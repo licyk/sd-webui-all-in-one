@@ -1,0 +1,12 @@
+{
+    "path_checkpoints": "/kaggle/Fooocus/models/checkpoints",
+    "path_loras": "/kaggle/Fooocus/models/loras",
+    "path_embeddings": "/kaggle/Fooocus/models/embeddings",
+    "path_vae_approx": "/kaggle/Fooocus/models/vae_approx",
+    "path_upscale_models": "/kaggle/Fooocus/models/upscale_models",
+    "path_inpaint": "/kaggle/Fooocus/models/inpaint",
+    "path_controlnet": "/kaggle/Fooocus/models/controlnet",
+    "path_clip_vision": "/kaggle/Fooocus/models/clip_vision",
+    "path_fooocus_expansion": "/kaggle/Fooocus/models/prompt_expansion/fooocus_expansion",
+    "path_outputs": "/kaggle/working/fooocus_output"
+}
