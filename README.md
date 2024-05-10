@@ -11,8 +11,8 @@
 
 ## 可用的 Jupyter Notebook 
 - sd_webui_all_in_one.ipynb：支持部署多种 WebUI 的 Jupyter Notebook。
-- sd_webui_all_in_one_colab.ipynb：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。
-- fooocus_colab.ipynb：适用于 Colab 部署 Fooocus。
+- sd_webui_all_in_one_colab.ipynb：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+- fooocus_colab.ipynb：适用于 Colab 部署 Fooocus。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 - fooocus_kaggle.ipynb：适用于 Kaggle 部署 Fooocus。
 
 ## 主要功能
