@@ -36,3 +36,5 @@ irm https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_inst
 |↓|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
 |↓|[下载地址 2](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 |↓|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
+
+<!--# TODO 完善说明文档-->

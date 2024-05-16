@@ -31,7 +31,8 @@ function Modify-PythonPath {
 
 # 下载并解压python
 function Install-Python {
-    $url = "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
+    $url = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/python-3.10.11-embed-amd64.zip"
+    # $url = "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
 
     # 下载python
     Print-Msg "正在下载 Python"
@@ -46,17 +47,19 @@ function Install-Python {
         Expand-Archive -Path "./InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "./InvokeAI/python"
         Remove-Item -Path "./InvokeAI/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
-        return $true
+        Print-Msg "Python 安装成功"
     }else {
-        Print-Msg "下载 Python 失败"
-        return $false
+        Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程"
+        pause
+        exit 1
     }
 }
 
 
 # 配置python的pip模块
 function Install-Pip {
-    $url = "https://bootstrap.pypa.io/get-pip.py"
+    $url = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/get-pip.py"
+    # $url = "https://bootstrap.pypa.io/get-pip.py"
 
     # 下载get-pip.py
     Print-Msg "正在下载 get-pip.py"
@@ -67,14 +70,18 @@ function Install-Pip {
         ./InvokeAI/python/python.exe ./InvokeAI/get-pip.py --no-warn-script-location
         if ($?){ # 检测是否安装成功
             Remove-Item -Path "./InvokeAI/get-pip.py"
-            return $true
+            Print-Msg "Pip 安装成功"
         }else {
             Remove-Item -Path "./InvokeAI/get-pip.py"
-            return $false
+            Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程"
+            pause
+            exit 1
         }
     }else {
         Print-Msg "下载 get-pip.py 失败"
-        return $false
+        Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程"
+        pause
+        exit 1
     }
 }
 
@@ -85,9 +92,11 @@ function Install-InvokeAI {
     Print-Msg "正在下载 InvokeAI"
     ./InvokeAI/python/python.exe -m pip install "InvokeAI[xformers]"  --no-warn-script-location --use-pep517
     if ($?){ # 检测是否下载成功
-        return $true
+        Print-Msg "InvokeAI 安装成功"
     }else {
-        return $false
+        Print-Msg "InvokeAI 安装失败, 终止 InvokeAI 安装进程"
+        pause
+        exit 1
     }
 }
 
@@ -144,6 +153,34 @@ function Reinstall-Xformers {
 }
 
 
+# 下载pypatchmatch
+function Install-PyPatchMatch {
+    # PyPatchMatch
+    # https://github.com/invoke-ai/PyPatchMatch/releases/download/0.1.1/libpatchmatch_windows_amd64.dll
+    # https://github.com/invoke-ai/PyPatchMatch/releases/download/0.1.1/opencv_world460.dll
+    $url_1 = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/libpatchmatch_windows_amd64.dll"
+    $url_2 = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/opencv_world460.dll"
+
+    if (Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"){
+        Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
+        Invoke-WebRequest -Uri $url_1 -OutFile "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
+        if ($?){
+            Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
+        }else {
+            Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
+        }
+    }
+
+    if (Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"){
+        Print-Msg "下载 opencv_world460.dll 中"
+        Invoke-WebRequest -Uri $url_2 -OutFile "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
+        if ($?){
+            Print-Msg "下载 opencv_world460.dll 成功"
+        }else {
+            Print-Msg "下载 opencv_world460.dll 失败"
+        }
+    }
+}
 # 安装
 function Check-Install {
     if (Test-Path "./InvokeAI"){}else{
@@ -155,13 +192,7 @@ function Check-Install {
         Print-Msg "Python 已安装"
     }else {
         Print-Msg "Python 未安装"
-        if (Install-Python){ # 检测是否安装成功
-            Print-Msg "Python 安装成功"
-        }else {
-            Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程"
-            pause
-            exit 1
-        }
+        Install-Python
     }
 
     Print-Msg "检查是否安装 Pip"
@@ -170,13 +201,7 @@ function Check-Install {
         Print-Msg "Pip 已安装"
     }else {
         Print-Msg "Pip 未安装"
-        if (Install-Pip){ # 检测是否安装成功
-            Print-Msg "Pip 安装成功"
-        }else {
-            Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程"
-            pause
-            exit 1
-        }
+        Install-Pip
     }
 
     Print-Msg "检查是否安装 InvokeAI"
@@ -185,41 +210,42 @@ function Check-Install {
         Print-Msg "InvokeAI 已安装"
     }else {
         Print-Msg "InvokeAI 未安装"
-        if (Install-InvokeAI){ # 检测是否安装成功
-            Print-Msg "InvokeAI 安装成功"
-        }else {
-            Print-Msg "InvokeAI 安装失败, 终止 InvokeAI 安装进程"
-            pause
-            exit 1
-        }
+        Install-InvokeAI
     }
 
     Print-Msg "检测是否需要重装 xFormers"
     Reinstall-Xformers
+
+    Print-Msg "检测是否需要安装 PyPatchMatch"
+    Install-PyPatchMatch
 }
 
 
 # 启动脚本
 function Write-Launch-Script {
-    $content = @(
-        "`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`""
-        "`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`""
-        "`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉"
-        "`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1"
-        "`$env:CACHE_HOME = `"./invokeai/cache`""
-        "`$env:HF_HOME = `"./invokeai/cache/huggingface`""
-        "`$env:MATPLOTLIBRC = `"./invokeai/cache`""
-        "`$env:MODELSCOPE_CACHE = `"./invokeai/cache/modelscope/hub`""
-        "`$env:MS_CACHE_HOME = `"./invokeai/cache/modelscope/hub`""
-        "`$env:SYCL_CACHE_DIR = `"./invokeai/cache/libsycl_cache`""
-        "`$env:TORCH_HOME = `"./invokeai/cache/torch`""
-        "`$env:U2NET_HOME = `"./invokeai/cache/u2net`""
-        "`$env:XDG_CACHE_HOME = `"./invokeai/cache`""
-        "`$env:PIP_CACHE_DIR = `"./invokeai/cache/pip`""
-        "`$env:PYTHONPYCACHEPREFIX = `"./invokeai/cache/pycache`""
-        "Write-Host `"启动 InvokeAI 中`""
-        "./python/Scripts/invokeai-web.exe --root invokeai"
-    )
+    $content = "
+function Print-Msg (`$msg){
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+}
+`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
+`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
+`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
+`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$env:CACHE_HOME = `"./invokeai/cache`"
+`$env:HF_HOME = `"./invokeai/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"./invokeai/cache`"
+`$env:MODELSCOPE_CACHE = `"./invokeai/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"./invokeai/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"./invokeai/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"./invokeai/cache/torch`"
+`$env:U2NET_HOME = `"./invokeai/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"./invokeai/cache`"
+`$env:PIP_CACHE_DIR = `"./invokeai/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"./invokeai/cache/pycache`"
+Print-Msg `"启动 InvokeAI 中`"
+./python/Scripts/invokeai-web.exe --root invokeai
+pause
+    "
 
     Set-Content -Path "./InvokeAI/launch.ps1" -Value $content
 }
@@ -227,25 +253,30 @@ function Write-Launch-Script {
 
 # 更新脚本
 function Write-Update-Script {
-    $content = @(
-        "`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`""
-        "`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`""
-        "`$env:CACHE_HOME = `"./invokeai/cache`""
-        "`$env:HF_HOME = `"./invokeai/cache/huggingface`""
-        "`$env:MATPLOTLIBRC = `"./invokeai/cache`""
-        "`$env:MODELSCOPE_CACHE = `"./invokeai/cache/modelscope/hub`""
-        "`$env:MS_CACHE_HOME = `"./invokeai/cache/modelscope/hub`""
-        "`$env:SYCL_CACHE_DIR = `"./invokeai/cache/libsycl_cache`""
-        "`$env:TORCH_HOME = `"./invokeai/cache/torch`""
-        "`$env:U2NET_HOME = `"./invokeai/cache/u2net`""
-        "`$env:XDG_CACHE_HOME = `"./invokeai/cache`""
-        "`$env:PIP_CACHE_DIR = `"./invokeai/cache/pip`""
-        "`$env:PYTHONPYCACHEPREFIX = `"./invokeai/cache/pycache`""
-        "Write-Host `"更新 InvokeAI 中`""
-        "./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517"
-        "Write-Host `"InvokeAI 更新完成`""
-        "pause"
-    )
+    $content = "
+function Print-Msg (`$msg){
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+}
+`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
+`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
+`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
+`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$env:CACHE_HOME = `"./invokeai/cache`"
+`$env:HF_HOME = `"./invokeai/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"./invokeai/cache`"
+`$env:MODELSCOPE_CACHE = `"./invokeai/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"./invokeai/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"./invokeai/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"./invokeai/cache/torch`"
+`$env:U2NET_HOME = `"./invokeai/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"./invokeai/cache`"
+`$env:PIP_CACHE_DIR = `"./invokeai/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"./invokeai/cache/pycache`"
+Print-Msg `"更新 InvokeAI 中`"
+./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
+Print-Msg `"InvokeAI 更新完成`"
+pause
+"
 
     Set-Content -Path "./InvokeAI/update.ps1" -Value $content
 }
@@ -253,12 +284,15 @@ function Write-Update-Script {
 
 # 数据库修复
 function Write-InvokeAI-DB-Fix-Script {
-    $content = @(
-        "Write-Host `"修复 InvokeAI 数据库中`""
-        "./python/Scripts/invokeai-db-maintenance.exe --operation all --root invokeai"
-        "Write-Host `"修复 InvokeAI 数据库完成`""
-        "pause"
-    )
+    $content = "
+function Print-Msg (`$msg){
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+}
+Print-Msg `"修复 InvokeAI 数据库中`"
+./python/Scripts/invokeai-db-maintenance.exe --operation all --root invokeai
+Print-Msg `"修复 InvokeAI 数据库完成`"
+pause
+"
 
     Set-Content -Path "./InvokeAI/fix-db.ps1" -Value $content
 }
@@ -267,16 +301,19 @@ function Write-InvokeAI-DB-Fix-Script {
 # 获取安装脚本
 function Write-InvokeAI-Install-Script {
     $content = "
+function Print-Msg (`$msg){
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+}
 `$url = `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`"
-Write-Host `":: 正在下载 InvokeAI Installer 脚本`"
+Print-Msg `":: 正在下载 InvokeAI Installer 脚本`"
 Invoke-WebRequest -Uri `$url -OutFile `"../invokeai_installer.ps1`"
 if (`$?){
-    Write-Host `":: 下载 InvokeAI Installer 脚本成功`"
+    Print-Msg `":: 下载 InvokeAI Installer 脚本成功`"
 }else{
-    Write-Host `":: 下载 InvokeAI Installer 脚本失败`"
+    Print-Msg `":: 下载 InvokeAI Installer 脚本失败`"
 }
 pause
-    "
+"
 
     Set-Content -Path "./InvokeAI/get_invokeai_installer.ps1" -Value $content
 }
@@ -287,6 +324,10 @@ function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
     `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location) > `"
+}
+
+function Print-Msg (`$msg){
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 
 # 环境变量
@@ -308,9 +349,9 @@ function global:prompt {
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
 
-Write-Host `":: 激活 InvokeAI-Env`"
-Write-Host `":: 帮助文档可在 help.txt 文件中查看`"
-Write-Host `":: 更多帮助信息可在项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+Print-Msg `":: 激活 InvokeAI-Env`"
+Print-Msg `":: 帮助文档可在 help.txt 文件中查看`"
+Print-Msg `":: 更多帮助信息可在项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 "
 
     Set-Content -Path "./InvokeAI/activate.ps1" -Value $content
@@ -326,15 +367,15 @@ function Write-ReadMe {
 
 使用 InvokeAI Installer 进行安装并安装成功后，将在当前目录生成 InvokeAI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-- cache：缓存文件夹，保存者 Pip / HuggingFace 等缓存文件。
-- python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
-- invokeai：InvokeAI 存放模型、图片等的文件夹。
-- activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境，即可使用 InvokeAI。
-- get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
-- update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
-- launch.ps1：启动 InvokeAI 的脚本。
-- fix-db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
-- help.txt：帮助文档，使用该文件查看帮助文档。
+cache：缓存文件夹，保存者 Pip / HuggingFace 等缓存文件。
+python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
+invokeai：InvokeAI 存放模型、图片等的文件夹。
+activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境，即可使用 InvokeAI。
+get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
+update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
+launch.ps1：启动 InvokeAI 的脚本。
+fix-db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
+help.txt：帮助文档，使用该文件查看帮助文档。
 
 使用 InvokeAI 前，建议阅读下列教程，以更快的了解并掌握使用 InvokeAI 的方法。
 给所有想学习AI辅助绘画的人的入门课 By Yuno779：https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
