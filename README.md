@@ -33,3 +33,9 @@
 3. 若使用 [Colab](https://colab.research.google.com) 平台，请注意该 Jupyter Notebook 无法在免费版的 Colab 账号中使用，运行前将会收到 Colab 的警告提示，强行运行将会导致 Colab 强制关机（如果 Colab 账号已付费订阅可直接使用该 Jupyter Notebook），可选择仓库中其他的  Jupyter Notebook（将 Colab 中禁止的 WebUI 移除了）。
 4. [Ngrok](https://ngrok.com) 内网穿透的稳定性高，使用前需要填写 Ngrok Token，可在 [Ngrok](https://ngrok.com) 官网获取。
 5. 在启动时将启动内网穿透，可在控制台输出中看到内网穿透地址，用于访问 WebUI 界面。
+
+## 其他可用脚本
+>[!NOTE]  
+>以下脚本非 Jupyter Notebook 脚本。
+
+- [invokeai_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)：Windows 平台一键部署 InvokeAI 脚本。更多信息可[点击此处](https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md)。
