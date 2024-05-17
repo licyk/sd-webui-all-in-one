@@ -19,7 +19,7 @@ $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
 $env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
 
 # 消息输出
-function Print-Msg ($msg){
+function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI-Installer]:: $msg"
 }
 
@@ -33,9 +33,9 @@ function Install-Python {
     # 下载python
     Print-Msg "正在下载 Python"
     Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/python-3.10.11-embed-amd64.zip"
-    if ($?){ # 检测是否下载成功并解压
+    if ($?) { # 检测是否下载成功并解压
         # 创建python文件夹
-        if (!(Test-Path "./InvokeAI/python")){
+        if (!(Test-Path "./InvokeAI/python")) {
             New-Item -ItemType Directory -Force -Path ./InvokeAI/python > $null
         }
         # 解压python
@@ -44,7 +44,7 @@ function Install-Python {
         Remove-Item -Path "./InvokeAI/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
         Print-Msg "Python 安装成功"
-    }else {
+    } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         pause
         exit 1
@@ -69,20 +69,20 @@ function Install-Pip {
     # 下载get-pip.py
     Print-Msg "正在下载 get-pip.py"
     Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/get-pip.py"
-    if ($?){ # 检测是否下载成功
+    if ($?) { # 检测是否下载成功
         # 执行get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
         ./InvokeAI/python/python.exe ./InvokeAI/get-pip.py --no-warn-script-location
-        if ($?){ # 检测是否安装成功
+        if ($?) { # 检测是否安装成功
             Remove-Item -Path "./InvokeAI/get-pip.py"
             Print-Msg "Pip 安装成功"
-        }else {
+        } else {
             Remove-Item -Path "./InvokeAI/get-pip.py"
             Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
             pause
             exit 1
         }
-    }else {
+    } else {
         Print-Msg "下载 get-pip.py 失败"
         Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         pause
@@ -96,9 +96,9 @@ function Install-InvokeAI {
     # 下载InvokeAI
     Print-Msg "正在下载 InvokeAI"
     ./InvokeAI/python/python.exe -m pip install "InvokeAI[xformers]"  --no-warn-script-location --use-pep517
-    if ($?){ # 检测是否下载成功
+    if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
-    }else {
+    } else {
         Print-Msg "InvokeAI 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         pause
         exit 1
@@ -114,57 +114,57 @@ function Reinstall-Xformers {
     $xformers_pkg = $(./InvokeAI/python/Scripts/pip.exe freeze | Select-String -Pattern "xformers") # 检测是否安装了xformers
     $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # 检查是否版本为cu118的
 
-    if (Test-Path "./InvokeAI/cache/xformers.txt"){
+    if (Test-Path "./InvokeAI/cache/xformers.txt") {
         # 读取xformers.txt文件的内容
         Print-Msg "读取上次的 xFormers 版本记录"
         $xformers_ver = Get-Content "./InvokeAI/cache/xformers.txt"
     }
 
-    for ($i = 1; $i -le 3; $i++){
+    for ($i = 1; $i -le 3; $i++) {
         if ($xformers_ver) { # 本地存在版本记录（上次安装xformers喂未完成）
             Print-Msg "安装: $xformers_ver"
             ./InvokeAI/python/python.exe -m pip uninstall xformers -y
             ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir
-            if ($?){
+            if ($?) {
                 Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                 Print-Msg "重装 xFormers 成功"
                 break
-            }else {
+            } else {
                 Print-Msg "重装 xFormers 失败"
             }
-        }elseif ($xformers_pkg){ # 已安装了xformers
-            if ($xformers_pkg_cu118){ # 确认xformers是否为cu118的版本
+        } elseif ($xformers_pkg) { # 已安装了xformers
+            if ($xformers_pkg_cu118) { # 确认xformers是否为cu118的版本
                 Print-Msg "检测到已安装的 xFormers 为 CU118 的版本, 将进行重装"
                 $xformers_pkg = $xformers_pkg.ToString().Split("+")[0]
                 $xformers_pkg > ./InvokeAI/cache/xformers.txt # 将版本信息存在本地，用于安装失败时恢复
                 ./InvokeAI/python/python.exe -m pip uninstall xformers -y
                 ./InvokeAI/python/python.exe -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir
-                if ($?){
+                if ($?) {
                     Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                     Print-Msg "重装 xFormers 成功"
                     break
-                }else {
+                } else {
                     Print-Msg "重装 xFormers 失败"
                 }
-            }else{
+            } else {
                 Print-Msg "无需重装 xFormers"
                 break
             }
-        }else{
+        } else {
             Print-Msg "未安装 xFormers, 尝试安装中"
             ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir
-            if ($?){ # 检测是否下载成功
+            if ($?) { # 检测是否下载成功
                 Print-Msg "重装 xFormers 成功"
                 break
-            }else {
+            } else {
                 Print-Msg "重装 xFormers 失败"
             }
         }
 
-        if ($i -ge 3){ # 超出重试次数时进行提示
+        if ($i -ge 3) { # 超出重试次数时进行提示
             Print-Msg "xFormers 未能成功安装, 这可能导致使用 InvokeAI 时显存占用率增大, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
             break
-        }else{
+        } else {
             Print-Msg "尝试重新安装 xFormers 中"
         }
     }
@@ -181,29 +181,29 @@ function Install-PyPatchMatch {
     $url_1 = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Flibpatchmatch_windows_amd64.dll"
     $url_2 = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Fopencv_world460.dll"
 
-    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")){
+    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
         Invoke-WebRequest -Uri $url_1 -OutFile "./InvokeAI/cache/libpatchmatch_windows_amd64.dll"
-        if ($?){
+        if ($?) {
             Move-Item -Path "./InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
-        }else {
+        } else {
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
         }
-    }else{
+    } else {
         Print-Msg "无需下载 libpatchmatch_windows_amd64.dll"
     }
 
-    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")){
+    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
         Print-Msg "下载 opencv_world460.dll 中"
         Invoke-WebRequest -Uri $url_2 -OutFile "./InvokeAI/cache/opencv_world460.dll"
-        if ($?){
+        if ($?) {
             Move-Item -Path "./InvokeAI/cache/opencv_world460.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
             Print-Msg "下载 opencv_world460.dll 成功"
-        }else {
+        } else {
             Print-Msg "下载 opencv_world460.dll 失败"
         }
-    }else{
+    } else {
         Print-Msg "无需下载 opencv_world460.dll"
     }
 }
@@ -211,11 +211,11 @@ function Install-PyPatchMatch {
 
 # 安装
 function Check-Install {
-    if (!(Test-Path "./InvokeAI")){
+    if (!(Test-Path "./InvokeAI")) {
         New-Item -ItemType Directory -Path "./InvokeAI" > $null
     }
 
-    if (!(Test-Path "./InvokeAI/cache")){
+    if (!(Test-Path "./InvokeAI/cache")) {
         New-Item -ItemType Directory -Path "./InvokeAI/cache" > $null
     }
 
@@ -223,7 +223,7 @@ function Check-Install {
     $pythonPath = "./InvokeAI/python/python.exe"
     if (Test-Path $pythonPath) {
         Print-Msg "Python 已安装"
-    }else {
+    } else {
         Print-Msg "Python 未安装"
         Install-Python
     }
@@ -232,7 +232,7 @@ function Check-Install {
     $pipPath = "./InvokeAI/python/Scripts/pip.exe"
     if (Test-Path $pipPath) {
         Print-Msg "Pip 已安装"
-    }else {
+    } else {
         Print-Msg "Pip 未安装"
         Install-Pip
     }
@@ -241,7 +241,7 @@ function Check-Install {
     $invokeaiPath = "./InvokeAI/python/Scripts/invokeai-web.exe"
     if (Test-Path $invokeaiPath) {
         Print-Msg "InvokeAI 已安装"
-    }else {
+    } else {
         Print-Msg "InvokeAI 未安装"
         Install-InvokeAI
     }
@@ -257,9 +257,10 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
-function Print-Msg (`$msg){
+function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
+Print-Msg `"初始化中`"
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
@@ -279,14 +280,16 @@ function Print-Msg (`$msg){
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
 `$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
-Print-Msg `"启动 InvokeAI 中`"
-Print-Msg `"使用浏览器打开 http://127.0.0.1:9090 地址`"
+Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
 Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败，这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
+Print-Msg `"提示：如果 PowerShell 界面长时间不动，并且 InvokeAI 未启动，可以尝试按下几次回车键`"
 Start-Sleep -Seconds 2
+Print-Msg `"调用浏览器打开地址中`"
 Start-Process `"http://127.0.0.1:9090`"
+Print-Msg `"启动 InvokeAI 中`"
 ./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
 pause
-    "
+"
 
     Set-Content -Path "./InvokeAI/launch.ps1" -Value $content
 }
@@ -295,7 +298,7 @@ pause
 # 更新脚本
 function Write-Update-Script {
     $content = "
-function Print-Msg (`$msg){
+function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
@@ -319,9 +322,9 @@ function Print-Msg (`$msg){
 `$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
 Print-Msg `"更新 InvokeAI 中`"
 ./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
-if (`$?){
+if (`$?) {
     Print-Msg `"InvokeAI 更新成功`"
-}else{
+} else {
     Print-Msg `"InvokeAI 更新失败`"
 }
 pause
@@ -334,7 +337,7 @@ pause
 # 数据库修复
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
-function Print-Msg (`$msg){
+function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 Print-Msg `"修复 InvokeAI 数据库中`"
@@ -350,7 +353,7 @@ pause
 # 获取安装脚本
 function Write-InvokeAI-Install-Script {
     $content = "
-function Print-Msg (`$msg){
+function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 # 可用的下载源
@@ -359,21 +362,21 @@ function Print-Msg (`$msg){
 `$i = 0
 
 ForEach (`$url in `$urls) {
-    Print-Msg `":: 正在下载 InvokeAI Installer 脚本`"
+    Print-Msg `"正在下载 InvokeAI Installer 脚本`"
     Invoke-WebRequest -Uri `$url -OutFile `"./cache/invokeai_installer.ps1`"
-    if (`$?){
-        if (Test-Path `"../invokeai_installer.ps1`"){
+    if (`$?) {
+        if (Test-Path `"../invokeai_installer.ps1`") {
             Remove-Item `"../invokeai_installer.ps1`" -Force
         }
         Move-Item -Path `"./cache/invokeai_installer.ps1`" -Destination `"../invokeai_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-        Print-Msg `":: 下载 InvokeAI Installer 脚本成功, 路径为 `$parentDirectory/invokeai_installer.ps1`"
+        Print-Msg `"下载 InvokeAI Installer 脚本成功, 路径为 `$parentDirectory/invokeai_installer.ps1`"
         break
-    }else{
-        Print-Msg `":: 下载 InvokeAI Installer 脚本失败`"
+    } else {
+        Print-Msg `"下载 InvokeAI Installer 脚本失败`"
         `$i += 1
-        if (`$i -lt `$count){
-            Print-Msg `":: 重试下载 InvokeAI Installer 脚本`"
+        if (`$i -lt `$count) {
+            Print-Msg `"重试下载 InvokeAI Installer 脚本`"
         }
     }
 }
@@ -391,7 +394,7 @@ function global:prompt {
     `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location) > `"
 }
 
-function Print-Msg (`$msg){
+function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 
@@ -420,8 +423,7 @@ function Print-Msg (`$msg){
 `$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
 
 Print-Msg `"激活 InvokeAI Env`"
-Print-Msg `"帮助文档可在 help.txt 文件中查看`"
-Print-Msg `"更多帮助信息可在项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 "
 
     Set-Content -Path "./InvokeAI/activate.ps1" -Value $content
@@ -463,7 +465,7 @@ InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 L
 更多详细的帮助文档可在下面的链接查看。
 详细的使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 InvokeAI 官方文档：https://invoke-ai.github.io/InvokeAI
-    "
+"
     Set-Content -Path "./InvokeAI/help.txt" -Value $content
 }
 
