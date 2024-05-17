@@ -33,6 +33,8 @@ _✨一键安装 InvokeAI_
     - [卸载 InvokeAI](#卸载-invokeai)
     - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
     - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
+    - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
+    - [命令的使用](#命令的使用)
 
 
 ## 简介
@@ -158,7 +160,7 @@ $env:U2NET_HOME = "$PSScriptRoot/invokeai/cache/u2net"
 $env:XDG_CACHE_HOME = "$PSScriptRoot/invokeai/cache"
 $env:PIP_CACHE_DIR = "$PSScriptRoot/invokeai/cache/pip"
 $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/invokeai/cache/pycache"
-$env:INVOKEAI_ROOT="$PSScriptRoot/InvokeAI/invokeai"
+$env:INVOKEAI_ROOT="$PSScriptRoot/invokeai"
 Print-Msg "启动 InvokeAI 中"
 Print-Msg "使用浏览器打开 http://127.0.0.1:9090 地址"
 Print-Msg "提示: 打开浏览器后，InvokeAI 还处在启动状态，可能会浏览器会显示连接失败，可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可"
@@ -209,4 +211,61 @@ invokeai
 └── outputs               # 生成的图片保存位置
 
 7 directories, 2 files
+```
+
+### 更新 InvokeAI 管理脚本
+运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer，并运行一次 InvokeAI Installer。
+
+### 命令的使用
+在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
+
+```powershell
+.\activate.ps1
+```
+>[!NOTE]  
+>在 PowerShell 中一定要显示`[InvokeAI-Env]`才算进入了环境，这样才能使用下面的命令。
+
+- 清理安装时产生的 Pip 缓存
+```powershell
+python -m pip cache purge
+```
+
+- 启动 InvokeAI
+```powershell
+invokeai-web
+```
+
+- 查看 InvokeAI 的版本
+```powershell
+invokeai-web --version
+```
+
+- 修复 InvokeAI 数据库
+```powershell
+invokeai-db-maintenance --operation all
+```
+
+- 从旧版 InvokeAI 导入图片到新版的 InvokeAI
+```powershell
+invokeai-import-images
+```
+
+- 安装某个 Pip 软件包
+```powershell
+python -m pip install <package_name>
+```
+
+- 更新某个软件包
+```powershell
+python -m pip install <package_name> -U
+```
+
+- 重装某个软件包
+```powershell
+python -m pip install <package_name> --force-reinstall
+```
+
+- 卸载某个软件包
+```powershell
+python -m pip uninstall <package_name>
 ```

@@ -266,8 +266,8 @@ Print-Msg `"初始化中`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT=30
-`$env:PIP_RETRIES=5
+`$env:PIP_TIMEOUT = 30
+`$env:PIP_RETRIES = 5
 `$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
 `$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
@@ -279,7 +279,7 @@ Print-Msg `"初始化中`"
 `$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
-`$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
+`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
 Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败，这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
 Print-Msg `"提示：如果 PowerShell 界面长时间不动，并且 InvokeAI 未启动，可以尝试按下几次回车键`"
@@ -306,8 +306,8 @@ function Print-Msg (`$msg) {
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT=30
-`$env:PIP_RETRIES=5
+`$env:PIP_TIMEOUT = 30
+`$env:PIP_RETRIES = 5
 `$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
 `$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
@@ -319,7 +319,7 @@ function Print-Msg (`$msg) {
 `$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
-`$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
+`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 Print-Msg `"更新 InvokeAI 中`"
 ./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
@@ -337,11 +337,12 @@ pause
 # 数据库修复
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
+`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 Print-Msg `"修复 InvokeAI 数据库中`"
-./python/Scripts/invokeai-db-maintenance.exe --operation all --root invokeai
+./python/Scripts/invokeai-db-maintenance.exe --operation all --root `"`$PSScriptRoot/invokeai`"
 Print-Msg `"修复 InvokeAI 数据库完成`"
 pause
 "
@@ -362,10 +363,11 @@ function Print-Msg (`$msg) {
 `$i = 0
 
 ForEach (`$url in `$urls) {
-    Print-Msg `"正在下载 InvokeAI Installer 脚本`"
+    Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
     Invoke-WebRequest -Uri `$url -OutFile `"./cache/invokeai_installer.ps1`"
     if (`$?) {
         if (Test-Path `"../invokeai_installer.ps1`") {
+            Print-Msg `"删除原有的 InvokeAI Installer 脚本`"
             Remove-Item `"../invokeai_installer.ps1`" -Force
         }
         Move-Item -Path `"./cache/invokeai_installer.ps1`" -Destination `"../invokeai_installer.ps1`"
@@ -407,8 +409,8 @@ function Print-Msg (`$msg) {
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT=30
-`$env:PIP_RETRIES=5
+`$env:PIP_TIMEOUT = 30
+`$env:PIP_RETRIES = 5
 `$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
 `$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
@@ -420,7 +422,7 @@ function Print-Msg (`$msg) {
 `$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
-`$env:INVOKEAI_ROOT=`"`$PSScriptRoot/InvokeAI/invokeai`"
+`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"激活 InvokeAI Env`"
 Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
