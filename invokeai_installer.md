@@ -30,6 +30,9 @@ _✨一键安装 InvokeAI_
     - [重装 InvokeAI](#重装-invokeai)
     - [显存占用很大](#显存占用很大)
     - [InvokeAI 无法正常调用显卡](#invokeai-无法正常调用显卡)
+    - [卸载 InvokeAI](#卸载-invokeai)
+    - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
+    - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
 
 
 ## 简介
@@ -183,3 +186,27 @@ pause
 
 ### InvokeAI 无法正常调用显卡
 尝试将显卡驱动更至最新。
+
+### 卸载 InvokeAI
+使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。
+
+### 移动 InvokeAI 的路径
+直接将 InvokeAI 文件夹移动到别的路径即可。
+
+### InvokeAI 文件夹用途
+在 InvokeAI 文件夹中，存在着 invokeai 文件夹，保存着模型和生成出来的图片等，以下为不同文件夹的用途。
+
+```
+$ tree -L 1 invokeai
+invokeai
+├── cache                 # InvokeAI 的缓存文件夹
+├── configs               # 一些模型的配置文件
+├── databases             # InvokeAI 的数据库
+├── invokeai.example.yaml # InvokeAI 的配置文件示例
+├── invokeai.yaml         # InvokeAI 的配置文件
+├── models                # 模型文件夹
+├── nodes                 # InvokeAI 节点存放路径
+└── outputs               # 生成的图片保存位置
+
+7 directories, 2 files
+```
