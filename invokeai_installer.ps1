@@ -18,9 +18,25 @@ $env:PIP_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/pip"
 $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
 $env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
 
+
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI-Installer]:: $msg"
+}
+
+
+# 代理配置
+$env:NO_PROXY = "localhost,127.0.0.1,::1"
+$internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+if (Test-Path "$PSScriptRoot/proxy.txt") {
+    $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+    $env:HTTP_PROXY = $proxy_value
+    $env:HTTPS_PROXY = $proxy_value
+    Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
+} elseif ($internet_setting.ProxyEnable -eq 1) {
+    $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
+    $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+    Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
 }
 
 
@@ -261,6 +277,21 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
 Print-Msg `"初始化中`"
+
+# 代理配置
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    `$env:HTTP_PROXY = `$proxy_value
+    `$env:HTTPS_PROXY = `$proxy_value
+    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+} elseif (`$internet_setting.ProxyEnable -eq 1) {
+    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+}
+
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
@@ -301,6 +332,21 @@ function Write-Update-Script {
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
+
+# 代理配置
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    `$env:HTTP_PROXY = `$proxy_value
+    `$env:HTTPS_PROXY = `$proxy_value
+    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+} elseif (`$internet_setting.ProxyEnable -eq 1) {
+    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+}
+
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
@@ -357,6 +403,21 @@ function Write-InvokeAI-Install-Script {
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
+
+# 代理配置
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    `$env:HTTP_PROXY = `$proxy_value
+    `$env:HTTPS_PROXY = `$proxy_value
+    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+} elseif (`$internet_setting.ProxyEnable -eq 1) {
+    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+}
+
 # 可用的下载源
 `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
 `$count = `$urls.Length
@@ -398,6 +459,20 @@ function global:prompt {
 
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+}
+
+# 代理配置
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    `$env:HTTP_PROXY = `$proxy_value
+    `$env:HTTPS_PROXY = `$proxy_value
+    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+} elseif (`$internet_setting.ProxyEnable -eq 1) {
+    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
 }
 
 # 环境变量
