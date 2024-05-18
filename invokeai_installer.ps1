@@ -24,19 +24,24 @@ function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI-Installer]:: $msg"
 }
 
+Print-Msg "初始化中"
 
 # 代理配置
 $env:NO_PROXY = "localhost,127.0.0.1,::1"
-$internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-if (Test-Path "$PSScriptRoot/proxy.txt") {
-    $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
-    $env:HTTP_PROXY = $proxy_value
-    $env:HTTPS_PROXY = $proxy_value
-    Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
-} elseif ($internet_setting.ProxyEnable -eq 1) {
-    $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-    $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
-    Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
+if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
+    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
+        $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+        $env:HTTP_PROXY = $proxy_value
+        $env:HTTPS_PROXY = $proxy_value
+        Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
+    } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
+        $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+        Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
+    }
+} else {
+    Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
 }
 
 
@@ -280,22 +285,39 @@ Print-Msg `"初始化中`"
 
 # 代理配置
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-    `$env:HTTP_PROXY = `$proxy_value
-    `$env:HTTPS_PROXY = `$proxy_value
-    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-} elseif (`$internet_setting.ProxyEnable -eq 1) {
-    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# Huggingface 镜像源
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
+        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+        `$env:HF_ENDPOINT = `$hf_mirror_value
+        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+    } else { # 使用默认设置
+        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        Print-Msg `"使用默认 HuggingFace 镜像源`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
-`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
@@ -311,6 +333,7 @@ if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+
 Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
 Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败，这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
 Print-Msg `"提示：如果 PowerShell 界面长时间不动，并且 InvokeAI 未启动，可以尝试按下几次回车键`"
@@ -335,22 +358,40 @@ function Print-Msg (`$msg) {
 
 # 代理配置
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-    `$env:HTTP_PROXY = `$proxy_value
-    `$env:HTTPS_PROXY = `$proxy_value
-    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-} elseif (`$internet_setting.ProxyEnable -eq 1) {
-    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
 
+# Huggingface 镜像源
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
+        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+        `$env:HF_ENDPOINT = `$hf_mirror_value
+        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+    } else { # 使用默认设置
+        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        Print-Msg `"使用默认 HuggingFace 镜像源`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+}
+
+# 环境变量
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
-`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
@@ -366,6 +407,7 @@ if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+
 Print-Msg `"更新 InvokeAI 中`"
 ./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
@@ -387,6 +429,7 @@ function Write-InvokeAI-DB-Fix-Script {
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
 }
+
 Print-Msg `"修复 InvokeAI 数据库中`"
 ./python/Scripts/invokeai-db-maintenance.exe --operation all --root `"`$PSScriptRoot/invokeai`"
 Print-Msg `"修复 InvokeAI 数据库完成`"
@@ -406,16 +449,34 @@ function Print-Msg (`$msg) {
 
 # 代理配置
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-    `$env:HTTP_PROXY = `$proxy_value
-    `$env:HTTPS_PROXY = `$proxy_value
-    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-} elseif (`$internet_setting.ProxyEnable -eq 1) {
-    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# Huggingface 镜像源
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
+        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+        `$env:HF_ENDPOINT = `$hf_mirror_value
+        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+    } else { # 使用默认设置
+        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        Print-Msg `"使用默认 HuggingFace 镜像源`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
 # 可用的下载源
@@ -463,16 +524,34 @@ function Print-Msg (`$msg) {
 
 # 代理配置
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-`$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-    `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-    `$env:HTTP_PROXY = `$proxy_value
-    `$env:HTTPS_PROXY = `$proxy_value
-    Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-} elseif (`$internet_setting.ProxyEnable -eq 1) {
-    `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-    Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# Huggingface 镜像源
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
+        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+        `$env:HF_ENDPOINT = `$hf_mirror_value
+        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+    } else { # 使用默认设置
+        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        Print-Msg `"使用默认 HuggingFace 镜像源`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
 # 环境变量
@@ -482,7 +561,6 @@ if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
 `$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
-`$env:HF_ENDPOINT = `"https://hf-mirror.com`" # Huggingface 镜像源, 当不使用这个镜像源时可以注释掉
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
@@ -509,10 +587,11 @@ Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com
 
 # 帮助文档
 function Write-ReadMe {
-    $content = "
+    $content = "==================================
+InvokeAI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
-
+==================================
 
 这是关于 InvokeAI 的简单使用文档。
 
@@ -537,7 +616,11 @@ InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 L
 给所有想学习AI辅助绘画的人的入门课 By Yuno779：https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
 
 脚本为 InvokeAI 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace 的问题，导致 InvokeAI 的模型管理无法从 HuggingFace 下载模型。
-如果自己有代理，不想使用 HuggingFace 镜像源，可以将 launcher.ps1 中的 `$env:HF_ENDPOINT = `"https://hf-mirror.com`" 这一行注释掉即可。
+如果想自定义 HuggingFace 镜像源，可以在本地创建 mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本是将自动读取配置。
+如果需要禁用 HuggingFace 镜像源，则创建 disable_mirror.txt 文件，启动脚本时将不再设置 HuggingFace 镜像源。
+
+若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
+如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
 
 更多详细的帮助文档可在下面的链接查看。
 详细的使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md

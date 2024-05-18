@@ -138,38 +138,14 @@ $ tree -L 2
 InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 Language 选项选择简体中文即可将界面语言设置为中文。
 
 ### 设置 HuggingFace 镜像
-InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，可以使用文本编辑器打开脚本查看该设置，以 launch.ps1 脚本为例。
-```powershell
-function Print-Msg ($msg){
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI-Installer]:: $msg"
-}
-$env:PIP_INDEX_URL = "https://mirror.baidu.com/pypi/simple"
-$env:PIP_EXTRA_INDEX_URL = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
-$env:PIP_FIND_LINKS = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
-$env:HF_ENDPOINT = "https://hf-mirror.com" # 这里就是 Huggingface 镜像源, 可以自己修改这个镜像源。如果不使用这个镜像源时可以将这行注释掉
-$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-$env:PIP_TIMEOUT=30
-$env:PIP_RETRIES=5
-$env:CACHE_HOME = "$PSScriptRoot/invokeai/cache"
-$env:HF_HOME = "$PSScriptRoot/invokeai/cache/huggingface"
-$env:MATPLOTLIBRC = "$PSScriptRoot/invokeai/cache"
-$env:MODELSCOPE_CACHE = "$PSScriptRoot/invokeai/cache/modelscope/hub"
-$env:MS_CACHE_HOME = "$PSScriptRoot/invokeai/cache/modelscope/hub"
-$env:SYCL_CACHE_DIR = "$PSScriptRoot/invokeai/cache/libsycl_cache"
-$env:TORCH_HOME = "$PSScriptRoot/invokeai/cache/torch"
-$env:U2NET_HOME = "$PSScriptRoot/invokeai/cache/u2net"
-$env:XDG_CACHE_HOME = "$PSScriptRoot/invokeai/cache"
-$env:PIP_CACHE_DIR = "$PSScriptRoot/invokeai/cache/pip"
-$env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/invokeai/cache/pycache"
-$env:INVOKEAI_ROOT="$PSScriptRoot/invokeai"
-Print-Msg "启动 InvokeAI 中"
-Print-Msg "使用浏览器打开 http://127.0.0.1:9090 地址"
-Print-Msg "提示: 打开浏览器后，InvokeAI 还处在启动状态，可能会浏览器会显示连接失败，可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可"
-Start-Sleep -Seconds 2
-Start-Process "http://127.0.0.1:9090"
-./python/Scripts/invokeai-web.exe --root "$PSScriptRoot/invokeai"
-pause
-```
+InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建`mirror.txt`文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
+
+|可用的 HuggingFace 镜像源||
+|---|---|
+|https://hf-mirror.com||
+|https://huggingface.sukaka.top||
+
+如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建`disable_mirror.txt`文件，再次启动脚本时将禁用 HuggingFace 镜像源。
 
 ### 添加模型
 在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
@@ -226,7 +202,11 @@ invokeai
 
 - 使用配置文件
 
-在和脚本同级的路径中创建一个 proxy.txt 文件，在文件中填写代理地址，如`http://127.0.0.1:10809`，保存后运行脚本，这时候脚本会自动读取这个配置文件中的代理配置并设置代理。
+在和脚本同级的路径中创建一个`proxy.txt`文件，在文件中填写代理地址，如`http://127.0.0.1:10809`，保存后运行脚本，这时候脚本会自动读取这个配置文件中的代理配置并设置代理。
+
+- 禁用自动设置代理
+
+在和脚本同级的路径中创建一个`disable_proxy.txt`文件，再次启动脚本时将禁用设置代理。
 
 >[!NOTE]  
 >配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
