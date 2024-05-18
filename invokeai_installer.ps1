@@ -321,17 +321,17 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/invokeai/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/invokeai/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
+`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
@@ -395,17 +395,17 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/invokeai/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/invokeai/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
+`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"更新 InvokeAI 中`"
@@ -436,7 +436,7 @@ Print-Msg `"修复 InvokeAI 数据库完成`"
 pause
 "
 
-    Set-Content -Path "$PSScriptRoot/InvokeAI/fix-db.ps1" -Value $content
+    Set-Content -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
 }
 
 
@@ -564,17 +564,17 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/invokeai/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/invokeai/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/invokeai/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/invokeai/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/invokeai/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/invokeai/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/invokeai/cache/pycache`"
+`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"激活 InvokeAI Env`"
