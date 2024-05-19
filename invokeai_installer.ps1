@@ -61,7 +61,7 @@ function Install-Python {
         }
         # 解压python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "./InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "./InvokeAI/python"
+        Expand-Archive -Path "./InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "./InvokeAI/python" -Force
         Remove-Item -Path "./InvokeAI/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
         Print-Msg "Python 安装成功"
@@ -142,7 +142,7 @@ function Reinstall-Xformers {
     }
 
     for ($i = 1; $i -le 3; $i++) {
-        if ($xformers_ver) { # 本地存在版本记录（上次安装xformers喂未完成）
+        if ($xformers_ver) { # 本地存在版本记录（上次安装xformers未完成）
             Print-Msg "安装: $xformers_ver"
             ./InvokeAI/python/python.exe -m pip uninstall xformers -y
             ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir
@@ -515,7 +515,7 @@ pause
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
-    `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location) > `"
+    `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 function Print-Msg (`$msg) {
