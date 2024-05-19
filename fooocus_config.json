@@ -27,10 +27,10 @@
     "default_cfg_scale": 5.0,
     "default_sample_sharpness": 2.0,
     "default_sampler": "dpmpp_2m_sde_gpu",
-    "default_scheduler": "karras",
+    "default_scheduler": "exponential",
     "default_performance": "Speed",
     "default_prompt": "",
-    "default_prompt_negative": "lowres,bad anatomy,bad hands,text,error,missing fingers,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,high contrast,blurry,",
+    "default_prompt_negative": "lowres,bad anatomy,bad hands,text,error,missing fingers,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,high contrast,",
     "default_styles": [
     ],
     "default_image_number": 1,
