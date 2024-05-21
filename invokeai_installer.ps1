@@ -145,7 +145,7 @@ function Reinstall-Xformers {
         if ($xformers_ver) { # 本地存在版本记录（上次安装xformers未完成）
             Print-Msg "安装: $xformers_ver"
             ./InvokeAI/python/python.exe -m pip uninstall xformers -y
-            ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir
+            ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir --no-deps
             if ($?) {
                 Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                 Print-Msg "重装 xFormers 成功"
@@ -159,7 +159,7 @@ function Reinstall-Xformers {
                 $xformers_pkg = $xformers_pkg.ToString().Split("+")[0]
                 $xformers_pkg > ./InvokeAI/cache/xformers.txt # 将版本信息存在本地，用于安装失败时恢复
                 ./InvokeAI/python/python.exe -m pip uninstall xformers -y
-                ./InvokeAI/python/python.exe -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir
+                ./InvokeAI/python/python.exe -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir --no-deps
                 if ($?) {
                     Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                     Print-Msg "重装 xFormers 成功"
@@ -173,7 +173,7 @@ function Reinstall-Xformers {
             }
         } else {
             Print-Msg "未安装 xFormers, 尝试安装中"
-            ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir
+            ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
             if ($?) { # 检测是否下载成功
                 Print-Msg "重装 xFormers 成功"
                 break
@@ -495,7 +495,7 @@ ForEach (`$url in `$urls) {
         }
         Move-Item -Path `"./cache/invokeai_installer.ps1`" -Destination `"../invokeai_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-        Print-Msg `"下载 InvokeAI Installer 脚本成功, 路径为 `$parentDirectory/invokeai_installer.ps1`"
+        Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
         break
     } else {
         Print-Msg `"下载 InvokeAI Installer 脚本失败`"
@@ -516,7 +516,7 @@ pause
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
-    `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)>`"
 }
 
 function Print-Msg (`$msg) {
@@ -601,12 +601,12 @@ Github：https://github.com/licyk
 cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 invokeai：InvokeAI 存放模型、图片等的文件夹。
-activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境，即可使用 Python、Pip、InvokeAI 的命令。
+activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
 get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 launch.ps1：启动 InvokeAI 的脚本。
 fix-db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
-help.txt：帮助文档，使用该文件查看帮助文档。
+help.txt：帮助文档。
 
 
 要启动 InvokeAI，在 InvokeAI 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 InvokeAI 启动完成，启动完成后将在控制台显示访问地址，地址为 http://127.0.0.1:9090，将该地址输入浏览器地址栏并回车后进入 InvokeAI 界面。
@@ -648,6 +648,7 @@ function Main {
     Write-Env-Activate-Script
     Write-ReadMe
     Print-Msg "InvokeAI 安装结束, 安装路径为 $PSScriptRoot\InvokeAI"
+    Print-Msg "关于该 InvokeAI 版本的更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest"
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看"
     Print-Msg "退出 InvokeAI Installer"
 }

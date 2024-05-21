@@ -29,6 +29,7 @@ _✨一键安装 InvokeAI_
     - [InvokeAI 的使用方法](#invokeai-的使用方法)
     - [重装 InvokeAI](#重装-invokeai)
     - [显存占用很大](#显存占用很大)
+    - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
     - [InvokeAI 无法正常调用显卡](#invokeai-无法正常调用显卡)
     - [卸载 InvokeAI](#卸载-invokeai)
     - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
@@ -162,6 +163,17 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
+
+### PowerShell 中出现 xFormers 报错
+在控制台中出现有关 xFormers 的警告信息，类似下面的内容。
+```
+WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built for:
+    PyTorch 2.2.1+cu118 with CUDA 1108 (you have 2.2.2+cu121)
+    Python  3.10.11 (you have 3.10.11)
+  Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
+  Memory-efficient attention, SwiGLU, sparse and more won't be available.
+```
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 InvokeAI Installer 进行修复。
 
 ### InvokeAI 无法正常调用显卡
 尝试将显卡驱动更至最新。

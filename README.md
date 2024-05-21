@@ -38,4 +38,4 @@
 >[!NOTE]  
 >以下脚本非 Jupyter Notebook 脚本。
 
-- [invokeai_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)：Windows 平台一键部署 InvokeAI 脚本。更多信息可[点击此处](https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md)。
+- [invokeai_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)：Windows 平台一键部署 InvokeAI 脚本。更多信息可[点击此处](./invokeai_installer.md)。
