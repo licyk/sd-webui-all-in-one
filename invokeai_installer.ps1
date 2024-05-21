@@ -412,6 +412,7 @@ Print-Msg `"更新 InvokeAI 中`"
 ./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
     Print-Msg `"InvokeAI 更新成功`"
+    Print-Msg `"InvokeAI 更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
 } else {
     Print-Msg `"InvokeAI 更新失败`"
 }
