@@ -36,6 +36,7 @@ _✨一键安装 InvokeAI_
     - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
     - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
     - [配置代理](#配置代理)
+    - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [命令的使用](#命令的使用)
 
 
@@ -222,6 +223,24 @@ invokeai
 
 >[!NOTE]  
 >配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
+
+### 无法使用 PowerShell 运行
+运行 PowerShell 脚本时出现以下错误。
+```
+.\invokeai_installer.ps1 : 无法加载文件 D:\InvokeAI\invokeai_installer.ps1。
+未对文件 D:\InvokeAI\invokeai_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
+有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
+所在位置 行:1 字符: 1
++ .\invokeai_installer.ps1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+   + CategoryInfo          : SecurityError: (:) []，PSSecurityException
+   + FullyQualifiedErrorId : UnauthorizedAccess
+```
+
+这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
 
 ### 命令的使用
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
