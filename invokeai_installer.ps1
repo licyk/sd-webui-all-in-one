@@ -342,6 +342,7 @@ Print-Msg `"调用浏览器打开地址中`"
 Start-Process `"http://127.0.0.1:9090`"
 Print-Msg `"启动 InvokeAI 中`"
 ./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
+Print-Msg `"InvokeAI 已结束运行`"
 pause
 "
 
