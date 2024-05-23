@@ -1,6 +1,6 @@
 # 环境变量
-$env:PIP_INDEX_URL = "https://mirror.baidu.com/pypi/simple"
-$env:PIP_EXTRA_INDEX_URL = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+$env:PIP_INDEX_URL = "https://mirrors.cloud.tencent.com/pypi/simple"
+$env:PIP_EXTRA_INDEX_URL = "https://mirror.baidu.com/pypi/simple"
 $env:PIP_FIND_LINKS = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 $env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $env:PIP_TIMEOUT = 30
@@ -315,8 +315,8 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
+`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
+`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
@@ -389,8 +389,8 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 }
 
 # 环境变量
-`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
+`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
+`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
@@ -559,8 +559,8 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # 将python添加到环境变量
-`$env:PIP_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirrors.bfsu.edu.cn/pypi/web/simple`"
+`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
+`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
 `$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
