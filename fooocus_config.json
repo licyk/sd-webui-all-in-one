@@ -30,7 +30,7 @@
     "default_scheduler": "exponential",
     "default_performance": "Speed",
     "default_prompt": "",
-    "default_prompt_negative": "worst quality,low quality,lowres,bad hands,bad anatomy,",
+    "default_prompt_negative": "low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anatomy,old,early,copyright name,watermark,artist name,signature,",
     "default_styles": [
     ],
     "default_image_number": 1,
@@ -44,7 +44,8 @@
         "AnimagineXLV3_Style_Difference_AnimeFace.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_AnimeFace.safetensors",
         "AnimagineXLV3_Style_Difference_EdgeEmphasys.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_EdgeEmphasys.safetensors",
         "AnimagineXLV3_Style_Difference_Saturation.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_Saturation.safetensors",
-        "AnimagineXLV3_Style_Difference_bodyshadow.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_bodyshadow.safetensors"
+        "AnimagineXLV3_Style_Difference_bodyshadow.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_bodyshadow.safetensors",
+        "outline_xl_kohaku_delta_spv5x.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/outline_xl_kohaku_delta_spv5x.safetensors"
     },
     "available_aspect_ratios": [
         "704*1408",
