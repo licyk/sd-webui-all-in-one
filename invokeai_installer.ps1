@@ -628,9 +628,11 @@ https://huggingface.sukaka.top
 若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
 如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
 
-更多详细的帮助文档可在下面的链接查看。
-详细的使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多详细的帮助可在下面的链接查看。
+InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 InvokeAI 官方文档：https://invoke-ai.github.io/InvokeAI
+InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
+Reddit 社区：https://www.reddit.com/r/invokeai
 "
     Set-Content -Path "./InvokeAI/help.txt" -Value $content
 }

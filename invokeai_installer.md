@@ -142,10 +142,10 @@ InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标�
 ### 设置 HuggingFace 镜像
 InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建`mirror.txt`文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
 
-|可用的 HuggingFace 镜像源||
-|---|---|
-|https://hf-mirror.com||
-|https://huggingface.sukaka.top||
+|可用的 HuggingFace 镜像源|
+|---|
+|https://hf-mirror.com|
+|https://huggingface.sukaka.top|
 
 如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建`disable_mirror.txt`文件，再次启动脚本时将禁用 HuggingFace 镜像源。
 
@@ -153,11 +153,13 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
 
 ### InvokeAI 的使用方法
-推荐下面两个文档：  
+推荐下面的教程：  
 - [给所有想学习AI辅助绘画的人的入门课](https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140)
 - [InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI)
+- [InvokeAI 官方视频教程](https://www.youtube.com/@invokeai)
+- [Reddit 社区](https://www.reddit.com/r/invokeai)
 
-除了上面的两个文档，也可以通过 Google 等平台搜索教程。
+除了上面的教程，也可以通过 Google 等平台搜索教程。
 
 ### 重装 InvokeAI
 如果 InvokeAI 因为严重损坏导致无法正常使用，可以将 InvokeAI 文件夹中的 python 文件夹删除，然后运行 InvokeAI Installer 重新部署 InvokeAI。
