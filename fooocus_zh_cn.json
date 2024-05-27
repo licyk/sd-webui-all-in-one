@@ -561,7 +561,7 @@
     "Downloading Hyper-SD components ...": "下载 Hyper SD 组件中 ...",
     "Inpaint brush color": "重绘画笔颜色",
     "CLIP Skip": "CLIP 跳过层数",
-    "Bypass CLIP layers to avoid overfitting (use 1 to not skip any layers, 2 is recommended).": "CLI跳过层数可避免过拟合的情况（使用 1 为不跳过任何层，2 为推荐值）",
+    "Bypass CLIP layers to avoid overfitting (use 1 to not skip any layers, 2 is recommended).": "CLIP 跳过层数可避免过拟合的情况（使用 1 为不跳过任何层，2 为推荐值）",
     "VAE": "VAE 模型",
     "Default (model)": "默认",
     "Use black image if NSFW is detected.": "当检测到图片存在 NSFW 内容时将屏蔽图片",
