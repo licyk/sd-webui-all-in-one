@@ -30,6 +30,7 @@
     "default_scheduler": "exponential",
     "default_performance": "Speed",
     "default_prompt": "",
+    "default_vae": "Default (model)",
     "default_prompt_negative": "low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anatomy,old,early,copyright name,watermark,artist name,signature,",
     "default_styles": [
     ],
@@ -46,6 +47,9 @@
         "AnimagineXLV3_Style_Difference_Saturation.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_Saturation.safetensors",
         "AnimagineXLV3_Style_Difference_bodyshadow.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/AnimagineXLV3_Style_Difference_bodyshadow.safetensors",
         "outline_xl_kohaku_delta_spv5x.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/outline_xl_kohaku_delta_spv5x.safetensors"
+    },
+    "vae_downloads": {
+        "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
     },
     "available_aspect_ratios": [
         "704*1408",
@@ -98,5 +102,6 @@
     "default_save_metadata_to_images": true,
     "default_metadata_scheme": "a1111",
     "default_clip_skip": 2,
-    "default_black_out_nsfw": false
+    "default_black_out_nsfw": false,
+    "metadata_created_by": "Fooocus"
 }
