@@ -572,5 +572,6 @@
     "- Undo last action": "- 撤回上一次的操作",
     "- Reset zoom": " - 重置缩放",
     "- Fullscreen mode": " - 全屏模式",
-    "- Move canvas": " - 移动画布"
+    "- Move canvas": " - 移动画布",
+    "Image Size and Recommended Size": "图片分辨率和推荐的生图分辨率"
 }
