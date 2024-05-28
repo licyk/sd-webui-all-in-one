@@ -28,6 +28,8 @@ _✨一键安装 InvokeAI_
     - [添加模型](#添加模型)
     - [InvokeAI 的使用方法](#invokeai-的使用方法)
     - [重装 InvokeAI](#重装-invokeai)
+    - [重置 InvokeAI 数据库](#重置-invokeai-数据库)
+    - [配置 InvokeAI](#配置-invokeai)
     - [显存占用很大](#显存占用很大)
     - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
     - [InvokeAI 无法正常调用显卡](#invokeai-无法正常调用显卡)
@@ -163,6 +165,15 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 ### 重装 InvokeAI
 如果 InvokeAI 因为严重损坏导致无法正常使用，可以将 InvokeAI 文件夹中的 python 文件夹删除，然后运行 InvokeAI Installer 重新部署 InvokeAI。
+
+### 重置 InvokeAI 数据库
+如果 InvokeAI 的数据库出现损坏，可以将`InvokeAI/invokeai/databases`文件夹删除。
+
+### 配置 InvokeAI
+在`InvokeAI/invokeai`路径下，可以看到`invokeai.yaml`配置文件，如果需要修改，请参考`invokeai.example.yaml`文件内的示例。如果因为修改`invokeai.yaml`后导致 InvokeAI 的功能异常，请将该文件删除来重置 InvokeAI 配置。
+
+>[!NOTE]  
+>在大多数情况下并不需要修改该配置文件，因为 InvokeAI 会自动选择最佳的配置。
 
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
