@@ -101,7 +101,9 @@
         "1104*1472",
         "1920*640",
         "1920*824",
-        "824*1920"
+        "824*1920",
+        "1920*768",
+        "1536*768"
     ],
     "default_save_metadata_to_images": true,
     "default_metadata_scheme": "a1111",
