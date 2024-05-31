@@ -250,6 +250,8 @@ invokeai
    + FullyQualifiedErrorId : UnauthorizedAccess
 ```
 
+或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
+
 这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser

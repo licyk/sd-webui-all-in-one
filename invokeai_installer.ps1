@@ -410,10 +410,16 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"更新 InvokeAI 中`"
+`$ver = `$(./python/Scripts/pip.exe freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
 ./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
-    Print-Msg `"InvokeAI 更新成功`"
-    Print-Msg `"InvokeAI 更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+    `$ver_ = `$(./python/Scripts/pip.exe freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    if (`$ver -eq `$ver_) {
+        Print-Msg `"InvokeAI 已为最新版，当前版本：`$ver_`"
+    } else {
+        Print-Msg `"InvokeAI 更新成功，版本：`$ver -> `$ver_`"
+    }
+    Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
 } else {
     Print-Msg `"InvokeAI 更新失败`"
 }
