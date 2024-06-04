@@ -1,7 +1,13 @@
+# pip镜像源
+$pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
+$pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
+$pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+$pip_extra_index_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
+$pip_find_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
 # 环境变量
-$env:PIP_INDEX_URL = "https://mirrors.cloud.tencent.com/pypi/simple"
-$env:PIP_EXTRA_INDEX_URL = "https://mirror.baidu.com/pypi/simple"
-$env:PIP_FIND_LINKS = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+$env:PIP_INDEX_URL = $pip_index_mirror
+$env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror
+$env:PIP_FIND_LINKS = $pip_find_mirror
 $env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $env:PIP_TIMEOUT = 30
 $env:PIP_RETRIES = 5
@@ -129,11 +135,13 @@ function Install-InvokeAI {
 
 # 重装xformers
 function Reinstall-Xformers {
-    $env:PIP_EXTRA_INDEX_URL="https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
-    $env:PIP_FIND_LINKS="https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
+    $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror_cu121
+    $env:PIP_FIND_LINKS = $pip_find_mirror_cu121
     $pip_cmd = "$PSScriptRoot/InvokeAI/python/pip.exe"
     $xformers_pkg = $(./InvokeAI/python/Scripts/pip.exe freeze | Select-String -Pattern "xformers") # 检测是否安装了xformers
     $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # 检查是否版本为cu118的
+    $torch_ver = $(./InvokeAI/python/Scripts/pip.exe show torch | Select-String -Pattern "version") # 获取pytorch版本信息
+    $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # 截取pytorch版本号
 
     if (Test-Path "./InvokeAI/cache/xformers.txt") {
         # 读取xformers.txt文件的内容
@@ -173,7 +181,51 @@ function Reinstall-Xformers {
             }
         } else {
             Print-Msg "未安装 xFormers, 尝试安装中"
-            ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
+            switch ($torch_ver) { # 判断适合安装的xformers版本
+                1.12.1 {
+                    $install_xformers_ver = "0.0.14"
+                }
+                1.13.1 {
+                    $install_xformers_ver = "0.0.16"
+                }
+                2.0.0 {
+                    $install_xformers_ver = "0.0.18"
+                }
+                2.0.1 {
+                    $install_xformers_ver = "0.0.22"
+                }
+                2.1.1 {
+                    $install_xformers_ver = "0.0.23"
+                }
+                2.1.1 {
+                    $install_xformers_ver = "0.0.23"
+                }
+                2.1.2 {
+                    $install_xformers_ver = "0.0.23.post1"
+                }
+                2.2.0 {
+                    $install_xformers_ver = "0.0.24"
+                }
+                2.2.1 {
+                    $install_xformers_ver = "0.0.25"
+                }
+                2.2.2 {
+                    $install_xformers_ver = "0.0.25"
+                }
+                2.3.0 {
+                    $install_xformers_ver = "0.0.26.post1"
+                }
+                Default {
+                    $install_xformers_ver = ""
+                }
+            }
+
+            if ($install_xformers_ver -eq "") {
+                ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
+            } else {
+                ./InvokeAI/python/python.exe -m pip install xformers==$install_xformers_ver --no-warn-script-location --no-cache-dir --no-deps
+            }
+
             if ($?) { # 检测是否下载成功
                 Print-Msg "重装 xFormers 成功"
                 break
@@ -315,9 +367,9 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
+`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
+`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
+`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
@@ -390,9 +442,9 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 }
 
 # 环境变量
-`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
+`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
+`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
+`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
@@ -566,9 +618,9 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # 将python添加到环境变量
-`$env:PIP_INDEX_URL = `"https://mirrors.cloud.tencent.com/pypi/simple`"
-`$env:PIP_EXTRA_INDEX_URL = `"https://mirror.baidu.com/pypi/simple`"
-`$env:PIP_FIND_LINKS = `"https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html`"
+`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
+`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
+`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_TIMEOUT = 30
 `$env:PIP_RETRIES = 5
