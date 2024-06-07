@@ -40,3 +40,4 @@
 >以下脚本非 Jupyter Notebook 脚本。
 
 - [invokeai_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)：Windows 平台一键部署 InvokeAI 脚本。更多信息可[点击此处](./invokeai_installer.md)。
+- [sd_trainer_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)：Windows 平台一键部署 SD-Trainer 脚本。更多信息可[点击此处](./sd_trainer_installer.md)。

@@ -27,7 +27,7 @@ $env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
 
 # œ˚œ¢ ‰≥ˆ
 function Print-Msg ($msg) {
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI-Installer]:: $msg"
+    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI Installer]:: $msg"
 }
 
 Print-Msg "≥ı ºªØ÷–"
@@ -73,7 +73,7 @@ function Install-Python {
         Print-Msg "Python ∞≤◊∞≥…π¶"
     } else {
         Print-Msg "Python ∞≤◊∞ ß∞‹, ÷’÷π InvokeAI ∞≤◊∞Ω¯≥Ã, ø…≥¢ ‘÷ÿ–¬‘À–– InvokeAI Installer ÷ÿ ‘ ß∞‹µƒ∞≤◊∞"
-        pause
+        Read-Host | Out-Null
         exit 1
     }
 }
@@ -106,13 +106,13 @@ function Install-Pip {
         } else {
             Remove-Item -Path "./InvokeAI/get-pip.py"
             Print-Msg "Pip ∞≤◊∞ ß∞‹, ÷’÷π InvokeAI ∞≤◊∞Ω¯≥Ã, ø…≥¢ ‘÷ÿ–¬‘À–– InvokeAI Installer ÷ÿ ‘ ß∞‹µƒ∞≤◊∞"
-            pause
+            Read-Host | Out-Null
             exit 1
         }
     } else {
         Print-Msg "œ¬‘ÿ get-pip.py  ß∞‹"
         Print-Msg "Pip ∞≤◊∞ ß∞‹, ÷’÷π InvokeAI ∞≤◊∞Ω¯≥Ã, ø…≥¢ ‘÷ÿ–¬‘À–– InvokeAI Installer ÷ÿ ‘ ß∞‹µƒ∞≤◊∞"
-        pause
+        Read-Host | Out-Null
         exit 1
     }
 }
@@ -127,7 +127,7 @@ function Install-InvokeAI {
         Print-Msg "InvokeAI ∞≤◊∞≥…π¶"
     } else {
         Print-Msg "InvokeAI ∞≤◊∞ ß∞‹, ÷’÷π InvokeAI ∞≤◊∞Ω¯≥Ã, ø…≥¢ ‘÷ÿ–¬‘À–– InvokeAI Installer ÷ÿ ‘ ß∞‹µƒ∞≤◊∞"
-        pause
+        Read-Host | Out-Null
         exit 1
     }
 }
@@ -331,7 +331,7 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 Print-Msg `"≥ı ºªØ÷–`"
 
@@ -395,7 +395,7 @@ Start-Process `"http://127.0.0.1:9090`"
 Print-Msg `"∆Ù∂Ø InvokeAI ÷–`"
 ./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
 Print-Msg `"InvokeAI “—Ω· ¯‘À––`"
-pause
+Read-Host | Out-Null
 "
 
     Set-Content -Path "./InvokeAI/launch.ps1" -Value $content
@@ -406,7 +406,7 @@ pause
 function Write-Update-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 # ¥˙¿Ì≈‰÷√
@@ -425,20 +425,6 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ºÏ≤‚ «∑ÒΩ˚”√◊‘∂Ø…Ë÷√æ
     }
 } else {
     Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ disable_proxy.txt ¥˙¿Ì≈‰÷√Œƒº˛, Ω˚”√◊‘∂Ø…Ë÷√¥˙¿Ì`"
-}
-
-# Huggingface æµœÒ‘¥
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ºÏ≤‚ «∑ÒΩ˚”√¡À◊‘∂Ø…Ë÷√huggingfaceæµœÒ‘¥
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # ±æµÿ¥Ê‘⁄huggingfaceæµœÒ‘¥≈‰÷√
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ mirror.txt ≈‰÷√Œƒº˛, “—∂¡»°∏√≈‰÷√≤¢…Ë÷√ HuggingFace æµœÒ‘¥`"
-    } else { #  π”√ƒ¨»œ…Ë÷√
-        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `" π”√ƒ¨»œ HuggingFace æµœÒ‘¥`"
-    }
-} else {
-    Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ disable_mirror.txt æµœÒ‘¥≈‰÷√Œƒº˛, Ω˚”√◊‘∂Ø…Ë÷√ HuggingFace æµœÒ‘¥`"
 }
 
 # ª∑æ≥±‰¡ø
@@ -475,7 +461,7 @@ if (`$?) {
 } else {
     Print-Msg `"InvokeAI ∏¸–¬ ß∞‹`"
 }
-pause
+Read-Host | Out-Null
 "
 
     Set-Content -Path "./InvokeAI/update.ps1" -Value $content
@@ -487,13 +473,13 @@ function Write-InvokeAI-DB-Fix-Script {
     $content = "
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 Print-Msg `"–ﬁ∏¥ InvokeAI  ˝æ›ø‚÷–`"
 ./python/Scripts/invokeai-db-maintenance.exe --operation all --root `"`$PSScriptRoot/invokeai`"
 Print-Msg `"–ﬁ∏¥ InvokeAI  ˝æ›ø‚ÕÍ≥…`"
-pause
+Read-Host | Out-Null
 "
 
     Set-Content -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
@@ -504,7 +490,7 @@ pause
 function Write-InvokeAI-Install-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 # ¥˙¿Ì≈‰÷√
@@ -523,20 +509,6 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ºÏ≤‚ «∑ÒΩ˚”√◊‘∂Ø…Ë÷√æ
     }
 } else {
     Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ disable_proxy.txt ¥˙¿Ì≈‰÷√Œƒº˛, Ω˚”√◊‘∂Ø…Ë÷√¥˙¿Ì`"
-}
-
-# Huggingface æµœÒ‘¥
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ºÏ≤‚ «∑ÒΩ˚”√¡À◊‘∂Ø…Ë÷√huggingfaceæµœÒ‘¥
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # ±æµÿ¥Ê‘⁄huggingfaceæµœÒ‘¥≈‰÷√
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ mirror.txt ≈‰÷√Œƒº˛, “—∂¡»°∏√≈‰÷√≤¢…Ë÷√ HuggingFace æµœÒ‘¥`"
-    } else { #  π”√ƒ¨»œ…Ë÷√
-        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `" π”√ƒ¨»œ HuggingFace æµœÒ‘¥`"
-    }
-} else {
-    Print-Msg `"ºÏ≤‚µΩ±æµÿ¥Ê‘⁄ disable_mirror.txt æµœÒ‘¥≈‰÷√Œƒº˛, Ω˚”√◊‘∂Ø…Ë÷√ HuggingFace æµœÒ‘¥`"
 }
 
 # ø…”√µƒœ¬‘ÿ‘¥
@@ -564,7 +536,7 @@ ForEach (`$url in `$urls) {
         }
     }
 }
-pause
+Read-Host | Out-Null
 "
 
     Set-Content -Path "./InvokeAI/get_invokeai_installer.ps1" -Value $content
@@ -575,11 +547,11 @@ pause
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
-    `"`$(Write-Host `"[InvokeAI-Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)>`"
+    `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)>`"
 }
 
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI-Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 # ¥˙¿Ì≈‰÷√
@@ -719,4 +691,4 @@ function Main {
 
 
 Main
-pause
+Read-Host | Out-Null

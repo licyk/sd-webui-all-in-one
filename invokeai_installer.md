@@ -268,7 +268,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 - 清理安装时产生的 Pip 缓存
 ```powershell
-python -m pip cache purge
+pip cache purge
 ```
 
 - 启动 InvokeAI
@@ -293,20 +293,27 @@ invokeai-import-images
 
 - 安装某个 Pip 软件包
 ```powershell
-python -m pip install <package_name>
+pip install <package_name>
 ```
 
 - 更新某个软件包
 ```powershell
-python -m pip install <package_name> -U
+pip install <package_name> -U
 ```
 
 - 重装某个软件包
 ```powershell
-python -m pip install <package_name> --force-reinstall
+pip install <package_name> --force-reinstall
 ```
 
 - 卸载某个软件包
 ```powershell
-python -m pip uninstall <package_name>
+pip uninstall <package_name>
+```
+
+- 解决 ModuleNotFoundError: No module named 'controlnet_aux'
+```powershell
+pip cache remove controlnet_aux
+pip uninstall controlnet_aux -y
+pip install controlnet_aux
 ```
