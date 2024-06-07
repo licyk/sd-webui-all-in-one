@@ -27,7 +27,7 @@ _✨一键安装 SD-Trainer_
     - [设置 Github 镜像源](#设置-github-镜像源)
     - [配置代理](#配置代理)
     - [添加模型](#添加模型)
-    - [SD-Trainer 的使用方法](#sd-trainer-的使用方法)
+    - [模型训练的方法](#模型训练的方法)
     - [重装 SD-Trainer](#重装-sd-trainer)
     - [重装 Python 环境](#重装-python-环境)
     - [重装 Git](#重装-git)
@@ -190,10 +190,11 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 ### 添加模型
 在 SD-Trainer 中可以选择本地已下载的模型，如果有下载某些用于训练的模型（非融合模型），可以使用 download_models.ps1 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
 
-### SD-Trainer 的使用方法
+### 模型训练的方法
 推荐的哔哩哔哩 UP 主：
-青龙圣者：https://space.bilibili.com/219296
-琥珀青葉：https://space.bilibili.com/507303431
+- 青龙圣者：https://space.bilibili.com/219296
+- 秋葉aaaki：https://space.bilibili.com/12566101
+- 琥珀青葉：https://space.bilibili.com/507303431
 
 一些训练模型的教程：
 - https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
@@ -229,7 +230,10 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall_pytorch.ps1 重装 PyTorch。
 
 ### SD-Trainer 无法正常调用显卡
-尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本。
+尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用 reinstall_pytorch.ps1 重装 PyTorch。
+
+>[!NOTE]  
+>Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
 
 如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
 ```powershell
