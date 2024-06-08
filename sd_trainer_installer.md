@@ -341,28 +341,31 @@ SD-Trainer 默认开启 arb 桶，自动处理不同分辨率的图片，无需�
 
 - 清理安装时产生的 Pip 缓存
 ```powershell
-pip cache purge
+python -m pip cache purge
 ```
 
 - 安装某个 Pip 软件包
 ```powershell
-pip install <package_name>
+python -m pip install <package_name>
 ```
 
 - 更新某个软件包
 ```powershell
-pip install <package_name> -U
+python -m pip install <package_name> -U
 ```
 
 - 重装某个软件包
 ```powershell
-pip install <package_name> --force-reinstall
+python -m pip install <package_name> --force-reinstall
 ```
 
 - 卸载某个软件包
 ```powershell
-pip uninstall <package_name>
+python -m pip uninstall <package_name>
 ```
+
+>推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
+>参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
 - 更新仓库
 ```powershell
