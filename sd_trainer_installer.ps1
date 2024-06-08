@@ -424,16 +424,16 @@ function Fix-Git-Point-Off-Set {
         `$path
     )
     if (Test-Path `"`$path/.git`") {
-        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        ./git/bin/git.exe -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
         if (!(`$?)) {
             Print-Msg `"检测到出现分支游离, 进行修复中`"
-            git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化git子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
-            git -C `"`$path`" checkout `$branch # 切换到主分支
-            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-            git -C `"`$path`" reset --recurse-submodules --hard HEAD # 回退版本,解决git pull异常
-            git -C `"`$path`" restore --recurse-submodules --source=HEAD :/ # 重置工作区
+            ./git/bin/git.exe -C `"`$path`" remote prune origin # 删除无用分支
+            ./git/bin/git.exe -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(./git/bin/git.exe -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            ./git/bin/git.exe -C `"`$path`" checkout `$branch # 切换到主分支
+            ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+            ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard HEAD # 回退版本,解决git pull异常
+            ./git/bin/git.exe -C `"`$path`" restore --recurse-submodules --source=HEAD :/ # 重置工作区
         }
     }
 }
