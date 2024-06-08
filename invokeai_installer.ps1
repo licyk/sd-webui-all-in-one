@@ -1,3 +1,4 @@
+Set-Location "$PSScriptRoot"
 # pip镜像源
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
@@ -330,6 +331,7 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
@@ -405,6 +407,7 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
@@ -471,6 +474,7 @@ Read-Host | Out-Null
 # 数据库修复
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
@@ -489,6 +493,7 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-InvokeAI-Install-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }

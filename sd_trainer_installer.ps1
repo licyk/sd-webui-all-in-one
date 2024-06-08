@@ -1,3 +1,4 @@
+Set-Location "$PSScriptRoot"
 # pip镜像源
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
@@ -406,6 +407,7 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 `$github_mirror_list = @(
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
@@ -545,6 +547,7 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-SD-Trainer-Install-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
@@ -618,6 +621,7 @@ Read-Host | Out-Null
 # 重装pytorch脚本
 function Write-PyTorch-Reinstall-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
@@ -791,6 +795,7 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Doenload-Model-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
