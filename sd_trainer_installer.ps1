@@ -3,8 +3,6 @@ Set-Location "$PSScriptRoot"
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
 $pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
-$pip_extra_index_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
-$pip_find_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
 # github镜像源列表
 $github_mirror_list = @(
     "https://mirror.ghproxy.com/https://github.com",
@@ -619,7 +617,7 @@ Read-Host | Out-Null
 
 
 # 重装pytorch脚本
-function Write-PyTorch-Reinstall-Script {
+function Write-PyTorch-ReInstall-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
@@ -793,7 +791,7 @@ Read-Host | Out-Null
 
 
 # 模型下载脚本
-function Write-Doenload-Model-Script {
+function Write-Download-Model-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
@@ -1154,8 +1152,8 @@ function Main {
     Write-Launch-Script
     Write-Update-Script
     Write-SD-Trainer-Install-Script
-    Write-PyTorch-Reinstall-Script
-    Write-Doenload-Model-Script
+    Write-PyTorch-ReInstall-Script
+    Write-Download-Model-Script
     Write-Env-Activate-Script
     Write-ReadMe
     Print-Msg "SD-Trainer 安装结束, 安装路径为 $PSScriptRoot\SD-Trainer"
