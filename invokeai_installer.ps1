@@ -138,10 +138,9 @@ function Install-InvokeAI {
 function Reinstall-Xformers {
     $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror_cu121
     $env:PIP_FIND_LINKS = $pip_find_mirror_cu121
-    $pip_cmd = "$PSScriptRoot/InvokeAI/python/pip.exe"
-    $xformers_pkg = $(./InvokeAI/python/Scripts/pip.exe freeze | Select-String -Pattern "xformers") # ¼ì²âÊÇ·ñ°²×°ÁËxformers
+    $xformers_pkg = $(./InvokeAI/python/python.exe -m pip freeze | Select-String -Pattern "xformers") # ¼ì²âÊÇ·ñ°²×°ÁËxformers
     $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # ¼ì²éÊÇ·ñ°æ±¾Îªcu118µÄ
-    $torch_ver = $(./InvokeAI/python/Scripts/pip.exe show torch | Select-String -Pattern "version") # »ñÈ¡pytorch°æ±¾ÐÅÏ¢
+    $torch_ver = $(./InvokeAI/python/python.exe -m pip show torch | Select-String -Pattern "version") # »ñÈ¡pytorch°æ±¾ÐÅÏ¢
     $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # ½ØÈ¡pytorch°æ±¾ºÅ
 
     if (Test-Path "./InvokeAI/cache/xformers.txt") {
@@ -303,7 +302,7 @@ function Check-Install {
     }
 
     Print-Msg "¼ì²éÊÇ·ñ°²×° Pip"
-    $pipPath = "./InvokeAI/python/Scripts/pip.exe"
+    $pipPath = "./InvokeAI/python/python.exe -m pip"
     if (Test-Path $pipPath) {
         Print-Msg "Pip ÒÑ°²×°"
     } else {
@@ -451,10 +450,10 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
 Print-Msg `"¸üÐÂ InvokeAI ÖÐ`"
-`$ver = `$(./python/Scripts/pip.exe freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
-./python/Scripts/pip.exe install invokeai --upgrade --no-warn-script-location --use-pep517
+`$ver = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+./python/python.exe -m pip install invokeai --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
-    `$ver_ = `$(./python/Scripts/pip.exe freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    `$ver_ = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$ver -eq `$ver_) {
         Print-Msg `"InvokeAI ÒÑÎª×îÐÂ°æ£¬µ±Ç°°æ±¾£º`$ver_`"
     } else {
