@@ -293,8 +293,8 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Python"
-    $pythonPath = "./InvokeAI/python/python.exe"
-    if (Test-Path $pythonPath) {
+    $python_path = "./InvokeAI/python/python.exe"
+    if (Test-Path $python_path) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -302,8 +302,8 @@ function Check-Install {
     }
 
     Print-Msg "检查是否安装 Pip"
-    $pipPath = "./InvokeAI/python/python.exe -m pip"
-    if (Test-Path $pipPath) {
+    $pip_path = "./InvokeAI/python/Scripts/pip.exe"
+    if (Test-Path $pip_path) {
         Print-Msg "Pip 已安装"
     } else {
         Print-Msg "Pip 未安装"
@@ -311,8 +311,8 @@ function Check-Install {
     }
 
     Print-Msg "检查是否安装 InvokeAI"
-    $invokeaiPath = "./InvokeAI/python/Scripts/invokeai-web.exe"
-    if (Test-Path $invokeaiPath) {
+    $invokeai_path = "./InvokeAI/python/Scripts/invokeai-web.exe"
+    if (Test-Path $invokeai_path) {
         Print-Msg "InvokeAI 已安装"
     } else {
         Print-Msg "InvokeAI 未安装"
