@@ -36,7 +36,6 @@ $env:PIP_CACHE_DIR = "$PSScriptRoot/SD-Trainer/cache/pip"
 $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/SD-Trainer/cache/pycache"
 
 
-
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][SD-Trainer Installer]:: $msg"
@@ -120,7 +119,9 @@ function Install-Aria2 {
         Move-Item -Path "./SD-Trainer/cache/aria2c.exe" -Destination "./SD-Trainer/git/bin/aria2c.exe"
         Print-Msg "Aria2 下载成功"
     } else {
-        Print-Msg "Aria2 下载失败"
+        Print-Msg "Aria2 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+        Read-Host | Out-Null
+        exit 1
     }
 }
 
@@ -244,6 +245,7 @@ function Install-PyTorch {
     }
 }
 
+
 # 安装sd-trainer依赖
 function Install-SD-Trainer-Dependence {
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
@@ -271,7 +273,6 @@ function Install-SD-Trainer-Dependence {
     }
     Set-Location "$PSScriptRoot"
 }
-
 
 
 # 安装
@@ -541,7 +542,6 @@ Read-Host | Out-Null
 }
 
 
-
 # 获取安装脚本
 function Write-SD-Trainer-Install-Script {
     $content = "
@@ -613,6 +613,7 @@ Read-Host | Out-Null
 
     Set-Content -Path "./SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
 }
+
 
 # 重装pytorch脚本
 function Write-PyTorch-Reinstall-Script {
@@ -1123,9 +1124,11 @@ SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
 
 推荐的哔哩哔哩 UP 主：
 青龙圣者：https://space.bilibili.com/219296
+秋葉aaaki：https://space.bilibili.com/12566101
 琥珀青葉：https://space.bilibili.com/507303431
 
 一些训练模型的教程：
+https://civitai.com/articles/2056
 https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
 https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
 https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora

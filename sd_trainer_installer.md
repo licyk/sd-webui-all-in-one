@@ -42,6 +42,7 @@ _✨一键安装 SD-Trainer_
     - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
     - [RuntimeError: NaN detected in latents: X:\\xxx\\xxx\\xx.png](#runtimeerror-nan-detected-in-latents-xxxxxxxxxpng)
     - [CUDA out of memory](#cuda-out-of-memory)
+    - [DefaultCPUAllocator: not enough memory](#defaultcpuallocator-not-enough-memory)
     - [Loss?](#loss)
     - [命令的使用](#命令的使用)
 
@@ -91,7 +92,7 @@ irm https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_in
 
 
 ## 使用
-在 SD-Trainer 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择使用 PowerShell 运行后即可运行。
+在 SD-Trainer 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择使用 PowerShell 运行后即可运行。在 lora-scripts 文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
 
 ### 启动 SD-Trainer
 运行 launch.ps1 脚本。
@@ -101,6 +102,9 @@ irm https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_in
 
 ### 设置 SD-Trainer 启动参数
 要设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
+
+>[!NOTE]  
+>SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts - 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
 
 ### 进入 SD-Trainer 所在的 Python 环境
 如果需要使用 Python、Pip、SD-Trainer 的命令时，请勿将 SD-Trainer 的 python 文件夹添加到环境变量，这将会导致不良的后果产生。  
@@ -135,7 +139,7 @@ $ tree -L 2
 │   ├── help.txt                      # 帮助文档
 │   ├── launch.ps1                    # 启动 SD-Trainer 的脚本
 │   ├── lora-scripts                  # SD-Trainer 路径
-│   ├── models                        # SD-Trainer 路径
+│   ├── models                        # download_models.ps1 脚本下载模型的路径
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
 │   └── update.ps1                    # 更新 SD-Trainer 的脚本
@@ -197,6 +201,7 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 - 琥珀青葉：https://space.bilibili.com/507303431
 
 一些训练模型的教程：
+- https://civitai.com/articles/2056
 - https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
 - https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
 - https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
@@ -307,8 +312,11 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ### CUDA out of memory
 确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
 
+### DefaultCPUAllocator: not enough memory
+尝试增加系统的虚拟内存，或者增加内存条。
+
 ### Loss?
-没必要看。
+没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
@@ -344,3 +352,17 @@ pip install <package_name> --force-reinstall
 pip uninstall <package_name>
 ```
 
+- 更新仓库
+```powershell
+git pull --recurse-submodules
+```
+
+- 运行某个 Python 脚本
+```powershell
+python <python_script.py>
+```
+
+- 下载文件
+```powershell
+aria2c <url> -c -x <thread_count> -d <dir> -o <output_file_name>
+```
