@@ -1022,12 +1022,11 @@ if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶
 if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ½ûÓÃgithub¾µÏñÔ´
     Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ Github ¾µÏñÔ´`"
 } else {
-    `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # ÉèÖÃgitÅäÖÃÎÄ¼şÂ·¾¶
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-    }
-
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # Ê¹ÓÃ×Ô¶¨Òågithub¾µÏñÔ´
+        `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # ÉèÖÃgitÅäÖÃÎÄ¼şÂ·¾¶
+        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        }
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         ./git/bin/git.exe config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡ Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş²¢ÉèÖÃ Github ¾µÏñÔ´`"
