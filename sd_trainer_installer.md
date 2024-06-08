@@ -38,6 +38,7 @@ _✨一键安装 SD-Trainer_
     - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
     - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
+    - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
     - [RuntimeError: Error(s) in loading state\_dict for UNet2DConditionModel](#runtimeerror-errors-in-loading-state_dict-for-unet2dconditionmodel)
     - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
     - [RuntimeError: NaN detected in latents: X:\\xxx\\xxx\\xx.png](#runtimeerror-nan-detected-in-latents-xxxxxxxxxpng)
@@ -223,6 +224,9 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 ### 重装 SD-Trainer
 将 SD-Trainer 文件夹中的 lora-scripts 文件夹删除，然后运行 SD-Trainer Installer 重新部署 SD-Trainer。
 
+>[!NOTE]  
+>如果 lora-scripts 文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除 lora-scripts 文件夹。
+
 ### 重装 Python 环境
 如果 Python 环境出现严重损坏，可以将 SD-Trainer 文件夹中的 python 文件夹删除，然后运行 SD-Trainer Installer 重新构建 Python 环境。
 
@@ -309,6 +313,17 @@ Fri Jun  7 19:07:00 2024
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
+### ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
+运行 SD-Trainer Installer 时出现以下类似的错误。
+```
+ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
+    rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
+        Expected sha256 90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7
+             Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
+```
+
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 SD-Trainer/cache/pip 文件夹删除，再重新运行 SD-Trainer。
+
 ### RuntimeError: Error(s) in loading state_dict for UNet2DConditionModel
 检查训练参数是否正确，确认是否选择对应大模型版本的训练参数。
 
@@ -381,3 +396,4 @@ python <python_script.py>
 ```powershell
 aria2c <url> -c -x <thread_count> -d <dir> -o <output_file_name>
 ```
+

@@ -39,6 +39,7 @@ _✨一键安装 InvokeAI_
     - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
     - [配置代理](#配置代理)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
+    - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
     - [命令的使用](#命令的使用)
 
 
@@ -263,6 +264,17 @@ invokeai
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
+
+### ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
+运行 InvokeAI Installer 时出现以下类似的错误。
+```
+ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
+    rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
+        Expected sha256 90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7
+             Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
+```
+
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 InvokeAI/cache/pip 文件夹删除，再重新运行 InvokeAI。
 
 ### 命令的使用
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
