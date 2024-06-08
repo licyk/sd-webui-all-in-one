@@ -44,6 +44,7 @@ _✨一键安装 SD-Trainer_
     - [CUDA out of memory](#cuda-out-of-memory)
     - [DefaultCPUAllocator: not enough memory](#defaultcpuallocator-not-enough-memory)
     - [Loss?](#loss)
+    - [训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?](#训练素材中图片的分辨率不一致而且有些图片的分辨率很大需要裁剪)
     - [命令的使用](#命令的使用)
 
 
@@ -59,15 +60,22 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 ### 解除脚本限制
 使用管理员权限打开 PowerShell，运行以下命令：
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+
 ```
 输入 `Y` 并回车以确认。
+
+>[!NOTE]  
+>关于 PowerShell 执行策略的说明：[关于执行策略 - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 
 ### 启用 Windows 长路径支持
 在刚刚的 PowerShell 中运行下面的命令：
 ```powershell
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 ```
+
+>[!NOTE]  
+>关于 Windows 长路径支持的说明：[最大路径长度限制 - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
 
 
 ## 安装
@@ -201,6 +209,7 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 - 琥珀青葉：https://space.bilibili.com/507303431
 
 一些训练模型的教程：
+- https://rentry.org/59xed3
 - https://civitai.com/articles/2056
 - https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
 - https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
@@ -317,6 +326,9 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### Loss?
 没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
+
+### 训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?
+SD-Trainer 默认开启 arb 桶，自动处理不同分辨率的图片，无需手动进行图片裁剪。
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：

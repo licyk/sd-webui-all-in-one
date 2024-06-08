@@ -54,15 +54,22 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 ### 解除脚本限制
 使用管理员权限打开 PowerShell，运行以下命令：
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+
 ```
 输入 `Y` 并回车以确认。
+
+>[!NOTE]  
+>关于 PowerShell 执行策略的说明：[关于执行策略 - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 
 ### 启用 Windows 长路径支持
 在刚刚的 PowerShell 中运行下面的命令：
 ```powershell
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 ```
+
+>[!NOTE]  
+>关于 Windows 长路径支持的说明：[最大路径长度限制 - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
 
 
 ## 安装

@@ -1082,7 +1082,7 @@ git：Git 的存放路径。
 lora-scripts：SD-Trainer 存放的文件夹。
 models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-get_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本，运行后将会在与 SD-Trainer 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
+get_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本，运行后将会在与 SD-Trainer 文件夹同级的目录中生成 sd_trainer_installer.ps1 安装脚本。
 update.ps1：更新 SD-Trainer 的脚本，可使用该脚本更新 SD-Trainer。
 launch.ps1：启动 SD-Trainer 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
@@ -1127,6 +1127,7 @@ SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
 琥珀青葉：https://space.bilibili.com/507303431
 
 一些训练模型的教程：
+https://rentry.org/59xed3
 https://civitai.com/articles/2056
 https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
 https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
