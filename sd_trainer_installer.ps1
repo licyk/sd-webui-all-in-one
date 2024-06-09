@@ -816,14 +816,15 @@ while (`$True) {
 - 10、kohakuXLEpsilon_rev1 (SDXL)
 - 11、ponyDiffusionV6XL_v6 (SDXL)
 - 12、kohaku-xl-epsilon-rev2 (SDXL)
-- 13、pdForAnime_v20 (SDXL)
-- 14、starryXLV52_v52 (SDXL)
-- 15、heartOfAppleXL_v20 (SDXL)
-- 16、heartOfAppleXL_v30 (SDXL)
-- 17、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 18、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 19、sdxl_fp16_fix_vae (SDXL VAE)
-- 20、sdxl_vae (SDXL VAE)
+- 13、kohaku-xl-epsilon-rev3 (SDXL)
+- 14、pdForAnime_v20 (SDXL)
+- 15、starryXLV52_v52 (SDXL)
+- 16、heartOfAppleXL_v20 (SDXL)
+- 17、heartOfAppleXL_v30 (SDXL)
+- 18、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 19、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 20、sdxl_fp16_fix_vae (SDXL VAE)
+- 21、sdxl_vae (SDXL VAE)
 -----------------------------------------------------
 `"
 
@@ -894,41 +895,46 @@ while (`$True) {
             `$go_to = 1
         }
         13 {
+            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fkohaku-xl-epsilon-rev3.safetensors`"
+            `$model_name = `"kohaku-xl-epsilon-rev3.safetensors`"
+            `$go_to = 1
+        }
+        14 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FpdForAnime_v20.safetensors`"
             `$model_name = `"pdForAnime_v20.safetensors`"
             `$go_to = 1
         }
-        14 {
+        15 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FstarryXLV52_v52.safetensors`"
             `$model_name = `"starryXLV52_v52.safetensors`"
             `$go_to = 1
         }
-        15 {
+        16 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FheartOfAppleXL_v20.safetensors`"
             `$model_name = `"heartOfAppleXL_v20.safetensors`"
             `$go_to = 1
         }
-        16 {
+        17 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FheartOfAppleXL_v30.safetensors`"
             `$model_name = `"heartOfAppleXL_v30.safetensors`"
             `$go_to = 1
         }
-        17 {
+        18 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sd_1.5%2Fvae-ft-ema-560000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        18 {
+        19 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sd_1.5%2Fvae-ft-mse-840000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        19 {
+        20 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sdxl_1.0%2Fsdxl_fp16_fix_vae.safetensors`"
             `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
             `$go_to = 1
         }
-        20 {
+        21 {
             `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sdxl_1.0%2Fsdxl_vae.safetensors`"
             `$model_name = `"sdxl_vae.safetensors`"
             `$go_to = 1
