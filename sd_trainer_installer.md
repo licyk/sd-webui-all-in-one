@@ -20,6 +20,7 @@ _✨一键安装 SD-Trainer_
     - [设置 SD-Trainer 启动参数](#设置-sd-trainer-启动参数)
     - [进入 SD-Trainer 所在的 Python 环境](#进入-sd-trainer-所在的-python-环境)
     - [获取最新的 SD-Trainer Installer 脚本](#获取最新的-sd-trainer-installer-脚本)
+    - [更新管理脚本脚本](#更新管理脚本脚本)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
     - [设置 Github 镜像源](#设置-github-镜像源)
@@ -117,6 +118,9 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 ### 获取最新的 SD-Trainer Installer 脚本
 运行 get_sd_trainer_installer.ps1 脚本。
+
+### 更新管理脚本脚本
+运行 get_sd_trainer_installer.ps1 脚本获取最新的 SD-Trainer Installer 脚本，然后运行 SD-Trainer Installer 后将会把本地的管理脚本进行更新。
 
 ### 恢复被修改 / 删除的脚本
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 SD-Trainer Installer 重新生成这些脚本。
