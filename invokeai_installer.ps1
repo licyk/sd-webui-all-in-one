@@ -676,6 +676,7 @@ Reddit 社区：https://www.reddit.com/r/invokeai
 function Main {
     Print-Msg "启动 InvokeAI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
     Check-Install
     Print-Msg "添加启动脚本和文档中"
     Write-Launch-Script

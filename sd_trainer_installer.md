@@ -14,8 +14,6 @@ _✨一键安装 SD-Trainer_
     - [解除脚本限制](#解除脚本限制)
     - [启用 Windows 长路径支持](#启用-windows-长路径支持)
   - [安装](#安装)
-    - [手动下载 SD-Trainer Installer 并右键运行](#手动下载-sd-trainer-installer-并右键运行)
-    - [使用 PowerShell 命令](#使用-powershell-命令)
   - [使用](#使用)
     - [启动 SD-Trainer](#启动-sd-trainer)
     - [更新 SD-Trainer](#更新-sd-trainer)
@@ -80,9 +78,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 安装
-可以使用以下其中一种方法运行 SD-Trainer Installer。
-
-### 手动下载 SD-Trainer Installer 并右键运行
+将 SD-Trainer Installer 下载至本地，右键该脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
 
 ||SD-Trainer Installer 下载地址|
 |---|---|
@@ -90,12 +86,6 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |↓|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1)|
 |↓|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
 |↓|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
-
-### 使用 PowerShell 命令
-```powershell
-irm https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1 | iex
-```
-
 
 在 SD-Trainer Installer 成功安装 SD-Trainer 后，在 SD-Trainer 文件夹中可以看到 SD-Trainer 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer Installer。
 

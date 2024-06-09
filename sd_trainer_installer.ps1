@@ -1147,6 +1147,7 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 function Main {
     Print-Msg "启动 SD-Trainer 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer"
+    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Check-Install
     Print-Msg "添加启动脚本和文档中"
     Write-Launch-Script

@@ -14,8 +14,6 @@ _✨一键安装 InvokeAI_
     - [解除脚本限制](#解除脚本限制)
     - [启用 Windows 长路径支持](#启用-windows-长路径支持)
   - [安装](#安装)
-    - [手动下载 InvokeAI Installer 并右键运行](#手动下载-invokeai-installer-并右键运行)
-    - [使用 PowerShell 命令](#使用-powershell-命令)
   - [使用](#使用)
     - [启动 InvokeAI](#启动-invokeai)
     - [更新 InvokeAI](#更新-invokeai)
@@ -74,9 +72,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 安装
-可以使用以下其中一种方法运行 InvokeAI Installer。
-
-### 手动下载 InvokeAI Installer 并右键运行
+将 InvokeAI Installer 下载至本地，右键该脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
 
 ||InvokeAI Installer 下载地址|
 |---|---|
@@ -84,12 +80,6 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |↓|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1)|
 |↓|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 |↓|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
-
-### 使用 PowerShell 命令
-```powershell
-irm https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1 | iex
-```
-
 
 在 InvokeAI Installer 成功安装 InvokeAI 后，在 InvokeAI 文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
 
