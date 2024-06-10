@@ -563,7 +563,7 @@
     "CLIP Skip": "CLIP 跳过层数",
     "Bypass CLIP layers to avoid overfitting (use 1 to not skip any layers, 2 is recommended).": "CLIP 跳过层数可避免过拟合的情况（使用 1 为不跳过任何层，2 为推荐值）",
     "VAE": "VAE 模型",
-    "Default (model)": "默认",
+    "Default (model)": "默认（模型）",
     "Use black image if NSFW is detected.": "当检测到图片存在 NSFW 内容时将屏蔽图片",
     "Black Out NSFW": "屏蔽 NSFW",
     "For images created by Fooocus": "导入由 Fooocus 生成的图片",
