@@ -37,6 +37,7 @@ _✨一键安装 SD-Trainer_
     - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
     - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
+    - [RuntimeError: Directory 'frontend/dist' does not exist](#runtimeerror-directory-frontenddist-does-not-exist)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
     - [RuntimeError: Error(s) in loading state\_dict for UNet2DConditionModel](#runtimeerror-errors-in-loading-state_dict-for-unet2dconditionmodel)
     - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
@@ -307,6 +308,9 @@ Fri Jun  7 19:07:00 2024
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
+
+### RuntimeError: Directory 'frontend/dist' does not exist
+SD-Trainer 组件缺失，重新运行 update.ps1 或者 sd_trainer_installer.ps1 进行修复。
 
 ### ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
 运行 SD-Trainer Installer 时出现以下类似的错误。
