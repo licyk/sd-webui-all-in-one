@@ -968,7 +968,7 @@ Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
 if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
     Print-Msg `"模型将下载至 `$PSScriptRoot\models 目录中`"
     Print-Msg `"下载 `$model_name 模型中`"
-    ./git/bin/aria2c --console-log-level=error -c -x 16 -s 16 `$url -d ./models -o `$model_name
+    ./git/bin/aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d ./models -o `$model_name
     if (`$?) {
         Print-Msg `"`$model_name 模型下载成功`"
     } else {
