@@ -20,7 +20,7 @@ _✨一键安装 SD-Trainer_
     - [设置 SD-Trainer 启动参数](#设置-sd-trainer-启动参数)
     - [进入 SD-Trainer 所在的 Python 环境](#进入-sd-trainer-所在的-python-环境)
     - [获取最新的 SD-Trainer Installer 脚本](#获取最新的-sd-trainer-installer-脚本)
-    - [更新管理脚本脚本](#更新管理脚本脚本)
+    - [更新管理脚本](#更新管理脚本)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
     - [设置 Github 镜像源](#设置-github-镜像源)
@@ -121,7 +121,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ### 获取最新的 SD-Trainer Installer 脚本
 运行 get_sd_trainer_installer.ps1 脚本。
 
-### 更新管理脚本脚本
+### 更新管理脚本
 运行 get_sd_trainer_installer.ps1 脚本获取最新的 SD-Trainer Installer 脚本，然后运行 SD-Trainer Installer 后将会把本地的管理脚本进行更新。
 
 ### 恢复被修改 / 删除的脚本
@@ -321,7 +321,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
              Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
 ```
 
-这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 SD-Trainer/cache/pip 文件夹删除，再重新运行 SD-Trainer。
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 SD-Trainer/cache/pip 文件夹删除，再重新运行 SD-Trainer Installer。
 
 ### RuntimeError: Error(s) in loading state_dict for UNet2DConditionModel
 检查训练参数是否正确，确认是否选择对应大模型版本的训练参数。

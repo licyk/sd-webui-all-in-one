@@ -20,7 +20,7 @@ _✨一键安装 InvokeAI_
     - [修复 InvokeAI 图库出现无效图片](#修复-invokeai-图库出现无效图片)
     - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
     - [获取最新的 InvokeAI Installer 脚本](#获取最新的-invokeai-installer-脚本)
-    - [更新管理脚本脚本](#更新管理脚本脚本)
+    - [更新管理脚本](#更新管理脚本)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [设置 InvokeAI 中文](#设置-invokeai-中文)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
@@ -110,7 +110,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ### 获取最新的 InvokeAI Installer 脚本
 运行 get_invokeai_installer.ps1 脚本。
 
-### 更新管理脚本脚本
+### 更新管理脚本
 运行 get_invokeai_installer.ps1 脚本获取最新的 InvokeAI Installer 脚本，然后运行 InvokeAI Installer 后将会把本地的管理脚本进行更新。
 
 ### 恢复被修改 / 删除的脚本
