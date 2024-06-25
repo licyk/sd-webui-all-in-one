@@ -49,7 +49,8 @@
         "outline_xl_kohaku_delta_spv5x.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/outline_xl_kohaku_delta_spv5x.safetensors",
         "a31_style_koni-000010.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/a31_style_koni-000010.safetensors",
         "ag31_style_ba_v1-000016.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ag31_style_ba_v1-000016.safetensors",
-        "delta_style_koni-000022.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/delta_style_koni-000022.safetensors"
+        "delta_style_koni-000022.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/delta_style_koni-000022.safetensors",
+        "Fixhands_anime_bdsqlsz_V1.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/Fixhands_anime_bdsqlsz_V1.safetensors"
     },
     "vae_downloads": {
         "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
