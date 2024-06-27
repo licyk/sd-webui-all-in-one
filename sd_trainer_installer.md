@@ -47,6 +47,7 @@ _✨一键安装 SD-Trainer_
     - [Loss?](#loss)
     - [训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?](#训练素材中图片的分辨率不一致而且有些图片的分辨率很大需要裁剪)
     - [以一种访问权限不允许的方式做了一个访问套接字的尝试](#以一种访问权限不允许的方式做了一个访问套接字的尝试)
+    - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
     - [命令的使用](#命令的使用)
 
 
@@ -351,6 +352,9 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 ```
 
 这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在 launch.ps1 所在目录创建 launch_args.txt 文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存 launch_args.txt 文件后使用 launch.ps1 重新启动 SD-Trainer。
+
+### AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
+这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
