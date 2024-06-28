@@ -2,7 +2,7 @@ Set-Location "$PSScriptRoot"
 # pip镜像源
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
-$pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+$pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu118/torch_stable.html"
 $pip_extra_index_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
 $pip_find_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
 # 环境变量
@@ -319,8 +319,8 @@ function Check-Install {
         Install-InvokeAI
     }
 
-    Print-Msg "检测是否需要重装 xFormers"
-    Reinstall-Xformers
+    # Print-Msg "检测是否需要重装 xFormers"
+    # Reinstall-Xformers
 
     Print-Msg "检测是否需要安装 PyPatchMatch"
     Install-PyPatchMatch
