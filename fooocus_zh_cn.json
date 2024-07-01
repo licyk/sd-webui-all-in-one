@@ -544,7 +544,7 @@
     "Downloading LCM components ...": "下载 LCM 组件 ...",
     "Downloading Lightning components ...": "下载 Lightning 组件 ...",
     "Start drawing": "开始涂鸦",
-    "VAE Inpaint encoding ...": "VAE 重绘解码 ...",
+    "VAE Inpaint encoding ...": "VAE 重绘编码 ...",
     "JSON.parse: unexpected character at line 2 column 1 of the JSON data": "JSON 分析：JSON 数据中第 2 行第 1 列出现不期望字符",
     "API documentation": "API 文档",
     "fn_index:": "主要方法: ",
