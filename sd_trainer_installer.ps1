@@ -393,8 +393,13 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
 Print-Msg `"启动 SD-Trainer 中`"
 Set-Location `"`$PSScriptRoot/lora-scripts`"
 ../python/python gui.py `$args.ToString().Split()
+`$req = `$?
+if (`$req) {
+    Print-Msg `"SD-Trainer 正常退出`"
+} else {
+    Print-Msg `"SD-Trainer 出现异常, 已退出`"
+}
 Set-Location `"`$PSScriptRoot`"
-Print-Msg `"SD-Trainer 已结束运行`"
 Read-Host | Out-Null
 "
 
@@ -1145,6 +1150,7 @@ https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
 https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
 "
+
     Set-Content -Path "./SD-Trainer/help.txt" -Value $content
 }
 

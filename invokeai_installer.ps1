@@ -302,8 +302,8 @@ function Check-Install {
     }
 
     Print-Msg "¼ì²éÊÇ·ñ°²×° Pip"
-    $pip_path = "./InvokeAI/python/Scripts/pip.exe"
-    if (Test-Path $pip_path) {
+    ./InvokeAI/python/python.exe -c "import pip" 2> $null
+    if ($?) {
         Print-Msg "Pip ÒÑ°²×°"
     } else {
         Print-Msg "Pip Î´°²×°"
@@ -395,7 +395,12 @@ Print-Msg `"µ÷ÓÃä¯ÀÀÆ÷´ò¿ªµØÖ·ÖĞ`"
 Start-Process `"http://127.0.0.1:9090`"
 Print-Msg `"Æô¶¯ InvokeAI ÖĞ`"
 ./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
-Print-Msg `"InvokeAI ÒÑ½áÊøÔËĞĞ`"
+`$req = `$?
+if (`$req) {
+    Print-Msg `"InvokeAI Õı³£ÍË³ö`"
+} else {
+    Print-Msg `"InvokeAI ³öÏÖÒì³£, ÒÑÍË³ö`"
+}
 Read-Host | Out-Null
 "
 
@@ -451,7 +456,7 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾
 
 Print-Msg `"¸üĞÂ InvokeAI ÖĞ`"
 `$ver = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
-./python/python.exe -m pip install invokeai --upgrade --no-warn-script-location --use-pep517
+./python/python.exe -m pip install `"InvokeAI[xformers]`" --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
     `$ver_ = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$ver -eq `$ver_) {
@@ -621,6 +626,76 @@ Print-Msg `"¸ü¶à°ïÖúĞÅÏ¢¿ÉÔÚ InvokeAI Installer ÏîÄ¿µØÖ·²é¿´: https://github.com
 }
 
 
+# pytorchÖØ×°½Å±¾
+function Write-PyTorch-ReInstall-Script {
+    $content = "
+Set-Location `"`$PSScriptRoot`"
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+}
+
+# ´úÀíÅäÖÃ
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+    }
+} else {
+    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+}
+
+# »·¾³±äÁ¿
+`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
+`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
+`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
+`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$env:PIP_TIMEOUT = 30
+`$env:PIP_RETRIES = 5
+`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+
+Print-Msg `"ÊÇ·ñÖØĞÂ°²×° PyTorch (yes/no)?`"
+Print-Msg `"ÌáÊ¾: ÊäÈë yes È·ÈÏ»ò no È¡Ïû (Ä¬ÈÏÎª no)`"
+`$arg = Read-Host `"===========================================>`"
+if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+    Print-Msg `"Ğ¶ÔØÔ­ÓĞµÄ PyTorch`"
+    ./python/python.exe -m pip uninstall torch torchvision torchaudio xformers -y
+    Print-Msg `"ÖØĞÂ°²×° PyTorch`"
+    ./python/python.exe -m pip install `"InvokeAI[xformers]`" --no-warn-script-location --use-pep517
+    if (`$?) {
+        Print-Msg `"ÖØĞÂ°²×° PyTorch ³É¹¦`"
+    } else {
+        Print-Msg `"ÖØĞÂ°²×° PyTorch Ê§°Ü, ÇëÖØĞÂÔËĞĞ PyTorch ÖØ×°½Å±¾`"
+    }
+} else {
+    Print-Msg `"È¡ÏûÖØ×° PyTorch`"
+}
+
+Read-Host | Out-Null
+"
+
+    Set-Content -Path "./InvokeAI/reinstall-pytorch.ps1" -Value $content
+}
+
+
 # °ïÖúÎÄµµ
 function Write-ReadMe {
     $content = "==================================
@@ -641,6 +716,7 @@ get_invokeai_installer.ps1£º»ñÈ¡×îĞÂµÄ InvokeAI Installer °²×°½Å±¾£¬ÔËĞĞºó½«»áÔÚ
 update.ps1£º¸üĞÂ InvokeAI µÄ½Å±¾£¬¿ÉÊ¹ÓÃ¸Ã½Å±¾¸üĞÂ InvokeAI¡£
 launch.ps1£ºÆô¶¯ InvokeAI µÄ½Å±¾¡£
 fix-db.ps1£ºĞŞ¸´ InvokeAI Êı¾İ¿â½Å±¾£¬½â¾öÉ¾³ı InvokeAI µÄÍ¼Æ¬ºóÔÚ½çÃæÖĞ³öÏÖÎŞĞ§Í¼Æ¬µÄÎÊÌâ¡£
+reinstall-pytorch.ps1£ºÖØ×° PyTorch ½Å±¾£¬½â¾ö PyTorch ÎŞ·¨Õı³£Ê¹ÓÃ»òÕß xFormers °æ±¾²»Æ¥Åäµ¼ÖÂÎŞ·¨µ÷ÓÃµÄÎÊÌâ¡£
 help.txt£º°ïÖúÎÄµµ¡£
 
 
@@ -668,6 +744,7 @@ InvokeAI ¹Ù·½ÎÄµµ£ºhttps://invoke-ai.github.io/InvokeAI
 InvokeAI ¹Ù·½ÊÓÆµ½Ì³Ì£ºhttps://www.youtube.com/@invokeai
 Reddit ÉçÇø£ºhttps://www.reddit.com/r/invokeai
 "
+
     Set-Content -Path "./InvokeAI/help.txt" -Value $content
 }
 
@@ -684,6 +761,7 @@ function Main {
     Write-InvokeAI-DB-Fix-Script
     Write-InvokeAI-Install-Script
     Write-Env-Activate-Script
+    Write-PyTorch-ReInstall-Script
     Write-ReadMe
     Print-Msg "InvokeAI °²×°½áÊø, °²×°Â·¾¶Îª $PSScriptRoot\InvokeAI"
     Print-Msg "¹ØÓÚ¸Ã InvokeAI °æ±¾µÄ¸üĞÂÈÕÖ¾£ºhttps://github.com/invoke-ai/InvokeAI/releases/latest"

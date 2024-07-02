@@ -31,6 +31,7 @@ _✨一键安装 InvokeAI_
     - [配置 InvokeAI](#配置-invokeai)
     - [显存占用很大](#显存占用很大)
     - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
+    - [重装 PyTorch / xFormers](#重装-pytorch--xformers)
     - [InvokeAI 无法正常调用显卡](#invokeai-无法正常调用显卡)
     - [卸载 InvokeAI](#卸载-invokeai)
     - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
@@ -39,6 +40,7 @@ _✨一键安装 InvokeAI_
     - [配置代理](#配置代理)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
+    - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
     - [命令的使用](#命令的使用)
 
 
@@ -133,6 +135,7 @@ $ tree -L 2
 │   ├── invokeai                    # InvokeAI 生成的图片和模型存放路径
 │   ├── launch.ps1                  # 启动 InvokeAI 的脚本
 │   ├── python                      # Python 目录
+│   ├── reinstall-pytorch.ps1       # 重装 PyTorch 脚本
 │   └── update.ps1                  # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1          # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
@@ -189,10 +192,13 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
   Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
   Memory-efficient attention, SwiGLU, sparse and more won't be available.
 ```
-这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 InvokeAI Installer 进行修复。
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall-pytorch.ps1 脚本进行修复。
+
+### 重装 PyTorch / xFormers
+运行 reinstall-pytorch.ps1 脚本。
 
 ### InvokeAI 无法正常调用显卡
-尝试将显卡驱动更至最新。
+尝试将显卡驱动更至最新或者运行 reinstall-pytorch.ps1 脚本重装 PyTorch。
 
 ### 卸载 InvokeAI
 使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。
@@ -269,6 +275,9 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 ```
 
 这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 InvokeAI/cache/pip 文件夹删除，再重新运行 InvokeAI。
+
+### 运行 InvokeAI 时 InvokeAI 出现崩溃
+尝试增加 Windows 系统虚拟内存。
 
 ### 命令的使用
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
