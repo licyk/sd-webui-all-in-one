@@ -262,7 +262,7 @@ invokeai
 
 这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
 ### ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
@@ -342,3 +342,4 @@ python -m pip install controlnet_aux
 
 >推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
+

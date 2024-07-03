@@ -307,7 +307,7 @@ Fri Jun  7 19:07:00 2024
 
 这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
 ### RuntimeError: Directory 'frontend/dist' does not exist
