@@ -54,9 +54,7 @@ if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像
 
 # 下载并解压python
 function Install-Python {
-    # $url = "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
-    # $url = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/python-3.10.11-embed-amd64.zip"
-    $url = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Fpython-3.10.11-embed-amd64.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-embed-amd64.zip"
 
     # 下载python
     Print-Msg "正在下载 Python"
@@ -90,9 +88,7 @@ function Modify-PythonPath {
 
 # 配置python的pip模块
 function Install-Pip {
-    # $url = "https://bootstrap.pypa.io/get-pip.py"
-    # $url = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/get-pip.py"
-    $url = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Fget-pip.py"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/get-pip.py"
 
     # 下载get-pip.py
     Print-Msg "正在下载 get-pip.py"
@@ -247,12 +243,8 @@ function Reinstall-Xformers {
 # 下载pypatchmatch
 function Install-PyPatchMatch {
     # PyPatchMatch
-    # https://github.com/invoke-ai/PyPatchMatch/releases/download/0.1.1/libpatchmatch_windows_amd64.dll
-    # https://github.com/invoke-ai/PyPatchMatch/releases/download/0.1.1/opencv_world460.dll
-    # $url_1 = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/libpatchmatch_windows_amd64.dll"
-    # $url_2 = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/opencv_world460.dll"
-    $url_1 = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Flibpatchmatch_windows_amd64.dll"
-    $url_2 = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Fopencv_world460.dll"
+    $url_1 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll"
+    $url_2 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll"
 
     if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"

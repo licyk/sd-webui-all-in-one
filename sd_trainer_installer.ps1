@@ -63,7 +63,7 @@ if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像
 
 # 下载并解压python
 function Install-Python {
-    $url = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Fpython-3.10.11-amd64.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-amd64.zip"
 
     # 下载python
     Print-Msg "正在下载 Python"
@@ -88,7 +88,7 @@ function Install-Python {
 
 # 下载并解压git
 function Install-Git {
-    $url = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2FPortableGit-2.45.2-64-bit.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
     Print-Msg "正在下载 Git"
     Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/PortableGit-2.45.2-64-bit.zip"
     if ($?) { # 检测是否下载成功并解压
@@ -111,7 +111,7 @@ function Install-Git {
 
 # 下载aria2
 function Install-Aria2 {
-    $url = "https://modelscope.cn/api/v1/models/licyks/invokeai-core-model/repo?Revision=master&FilePath=pypatchmatch%2Faria2c.exe"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
     Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/aria2c.exe"
     if ($?) {
@@ -840,107 +840,107 @@ while (`$True) {
 
     switch (`$arg) {
         1 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sd_1.5%2Fv1-5-pruned-emaonly.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`"
             `$model_name = `"v1-5-pruned-emaonly.safetensors`"
             `$go_to = 1
         }
         2 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sd_1.5%2Fanimefull-final-pruned.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`"
             `$model_name = `"animefull-final-pruned.safetensors`"
             `$go_to = 1
         }
         3 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sd_2.1%2Fv2-1_768-ema-pruned.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`"
             `$model_name = `"v2-1_768-ema-pruned.safetensors`"
             `$go_to = 1
         }
         4 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sd_2.1%2Fwd-1-4-anime_e2.ckpt`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`"
             `$model_name = `"wd-1-4-anime_e2.ckpt`"
             `$go_to = 1
         }
         5 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sd_2.1%2Fwd-mofu-fp16.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`"
             `$model_name = `"wd-mofu-fp16.safetensors`"
             `$go_to = 1
         }
         6 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fsd_xl_base_1.0_0.9vae.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`"
             `$model_name = `"sd_xl_base_1.0_0.9vae.safetensors`"
             `$go_to = 1
         }
         7 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fanimagine-xl-3.0.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`"
             `$model_name = `"animagine-xl-3.0.safetensors`"
             `$go_to = 1
         }
         8 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fanimagine-xl-3.1.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`"
             `$model_name = `"animagine-xl-3.1.safetensors`"
             `$go_to = 1
         }
         9 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fkohaku-xl-delta-rev1.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-delta-rev1.safetensors`"
             `$model_name = `"kohaku-xl-delta-rev1.safetensors`"
             `$go_to = 1
         }
         10 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FkohakuXLEpsilon_rev1.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors`"
             `$model_name = `"kohakuXLEpsilon_rev1.safetensors`"
             `$go_to = 1
         }
         11 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
             `$model_name = `"ponyDiffusionV6XL_v6.safetensors`"
             `$go_to = 1
         }
         12 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fkohaku-xl-epsilon-rev2.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors`"
             `$model_name = `"kohaku-xl-epsilon-rev2.safetensors`"
             `$go_to = 1
         }
         13 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2Fkohaku-xl-epsilon-rev3.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors`"
             `$model_name = `"kohaku-xl-epsilon-rev3.safetensors`"
             `$go_to = 1
         }
         14 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FpdForAnime_v20.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`"
             `$model_name = `"pdForAnime_v20.safetensors`"
             `$go_to = 1
         }
         15 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FstarryXLV52_v52.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors`"
             `$model_name = `"starryXLV52_v52.safetensors`"
             `$go_to = 1
         }
         16 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FheartOfAppleXL_v20.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors`"
             `$model_name = `"heartOfAppleXL_v20.safetensors`"
             `$go_to = 1
         }
         17 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-model/repo?Revision=master&FilePath=sdxl_1.0%2FheartOfAppleXL_v30.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors`"
             `$model_name = `"heartOfAppleXL_v30.safetensors`"
             `$go_to = 1
         }
         18 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sd_1.5%2Fvae-ft-ema-560000-ema-pruned.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
             `$go_to = 1
         }
         19 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sd_1.5%2Fvae-ft-mse-840000-ema-pruned.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
             `$go_to = 1
         }
         20 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sdxl_1.0%2Fsdxl_fp16_fix_vae.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
             `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
             `$go_to = 1
         }
         21 {
-            `$url = `"https://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sdxl_1.0%2Fsdxl_vae.safetensors`"
+            `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
             `$model_name = `"sdxl_vae.safetensors`"
             `$go_to = 1
         }
