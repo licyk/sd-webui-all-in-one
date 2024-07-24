@@ -437,8 +437,6 @@ function Fix-Git-Point-Off-Set {
             `$branch = `$(./git/bin/git.exe -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
             ./git/bin/git.exe -C `"`$path`" checkout `$branch # 切换到主分支
             ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-            ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard HEAD # 回退版本,解决git pull异常
-            ./git/bin/git.exe -C `"`$path`" restore --recurse-submodules --source=HEAD :/ # 重置工作区
         }
     }
 }
@@ -523,12 +521,15 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用github镜像源
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 
-Print-Msg `"更新 SD-Trainer 中`"
+Print-Msg `"拉取 SD-Trainer 更新内容中`"
 Fix-Git-Point-Off-Set `"./lora-scripts`"
 `$ver = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-./git/bin/git.exe -C lora-scripts reset --hard --recurse-submodules
-./git/bin/git.exe -C lora-scripts pull --recurse-submodules
+`$branch = `$(./git/bin/git.exe -C lora-scripts symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+./git/bin/git.exe -C lora-scripts fetch --recurse-submodules
 if (`$?) {
+    Print-Msg `"应用 SD-Trainer 更新中`"
+    `$commit_hash = `$(./git/bin/git.exe -C lora-scripts log origin/`$branch --max-count 1 --format=`"%h`")
+    ./git/bin/git.exe -C lora-scripts reset --hard `$commit_hash --recurse-submodules
     `$ver_ = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     if (`$ver -eq `$ver_) {
         Print-Msg `"SD-Trainer 已为最新版，当前版本：`$ver`"
@@ -536,7 +537,7 @@ if (`$?) {
         Print-Msg `"SD-Trainer 更新成功，版本：`$ver -> `$ver_`"
     }
 } else {
-    Print-Msg `"SD-Trainer 更新失败`"
+    Print-Msg `"拉取 SD-Trainer 更新内容失败, 请重试`"
 }
 
 Print-Msg `"退出 SD-Trainer 更新脚本`"
@@ -1106,7 +1107,7 @@ help.txt：帮助文档。
 
 要启动 SD-Trainer，可在 SD-Trainer 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 SD-Trainer 启动完成，启动完成后将自动打开浏览器进入 SD-Trainer 界面。
 
-脚本为 SD-Trainer，可在 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace 的问题，导致 SD-Trainer 无法从 HuggingFace 下载模型。
+脚本为 SD-Trainer 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 SD-Trainer 无法从 HuggingFace 下载模型的问题。
 如果想自定义 HuggingFace 镜像源，可以在本地创建 hf_mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
 如果需要禁用 HuggingFace 镜像源，则创建 disable_hf_mirror.txt 文件，启动脚本时将不再设置 HuggingFace 镜像源。
 
