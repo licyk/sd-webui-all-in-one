@@ -29,6 +29,7 @@ _✨一键安装 InvokeAI_
     - [重装 InvokeAI](#重装-invokeai)
     - [重置 InvokeAI 数据库](#重置-invokeai-数据库)
     - [配置 InvokeAI](#配置-invokeai)
+    - [下载 InvokeAI 模型配置文件](#下载-invokeai-模型配置文件)
     - [显存占用很大](#显存占用很大)
     - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
     - [重装 PyTorch / xFormers](#重装-pytorch--xformers)
@@ -97,7 +98,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 运行 update.ps1 脚本。
 
 ### 修复 InvokeAI 图库出现无效图片
-在 InvokeAI 的图片保存目录删除图片后，会发现 InvokeAI 的图库中图片还存在，并且显示损坏，无法查看，可以运行 fix-db.ps1 进行修复。
+在 InvokeAI 的图片保存目录删除图片后，会发现 InvokeAI 的图库中图片还存在，并且显示损坏，无法查看，可以运行 fix_db.ps1 进行修复。
 
 ### 进入 InvokeAI 所在的 Python 环境
 如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的 python 文件夹添加到环境变量，这将会导致不良的后果产生。  
@@ -129,13 +130,14 @@ $ tree -L 2
 ├── InvokeAI                        # 这是 InvokeAI 文件夹
 │   ├── activate.ps1                # 进入 InvokeAI Env 的脚本
 │   ├── cache                       # 缓存文件夹
-│   ├── fix-db.ps1                  # 修复 InvokeAI 数据库的脚本
+│   ├── download_config.ps1         # 下载模型配置文件脚本
+│   ├── fix_db.ps1                  # 修复 InvokeAI 数据库的脚本
 │   ├── get_invokeai_installer.ps1  # 获取最新的 InvokeAI Installer 的脚本
 │   ├── help.txt                    # 帮助文档
 │   ├── invokeai                    # InvokeAI 生成的图片和模型存放路径
 │   ├── launch.ps1                  # 启动 InvokeAI 的脚本
 │   ├── python                      # Python 目录
-│   ├── reinstall-pytorch.ps1       # 重装 PyTorch 脚本
+│   ├── reinstall_pytorch.ps1       # 重装 PyTorch 脚本
 │   └── update.ps1                  # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1          # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
@@ -180,6 +182,9 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 >[!NOTE]  
 >在大多数情况下并不需要修改该配置文件，因为 InvokeAI 会自动选择最佳的配置。
 
+### 下载 InvokeAI 模型配置文件
+运行 download_config.ps1 脚本。
+
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
 
@@ -192,13 +197,13 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
   Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
   Memory-efficient attention, SwiGLU, sparse and more won't be available.
 ```
-这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall-pytorch.ps1 脚本进行修复。
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall_pytorch.ps1 脚本进行修复。
 
 ### 重装 PyTorch / xFormers
-运行 reinstall-pytorch.ps1 脚本。
+运行 reinstall_pytorch.ps1 脚本。
 
 ### InvokeAI 无法正常调用显卡
-尝试将显卡驱动更至最新或者运行 reinstall-pytorch.ps1 脚本重装 PyTorch。
+尝试将显卡驱动更至最新或者运行 reinstall_pytorch.ps1 脚本重装 PyTorch。
 
 ### 卸载 InvokeAI
 使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。

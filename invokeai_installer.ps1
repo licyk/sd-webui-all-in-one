@@ -274,6 +274,50 @@ function Install-PyPatchMatch {
 }
 
 
+# 下载配置文件
+function Download-Config-File($url, $path) {
+    $length = $url.split("/").length
+    $name = $url.split("/")[$length - 1]
+    if (!(Test-Path $path)) {
+        Print-Msg "下载 $name 中"
+        Invoke-WebRequest -Uri $url.ToString() -OutFile "./InvokeAI/cache/$name"
+        if ($?) {
+            Move-Item -Path "./InvokeAI/cache/$name" -Destination "$path"
+            Print-Msg "$name 下载成功"
+        } else {
+            Print-Msg "$name 下载失败"
+        }
+    } else {
+        Print-Msg "$name 已存在"
+    }
+}
+
+
+# 预下载模型配置文件
+function Get-Model-Config-File {
+    Print-Msg "预下载模型配置文件中"
+    New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/stable-diffusion" -Force > $null
+    New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/controlnet" -Force > $null
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-finetune_style.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v15.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v21.yaml"
+    Print-Msg "模型配置文件下载完成"
+}
+
+
 # 安装
 function Check-Install {
     if (!(Test-Path "./InvokeAI")) {
@@ -316,6 +360,9 @@ function Check-Install {
 
     Print-Msg "检测是否需要安装 PyPatchMatch"
     Install-PyPatchMatch
+
+    Print-Msg "检测是否需要下载模型配置文件"
+    Get-Model-Config-File
 }
 
 
@@ -684,9 +731,69 @@ if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./InvokeAI/reinstall-pytorch.ps1" -Value $content
+    Set-Content -Path "./InvokeAI/reinstall_pytorch.ps1" -Value $content
 }
 
+
+# 下载模型配置文件脚本
+function Wirte-Download-Config-Script {
+    $content = "
+Set-Location `"`$PSScriptRoot`"
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+}
+
+# 下载配置文件
+function Download-Config-File(`$url, `$path) {
+    `$length = `$url.split(`"/`").length
+    `$name = `$url.split(`"/`")[`$length - 1]
+    if (!(Test-Path `$path)) {
+        Print-Msg `"下载 `$name 中`"
+        Invoke-WebRequest -Uri `$url.ToString() -OutFile `"./cache/`$name`"
+        if (`$?) {
+            Move-Item -Path `"./cache/`$name`" -Destination `"`$path`"
+            Print-Msg `"`$name 下载成功`"
+        } else {
+            Print-Msg `"`$name 下载失败`"
+        }
+    } else {
+        Print-Msg `"`$name 已存在`"
+    }
+}
+
+
+# 预下载模型配置文件
+function Get-Model-Config-File {
+    Print-Msg `"预下载模型配置文件中`"
+    New-Item -ItemType Directory -Path `"./config`" -Force > `$null
+    New-Item -ItemType Directory -Path `"./invokeai/configs/stable-diffusion`" -Force > `$null
+    New-Item -ItemType Directory -Path `"./invokeai/configs/controlnet`" -Force > `$null
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_base.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_refiner.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml`" `"./invokeai/configs/stable-diffusion/v1-finetune.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml`" `"./invokeai/configs/stable-diffusion/v1-finetune_style.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v1-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml`" `"./invokeai/configs/stable-diffusion/v1-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml`" `"./invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml`" `"./invokeai/configs/stable-diffusion/v1-m1-finetune.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v2-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-midas-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml`" `"./invokeai/configs/controlnet/cldm_v15.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml`" `"./invokeai/configs/controlnet/cldm_v21.yaml`"
+    Print-Msg `"模型配置文件下载完成`"
+}
+
+Get-Model-Config-File
+Read-Host | Out-Null
+"
+    Set-Content -Path "./InvokeAI/download_config.ps1" -Value $content
+}
 
 # 帮助文档
 function Write-ReadMe {
@@ -707,8 +814,9 @@ activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、In
 get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 launch.ps1：启动 InvokeAI 的脚本。
-fix-db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
-reinstall-pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
+fix_db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
+reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
+download_config.ps1：下载模型配置文件，当删除 invokeai 文件夹后，InvokeAI 将重新下载模型配置文件，但在无代理的情况下可能下载失败，所以可以通过该脚本进行下载。
 help.txt：帮助文档。
 
 
@@ -754,6 +862,7 @@ function Main {
     Write-InvokeAI-Install-Script
     Write-Env-Activate-Script
     Write-PyTorch-ReInstall-Script
+    Wirte-Download-Config-Script
     Write-ReadMe
     Print-Msg "InvokeAI 安装结束, 安装路径为 $PSScriptRoot\InvokeAI"
     Print-Msg "关于该 InvokeAI 版本的更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest"
