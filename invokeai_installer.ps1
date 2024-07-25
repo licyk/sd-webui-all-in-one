@@ -767,7 +767,7 @@ function Download-Config-File(`$url, `$path) {
 # 预下载模型配置文件
 function Get-Model-Config-File {
     Print-Msg `"预下载模型配置文件中`"
-    New-Item -ItemType Directory -Path `"./config`" -Force > `$null
+    New-Item -ItemType Directory -Path `"./cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"./invokeai/configs/stable-diffusion`" -Force > `$null
     New-Item -ItemType Directory -Path `"./invokeai/configs/controlnet`" -Force > `$null
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_base.yaml`"
