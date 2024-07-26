@@ -39,6 +39,7 @@ _✨一键安装 InvokeAI_
     - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
     - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
     - [配置代理](#配置代理)
+    - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
     - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
@@ -249,6 +250,14 @@ invokeai
 
 >[!NOTE]  
 >配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
+
+### 运行脚本时出现中文乱码
+这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
+
+1. 按下`Win + R`键，输入`control`后回车启动控制面板。
+2. 点击`时钟和区域`->`区域`
+3. 在弹出的区域设置窗口中点击顶部的`管理`，再点击`更改系统区域设置`.
+4. 在弹出的窗口中将`使用 Unicode UTF-8 提供全球语言支持`取消勾选，然后一直点击确定保存设置，并重启电脑。
 
 ### 无法使用 PowerShell 运行
 运行 PowerShell 脚本时出现以下错误。

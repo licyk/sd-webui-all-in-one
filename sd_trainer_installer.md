@@ -36,6 +36,7 @@ _✨一键安装 SD-Trainer_
     - [卸载 SD-Trainer](#卸载-sd-trainer)
     - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
     - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+    - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [RuntimeError: Directory 'frontend/dist' does not exist](#runtimeerror-directory-frontenddist-does-not-exist)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
@@ -289,6 +290,14 @@ Fri Jun  7 19:07:00 2024
 
 ### 更新 SD-Trainer 管理脚本
 运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer，并运行一次 SD-Trainer Installer。
+
+### 运行脚本时出现中文乱码
+这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
+
+1. 按下`Win + R`键，输入`control`后回车启动控制面板。
+2. 点击`时钟和区域`->`区域`
+3. 在弹出的区域设置窗口中点击顶部的`管理`，再点击`更改系统区域设置`.
+4. 在弹出的窗口中将`使用 Unicode UTF-8 提供全球语言支持`取消勾选，然后一直点击确定保存设置，并重启电脑。
 
 ### 无法使用 PowerShell 运行
 运行 PowerShell 脚本时出现以下错误。
