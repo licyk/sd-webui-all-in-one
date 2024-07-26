@@ -810,6 +810,8 @@ while (`$True) {
     Print-Msg `"可下载的模型列表`"
     `$content = `"
 -----------------------------------------------------
+模型序号 | 模型名称 | 模型种类
+
 - 1、v1-5-pruned-emaonly (SD 1.5)
 - 2、animefull-final-pruned (SD 1.5)
 - 3、v2-1_768-ema-pruned (SD 2.1)
@@ -820,9 +822,9 @@ while (`$True) {
 - 8、animagine-xl-3.1 (SDXL)
 - 9、kohaku-xl-delta-rev1 (SDXL)
 - 10、kohakuXLEpsilon_rev1 (SDXL)
-- 11、ponyDiffusionV6XL_v6 (SDXL)
-- 12、kohaku-xl-epsilon-rev2 (SDXL)
-- 13、kohaku-xl-epsilon-rev3 (SDXL)
+- 11、kohaku-xl-epsilon-rev2 (SDXL)
+- 12、kohaku-xl-epsilon-rev3 (SDXL)
+- 13、ponyDiffusionV6XL_v6 (SDXL)
 - 14、pdForAnime_v20 (SDXL)
 - 15、starryXLV52_v52 (SDXL)
 - 16、heartOfAppleXL_v20 (SDXL)
@@ -831,6 +833,8 @@ while (`$True) {
 - 19、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
 - 20、sdxl_fp16_fix_vae (SDXL VAE)
 - 21、sdxl_vae (SDXL VAE)
+
+关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
 `"
 
@@ -891,18 +895,18 @@ while (`$True) {
             `$go_to = 1
         }
         11 {
-            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
-            `$model_name = `"ponyDiffusionV6XL_v6.safetensors`"
-            `$go_to = 1
-        }
-        12 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors`"
             `$model_name = `"kohaku-xl-epsilon-rev2.safetensors`"
             `$go_to = 1
         }
-        13 {
+        12 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors`"
             `$model_name = `"kohaku-xl-epsilon-rev3.safetensors`"
+            `$go_to = 1
+        }
+        13 {
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
+            `$model_name = `"ponyDiffusionV6XL_v6.safetensors`"
             `$go_to = 1
         }
         14 {
