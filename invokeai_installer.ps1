@@ -1,11 +1,12 @@
+ï»¿# æœ‰å…³ PowerShell è„šæœ¬ä¿å­˜ç¼–ç çš„é—®é¢˜: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 Set-Location "$PSScriptRoot"
-# pip¾µÏñÔ´
+# Pip é•œåƒæº
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
 $pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu118/torch_stable.html"
 $pip_extra_index_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
 $pip_find_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
-# »·¾³±äÁ¿
+# çŽ¯å¢ƒå˜é‡
 $env:PIP_INDEX_URL = $pip_index_mirror
 $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror
 $env:PIP_FIND_LINKS = $pip_find_mirror
@@ -26,158 +27,158 @@ $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
 $env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
 
 
-# ÏûÏ¢Êä³ö
+# æ¶ˆæ¯è¾“å‡º
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI Installer]:: $msg"
 }
 
-Print-Msg "³õÊ¼»¯ÖÐ"
+Print-Msg "åˆå§‹åŒ–ä¸­"
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 $env:NO_PROXY = "localhost,127.0.0.1,::1"
-if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if (Test-Path "$PSScriptRoot/proxy.txt") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path "$PSScriptRoot/proxy.txt") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
         $env:HTTP_PROXY = $proxy_value
         $env:HTTPS_PROXY = $proxy_value
-        Print-Msg "¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí"
-    } elseif ($internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†"
+    } elseif ($internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
         $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
-        Print-Msg "¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí"
+        Print-Msg "æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†"
     }
 } else {
-    Print-Msg "¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí"
+    Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†"
 }
 
 
-# ÏÂÔØ²¢½âÑ¹python
+# ä¸‹è½½å¹¶è§£åŽ‹ Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-embed-amd64.zip"
 
-    # ÏÂÔØpython
-    Print-Msg "ÕýÔÚÏÂÔØ Python"
+    # ä¸‹è½½ Python
+    Print-Msg "æ­£åœ¨ä¸‹è½½ Python"
     Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/python-3.10.11-embed-amd64.zip"
-    if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦²¢½âÑ¹
-        # ´´½¨pythonÎÄ¼þ¼Ð
+    if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸå¹¶è§£åŽ‹
+        # åˆ›å»º Python æ–‡ä»¶å¤¹
         if (!(Test-Path "./InvokeAI/python")) {
             New-Item -ItemType Directory -Force -Path ./InvokeAI/python > $null
         }
-        # ½âÑ¹python
-        Print-Msg "ÕýÔÚ½âÑ¹ Python"
+        # è§£åŽ‹ Python
+        Print-Msg "æ­£åœ¨è§£åŽ‹ Python"
         Expand-Archive -Path "./InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "./InvokeAI/python" -Force
         Remove-Item -Path "./InvokeAI/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
-        Print-Msg "Python °²×°³É¹¦"
+        Print-Msg "Python å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "Python °²×°Ê§°Ü, ÖÕÖ¹ InvokeAI °²×°½ø³Ì, ¿É³¢ÊÔÖØÐÂÔËÐÐ InvokeAI Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "Python å®‰è£…å¤±è´¥, ç»ˆæ­¢ InvokeAI å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ InvokeAI Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# ÐÞ¸Äpython310._pthÎÄ¼þµÄÄÚÈÝ
+# ä¿®æ”¹ python310._pth æ–‡ä»¶çš„å†…å®¹
 function Modify-PythonPath {
-    Print-Msg "ÐÞ¸Ä python310._pth ÎÄ¼þÄÚÈÝ"
+    Print-Msg "ä¿®æ”¹ python310._pth æ–‡ä»¶å†…å®¹"
     $content = @("python310.zip", ".", "", "# Uncomment to run site.main() automatically", "import site")
     Set-Content -Path "./InvokeAI/python/python310._pth" -Value $content
 }
 
 
-# ÅäÖÃpythonµÄpipÄ£¿é
+# é…ç½® Python çš„ Pip æ¨¡å—
 function Install-Pip {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/get-pip.py"
 
-    # ÏÂÔØget-pip.py
-    Print-Msg "ÕýÔÚÏÂÔØ get-pip.py"
+    # ä¸‹è½½ get-pip.py
+    Print-Msg "æ­£åœ¨ä¸‹è½½ get-pip.py"
     Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/get-pip.py"
-    if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦
-        # Ö´ÐÐget-pip.py
-        Print-Msg "Í¨¹ý get-pip.py °²×° Pip ÖÐ"
+    if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸ
+        # æ‰§è¡Œ get-pip.py
+        Print-Msg "é€šè¿‡ get-pip.py å®‰è£… Pip ä¸­"
         ./InvokeAI/python/python.exe ./InvokeAI/get-pip.py --no-warn-script-location
-        if ($?) { # ¼ì²âÊÇ·ñ°²×°³É¹¦
+        if ($?) { # æ£€æµ‹æ˜¯å¦å®‰è£…æˆåŠŸ
             Remove-Item -Path "./InvokeAI/get-pip.py"
-            Print-Msg "Pip °²×°³É¹¦"
+            Print-Msg "Pip å®‰è£…æˆåŠŸ"
         } else {
             Remove-Item -Path "./InvokeAI/get-pip.py"
-            Print-Msg "Pip °²×°Ê§°Ü, ÖÕÖ¹ InvokeAI °²×°½ø³Ì, ¿É³¢ÊÔÖØÐÂÔËÐÐ InvokeAI Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+            Print-Msg "Pip å®‰è£…å¤±è´¥, ç»ˆæ­¢ InvokeAI å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ InvokeAI Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
             Read-Host | Out-Null
             exit 1
         }
     } else {
-        Print-Msg "ÏÂÔØ get-pip.py Ê§°Ü"
-        Print-Msg "Pip °²×°Ê§°Ü, ÖÕÖ¹ InvokeAI °²×°½ø³Ì, ¿É³¢ÊÔÖØÐÂÔËÐÐ InvokeAI Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "ä¸‹è½½ get-pip.py å¤±è´¥"
+        Print-Msg "Pip å®‰è£…å¤±è´¥, ç»ˆæ­¢ InvokeAI å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ InvokeAI Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# °²×°invokeai
+# å®‰è£… InvokeAI
 function Install-InvokeAI {
-    # ÏÂÔØInvokeAI
-    Print-Msg "ÕýÔÚÏÂÔØ InvokeAI"
+    # ä¸‹è½½ InvokeAI
+    Print-Msg "æ­£åœ¨ä¸‹è½½ InvokeAI"
     ./InvokeAI/python/python.exe -m pip install "InvokeAI[xformers]"  --no-warn-script-location --use-pep517
-    if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦
-        Print-Msg "InvokeAI °²×°³É¹¦"
+    if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸ
+        Print-Msg "InvokeAI å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "InvokeAI °²×°Ê§°Ü, ÖÕÖ¹ InvokeAI °²×°½ø³Ì, ¿É³¢ÊÔÖØÐÂÔËÐÐ InvokeAI Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "InvokeAI å®‰è£…å¤±è´¥, ç»ˆæ­¢ InvokeAI å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ InvokeAI Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# ÖØ×°xformers
+# é‡è£… xFormers
 function Reinstall-Xformers {
     $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror_cu121
     $env:PIP_FIND_LINKS = $pip_find_mirror_cu121
-    $xformers_pkg = $(./InvokeAI/python/python.exe -m pip freeze | Select-String -Pattern "xformers") # ¼ì²âÊÇ·ñ°²×°ÁËxformers
-    $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # ¼ì²éÊÇ·ñ°æ±¾Îªcu118µÄ
-    $torch_ver = $(./InvokeAI/python/python.exe -m pip show torch | Select-String -Pattern "version") # »ñÈ¡pytorch°æ±¾ÐÅÏ¢
-    $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # ½ØÈ¡pytorch°æ±¾ºÅ
+    $xformers_pkg = $(./InvokeAI/python/python.exe -m pip freeze | Select-String -Pattern "xformers") # æ£€æµ‹æ˜¯å¦å®‰è£…äº† xFormers
+    $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # æ£€æŸ¥æ˜¯å¦ç‰ˆæœ¬ä¸º cu118 çš„
+    $torch_ver = $(./InvokeAI/python/python.exe -m pip show torch | Select-String -Pattern "version") # èŽ·å– PyTorch ç‰ˆæœ¬ä¿¡æ¯
+    $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # æˆªå– PyTorch ç‰ˆæœ¬å·
 
     if (Test-Path "./InvokeAI/cache/xformers.txt") {
-        # ¶ÁÈ¡xformers.txtÎÄ¼þµÄÄÚÈÝ
-        Print-Msg "¶ÁÈ¡ÉÏ´ÎµÄ xFormers °æ±¾¼ÇÂ¼"
+        # è¯»å– xformers.txt æ–‡ä»¶çš„å†…å®¹
+        Print-Msg "è¯»å–ä¸Šæ¬¡çš„ xFormers ç‰ˆæœ¬è®°å½•"
         $xformers_ver = Get-Content "./InvokeAI/cache/xformers.txt"
     }
 
     for ($i = 1; $i -le 3; $i++) {
-        if ($xformers_ver) { # ±¾µØ´æÔÚ°æ±¾¼ÇÂ¼£¨ÉÏ´Î°²×°xformersÎ´Íê³É£©
-            Print-Msg "°²×°: $xformers_ver"
+        if ($xformers_ver) { # æœ¬åœ°å­˜åœ¨ç‰ˆæœ¬è®°å½•ï¼ˆä¸Šæ¬¡å®‰è£… xFormers æœªå®Œæˆï¼‰
+            Print-Msg "å®‰è£…: $xformers_ver"
             ./InvokeAI/python/python.exe -m pip uninstall xformers -y
             ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir --no-deps
             if ($?) {
                 Remove-Item -Path "./InvokeAI/cache/xformers.txt"
-                Print-Msg "ÖØ×° xFormers ³É¹¦"
+                Print-Msg "é‡è£… xFormers æˆåŠŸ"
                 break
             } else {
-                Print-Msg "ÖØ×° xFormers Ê§°Ü"
+                Print-Msg "é‡è£… xFormers å¤±è´¥"
             }
-        } elseif ($xformers_pkg) { # ÒÑ°²×°ÁËxformers
-            if ($xformers_pkg_cu118) { # È·ÈÏxformersÊÇ·ñÎªcu118µÄ°æ±¾
-                Print-Msg "¼ì²âµ½ÒÑ°²×°µÄ xFormers Îª CU118 µÄ°æ±¾, ½«½øÐÐÖØ×°"
+        } elseif ($xformers_pkg) { # å·²å®‰è£…äº† xFormers
+            if ($xformers_pkg_cu118) { # ç¡®è®¤ xFormers æ˜¯å¦ä¸º cu118 çš„ç‰ˆæœ¬
+                Print-Msg "æ£€æµ‹åˆ°å·²å®‰è£…çš„ xFormers ä¸º CU118 çš„ç‰ˆæœ¬, å°†è¿›è¡Œé‡è£…"
                 $xformers_pkg = $xformers_pkg.ToString().Split("+")[0]
-                $xformers_pkg > ./InvokeAI/cache/xformers.txt # ½«°æ±¾ÐÅÏ¢´æÔÚ±¾µØ£¬ÓÃÓÚ°²×°Ê§°ÜÊ±»Ö¸´
+                $xformers_pkg > ./InvokeAI/cache/xformers.txt # å°†ç‰ˆæœ¬ä¿¡æ¯å­˜åœ¨æœ¬åœ°, ç”¨äºŽå®‰è£…å¤±è´¥æ—¶æ¢å¤
                 ./InvokeAI/python/python.exe -m pip uninstall xformers -y
                 ./InvokeAI/python/python.exe -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir --no-deps
                 if ($?) {
                     Remove-Item -Path "./InvokeAI/cache/xformers.txt"
-                    Print-Msg "ÖØ×° xFormers ³É¹¦"
+                    Print-Msg "é‡è£… xFormers æˆåŠŸ"
                     break
                 } else {
-                    Print-Msg "ÖØ×° xFormers Ê§°Ü"
+                    Print-Msg "é‡è£… xFormers å¤±è´¥"
                 }
             } else {
-                Print-Msg "ÎÞÐèÖØ×° xFormers"
+                Print-Msg "æ— éœ€é‡è£… xFormers"
                 break
             }
         } else {
-            Print-Msg "Î´°²×° xFormers, ³¢ÊÔ°²×°ÖÐ"
-            switch ($torch_ver) { # ÅÐ¶ÏÊÊºÏ°²×°µÄxformers°æ±¾
+            Print-Msg "æœªå®‰è£… xFormers, å°è¯•å®‰è£…ä¸­"
+            switch ($torch_ver) { # åˆ¤æ–­é€‚åˆå®‰è£…çš„ xFormers ç‰ˆæœ¬
                 1.12.1 {
                     $install_xformers_ver = "0.0.14"
                 }
@@ -222,80 +223,80 @@ function Reinstall-Xformers {
                 ./InvokeAI/python/python.exe -m pip install xformers==$install_xformers_ver --no-warn-script-location --no-cache-dir --no-deps
             }
 
-            if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦
-                Print-Msg "ÖØ×° xFormers ³É¹¦"
+            if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸ
+                Print-Msg "é‡è£… xFormers æˆåŠŸ"
                 break
             } else {
-                Print-Msg "ÖØ×° xFormers Ê§°Ü"
+                Print-Msg "é‡è£… xFormers å¤±è´¥"
             }
         }
 
-        if ($i -ge 3) { # ³¬³öÖØÊÔ´ÎÊýÊ±½øÐÐÌáÊ¾
-            Print-Msg "xFormers Î´ÄÜ³É¹¦°²×°, Õâ¿ÉÄÜµ¼ÖÂÊ¹ÓÃ InvokeAI Ê±ÏÔ´æÕ¼ÓÃÂÊÔö´ó, ¿É³¢ÊÔÖØÐÂÔËÐÐ InvokeAI Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        if ($i -ge 3) { # è¶…å‡ºé‡è¯•æ¬¡æ•°æ—¶è¿›è¡Œæç¤º
+            Print-Msg "xFormers æœªèƒ½æˆåŠŸå®‰è£…, è¿™å¯èƒ½å¯¼è‡´ä½¿ç”¨ InvokeAI æ—¶æ˜¾å­˜å ç”¨çŽ‡å¢žå¤§, å¯å°è¯•é‡æ–°è¿è¡Œ InvokeAI Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
             break
         } else {
-            Print-Msg "³¢ÊÔÖØÐÂ°²×° xFormers ÖÐ"
+            Print-Msg "å°è¯•é‡æ–°å®‰è£… xFormers ä¸­"
         }
     }
 }
 
 
-# ÏÂÔØpypatchmatch
+# ä¸‹è½½ PyPatchMatch
 function Install-PyPatchMatch {
     # PyPatchMatch
     $url_1 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll"
     $url_2 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll"
 
     if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
-        Print-Msg "ÏÂÔØ libpatchmatch_windows_amd64.dll ÖÐ"
+        Print-Msg "ä¸‹è½½ libpatchmatch_windows_amd64.dll ä¸­"
         Invoke-WebRequest -Uri $url_1 -OutFile "./InvokeAI/cache/libpatchmatch_windows_amd64.dll"
         if ($?) {
             Move-Item -Path "./InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
-            Print-Msg "ÏÂÔØ libpatchmatch_windows_amd64.dll ³É¹¦"
+            Print-Msg "ä¸‹è½½ libpatchmatch_windows_amd64.dll æˆåŠŸ"
         } else {
-            Print-Msg "ÏÂÔØ libpatchmatch_windows_amd64.dll Ê§°Ü"
+            Print-Msg "ä¸‹è½½ libpatchmatch_windows_amd64.dll å¤±è´¥"
         }
     } else {
-        Print-Msg "ÎÞÐèÏÂÔØ libpatchmatch_windows_amd64.dll"
+        Print-Msg "æ— éœ€ä¸‹è½½ libpatchmatch_windows_amd64.dll"
     }
 
     if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
-        Print-Msg "ÏÂÔØ opencv_world460.dll ÖÐ"
+        Print-Msg "ä¸‹è½½ opencv_world460.dll ä¸­"
         Invoke-WebRequest -Uri $url_2 -OutFile "./InvokeAI/cache/opencv_world460.dll"
         if ($?) {
             Move-Item -Path "./InvokeAI/cache/opencv_world460.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
-            Print-Msg "ÏÂÔØ opencv_world460.dll ³É¹¦"
+            Print-Msg "ä¸‹è½½ opencv_world460.dll æˆåŠŸ"
         } else {
-            Print-Msg "ÏÂÔØ opencv_world460.dll Ê§°Ü"
+            Print-Msg "ä¸‹è½½ opencv_world460.dll å¤±è´¥"
         }
     } else {
-        Print-Msg "ÎÞÐèÏÂÔØ opencv_world460.dll"
+        Print-Msg "æ— éœ€ä¸‹è½½ opencv_world460.dll"
     }
 }
 
 
-# ÏÂÔØÅäÖÃÎÄ¼þ
+# ä¸‹è½½é…ç½®æ–‡ä»¶
 function Download-Config-File($url, $path) {
     $length = $url.split("/").length
     $name = $url.split("/")[$length - 1]
     if (!(Test-Path $path)) {
-        Print-Msg "ÏÂÔØ $name ÖÐ"
+        Print-Msg "ä¸‹è½½ $name ä¸­"
         Invoke-WebRequest -Uri $url.ToString() -OutFile "./InvokeAI/cache/$name"
         if ($?) {
             Move-Item -Path "./InvokeAI/cache/$name" -Destination "$path"
-            Print-Msg "$name ÏÂÔØ³É¹¦"
+            Print-Msg "$name ä¸‹è½½æˆåŠŸ"
         } else {
-            Print-Msg "$name ÏÂÔØÊ§°Ü"
+            Print-Msg "$name ä¸‹è½½å¤±è´¥"
         }
     } else {
-        Print-Msg "$name ÒÑ´æÔÚ"
+        Print-Msg "$name å·²å­˜åœ¨"
     }
 }
 
 
-# Ô¤ÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ
+# é¢„ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶
 function Get-Model-Config-File {
-    Print-Msg "Ô¤ÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þÖÐ"
+    Print-Msg "é¢„ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶ä¸­"
     New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/stable-diffusion" -Force > $null
     New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/controlnet" -Force > $null
     Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
@@ -314,11 +315,11 @@ function Get-Model-Config-File {
     Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
     Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v15.yaml"
     Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v21.yaml"
-    Print-Msg "Ä£ÐÍÅäÖÃÎÄ¼þÏÂÔØÍê³É"
+    Print-Msg "æ¨¡åž‹é…ç½®æ–‡ä»¶ä¸‹è½½å®Œæˆ"
 }
 
 
-# °²×°
+# å®‰è£…
 function Check-Install {
     if (!(Test-Path "./InvokeAI")) {
         New-Item -ItemType Directory -Path "./InvokeAI" > $null
@@ -328,83 +329,83 @@ function Check-Install {
         New-Item -ItemType Directory -Path "./InvokeAI/cache" > $null
     }
 
-    Print-Msg "¼ì²âÊÇ·ñ°²×° Python"
+    Print-Msg "æ£€æµ‹æ˜¯å¦å®‰è£… Python"
     $python_path = "./InvokeAI/python/python.exe"
     if (Test-Path $python_path) {
-        Print-Msg "Python ÒÑ°²×°"
+        Print-Msg "Python å·²å®‰è£…"
     } else {
-        Print-Msg "Python Î´°²×°"
+        Print-Msg "Python æœªå®‰è£…"
         Install-Python
     }
 
-    Print-Msg "¼ì²éÊÇ·ñ°²×° Pip"
+    Print-Msg "æ£€æŸ¥æ˜¯å¦å®‰è£… Pip"
     ./InvokeAI/python/python.exe -c "import pip" 2> $null
     if ($?) {
-        Print-Msg "Pip ÒÑ°²×°"
+        Print-Msg "Pip å·²å®‰è£…"
     } else {
-        Print-Msg "Pip Î´°²×°"
+        Print-Msg "Pip æœªå®‰è£…"
         Install-Pip
     }
 
-    Print-Msg "¼ì²éÊÇ·ñ°²×° InvokeAI"
+    Print-Msg "æ£€æŸ¥æ˜¯å¦å®‰è£… InvokeAI"
     $invokeai_path = "./InvokeAI/python/Scripts/invokeai-web.exe"
     if (Test-Path $invokeai_path) {
-        Print-Msg "InvokeAI ÒÑ°²×°"
+        Print-Msg "InvokeAI å·²å®‰è£…"
     } else {
-        Print-Msg "InvokeAI Î´°²×°"
+        Print-Msg "InvokeAI æœªå®‰è£…"
         Install-InvokeAI
     }
 
-    # Print-Msg "¼ì²âÊÇ·ñÐèÒªÖØ×° xFormers"
+    # Print-Msg "æ£€æµ‹æ˜¯å¦éœ€è¦é‡è£… xFormers"
     # Reinstall-Xformers
 
-    Print-Msg "¼ì²âÊÇ·ñÐèÒª°²×° PyPatchMatch"
+    Print-Msg "æ£€æµ‹æ˜¯å¦éœ€è¦å®‰è£… PyPatchMatch"
     Install-PyPatchMatch
 
-    Print-Msg "¼ì²âÊÇ·ñÐèÒªÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ"
+    Print-Msg "æ£€æµ‹æ˜¯å¦éœ€è¦ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶"
     Get-Model-Config-File
 }
 
 
-# Æô¶¯½Å±¾
+# å¯åŠ¨è„šæœ¬
 function Write-Launch-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
-Print-Msg `"³õÊ¼»¯ÖÐ`"
+Print-Msg `"åˆå§‹åŒ–ä¸­`"
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# Huggingface ¾µÏñÔ´
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯ÉèÖÃhuggingface¾µÏñÔ´
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # ±¾µØ´æÔÚhuggingface¾µÏñÔ´ÅäÖÃ
+# Huggingface é•œåƒæº
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨äº†è‡ªåŠ¨è®¾ç½®huggingfaceé•œåƒæº
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # æœ¬åœ°å­˜åœ¨huggingfaceé•œåƒæºé…ç½®
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
         `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ mirror.txt ÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡¸ÃÅäÖÃ²¢ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-    } else { # Ê¹ÓÃÄ¬ÈÏÉèÖÃ
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ mirror.txt é…ç½®æ–‡ä»¶, å·²è¯»å–è¯¥é…ç½®å¹¶è®¾ç½® HuggingFace é•œåƒæº`"
+    } else { # ä½¿ç”¨é»˜è®¤è®¾ç½®
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"Ê¹ÓÃÄ¬ÈÏ HuggingFace ¾µÏñÔ´`"
+        Print-Msg `"ä½¿ç”¨é»˜è®¤ HuggingFace é•œåƒæº`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_mirror.txt ¾µÏñÔ´ÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ HuggingFace ¾µÏñÔ´`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_mirror.txt é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº`"
 }
 
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
@@ -426,19 +427,19 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯Éè
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
-Print-Msg `"½«Ê¹ÓÃä¯ÀÀÆ÷´ò¿ª http://127.0.0.1:9090 µØÖ·£¬½øÈë InvokeAI µÄ½çÃæ`"
-Print-Msg `"ÌáÊ¾: ´ò¿ªä¯ÀÀÆ÷ºó, ä¯ÀÀÆ÷¿ÉÄÜ»áÏÔÊ¾Á¬½ÓÊ§°Ü£¬ÕâÊÇÒòÎª InvokeAI Î´Íê³ÉÆô¶¯, ¿ÉÒÔÔÚµ¯³öµÄ PowerShell ÖÐ²é¿´ InvokeAI µÄÆô¶¯¹ý³Ì, µÈ´ý InvokeAI Æô¶¯Íê³ÉºóË¢ÐÂä¯ÀÀÆ÷ÍøÒ³¼´¿É`"
-Print-Msg `"ÌáÊ¾£ºÈç¹û PowerShell ½çÃæ³¤Ê±¼ä²»¶¯£¬²¢ÇÒ InvokeAI Î´Æô¶¯£¬¿ÉÒÔ³¢ÊÔ°´ÏÂ¼¸´Î»Ø³µ¼ü`"
+Print-Msg `"å°†ä½¿ç”¨æµè§ˆå™¨æ‰“å¼€ http://127.0.0.1:9090 åœ°å€ï¼Œè¿›å…¥ InvokeAI çš„ç•Œé¢`"
+Print-Msg `"æç¤º: æ‰“å¼€æµè§ˆå™¨åŽ, æµè§ˆå™¨å¯èƒ½ä¼šæ˜¾ç¤ºè¿žæŽ¥å¤±è´¥ï¼Œè¿™æ˜¯å› ä¸º InvokeAI æœªå®Œæˆå¯åŠ¨, å¯ä»¥åœ¨å¼¹å‡ºçš„ PowerShell ä¸­æŸ¥çœ‹ InvokeAI çš„å¯åŠ¨è¿‡ç¨‹, ç­‰å¾… InvokeAI å¯åŠ¨å®ŒæˆåŽåˆ·æ–°æµè§ˆå™¨ç½‘é¡µå³å¯`"
+Print-Msg `"æç¤ºï¼šå¦‚æžœ PowerShell ç•Œé¢é•¿æ—¶é—´ä¸åŠ¨ï¼Œå¹¶ä¸” InvokeAI æœªå¯åŠ¨ï¼Œå¯ä»¥å°è¯•æŒ‰ä¸‹å‡ æ¬¡å›žè½¦é”®`"
 Start-Sleep -Seconds 2
-Print-Msg `"µ÷ÓÃä¯ÀÀÆ÷´ò¿ªµØÖ·ÖÐ`"
+Print-Msg `"è°ƒç”¨æµè§ˆå™¨æ‰“å¼€åœ°å€ä¸­`"
 Start-Process `"http://127.0.0.1:9090`"
-Print-Msg `"Æô¶¯ InvokeAI ÖÐ`"
+Print-Msg `"å¯åŠ¨ InvokeAI ä¸­`"
 ./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
 `$req = `$?
 if (`$req) {
-    Print-Msg `"InvokeAI Õý³£ÍË³ö`"
+    Print-Msg `"InvokeAI æ­£å¸¸é€€å‡º`"
 } else {
-    Print-Msg `"InvokeAI ³öÏÖÒì³£, ÒÑÍË³ö`"
+    Print-Msg `"InvokeAI å‡ºçŽ°å¼‚å¸¸, å·²é€€å‡º`"
 }
 Read-Host | Out-Null
 "
@@ -447,7 +448,7 @@ Read-Host | Out-Null
 }
 
 
-# ¸üÐÂ½Å±¾
+# æ›´æ–°è„šæœ¬
 function Write-Update-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -455,25 +456,25 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# »·¾³±äÁ¿
+# çŽ¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -493,19 +494,19 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
-Print-Msg `"¸üÐÂ InvokeAI ÖÐ`"
+Print-Msg `"æ›´æ–° InvokeAI ä¸­`"
 `$ver = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
 ./python/python.exe -m pip install `"InvokeAI[xformers]`" --upgrade --no-warn-script-location --use-pep517
 if (`$?) {
     `$ver_ = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$ver -eq `$ver_) {
-        Print-Msg `"InvokeAI ÒÑÎª×îÐÂ°æ£¬µ±Ç°°æ±¾£º`$ver_`"
+        Print-Msg `"InvokeAI å·²ä¸ºæœ€æ–°ç‰ˆï¼Œå½“å‰ç‰ˆæœ¬ï¼š`$ver_`"
     } else {
-        Print-Msg `"InvokeAI ¸üÐÂ³É¹¦£¬°æ±¾£º`$ver -> `$ver_`"
+        Print-Msg `"InvokeAI æ›´æ–°æˆåŠŸï¼Œç‰ˆæœ¬ï¼š`$ver -> `$ver_`"
     }
-    Print-Msg `"¸Ã°æ±¾¸üÐÂÈÕÖ¾£ºhttps://github.com/invoke-ai/InvokeAI/releases/latest`"
+    Print-Msg `"è¯¥ç‰ˆæœ¬æ›´æ–°æ—¥å¿—ï¼šhttps://github.com/invoke-ai/InvokeAI/releases/latest`"
 } else {
-    Print-Msg `"InvokeAI ¸üÐÂÊ§°Ü`"
+    Print-Msg `"InvokeAI æ›´æ–°å¤±è´¥`"
 }
 Read-Host | Out-Null
 "
@@ -514,7 +515,7 @@ Read-Host | Out-Null
 }
 
 
-# Êý¾Ý¿âÐÞ¸´
+# æ•°æ®åº“ä¿®å¤
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -523,9 +524,9 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-Print-Msg `"ÐÞ¸´ InvokeAI Êý¾Ý¿âÖÐ`"
+Print-Msg `"ä¿®å¤ InvokeAI æ•°æ®åº“ä¸­`"
 ./python/Scripts/invokeai-db-maintenance.exe --operation all --root `"`$PSScriptRoot/invokeai`"
-Print-Msg `"ÐÞ¸´ InvokeAI Êý¾Ý¿âÍê³É`"
+Print-Msg `"ä¿®å¤ InvokeAI æ•°æ®åº“å®Œæˆ`"
 Read-Host | Out-Null
 "
 
@@ -533,7 +534,7 @@ Read-Host | Out-Null
 }
 
 
-# »ñÈ¡°²×°½Å±¾
+# èŽ·å–å®‰è£…è„šæœ¬
 function Write-InvokeAI-Install-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -541,46 +542,46 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# ¿ÉÓÃµÄÏÂÔØÔ´
+# å¯ç”¨çš„ä¸‹è½½æº
 `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
 `$count = `$urls.Length
 `$i = 0
 
 ForEach (`$url in `$urls) {
-    Print-Msg `"ÕýÔÚÏÂÔØ×îÐÂµÄ InvokeAI Installer ½Å±¾`"
+    Print-Msg `"æ­£åœ¨ä¸‹è½½æœ€æ–°çš„ InvokeAI Installer è„šæœ¬`"
     Invoke-WebRequest -Uri `$url -OutFile `"./cache/invokeai_installer.ps1`"
     if (`$?) {
         if (Test-Path `"../invokeai_installer.ps1`") {
-            Print-Msg `"É¾³ýÔ­ÓÐµÄ InvokeAI Installer ½Å±¾`"
+            Print-Msg `"åˆ é™¤åŽŸæœ‰çš„ InvokeAI Installer è„šæœ¬`"
             Remove-Item `"../invokeai_installer.ps1`" -Force
         }
         Move-Item -Path `"./cache/invokeai_installer.ps1`" -Destination `"../invokeai_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-        Print-Msg `"ÏÂÔØ InvokeAI Installer ½Å±¾³É¹¦, ½Å±¾Â·¾¶Îª `$parentDirectory\invokeai_installer.ps1`"
+        Print-Msg `"ä¸‹è½½ InvokeAI Installer è„šæœ¬æˆåŠŸ, è„šæœ¬è·¯å¾„ä¸º `$parentDirectory\invokeai_installer.ps1`"
         break
     } else {
-        Print-Msg `"ÏÂÔØ InvokeAI Installer ½Å±¾Ê§°Ü`"
+        Print-Msg `"ä¸‹è½½ InvokeAI Installer è„šæœ¬å¤±è´¥`"
         `$i += 1
         if (`$i -lt `$count) {
-            Print-Msg `"ÖØÊÔÏÂÔØ InvokeAI Installer ½Å±¾`"
+            Print-Msg `"é‡è¯•ä¸‹è½½ InvokeAI Installer è„šæœ¬`"
         }
     }
 }
@@ -591,7 +592,7 @@ Read-Host | Out-Null
 }
 
 
-# ÐéÄâ»·¾³¼¤»î½Å±¾
+# è™šæ‹ŸçŽ¯å¢ƒæ¿€æ´»è„šæœ¬
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
@@ -602,42 +603,42 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# Huggingface ¾µÏñÔ´
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯ÉèÖÃhuggingface¾µÏñÔ´
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # ±¾µØ´æÔÚhuggingface¾µÏñÔ´ÅäÖÃ
+# HuggingFace é•œåƒæº
+if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨äº†è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº
+    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # æœ¬åœ°å­˜åœ¨ HuggingFace é•œåƒæºé…ç½®
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
         `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ mirror.txt ÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡¸ÃÅäÖÃ²¢ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-    } else { # Ê¹ÓÃÄ¬ÈÏÉèÖÃ
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ mirror.txt é…ç½®æ–‡ä»¶, å·²è¯»å–è¯¥é…ç½®å¹¶è®¾ç½® HuggingFace é•œåƒæº`"
+    } else { # ä½¿ç”¨é»˜è®¤è®¾ç½®
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"Ê¹ÓÃÄ¬ÈÏ HuggingFace ¾µÏñÔ´`"
+        Print-Msg `"ä½¿ç”¨é»˜è®¤ HuggingFace é•œåƒæº`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_mirror.txt ¾µÏñÔ´ÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ HuggingFace ¾µÏñÔ´`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_mirror.txt é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº`"
 }
 
-# »·¾³±äÁ¿
+# çŽ¯å¢ƒå˜é‡
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # ½«pythonÌí¼Óµ½»·¾³±äÁ¿
+`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # å°†pythonæ·»åŠ åˆ°çŽ¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -657,15 +658,15 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯Éè
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
-Print-Msg `"¼¤»î InvokeAI Env`"
-Print-Msg `"¸ü¶à°ïÖúÐÅÏ¢¿ÉÔÚ InvokeAI Installer ÏîÄ¿µØÖ·²é¿´: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+Print-Msg `"æ¿€æ´» InvokeAI Env`"
+Print-Msg `"æ›´å¤šå¸®åŠ©ä¿¡æ¯å¯åœ¨ InvokeAI Installer é¡¹ç›®åœ°å€æŸ¥çœ‹: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 "
 
     Set-Content -Path "./InvokeAI/activate.ps1" -Value $content
 }
 
 
-# pytorchÖØ×°½Å±¾
+# PyTorch é‡è£…è„šæœ¬
 function Write-PyTorch-ReInstall-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -673,25 +674,7 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
-`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼þ²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
-        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖÐµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
-    }
-} else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼þ, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
-}
-
-# »·¾³±äÁ¿
+# çŽ¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -711,21 +694,21 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 
-Print-Msg `"ÊÇ·ñÖØÐÂ°²×° PyTorch (yes/no)?`"
-Print-Msg `"ÌáÊ¾: ÊäÈë yes È·ÈÏ»ò no È¡Ïû (Ä¬ÈÏÎª no)`"
+Print-Msg `"æ˜¯å¦é‡æ–°å®‰è£… PyTorch (yes/no)?`"
+Print-Msg `"æç¤º: è¾“å…¥ yes ç¡®è®¤æˆ– no å–æ¶ˆ (é»˜è®¤ä¸º no)`"
 `$arg = Read-Host `"===========================================>`"
 if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-    Print-Msg `"Ð¶ÔØÔ­ÓÐµÄ PyTorch`"
+    Print-Msg `"å¸è½½åŽŸæœ‰çš„ PyTorch`"
     ./python/python.exe -m pip uninstall torch torchvision torchaudio xformers -y
-    Print-Msg `"ÖØÐÂ°²×° PyTorch`"
+    Print-Msg `"é‡æ–°å®‰è£… PyTorch`"
     ./python/python.exe -m pip install `"InvokeAI[xformers]`" --no-warn-script-location --use-pep517
     if (`$?) {
-        Print-Msg `"ÖØÐÂ°²×° PyTorch ³É¹¦`"
+        Print-Msg `"é‡æ–°å®‰è£… PyTorch æˆåŠŸ`"
     } else {
-        Print-Msg `"ÖØÐÂ°²×° PyTorch Ê§°Ü, ÇëÖØÐÂÔËÐÐ PyTorch ÖØ×°½Å±¾`"
+        Print-Msg `"é‡æ–°å®‰è£… PyTorch å¤±è´¥, è¯·é‡æ–°è¿è¡Œ PyTorch é‡è£…è„šæœ¬`"
     }
 } else {
-    Print-Msg `"È¡ÏûÖØ×° PyTorch`"
+    Print-Msg `"å–æ¶ˆé‡è£… PyTorch`"
 }
 
 Read-Host | Out-Null
@@ -735,38 +718,38 @@ Read-Host | Out-Null
 }
 
 
-# ÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ½Å±¾
+# ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶è„šæœ¬
 function Wirte-Download-Config-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
 
-# ÏûÏ¢Êä³ö
+# æ¶ˆæ¯è¾“å‡º
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
-# ÏÂÔØÅäÖÃÎÄ¼þ
+# ä¸‹è½½é…ç½®æ–‡ä»¶
 function Download-Config-File(`$url, `$path) {
     `$length = `$url.split(`"/`").length
     `$name = `$url.split(`"/`")[`$length - 1]
     if (!(Test-Path `$path)) {
-        Print-Msg `"ÏÂÔØ `$name ÖÐ`"
+        Print-Msg `"ä¸‹è½½ `$name ä¸­`"
         Invoke-WebRequest -Uri `$url.ToString() -OutFile `"./cache/`$name`"
         if (`$?) {
             Move-Item -Path `"./cache/`$name`" -Destination `"`$path`"
-            Print-Msg `"`$name ÏÂÔØ³É¹¦`"
+            Print-Msg `"`$name ä¸‹è½½æˆåŠŸ`"
         } else {
-            Print-Msg `"`$name ÏÂÔØÊ§°Ü`"
+            Print-Msg `"`$name ä¸‹è½½å¤±è´¥`"
         }
     } else {
-        Print-Msg `"`$name ÒÑ´æÔÚ`"
+        Print-Msg `"`$name å·²å­˜åœ¨`"
     }
 }
 
 
-# Ô¤ÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ
+# é¢„ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶
 function Get-Model-Config-File {
-    Print-Msg `"Ô¤ÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þÖÐ`"
+    Print-Msg `"é¢„ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶ä¸­`"
     New-Item -ItemType Directory -Path `"./cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"./invokeai/configs/stable-diffusion`" -Force > `$null
     New-Item -ItemType Directory -Path `"./invokeai/configs/controlnet`" -Force > `$null
@@ -786,7 +769,7 @@ function Get-Model-Config-File {
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-midas-inference.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml`" `"./invokeai/configs/controlnet/cldm_v15.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml`" `"./invokeai/configs/controlnet/cldm_v21.yaml`"
-    Print-Msg `"Ä£ÐÍÅäÖÃÎÄ¼þÏÂÔØÍê³É`"
+    Print-Msg `"æ¨¡åž‹é…ç½®æ–‡ä»¶ä¸‹è½½å®Œæˆ`"
 }
 
 Get-Model-Config-File
@@ -795,67 +778,67 @@ Read-Host | Out-Null
     Set-Content -Path "./InvokeAI/download_config.ps1" -Value $content
 }
 
-# °ïÖúÎÄµµ
+# å¸®åŠ©æ–‡æ¡£
 function Write-ReadMe {
     $content = "==================================
 InvokeAI Installer created by licyk
-ßÙÁ¨ßÙÁ¨£ºhttps://space.bilibili.com/46497516
-Github£ºhttps://github.com/licyk
+å“”å“©å“”å“©ï¼šhttps://space.bilibili.com/46497516
+Githubï¼šhttps://github.com/licyk
 ==================================
 
-ÕâÊÇ¹ØÓÚ InvokeAI µÄ¼òµ¥Ê¹ÓÃÎÄµµ¡£
+è¿™æ˜¯å…³äºŽ InvokeAI çš„ç®€å•ä½¿ç”¨æ–‡æ¡£ã€‚
 
-Ê¹ÓÃ InvokeAI Installer ½øÐÐ°²×°²¢°²×°³É¹¦ºó£¬½«ÔÚµ±Ç°Ä¿Â¼Éú³É InvokeAI ÎÄ¼þ¼Ð£¬ÒÔÏÂÎªÎÄ¼þ¼ÐÖÐ²»Í¬ÎÄ¼þ / ÎÄ¼þ¼ÐµÄ×÷ÓÃ¡£
+ä½¿ç”¨ InvokeAI Installer è¿›è¡Œå®‰è£…å¹¶å®‰è£…æˆåŠŸåŽï¼Œå°†åœ¨å½“å‰ç›®å½•ç”Ÿæˆ InvokeAI æ–‡ä»¶å¤¹ï¼Œä»¥ä¸‹ä¸ºæ–‡ä»¶å¤¹ä¸­ä¸åŒæ–‡ä»¶ / æ–‡ä»¶å¤¹çš„ä½œç”¨ã€‚
 
-cache£º»º´æÎÄ¼þ¼Ð£¬±£´æ×Å Pip / HuggingFace µÈ»º´æÎÄ¼þ¡£
-python£ºPython µÄ´æ·ÅÂ·¾¶£¬InvokeAI °²×°µÄÎ»ÖÃÔÚ´Ë´¦£¬Èç¹ûÐèÒªÖØ×° InvokeAI£¬¿É½«¸ÃÎÄ¼þ¼ÐÉ¾³ý£¬²¢Ê¹ÓÃ InvokeAI Installer ÖØÐÂ²¿Êð InvokeAI¡£Çë×¢Òâ£¬ÇëÎð½«¸Ã Python ÎÄ¼þ¼ÐÌí¼Óµ½»·¾³±äÁ¿£¬Õâ¿ÉÄÜµ¼ÖÂ²»Á¼ºó¹û¡£
-invokeai£ºInvokeAI ´æ·ÅÄ£ÐÍ¡¢Í¼Æ¬µÈµÄÎÄ¼þ¼Ð¡£
-activate.ps1£ºÐéÄâ»·¾³¼¤»î½Å±¾£¬Ê¹ÓÃ¸Ã½Å±¾¼¤»îÐéÄâ»·¾³ºó¼´¿ÉÊ¹ÓÃ Python¡¢Pip¡¢InvokeAI µÄÃüÁî¡£
-get_invokeai_installer.ps1£º»ñÈ¡×îÐÂµÄ InvokeAI Installer °²×°½Å±¾£¬ÔËÐÐºó½«»áÔÚÓë InvokeAI ÎÄ¼þ¼ÐÍ¬¼¶µÄÄ¿Â¼ÖÐÉú³É invokeai_installer.ps1 °²×°½Å±¾¡£
-update.ps1£º¸üÐÂ InvokeAI µÄ½Å±¾£¬¿ÉÊ¹ÓÃ¸Ã½Å±¾¸üÐÂ InvokeAI¡£
-launch.ps1£ºÆô¶¯ InvokeAI µÄ½Å±¾¡£
-fix_db.ps1£ºÐÞ¸´ InvokeAI Êý¾Ý¿â½Å±¾£¬½â¾öÉ¾³ý InvokeAI µÄÍ¼Æ¬ºóÔÚ½çÃæÖÐ³öÏÖÎÞÐ§Í¼Æ¬µÄÎÊÌâ¡£
-reinstall_pytorch.ps1£ºÖØ×° PyTorch ½Å±¾£¬½â¾ö PyTorch ÎÞ·¨Õý³£Ê¹ÓÃ»òÕß xFormers °æ±¾²»Æ¥Åäµ¼ÖÂÎÞ·¨µ÷ÓÃµÄÎÊÌâ¡£
-download_config.ps1£ºÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ£¬µ±É¾³ý invokeai ÎÄ¼þ¼Ðºó£¬InvokeAI ½«ÖØÐÂÏÂÔØÄ£ÐÍÅäÖÃÎÄ¼þ£¬µ«ÔÚÎÞ´úÀíµÄÇé¿öÏÂ¿ÉÄÜÏÂÔØÊ§°Ü£¬ËùÒÔ¿ÉÒÔÍ¨¹ý¸Ã½Å±¾½øÐÐÏÂÔØ¡£
-help.txt£º°ïÖúÎÄµµ¡£
+cacheï¼šç¼“å­˜æ–‡ä»¶å¤¹ï¼Œä¿å­˜ç€ Pip / HuggingFace ç­‰ç¼“å­˜æ–‡ä»¶ã€‚
+pythonï¼šPython çš„å­˜æ”¾è·¯å¾„ï¼ŒInvokeAI å®‰è£…çš„ä½ç½®åœ¨æ­¤å¤„ï¼Œå¦‚æžœéœ€è¦é‡è£… InvokeAIï¼Œå¯å°†è¯¥æ–‡ä»¶å¤¹åˆ é™¤ï¼Œå¹¶ä½¿ç”¨ InvokeAI Installer é‡æ–°éƒ¨ç½² InvokeAIã€‚è¯·æ³¨æ„ï¼Œè¯·å‹¿å°†è¯¥ Python æ–‡ä»¶å¤¹æ·»åŠ åˆ°çŽ¯å¢ƒå˜é‡ï¼Œè¿™å¯èƒ½å¯¼è‡´ä¸è‰¯åŽæžœã€‚
+invokeaiï¼šInvokeAI å­˜æ”¾æ¨¡åž‹ã€å›¾ç‰‡ç­‰çš„æ–‡ä»¶å¤¹ã€‚
+activate.ps1ï¼šè™šæ‹ŸçŽ¯å¢ƒæ¿€æ´»è„šæœ¬ï¼Œä½¿ç”¨è¯¥è„šæœ¬æ¿€æ´»è™šæ‹ŸçŽ¯å¢ƒåŽå³å¯ä½¿ç”¨ Pythonã€Pipã€InvokeAI çš„å‘½ä»¤ã€‚
+get_invokeai_installer.ps1ï¼šèŽ·å–æœ€æ–°çš„ InvokeAI Installer å®‰è£…è„šæœ¬ï¼Œè¿è¡ŒåŽå°†ä¼šåœ¨ä¸Ž InvokeAI æ–‡ä»¶å¤¹åŒçº§çš„ç›®å½•ä¸­ç”Ÿæˆ invokeai_installer.ps1 å®‰è£…è„šæœ¬ã€‚
+update.ps1ï¼šæ›´æ–° InvokeAI çš„è„šæœ¬ï¼Œå¯ä½¿ç”¨è¯¥è„šæœ¬æ›´æ–° InvokeAIã€‚
+launch.ps1ï¼šå¯åŠ¨ InvokeAI çš„è„šæœ¬ã€‚
+fix_db.ps1ï¼šä¿®å¤ InvokeAI æ•°æ®åº“è„šæœ¬ï¼Œè§£å†³åˆ é™¤ InvokeAI çš„å›¾ç‰‡åŽåœ¨ç•Œé¢ä¸­å‡ºçŽ°æ— æ•ˆå›¾ç‰‡çš„é—®é¢˜ã€‚
+reinstall_pytorch.ps1ï¼šé‡è£… PyTorch è„šæœ¬ï¼Œè§£å†³ PyTorch æ— æ³•æ­£å¸¸ä½¿ç”¨æˆ–è€… xFormers ç‰ˆæœ¬ä¸åŒ¹é…å¯¼è‡´æ— æ³•è°ƒç”¨çš„é—®é¢˜ã€‚
+download_config.ps1ï¼šä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶ï¼Œå½“åˆ é™¤ invokeai æ–‡ä»¶å¤¹åŽï¼ŒInvokeAI å°†é‡æ–°ä¸‹è½½æ¨¡åž‹é…ç½®æ–‡ä»¶ï¼Œä½†åœ¨æ— ä»£ç†çš„æƒ…å†µä¸‹å¯èƒ½ä¸‹è½½å¤±è´¥ï¼Œæ‰€ä»¥å¯ä»¥é€šè¿‡è¯¥è„šæœ¬è¿›è¡Œä¸‹è½½ã€‚
+help.txtï¼šå¸®åŠ©æ–‡æ¡£ã€‚
 
 
-ÒªÆô¶¯ InvokeAI£¬ÔÚ InvokeAI ÎÄ¼þ¼ÐÖÐÕÒµ½ launch.ps1 ½Å±¾£¬ÓÒ¼üÕâ¸ö½Å±¾£¬Ñ¡ÔñÊ¹ÓÃ PowerShell ÔËÐÐ£¬µÈ´ý InvokeAI Æô¶¯Íê³É£¬Æô¶¯Íê³Éºó½«ÔÚ¿ØÖÆÌ¨ÏÔÊ¾·ÃÎÊµØÖ·£¬µØÖ·Îª http://127.0.0.1:9090£¬½«¸ÃµØÖ·ÊäÈëä¯ÀÀÆ÷µØÖ·À¸²¢»Ø³µºó½øÈë InvokeAI ½çÃæ¡£
+è¦å¯åŠ¨ InvokeAIï¼Œåœ¨ InvokeAI æ–‡ä»¶å¤¹ä¸­æ‰¾åˆ° launch.ps1 è„šæœ¬ï¼Œå³é”®è¿™ä¸ªè„šæœ¬ï¼Œé€‰æ‹©ä½¿ç”¨ PowerShell è¿è¡Œï¼Œç­‰å¾… InvokeAI å¯åŠ¨å®Œæˆï¼Œå¯åŠ¨å®ŒæˆåŽå°†åœ¨æŽ§åˆ¶å°æ˜¾ç¤ºè®¿é—®åœ°å€ï¼Œåœ°å€ä¸º http://127.0.0.1:9090ï¼Œå°†è¯¥åœ°å€è¾“å…¥æµè§ˆå™¨åœ°å€æ å¹¶å›žè½¦åŽè¿›å…¥ InvokeAI ç•Œé¢ã€‚
 
-InvokeAI Ä¬ÈÏµÄ½çÃæÓïÑÔÎªÓ¢ÎÄ£¬ÔÚ InvokeAI ×óÏÂ½ÇµÄ³ÝÂÖÍ¼±ê£¬µã½ø Settings£¬ÔÚ Language Ñ¡ÏîÑ¡Ôñ¼òÌåÖÐÎÄ¼´¿É½«½çÃæÓïÑÔÉèÖÃÎªÖÐÎÄ¡£
+InvokeAI é»˜è®¤çš„ç•Œé¢è¯­è¨€ä¸ºè‹±æ–‡ï¼Œåœ¨ InvokeAI å·¦ä¸‹è§’çš„é½¿è½®å›¾æ ‡ï¼Œç‚¹è¿› Settingsï¼Œåœ¨ Language é€‰é¡¹é€‰æ‹©ç®€ä½“ä¸­æ–‡å³å¯å°†ç•Œé¢è¯­è¨€è®¾ç½®ä¸ºä¸­æ–‡ã€‚
 
-Ê¹ÓÃ InvokeAI Ê±£¬½¨ÒéÔÄ¶ÁÏÂÁÐ½Ì³Ì£¬ÒÔ¸ü¿ìµÄÁË½â²¢ÕÆÎÕÊ¹ÓÃ InvokeAI µÄ·½·¨¡£
-¸øËùÓÐÏëÑ§Ï°AI¸¨Öú»æ»­µÄÈËµÄÈëÃÅ¿Î By Yuno779£ºhttps://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
+ä½¿ç”¨ InvokeAI æ—¶ï¼Œå»ºè®®é˜…è¯»ä¸‹åˆ—æ•™ç¨‹ï¼Œä»¥æ›´å¿«çš„äº†è§£å¹¶æŽŒæ¡ä½¿ç”¨ InvokeAI çš„æ–¹æ³•ã€‚
+ç»™æ‰€æœ‰æƒ³å­¦ä¹ AIè¾…åŠ©ç»˜ç”»çš„äººçš„å…¥é—¨è¯¾ By Yuno779ï¼šhttps://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
 
-½Å±¾Îª InvokeAI ÉèÖÃÁË HuggingFace ¾µÏñÔ´£¬½â¾ö¹úÄÚÎÞ·¨Ö±½Ó·ÃÎÊ HuggingFace£¬µ¼ÖÂ InvokeAI µÄÄ£ÐÍ¹ÜÀíÎÞ·¨´Ó HuggingFace ÏÂÔØÄ£ÐÍµÄÎÊÌâ¡£
-Èç¹ûÏë×Ô¶¨Òå HuggingFace ¾µÏñÔ´£¬¿ÉÒÔÔÚ±¾µØ´´½¨ mirror.txt ÎÄ¼þ£¬ÔÚÎÄ¼þÖÐÌîÐ´ HuggingFace ¾µÏñÔ´µÄµØÖ·ºó±£´æ£¬ÔÙ´ÎÆô¶¯½Å±¾Ê±½«×Ô¶¯¶ÁÈ¡ÅäÖÃ¡£
-Èç¹ûÐèÒª½ûÓÃ HuggingFace ¾µÏñÔ´£¬Ôò´´½¨ disable_mirror.txt ÎÄ¼þ£¬Æô¶¯½Å±¾Ê±½«²»ÔÙÉèÖÃ HuggingFace ¾µÏñÔ´¡£
+è„šæœ¬ä¸º InvokeAI è®¾ç½®äº† HuggingFace é•œåƒæºï¼Œè§£å†³å›½å†…æ— æ³•ç›´æŽ¥è®¿é—® HuggingFaceï¼Œå¯¼è‡´ InvokeAI çš„æ¨¡åž‹ç®¡ç†æ— æ³•ä»Ž HuggingFace ä¸‹è½½æ¨¡åž‹çš„é—®é¢˜ã€‚
+å¦‚æžœæƒ³è‡ªå®šä¹‰ HuggingFace é•œåƒæºï¼Œå¯ä»¥åœ¨æœ¬åœ°åˆ›å»º mirror.txt æ–‡ä»¶ï¼Œåœ¨æ–‡ä»¶ä¸­å¡«å†™ HuggingFace é•œåƒæºçš„åœ°å€åŽä¿å­˜ï¼Œå†æ¬¡å¯åŠ¨è„šæœ¬æ—¶å°†è‡ªåŠ¨è¯»å–é…ç½®ã€‚
+å¦‚æžœéœ€è¦ç¦ç”¨ HuggingFace é•œåƒæºï¼Œåˆ™åˆ›å»º disable_mirror.txt æ–‡ä»¶ï¼Œå¯åŠ¨è„šæœ¬æ—¶å°†ä¸å†è®¾ç½® HuggingFace é•œåƒæºã€‚
 
-ÒÔÏÂÎª¿ÉÓÃµÄ HuggingFace ¾µÏñÔ´µØÖ·£º
+ä»¥ä¸‹ä¸ºå¯ç”¨çš„ HuggingFace é•œåƒæºåœ°å€ï¼š
 https://hf-mirror.com
 https://huggingface.sukaka.top
 
-ÈôÒªÎª½Å±¾ÉèÖÃ´úÀí£¬ÔòÔÚ´úÀíÈí¼þÖÐ´ò¿ªÏµÍ³´úÀíÄ£Ê½¼´¿É£¬»òÕßÔÚ±¾µØ´´½¨ proxy.txt ÎÄ¼þ£¬ÔÚÎÄ¼þÖÐÌîÐ´´úÀíµØÖ·ºó±£´æ£¬ÔÙ´ÎÆô¶¯½Å±¾ÊÇ½«×Ô¶¯¶ÁÈ¡ÅäÖÃ¡£
-Èç¹ûÒª½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí£¬¿ÉÒÔÔÚ±¾µØ´´½¨ disable_proxy.txt ÎÄ¼þ£¬Æô¶¯½Å±¾Ê±½«²»ÔÙ×Ô¶¯ÉèÖÃ´úÀí¡£
+è‹¥è¦ä¸ºè„šæœ¬è®¾ç½®ä»£ç†ï¼Œåˆ™åœ¨ä»£ç†è½¯ä»¶ä¸­æ‰“å¼€ç³»ç»Ÿä»£ç†æ¨¡å¼å³å¯ï¼Œæˆ–è€…åœ¨æœ¬åœ°åˆ›å»º proxy.txt æ–‡ä»¶ï¼Œåœ¨æ–‡ä»¶ä¸­å¡«å†™ä»£ç†åœ°å€åŽä¿å­˜ï¼Œå†æ¬¡å¯åŠ¨è„šæœ¬æ˜¯å°†è‡ªåŠ¨è¯»å–é…ç½®ã€‚
+å¦‚æžœè¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†ï¼Œå¯ä»¥åœ¨æœ¬åœ°åˆ›å»º disable_proxy.txt æ–‡ä»¶ï¼Œå¯åŠ¨è„šæœ¬æ—¶å°†ä¸å†è‡ªåŠ¨è®¾ç½®ä»£ç†ã€‚
 
-¸ü¶àÏêÏ¸µÄ°ïÖú¿ÉÔÚÏÂÃæµÄÁ´½Ó²é¿´¡£
-InvokeAI Installer Ê¹ÓÃ°ïÖú£ºhttps://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-InvokeAI ¹Ù·½ÎÄµµ£ºhttps://invoke-ai.github.io/InvokeAI
-InvokeAI ¹Ù·½ÊÓÆµ½Ì³Ì£ºhttps://www.youtube.com/@invokeai
-Reddit ÉçÇø£ºhttps://www.reddit.com/r/invokeai
+æ›´å¤šè¯¦ç»†çš„å¸®åŠ©å¯åœ¨ä¸‹é¢çš„é“¾æŽ¥æŸ¥çœ‹ã€‚
+InvokeAI Installer ä½¿ç”¨å¸®åŠ©ï¼šhttps://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+InvokeAI å®˜æ–¹æ–‡æ¡£ï¼šhttps://invoke-ai.github.io/InvokeAI
+InvokeAI å®˜æ–¹è§†é¢‘æ•™ç¨‹ï¼šhttps://www.youtube.com/@invokeai
+Reddit ç¤¾åŒºï¼šhttps://www.reddit.com/r/invokeai
 "
 
     Set-Content -Path "./InvokeAI/help.txt" -Value $content
 }
 
 
-# Ö÷³ÌÐò
+# ä¸»ç¨‹åº
 function Main {
-    Print-Msg "Æô¶¯ InvokeAI °²×°³ÌÐò"
-    Print-Msg "ÌáÊ¾: Èô³öÏÖÄ³¸ö²½ÖèÖ´ÐÐÊ§°Ü, ¿É³¢ÊÔÔÙ´ÎÔËÐÐ InvokeAI Installer"
-    Print-Msg "InvokeAI Installer Ê¹ÓÃÎÄµµ: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "å¯åŠ¨ InvokeAI å®‰è£…ç¨‹åº"
+    Print-Msg "æç¤º: è‹¥å‡ºçŽ°æŸä¸ªæ­¥éª¤æ‰§è¡Œå¤±è´¥, å¯å°è¯•å†æ¬¡è¿è¡Œ InvokeAI Installer"
+    Print-Msg "InvokeAI Installer ä½¿ç”¨æ–‡æ¡£: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
     Check-Install
-    Print-Msg "Ìí¼ÓÆô¶¯½Å±¾ºÍÎÄµµÖÐ"
+    Print-Msg "æ·»åŠ å¯åŠ¨è„šæœ¬å’Œæ–‡æ¡£ä¸­"
     Write-Launch-Script
     Write-Update-Script
     Write-InvokeAI-DB-Fix-Script
@@ -864,10 +847,10 @@ function Main {
     Write-PyTorch-ReInstall-Script
     Wirte-Download-Config-Script
     Write-ReadMe
-    Print-Msg "InvokeAI °²×°½áÊø, °²×°Â·¾¶Îª $PSScriptRoot\InvokeAI"
-    Print-Msg "¹ØÓÚ¸Ã InvokeAI °æ±¾µÄ¸üÐÂÈÕÖ¾£ºhttps://github.com/invoke-ai/InvokeAI/releases/latest"
-    Print-Msg "°ïÖúÎÄµµ¿ÉÔÚ InvokeAI ÎÄ¼þ¼ÐÖÐ²é¿´, Ë«»÷ help.txt ÎÄ¼þ¼´¿É²é¿´"
-    Print-Msg "ÍË³ö InvokeAI Installer"
+    Print-Msg "InvokeAI å®‰è£…ç»“æŸ, å®‰è£…è·¯å¾„ä¸º $PSScriptRoot\InvokeAI"
+    Print-Msg "å…³äºŽè¯¥ InvokeAI ç‰ˆæœ¬çš„æ›´æ–°æ—¥å¿—ï¼šhttps://github.com/invoke-ai/InvokeAI/releases/latest"
+    Print-Msg "å¸®åŠ©æ–‡æ¡£å¯åœ¨ InvokeAI æ–‡ä»¶å¤¹ä¸­æŸ¥çœ‹, åŒå‡» help.txt æ–‡ä»¶å³å¯æŸ¥çœ‹"
+    Print-Msg "é€€å‡º InvokeAI Installer"
 }
 
 

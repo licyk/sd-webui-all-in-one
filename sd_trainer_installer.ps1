@@ -1,9 +1,10 @@
+ï»¿# æœ‰å…³ PowerShell è„šæœ¬ä¿å­˜ç¼–ç çš„é—®é¢˜: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 Set-Location "$PSScriptRoot"
-# pip¾µÏñÔ´
+# Pip é•œåƒæº
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
 $pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
-# github¾µÏñÔ´ÁĞ±í
+# Github é•œåƒæºåˆ—è¡¨
 $github_mirror_list = @(
     "https://mirror.ghproxy.com/https://github.com",
     "https://ghproxy.net/https://github.com",
@@ -12,10 +13,10 @@ $github_mirror_list = @(
     "https://ghps.cc/https://github.com",
     "https://gh.idayer.com/https://github.com"
 )
-# pytorch°æ±¾
+# PyTorch ç‰ˆæœ¬
 $pytorch_ver = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $xformers_ver = "xformers==0.0.26.post1+cu118"
-# »·¾³±äÁ¿
+# ç¯å¢ƒå˜é‡
 $env:PIP_INDEX_URL = $pip_index_mirror
 $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror
 $env:PIP_FIND_LINKS = $pip_find_mirror
@@ -35,135 +36,135 @@ $env:PIP_CACHE_DIR = "$PSScriptRoot/SD-Trainer/cache/pip"
 $env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/SD-Trainer/cache/pycache"
 
 
-# ÏûÏ¢Êä³ö
+# æ¶ˆæ¯è¾“å‡º
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][SD-Trainer Installer]:: $msg"
 }
 
-Print-Msg "³õÊ¼»¯ÖĞ"
+Print-Msg "åˆå§‹åŒ–ä¸­"
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 $env:NO_PROXY = "localhost,127.0.0.1,::1"
-if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if (Test-Path "$PSScriptRoot/proxy.txt") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path "$PSScriptRoot/proxy.txt") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
         $env:HTTP_PROXY = $proxy_value
         $env:HTTPS_PROXY = $proxy_value
-        Print-Msg "¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí"
-    } elseif ($internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†"
+    } elseif ($internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
         $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
-        Print-Msg "¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí"
+        Print-Msg "æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†"
     }
 } else {
-    Print-Msg "¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí"
+    Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†"
 }
 
 
-# ÏÂÔØ²¢½âÑ¹python
+# ä¸‹è½½å¹¶è§£å‹ Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-amd64.zip"
 
-    # ÏÂÔØpython
-    Print-Msg "ÕıÔÚÏÂÔØ Python"
+    # ä¸‹è½½ Python
+    Print-Msg "æ­£åœ¨ä¸‹è½½ Python"
     Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/python-3.10.11-amd64.zip"
-    if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦²¢½âÑ¹
-        # ´´½¨pythonÎÄ¼ş¼Ğ
+    if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸå¹¶è§£å‹
+        # åˆ›å»º Python æ–‡ä»¶å¤¹
         if (!(Test-Path "./SD-Trainer/python")) {
             New-Item -ItemType Directory -Force -Path ./SD-Trainer/python > $null
         }
-        # ½âÑ¹python
-        Print-Msg "ÕıÔÚ½âÑ¹ Python"
+        # è§£å‹ Python
+        Print-Msg "æ­£åœ¨è§£å‹ Python"
         Expand-Archive -Path "./SD-Trainer/python-3.10.11-amd64.zip" -DestinationPath "./SD-Trainer/python" -Force
         Remove-Item -Path "./SD-Trainer/python-3.10.11-amd64.zip"
-        Print-Msg "Python °²×°³É¹¦"
+        Print-Msg "Python å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "Python °²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "Python å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# ÏÂÔØ²¢½âÑ¹git
+# ä¸‹è½½å¹¶è§£å‹ Git
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
-    Print-Msg "ÕıÔÚÏÂÔØ Git"
+    Print-Msg "æ­£åœ¨ä¸‹è½½ Git"
     Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/PortableGit-2.45.2-64-bit.zip"
-    if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦²¢½âÑ¹
-        # ´´½¨gitÎÄ¼ş¼Ğ
+    if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸå¹¶è§£å‹
+        # åˆ›å»º Git æ–‡ä»¶å¤¹
         if (!(Test-Path "./SD-Trainer/git")) {
             New-Item -ItemType Directory -Force -Path ./SD-Trainer/git > $null
         }
-        # ½âÑ¹git
-        Print-Msg "ÕıÔÚ½âÑ¹ Git"
+        # è§£å‹ Git
+        Print-Msg "æ­£åœ¨è§£å‹ Git"
         Expand-Archive -Path "./SD-Trainer/PortableGit-2.45.2-64-bit.zip" -DestinationPath "./SD-Trainer/git" -Force
         Remove-Item -Path "./SD-Trainer/PortableGit-2.45.2-64-bit.zip"
-        Print-Msg "Git °²×°³É¹¦"
+        Print-Msg "Git å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "Git °²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "Git å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# ÏÂÔØaria2
+# ä¸‹è½½ Aria2
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
-    Print-Msg "ÕıÔÚÏÂÔØ Aria2"
+    Print-Msg "æ­£åœ¨ä¸‹è½½ Aria2"
     Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/aria2c.exe"
     if ($?) {
         Move-Item -Path "./SD-Trainer/cache/aria2c.exe" -Destination "./SD-Trainer/git/bin/aria2c.exe"
-        Print-Msg "Aria2 ÏÂÔØ³É¹¦"
+        Print-Msg "Aria2 ä¸‹è½½æˆåŠŸ"
     } else {
-        Print-Msg "Aria2 ÏÂÔØÊ§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "Aria2 ä¸‹è½½å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# github¾µÏñ²âÊÔ
+# Github é•œåƒæµ‹è¯•
 function Test-Github-Mirror {
-    if (Test-Path "./disable_gh_mirror.txt") { # ½ûÓÃgithub¾µÏñÔ´
-        Print-Msg "¼ì²âµ½±¾µØ´æÔÚ disable_gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ Github ¾µÏñÔ´"
+    if (Test-Path "./disable_gh_mirror.txt") { # ç¦ç”¨ Github é•œåƒæº
+        Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨ Github é•œåƒæº"
     } else {
-        $env:GIT_CONFIG_GLOBAL = "$PSScriptRoot/SD-Trainer/.gitconfig" # ÉèÖÃgitÅäÖÃÎÄ¼şÂ·¾¶
+        $env:GIT_CONFIG_GLOBAL = "$PSScriptRoot/SD-Trainer/.gitconfig" # è®¾ç½® Git é…ç½®æ–‡ä»¶è·¯å¾„
         if (Test-Path "$PSScriptRoot/SD-Trainer/.gitconfig") {
             Remove-Item -Path "$PSScriptRoot/SD-Trainer/.gitconfig" -Force
         }
 
-        if (Test-Path "./gh_mirror.txt") { # Ê¹ÓÃ×Ô¶¨Òågithub¾µÏñÔ´
+        if (Test-Path "./gh_mirror.txt") { # ä½¿ç”¨è‡ªå®šä¹‰ Github é•œåƒæº
             $github_mirror = Get-Content "./gh_mirror.txt"
             ./SD-Trainer/git/bin/git.exe config --global url."$github_mirror".insteadOf "https://github.com"
-            Print-Msg "¼ì²âµ½±¾µØ´æÔÚ gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡ Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş²¢ÉèÖÃ Github ¾µÏñÔ´"
-        } else { # ×Ô¶¯¼ì²â¿ÉÓÃ¾µÏñÔ´²¢Ê¹ÓÃ
+            Print-Msg "æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, å·²è¯»å– Github é•œåƒæºé…ç½®æ–‡ä»¶å¹¶è®¾ç½® Github é•œåƒæº"
+        } else { # è‡ªåŠ¨æ£€æµ‹å¯ç”¨é•œåƒæºå¹¶ä½¿ç”¨
             $status = 0
             ForEach($i in $github_mirror_list) {
-                Print-Msg "²âÊÔ Github ¾µÏñÔ´: $i"
+                Print-Msg "æµ‹è¯• Github é•œåƒæº: $i"
                 if (Test-Path "./SD-Trainer/github-mirror-test") {
                     Remove-Item -Path "./SD-Trainer/github-mirror-test" -Force -Recurse
                 }
                 ./SD-Trainer/git/bin/git.exe clone $i/licyk/empty ./SD-Trainer/github-mirror-test --quiet
                 if ($?) {
-                    Print-Msg "¸Ã Github ¾µÏñÔ´¿ÉÓÃ"
+                    Print-Msg "è¯¥ Github é•œåƒæºå¯ç”¨"
                     $github_mirror = $i
                     $status = 1
                     break
                 } else {
-                    Print-Msg "¾µÏñÔ´²»¿ÉÓÃ, ¸ü»»¾µÏñÔ´½øĞĞ²âÊÔ"
+                    Print-Msg "é•œåƒæºä¸å¯ç”¨, æ›´æ¢é•œåƒæºè¿›è¡Œæµ‹è¯•"
                 }
             }
             if (Test-Path "./SD-Trainer/github-mirror-test") {
                 Remove-Item -Path "./SD-Trainer/github-mirror-test" -Force -Recurse
             }
             if ($status -eq 0) {
-                Print-Msg "ÎŞ¿ÉÓÃ Github ¾µÏñÔ´, È¡ÏûÊ¹ÓÃ Github ¾µÏñÔ´"
+                Print-Msg "æ— å¯ç”¨ Github é•œåƒæº, å–æ¶ˆä½¿ç”¨ Github é•œåƒæº"
                 Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
             } else {
-                Print-Msg "ÉèÖÃ Github ¾µÏñÔ´"
+                Print-Msg "è®¾ç½® Github é•œåƒæº"
                 ./SD-Trainer/git/bin/git.exe config --global url."$github_mirror".insteadOf "https://github.com"
             }
         }
@@ -171,7 +172,7 @@ function Test-Github-Mirror {
 }
 
 
-# °²×°sd-trainer
+# å®‰è£… SD-Trainer
 function Install-SD-Trainer {
     $status = 0
     if (!(Test-Path "./SD-Trainer/lora-scripts")) {
@@ -184,88 +185,88 @@ function Install-SD-Trainer {
     }
 
     if ($status -eq 1) {
-        Print-Msg "ÕıÔÚÏÂÔØ SD-Trainer"
+        Print-Msg "æ­£åœ¨ä¸‹è½½ SD-Trainer"
         ./SD-Trainer/git/bin/git.exe clone --recurse-submodules https://github.com/Akegarasu/lora-scripts ./SD-Trainer/lora-scripts
-        if ($?) { # ¼ì²âÊÇ·ñÏÂÔØ³É¹¦
-            Print-Msg "SD-Trainer °²×°³É¹¦"
+        if ($?) { # æ£€æµ‹æ˜¯å¦ä¸‹è½½æˆåŠŸ
+            Print-Msg "SD-Trainer å®‰è£…æˆåŠŸ"
         } else {
-            Print-Msg "SD-Trainer °²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+            Print-Msg "SD-Trainer å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
             Read-Host | Out-Null
             exit 1
         }
     } else {
-        Print-Msg "SD-Trainer ÒÑ°²×°"
+        Print-Msg "SD-Trainer å·²å®‰è£…"
     }
 
-    Print-Msg "°²×° SD-Trainer ×ÓÄ£¿éÖĞ"
+    Print-Msg "å®‰è£… SD-Trainer å­æ¨¡å—ä¸­"
     ./SD-Trainer/git/bin/git.exe -C ./SD-Trainer/lora-scripts submodule init
     ./SD-Trainer/git/bin/git.exe -C ./SD-Trainer/lora-scripts submodule update
     if ($?) {
-        Print-Msg "SD-Trainer ×ÓÄ£¿é°²×°³É¹¦"
+        Print-Msg "SD-Trainer å­æ¨¡å—å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "SD-Trainer ×ÓÄ£¿é°²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "SD-Trainer å­æ¨¡å—å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# °²×°pytorch
+# å®‰è£… PyTorch
 function Install-PyTorch {
-    Print-Msg "¼ì²âÊÇ·ñĞèÒª°²×° PyTorch"
+    Print-Msg "æ£€æµ‹æ˜¯å¦éœ€è¦å®‰è£… PyTorch"
     ./SD-Trainer/python/python.exe -m pip show torch --quiet 2> $null
     if (!($?)) {
-        Print-Msg "°²×° PyTorch ÖĞ"
+        Print-Msg "å®‰è£… PyTorch ä¸­"
         ./SD-Trainer/python/python.exe -m pip install $pytorch_ver.ToString().Split() --no-warn-script-location
         if ($?) {
-            Print-Msg "PyTorch °²×°³É¹¦"
+            Print-Msg "PyTorch å®‰è£…æˆåŠŸ"
         } else {
-            Print-Msg "PyTorch °²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+            Print-Msg "PyTorch å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
             Read-Host | Out-Null
             exit 1
         }
     } else {
-        Print-Msg "PyTorch ÒÑ°²×°, ÎŞĞèÔÙ´Î°²×°"
+        Print-Msg "PyTorch å·²å®‰è£…, æ— éœ€å†æ¬¡å®‰è£…"
     }
 
-    Print-Msg "¼ì²âÊÇ·ñĞèÒª°²×° xFormers"
+    Print-Msg "æ£€æµ‹æ˜¯å¦éœ€è¦å®‰è£… xFormers"
     ./SD-Trainer/python/python.exe -m pip show xformers --quiet 2> $null
     if (!($?)) {
         ./SD-Trainer/python/python.exe -m pip install $xformers_ver --no-deps --no-warn-script-location
         if ($?) {
-            Print-Msg "xFormers °²×°³É¹¦"
+            Print-Msg "xFormers å®‰è£…æˆåŠŸ"
         } else {
-            Print-Msg "xFormers °²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+            Print-Msg "xFormers å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
             Read-Host | Out-Null
             exit 1
         }
     } else {
-        Print-Msg "xFormers ÒÑ°²×°, ÎŞĞèÔÙ´Î°²×°"
+        Print-Msg "xFormers å·²å®‰è£…, æ— éœ€å†æ¬¡å®‰è£…"
     }
 }
 
 
-# °²×°sd-trainerÒÀÀµ
+# å®‰è£… SD-Trainer ä¾èµ–
 function Install-SD-Trainer-Dependence {
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
-    Print-Msg "°²×° SD-Trainer ÄÚºËÒÀÀµÖĞ"
+    Print-Msg "å®‰è£… SD-Trainer å†…æ ¸ä¾èµ–ä¸­"
     ../../python/python.exe -m pip install --upgrade -r requirements.txt --no-warn-script-location
     if ($?) {
-        Print-Msg "SD-Trainer ÄÚºËÒÀÀµ°²×°³É¹¦"
+        Print-Msg "SD-Trainer å†…æ ¸ä¾èµ–å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "SD-Trainer ÄÚºËÒÀÀµ°²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "SD-Trainer å†…æ ¸ä¾èµ–å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Set-Location "$PSScriptRoot"
         Read-Host | Out-Null
         exit 1
     }
 
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts"
-    Print-Msg "°²×° SD-Trainer ÒÀÀµÖĞ"
+    Print-Msg "å®‰è£… SD-Trainer ä¾èµ–ä¸­"
     ../python/python.exe -m pip install --upgrade -r requirements.txt --no-warn-script-location
     if ($?) {
-        Print-Msg "SD-Trainer ÒÀÀµ°²×°³É¹¦"
+        Print-Msg "SD-Trainer ä¾èµ–å®‰è£…æˆåŠŸ"
     } else {
-        Print-Msg "SD-Trainer ÒÀÀµ°²×°Ê§°Ü, ÖÕÖ¹ SD-Trainer °²×°½ø³Ì, ¿É³¢ÊÔÖØĞÂÔËĞĞ SD-Trainer Installer ÖØÊÔÊ§°ÜµÄ°²×°"
+        Print-Msg "SD-Trainer ä¾èµ–å®‰è£…å¤±è´¥, ç»ˆæ­¢ SD-Trainer å®‰è£…è¿›ç¨‹, å¯å°è¯•é‡æ–°è¿è¡Œ SD-Trainer Installer é‡è¯•å¤±è´¥çš„å®‰è£…"
         Set-Location "$PSScriptRoot"
         Read-Host | Out-Null
         exit 1
@@ -274,7 +275,7 @@ function Install-SD-Trainer-Dependence {
 }
 
 
-# °²×°
+# å®‰è£…
 function Check-Install {
     if (!(Test-Path "./SD-Trainer")) {
         New-Item -ItemType Directory -Path "./SD-Trainer" > $null
@@ -288,30 +289,30 @@ function Check-Install {
         New-Item -ItemType Directory -Path "./SD-Trainer/models" > $null
     }
 
-    Print-Msg "¼ì²âÊÇ·ñ°²×° Python"
+    Print-Msg "æ£€æµ‹æ˜¯å¦å®‰è£… Python"
     $pythonPath = "./SD-Trainer/python/python.exe"
     if (Test-Path $pythonPath) {
-        Print-Msg "Python ÒÑ°²×°"
+        Print-Msg "Python å·²å®‰è£…"
     } else {
-        Print-Msg "Python Î´°²×°"
+        Print-Msg "Python æœªå®‰è£…"
         Install-Python
     }
 
-    Print-Msg "¼ì²âÊÇ·ñ°²×° Git"
+    Print-Msg "æ£€æµ‹æ˜¯å¦å®‰è£… Git"
     $gitPath = "./SD-Trainer/git/bin/git.exe"
     if (Test-Path $gitPath) {
-        Print-Msg "Git ÒÑ°²×°"
+        Print-Msg "Git å·²å®‰è£…"
     } else {
-        Print-Msg "Git Î´°²×°"
+        Print-Msg "Git æœªå®‰è£…"
         Install-Git
     }
 
-    Print-Msg "¼ì²âÊÇ·ñ°²×° Aria2"
+    Print-Msg "æ£€æµ‹æ˜¯å¦å®‰è£… Aria2"
     $aria2Path = "./SD-Trainer/git/bin/aria2c.exe"
     if (Test-Path $aria2Path) {
-        Print-Msg "Aria2 ÒÑ°²×°"
+        Print-Msg "Aria2 å·²å®‰è£…"
     } else {
-        Print-Msg "Aria2 Î´°²×°"
+        Print-Msg "Aria2 æœªå®‰è£…"
         Install-Aria2
     }
 
@@ -322,56 +323,56 @@ function Check-Install {
 }
 
 
-# Æô¶¯½Å±¾
+# å¯åŠ¨è„šæœ¬
 function Write-Launch-Script {
     $content = "
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
-Print-Msg `"³õÊ¼»¯ÖĞ`"
+Print-Msg `"åˆå§‹åŒ–ä¸­`"
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# Huggingface ¾µÏñÔ´
-if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯ÉèÖÃhuggingface¾µÏñÔ´
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # ±¾µØ´æÔÚhuggingface¾µÏñÔ´ÅäÖÃ
+# HuggingFace é•œåƒæº
+if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨äº†è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº
+    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # æœ¬åœ°å­˜åœ¨ HuggingFace é•œåƒæºé…ç½®
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
         `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ hf_mirror.txt ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡¸ÃÅäÖÃ²¢ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-    } else { # Ê¹ÓÃÄ¬ÈÏÉèÖÃ
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ hf_mirror.txt é…ç½®æ–‡ä»¶, å·²è¯»å–è¯¥é…ç½®å¹¶è®¾ç½® HuggingFace é•œåƒæº`"
+    } else { # ä½¿ç”¨é»˜è®¤è®¾ç½®
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"Ê¹ÓÃÄ¬ÈÏ HuggingFace ¾µÏñÔ´`"
+        Print-Msg `"ä½¿ç”¨é»˜è®¤ HuggingFace é•œåƒæº`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_hf_mirror.txt ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ HuggingFace ¾µÏñÔ´`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_hf_mirror.txt é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº`"
 }
 
 if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
     `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ launch_args.txt Æô¶¯²ÎÊıÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡¸ÃÆô¶¯²ÎÊıÅäÖÃÎÄ¼ş²¢Ó¦ÓÃÆô¶¯²ÎÊı`"
-    Print-Msg `"Ê¹ÓÃµÄÆô¶¯²ÎÊı: `$args`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ launch_args.txt å¯åŠ¨å‚æ•°é…ç½®æ–‡ä»¶, å·²è¯»å–è¯¥å¯åŠ¨å‚æ•°é…ç½®æ–‡ä»¶å¹¶åº”ç”¨å¯åŠ¨å‚æ•°`"
+    Print-Msg `"ä½¿ç”¨çš„å¯åŠ¨å‚æ•°: `$args`"
 }
 
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
 `$git_path = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$git_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # ½«pythonÌí¼Óµ½»·¾³±äÁ¿
+`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$git_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # å°†pythonæ·»åŠ åˆ°ç¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -390,14 +391,14 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 
-Print-Msg `"Æô¶¯ SD-Trainer ÖĞ`"
+Print-Msg `"å¯åŠ¨ SD-Trainer ä¸­`"
 Set-Location `"`$PSScriptRoot/lora-scripts`"
 ../python/python gui.py `$args.ToString().Split()
 `$req = `$?
 if (`$req) {
-    Print-Msg `"SD-Trainer Õı³£ÍË³ö`"
+    Print-Msg `"SD-Trainer æ­£å¸¸é€€å‡º`"
 } else {
-    Print-Msg `"SD-Trainer ³öÏÖÒì³£, ÒÑÍË³ö`"
+    Print-Msg `"SD-Trainer å‡ºç°å¼‚å¸¸, å·²é€€å‡º`"
 }
 Set-Location `"`$PSScriptRoot`"
 Read-Host | Out-Null
@@ -407,7 +408,7 @@ Read-Host | Out-Null
 }
 
 
-# ¸üĞÂ½Å±¾
+# æ›´æ–°è„šæœ¬
 function Write-Update-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -431,78 +432,78 @@ function Fix-Git-Point-Off-Set {
     if (Test-Path `"`$path/.git`") {
         ./git/bin/git.exe -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
         if (!(`$?)) {
-            Print-Msg `"¼ì²âµ½³öÏÖ·ÖÖ§ÓÎÀë, ½øĞĞĞŞ¸´ÖĞ`"
-            ./git/bin/git.exe -C `"`$path`" remote prune origin # É¾³ıÎŞÓÃ·ÖÖ§
-            ./git/bin/git.exe -C `"`$path`" submodule init # ³õÊ¼»¯git×ÓÄ£¿é
-            `$branch = `$(./git/bin/git.exe -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # ²éÑ¯Ô¶³ÌHEADËùÖ¸·ÖÖ§
-            ./git/bin/git.exe -C `"`$path`" checkout `$branch # ÇĞ»»µ½Ö÷·ÖÖ§
-            ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # »ØÍËµ½Ô¶³Ì·ÖÖ§µÄ°æ±¾
+            Print-Msg `"æ£€æµ‹åˆ°å‡ºç°åˆ†æ”¯æ¸¸ç¦», è¿›è¡Œä¿®å¤ä¸­`"
+            ./git/bin/git.exe -C `"`$path`" remote prune origin # åˆ é™¤æ— ç”¨åˆ†æ”¯
+            ./git/bin/git.exe -C `"`$path`" submodule init # åˆå§‹åŒ–gitå­æ¨¡å—
+            `$branch = `$(./git/bin/git.exe -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # æŸ¥è¯¢è¿œç¨‹HEADæ‰€æŒ‡åˆ†æ”¯
+            ./git/bin/git.exe -C `"`$path`" checkout `$branch # åˆ‡æ¢åˆ°ä¸»åˆ†æ”¯
+            ./git/bin/git.exe -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # å›é€€åˆ°è¿œç¨‹åˆ†æ”¯çš„ç‰ˆæœ¬
         }
     }
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# github ¾µÏñÔ´
-if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ½ûÓÃgithub¾µÏñÔ´
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ Github ¾µÏñÔ´`"
+# Github é•œåƒæº
+if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ç¦ç”¨ Github é•œåƒæº
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨ Github é•œåƒæº`"
 } else {
-    `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # ÉèÖÃgitÅäÖÃÎÄ¼şÂ·¾¶
+    `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # è®¾ç½® Git é…ç½®æ–‡ä»¶è·¯å¾„
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # Ê¹ÓÃ×Ô¶¨Òågithub¾µÏñÔ´
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # ä½¿ç”¨è‡ªå®šä¹‰ Github é•œåƒæº
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         ./git/bin/git.exe config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡ Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş²¢ÉèÖÃ Github ¾µÏñÔ´`"
-    } else { # ×Ô¶¯¼ì²â¿ÉÓÃ¾µÏñÔ´²¢Ê¹ÓÃ
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, å·²è¯»å– Github é•œåƒæºé…ç½®æ–‡ä»¶å¹¶è®¾ç½® Github é•œåƒæº`"
+    } else { # è‡ªåŠ¨æ£€æµ‹å¯ç”¨é•œåƒæºå¹¶ä½¿ç”¨
         `$status = 0
         ForEach(`$i in `$github_mirror_list) {
-            Print-Msg `"²âÊÔ Github ¾µÏñÔ´: `$i`"
+            Print-Msg `"æµ‹è¯• Github é•œåƒæº: `$i`"
             if (Test-Path `"./github-mirror-test`") {
                 Remove-Item -Path `"./github-mirror-test`" -Force -Recurse
             }
             ./git/bin/git.exe clone `$i/licyk/empty ./github-mirror-test --quiet
             if (`$?) {
-                Print-Msg `"¸Ã Github ¾µÏñÔ´¿ÉÓÃ`"
+                Print-Msg `"è¯¥ Github é•œåƒæºå¯ç”¨`"
                 `$github_mirror = `$i
                 `$status = 1
                 break
             } else {
-                Print-Msg `"¾µÏñÔ´²»¿ÉÓÃ, ¸ü»»¾µÏñÔ´½øĞĞ²âÊÔ`"
+                Print-Msg `"é•œåƒæºä¸å¯ç”¨, æ›´æ¢é•œåƒæºè¿›è¡Œæµ‹è¯•`"
             }
         }
         if (Test-Path `"./github-mirror-test`") {
             Remove-Item -Path `"./github-mirror-test`" -Force -Recurse
         }
         if (`$status -eq 0) {
-            Print-Msg `"ÎŞ¿ÉÓÃ Github ¾µÏñÔ´, È¡ÏûÊ¹ÓÃ Github ¾µÏñÔ´`"
+            Print-Msg `"æ— å¯ç”¨ Github é•œåƒæº, å–æ¶ˆä½¿ç”¨ Github é•œåƒæº`"
             Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
         } else {
-            Print-Msg `"ÉèÖÃ Github ¾µÏñÔ´`"
+            Print-Msg `"è®¾ç½® Github é•œåƒæº`"
             ./git/bin/git.exe config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         }
     }
 }
 
-# »·¾³±äÁ¿
+# ç¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -521,26 +522,26 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ½ûÓÃgithub¾µÏñÔ´
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 
-Print-Msg `"À­È¡ SD-Trainer ¸üĞÂÄÚÈİÖĞ`"
+Print-Msg `"æ‹‰å– SD-Trainer æ›´æ–°å†…å®¹ä¸­`"
 Fix-Git-Point-Off-Set `"./lora-scripts`"
 `$ver = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 `$branch = `$(./git/bin/git.exe -C lora-scripts symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 ./git/bin/git.exe -C lora-scripts fetch --recurse-submodules
 if (`$?) {
-    Print-Msg `"Ó¦ÓÃ SD-Trainer ¸üĞÂÖĞ`"
+    Print-Msg `"åº”ç”¨ SD-Trainer æ›´æ–°ä¸­`"
     `$commit_hash = `$(./git/bin/git.exe -C lora-scripts log origin/`$branch --max-count 1 --format=`"%h`")
     ./git/bin/git.exe -C lora-scripts reset --hard `$commit_hash --recurse-submodules
     `$ver_ = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     if (`$ver -eq `$ver_) {
-        Print-Msg `"SD-Trainer ÒÑÎª×îĞÂ°æ£¬µ±Ç°°æ±¾£º`$ver`"
+        Print-Msg `"SD-Trainer å·²ä¸ºæœ€æ–°ç‰ˆï¼Œå½“å‰ç‰ˆæœ¬ï¼š`$ver`"
     } else {
-        Print-Msg `"SD-Trainer ¸üĞÂ³É¹¦£¬°æ±¾£º`$ver -> `$ver_`"
+        Print-Msg `"SD-Trainer æ›´æ–°æˆåŠŸï¼Œç‰ˆæœ¬ï¼š`$ver -> `$ver_`"
     }
 } else {
-    Print-Msg `"À­È¡ SD-Trainer ¸üĞÂÄÚÈİÊ§°Ü, ÇëÖØÊÔ`"
+    Print-Msg `"æ‹‰å– SD-Trainer æ›´æ–°å†…å®¹å¤±è´¥, è¯·é‡è¯•`"
 }
 
-Print-Msg `"ÍË³ö SD-Trainer ¸üĞÂ½Å±¾`"
+Print-Msg `"é€€å‡º SD-Trainer æ›´æ–°è„šæœ¬`"
 Read-Host | Out-Null
 "
 
@@ -548,7 +549,7 @@ Read-Host | Out-Null
 }
 
 
-# »ñÈ¡°²×°½Å±¾
+# è·å–å®‰è£…è„šæœ¬
 function Write-SD-Trainer-Install-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -556,65 +557,51 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# Huggingface ¾µÏñÔ´
-if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯ÉèÖÃhuggingface¾µÏñÔ´
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # ±¾µØ´æÔÚhuggingface¾µÏñÔ´ÅäÖÃ
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
-        `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ hf_mirror.txt ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡¸ÃÅäÖÃ²¢ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-    } else { # Ê¹ÓÃÄ¬ÈÏÉèÖÃ
-        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"Ê¹ÓÃÄ¬ÈÏ HuggingFace ¾µÏñÔ´`"
-    }
-} else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_hf_mirror.txt ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-}
-
-# ¿ÉÓÃµÄÏÂÔØÔ´
+# å¯ç”¨çš„ä¸‹è½½æº
 `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
 `$count = `$urls.Length
 `$i = 0
 
 ForEach (`$url in `$urls) {
-    Print-Msg `"ÕıÔÚÏÂÔØ×îĞÂµÄ SD-Trainer Installer ½Å±¾`"
+    Print-Msg `"æ­£åœ¨ä¸‹è½½æœ€æ–°çš„ SD-Trainer Installer è„šæœ¬`"
     Invoke-WebRequest -Uri `$url -OutFile `"./cache/sd_trainer_installer.ps1`"
     if (`$?) {
         if (Test-Path `"../sd_trainer_installer.ps1`") {
-            Print-Msg `"É¾³ıÔ­ÓĞµÄ SD-Trainer Installer ½Å±¾`"
+            Print-Msg `"åˆ é™¤åŸæœ‰çš„ SD-Trainer Installer è„šæœ¬`"
             Remove-Item `"../sd_trainer_installer.ps1`" -Force
         }
         Move-Item -Path `"./cache/sd_trainer_installer.ps1`" -Destination `"../sd_trainer_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-        Print-Msg `"ÏÂÔØ SD-Trainer Installer ½Å±¾³É¹¦, ½Å±¾Â·¾¶Îª `$parentDirectory\sd_trainer_installer.ps1`"
+        Print-Msg `"ä¸‹è½½ SD-Trainer Installer è„šæœ¬æˆåŠŸ, è„šæœ¬è·¯å¾„ä¸º `$parentDirectory\sd_trainer_installer.ps1`"
         break
     } else {
-        Print-Msg `"ÏÂÔØ SD-Trainer Installer ½Å±¾Ê§°Ü`"
+        Print-Msg `"ä¸‹è½½ SD-Trainer Installer è„šæœ¬å¤±è´¥`"
         `$i += 1
         if (`$i -lt `$count) {
-            Print-Msg `"ÖØÊÔÏÂÔØ SD-Trainer Installer ½Å±¾`"
+            Print-Msg `"é‡è¯•ä¸‹è½½ SD-Trainer Installer è„šæœ¬`"
         }
     }
 }
 
-Print-Msg `"ÍË³ö SD-Trainer Installer ÏÂÔØ½Å±¾`"
+Print-Msg `"é€€å‡º SD-Trainer Installer ä¸‹è½½è„šæœ¬`"
 Read-Host | Out-Null
 "
 
@@ -622,7 +609,7 @@ Read-Host | Out-Null
 }
 
 
-# ÖØ×°pytorch½Å±¾
+# é‡è£… PyTorch è„šæœ¬
 function Write-PyTorch-ReInstall-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -630,7 +617,7 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
-# »·¾³±äÁ¿
+# ç¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -651,27 +638,31 @@ function Print-Msg (`$msg) {
 
 `$to_exit = 0
 while (`$True) {
-    Print-Msg `"PyTorch °æ±¾ÁĞ±í`"
+    Print-Msg `"PyTorch ç‰ˆæœ¬åˆ—è¡¨`"
     `$go_to = 0
 
     `$content = `"
 -----------------------------------------------------
-- 1¡¢Torch 1.12.1 (CUDA11.3)+ xFormers 0.0.14
-- 2¡¢Torch 1.13.1 (CUDA11.7)+ xFormers 0.0.16
-- 3¡¢Torch 2.0.0 (CUDA11.8) + xFormers 0.0.18
-- 4¡¢Torch 2.0.1 (CUDA11.8) + xFormers 0.0.22
-- 5¡¢Torch 2.1.1 (CUDA11.8) + xFormers 0.0.23
-- 6¡¢Torch 2.1.2 (CUDA11.8) + xFormers 0.0.23.post1
-- 7¡¢Torch 2.2.0 (CUDA11.8) + xFormers 0.0.24
-- 8¡¢Torch 2.2.1 (CUDA11.8) + xFormers 0.0.25
-- 9¡¢Torch 2.2.2 (CUDA11.8) + xFormers 0.0.25.post1
-- 10¡¢Torch 2.3.0 (CUDA11.8) + xFormers 0.0.26.post1
+- 1ã€Torch 1.12.1 (CUDA11.3)+ xFormers 0.0.14
+- 2ã€Torch 1.13.1 (CUDA11.7)+ xFormers 0.0.16
+- 3ã€Torch 2.0.0 (CUDA11.8) + xFormers 0.0.18
+- 4ã€Torch 2.0.1 (CUDA11.8) + xFormers 0.0.22
+- 5ã€Torch 2.1.1 (CUDA11.8) + xFormers 0.0.23
+- 6ã€Torch 2.1.2 (CUDA11.8) + xFormers 0.0.23.post1
+- 7ã€Torch 2.2.0 (CUDA11.8) + xFormers 0.0.24
+- 8ã€Torch 2.2.1 (CUDA11.8) + xFormers 0.0.25
+- 9ã€Torch 2.2.2 (CUDA11.8) + xFormers 0.0.25.post1
+- 10ã€Torch 2.3.0 (CUDA11.8) + xFormers 0.0.26.post1
+- 11ã€Torch 2.3.1 (CUDA11.8) + xFormers 0.0.27
+- 12ã€Torch 2.4.0 (CUDA11.8) + xFormers 0.0.27.post2
 -----------------------------------------------------
     `"
 
     Write-Host `$content
-    Print-Msg `"ÇëÑ¡Ôñ PyTorch °æ±¾`"
-    Print-Msg `"ÌáÊ¾: ÊäÈëÊı×Öºó»Ø³µ, »òÕßÊäÈë exit ÍË³ö PyTroch ÖØ×°½Å±¾`"
+    Print-Msg `"è¯·é€‰æ‹© PyTorch ç‰ˆæœ¬`"
+    Print-Msg `"æç¤º:`"
+    Print-Msg `"1. PyTroch ç‰ˆæœ¬é€šå¸¸æ¥è¯´é€‰æ‹©æœ€æ–°ç‰ˆçš„å³å¯`"
+    Print-Msg `"2. è¾“å…¥æ•°å­—åå›è½¦, æˆ–è€…è¾“å…¥ exit é€€å‡º PyTroch é‡è£…è„šæœ¬`"
     `$arg = Read-Host `"===========================================>`"
 
     switch (`$arg) {
@@ -725,13 +716,23 @@ while (`$True) {
             `$xformers_ver = `"xformers==0.0.26.post1+cu118`"
             `$go_to = 1
         }
+        11 {
+            `$torch_ver = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
+            `$xformers_ver = `"xformers==0.0.27+cu118`"
+            `$go_to = 1
+        }
+        12 {
+            `$torch_ver = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
+            `$xformers_ver = `"xformers==0.0.27.post2+cu118`"
+            `$go_to = 1
+        }
         exit {
-            Print-Msg `"ÍË³ö PyTorch ÖØ×°½Å±¾`"
+            Print-Msg `"é€€å‡º PyTorch é‡è£…è„šæœ¬`"
             `$to_exit = 1
             `$go_to = 1
         }
         Default {
-            Print-Msg `"ÊäÈëÓĞÎó, ÇëÖØÊÔ`"
+            Print-Msg `"è¾“å…¥æœ‰è¯¯, è¯·é‡è¯•`"
         }
     }
 
@@ -745,50 +746,50 @@ if (`$to_exit -eq 1) {
     exit 0
 }
 
-Print-Msg `"ÊÇ·ñÑ¡Ôñ½öÇ¿ÖÆÖØ×°? (Í¨³£Çé¿öÏÂ²»ĞèÒª)`"
-Print-Msg `"ÌáÊ¾: ÊäÈë yes È·ÈÏ»ò no È¡Ïû (Ä¬ÈÏÎª no)`"
+Print-Msg `"æ˜¯å¦é€‰æ‹©ä»…å¼ºåˆ¶é‡è£… ? (é€šå¸¸æƒ…å†µä¸‹ä¸éœ€è¦)`"
+Print-Msg `"æç¤º: è¾“å…¥ yes ç¡®è®¤æˆ– no å–æ¶ˆ (é»˜è®¤ä¸º no)`"
 `$use_force_reinstall = Read-Host `"===========================================>`"
 
 if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
     `$force_reinstall_arg = `"--force-reinstall`"
-    `$force_reinstall_status = `"ÆôÓÃ`"
+    `$force_reinstall_status = `"å¯ç”¨`"
 } else {
     `$force_reinstall_arg = `"`"
-    `$force_reinstall_status = `"½ûÓÃ`"
+    `$force_reinstall_status = `"ç¦ç”¨`"
 }
 
-Print-Msg `"µ±Ç°µÄÑ¡Ôñ`"
+Print-Msg `"å½“å‰çš„é€‰æ‹©`"
 Print-Msg `"PyTorch: `$torch_ver`"
 Print-Msg `"xFormers: `$xformers_ver`"
-Print-Msg `"½öÇ¿ÖÆÖØ×°: `$force_reinstall_status`"
-Print-Msg `"ÊÇ·ñÈ·ÈÏ°²×°?`"
-Print-Msg `"ÌáÊ¾: ÊäÈë yes È·ÈÏ»ò no È¡Ïû (Ä¬ÈÏÎª no)`"
+Print-Msg `"ä»…å¼ºåˆ¶é‡è£…: `$force_reinstall_status`"
+Print-Msg `"æ˜¯å¦ç¡®è®¤å®‰è£…?`"
+Print-Msg `"æç¤º: è¾“å…¥ yes ç¡®è®¤æˆ– no å–æ¶ˆ (é»˜è®¤ä¸º no)`"
 `$install_torch = Read-Host `"===========================================>`"
 
 if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
-    Print-Msg `"ÖØ×° PyTorch ÖĞ`"
+    Print-Msg `"é‡è£… PyTorch ä¸­`"
     ./python/python.exe -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg --no-warn-script-location
     if (`$?) {
-        Print-Msg `"°²×° PyTorch ³É¹¦`"
+        Print-Msg `"å®‰è£… PyTorch æˆåŠŸ`"
     } else {
-        Print-Msg `"°²×° PyTorch Ê§°Ü, ÖÕÖ¹ÖØ×°½ø³Ì`"
+        Print-Msg `"å®‰è£… PyTorch å¤±è´¥, ç»ˆæ­¢é‡è£…è¿›ç¨‹`"
         Read-Host | Out-Null
         exit 1
     }
-    Print-Msg `"ÖØ×° xFormers ÖĞ`"
+    Print-Msg `"é‡è£… xFormers ä¸­`"
     ./python/python.exe -m pip install `$xformers_ver `$force_reinstall_arg --no-deps --no-warn-script-location
     if (`$?) {
-        Print-Msg `"°²×° xFormers ³É¹¦`"
+        Print-Msg `"å®‰è£… xFormers æˆåŠŸ`"
     } else {
-        Print-Msg `"°²×° xFormers Ê§°Ü, ÖÕÖ¹ÖØ×°½ø³Ì`"
+        Print-Msg `"å®‰è£… xFormers å¤±è´¥, ç»ˆæ­¢é‡è£…è¿›ç¨‹`"
         Read-Host | Out-Null
         exit 1
     }
 } else {
-    Print-Msg `"È¡ÏûÖØ×° PyTorch`"
+    Print-Msg `"å–æ¶ˆé‡è£… PyTorch`"
 }
 
-Print-Msg `"ÍË³ö PyTorch ÖØ×°½Å±¾`"
+Print-Msg `"é€€å‡º PyTorch é‡è£…è„šæœ¬`"
 Read-Host | Out-Null
 "
 
@@ -796,7 +797,7 @@ Read-Host | Out-Null
 }
 
 
-# Ä£ĞÍÏÂÔØ½Å±¾
+# æ¨¡å‹ä¸‹è½½è„šæœ¬
 function Write-Download-Model-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
@@ -807,40 +808,40 @@ function Print-Msg (`$msg) {
 `$to_exit = 0
 while (`$True) {
     `$go_to = 0
-    Print-Msg `"¿ÉÏÂÔØµÄÄ£ĞÍÁĞ±í`"
+    Print-Msg `"å¯ä¸‹è½½çš„æ¨¡å‹åˆ—è¡¨`"
     `$content = `"
 -----------------------------------------------------
-Ä£ĞÍĞòºÅ | Ä£ĞÍÃû³Æ | Ä£ĞÍÖÖÀà
+æ¨¡å‹åºå· | æ¨¡å‹åç§° | æ¨¡å‹ç§ç±»
 
-- 1¡¢v1-5-pruned-emaonly (SD 1.5)
-- 2¡¢animefull-final-pruned (SD 1.5)
-- 3¡¢v2-1_768-ema-pruned (SD 2.1)
-- 4¡¢wd-1-4-anime_e2 (SD 2.1)
-- 5¡¢wd-mofu-fp16 (SD 2.1)
-- 6¡¢sd_xl_base_1.0_0.9vae (SDXL)
-- 7¡¢animagine-xl-3.0 (SDXL)
-- 8¡¢animagine-xl-3.1 (SDXL)
-- 9¡¢kohaku-xl-delta-rev1 (SDXL)
-- 10¡¢kohakuXLEpsilon_rev1 (SDXL)
-- 11¡¢kohaku-xl-epsilon-rev2 (SDXL)
-- 12¡¢kohaku-xl-epsilon-rev3 (SDXL)
-- 13¡¢ponyDiffusionV6XL_v6 (SDXL)
-- 14¡¢pdForAnime_v20 (SDXL)
-- 15¡¢starryXLV52_v52 (SDXL)
-- 16¡¢heartOfAppleXL_v20 (SDXL)
-- 17¡¢heartOfAppleXL_v30 (SDXL)
-- 18¡¢vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 19¡¢vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 20¡¢sdxl_fp16_fix_vae (SDXL VAE)
-- 21¡¢sdxl_vae (SDXL VAE)
+- 1ã€v1-5-pruned-emaonly (SD 1.5)
+- 2ã€animefull-final-pruned (SD 1.5)
+- 3ã€v2-1_768-ema-pruned (SD 2.1)
+- 4ã€wd-1-4-anime_e2 (SD 2.1)
+- 5ã€wd-mofu-fp16 (SD 2.1)
+- 6ã€sd_xl_base_1.0_0.9vae (SDXL)
+- 7ã€animagine-xl-3.0 (SDXL)
+- 8ã€animagine-xl-3.1 (SDXL)
+- 9ã€kohaku-xl-delta-rev1 (SDXL)
+- 10ã€kohakuXLEpsilon_rev1 (SDXL)
+- 11ã€kohaku-xl-epsilon-rev2 (SDXL)
+- 12ã€kohaku-xl-epsilon-rev3 (SDXL)
+- 13ã€ponyDiffusionV6XL_v6 (SDXL)
+- 14ã€pdForAnime_v20 (SDXL)
+- 15ã€starryXLV52_v52 (SDXL)
+- 16ã€heartOfAppleXL_v20 (SDXL)
+- 17ã€heartOfAppleXL_v30 (SDXL)
+- 18ã€vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 19ã€vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 20ã€sdxl_fp16_fix_vae (SDXL VAE)
+- 21ã€sdxl_vae (SDXL VAE)
 
-¹ØÓÚÄ£ĞÍµÄ½éÉÜ¿ÉÔÄ¶Á£ºhttps://github.com/licyk/README-collection/blob/main/model-info/README.md
+å…³äºæ¨¡å‹çš„ä»‹ç»å¯é˜…è¯»ï¼šhttps://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
 `"
 
     Write-Host `$content
-    Print-Msg `"ÇëÑ¡ÔñÒªÏÂÔØµÄÄ£ĞÍ`"
-    Print-Msg `"ÌáÊ¾: ÊäÈëÊı×Öºó»Ø³µ, »òÕßÊäÈë exit ÍË³öÄ£ĞÍÏÂÔØ½Å±¾`"
+    Print-Msg `"è¯·é€‰æ‹©è¦ä¸‹è½½çš„æ¨¡å‹`"
+    Print-Msg `"æç¤º: è¾“å…¥æ•°å­—åå›è½¦, æˆ–è€…è¾“å…¥ exit é€€å‡ºæ¨¡å‹ä¸‹è½½è„šæœ¬`"
     `$arg = Read-Host `"===========================================>`"
 
     switch (`$arg) {
@@ -950,12 +951,12 @@ while (`$True) {
             `$go_to = 1
         }
         exit {
-            Print-Msg `"ÍË³öÄ£ĞÍÏÂÔØ½Å±¾`"
+            Print-Msg `"é€€å‡ºæ¨¡å‹ä¸‹è½½è„šæœ¬`"
             `$to_exit = 1
             `$go_to = 1
         }
         Default {
-            Print-Msg `"ÊäÈëÓĞÎó, ÇëÖØÊÔ`"
+            Print-Msg `"è¾“å…¥æœ‰è¯¯, è¯·é‡è¯•`"
         }
     }
 
@@ -965,28 +966,28 @@ while (`$True) {
 }
 
 if (`$to_exit -eq 1) {
-    Print-Msg `"ÍË³öÄ£ĞÍÏÂÔØ½Å±¾`"
+    Print-Msg `"é€€å‡ºæ¨¡å‹ä¸‹è½½è„šæœ¬`"
     Read-Host | Out-Null
     exit 0
 }
 
-Print-Msg `"µ±Ç°Ñ¡ÔñÒªÏÂÔØµÄÄ£ĞÍ: `$model_name`"
-Print-Msg `"ÊÇ·ñÈ·ÈÏÏÂÔØÄ£ĞÍ?`"
-Print-Msg `"ÌáÊ¾: ÊäÈë yes È·ÈÏ»ò no È¡Ïû (Ä¬ÈÏÎª no)`"
+Print-Msg `"å½“å‰é€‰æ‹©è¦ä¸‹è½½çš„æ¨¡å‹: `$model_name`"
+Print-Msg `"æ˜¯å¦ç¡®è®¤ä¸‹è½½æ¨¡å‹?`"
+Print-Msg `"æç¤º: è¾“å…¥ yes ç¡®è®¤æˆ– no å–æ¶ˆ (é»˜è®¤ä¸º no)`"
 `$download_model = Read-Host `"===========================================>`"
 
 if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
-    Print-Msg `"Ä£ĞÍ½«ÏÂÔØÖÁ `$PSScriptRoot\models Ä¿Â¼ÖĞ`"
-    Print-Msg `"ÏÂÔØ `$model_name Ä£ĞÍÖĞ`"
+    Print-Msg `"æ¨¡å‹å°†ä¸‹è½½è‡³ `$PSScriptRoot\models ç›®å½•ä¸­`"
+    Print-Msg `"ä¸‹è½½ `$model_name æ¨¡å‹ä¸­`"
     ./git/bin/aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d ./models -o `$model_name
     if (`$?) {
-        Print-Msg `"`$model_name Ä£ĞÍÏÂÔØ³É¹¦`"
+        Print-Msg `"`$model_name æ¨¡å‹ä¸‹è½½æˆåŠŸ`"
     } else {
-        Print-Msg `"`$model_name Ä£ĞÍÏÂÔØÊ§°Ü`"
+        Print-Msg `"`$model_name æ¨¡å‹ä¸‹è½½å¤±è´¥`"
     }
 }
 
-Print-Msg `"ÍË³öÄ£ĞÍÏÂÔØ½Å±¾`"
+Print-Msg `"é€€å‡ºæ¨¡å‹ä¸‹è½½è„šæœ¬`"
 Read-Host | Out-Null
 "
 
@@ -994,7 +995,7 @@ Read-Host | Out-Null
 }
 
 
-# ĞéÄâ»·¾³¼¤»î½Å±¾
+# è™šæ‹Ÿç¯å¢ƒæ¿€æ´»è„šæœ¬
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
@@ -1005,58 +1006,58 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
-# ´úÀíÅäÖÃ
+# ä»£ç†é…ç½®
 `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃ×Ô¶¯ÉèÖÃ¾µÏñÔ´
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®é•œåƒæº
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # ±¾µØ´æÔÚ´úÀíÅäÖÃ
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # æœ¬åœ°å­˜åœ¨ä»£ç†é…ç½®
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡´úÀíÅäÖÃÎÄ¼ş²¢ÉèÖÃ´úÀí`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ÏµÍ³ÒÑÉèÖÃ´úÀí
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, å·²è¯»å–ä»£ç†é…ç½®æ–‡ä»¶å¹¶è®¾ç½®ä»£ç†`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # ç³»ç»Ÿå·²è®¾ç½®ä»£ç†
         `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"¼ì²âµ½ÏµÍ³ÉèÖÃÁË´úÀí, ÒÑ¶ÁÈ¡ÏµÍ³ÖĞµÄ´úÀíÅäÖÃ²¢ÉèÖÃ´úÀí`"
+        Print-Msg `"æ£€æµ‹åˆ°ç³»ç»Ÿè®¾ç½®äº†ä»£ç†, å·²è¯»å–ç³»ç»Ÿä¸­çš„ä»£ç†é…ç½®å¹¶è®¾ç½®ä»£ç†`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_proxy.txt ´úÀíÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_proxy.txt ä»£ç†é…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†`"
 }
 
-# Huggingface ¾µÏñÔ´
-if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # ¼ì²âÊÇ·ñ½ûÓÃÁË×Ô¶¯ÉèÖÃhuggingface¾µÏñÔ´
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # ±¾µØ´æÔÚhuggingface¾µÏñÔ´ÅäÖÃ
+# HuggingFace é•œåƒæº
+if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # æ£€æµ‹æ˜¯å¦ç¦ç”¨äº†è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº
+    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # æœ¬åœ°å­˜åœ¨ HuggingFace é•œåƒæºé…ç½®
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
         `$env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ hf_mirror.txt ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡¸ÃÅäÖÃ²¢ÉèÖÃ HuggingFace ¾µÏñÔ´`"
-    } else { # Ê¹ÓÃÄ¬ÈÏÉèÖÃ
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ hf_mirror.txt é…ç½®æ–‡ä»¶, å·²è¯»å–è¯¥é…ç½®å¹¶è®¾ç½® HuggingFace é•œåƒæº`"
+    } else { # ä½¿ç”¨é»˜è®¤è®¾ç½®
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"Ê¹ÓÃÄ¬ÈÏ HuggingFace ¾µÏñÔ´`"
+        Print-Msg `"ä½¿ç”¨é»˜è®¤ HuggingFace é•œåƒæº`"
     }
 } else {
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_hf_mirror.txt ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ×Ô¶¯ÉèÖÃ HuggingFace ¾µÏñÔ´`"
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_hf_mirror.txt é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨è‡ªåŠ¨è®¾ç½® HuggingFace é•œåƒæº`"
 }
 
-# github ¾µÏñÔ´
-if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ½ûÓÃgithub¾µÏñÔ´
-    Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ disable_gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ½ûÓÃ Github ¾µÏñÔ´`"
+# Github é•œåƒæº
+if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ç¦ç”¨ Github é•œåƒæº
+    Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ disable_gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, ç¦ç”¨ Github é•œåƒæº`"
 } else {
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # Ê¹ÓÃ×Ô¶¨Òågithub¾µÏñÔ´
-        `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # ÉèÖÃgitÅäÖÃÎÄ¼şÂ·¾¶
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # ä½¿ç”¨è‡ªå®šä¹‰ Github é•œåƒæº
+        `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # è®¾ç½® Git é…ç½®æ–‡ä»¶è·¯å¾„
         if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
             Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
         }
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         ./git/bin/git.exe config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"¼ì²âµ½±¾µØ´æÔÚ gh_mirror.txt Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş, ÒÑ¶ÁÈ¡ Github ¾µÏñÔ´ÅäÖÃÎÄ¼ş²¢ÉèÖÃ Github ¾µÏñÔ´`"
+        Print-Msg `"æ£€æµ‹åˆ°æœ¬åœ°å­˜åœ¨ gh_mirror.txt Github é•œåƒæºé…ç½®æ–‡ä»¶, å·²è¯»å– Github é•œåƒæºé…ç½®æ–‡ä»¶å¹¶è®¾ç½® Github é•œåƒæº`"
     }
 }
 
-# »·¾³±äÁ¿
+# ç¯å¢ƒå˜é‡
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
 `$git_path = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$git_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # ½«pythonÌí¼Óµ½»·¾³±äÁ¿
+`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$git_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # å°†pythonæ·»åŠ åˆ°ç¯å¢ƒå˜é‡
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
 `$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
@@ -1075,55 +1076,55 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # ½ûÓÃgithub¾µÏñÔ´
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 
-Print-Msg `"¼¤»î SD-Trainer Env`"
-Print-Msg `"¸ü¶à°ïÖúĞÅÏ¢¿ÉÔÚ SD-Trainer Installer ÏîÄ¿µØÖ·²é¿´: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
+Print-Msg `"æ¿€æ´» SD-Trainer Env`"
+Print-Msg `"æ›´å¤šå¸®åŠ©ä¿¡æ¯å¯åœ¨ SD-Trainer Installer é¡¹ç›®åœ°å€æŸ¥çœ‹: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 "
 
     Set-Content -Path "./SD-Trainer/activate.ps1" -Value $content
 }
 
 
-# °ïÖúÎÄµµ
+# å¸®åŠ©æ–‡æ¡£
 function Write-ReadMe {
     $content = "==================================
 SD-Trainer Installer created by licyk
-ßÙÁ¨ßÙÁ¨£ºhttps://space.bilibili.com/46497516
-Github£ºhttps://github.com/licyk
+å“”å“©å“”å“©ï¼šhttps://space.bilibili.com/46497516
+Githubï¼šhttps://github.com/licyk
 ==================================
 
-ÕâÊÇ¹ØÓÚ SD-Trainer µÄ¼òµ¥Ê¹ÓÃÎÄµµ¡£
+è¿™æ˜¯å…³äº SD-Trainer çš„ç®€å•ä½¿ç”¨æ–‡æ¡£ã€‚
 
-Ê¹ÓÃ SD-Trainer Installer ½øĞĞ°²×°²¢°²×°³É¹¦ºó£¬½«ÔÚµ±Ç°Ä¿Â¼Éú³É SD-Trainer ÎÄ¼ş¼Ğ£¬ÒÔÏÂÎªÎÄ¼ş¼ĞÖĞ²»Í¬ÎÄ¼ş / ÎÄ¼ş¼ĞµÄ×÷ÓÃ¡£
+ä½¿ç”¨ SD-Trainer Installer è¿›è¡Œå®‰è£…å¹¶å®‰è£…æˆåŠŸåï¼Œå°†åœ¨å½“å‰ç›®å½•ç”Ÿæˆ SD-Trainer æ–‡ä»¶å¤¹ï¼Œä»¥ä¸‹ä¸ºæ–‡ä»¶å¤¹ä¸­ä¸åŒæ–‡ä»¶ / æ–‡ä»¶å¤¹çš„ä½œç”¨ã€‚
 
-cache£º»º´æÎÄ¼ş¼Ğ£¬±£´æ×Å Pip / HuggingFace µÈ»º´æÎÄ¼ş¡£
-python£ºPython µÄ´æ·ÅÂ·¾¶¡£Çë×¢Òâ£¬ÇëÎğ½«¸Ã Python ÎÄ¼ş¼ĞÌí¼Óµ½»·¾³±äÁ¿£¬Õâ¿ÉÄÜµ¼ÖÂ²»Á¼ºó¹û¡£
-git£ºGit µÄ´æ·ÅÂ·¾¶¡£
-lora-scripts£ºSD-Trainer ´æ·ÅµÄÎÄ¼ş¼Ğ¡£
-models£ºÊ¹ÓÃÄ£ĞÍÏÂÔØ½Å±¾ÏÂÔØÄ£ĞÍÊ±Ä£ĞÍµÄ´æ·ÅÎ»ÖÃ¡£
-activate.ps1£ºĞéÄâ»·¾³¼¤»î½Å±¾£¬Ê¹ÓÃ¸Ã½Å±¾¼¤»îĞéÄâ»·¾³ºó¼´¿ÉÊ¹ÓÃ Python¡¢Pip¡¢Git µÄÃüÁî¡£
-get_sd_trainer_installer.ps1£º»ñÈ¡×îĞÂµÄ SD-Trainer Installer °²×°½Å±¾£¬ÔËĞĞºó½«»áÔÚÓë SD-Trainer ÎÄ¼ş¼ĞÍ¬¼¶µÄÄ¿Â¼ÖĞÉú³É sd_trainer_installer.ps1 °²×°½Å±¾¡£
-update.ps1£º¸üĞÂ SD-Trainer µÄ½Å±¾£¬¿ÉÊ¹ÓÃ¸Ã½Å±¾¸üĞÂ SD-Trainer¡£
-launch.ps1£ºÆô¶¯ SD-Trainer µÄ½Å±¾¡£
-reinstall_pytorch.ps1£ºÖØĞÂ°²×° PyTorch µÄ½Å±¾£¬ÔÚ PyTorch ³öÎÊÌâ»òÕßĞèÒªÇĞ»» PyTorch °æ±¾Ê±¿ÉÊ¹ÓÃ¡£
-download_model.ps1£ºÏÂÔØÄ£ĞÍµÄ½Å±¾£¬ÏÂÔØµÄÄ£ĞÍ½«´æ·ÅÔÚ models ÎÄ¼ş¼ĞÖĞ¡£
-help.txt£º°ïÖúÎÄµµ¡£
+cacheï¼šç¼“å­˜æ–‡ä»¶å¤¹ï¼Œä¿å­˜ç€ Pip / HuggingFace ç­‰ç¼“å­˜æ–‡ä»¶ã€‚
+pythonï¼šPython çš„å­˜æ”¾è·¯å¾„ã€‚è¯·æ³¨æ„ï¼Œè¯·å‹¿å°†è¯¥ Python æ–‡ä»¶å¤¹æ·»åŠ åˆ°ç¯å¢ƒå˜é‡ï¼Œè¿™å¯èƒ½å¯¼è‡´ä¸è‰¯åæœã€‚
+gitï¼šGit çš„å­˜æ”¾è·¯å¾„ã€‚
+lora-scriptsï¼šSD-Trainer å­˜æ”¾çš„æ–‡ä»¶å¤¹ã€‚
+modelsï¼šä½¿ç”¨æ¨¡å‹ä¸‹è½½è„šæœ¬ä¸‹è½½æ¨¡å‹æ—¶æ¨¡å‹çš„å­˜æ”¾ä½ç½®ã€‚
+activate.ps1ï¼šè™šæ‹Ÿç¯å¢ƒæ¿€æ´»è„šæœ¬ï¼Œä½¿ç”¨è¯¥è„šæœ¬æ¿€æ´»è™šæ‹Ÿç¯å¢ƒåå³å¯ä½¿ç”¨ Pythonã€Pipã€Git çš„å‘½ä»¤ã€‚
+get_sd_trainer_installer.ps1ï¼šè·å–æœ€æ–°çš„ SD-Trainer Installer å®‰è£…è„šæœ¬ï¼Œè¿è¡Œåå°†ä¼šåœ¨ä¸ SD-Trainer æ–‡ä»¶å¤¹åŒçº§çš„ç›®å½•ä¸­ç”Ÿæˆ sd_trainer_installer.ps1 å®‰è£…è„šæœ¬ã€‚
+update.ps1ï¼šæ›´æ–° SD-Trainer çš„è„šæœ¬ï¼Œå¯ä½¿ç”¨è¯¥è„šæœ¬æ›´æ–° SD-Trainerã€‚
+launch.ps1ï¼šå¯åŠ¨ SD-Trainer çš„è„šæœ¬ã€‚
+reinstall_pytorch.ps1ï¼šé‡æ–°å®‰è£… PyTorch çš„è„šæœ¬ï¼Œåœ¨ PyTorch å‡ºé—®é¢˜æˆ–è€…éœ€è¦åˆ‡æ¢ PyTorch ç‰ˆæœ¬æ—¶å¯ä½¿ç”¨ã€‚
+download_model.ps1ï¼šä¸‹è½½æ¨¡å‹çš„è„šæœ¬ï¼Œä¸‹è½½çš„æ¨¡å‹å°†å­˜æ”¾åœ¨ models æ–‡ä»¶å¤¹ä¸­ã€‚
+help.txtï¼šå¸®åŠ©æ–‡æ¡£ã€‚
 
 
-ÒªÆô¶¯ SD-Trainer£¬¿ÉÔÚ SD-Trainer ÎÄ¼ş¼ĞÖĞÕÒµ½ launch.ps1 ½Å±¾£¬ÓÒ¼üÕâ¸ö½Å±¾£¬Ñ¡ÔñÊ¹ÓÃ PowerShell ÔËĞĞ£¬µÈ´ı SD-Trainer Æô¶¯Íê³É£¬Æô¶¯Íê³Éºó½«×Ô¶¯´ò¿ªä¯ÀÀÆ÷½øÈë SD-Trainer ½çÃæ¡£
+è¦å¯åŠ¨ SD-Trainerï¼Œå¯åœ¨ SD-Trainer æ–‡ä»¶å¤¹ä¸­æ‰¾åˆ° launch.ps1 è„šæœ¬ï¼Œå³é”®è¿™ä¸ªè„šæœ¬ï¼Œé€‰æ‹©ä½¿ç”¨ PowerShell è¿è¡Œï¼Œç­‰å¾… SD-Trainer å¯åŠ¨å®Œæˆï¼Œå¯åŠ¨å®Œæˆåå°†è‡ªåŠ¨æ‰“å¼€æµè§ˆå™¨è¿›å…¥ SD-Trainer ç•Œé¢ã€‚
 
-½Å±¾Îª SD-Trainer ÉèÖÃÁË HuggingFace ¾µÏñÔ´£¬½â¾ö¹úÄÚÎŞ·¨Ö±½Ó·ÃÎÊ HuggingFace£¬µ¼ÖÂ SD-Trainer ÎŞ·¨´Ó HuggingFace ÏÂÔØÄ£ĞÍµÄÎÊÌâ¡£
-Èç¹ûÏë×Ô¶¨Òå HuggingFace ¾µÏñÔ´£¬¿ÉÒÔÔÚ±¾µØ´´½¨ hf_mirror.txt ÎÄ¼ş£¬ÔÚÎÄ¼şÖĞÌîĞ´ HuggingFace ¾µÏñÔ´µÄµØÖ·ºó±£´æ£¬ÔÙ´ÎÆô¶¯½Å±¾Ê±½«×Ô¶¯¶ÁÈ¡ÅäÖÃ¡£
-Èç¹ûĞèÒª½ûÓÃ HuggingFace ¾µÏñÔ´£¬Ôò´´½¨ disable_hf_mirror.txt ÎÄ¼ş£¬Æô¶¯½Å±¾Ê±½«²»ÔÙÉèÖÃ HuggingFace ¾µÏñÔ´¡£
+è„šæœ¬ä¸º SD-Trainer è®¾ç½®äº† HuggingFace é•œåƒæºï¼Œè§£å†³å›½å†…æ— æ³•ç›´æ¥è®¿é—® HuggingFaceï¼Œå¯¼è‡´ SD-Trainer æ— æ³•ä» HuggingFace ä¸‹è½½æ¨¡å‹çš„é—®é¢˜ã€‚
+å¦‚æœæƒ³è‡ªå®šä¹‰ HuggingFace é•œåƒæºï¼Œå¯ä»¥åœ¨æœ¬åœ°åˆ›å»º hf_mirror.txt æ–‡ä»¶ï¼Œåœ¨æ–‡ä»¶ä¸­å¡«å†™ HuggingFace é•œåƒæºçš„åœ°å€åä¿å­˜ï¼Œå†æ¬¡å¯åŠ¨è„šæœ¬æ—¶å°†è‡ªåŠ¨è¯»å–é…ç½®ã€‚
+å¦‚æœéœ€è¦ç¦ç”¨ HuggingFace é•œåƒæºï¼Œåˆ™åˆ›å»º disable_hf_mirror.txt æ–‡ä»¶ï¼Œå¯åŠ¨è„šæœ¬æ—¶å°†ä¸å†è®¾ç½® HuggingFace é•œåƒæºã€‚
 
-ÒÔÏÂÎª¿ÉÓÃµÄ HuggingFace ¾µÏñÔ´µØÖ·£º
+ä»¥ä¸‹ä¸ºå¯ç”¨çš„ HuggingFace é•œåƒæºåœ°å€ï¼š
 https://hf-mirror.com
 https://huggingface.sukaka.top
 
-ÎªÁË½â¾ö·ÃÎÊ Github ËÙ¶ÈÂıµÄÎÊÌâ£¬½Å±¾Ä¬ÈÏÆôÓÃ Github ¾µÏñÔ´£¬ÔÚÔËĞĞ SD-Trainer Installer »òÕß SD-Trainer ¸üĞÂ½Å±¾Ê±½«×Ô¶¯²âÊÔ¿ÉÓÃµÄ Github ¾µÏñÔ´²¢ÉèÖÃ¡£
-Èç¹ûÏë×Ô¶¨Òå Github ¾µÏñÔ´£¬¿ÉÒÔÔÚ±¾µØ´´½¨ gh_mirror.txt ÎÄ¼ş£¬ÔÚÎÄ±¾ÖĞÌîĞ´ Github ¾µÏñÔ´µÄµØÖ·ºó±£´æ£¬ÔÙ´ÎÆô¶¯½Å±¾Ê±½«×Ô¶¯¶ÁÈ¡ÅäÖÃ¡£
-Èç¹ûĞèÒª½ûÓÃ Github ¾µÏñÔ´£¬Ôò´´½¨ disable_gh_mirror.txt ÎÄ¼ş£¬Æô¶¯½Å±¾Ê±½«²»ÔÙÉèÖÃ Github ¾µÏñÔ´¡£
+ä¸ºäº†è§£å†³è®¿é—® Github é€Ÿåº¦æ…¢çš„é—®é¢˜ï¼Œè„šæœ¬é»˜è®¤å¯ç”¨ Github é•œåƒæºï¼Œåœ¨è¿è¡Œ SD-Trainer Installer æˆ–è€… SD-Trainer æ›´æ–°è„šæœ¬æ—¶å°†è‡ªåŠ¨æµ‹è¯•å¯ç”¨çš„ Github é•œåƒæºå¹¶è®¾ç½®ã€‚
+å¦‚æœæƒ³è‡ªå®šä¹‰ Github é•œåƒæºï¼Œå¯ä»¥åœ¨æœ¬åœ°åˆ›å»º gh_mirror.txt æ–‡ä»¶ï¼Œåœ¨æ–‡æœ¬ä¸­å¡«å†™ Github é•œåƒæºçš„åœ°å€åä¿å­˜ï¼Œå†æ¬¡å¯åŠ¨è„šæœ¬æ—¶å°†è‡ªåŠ¨è¯»å–é…ç½®ã€‚
+å¦‚æœéœ€è¦ç¦ç”¨ Github é•œåƒæºï¼Œåˆ™åˆ›å»º disable_gh_mirror.txt æ–‡ä»¶ï¼Œå¯åŠ¨è„šæœ¬æ—¶å°†ä¸å†è®¾ç½® Github é•œåƒæºã€‚
 
-ÒÔÏÂÎª¿ÉÓÃµÄ Github ¾µÏñÔ´£º
+ä»¥ä¸‹ä¸ºå¯ç”¨çš„ Github é•œåƒæºï¼š
 https://mirror.ghproxy.com/https://github.com
 https://ghproxy.net/https://github.com
 https://gitclone.com/github.com
@@ -1131,21 +1132,21 @@ https://gh-proxy.com/https://github.com
 https://ghps.cc/https://github.com
 https://gh.idayer.com/https://github.com
 
-ÈôÒªÎª½Å±¾ÉèÖÃ´úÀí£¬ÔòÔÚ´úÀíÈí¼şÖĞ´ò¿ªÏµÍ³´úÀíÄ£Ê½¼´¿É£¬»òÕßÔÚ±¾µØ´´½¨ proxy.txt ÎÄ¼ş£¬ÔÚÎÄ¼şÖĞÌîĞ´´úÀíµØÖ·ºó±£´æ£¬ÔÙ´ÎÆô¶¯½Å±¾ÊÇ½«×Ô¶¯¶ÁÈ¡ÅäÖÃ¡£
-Èç¹ûÒª½ûÓÃ×Ô¶¯ÉèÖÃ´úÀí£¬¿ÉÒÔÔÚ±¾µØ´´½¨ disable_proxy.txt ÎÄ¼ş£¬Æô¶¯½Å±¾Ê±½«²»ÔÙ×Ô¶¯ÉèÖÃ´úÀí¡£
+è‹¥è¦ä¸ºè„šæœ¬è®¾ç½®ä»£ç†ï¼Œåˆ™åœ¨ä»£ç†è½¯ä»¶ä¸­æ‰“å¼€ç³»ç»Ÿä»£ç†æ¨¡å¼å³å¯ï¼Œæˆ–è€…åœ¨æœ¬åœ°åˆ›å»º proxy.txt æ–‡ä»¶ï¼Œåœ¨æ–‡ä»¶ä¸­å¡«å†™ä»£ç†åœ°å€åä¿å­˜ï¼Œå†æ¬¡å¯åŠ¨è„šæœ¬æ˜¯å°†è‡ªåŠ¨è¯»å–é…ç½®ã€‚
+å¦‚æœè¦ç¦ç”¨è‡ªåŠ¨è®¾ç½®ä»£ç†ï¼Œå¯ä»¥åœ¨æœ¬åœ°åˆ›å»º disable_proxy.txt æ–‡ä»¶ï¼Œå¯åŠ¨è„šæœ¬æ—¶å°†ä¸å†è‡ªåŠ¨è®¾ç½®ä»£ç†ã€‚
 
-ÉèÖÃ SD-Trainer µÄÆô¶¯²ÎÊı£¬¿ÉÒÔÔÚºÍ launch.ps1 ½Å±¾Í¬¼¶µÄÄ¿Â¼´´½¨Ò»¸ö launch_args.txt ÎÄ¼ş£¬ÔÚÎÄ¼şÄÚĞ´ÉÏÆô¶¯²ÎÊı£¬ÔËĞĞ SD-Trainer Æô¶¯½Å±¾Ê±½«×Ô¶¯¶ÁÈ¡¸ÃÎÄ¼şÄÚµÄÆô¶¯²ÎÊı²¢Ó¦ÓÃ¡£
+è®¾ç½® SD-Trainer çš„å¯åŠ¨å‚æ•°ï¼Œå¯ä»¥åœ¨å’Œ launch.ps1 è„šæœ¬åŒçº§çš„ç›®å½•åˆ›å»ºä¸€ä¸ª launch_args.txt æ–‡ä»¶ï¼Œåœ¨æ–‡ä»¶å†…å†™ä¸Šå¯åŠ¨å‚æ•°ï¼Œè¿è¡Œ SD-Trainer å¯åŠ¨è„šæœ¬æ—¶å°†è‡ªåŠ¨è¯»å–è¯¥æ–‡ä»¶å†…çš„å¯åŠ¨å‚æ•°å¹¶åº”ç”¨ã€‚
 
-¸ü¶àÏêÏ¸µÄ°ïÖú¿ÉÔÚÏÂÃæµÄÁ´½Ó²é¿´¡£
-SD-Trainer Installer Ê¹ÓÃ°ïÖú£ºhttps://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
-SD-Trainer ÏîÄ¿µØÖ·£ºhttps://github.com/Akegarasu/lora-scripts
+æ›´å¤šè¯¦ç»†çš„å¸®åŠ©å¯åœ¨ä¸‹é¢çš„é“¾æ¥æŸ¥çœ‹ã€‚
+SD-Trainer Installer ä½¿ç”¨å¸®åŠ©ï¼šhttps://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+SD-Trainer é¡¹ç›®åœ°å€ï¼šhttps://github.com/Akegarasu/lora-scripts
 
-ÍÆ¼öµÄßÙÁ¨ßÙÁ¨ UP Ö÷£º
-ÇàÁúÊ¥Õß£ºhttps://space.bilibili.com/219296
-ÇïÈ~aaaki£ºhttps://space.bilibili.com/12566101
-çúçêÇàÈ~£ºhttps://space.bilibili.com/507303431
+æ¨èçš„å“”å“©å“”å“© UP ä¸»ï¼š
+é’é¾™åœ£è€…ï¼šhttps://space.bilibili.com/219296
+ç§‹è‘‰aaakiï¼šhttps://space.bilibili.com/12566101
+ç¥ç€é’è‘‰ï¼šhttps://space.bilibili.com/507303431
 
-Ò»Ğ©ÑµÁ·Ä£ĞÍµÄ½Ì³Ì£º
+ä¸€äº›è®­ç»ƒæ¨¡å‹çš„æ•™ç¨‹ï¼š
 https://rentry.org/59xed3
 https://civitai.com/articles/2056
 https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
@@ -1160,13 +1161,13 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 }
 
 
-# Ö÷³ÌĞò
+# ä¸»ç¨‹åº
 function Main {
-    Print-Msg "Æô¶¯ SD-Trainer °²×°³ÌĞò"
-    Print-Msg "ÌáÊ¾: Èô³öÏÖÄ³¸ö²½ÖèÖ´ĞĞÊ§°Ü, ¿É³¢ÊÔÔÙ´ÎÔËĞĞ SD-Trainer Installer"
-    Print-Msg "SD-Trainer Installer Ê¹ÓÃÎÄµµ: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
+    Print-Msg "å¯åŠ¨ SD-Trainer å®‰è£…ç¨‹åº"
+    Print-Msg "æç¤º: è‹¥å‡ºç°æŸä¸ªæ­¥éª¤æ‰§è¡Œå¤±è´¥, å¯å°è¯•å†æ¬¡è¿è¡Œ SD-Trainer Installer"
+    Print-Msg "SD-Trainer Installer ä½¿ç”¨æ–‡æ¡£: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Check-Install
-    Print-Msg "Ìí¼ÓÆô¶¯½Å±¾ºÍÎÄµµÖĞ"
+    Print-Msg "æ·»åŠ å¯åŠ¨è„šæœ¬å’Œæ–‡æ¡£ä¸­"
     Write-Launch-Script
     Write-Update-Script
     Write-SD-Trainer-Install-Script
@@ -1174,9 +1175,9 @@ function Main {
     Write-Download-Model-Script
     Write-Env-Activate-Script
     Write-ReadMe
-    Print-Msg "SD-Trainer °²×°½áÊø, °²×°Â·¾¶Îª $PSScriptRoot\SD-Trainer"
-    Print-Msg "°ïÖúÎÄµµ¿ÉÔÚ SD-Trainer ÎÄ¼ş¼ĞÖĞ²é¿´, Ë«»÷ help.txt ÎÄ¼ş¼´¿É²é¿´"
-    Print-Msg "ÍË³ö SD-Trainer Installer"
+    Print-Msg "SD-Trainer å®‰è£…ç»“æŸ, å®‰è£…è·¯å¾„ä¸º $PSScriptRoot\SD-Trainer"
+    Print-Msg "å¸®åŠ©æ–‡æ¡£å¯åœ¨ SD-Trainer æ–‡ä»¶å¤¹ä¸­æŸ¥çœ‹, åŒå‡» help.txt æ–‡ä»¶å³å¯æŸ¥çœ‹"
+    Print-Msg "é€€å‡º SD-Trainer Installer"
 }
 
 
