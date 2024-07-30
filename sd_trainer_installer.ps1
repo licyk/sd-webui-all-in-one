@@ -1106,7 +1106,7 @@ get_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本
 update.ps1：更新 SD-Trainer 的脚本，可使用该脚本更新 SD-Trainer。
 launch.ps1：启动 SD-Trainer 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。
+download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 help.txt：帮助文档。
 
 
