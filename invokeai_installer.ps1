@@ -444,7 +444,7 @@ if (`$req) {
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./InvokeAI/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/launch.ps1" -Value $content
 }
 
 
@@ -511,7 +511,7 @@ if (`$?) {
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./InvokeAI/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/update.ps1" -Value $content
 }
 
 
@@ -530,7 +530,7 @@ Print-Msg `"修复 InvokeAI 数据库完成`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
 }
 
 
@@ -588,7 +588,7 @@ ForEach (`$url in `$urls) {
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./InvokeAI/get_invokeai_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/get_invokeai_installer.ps1" -Value $content
 }
 
 
@@ -662,7 +662,7 @@ Print-Msg `"激活 InvokeAI Env`"
 Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 "
 
-    Set-Content -Path "./InvokeAI/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/activate.ps1" -Value $content
 }
 
 
@@ -714,7 +714,7 @@ if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./InvokeAI/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -775,7 +775,7 @@ function Get-Model-Config-File {
 Get-Model-Config-File
 Read-Host | Out-Null
 "
-    Set-Content -Path "./InvokeAI/download_config.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/download_config.ps1" -Value $content
 }
 
 # 帮助文档
@@ -828,7 +828,7 @@ InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
 "
 
-    Set-Content -Path "./InvokeAI/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "./InvokeAI/help.txt" -Value $content
 }
 
 

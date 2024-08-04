@@ -404,7 +404,7 @@ Set-Location `"`$PSScriptRoot`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./SD-Trainer/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/launch.ps1" -Value $content
 }
 
 
@@ -522,30 +522,72 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 `$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 
+`$update_fail = 0
 Print-Msg `"拉取 SD-Trainer 更新内容中`"
 Fix-Git-Point-Off-Set `"./lora-scripts`"
-`$ver = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+`$core_origin_ver = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 `$branch = `$(./git/bin/git.exe -C lora-scripts symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 ./git/bin/git.exe -C lora-scripts fetch --recurse-submodules
 if (`$?) {
     Print-Msg `"应用 SD-Trainer 更新中`"
     `$commit_hash = `$(./git/bin/git.exe -C lora-scripts log origin/`$branch --max-count 1 --format=`"%h`")
     ./git/bin/git.exe -C lora-scripts reset --hard `$commit_hash --recurse-submodules
-    `$ver_ = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    if (`$ver -eq `$ver_) {
-        Print-Msg `"SD-Trainer 已为最新版，当前版本：`$ver`"
+    `$core_latest_ver = `$(./git/bin/git.exe -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    
+    if (`$core_origin_ver -eq `$core_latest_ver) {
+        Print-Msg `"SD-Trainer 已为最新版`"
+        `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
+        `$core_req_update_msg = `"因 SD-Trainer 已为最新版, 无需进行内核依赖更新`"
+        `$req_update_msg = `"因 SD-Trainer 已为最新版, 无需进行依赖更新`"
     } else {
-        Print-Msg `"SD-Trainer 更新成功，版本：`$ver -> `$ver_`"
+        Print-Msg `"SD-Trainer 更新成功`"
+        `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+        Print-Msg `"更新 SD-Trainer 内核依赖中`"
+        Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
+        ../../python/python.exe -m pip install --upgrade -r requirements.txt --no-warn-script-location
+        if (`$?) {
+            Print-Msg `"SD-Trainer 内核依赖更新成功`"
+            `$core_req_update_msg = `"更新成功`"
+        } else {
+            Print-Msg `"SD-Trainer 内核依赖更新失败`"
+            `$core_req_update_msg = `"更新失败`"
+            `$update_fail = 1
+        }
+        Set-Location `"`$PSScriptRoot/lora-scripts`"
+        ../python/python.exe -m pip install --upgrade -r requirements.txt --no-warn-script-location
+        if (`$?) {
+            Print-Msg `"SD-Trainer 依赖更新成功`"
+            `$req_update_msg = `"更新成功`"
+        } else {
+            Print-Msg `"SD-Trainer 依赖更新成功`"
+            `$req_update_msg = `"更新失败`"
+            `$update_fail = 1
+        }
+        Set-Location `"`$PSScriptRoot`"
     }
 } else {
-    Print-Msg `"拉取 SD-Trainer 更新内容失败, 请重试`"
+    Print-Msg `"拉取 SD-Trainer 更新内容失败`"
+    `$core_update_msg = `"拉取 SD-Trainer 更新内容失败, 无法进行更新`"
+    `$core_req_update_msg = `"因 SD-Trainer 组件新失败, 不进行更新`"
+    `$req_update_msg = `"因 SD-Trainer 组件更新失败, 不进行更新`"
+    `$update_fail = 1
+}
+
+Print-Msg `"SD-Trainer 更新结果：`"
+Print-Msg `"SD-Trainer 组件: `$core_update_msg`"
+Print-Msg `"SD-Trainer 内核依赖: `$core_req_update_msg`"
+Print-Msg `"SD-Trainer 依赖: `$req_update_msg`"
+if (`$update_fail -eq 0) {
+    Print-Msg `"SD-Trainer 更新成功`"
+} else {
+    Print-Msg `"SD-Trainer 更新失败, 请检查控制台日志`"
 }
 
 Print-Msg `"退出 SD-Trainer 更新脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./SD-Trainer/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/update.ps1" -Value $content
 }
 
 
@@ -605,7 +647,7 @@ Print-Msg `"退出 SD-Trainer Installer 下载脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
 }
 
 
@@ -793,7 +835,7 @@ Print-Msg `"退出 PyTorch 重装脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./SD-Trainer/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -991,7 +1033,7 @@ Print-Msg `"退出模型下载脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Path "./SD-Trainer/download_models.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/download_models.ps1" -Value $content
 }
 
 
@@ -1080,7 +1122,7 @@ Print-Msg `"激活 SD-Trainer Env`"
 Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 "
 
-    Set-Content -Path "./SD-Trainer/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/activate.ps1" -Value $content
 }
 
 
@@ -1157,7 +1199,7 @@ https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-abou
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
 "
 
-    Set-Content -Path "./SD-Trainer/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "./SD-Trainer/help.txt" -Value $content
 }
 
 
