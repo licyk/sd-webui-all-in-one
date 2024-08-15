@@ -15,6 +15,7 @@
 - [fooocus_colab.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_colab.ipynb)：适用于 Colab 部署 Fooocus。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 - [fooocus_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_kaggle.ipynb)：适用于 Kaggle 部署 Fooocus。
 - [sd_trainer_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_trainer_kaggle.ipynb)：适用于 Kaggle 部署 SD Trainer，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
+- [sd_scripts_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_scripts_kaggle.ipynb)：适用于 Kaggle 部署 sd-scripts，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
 
 ## 主要功能
 1. 功能初始化：导入 SD WebUI All In One 所使用的功能
