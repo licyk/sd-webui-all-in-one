@@ -4,6 +4,8 @@ Set-Location "$PSScriptRoot"
 $pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
 $pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
 $pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+# $pip_find_mirror_cu121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
+$pip_extra_index_mirror_cu121 = "https://download.pytorch.org/whl/cu121"
 # Github 镜像源列表
 $github_mirror_list = @(
     "https://mirror.ghproxy.com/https://github.com",
@@ -659,6 +661,24 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
+# 代理配置
+`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$env:HTTP_PROXY = `$proxy_value
+        `$env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
 # 环境变量
 `$env:PIP_INDEX_URL = `"$pip_index_mirror`"
 `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
@@ -685,18 +705,26 @@ while (`$True) {
 
     `$content = `"
 -----------------------------------------------------
-- 1、Torch 1.12.1 (CUDA11.3)+ xFormers 0.0.14
-- 2、Torch 1.13.1 (CUDA11.7)+ xFormers 0.0.16
-- 3、Torch 2.0.0 (CUDA11.8) + xFormers 0.0.18
-- 4、Torch 2.0.1 (CUDA11.8) + xFormers 0.0.22
-- 5、Torch 2.1.1 (CUDA11.8) + xFormers 0.0.23
-- 6、Torch 2.1.2 (CUDA11.8) + xFormers 0.0.23.post1
-- 7、Torch 2.2.0 (CUDA11.8) + xFormers 0.0.24
-- 8、Torch 2.2.1 (CUDA11.8) + xFormers 0.0.25
-- 9、Torch 2.2.2 (CUDA11.8) + xFormers 0.0.25.post1
-- 10、Torch 2.3.0 (CUDA11.8) + xFormers 0.0.26.post1
-- 11、Torch 2.3.1 (CUDA11.8) + xFormers 0.0.27
-- 12、Torch 2.4.0 (CUDA11.8) + xFormers 0.0.27.post2
+- 1、Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14
+- 2、Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16
+- 3、Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18
+- 4、Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22
+- 5、Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23
+- 6、Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23
+- 7、Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1
+- 8、Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1
+- 9、Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24
+- 10、Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24
+- 11、Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25
+- 12、Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25
+- 13、Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1
+- 14、Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1
+- 15、Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1
+- 16、Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1
+- 17、Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27
+- 18、Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27
+- 19、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
+- 20、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
 -----------------------------------------------------
     `"
 
@@ -734,38 +762,94 @@ while (`$True) {
             `$go_to = 1
         }
         6 {
+            `$torch_ver = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
+            `$xformers_ver = `"xformers==0.0.23`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        7 {
             `$torch_ver = `"torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118`"
             `$xformers_ver = `"xformers==0.0.23.post1+cu118`"
             `$go_to = 1
         }
-        7 {
+        8 {
+            `$torch_ver = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
+            `$xformers_ver = `"xformers==0.0.23.post1`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        9 {
             `$torch_ver = `"torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118`"
             `$xformers_ver = `"xformers==0.0.24+cu118`"
             `$go_to = 1
         }
-        8 {
+        10 {
+            `$torch_ver = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
+            `$xformers_ver = `"xformers==0.0.24`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        11 {
             `$torch_ver = `"torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1+cu118`"
             `$xformers_ver = `"xformers==0.0.25+cu118`"
             `$go_to = 1
         }
-        9 {
+        12 {
+            `$torch_ver = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
+            `$xformers_ver = `"xformers==0.0.25`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        13 {
             `$torch_ver = `"torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118`"
             `$xformers_ver = `"xformers==0.0.25.post1+cu118`"
             `$go_to = 1
         }
-        10 {
+        14 {
+            `$torch_ver = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
+            `$xformers_ver = `"xformers==0.0.25.post1`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        15 {
             `$torch_ver = `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
             `$xformers_ver = `"xformers==0.0.26.post1+cu118`"
             `$go_to = 1
         }
-        11 {
+        16 {
+            `$torch_ver = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
+            `$xformers_ver = `"xformers==0.0.26.post1`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        17 {
             `$torch_ver = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
             `$xformers_ver = `"xformers==0.0.27+cu118`"
             `$go_to = 1
         }
-        12 {
+        18 {
+            `$torch_ver = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
+            `$xformers_ver = `"xformers==0.0.27`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
+            `$go_to = 1
+        }
+        19 {
             `$torch_ver = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
             `$xformers_ver = `"xformers==0.0.27.post2+cu118`"
+            `$go_to = 1
+        }
+        20 {
+            `$torch_ver = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
+            `$xformers_ver = `"xformers==0.0.27.post2`"
+            `$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror $pip_extra_index_mirror_cu121`"
+            `$env:PIP_FIND_LINKS = `" `"
             `$go_to = 1
         }
         exit {
@@ -1041,7 +1125,7 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
-    `"`$(Write-Host `"[SD-Trainer Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)>`"
+    `"`$(Write-Host `"[SD-Trainer Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 function Print-Msg (`$msg) {

@@ -596,7 +596,7 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 function global:prompt {
-    `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)>`"
+    `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 function Print-Msg (`$msg) {
