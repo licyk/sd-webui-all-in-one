@@ -696,7 +696,7 @@ function Print-Msg (`$msg) {
 
 Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
 Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-`$arg = Read-Host `"===========================================>`"
+`$arg = Read-Host `"=========================================>`"
 if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
     Print-Msg `"卸载原有的 PyTorch`"
     ./python/python.exe -m pip uninstall torch torchvision torchaudio xformers -y
