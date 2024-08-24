@@ -956,10 +956,18 @@ while (`$True) {
 - 15、starryXLV52_v52 (SDXL)
 - 16、heartOfAppleXL_v20 (SDXL)
 - 17、heartOfAppleXL_v30 (SDXL)
-- 18、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 19、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 20、sdxl_fp16_fix_vae (SDXL VAE)
-- 21、sdxl_vae (SDXL VAE)
+- 18、flux1-schnell (FLUX.1)
+- 19、flux1-schnell-fp8 (FLUX.1)
+- 20、flux1-dev (FLUX.1)
+- 21、flux1-dev-fp8 (FLUX.1)
+- 22、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 23、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 24、sdxl_fp16_fix_vae (SDXL VAE)
+- 25、sdxl_vae (SDXL VAE)
+- 26、ae (FLUX.1 VAE)
+- 27、clip_l (FLUX.1 CLIP)
+- 28、t5xxl_fp16 (FLUX.1 CLIP)
+- 29、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
 
 关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
@@ -1057,23 +1065,63 @@ while (`$True) {
             `$go_to = 1
         }
         18 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
+            `$model_name = `"flux1-schnell.safetensors`"
+            `$go_to = 1
+        }
+        19 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`"
+            `$model_name = `"flux1-schnell-fp8.safetensors`"
+            `$go_to = 1
+        }
+        20 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
+            `$model_name = `"flux1-dev.safetensors`"
+            `$go_to = 1
+        }
+        21 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`"
+            `$model_name = `"flux1-dev-fp8.safetensors`"
+            `$go_to = 1
+        }
+        22 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        19 {
+        23 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        20 {
+        24 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
             `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
             `$go_to = 1
         }
-        21 {
+        25 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
             `$model_name = `"sdxl_vae.safetensors`"
+            `$go_to = 1
+        }
+        26 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
+            `$model_name = `"ae.safetensors`"
+            `$go_to = 1
+        }
+        27 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
+            `$model_name = `"clip_l.safetensors`"
+            `$go_to = 1
+        }
+        28 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`"
+            `$model_name = `"t5xxl_fp16.safetensors`"
+            `$go_to = 1
+        }
+        29 {
+            `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`"
+            `$model_name = `"t5xxl_fp8_e4m3fn.safetensors`"
             `$go_to = 1
         }
         exit {
