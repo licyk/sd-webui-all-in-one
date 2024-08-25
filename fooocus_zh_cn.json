@@ -617,5 +617,6 @@
     "Before First Enhancement": "在第一次增强前",
     "After Last Enhancement": "在最后一次增强后",
     "Save only final enhanced image": "仅保存最后一次增强后的图像",
-    "Positive value will make white area in the mask larger, negative value will make white area smaller. (default is 0, processed before SAM)": "该值为正值时会使遮罩中的白色区域变大，为负值时会使白色区域变小。（默认值为 0，并且在使用 SAM 之前处理）"
+    "Positive value will make white area in the mask larger, negative value will make white area smaller. (default is 0, processed before SAM)": "该值为正值时会使遮罩中的白色区域变大，为负值时会使白色区域变小。（默认值为 0，并且在使用 SAM 之前处理）",
+    "Apply Styles": "应用风格预设"
 }
