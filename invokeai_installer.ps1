@@ -1,30 +1,40 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 Set-Location "$PSScriptRoot"
 # Pip 镜像源
-$pip_index_mirror = "https://mirrors.cloud.tencent.com/pypi/simple"
-$pip_extra_index_mirror = "https://mirror.baidu.com/pypi/simple"
-$pip_find_mirror = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu118/torch_stable.html"
-$pip_extra_index_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
-$pip_find_mirror_cu121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
+$PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
+$PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
+$PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu118/torch_stable.html"
+$PIP_EXTRA_INDEX_MIRROR_CU121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
+$PIP_FIND_MIRROR_CU121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
+# PATH
+$PYTHON_PATH = "$PSScriptRoot/InvokeAI/python"
+$PYTHON_SCRIPTS_PATH = "$PSScriptRoot/InvokeAI/python/Scripts"
+$Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
-$env:PIP_INDEX_URL = $pip_index_mirror
-$env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror
-$env:PIP_FIND_LINKS = $pip_find_mirror
-$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-$env:PIP_TIMEOUT = 30
-$env:PIP_RETRIES = 5
-$env:CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
-$env:HF_HOME = "$PSScriptRoot/InvokeAI/cache/huggingface"
-$env:MATPLOTLIBRC = "$PSScriptRoot/InvokeAI/cache"
-$env:MODELSCOPE_CACHE = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
-$env:MS_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
-$env:SYCL_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/libsycl_cache"
-$env:TORCH_HOME = "$PSScriptRoot/InvokeAI/cache/torch"
-$env:U2NET_HOME = "$PSScriptRoot/InvokeAI/cache/u2net"
-$env:XDG_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
-$env:PIP_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/pip"
-$env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
-$env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
+$Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
+$Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
+$Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR
+$Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
+# $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
+# $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
+$Env:UV_LINK_MODE = "copy"
+$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+$Env:PIP_TIMEOUT = 30
+$Env:PIP_RETRIES = 5
+$Env:CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
+$Env:HF_HOME = "$PSScriptRoot/InvokeAI/cache/huggingface"
+$Env:MATPLOTLIBRC = "$PSScriptRoot/InvokeAI/cache"
+$Env:MODELSCOPE_CACHE = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
+$Env:MS_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
+$Env:SYCL_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/libsycl_cache"
+$Env:TORCH_HOME = "$PSScriptRoot/InvokeAI/cache/torch"
+$Env:U2NET_HOME = "$PSScriptRoot/InvokeAI/cache/u2net"
+$Env:XDG_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
+$Env:PIP_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/pip"
+$Env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
+$Env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
+$Env:UV_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/uv"
+$Env:UV_PYTHON = "$PSScriptRoot/InvokeAI/python/python.exe"
 
 
 # 消息输出
@@ -35,23 +45,31 @@ function Print-Msg ($msg) {
 Print-Msg "初始化中"
 
 # 代理配置
-$env:NO_PROXY = "localhost,127.0.0.1,::1"
+$Env:NO_PROXY = "localhost,127.0.0.1,::1"
 if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
     if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
         $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
-        $env:HTTP_PROXY = $proxy_value
-        $env:HTTPS_PROXY = $proxy_value
+        $Env:HTTP_PROXY = $proxy_value
+        $Env:HTTPS_PROXY = $proxy_value
         Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        $env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-        $env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+        $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
+        $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
         Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
 } else {
     Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
 }
 
+# 设置 uv 的使用状态
+if (Test-Path "./disable_uv.txt") {
+    Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
+    $USE_UV = $false
+} else {
+    Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
+    $USE_UV = $true
+}
 
 # 下载并解压 Python
 function Install-Python {
@@ -93,16 +111,16 @@ function Install-Pip {
 
     # 下载 get-pip.py
     Print-Msg "正在下载 get-pip.py"
-    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/get-pip.py"
+    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/cache/get-pip.py"
     if ($?) { # 检测是否下载成功
         # 执行 get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
-        ./InvokeAI/python/python.exe ./InvokeAI/get-pip.py --no-warn-script-location
+        python ./InvokeAI/cache/get-pip.py --no-warn-script-location
         if ($?) { # 检测是否安装成功
-            Remove-Item -Path "./InvokeAI/get-pip.py"
+            Remove-Item -Path "./InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装成功"
         } else {
-            Remove-Item -Path "./InvokeAI/get-pip.py"
+            Remove-Item -Path "./InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
             Read-Host | Out-Null
             exit 1
@@ -116,11 +134,31 @@ function Install-Pip {
 }
 
 
+# 下载 uv
+function Install-uv {
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe"
+    Print-Msg "正在下载 uv"
+    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/cache/uv.exe"
+    if ($?) {
+        Move-Item -Path "./InvokeAI/cache/uv.exe" -Destination "./InvokeAI/python/Scripts/uv.exe"
+        Print-Msg "uv 下载成功"
+    } else {
+        Print-Msg "uv 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+        Read-Host | Out-Null
+        exit 1
+    }
+}
+
+
 # 安装 InvokeAI
 function Install-InvokeAI {
     # 下载 InvokeAI
     Print-Msg "正在下载 InvokeAI"
-    ./InvokeAI/python/python.exe -m pip install "InvokeAI[xformers]"  --no-warn-script-location --use-pep517
+    if ($USE_UV) {
+        uv pip install "InvokeAI[xformers]" --find-links $PIP_FIND_MIRROR
+    } else {
+        python -m pip install "InvokeAI[xformers]" --no-warn-script-location --use-pep517
+    }
     if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
     } else {
@@ -131,13 +169,13 @@ function Install-InvokeAI {
 }
 
 
-# 重装 xFormers
+# 重装 xFormers (弃用)
 function Reinstall-Xformers {
-    $env:PIP_EXTRA_INDEX_URL = $pip_extra_index_mirror_cu121
-    $env:PIP_FIND_LINKS = $pip_find_mirror_cu121
-    $xformers_pkg = $(./InvokeAI/python/python.exe -m pip freeze | Select-String -Pattern "xformers") # 检测是否安装了 xFormers
+    $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU121
+    $Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR_CU121
+    $xformers_pkg = $(./InvokeAI/python/python -m pip freeze | Select-String -Pattern "xformers") # 检测是否安装了 xFormers
     $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # 检查是否版本为 cu118 的
-    $torch_ver = $(./InvokeAI/python/python.exe -m pip show torch | Select-String -Pattern "version") # 获取 PyTorch 版本信息
+    $torch_ver = $(./InvokeAI/python/python -m pip show torch | Select-String -Pattern "version") # 获取 PyTorch 版本信息
     $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # 截取 PyTorch 版本号
 
     if (Test-Path "./InvokeAI/cache/xformers.txt") {
@@ -149,8 +187,8 @@ function Reinstall-Xformers {
     for ($i = 1; $i -le 3; $i++) {
         if ($xformers_ver) { # 本地存在版本记录（上次安装 xFormers 未完成）
             Print-Msg "安装: $xformers_ver"
-            ./InvokeAI/python/python.exe -m pip uninstall xformers -y
-            ./InvokeAI/python/python.exe -m pip install $xformers_ver --no-warn-script-location --no-cache-dir --no-deps
+            ./InvokeAI/python/python -m pip uninstall xformers -y
+            ./InvokeAI/python/python -m pip install $xformers_ver --no-warn-script-location --no-cache-dir --no-deps
             if ($?) {
                 Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                 Print-Msg "重装 xFormers 成功"
@@ -163,8 +201,8 @@ function Reinstall-Xformers {
                 Print-Msg "检测到已安装的 xFormers 为 CU118 的版本, 将进行重装"
                 $xformers_pkg = $xformers_pkg.ToString().Split("+")[0]
                 $xformers_pkg > ./InvokeAI/cache/xformers.txt # 将版本信息存在本地, 用于安装失败时恢复
-                ./InvokeAI/python/python.exe -m pip uninstall xformers -y
-                ./InvokeAI/python/python.exe -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir --no-deps
+                ./InvokeAI/python/python -m pip uninstall xformers -y
+                ./InvokeAI/python/python -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir --no-deps
                 if ($?) {
                     Remove-Item -Path "./InvokeAI/cache/xformers.txt"
                     Print-Msg "重装 xFormers 成功"
@@ -218,9 +256,9 @@ function Reinstall-Xformers {
             }
 
             if ($install_xformers_ver -eq "") {
-                ./InvokeAI/python/python.exe -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
+                ./InvokeAI/python/python -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
             } else {
-                ./InvokeAI/python/python.exe -m pip install xformers==$install_xformers_ver --no-warn-script-location --no-cache-dir --no-deps
+                ./InvokeAI/python/python -m pip install xformers==$install_xformers_ver --no-warn-script-location --no-cache-dir --no-deps
             }
 
             if ($?) { # 检测是否下载成功
@@ -237,6 +275,43 @@ function Reinstall-Xformers {
         } else {
             Print-Msg "尝试重新安装 xFormers 中"
         }
+    }
+}
+
+
+# 修正 PyTorch 版本
+function Fix-PyTorch-Version {
+    $content = "
+from importlib.metadata import distribution
+try:
+    torch_ver = distribution('torch').version.split('+')[0]
+except:
+    torch_ver = None
+
+try:
+    torchvision_ver = distribution('torchvision').version.split('+')[0]
+except:
+    torchvision_ver = None
+
+try:
+    xformers_ver = distribution('xformers').version.split('+')[0]
+except:
+    xformers_ver = None
+
+if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
+    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
+else:
+    print('torch torchvision xformers')
+"
+
+    $pytorch_ver = $(python -c "$content")
+    uv pip install $pytorch_ver.ToString().Split() --find-links $PIP_FIND_MIRROR
+    if ($?) {
+        Print-Msg "PyTorch 版本修正成功"
+    } else {
+        Print-Msg "PyTorch 版本修正失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+        Read-Host | Out-Null
+        exit 1
     }
 }
 
@@ -330,8 +405,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Python"
-    $python_path = "./InvokeAI/python/python.exe"
-    if (Test-Path $python_path) {
+    if (Test-Path "./InvokeAI/python/python.exe") {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -339,7 +413,7 @@ function Check-Install {
     }
 
     Print-Msg "检查是否安装 Pip"
-    ./InvokeAI/python/python.exe -c "import pip" 2> $null
+    python -c "import pip" 2> $null
     if ($?) {
         Print-Msg "Pip 已安装"
     } else {
@@ -347,13 +421,25 @@ function Check-Install {
         Install-Pip
     }
 
+    Print-Msg "检测是否安装 uv"
+    if (Test-Path "./InvokeAI/python/Scripts/uv.exe") {
+        Print-Msg "uv 已安装"
+    } else {
+        Print-Msg "uv 未安装"
+        Install-uv
+    }
+
     Print-Msg "检查是否安装 InvokeAI"
-    $invokeai_path = "./InvokeAI/python/Scripts/invokeai-web.exe"
-    if (Test-Path $invokeai_path) {
+    if (Test-Path "./InvokeAI/python/Scripts/invokeai-web.exe") {
         Print-Msg "InvokeAI 已安装"
     } else {
         Print-Msg "InvokeAI 未安装"
         Install-InvokeAI
+    }
+
+    if ($USE_UV) {
+        Print-Msg "修正 PyTorch 版本中"
+        Fix-PyTorch-Version
     }
 
     # Print-Msg "检测是否需要重装 xFormers"
@@ -377,17 +463,17 @@ function Print-Msg (`$msg) {
 Print-Msg `"初始化中`"
 
 # 代理配置
-`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -398,34 +484,45 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
     if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$env:HF_ENDPOINT = `$hf_mirror_value
+        `$Env:HF_ENDPOINT = `$hf_mirror_value
         Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
-        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
     }
 } else {
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
-`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
-`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
-`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT = 30
-`$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
 Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败，这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
@@ -434,7 +531,7 @@ Start-Sleep -Seconds 2
 Print-Msg `"调用浏览器打开地址中`"
 Start-Process `"http://127.0.0.1:9090`"
 Print-Msg `"启动 InvokeAI 中`"
-./python/Scripts/invokeai-web.exe --root `"`$PSScriptRoot/invokeai`"
+invokeai-web --root `"`$PSScriptRoot/invokeai`"
 `$req = `$?
 if (`$req) {
     Print-Msg `"InvokeAI 正常退出`"
@@ -457,48 +554,110 @@ function Print-Msg (`$msg) {
 }
 
 # 代理配置
-`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
     Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
 
+# 设置 uv 的使用状态
+if (Test-Path `"./disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
-`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
-`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
-`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT = 30
-`$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+# 修正 PyTorch 版本
+function Fix-PyTorch-Version {
+    `$content = `"
+from importlib.metadata import distribution
+try:
+    torch_ver = distribution('torch').version.split('+')[0]
+except:
+    torch_ver = None
+
+try:
+    torchvision_ver = distribution('torchvision').version.split('+')[0]
+except:
+    torchvision_ver = None
+
+try:
+    xformers_ver = distribution('xformers').version.split('+')[0]
+except:
+    xformers_ver = None
+
+if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
+    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
+else:
+    print('torch torchvision xformers')
+`"
+
+    `$pytorch_ver = `$(python -c `"`$content`")
+    uv pip install `$pytorch_ver.ToString().Split() --find-links `$PIP_FIND_MIRROR
+    if (`$?) {
+        Print-Msg `"PyTorch 版本修正成功`"
+    } else {
+        Print-Msg `"PyTorch 版本修正失败, 可能会导致 InvokeAI 无法正常调用显卡, 可尝试重新运行 InvokeAI 更新脚本`"
+    }
+}
 
 Print-Msg `"更新 InvokeAI 中`"
-`$ver = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
-./python/python.exe -m pip install `"InvokeAI[xformers]`" --upgrade --no-warn-script-location --use-pep517
+`$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+if (`$USE_UV) {
+    uv pip install `"InvokeAI[xformers]`" --upgrade --find-links `$PIP_FIND_MIRROR
+} else {
+    python -m pip install `"InvokeAI[xformers]`" --upgrade --no-warn-script-location --use-pep517
+}
+
+
 if (`$?) {
-    `$ver_ = `$(./python/python.exe -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    if (`$USE_UV) {
+        Fix-PyTorch-Version
+    }
     if (`$ver -eq `$ver_) {
         Print-Msg `"InvokeAI 已为最新版，当前版本：`$ver_`"
     } else {
@@ -519,13 +678,17 @@ Read-Host | Out-Null
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
-`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 Print-Msg `"修复 InvokeAI 数据库中`"
-./python/Scripts/invokeai-db-maintenance.exe --operation all --root `"`$PSScriptRoot/invokeai`"
+invokeai-db-maintenance --operation all --root `"`$PSScriptRoot/invokeai`"
 Print-Msg `"修复 InvokeAI 数据库完成`"
 Read-Host | Out-Null
 "
@@ -543,17 +706,17 @@ function Print-Msg (`$msg) {
 }
 
 # 代理配置
-`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -604,17 +767,17 @@ function Print-Msg (`$msg) {
 }
 
 # 代理配置
-`$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -625,38 +788,48 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置 HuggingFace 镜像源
     if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
         `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$env:HF_ENDPOINT = `$hf_mirror_value
+        `$Env:HF_ENDPOINT = `$hf_mirror_value
         Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
-        `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+        `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
     }
 } else {
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$py_path = `"`$PSScriptRoot/python`"
 `$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # 将python添加到环境变量
-`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
-`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
-`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
-`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT = 30
-`$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 Print-Msg `"激活 InvokeAI Env`"
 Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
@@ -674,36 +847,96 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
+# 设置 uv 的使用状态
+if (Test-Path `"./disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$env:PIP_INDEX_URL = `"$pip_index_mirror`"
-`$env:PIP_EXTRA_INDEX_URL = `"$pip_extra_index_mirror`"
-`$env:PIP_FIND_LINKS = `"$pip_find_mirror`"
-`$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$env:PIP_TIMEOUT = 30
-`$env:PIP_RETRIES = 5
-`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+# 修正 PyTorch 版本
+function Fix-PyTorch-Version {
+    `$content = `"
+from importlib.metadata import distribution
+try:
+    torch_ver = distribution('torch').version.split('+')[0]
+except:
+    torch_ver = None
+
+try:
+    torchvision_ver = distribution('torchvision').version.split('+')[0]
+except:
+    torchvision_ver = None
+
+try:
+    xformers_ver = distribution('xformers').version.split('+')[0]
+except:
+    xformers_ver = None
+
+if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
+    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
+else:
+    print('torch torchvision xformers')
+`"
+
+    `$pytorch_ver = `$(python -c `"`$content`")
+    uv pip install `$pytorch_ver.ToString().Split() --find-links `$PIP_FIND_MIRROR
+    if (`$?) {
+        Print-Msg `"PyTorch 版本修正成功`"
+    } else {
+        Print-Msg `"PyTorch 版本修正失败, 可能会导致 InvokeAI 无法正常调用显卡, 可尝试重新运行 PyTorch 重装脚本`"
+    }
+}
 
 Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
 Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
 `$arg = Read-Host `"=========================================>`"
 if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
     Print-Msg `"卸载原有的 PyTorch`"
-    ./python/python.exe -m pip uninstall torch torchvision torchaudio xformers -y
+    python -m pip uninstall torch torchvision torchaudio xformers -y
     Print-Msg `"重新安装 PyTorch`"
-    ./python/python.exe -m pip install `"InvokeAI[xformers]`" --no-warn-script-location --use-pep517
+    if (`$USE_UV) {
+        uv pip install `"InvokeAI[xformers]`" --find-links `$PIP_FIND_MIRROR
+    } else {
+        python -m pip install `"InvokeAI[xformers]`" --no-warn-script-location --use-pep517
+    }
     if (`$?) {
         Print-Msg `"重新安装 PyTorch 成功`"
+        if (`$USE_UV) {
+            Fix-PyTorch-Version
+        }
     } else {
         Print-Msg `"重新安装 PyTorch 失败, 请重新运行 PyTorch 重装脚本`"
     }
@@ -719,7 +952,7 @@ Read-Host | Out-Null
 
 
 # 下载模型配置文件脚本
-function Wirte-Download-Config-Script {
+function Write-Download-Config-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
 
@@ -845,7 +1078,7 @@ function Main {
     Write-InvokeAI-Install-Script
     Write-Env-Activate-Script
     Write-PyTorch-ReInstall-Script
-    Wirte-Download-Config-Script
+    Write-Download-Config-Script
     Write-ReadMe
     Print-Msg "InvokeAI 安装结束, 安装路径为 $PSScriptRoot\InvokeAI"
     Print-Msg "关于该 InvokeAI 版本的更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest"
