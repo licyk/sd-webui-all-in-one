@@ -411,9 +411,9 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用�
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
-Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址，进入 InvokeAI 的界面`"
-Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败，这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
-Print-Msg `"提示：如果 PowerShell 界面长时间不动，并且 InvokeAI 未启动，可以尝试按下几次回车键`"
+Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址, 进入 InvokeAI 的界面`"
+Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
+Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
 Start-Sleep -Seconds 2
 Print-Msg `"调用浏览器打开地址中`"
 Start-Process `"http://127.0.0.1:9090`"
@@ -540,9 +540,9 @@ if (`$?) {
     }
     if (`$?) {
         if (`$ver -eq `$ver_) {
-            Print-Msg `"InvokeAI 已为最新版，当前版本：`$ver_`"
+            Print-Msg `"InvokeAI 已为最新版, 当前版本：`$ver_`"
         } else {
-            Print-Msg `"InvokeAI 更新成功，版本：`$ver -> `$ver_`"
+            Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
         }
         Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
     }

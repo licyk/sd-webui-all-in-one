@@ -30,6 +30,7 @@ _✨一键安装 InvokeAI_
     - [重置 InvokeAI 数据库](#重置-invokeai-数据库)
     - [配置 InvokeAI](#配置-invokeai)
     - [下载 InvokeAI 模型配置文件](#下载-invokeai-模型配置文件)
+    - [设置 uv 包管理器](#设置-uv-包管理器)
     - [显存占用很大](#显存占用很大)
     - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
     - [重装 PyTorch / xFormers](#重装-pytorch--xformers)
@@ -185,6 +186,10 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 ### 下载 InvokeAI 模型配置文件
 运行 download_config.ps1 脚本。
+
+### 设置 uv 包管理器
+InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
+如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
@@ -357,3 +362,9 @@ python -m pip install controlnet_aux
 >推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
+- 使用 uv 安装软件包
+```
+uv pip install <package_name>
+```
+>[!NOTE]  
+>uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)

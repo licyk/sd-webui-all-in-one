@@ -36,6 +36,7 @@ _✨一键安装 SD-Trainer_
     - [卸载 SD-Trainer](#卸载-sd-trainer)
     - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
     - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+    - [设置 uv 包管理器](#设置-uv-包管理器)
     - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [RuntimeError: Directory 'frontend/dist' does not exist](#runtimeerror-directory-frontenddist-does-not-exist)
@@ -291,6 +292,10 @@ Fri Jun  7 19:07:00 2024
 ### 更新 SD-Trainer 管理脚本
 运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer，并运行一次 SD-Trainer Installer。
 
+### 设置 uv 包管理器
+InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
+如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
+
 ### 运行脚本时出现中文乱码
 这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
 
@@ -401,6 +406,13 @@ python -m pip uninstall <package_name>
 
 >推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
+
+- 使用 uv 安装软件包
+```
+uv pip install <package_name>
+```
+>[!NOTE]  
+>uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
 
 - 更新仓库
 ```powershell
