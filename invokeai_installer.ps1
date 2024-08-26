@@ -155,9 +155,9 @@ function Install-InvokeAI {
     # 下载 InvokeAI
     Print-Msg "正在下载 InvokeAI"
     if ($USE_UV) {
-        uv pip install "InvokeAI[xformers]" --find-links $PIP_FIND_MIRROR
+        uv pip install InvokeAI --no-deps --find-links $PIP_FIND_MIRROR
     } else {
-        python -m pip install "InvokeAI[xformers]" --no-warn-script-location --use-pep517
+        python -m pip install InvokeAI --no-deps --no-warn-script-location --use-pep517
     }
     if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
@@ -169,147 +169,37 @@ function Install-InvokeAI {
 }
 
 
-# 重装 xFormers (弃用)
-function Reinstall-Xformers {
-    $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU121
-    $Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR_CU121
-    $xformers_pkg = $(./InvokeAI/python/python -m pip freeze | Select-String -Pattern "xformers") # 检测是否安装了 xFormers
-    $xformers_pkg_cu118 = $xformers_pkg | Select-String -Pattern "cu118" # 检查是否版本为 cu118 的
-    $torch_ver = $(./InvokeAI/python/python -m pip show torch | Select-String -Pattern "version") # 获取 PyTorch 版本信息
-    $torch_ver = $torch_ver.ToString().Split(":")[1].Split("+")[0].Trim() # 截取 PyTorch 版本号
-
-    if (Test-Path "./InvokeAI/cache/xformers.txt") {
-        # 读取 xformers.txt 文件的内容
-        Print-Msg "读取上次的 xFormers 版本记录"
-        $xformers_ver = Get-Content "./InvokeAI/cache/xformers.txt"
-    }
-
-    for ($i = 1; $i -le 3; $i++) {
-        if ($xformers_ver) { # 本地存在版本记录（上次安装 xFormers 未完成）
-            Print-Msg "安装: $xformers_ver"
-            ./InvokeAI/python/python -m pip uninstall xformers -y
-            ./InvokeAI/python/python -m pip install $xformers_ver --no-warn-script-location --no-cache-dir --no-deps
-            if ($?) {
-                Remove-Item -Path "./InvokeAI/cache/xformers.txt"
-                Print-Msg "重装 xFormers 成功"
-                break
-            } else {
-                Print-Msg "重装 xFormers 失败"
-            }
-        } elseif ($xformers_pkg) { # 已安装了 xFormers
-            if ($xformers_pkg_cu118) { # 确认 xFormers 是否为 cu118 的版本
-                Print-Msg "检测到已安装的 xFormers 为 CU118 的版本, 将进行重装"
-                $xformers_pkg = $xformers_pkg.ToString().Split("+")[0]
-                $xformers_pkg > ./InvokeAI/cache/xformers.txt # 将版本信息存在本地, 用于安装失败时恢复
-                ./InvokeAI/python/python -m pip uninstall xformers -y
-                ./InvokeAI/python/python -m pip install $xformers_pkg --no-warn-script-location --no-cache-dir --no-deps
-                if ($?) {
-                    Remove-Item -Path "./InvokeAI/cache/xformers.txt"
-                    Print-Msg "重装 xFormers 成功"
-                    break
-                } else {
-                    Print-Msg "重装 xFormers 失败"
-                }
-            } else {
-                Print-Msg "无需重装 xFormers"
-                break
-            }
-        } else {
-            Print-Msg "未安装 xFormers, 尝试安装中"
-            switch ($torch_ver) { # 判断适合安装的 xFormers 版本
-                1.12.1 {
-                    $install_xformers_ver = "0.0.14"
-                }
-                1.13.1 {
-                    $install_xformers_ver = "0.0.16"
-                }
-                2.0.0 {
-                    $install_xformers_ver = "0.0.18"
-                }
-                2.0.1 {
-                    $install_xformers_ver = "0.0.22"
-                }
-                2.1.1 {
-                    $install_xformers_ver = "0.0.23"
-                }
-                2.1.1 {
-                    $install_xformers_ver = "0.0.23"
-                }
-                2.1.2 {
-                    $install_xformers_ver = "0.0.23.post1"
-                }
-                2.2.0 {
-                    $install_xformers_ver = "0.0.24"
-                }
-                2.2.1 {
-                    $install_xformers_ver = "0.0.25"
-                }
-                2.2.2 {
-                    $install_xformers_ver = "0.0.25"
-                }
-                2.3.0 {
-                    $install_xformers_ver = "0.0.26.post1"
-                }
-                Default {
-                    $install_xformers_ver = ""
-                }
-            }
-
-            if ($install_xformers_ver -eq "") {
-                ./InvokeAI/python/python -m pip install xformers --no-warn-script-location --no-cache-dir --no-deps
-            } else {
-                ./InvokeAI/python/python -m pip install xformers==$install_xformers_ver --no-warn-script-location --no-cache-dir --no-deps
-            }
-
-            if ($?) { # 检测是否下载成功
-                Print-Msg "重装 xFormers 成功"
-                break
-            } else {
-                Print-Msg "重装 xFormers 失败"
-            }
-        }
-
-        if ($i -ge 3) { # 超出重试次数时进行提示
-            Print-Msg "xFormers 未能成功安装, 这可能导致使用 InvokeAI 时显存占用率增大, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-            break
-        } else {
-            Print-Msg "尝试重新安装 xFormers 中"
-        }
-    }
-}
-
-
-# 修正 PyTorch 版本
-function Fix-PyTorch-Version {
+# 安装 InvokeAI 依赖
+function Install-InvokeAI-Requirements {
     $content = "
-from importlib.metadata import distribution
-try:
-    torch_ver = distribution('torch').version.split('+')[0]
-except:
-    torch_ver = None
+from importlib.metadata import requires
 
-try:
-    torchvision_ver = distribution('torchvision').version.split('+')[0]
-except:
-    torchvision_ver = None
+requirements = requires('invokeai')
 
-try:
-    xformers_ver = distribution('xformers').version.split('+')[0]
-except:
-    xformers_ver = None
+for i in requirements:
+    if i.startswith('torch=='):
+        torch_ver = i.split(';')[0]
 
-if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
-    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
-else:
-    print('torch torchvision xformers')
+    if i.startswith('torchvision=='):
+        torchvision_ver = i.split(';')[0]
+
+    if i.startswith('xformers=='):
+        xformers_ver = i.split(';')[0]
+
+print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
 "
 
-    $pytorch_ver = $(python -c "$content")
-    uv pip install $pytorch_ver.ToString().Split() --find-links $PIP_FIND_MIRROR
-    if ($?) {
-        Print-Msg "PyTorch 版本修正成功"
+    $requirements = $(python -c "$content")
+    Print-Msg "安装 InvokeAI 依赖中"
+    if ($USE_UV) {
+        uv pip install "InvokeAI[xformers]" $requirements.ToString().Split() --find-links $PIP_FIND_MIRROR
     } else {
-        Print-Msg "PyTorch 版本修正失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+        python -m pip install "InvokeAI[xformers]" $requirements.ToString().Split() --no-warn-script-location --use-pep517
+    }
+    if ($?) {
+        Print-Msg "InvokeAI 依赖安装成功"
+    } else {
+        Print-Msg "InvokeAI 依赖安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -437,10 +327,7 @@ function Check-Install {
         Install-InvokeAI
     }
 
-    if ($USE_UV) {
-        Print-Msg "修正 PyTorch 版本中"
-        Fix-PyTorch-Version
-    }
+    Install-InvokeAI-Requirements
 
     # Print-Msg "检测是否需要重装 xFormers"
     # Reinstall-Xformers
@@ -610,62 +497,57 @@ if (Test-Path `"./disable_uv.txt`") {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
-# 修正 PyTorch 版本
-function Fix-PyTorch-Version {
+# 获取 PyTorch 版本
+function Get-PyTorch-Version {
     `$content = `"
-from importlib.metadata import distribution
-try:
-    torch_ver = distribution('torch').version.split('+')[0]
-except:
-    torch_ver = None
+from importlib.metadata import requires
 
-try:
-    torchvision_ver = distribution('torchvision').version.split('+')[0]
-except:
-    torchvision_ver = None
+requirements = requires('invokeai')
 
-try:
-    xformers_ver = distribution('xformers').version.split('+')[0]
-except:
-    xformers_ver = None
+for i in requirements:
+    if i.startswith('torch=='):
+        torch_ver = i.split(';')[0]
 
-if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
-    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
-else:
-    print('torch torchvision xformers')
+    if i.startswith('torchvision=='):
+        torchvision_ver = i.split(';')[0]
+
+    if i.startswith('xformers=='):
+        xformers_ver = i.split(';')[0]
+
+print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
 `"
 
     `$pytorch_ver = `$(python -c `"`$content`")
-    uv pip install `$pytorch_ver.ToString().Split() --find-links `$PIP_FIND_MIRROR
-    if (`$?) {
-        Print-Msg `"PyTorch 版本修正成功`"
-    } else {
-        Print-Msg `"PyTorch 版本修正失败, 可能会导致 InvokeAI 无法正常调用显卡, 可尝试重新运行 InvokeAI 更新脚本`"
-    }
+    return `$pytorch_ver
 }
 
-Print-Msg `"更新 InvokeAI 中`"
+Print-Msg `"更新 InvokeAI 内核中`"
 `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
 if (`$USE_UV) {
-    uv pip install `"InvokeAI[xformers]`" --upgrade --find-links `$PIP_FIND_MIRROR
+    uv pip install InvokeAI --upgrade --no-deps --find-links `"$PIP_FIND_MIRROR`"
 } else {
-    python -m pip install `"InvokeAI[xformers]`" --upgrade --no-warn-script-location --use-pep517
+    python -m pip install InvokeAI --upgrade --no-deps --no-warn-script-location --use-pep517
 }
 
-
 if (`$?) {
+    Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
+    `$pytorch_ver = Get-PyTorch-Version
     `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$USE_UV) {
-        Fix-PyTorch-Version
-    }
-    if (`$ver -eq `$ver_) {
-        Print-Msg `"InvokeAI 已为最新版，当前版本：`$ver_`"
+        uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
     } else {
-        Print-Msg `"InvokeAI 更新成功，版本：`$ver -> `$ver_`"
+        python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location --use-pep517
     }
-    Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+    if (`$?) {
+        if (`$ver -eq `$ver_) {
+            Print-Msg `"InvokeAI 已为最新版，当前版本：`$ver_`"
+        } else {
+            Print-Msg `"InvokeAI 更新成功，版本：`$ver -> `$ver_`"
+        }
+        Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+    }
 } else {
-    Print-Msg `"InvokeAI 更新失败`"
+    Print-Msg `"InvokeAI 内核更新失败`"
 }
 Read-Host | Out-Null
 "
@@ -886,38 +768,28 @@ if (Test-Path `"./disable_uv.txt`") {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
-# 修正 PyTorch 版本
-function Fix-PyTorch-Version {
+# 获取 PyTorch 版本
+function Get-PyTorch-Version {
     `$content = `"
-from importlib.metadata import distribution
-try:
-    torch_ver = distribution('torch').version.split('+')[0]
-except:
-    torch_ver = None
+from importlib.metadata import requires
 
-try:
-    torchvision_ver = distribution('torchvision').version.split('+')[0]
-except:
-    torchvision_ver = None
+requirements = requires('invokeai')
 
-try:
-    xformers_ver = distribution('xformers').version.split('+')[0]
-except:
-    xformers_ver = None
+for i in requirements:
+    if i.startswith('torch=='):
+        torch_ver = i.split(';')[0]
 
-if torch_ver is not None and torchvision_ver is not None and xformers_ver is not None:
-    print(f'torch=={torch_ver}+cu118 torchvision=={torchvision_ver}+cu118 xformers=={xformers_ver}+cu118')
-else:
-    print('torch torchvision xformers')
+    if i.startswith('torchvision=='):
+        torchvision_ver = i.split(';')[0]
+
+    if i.startswith('xformers=='):
+        xformers_ver = i.split(';')[0]
+
+print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
 `"
 
     `$pytorch_ver = `$(python -c `"`$content`")
-    uv pip install `$pytorch_ver.ToString().Split() --find-links `$PIP_FIND_MIRROR
-    if (`$?) {
-        Print-Msg `"PyTorch 版本修正成功`"
-    } else {
-        Print-Msg `"PyTorch 版本修正失败, 可能会导致 InvokeAI 无法正常调用显卡, 可尝试重新运行 PyTorch 重装脚本`"
-    }
+    return `$pytorch_ver
 }
 
 Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
@@ -925,18 +797,16 @@ Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
 `$arg = Read-Host `"=========================================>`"
 if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
     Print-Msg `"卸载原有的 PyTorch`"
-    python -m pip uninstall torch torchvision torchaudio xformers -y
+    python -m pip uninstall torch torchvision xformers -y
     Print-Msg `"重新安装 PyTorch`"
+    `$pytorch_ver = Get-PyTorch-Version
     if (`$USE_UV) {
-        uv pip install `"InvokeAI[xformers]`" --find-links `$PIP_FIND_MIRROR
+        uv pip install `$pytorch_ver.ToString().Split() --find-links `"$PIP_FIND_MIRROR`"
     } else {
-        python -m pip install `"InvokeAI[xformers]`" --no-warn-script-location --use-pep517
+        python -m pip install `$pytorch_ver.ToString().Split() --no-warn-script-location --use-pep517
     }
     if (`$?) {
         Print-Msg `"重新安装 PyTorch 成功`"
-        if (`$USE_UV) {
-            Fix-PyTorch-Version
-        }
     } else {
         Print-Msg `"重新安装 PyTorch 失败, 请重新运行 PyTorch 重装脚本`"
     }
@@ -1053,6 +923,9 @@ https://huggingface.sukaka.top
 
 若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
 如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
+
+脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
+如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
 
 更多详细的帮助可在下面的链接查看。
 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md

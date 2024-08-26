@@ -630,7 +630,7 @@ if (`$?) {
         Print-Msg `"更新 SD-Trainer 内核依赖中`"
         Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt --find-links `$PIP_FIND_MIRROR
+            uv pip install -r requirements.txt --find-links `"$PIP_FIND_MIRROR`"
         } else {
             python -m pip install --upgrade -r requirements.txt --no-warn-script-location
         }
@@ -645,7 +645,7 @@ if (`$?) {
         Print-Msg `"更新 SD-Trainer 依赖中`"
         Set-Location `"`$PSScriptRoot/lora-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt --find-links `$PIP_FIND_MIRROR
+            uv pip install -r requirements.txt --find-links `"$PIP_FIND_MIRROR`"
         } else {
             python -m pip install --upgrade -r requirements.txt --no-warn-script-location
         }
@@ -1452,6 +1452,9 @@ https://gh.idayer.com/https://github.com
 
 若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
 如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
+
+脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
+如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
 
 设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
