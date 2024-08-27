@@ -7,7 +7,7 @@ $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 # $PIP_FIND_MIRROR_cu121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 # Github 镜像源列表
-$github_mirror_list = @(
+$GITHUB_MIRROR_LIST = @(
     "https://mirror.ghproxy.com/https://github.com",
     "https://ghproxy.net/https://github.com",
     "https://gitclone.com/github.com",
@@ -178,7 +178,7 @@ function Test-Github-Mirror {
             Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         } else { # 自动检测可用镜像源并使用
             $status = 0
-            ForEach($i in $github_mirror_list) {
+            ForEach($i in $GITHUB_MIRROR_LIST) {
                 Print-Msg "测试 Github 镜像源: $i"
                 if (Test-Path "./SD-Trainer/cache/github-mirror-test") {
                     Remove-Item -Path "./SD-Trainer/cache/github-mirror-test" -Force -Recurse
@@ -477,7 +477,7 @@ Read-Host | Out-Null
 function Write-Update-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
-`$github_mirror_list = @(
+`$GITHUB_MIRROR_LIST = @(
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gitclone.com/github.com`",
@@ -549,7 +549,7 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     } else { # 自动检测可用镜像源并使用
         `$status = 0
-        ForEach(`$i in `$github_mirror_list) {
+        ForEach(`$i in `$GITHUB_MIRROR_LIST) {
             Print-Msg `"测试 Github 镜像源: `$i`"
             if (Test-Path `"./cache/github-mirror-test`") {
                 Remove-Item -Path `"./cache/github-mirror-test`" -Force -Recurse
@@ -607,6 +607,45 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+# 获取 PyTorch 版本
+function Get-PyTorch-Version {
+    `$content = `"
+from importlib.metadata import version
+
+pytorch_version = []
+
+try:
+    pytorch_version.append('torch==' + version('torch'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchvision==' + version('torchvision'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchaudio==' + version('torchaudio'))
+except:
+    pass
+
+try:
+    pytorch_version.append('xformers==' + version('xformers'))
+except:
+    pass
+
+version_list = ''
+
+for i in pytorch_version:
+    version_list = f'{version_list} {i}'
+
+print(version_list)
+`"
+
+    `$pytorch_ver = `$(python -c `"`$content`")
+    return `$pytorch_ver
+}
+
 `$update_fail = 0
 Print-Msg `"拉取 SD-Trainer 更新内容中`"
 Fix-Git-Point-Off-Set `"./lora-scripts`"
@@ -628,11 +667,12 @@ if (`$?) {
         Print-Msg `"SD-Trainer 更新成功`"
         `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         Print-Msg `"更新 SD-Trainer 内核依赖中`"
+        `$pytorch_ver = Get-PyTorch-Version
         Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt --find-links `"$PIP_FIND_MIRROR`"
+            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install --upgrade -r requirements.txt --no-warn-script-location
+            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
         }
         if (`$?) {
             Print-Msg `"SD-Trainer 内核依赖更新成功`"
@@ -645,9 +685,9 @@ if (`$?) {
         Print-Msg `"更新 SD-Trainer 依赖中`"
         Set-Location `"`$PSScriptRoot/lora-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt --find-links `"$PIP_FIND_MIRROR`"
+            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install --upgrade -r requirements.txt --no-warn-script-location
+            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
         }
         if (`$?) {
             Print-Msg `"SD-Trainer 依赖更新成功`"
@@ -1088,23 +1128,24 @@ while (`$True) {
 - 10、kohakuXLEpsilon_rev1 (SDXL)
 - 11、kohaku-xl-epsilon-rev2 (SDXL)
 - 12、kohaku-xl-epsilon-rev3 (SDXL)
-- 13、ponyDiffusionV6XL_v6 (SDXL)
-- 14、pdForAnime_v20 (SDXL)
-- 15、starryXLV52_v52 (SDXL)
-- 16、heartOfAppleXL_v20 (SDXL)
-- 17、heartOfAppleXL_v30 (SDXL)
-- 18、flux1-schnell (FLUX.1)
-- 19、flux1-schnell-fp8 (FLUX.1)
-- 20、flux1-dev (FLUX.1)
-- 21、flux1-dev-fp8 (FLUX.1)
-- 22、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 23、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 24、sdxl_fp16_fix_vae (SDXL VAE)
-- 25、sdxl_vae (SDXL VAE)
-- 26、ae (FLUX.1 VAE)
-- 27、clip_l (FLUX.1 CLIP)
-- 28、t5xxl_fp16 (FLUX.1 CLIP)
-- 29、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
+- 13、kohaku-xl-zeta (SDXL)
+- 14、ponyDiffusionV6XL_v6 (SDXL)
+- 15、pdForAnime_v20 (SDXL)
+- 16、starryXLV52_v52 (SDXL)
+- 17、heartOfAppleXL_v20 (SDXL)
+- 18、heartOfAppleXL_v30 (SDXL)
+- 19、flux1-schnell (FLUX.1)
+- 20、flux1-schnell-fp8 (FLUX.1)
+- 21、flux1-dev (FLUX.1)
+- 22、flux1-dev-fp8 (FLUX.1)
+- 23、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 24、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 25、sdxl_fp16_fix_vae (SDXL VAE)
+- 26、sdxl_vae (SDXL VAE)
+- 27、ae (FLUX.1 VAE)
+- 28、clip_l (FLUX.1 CLIP)
+- 29、t5xxl_fp16 (FLUX.1 CLIP)
+- 30、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
 
 关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
@@ -1177,86 +1218,91 @@ while (`$True) {
             `$go_to = 1
         }
         13 {
+            `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-zeta.safetensors`"
+            `$model_name = `"kohaku-xl-zeta.safetensors`"
+            `$go_to = 1
+        }
+        14 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
             `$model_name = `"ponyDiffusionV6XL_v6.safetensors`"
             `$go_to = 1
         }
-        14 {
+        15 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`"
             `$model_name = `"pdForAnime_v20.safetensors`"
             `$go_to = 1
         }
-        15 {
+        16 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors`"
             `$model_name = `"starryXLV52_v52.safetensors`"
             `$go_to = 1
         }
-        16 {
+        17 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors`"
             `$model_name = `"heartOfAppleXL_v20.safetensors`"
             `$go_to = 1
         }
-        17 {
+        18 {
             `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors`"
             `$model_name = `"heartOfAppleXL_v30.safetensors`"
             `$go_to = 1
         }
-        18 {
+        19 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
             `$model_name = `"flux1-schnell.safetensors`"
             `$go_to = 1
         }
-        19 {
+        20 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`"
             `$model_name = `"flux1-schnell-fp8.safetensors`"
             `$go_to = 1
         }
-        20 {
+        21 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
             `$model_name = `"flux1-dev.safetensors`"
             `$go_to = 1
         }
-        21 {
+        22 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`"
             `$model_name = `"flux1-dev-fp8.safetensors`"
             `$go_to = 1
         }
-        22 {
+        23 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        23 {
+        24 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
             `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
             `$go_to = 1
         }
-        24 {
+        25 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
             `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
             `$go_to = 1
         }
-        25 {
+        26 {
             `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
             `$model_name = `"sdxl_vae.safetensors`"
             `$go_to = 1
         }
-        26 {
+        27 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
             `$model_name = `"ae.safetensors`"
             `$go_to = 1
         }
-        27 {
+        28 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
             `$model_name = `"clip_l.safetensors`"
             `$go_to = 1
         }
-        28 {
+        29 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`"
             `$model_name = `"t5xxl_fp16.safetensors`"
             `$go_to = 1
         }
-        29 {
+        30 {
             `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`"
             `$model_name = `"t5xxl_fp8_e4m3fn.safetensors`"
             `$go_to = 1
