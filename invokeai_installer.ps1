@@ -4,8 +4,6 @@ Set-Location "$PSScriptRoot"
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
 $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu118/torch_stable.html"
-$PIP_EXTRA_INDEX_MIRROR_CU121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121"
-$PIP_FIND_MIRROR_CU121 = "https://mirror.sjtu.edu.cn/pytorch-wheels/cu121/torch_stable.html"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/InvokeAI/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/InvokeAI/python/Scripts"
@@ -48,15 +46,15 @@ Print-Msg "初始化中"
 # 代理配置
 $Env:NO_PROXY = "localhost,127.0.0.1,::1"
 if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
-    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    $INTERNET_SETTING = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
     if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
         $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
         $Env:HTTP_PROXY = $proxy_value
         $Env:HTTPS_PROXY = $proxy_value
         Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
-    } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-        $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+    } elseif ($INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        $Env:HTTP_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
+        $Env:HTTPS_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
         Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
 } else {
@@ -64,7 +62,7 @@ if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动
 }
 
 # 设置 uv 的使用状态
-if (Test-Path "./disable_uv.txt") {
+if (Test-Path "$PSScriptRoot/disable_uv.txt") {
     Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
     $USE_UV = $false
 } else {
@@ -78,16 +76,16 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/python-3.10.11-embed-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
-        if (!(Test-Path "./InvokeAI/python")) {
-            New-Item -ItemType Directory -Force -Path ./InvokeAI/python > $null
+        if (!(Test-Path "$PSScriptRoot/InvokeAI/python")) {
+            New-Item -ItemType Directory -Force -Path "$PSScriptRoot/InvokeAI/python" > $null
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "./InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "./InvokeAI/python" -Force
-        Remove-Item -Path "./InvokeAI/python-3.10.11-embed-amd64.zip"
+        Expand-Archive -Path "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
+        Remove-Item -Path "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
         Print-Msg "Python 安装成功"
     } else {
@@ -102,7 +100,7 @@ function Install-Python {
 function Modify-PythonPath {
     Print-Msg "修改 python310._pth 文件内容"
     $content = @("python310.zip", ".", "", "# Uncomment to run site.main() automatically", "import site")
-    Set-Content -Path "./InvokeAI/python/python310._pth" -Value $content
+    Set-Content -Path "$PSScriptRoot/InvokeAI/python/python310._pth" -Value $content
 }
 
 
@@ -112,16 +110,16 @@ function Install-Pip {
 
     # 下载 get-pip.py
     Print-Msg "正在下载 get-pip.py"
-    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/cache/get-pip.py"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/get-pip.py"
     if ($?) { # 检测是否下载成功
         # 执行 get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
-        python ./InvokeAI/cache/get-pip.py --no-warn-script-location
+        python $PSScriptRoot/InvokeAI/cache/get-pip.py --no-warn-script-location
         if ($?) { # 检测是否安装成功
-            Remove-Item -Path "./InvokeAI/cache/get-pip.py"
+            Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装成功"
         } else {
-            Remove-Item -Path "./InvokeAI/cache/get-pip.py"
+            Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
             Read-Host | Out-Null
             exit 1
@@ -139,9 +137,9 @@ function Install-Pip {
 function Install-uv {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe"
     Print-Msg "正在下载 uv"
-    Invoke-WebRequest -Uri $url -OutFile "./InvokeAI/cache/uv.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/uv.exe"
     if ($?) {
-        Move-Item -Path "./InvokeAI/cache/uv.exe" -Destination "./InvokeAI/python/Scripts/uv.exe"
+        Move-Item -Path "$PSScriptRoot/InvokeAI/cache/uv.exe" -Destination "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe"
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
@@ -213,11 +211,11 @@ function Install-PyPatchMatch {
     $url_1 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll"
     $url_2 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll"
 
-    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
+    if (!(Test-Path "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
-        Invoke-WebRequest -Uri $url_1 -OutFile "./InvokeAI/cache/libpatchmatch_windows_amd64.dll"
+        Invoke-WebRequest -Uri $url_1 -OutFile "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll"
         if ($?) {
-            Move-Item -Path "./InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
         } else {
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
@@ -226,11 +224,11 @@ function Install-PyPatchMatch {
         Print-Msg "无需下载 libpatchmatch_windows_amd64.dll"
     }
 
-    if (!(Test-Path "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
+    if (!(Test-Path "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
         Print-Msg "下载 opencv_world460.dll 中"
-        Invoke-WebRequest -Uri $url_2 -OutFile "./InvokeAI/cache/opencv_world460.dll"
+        Invoke-WebRequest -Uri $url_2 -OutFile "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll"
         if ($?) {
-            Move-Item -Path "./InvokeAI/cache/opencv_world460.dll" -Destination "./InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
             Print-Msg "下载 opencv_world460.dll 成功"
         } else {
             Print-Msg "下载 opencv_world460.dll 失败"
@@ -247,9 +245,9 @@ function Download-Config-File($url, $path) {
     $name = $url.split("/")[$length - 1]
     if (!(Test-Path $path)) {
         Print-Msg "下载 $name 中"
-        Invoke-WebRequest -Uri $url.ToString() -OutFile "./InvokeAI/cache/$name"
+        Invoke-WebRequest -Uri $url.ToString() -OutFile "$PSScriptRoot/InvokeAI/cache/$name"
         if ($?) {
-            Move-Item -Path "./InvokeAI/cache/$name" -Destination "$path"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/$name" -Destination "$path"
             Print-Msg "$name 下载成功"
         } else {
             Print-Msg "$name 下载失败"
@@ -263,40 +261,40 @@ function Download-Config-File($url, $path) {
 # 预下载模型配置文件
 function Get-Model-Config-File {
     Print-Msg "预下载模型配置文件中"
-    New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/stable-diffusion" -Force > $null
-    New-Item -ItemType Directory -Path "./InvokeAI/invokeai/configs/controlnet" -Force > $null
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-finetune.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-finetune_style.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "./InvokeAI/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v15.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "./InvokeAI/invokeai/configs/controlnet/cldm_v21.yaml"
+    New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion" -Force > $null
+    New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet" -Force > $null
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-finetune_style.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet/cldm_v15.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet/cldm_v21.yaml"
     Print-Msg "模型配置文件下载完成"
 }
 
 
 # 安装
 function Check-Install {
-    if (!(Test-Path "./InvokeAI")) {
-        New-Item -ItemType Directory -Path "./InvokeAI" > $null
+    if (!(Test-Path "$PSScriptRoot/InvokeAI")) {
+        New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI" > $null
     }
 
-    if (!(Test-Path "./InvokeAI/cache")) {
-        New-Item -ItemType Directory -Path "./InvokeAI/cache" > $null
+    if (!(Test-Path "$PSScriptRoot/InvokeAI/cache")) {
+        New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/cache" > $null
     }
 
     Print-Msg "检测是否安装 Python"
-    if (Test-Path "./InvokeAI/python/python.exe") {
+    if (Test-Path "$PSScriptRoot/InvokeAI/python/python.exe") {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -313,7 +311,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 uv"
-    if (Test-Path "./InvokeAI/python/Scripts/uv.exe") {
+    if (Test-Path "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe") {
         Print-Msg "uv 已安装"
     } else {
         Print-Msg "uv 未安装"
@@ -331,9 +329,6 @@ function Check-Install {
 
     Install-InvokeAI-Requirements
 
-    # Print-Msg "检测是否需要重装 xFormers"
-    # Reinstall-Xformers
-
     Print-Msg "检测是否需要安装 PyPatchMatch"
     Install-PyPatchMatch
 
@@ -346,23 +341,62 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
+
 Print-Msg `"初始化中`"
 
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -383,37 +417,6 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用�
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-
 Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址, 进入 InvokeAI 的界面`"
 Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
 Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
@@ -431,7 +434,7 @@ if (`$req) {
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/launch.ps1" -Value $content
 }
 
 
@@ -439,48 +442,21 @@ Read-Host | Out-Null
 function Write-Update-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
-}
-
-# 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
-}
-
-# 设置 uv 的使用状态
-if (Test-Path `"./disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
-}
-
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
@@ -500,6 +476,12 @@ if (Test-Path `"./disable_uv.txt`") {
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+}
 
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
@@ -525,10 +507,38 @@ print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
     return `$pytorch_ver
 }
 
+
+# 代理配置
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# 设置 uv 的使用状态
+if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
 Print-Msg `"更新 InvokeAI 内核中`"
 `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
 if (`$USE_UV) {
-    uv pip install InvokeAI --upgrade --no-deps --find-links `"$PIP_FIND_MIRROR`"
+    uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
 } else {
     python -m pip install InvokeAI --upgrade --no-deps --no-warn-script-location --use-pep517
 }
@@ -538,7 +548,7 @@ if (`$?) {
     `$pytorch_ver = Get-PyTorch-Version
     `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$USE_UV) {
-        uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
+        uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
     } else {
         python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location --use-pep517
     }
@@ -556,19 +566,50 @@ if (`$?) {
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update.ps1" -Value $content
 }
 
 
 # 数据库修复
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
@@ -587,22 +628,25 @@ Read-Host | Out-Null
 function Write-InvokeAI-Install-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
+
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -616,13 +660,13 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 
 ForEach (`$url in `$urls) {
     Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
-    Invoke-WebRequest -Uri `$url -OutFile `"./cache/invokeai_installer.ps1`"
+    Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
     if (`$?) {
-        if (Test-Path `"../invokeai_installer.ps1`") {
+        if (Test-Path `".`$PSScriptRoot/invokeai_installer.ps1`") {
             Print-Msg `"删除原有的 InvokeAI Installer 脚本`"
-            Remove-Item `"../invokeai_installer.ps1`" -Force
+            Remove-Item `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
         }
-        Move-Item -Path `"./cache/invokeai_installer.ps1`" -Destination `"../invokeai_installer.ps1`"
+        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
         Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
         break
@@ -634,20 +678,59 @@ ForEach (`$url in `$urls) {
         }
     }
 }
+
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/get_invokeai_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/get_invokeai_installer.ps1" -Value $content
 }
 
 
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 提示信息
 function global:prompt {
     `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
@@ -655,15 +738,15 @@ function Print-Msg (`$msg) {
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -684,76 +767,32 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用�
     Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$py_path = `"`$PSScriptRoot/python`"
-`$py_scripts_path = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$py_path`$([System.IO.Path]::PathSeparator)`$py_scripts_path`$([System.IO.Path]::PathSeparator)`$Env:PATH`" # 将python添加到环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-
 Print-Msg `"激活 InvokeAI Env`"
 Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/activate.ps1" -Value $content
 }
 
 
 # PyTorch 重装脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
-}
-
-# 设置 uv 的使用状态
-if (Test-Path `"./disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
-}
-
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
@@ -773,6 +812,12 @@ if (Test-Path `"./disable_uv.txt`") {
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+}
 
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
@@ -798,6 +843,16 @@ print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
     return `$pytorch_ver
 }
 
+
+# 设置 uv 的使用状态
+if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
 Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
 Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
 `$arg = Read-Host `"=========================================>`"
@@ -807,7 +862,7 @@ if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"
     Print-Msg `"重新安装 PyTorch`"
     `$pytorch_ver = Get-PyTorch-Version
     if (`$USE_UV) {
-        uv pip install `$pytorch_ver.ToString().Split() --find-links `"$PIP_FIND_MIRROR`"
+        uv pip install `$pytorch_ver.ToString().Split() --find-links `"`$PIP_FIND_MIRROR`"
     } else {
         python -m pip install `$pytorch_ver.ToString().Split() --no-warn-script-location --use-pep517
     }
@@ -823,7 +878,7 @@ if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -843,9 +898,9 @@ function Download-Config-File(`$url, `$path) {
     `$name = `$url.split(`"/`")[`$length - 1]
     if (!(Test-Path `$path)) {
         Print-Msg `"下载 `$name 中`"
-        Invoke-WebRequest -Uri `$url.ToString() -OutFile `"./cache/`$name`"
+        Invoke-WebRequest -Uri `$url.ToString() -OutFile `"`$PSScriptRoot/cache/`$name`"
         if (`$?) {
-            Move-Item -Path `"./cache/`$name`" -Destination `"`$path`"
+            Move-Item -Path `"`$PSScriptRoot/cache/`$name`" -Destination `"`$path`"
             Print-Msg `"`$name 下载成功`"
         } else {
             Print-Msg `"`$name 下载失败`"
@@ -855,36 +910,36 @@ function Download-Config-File(`$url, `$path) {
     }
 }
 
-
 # 预下载模型配置文件
 function Get-Model-Config-File {
     Print-Msg `"预下载模型配置文件中`"
-    New-Item -ItemType Directory -Path `"./cache`" -Force > `$null
-    New-Item -ItemType Directory -Path `"./invokeai/configs/stable-diffusion`" -Force > `$null
-    New-Item -ItemType Directory -Path `"./invokeai/configs/controlnet`" -Force > `$null
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_base.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml`" `"./invokeai/configs/stable-diffusion/sd_xl_refiner.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml`" `"./invokeai/configs/stable-diffusion/v1-finetune.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml`" `"./invokeai/configs/stable-diffusion/v1-finetune_style.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v1-inference-v.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml`" `"./invokeai/configs/stable-diffusion/v1-inference.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml`" `"./invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml`" `"./invokeai/configs/stable-diffusion/v1-m1-finetune.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v2-inference-v.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-inference.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml`" `"./invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml`" `"./invokeai/configs/stable-diffusion/v2-midas-inference.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml`" `"./invokeai/configs/controlnet/cldm_v15.yaml`"
-    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml`" `"./invokeai/configs/controlnet/cldm_v21.yaml`"
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/stable-diffusion`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/controlnet`" -Force > `$null
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_base.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-finetune.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-finetune_style.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-midas-inference.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml`" `"`$PSScriptRoot/invokeai/configs/controlnet/cldm_v15.yaml`"
+    Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml`" `"`$PSScriptRoot/invokeai/configs/controlnet/cldm_v21.yaml`"
     Print-Msg `"模型配置文件下载完成`"
 }
+
 
 Get-Model-Config-File
 Read-Host | Out-Null
 "
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/download_config.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/download_config.ps1" -Value $content
 }
 
 # 帮助文档
@@ -940,7 +995,7 @@ InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
 "
 
-    Set-Content -Encoding UTF8 -Path "./InvokeAI/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/help.txt" -Value $content
 }
 
 

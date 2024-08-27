@@ -4,7 +4,7 @@ Set-Location "$PSScriptRoot"
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
 $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
-# $PIP_FIND_MIRROR_cu121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
+# $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 # Github 镜像源列表
 $GITHUB_MIRROR_LIST = @(
@@ -60,15 +60,15 @@ Print-Msg "初始化中"
 # 代理配置
 $Env:NO_PROXY = "localhost,127.0.0.1,::1"
 if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
-    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    $INTERNET_SETTING = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
     if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
         $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
         $Env:HTTP_PROXY = $proxy_value
         $Env:HTTPS_PROXY = $proxy_value
         Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
-    } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-        $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+    } elseif ($INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        $Env:HTTP_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
+        $Env:HTTPS_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
         Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
 } else {
@@ -76,7 +76,7 @@ if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动
 }
 
 # 设置 uv 的使用状态
-if (Test-Path "./disable_uv.txt") {
+if (Test-Path "$PSScriptRoot/disable_uv.txt") {
     Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
     $USE_UV = $false
 } else {
@@ -90,16 +90,16 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/python-3.10.11-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
-        if (!(Test-Path "./SD-Trainer/python")) {
-            New-Item -ItemType Directory -Force -Path ./SD-Trainer/python > $null
+        if (!(Test-Path "$PSScriptRoot/SD-Trainer/python")) {
+            New-Item -ItemType Directory -Force -Path $PSScriptRoot/SD-Trainer/python > $null
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "./SD-Trainer/cache/python-3.10.11-amd64.zip" -DestinationPath "./SD-Trainer/python" -Force
-        Remove-Item -Path "./SD-Trainer/cache/python-3.10.11-amd64.zip"
+        Expand-Archive -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip" -DestinationPath "$PSScriptRoot/SD-Trainer/python" -Force
+        Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -113,16 +113,16 @@ function Install-Python {
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Git 文件夹
-        if (!(Test-Path "./SD-Trainer/git")) {
-            New-Item -ItemType Directory -Force -Path ./SD-Trainer/git > $null
+        if (!(Test-Path "$PSScriptRoot/SD-Trainer/git")) {
+            New-Item -ItemType Directory -Force -Path $PSScriptRoot/SD-Trainer/git > $null
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "./SD-Trainer/cache/PortableGit.zip" -DestinationPath "./SD-Trainer/git" -Force
-        Remove-Item -Path "./SD-Trainer/cache/PortableGit.zip"
+        Expand-Archive -Path "$PSScriptRoot/SD-Trainer/cache/PortableGit.zip" -DestinationPath "$PSScriptRoot/SD-Trainer/git" -Force
+        Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/PortableGit.zip"
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -136,9 +136,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/aria2c.exe"
     if ($?) {
-        Move-Item -Path "./SD-Trainer/cache/aria2c.exe" -Destination "./SD-Trainer/git/bin/aria2c.exe"
+        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/aria2c.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe"
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -152,9 +152,9 @@ function Install-Aria2 {
 function Install-uv {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe"
     Print-Msg "正在下载 uv"
-    Invoke-WebRequest -Uri $url -OutFile "./SD-Trainer/cache/uv.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/uv.exe"
     if ($?) {
-        Move-Item -Path "./SD-Trainer/cache/uv.exe" -Destination "./SD-Trainer/git/bin/uv.exe"
+        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/uv.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/uv.exe"
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -165,7 +165,7 @@ function Install-uv {
 
 # Github 镜像测试
 function Test-Github-Mirror {
-    if (Test-Path "./disable_gh_mirror.txt") { # 禁用 Github 镜像源
+    if (Test-Path "$PSScriptRoot/disable_gh_mirror.txt") { # 禁用 Github 镜像源
         Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源"
     } else {
         $Env:GIT_CONFIG_GLOBAL = "$PSScriptRoot/SD-Trainer/.gitconfig" # 设置 Git 配置文件路径
@@ -173,18 +173,18 @@ function Test-Github-Mirror {
             Remove-Item -Path "$PSScriptRoot/SD-Trainer/.gitconfig" -Force
         }
 
-        if (Test-Path "./gh_mirror.txt") { # 使用自定义 Github 镜像源
-            $github_mirror = Get-Content "./gh_mirror.txt"
+        if (Test-Path "$PSScriptRoot/gh_mirror.txt") { # 使用自定义 Github 镜像源
+            $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
             git config --global url."$github_mirror".insteadOf "https://github.com"
             Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         } else { # 自动检测可用镜像源并使用
             $status = 0
             ForEach($i in $GITHUB_MIRROR_LIST) {
                 Print-Msg "测试 Github 镜像源: $i"
-                if (Test-Path "./SD-Trainer/cache/github-mirror-test") {
-                    Remove-Item -Path "./SD-Trainer/cache/github-mirror-test" -Force -Recurse
+                if (Test-Path "$PSScriptRoot/SD-Trainer/cache/github-mirror-test") {
+                    Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/github-mirror-test" -Force -Recurse
                 }
-                git clone $i/licyk/empty ./SD-Trainer/cache/github-mirror-test --quiet
+                git clone $i/licyk/empty $PSScriptRoot/SD-Trainer/cache/github-mirror-test --quiet
                 if ($?) {
                     Print-Msg "该 Github 镜像源可用"
                     $github_mirror = $i
@@ -194,8 +194,8 @@ function Test-Github-Mirror {
                     Print-Msg "镜像源不可用, 更换镜像源进行测试"
                 }
             }
-            if (Test-Path "./SD-Trainer/cache/github-mirror-test") {
-                Remove-Item -Path "./SD-Trainer/cache/github-mirror-test" -Force -Recurse
+            if (Test-Path "$PSScriptRoot/SD-Trainer/cache/github-mirror-test") {
+                Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/github-mirror-test" -Force -Recurse
             }
             if ($status -eq 0) {
                 Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
@@ -212,10 +212,10 @@ function Test-Github-Mirror {
 # 安装 SD-Trainer
 function Install-SD-Trainer {
     $status = 0
-    if (!(Test-Path "./SD-Trainer/lora-scripts")) {
+    if (!(Test-Path "$PSScriptRoot/SD-Trainer/lora-scripts")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "./SD-Trainer/lora-scripts" -Recurse
+        $items = Get-ChildItem "$PSScriptRoot/SD-Trainer/lora-scripts" -Recurse
         if ($items.Count -eq 0) {
             $status = 1
         }
@@ -223,7 +223,7 @@ function Install-SD-Trainer {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
-        git clone --recurse-submodules https://github.com/Akegarasu/lora-scripts ./SD-Trainer/lora-scripts
+        git clone --recurse-submodules https://github.com/Akegarasu/lora-scripts $PSScriptRoot/SD-Trainer/lora-scripts
         if ($?) { # 检测是否下载成功
             Print-Msg "SD-Trainer 安装成功"
         } else {
@@ -236,8 +236,8 @@ function Install-SD-Trainer {
     }
 
     Print-Msg "安装 SD-Trainer 子模块中"
-    git -C ./SD-Trainer/lora-scripts submodule init
-    git -C ./SD-Trainer/lora-scripts submodule update
+    git -C $PSScriptRoot/SD-Trainer/lora-scripts submodule init
+    git -C $PSScriptRoot/SD-Trainer/lora-scripts submodule update
     if ($?) {
         Print-Msg "SD-Trainer 子模块安装成功"
     } else {
@@ -331,20 +331,20 @@ function Install-SD-Trainer-Dependence {
 
 # 安装
 function Check-Install {
-    if (!(Test-Path "./SD-Trainer")) {
-        New-Item -ItemType Directory -Path "./SD-Trainer" > $null
+    if (!(Test-Path "$PSScriptRoot/SD-Trainer")) {
+        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer" > $null
     }
 
-    if (!(Test-Path "./SD-Trainer/cache")) {
-        New-Item -ItemType Directory -Path "./SD-Trainer/cache" > $null
+    if (!(Test-Path "$PSScriptRoot/SD-Trainer/cache")) {
+        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/cache" > $null
     }
 
-    if (!(Test-Path "./SD-Trainer/models")) {
-        New-Item -ItemType Directory -Path "./SD-Trainer/models" > $null
+    if (!(Test-Path "$PSScriptRoot/SD-Trainer/models")) {
+        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/models" > $null
     }
 
     Print-Msg "检测是否安装 Python"
-    if (Test-Path "./SD-Trainer/python/python.exe") {
+    if (Test-Path "$PSScriptRoot/SD-Trainer/python/python.exe") {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -352,7 +352,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Git"
-    if (Test-Path "./SD-Trainer/git/bin/git.exe") {
+    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/git.exe") {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -360,7 +360,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if (Test-Path "./SD-Trainer/git/bin/aria2c.exe") {
+    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe") {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -368,7 +368,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 uv"
-    if (Test-Path "./SD-Trainer/git/bin/uv.exe") {
+    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/uv.exe") {
         Print-Msg "uv 已安装"
     } else {
         Print-Msg "uv 未安装"
@@ -385,23 +385,65 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+Set-Location `"`$PSScriptRoot`"
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
+
+
 Print-Msg `"初始化中`"
 
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -422,24 +464,61 @@ if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) { # 检测是否禁�
     Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
+# SD-Trainer 启动参数
 if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
     `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
     Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件, 已读取该启动参数配置文件并应用启动参数`"
     Print-Msg `"使用的启动参数: `$args`"
 }
 
+Print-Msg `"启动 SD-Trainer 中`"
+Set-Location `"`$PSScriptRoot/lora-scripts`"
+python gui.py `$args.ToString().Split()
+`$req = `$?
+if (`$req) {
+    Print-Msg `"SD-Trainer 正常退出`"
+} else {
+    Print-Msg `"SD-Trainer 出现异常, 已退出`"
+}
+Set-Location `"`$PSScriptRoot`"
+Read-Host | Out-Null
+"
+
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/launch.ps1" -Value $content
+}
+
+
+# 更新脚本
+function Write-Update-Script {
+    $content = "
+Set-Location `"`$PSScriptRoot`"
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
@@ -459,49 +538,13 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
-Print-Msg `"启动 SD-Trainer 中`"
-Set-Location `"`$PSScriptRoot/lora-scripts`"
-python gui.py `$args.ToString().Split()
-`$req = `$?
-if (`$req) {
-    Print-Msg `"SD-Trainer 正常退出`"
-} else {
-    Print-Msg `"SD-Trainer 出现异常, 已退出`"
-}
-Set-Location `"`$PSScriptRoot`"
-Read-Host | Out-Null
-"
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/launch.ps1" -Value $content
-}
-
-
-# 更新脚本
-function Write-Update-Script {
-    $content = "
-Set-Location `"`$PSScriptRoot`"
-`$GITHUB_MIRROR_LIST = @(
-    `"https://mirror.ghproxy.com/https://github.com`",
-    `"https://ghproxy.net/https://github.com`",
-    `"https://gitclone.com/github.com`",
-    `"https://gh-proxy.com/https://github.com`",
-    `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
-)
-
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
-# 设置 uv 的使用状态
-if (Test-Path `"./disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
-}
-
+# 修复 Git 分支游离
 function Fix-Git-Point-Off-Set {
     param(
         `$path
@@ -518,98 +561,6 @@ function Fix-Git-Point-Off-Set {
         }
     }
 }
-
-# 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
-}
-
-# Github 镜像源
-if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-    Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-} else {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-    }
-
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-    } else { # 自动检测可用镜像源并使用
-        `$status = 0
-        ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-            Print-Msg `"测试 Github 镜像源: `$i`"
-            if (Test-Path `"./cache/github-mirror-test`") {
-                Remove-Item -Path `"./cache/github-mirror-test`" -Force -Recurse
-            }
-            git clone `$i/licyk/empty ./cache/github-mirror-test --quiet
-            if (`$?) {
-                Print-Msg `"该 Github 镜像源可用`"
-                `$github_mirror = `$i
-                `$status = 1
-                break
-            } else {
-                Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-            }
-        }
-        if (Test-Path `"./cache/github-mirror-test`") {
-            Remove-Item -Path `"./cache/github-mirror-test`" -Force -Recurse
-        }
-        if (`$status -eq 0) {
-            Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-            Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-        } else {
-            Print-Msg `"设置 Github 镜像源`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        }
-    }
-}
-
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
@@ -650,9 +601,81 @@ print(version_list)
     return `$pytorch_ver
 }
 
+
+# 设置 uv 的使用状态
+if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
+# 代理配置
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# Github 镜像源
+if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+    Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+} else {
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+    }
+
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+    } else { # 自动检测可用镜像源并使用
+        `$status = 0
+        ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+            Print-Msg `"测试 Github 镜像源: `$i`"
+            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+            }
+            git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+            if (`$?) {
+                Print-Msg `"该 Github 镜像源可用`"
+                `$github_mirror = `$i
+                `$status = 1
+                break
+            } else {
+                Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+            }
+        }
+        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        }
+        if (`$status -eq 0) {
+            Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+            Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+        } else {
+            Print-Msg `"设置 Github 镜像源`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        }
+    }
+}
+
+
 `$update_fail = 0
 Print-Msg `"拉取 SD-Trainer 更新内容中`"
-Fix-Git-Point-Off-Set `"./lora-scripts`"
+Fix-Git-Point-Off-Set `"`$PSScriptRoot/lora-scripts`"
 `$core_origin_ver = `$(git -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 `$branch = `$(git -C lora-scripts symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 git -C lora-scripts fetch --recurse-submodules
@@ -665,44 +688,45 @@ if (`$?) {
     if (`$core_origin_ver -eq `$core_latest_ver) {
         Print-Msg `"SD-Trainer 已为最新版`"
         `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
-        `$core_req_update_msg = `"因 SD-Trainer 已为最新版, 无需进行内核依赖更新`"
-        `$req_update_msg = `"因 SD-Trainer 已为最新版, 无需进行依赖更新`"
     } else {
         Print-Msg `"SD-Trainer 更新成功`"
         `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
-        Print-Msg `"更新 SD-Trainer 内核依赖中`"
-        `$pytorch_ver = Get-PyTorch-Version
-        Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
-        if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
-        } else {
-            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
-        }
-        if (`$?) {
-            Print-Msg `"SD-Trainer 内核依赖更新成功`"
-            `$core_req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"SD-Trainer 内核依赖更新失败`"
-            `$core_req_update_msg = `"更新失败`"
-            `$update_fail = 1
-        }
-        Print-Msg `"更新 SD-Trainer 依赖中`"
-        Set-Location `"`$PSScriptRoot/lora-scripts`"
-        if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"$PIP_FIND_MIRROR`"
-        } else {
-            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
-        }
-        if (`$?) {
-            Print-Msg `"SD-Trainer 依赖更新成功`"
-            `$req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"SD-Trainer 依赖更新成功`"
-            `$req_update_msg = `"更新失败`"
-            `$update_fail = 1
-        }
-        Set-Location `"`$PSScriptRoot`"
     }
+
+    Print-Msg `"更新 SD-Trainer 内核依赖中`"
+    `$pytorch_ver = Get-PyTorch-Version
+    Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
+    if (`$USE_UV) {
+        uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+    } else {
+        python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
+    }
+    if (`$?) {
+        Print-Msg `"SD-Trainer 内核依赖更新成功`"
+        `$core_req_update_msg = `"更新成功`"
+    } else {
+        Print-Msg `"SD-Trainer 内核依赖更新失败`"
+        `$core_req_update_msg = `"更新失败`"
+        `$update_fail = 1
+    }
+
+    Print-Msg `"更新 SD-Trainer 依赖中`"
+    Set-Location `"`$PSScriptRoot/lora-scripts`"
+    if (`$USE_UV) {
+        uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+    } else {
+        python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
+    }
+    if (`$?) {
+        Print-Msg `"SD-Trainer 依赖更新成功`"
+        `$req_update_msg = `"更新成功`"
+    } else {
+        Print-Msg `"SD-Trainer 依赖更新失败`"
+        `$req_update_msg = `"更新失败`"
+        `$update_fail = 1
+    }
+
+    Set-Location `"`$PSScriptRoot`"
 } else {
     Print-Msg `"拉取 SD-Trainer 更新内容失败`"
     `$core_update_msg = `"拉取 SD-Trainer 更新内容失败, 无法进行更新`"
@@ -718,14 +742,14 @@ Print-Msg `"SD-Trainer 依赖: `$req_update_msg`"
 if (`$update_fail -eq 0) {
     Print-Msg `"SD-Trainer 更新成功`"
 } else {
-    Print-Msg `"SD-Trainer 更新失败, 请检查控制台日志`"
+    Print-Msg `"SD-Trainer 更新失败, 请检查控制台日志。可尝试重新运行 SD-Trainer 更新脚本进行重试`"
 }
 
 Print-Msg `"退出 SD-Trainer 更新脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/update.ps1" -Value $content
 }
 
 
@@ -733,22 +757,25 @@ Read-Host | Out-Null
 function Write-SD-Trainer-Install-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
+
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -762,13 +789,13 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 
 ForEach (`$url in `$urls) {
     Print-Msg `"正在下载最新的 SD-Trainer Installer 脚本`"
-    Invoke-WebRequest -Uri `$url -OutFile `"./cache/sd_trainer_installer.ps1`"
+    Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
     if (`$?) {
-        if (Test-Path `"../sd_trainer_installer.ps1`") {
+        if (Test-Path `"`$PSScriptRoot/../sd_trainer_installer.ps1`") {
             Print-Msg `"删除原有的 SD-Trainer Installer 脚本`"
-            Remove-Item `"../sd_trainer_installer.ps1`" -Force
+            Remove-Item `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
         }
-        Move-Item -Path `"./cache/sd_trainer_installer.ps1`" -Destination `"../sd_trainer_installer.ps1`"
+        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -Destination `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
         Print-Msg `"下载 SD-Trainer Installer 脚本成功, 脚本路径为 `$parentDirectory\sd_trainer_installer.ps1`"
         break
@@ -785,7 +812,7 @@ Print-Msg `"退出 SD-Trainer Installer 下载脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
 }
 
 
@@ -793,49 +820,24 @@ Read-Host | Out-Null
 function Write-PyTorch-ReInstall-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
-}
-
-# 设置 uv 的使用状态
-if (Test-Path `"./disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
-}
-
-# 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
-}
-
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
@@ -855,13 +857,42 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
-`$to_exit = 0
-`$pip_find_links_arg = `"--find-links $PIP_FIND_MIRROR`"
-while (`$True) {
-    Print-Msg `"PyTorch 版本列表`"
-    `$go_to = 0
 
-    `$content = `"
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# 设置 uv 的使用状态
+if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    `$USE_UV = `$false
+} else {
+    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+    `$USE_UV = `$true
+}
+
+# 代理配置
+`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+} else {
+    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+}
+
+# PyTorch 版本列表
+`$content = `"
 -----------------------------------------------------
 - 1、Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14
 - 2、Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16
@@ -884,8 +915,13 @@ while (`$True) {
 - 19、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
 - 20、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
 -----------------------------------------------------
-    `"
+`"
 
+`$to_exit = 0
+`$pip_find_links_arg = `"--find-links `$PIP_FIND_MIRROR`"
+while (`$True) {
+    Print-Msg `"PyTorch 版本列表`"
+    `$go_to = 0
     Write-Host `$content
     Print-Msg `"请选择 PyTorch 版本`"
     Print-Msg `"提示:`"
@@ -922,9 +958,7 @@ while (`$True) {
         6 {
             `$torch_ver = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
             `$xformers_ver = `"xformers==0.0.23`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -936,9 +970,7 @@ while (`$True) {
         8 {
             `$torch_ver = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
             `$xformers_ver = `"xformers==0.0.23.post1`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -950,9 +982,7 @@ while (`$True) {
         10 {
             `$torch_ver = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
             `$xformers_ver = `"xformers==0.0.24`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -964,9 +994,7 @@ while (`$True) {
         12 {
             `$torch_ver = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
             `$xformers_ver = `"xformers==0.0.25`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -978,9 +1006,7 @@ while (`$True) {
         14 {
             `$torch_ver = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
             `$xformers_ver = `"xformers==0.0.25.post1`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -992,9 +1018,7 @@ while (`$True) {
         16 {
             `$torch_ver = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
             `$xformers_ver = `"xformers==0.0.26.post1`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -1006,9 +1030,7 @@ while (`$True) {
         18 {
             `$torch_ver = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
             `$xformers_ver = `"xformers==0.0.27`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -1020,9 +1042,7 @@ while (`$True) {
         20 {
             `$torch_ver = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
             `$xformers_ver = `"xformers==0.0.27.post2`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
@@ -1076,7 +1096,7 @@ if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torc
     if (`$?) {
         Print-Msg `"安装 PyTorch 成功`"
     } else {
-        Print-Msg `"安装 PyTorch 失败, 终止重装进程`"
+        Print-Msg `"安装 PyTorch 失败, 终止 PyTorch 重装进程`"
         Read-Host | Out-Null
         exit 1
     }
@@ -1089,7 +1109,7 @@ if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torc
     if (`$?) {
         Print-Msg `"安装 xFormers 成功`"
     } else {
-        Print-Msg `"安装 xFormers 失败, 终止重装进程`"
+        Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
         Read-Host | Out-Null
         exit 1
     }
@@ -1101,7 +1121,7 @@ Print-Msg `"退出 PyTorch 重装脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -1109,9 +1129,48 @@ Read-Host | Out-Null
 function Write-Download-Model-Script {
     $content = "
 Set-Location `"`$PSScriptRoot`"
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
+
 
 `$to_exit = 0
 while (`$True) {
@@ -1341,7 +1400,7 @@ Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
 if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
     Print-Msg `"模型将下载至 `$PSScriptRoot\models 目录中`"
     Print-Msg `"下载 `$model_name 模型中`"
-    aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d ./models -o `$model_name
+    aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$PSScriptRoot/models`" -o `$model_name
     if (`$?) {
         Print-Msg `"`$model_name 模型下载成功`"
     } else {
@@ -1353,33 +1412,74 @@ Print-Msg `"退出模型下载脚本`"
 Read-Host | Out-Null
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/download_models.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/download_models.ps1" -Value $content
 }
 
 
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
+# Pip 镜像源
+`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
+`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
+`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+# 提示符信息
 function global:prompt {
     `"`$(Write-Host `"[SD-Trainer Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
+# 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
+
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
     if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
         `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 } else {
@@ -1415,42 +1515,12 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
     }
 }
 
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 Print-Msg `"激活 SD-Trainer Env`"
 Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/activate.ps1" -Value $content
 }
 
 
@@ -1530,7 +1600,7 @@ https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-abou
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
 "
 
-    Set-Content -Encoding UTF8 -Path "./SD-Trainer/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/help.txt" -Value $content
 }
 
 
