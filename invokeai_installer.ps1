@@ -321,7 +321,8 @@ function Check-Install {
     }
 
     Print-Msg "检查是否安装 InvokeAI"
-    if (Test-Path "./InvokeAI/python/Scripts/invokeai-web.exe") {
+    python -m pip show invokeai --quiet 2> $null
+    if ($?) {
         Print-Msg "InvokeAI 已安装"
     } else {
         Print-Msg "InvokeAI 未安装"
