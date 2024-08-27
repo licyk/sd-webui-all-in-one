@@ -31,6 +31,7 @@ $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 # $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
 # $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
+$Env:UV_HTTP_TIMEOUT = 30
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
@@ -272,6 +273,7 @@ function Install-PyTorch {
     Print-Msg "检测是否需要安装 xFormers"
     python -m pip show xformers --quiet 2> $null
     if (!($?)) {
+        Print-Msg "安装 xFormers 中"
         if ($USE_UV) {
             uv pip install $XFORMERS_VER --find-links $PIP_FIND_MIRROR
         } else {
@@ -439,6 +441,7 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -590,6 +593,7 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -833,6 +837,7 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -1423,6 +1428,7 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5

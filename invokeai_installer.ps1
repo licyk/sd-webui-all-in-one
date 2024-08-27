@@ -18,6 +18,7 @@ $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 # $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
 # $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
+$Env:UV_HTTP_TIMEOUT = 30
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
@@ -393,6 +394,7 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用�
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -479,6 +481,7 @@ if (Test-Path `"./disable_uv.txt`") {
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -695,6 +698,7 @@ if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用�
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
@@ -750,6 +754,7 @@ if (Test-Path `"./disable_uv.txt`") {
 # `$Env:UV_EXTRA_INDEX_URL = `"$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
