@@ -6,6 +6,7 @@ $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
 $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 # $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
+$PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # Github 镜像源列表
 $GITHUB_MIRROR_LIST = @(
     "https://mirror.ghproxy.com/https://github.com",
@@ -18,6 +19,8 @@ $GITHUB_MIRROR_LIST = @(
 # PyTorch 版本
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers==0.0.26.post1+cu118"
+# SD-Trainer 仓库地址
+$SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/SD-Trainer/python/Scripts"
@@ -223,7 +226,7 @@ function Install-SD-Trainer {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
-        git clone --recurse-submodules https://github.com/Akegarasu/lora-scripts $PSScriptRoot/SD-Trainer/lora-scripts
+        git clone --recurse-submodules $SD_TRAINER_REPO "$PSScriptRoot/SD-Trainer/lora-scripts"
         if ($?) { # 检测是否下载成功
             Print-Msg "SD-Trainer 安装成功"
         } else {
@@ -236,8 +239,8 @@ function Install-SD-Trainer {
     }
 
     Print-Msg "安装 SD-Trainer 子模块中"
-    git -C $PSScriptRoot/SD-Trainer/lora-scripts submodule init
-    git -C $PSScriptRoot/SD-Trainer/lora-scripts submodule update
+    git -C "$PSScriptRoot/SD-Trainer/lora-scripts" submodule init
+    git -C "$PSScriptRoot/SD-Trainer/lora-scripts" submodule update
     if ($?) {
         Print-Msg "SD-Trainer 子模块安装成功"
     } else {
@@ -331,17 +334,9 @@ function Install-SD-Trainer-Dependence {
 
 # 安装
 function Check-Install {
-    if (!(Test-Path "$PSScriptRoot/SD-Trainer")) {
-        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer" > $null
-    }
-
-    if (!(Test-Path "$PSScriptRoot/SD-Trainer/cache")) {
-        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/cache" > $null
-    }
-
-    if (!(Test-Path "$PSScriptRoot/SD-Trainer/models")) {
-        New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/models" > $null
-    }
+    New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer" -Force > $null
+    New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/cache" -Force > $null
+    New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/models" -Force > $null
 
     Print-Msg "检测是否安装 Python"
     if (Test-Path "$PSScriptRoot/SD-Trainer/python/python.exe") {
@@ -385,13 +380,13 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -471,6 +466,10 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
     Print-Msg `"使用的启动参数: `$args`"
 }
 
+# 记录上次的路径
+`$current_path = Get-Location
+`$current_path = `$current_path.ToString()
+
 Print-Msg `"启动 SD-Trainer 中`"
 Set-Location `"`$PSScriptRoot/lora-scripts`"
 python gui.py `$args.ToString().Split()
@@ -480,7 +479,7 @@ if (`$req) {
 } else {
     Print-Msg `"SD-Trainer 出现异常, 已退出`"
 }
-Set-Location `"`$PSScriptRoot`"
+Set-Location `"`$current_path`"
 Read-Host | Out-Null
 "
 
@@ -491,13 +490,13 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
     `"https://mirror.ghproxy.com/https://github.com`",
@@ -514,10 +513,10 @@ Set-Location `"`$PSScriptRoot`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
@@ -601,6 +600,40 @@ print(version_list)
     return `$pytorch_ver
 }
 
+# 为 CUDA 设置镜像源
+function Set-Pip-Extra-Index-URL-For-CUDA {
+    `$content = `"
+from importlib.metadata import version
+
+def get_cuda_ver(ver):
+    if 'cu124' in ver:
+        return 'cu124'
+    
+    if 'cu121' in ver:
+        return 'cu121'
+    
+    return 'other'
+
+
+try:
+    torch_ver = version('torch')
+except:
+    torch_ver = ''
+
+print(get_cuda_ver(torch_ver))
+`"
+
+    `$cuda_ver = `$(python -c `"`$content`")
+
+    if (`$cuda_ver -eq `"cu124`") {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif (`$cuda_ver -eq `"cu121`") {  
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    }
+}
+
 
 # 设置 uv 的使用状态
 if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -673,17 +706,22 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 }
 
 
+
+# 记录上次的路径
+`$current_path = Get-Location
+`$current_path = `$current_path.ToString()
+
 `$update_fail = 0
 Print-Msg `"拉取 SD-Trainer 更新内容中`"
 Fix-Git-Point-Off-Set `"`$PSScriptRoot/lora-scripts`"
-`$core_origin_ver = `$(git -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-`$branch = `$(git -C lora-scripts symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-git -C lora-scripts fetch --recurse-submodules
+`$core_origin_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+`$branch = `$(git -C `"`$PSScriptRoot/lora-scripts`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+git -C `"`$PSScriptRoot/lora-scripts`" fetch --recurse-submodules
 if (`$?) {
     Print-Msg `"应用 SD-Trainer 更新中`"
-    `$commit_hash = `$(git -C lora-scripts log origin/`$branch --max-count 1 --format=`"%h`")
-    git -C lora-scripts reset --hard `$commit_hash --recurse-submodules
-    `$core_latest_ver = `$(git -C lora-scripts show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$commit_hash = `$(git -C `"`$PSScriptRoot/lora-scripts`" log origin/`$branch --max-count 1 --format=`"%h`")
+    git -C `"`$PSScriptRoot/lora-scripts`" reset --hard `$commit_hash --recurse-submodules
+    `$core_latest_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     
     if (`$core_origin_ver -eq `$core_latest_ver) {
         Print-Msg `"SD-Trainer 已为最新版`"
@@ -695,6 +733,7 @@ if (`$?) {
 
     Print-Msg `"更新 SD-Trainer 内核依赖中`"
     `$pytorch_ver = Get-PyTorch-Version
+    Set-Pip-Extra-Index-URL-For-CUDA
     Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
     if (`$USE_UV) {
         uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
@@ -726,7 +765,7 @@ if (`$?) {
         `$update_fail = 1
     }
 
-    Set-Location `"`$PSScriptRoot`"
+    Set-Location `"`$current_path`"
 } else {
     Print-Msg `"拉取 SD-Trainer 更新内容失败`"
     `$core_update_msg = `"拉取 SD-Trainer 更新内容失败, 无法进行更新`"
@@ -756,8 +795,6 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-SD-Trainer-Install-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
-
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
@@ -787,15 +824,13 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 `$count = `$urls.Length
 `$i = 0
 
+New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
 ForEach (`$url in `$urls) {
     Print-Msg `"正在下载最新的 SD-Trainer Installer 脚本`"
     Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
     if (`$?) {
-        if (Test-Path `"`$PSScriptRoot/../sd_trainer_installer.ps1`") {
-            Print-Msg `"删除原有的 SD-Trainer Installer 脚本`"
-            Remove-Item `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-        }
-        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -Destination `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
+        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -Destination `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
         Print-Msg `"下载 SD-Trainer Installer 脚本成功, 脚本路径为 `$parentDirectory\sd_trainer_installer.ps1`"
         break
@@ -804,6 +839,8 @@ ForEach (`$url in `$urls) {
         `$i += 1
         if (`$i -lt `$count) {
             Print-Msg `"重试下载 SD-Trainer Installer 脚本`"
+        } else {
+            Print-Msg `"更新 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
         }
     }
 }
@@ -819,13 +856,13 @@ Read-Host | Out-Null
 # 重装 PyTorch 脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -833,10 +870,10 @@ Set-Location `"`$PSScriptRoot`"
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
@@ -914,11 +951,13 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 - 18、Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27
 - 19、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
 - 20、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
+- 21、Torch 2.4.0 (CUDA 12.4)
 -----------------------------------------------------
 `"
 
 `$to_exit = 0
 `$pip_find_links_arg = `"--find-links `$PIP_FIND_MIRROR`"
+
 while (`$True) {
     Print-Msg `"PyTorch 版本列表`"
     `$go_to = 0
@@ -958,6 +997,8 @@ while (`$True) {
         6 {
             `$torch_ver = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
             `$xformers_ver = `"xformers==0.0.23`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -970,6 +1011,8 @@ while (`$True) {
         8 {
             `$torch_ver = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
             `$xformers_ver = `"xformers==0.0.23.post1`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -982,6 +1025,8 @@ while (`$True) {
         10 {
             `$torch_ver = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
             `$xformers_ver = `"xformers==0.0.24`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -994,6 +1039,8 @@ while (`$True) {
         12 {
             `$torch_ver = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
             `$xformers_ver = `"xformers==0.0.25`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -1006,6 +1053,8 @@ while (`$True) {
         14 {
             `$torch_ver = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
             `$xformers_ver = `"xformers==0.0.25.post1`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -1018,6 +1067,8 @@ while (`$True) {
         16 {
             `$torch_ver = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
             `$xformers_ver = `"xformers==0.0.26.post1`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -1030,6 +1081,8 @@ while (`$True) {
         18 {
             `$torch_ver = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
             `$xformers_ver = `"xformers==0.0.27`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -1042,6 +1095,17 @@ while (`$True) {
         20 {
             `$torch_ver = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
             `$xformers_ver = `"xformers==0.0.27.post2`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$pip_find_links_arg = `"`"
+            `$go_to = 1
+        }
+        21 {
+            `$torch_ver = `"torch==2.4.0+cu124 torchvision==0.19.0+cu124 torchaudio==2.4.0+cu124`"
+            `$xformers_ver = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
             `$Env:PIP_FIND_LINKS = `" `"
             `$pip_find_links_arg = `"`"
             `$go_to = 1
@@ -1100,18 +1164,21 @@ if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torc
         Read-Host | Out-Null
         exit 1
     }
-    Print-Msg `"重装 xFormers 中`"
-    if (`$USE_UV) {
-        uv pip install `$xformers_ver `$force_reinstall_arg --no-deps `$pip_find_links_arg.ToString().Split()
-    } else {
-        python -m pip install `$xformers_ver `$force_reinstall_arg --no-deps --no-warn-script-location
-    }
-    if (`$?) {
-        Print-Msg `"安装 xFormers 成功`"
-    } else {
-        Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
-        Read-Host | Out-Null
-        exit 1
+
+    if (!(`$xformers_ver -eq `"`")) {
+        Print-Msg `"重装 xFormers 中`"
+        if (`$USE_UV) {
+            uv pip install `$xformers_ver `$force_reinstall_arg --no-deps `$pip_find_links_arg.ToString().Split()
+        } else {
+            python -m pip install `$xformers_ver `$force_reinstall_arg --no-deps --no-warn-script-location
+        }
+        if (`$?) {
+            Print-Msg `"安装 xFormers 成功`"
+        } else {
+            Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
+            Read-Host | Out-Null
+            exit 1
+        }
     }
 } else {
     Print-Msg `"取消重装 PyTorch`"
@@ -1128,13 +1195,13 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Download-Model-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1425,6 +1492,7 @@ function Write-Env-Activate-Script {
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1455,6 +1523,9 @@ function Write-Env-Activate-Script {
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+# 记录激活环境脚本所在路径
+`$ACTIVATE_SCRIPTS_PATH = Get-Location
+`$ACTIVATE_SCRIPTS_PATH = `$ACTIVATE_SCRIPTS_PATH.ToString()
 
 
 # 提示符信息
@@ -1465,6 +1536,55 @@ function global:prompt {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+# 更新 uv
+function Update-uv {
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
+    Print-Msg `"下载 uv 中`"
+    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    if (`$?) {
+        Print-Msg `"更新 uv 中`"
+        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/git/bin/uv.exe`"
+        Print-Msg `"更新 uv 完成`"
+    } else {
+        Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
+    }
+}
+
+# 更新 Aria2
+function Update-Aria2 {
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
+    Print-Msg `"下载 Aria2 中`"
+    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`"
+    if (`$?) {
+        Print-Msg `"更新 Aria2 中`"
+        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/git/bin/aria2c.exe`"
+        Print-Msg `"更新 Aria2 完成`"
+    } else {
+        Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
+    }
+}
+
+# 列出 SD-Trainer Installer 内置命令
+function List-CMD {
+    Write-Host `"
+==================================
+SD-Trainer Installer created by licyk
+哔哩哔哩：https://space.bilibili.com/46497516
+Github：https://github.com/licyk
+==================================
+
+当前可用的 SD-Trainer Installer 内置命令：
+
+    Update-uv
+    Update-Aria2
+    List-CMD
+
+更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
 }
 
 

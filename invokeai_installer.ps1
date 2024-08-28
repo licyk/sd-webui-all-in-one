@@ -340,7 +340,6 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -431,6 +430,7 @@ if (`$req) {
 } else {
     Print-Msg `"InvokeAI 出现异常, 已退出`"
 }
+
 Read-Host | Out-Null
 "
 
@@ -441,7 +441,6 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -546,7 +545,7 @@ if (`$USE_UV) {
 if (`$?) {
     Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
     `$pytorch_ver = Get-PyTorch-Version
-    `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
     if (`$USE_UV) {
         uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
     } else {
@@ -627,8 +626,6 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-InvokeAI-Install-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
-
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
@@ -734,6 +731,40 @@ function global:prompt {
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
+# 更新 uv
+function Update-uv {
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
+    Print-Msg `"下载 uv 中`"
+    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    if (`$?) {
+        Print-Msg `"更新 uv 中`"
+        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/python/Scripts/uv.exe`"
+        Print-Msg `"更新 uv 完成`"
+    } else {
+        Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
+    }
+}
+
+# 列出 InvokeAI Installer 内置命令
+function List-CMD {
+    Write-Host `"
+==================================
+InvokeAI Installer created by licyk
+哔哩哔哩：https://space.bilibili.com/46497516
+Github：https://github.com/licyk
+==================================
+
+当前可用的 InvokeAI Installer 内置命令：
+
+    Update-uv
+    List-CMD
+
+更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+}
+
 
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
@@ -885,8 +916,6 @@ Read-Host | Out-Null
 # 下载模型配置文件脚本
 function Write-Download-Config-Script {
     $content = "
-Set-Location `"`$PSScriptRoot`"
-
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
@@ -936,6 +965,7 @@ function Get-Model-Config-File {
 }
 
 
+New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > $null
 Get-Model-Config-File
 Read-Host | Out-Null
 "
