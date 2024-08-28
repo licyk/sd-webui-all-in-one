@@ -27,7 +27,7 @@ $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/SD-Trainer/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/SD-Trainer/git/bin"
 $Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
-# 记录激活环境脚本所在路径
+# 记录脚本所在路径
 $CURRENT_PATH = Get-Location
 $CURRENT_PATH = $CURRENT_PATH.ToString()
 # 环境变量
@@ -1542,8 +1542,7 @@ function Write-Env-Activate-Script {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 # 记录激活环境脚本所在路径
-`$Env:ACTIVATE_SCRIPTS_PATH = Get-Location
-`$Env:ACTIVATE_SCRIPTS_PATH = `$Env:ACTIVATE_SCRIPTS_PATH.ToString()
+`$Env:ACTIVATE_SCRIPTS_PATH = `$PSScriptRoot
 
 
 # 提示符信息

@@ -717,8 +717,7 @@ function Write-Env-Activate-Script {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 # 记录激活环境脚本所在路径
-`$Env:ACTIVATE_SCRIPTS_PATH = Get-Location
-`$Env:ACTIVATE_SCRIPTS_PATH = `$Env:ACTIVATE_SCRIPTS_PATH.ToString()
+`$Env:ACTIVATE_SCRIPTS_PATH = `$PSScriptRoot
 
 
 # 提示信息
