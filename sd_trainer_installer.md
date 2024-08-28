@@ -51,6 +51,7 @@ _✨一键安装 SD-Trainer_
     - [以一种访问权限不允许的方式做了一个访问套接字的尝试](#以一种访问权限不允许的方式做了一个访问套接字的尝试)
     - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
     - [命令的使用](#命令的使用)
+    - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
 
 
 ## 简介
@@ -429,3 +430,53 @@ python <python_script.py>
 aria2c <url> -c -x <thread_count> -d <dir> -o <output_file_name>
 ```
 
+- 更新 uv
+```powershell
+Update-uv
+```
+
+- 更新 Aria2
+```powershell
+Update-Aria2
+```
+
+- 列出 SD-Trainer Installer 内置命令
+```powershell
+List-CMD
+```
+
+### 使用 SD-Trainer Installer 安装 Kohya GUI
+[Kohya GUI](https://github.com/bmaltais/kohya_ss) 也可以用于模型训练。将 SD-Trainer Installer 下载下来后，使用代码编辑器（不建议使用 Windows 记事本）打开`sd_trainer_installer.ps1`，搜索以下内容
+
+```powershell
+$SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
+```
+
+找到这行代码后将该行代码改成下面的。
+
+```powershell
+$SD_TRAINER_REPO = "https://github.com/bmaltais/kohya_ss"
+```
+
+再接着搜索以下内容。
+
+```powershell
+python gui.py `$args.ToString().Split()
+```
+
+将该代码改成下面的。
+
+```powershell
+python kohya_gui.py `$args.ToString().Split()
+```
+
+修改完成后保存`sd_trainer_installer.ps1`并运行。
+
+>[!NOTE]  
+>Kohya GUI 默认为英文界面，并且启动后默认不会自动调用浏览器打开界面，可以在`launch.ps1`所在位置创建一个`launch_args.txt`文件并打开，填入以下启动参数。
+>
+>```
+>--inbrowser --language zh-CN
+>```
+>
+>保存后使用`launch.ps1`启动 Kohya GUI 时将自动调用浏览器打开界面并设置界面为中文。

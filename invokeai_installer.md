@@ -368,3 +368,13 @@ uv pip install <package_name>
 ```
 >[!NOTE]  
 >uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
+
+- 更新 uv
+```powershell
+Update-uv
+```
+
+- 列出 InvokeAI Installer 内置命令
+```powershell
+List-CMD
+```

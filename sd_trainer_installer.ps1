@@ -1,5 +1,4 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
-Set-Location "$PSScriptRoot"
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
@@ -26,6 +25,9 @@ $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/SD-Trainer/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/SD-Trainer/git/bin"
 $Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
+# 记录激活环境脚本所在路径
+$CURRENT_PATH = Get-Location
+$CURRENT_PATH = $CURRENT_PATH.ToString()
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
@@ -308,7 +310,7 @@ function Install-SD-Trainer-Dependence {
         Print-Msg "SD-Trainer 内核依赖安装成功"
     } else {
         Print-Msg "SD-Trainer 内核依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        Set-Location "$PSScriptRoot"
+        Set-Location "$CURRENT_PATH"
         Read-Host | Out-Null
         exit 1
     }
@@ -324,11 +326,11 @@ function Install-SD-Trainer-Dependence {
         Print-Msg "SD-Trainer 依赖安装成功"
     } else {
         Print-Msg "SD-Trainer 依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        Set-Location "$PSScriptRoot"
+        Set-Location "$CURRENT_PATH"
         Read-Host | Out-Null
         exit 1
     }
-    Set-Location "$PSScriptRoot"
+    Set-Location "$CURRENT_PATH"
 }
 
 
@@ -464,6 +466,8 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
     `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
     Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件, 已读取该启动参数配置文件并应用启动参数`"
     Print-Msg `"使用的启动参数: `$args`"
+} else {
+    `$args = `"`"
 }
 
 # 记录上次的路径

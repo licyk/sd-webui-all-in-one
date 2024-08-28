@@ -1,5 +1,4 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
-Set-Location "$PSScriptRoot"
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
@@ -76,7 +75,7 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
         if (!(Test-Path "$PSScriptRoot/InvokeAI/python")) {
@@ -84,8 +83,8 @@ function Install-Python {
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
-        Remove-Item -Path "$PSScriptRoot/InvokeAI/python-3.10.11-embed-amd64.zip"
+        Expand-Archive -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
+        Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
         Print-Msg "Python 安装成功"
     } else {
