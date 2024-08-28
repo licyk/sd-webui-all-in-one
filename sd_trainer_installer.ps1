@@ -5,6 +5,7 @@ $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 # $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
+$PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # Github 镜像源列表
@@ -144,7 +145,7 @@ function Install-Aria2 {
     Print-Msg "正在下载 Aria2"
     Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/aria2c.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe"
+        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/aria2c.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -160,7 +161,7 @@ function Install-uv {
     Print-Msg "正在下载 uv"
     Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/uv.exe"
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/uv.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/uv.exe"
+        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/uv.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/uv.exe" -Force
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -388,6 +389,7 @@ function Write-Launch-Script {
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
@@ -500,6 +502,7 @@ function Write-Update-Script {
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # Github 镜像源
@@ -636,6 +639,9 @@ print(get_cuda_ver(torch_ver))
     } elseif (`$cuda_ver -eq `"cu121`") {  
         `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
         `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    } else {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
     }
 }
 
@@ -866,6 +872,7 @@ function Write-PyTorch-ReInstall-Script {
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
@@ -1081,6 +1088,8 @@ while (`$True) {
         17 {
             `$torch_ver = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
             `$xformers_ver = `"xformers==0.0.27+cu118`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
             `$go_to = 1
         }
         18 {
@@ -1095,6 +1104,8 @@ while (`$True) {
         19 {
             `$torch_ver = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
             `$xformers_ver = `"xformers==0.0.27.post2+cu118`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
             `$go_to = 1
         }
         20 {
@@ -1205,6 +1216,7 @@ function Write-Download-Model-Script {
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
@@ -1496,6 +1508,7 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # PATH
@@ -1529,8 +1542,8 @@ function Write-Env-Activate-Script {
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 # 记录激活环境脚本所在路径
-`$ACTIVATE_SCRIPTS_PATH = Get-Location
-`$ACTIVATE_SCRIPTS_PATH = `$ACTIVATE_SCRIPTS_PATH.ToString()
+`$Env:ACTIVATE_SCRIPTS_PATH = Get-Location
+`$Env:ACTIVATE_SCRIPTS_PATH = `$Env:ACTIVATE_SCRIPTS_PATH.ToString()
 
 
 # 提示符信息
@@ -1539,19 +1552,19 @@ function global:prompt {
 }
 
 # 消息输出
-function Print-Msg (`$msg) {
+function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
 # 更新 uv
-function Update-uv {
+function global:Update-uv {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
     Print-Msg `"下载 uv 中`"
-    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
     if (`$?) {
         Print-Msg `"更新 uv 中`"
-        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/git/bin/uv.exe`"
+        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/git/bin/uv.exe`" -Force
         Print-Msg `"更新 uv 完成`"
     } else {
         Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -1559,14 +1572,14 @@ function Update-uv {
 }
 
 # 更新 Aria2
-function Update-Aria2 {
+function global:Update-Aria2 {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     Print-Msg `"下载 Aria2 中`"
-    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`"
+    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`"
     if (`$?) {
         Print-Msg `"更新 Aria2 中`"
-        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/git/bin/aria2c.exe`"
+        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/git/bin/aria2c.exe`" -Force
         Print-Msg `"更新 Aria2 完成`"
     } else {
         Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -1574,7 +1587,7 @@ function Update-Aria2 {
 }
 
 # 列出 SD-Trainer Installer 内置命令
-function List-CMD {
+function global:List-CMD {
     Write-Host `"
 ==================================
 SD-Trainer Installer created by licyk

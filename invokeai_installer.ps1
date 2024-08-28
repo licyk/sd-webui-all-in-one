@@ -139,7 +139,7 @@ function Install-uv {
     Print-Msg "正在下载 uv"
     Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/uv.exe"
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/InvokeAI/cache/uv.exe" -Destination "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe"
+        Move-Item -Path "$PSScriptRoot/InvokeAI/cache/uv.exe" -Destination "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe" -Force
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
@@ -215,7 +215,7 @@ function Install-PyPatchMatch {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
         Invoke-WebRequest -Uri $url_1 -OutFile "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll" -Force
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
         } else {
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
@@ -228,7 +228,7 @@ function Install-PyPatchMatch {
         Print-Msg "下载 opencv_world460.dll 中"
         Invoke-WebRequest -Uri $url_2 -OutFile "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll" -Force
             Print-Msg "下载 opencv_world460.dll 成功"
         } else {
             Print-Msg "下载 opencv_world460.dll 失败"
@@ -247,7 +247,7 @@ function Download-Config-File($url, $path) {
         Print-Msg "下载 $name 中"
         Invoke-WebRequest -Uri $url.ToString() -OutFile "$PSScriptRoot/InvokeAI/cache/$name"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/$name" -Destination "$path"
+            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/$name" -Destination "$path" -Force
             Print-Msg "$name 下载成功"
         } else {
             Print-Msg "$name 下载失败"
@@ -659,11 +659,7 @@ ForEach (`$url in `$urls) {
     Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
     Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
     if (`$?) {
-        if (Test-Path `".`$PSScriptRoot/invokeai_installer.ps1`") {
-            Print-Msg `"删除原有的 InvokeAI Installer 脚本`"
-            Remove-Item `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-        }
-        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`"
+        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
         `$parentDirectory = Split-Path `$PSScriptRoot -Parent
         Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
         break
@@ -720,6 +716,9 @@ function Write-Env-Activate-Script {
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+# 记录激活环境脚本所在路径
+`$Env:ACTIVATE_SCRIPTS_PATH = Get-Location
+`$Env:ACTIVATE_SCRIPTS_PATH = `$Env:ACTIVATE_SCRIPTS_PATH.ToString()
 
 
 # 提示信息
@@ -728,19 +727,19 @@ function global:prompt {
 }
 
 # 消息输出
-function Print-Msg (`$msg) {
+function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
 
 # 更新 uv
-function Update-uv {
+function global:Update-uv {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
     Print-Msg `"下载 uv 中`"
-    New-Item -ItemType Directory -Path `"`$ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
     if (`$?) {
         Print-Msg `"更新 uv 中`"
-        Move-Item -Path `"`$ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$ACTIVATE_SCRIPTS_PATH/python/Scripts/uv.exe`"
+        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/python/Scripts/uv.exe`" -Force
         Print-Msg `"更新 uv 完成`"
     } else {
         Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -748,7 +747,7 @@ function Update-uv {
 }
 
 # 列出 InvokeAI Installer 内置命令
-function List-CMD {
+function global:List-CMD {
     Write-Host `"
 ==================================
 InvokeAI Installer created by licyk
@@ -929,7 +928,7 @@ function Download-Config-File(`$url, `$path) {
         Print-Msg `"下载 `$name 中`"
         Invoke-WebRequest -Uri `$url.ToString() -OutFile `"`$PSScriptRoot/cache/`$name`"
         if (`$?) {
-            Move-Item -Path `"`$PSScriptRoot/cache/`$name`" -Destination `"`$path`"
+            Move-Item -Path `"`$PSScriptRoot/cache/`$name`" -Destination `"`$path`" -Force
             Print-Msg `"`$name 下载成功`"
         } else {
             Print-Msg `"`$name 下载失败`"
