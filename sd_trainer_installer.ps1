@@ -282,7 +282,7 @@ function Install-PyTorch {
     if (!($?)) {
         Print-Msg "安装 xFormers 中"
         if ($USE_UV) {
-            uv pip install $XFORMERS_VER --find-links $PIP_FIND_MIRROR
+            uv pip install $XFORMERS_VER --no-deps --find-links $PIP_FIND_MIRROR
         } else {
             python -m pip install $XFORMERS_VER --no-deps --no-warn-script-location
         }
