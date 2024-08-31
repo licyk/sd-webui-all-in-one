@@ -301,7 +301,7 @@ function Install-PyTorch {
 
 # 安装 SD-Trainer 依赖
 function Install-SD-Trainer-Dependence {
-    Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
+    Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts"
     Print-Msg "安装 SD-Trainer 内核依赖中"
     if ($USE_UV) {
         uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
@@ -745,7 +745,7 @@ if (`$?) {
     Print-Msg `"更新 SD-Trainer 内核依赖中`"
     `$pytorch_ver = Get-PyTorch-Version
     Set-Pip-Extra-Index-URL-For-CUDA
-    Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
+    Set-Location `"`$PSScriptRoot/lora-scripts/scripts`"
     if (`$USE_UV) {
         uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
     } else {
