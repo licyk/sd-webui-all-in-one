@@ -448,6 +448,8 @@ List-CMD
 ### 使用 SD-Trainer Installer 安装 Kohya GUI
 [Kohya GUI](https://github.com/bmaltais/kohya_ss) 也可以用于模型训练。做完[环境配置](#环境配置)的步骤并将 SD-Trainer Installer 下载下来后，使用代码编辑器（不建议使用 Windows 记事本）编辑`sd_trainer_installer.ps1`，搜索以下内容。
 
+1. 
+
 ```powershell
 $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 ```
@@ -458,16 +460,41 @@ $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 $SD_TRAINER_REPO = "https://github.com/bmaltais/kohya_ss"
 ```
 
-再接着搜索以下内容。
+2. 
 
 ```powershell
 python gui.py `$args.ToString().Split()
 ```
 
-将该代码改成下面的。
+找到这行代码后将该行代码改成下面的。
 
 ```powershell
 python kohya_gui.py `$args.ToString().Split()
+```
+
+3. 
+
+```
+Set-Location `"`$PSScriptRoot/lora-scripts/scripts`"
+```
+
+找到这行代码后将该行代码改成下面的。
+
+```
+Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
+```
+
+4. 
+
+
+```
+Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts"
+```
+
+找到这行代码后将该行代码改成下面的。
+
+```
+Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
 ```
 
 修改完成后保存`sd_trainer_installer.ps1`并运行。
