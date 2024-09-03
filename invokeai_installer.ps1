@@ -114,7 +114,7 @@ function Install-Pip {
     if ($?) { # 检测是否下载成功
         # 执行 get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
-        python $PSScriptRoot/InvokeAI/cache/get-pip.py --no-warn-script-location
+        python "$PSScriptRoot/InvokeAI/cache/get-pip.py" --no-warn-script-location
         if ($?) { # 检测是否安装成功
             Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装成功"
@@ -135,11 +135,9 @@ function Install-Pip {
 
 # 下载 uv
 function Install-uv {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe"
     Print-Msg "正在下载 uv"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/uv.exe"
+    python -m pip install uv
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/InvokeAI/cache/uv.exe" -Destination "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe" -Force
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
@@ -311,7 +309,8 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 uv"
-    if (Test-Path "$PSScriptRoot/InvokeAI/python/Scripts/uv.exe") {
+    python -m pip show uv --quiet 2> $null
+    if ($?) {
         Print-Msg "uv 已安装"
     } else {
         Print-Msg "uv 未安装"
@@ -732,16 +731,12 @@ function global:Print-Msg (`$msg) {
 
 # 更新 uv
 function global:Update-uv {
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
-    Print-Msg `"下载 uv 中`"
-    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    Print-Msg `"更新 uv 中`"
+    python -m pip install uv --upgrade
     if (`$?) {
-        Print-Msg `"更新 uv 中`"
-        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/python/Scripts/uv.exe`" -Force
-        Print-Msg `"更新 uv 完成`"
+        Print-Msg `"更新 uv 成功`"
     } else {
-        Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
+        Print-Msg `"更新 uv 失败, 可尝试重新运行更新命令`"
     }
 }
 

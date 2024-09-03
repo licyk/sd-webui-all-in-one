@@ -157,11 +157,9 @@ function Install-Aria2 {
 
 # 下载 uv
 function Install-uv {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe"
     Print-Msg "正在下载 uv"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/uv.exe"
+    python -m pip install uv
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/SD-Trainer/cache/uv.exe" -Destination "$PSScriptRoot/SD-Trainer/git/bin/uv.exe" -Force
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -367,7 +365,8 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 uv"
-    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/uv.exe") {
+    python -m pip show uv --quiet 2> $null
+    if ($?) {
         Print-Msg "uv 已安装"
     } else {
         Print-Msg "uv 未安装"
@@ -1557,16 +1556,12 @@ function global:Print-Msg (`$msg) {
 
 # 更新 uv
 function global:Update-uv {
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/uv.exe`"
-    Print-Msg `"下载 uv 中`"
-    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`"
+    Print-Msg `"更新 uv 中`"
+    python -m pip install uv --upgrade
     if (`$?) {
-        Print-Msg `"更新 uv 中`"
-        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/uv.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/git/bin/uv.exe`" -Force
-        Print-Msg `"更新 uv 完成`"
+        Print-Msg `"更新 uv 成功`"
     } else {
-        Print-Msg `"下载 uv 失败, 无法进行更新, 可尝试重新运行更新命令`"
+        Print-Msg `"更新 uv 失败, 可尝试重新运行更新命令`"
     }
 }
 
