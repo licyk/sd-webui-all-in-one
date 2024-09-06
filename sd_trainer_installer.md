@@ -50,6 +50,7 @@ _✨一键安装 SD-Trainer_
     - [训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?](#训练素材中图片的分辨率不一致而且有些图片的分辨率很大需要裁剪)
     - [以一种访问权限不允许的方式做了一个访问套接字的尝试](#以一种访问权限不允许的方式做了一个访问套接字的尝试)
     - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
+    - [Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。](#torch-版本低于-230将无法正常训练-flux-模型请考虑升级到更新的版本)
     - [命令的使用](#命令的使用)
     - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
 
@@ -291,7 +292,7 @@ Fri Jun  7 19:07:00 2024
 直接将 SD-Trainer 文件夹移动到别的路径即可。
 
 ### 更新 SD-Trainer 管理脚本
-运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer，并运行一次 SD-Trainer Installer。
+运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer，并运行一次 SD-Trainer Installer。SD-Trainer Installer 在安装过程无报错时并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
 
 ### 设置 uv 包管理器
 InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
@@ -346,7 +347,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 检查训练参数中是否存在中文，如模型文件名是否包含中文等。
 
 ### RuntimeError: NaN detected in latents: X:\xxx\xxx\xx.png
-检查图片是否有问题，如果是训练 SDXL 的 LoRA，请外挂一个 [sdxl_fp16_fix](http://modelscope.cn/api/v1/models/licyks/sd-vae/repo?Revision=master&FilePath=sdxl_1.0%2Fsdxl_fp16_fix_vae.safetensors) 的 VAE 或者使用 BF16 精度进行训练。
+检查图片是否有问题，如果是训练 SDXL 的 LoRA，请外挂一个 [sdxl_fp16_fix](https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors) 的 VAE 或者使用 BF16 精度进行训练。
 
 ### CUDA out of memory
 确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
@@ -355,7 +356,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 尝试增加系统的虚拟内存，或者增加内存条。
 
 ### Loss?
-没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
+当 Loss 不为 nan 或者大于 1 时没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
 
 ### 训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?
 SD-Trainer 默认开启 arb 桶，自动处理不同分辨率的图片，无需手动进行图片裁剪。
@@ -370,6 +371,9 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 ### AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
 这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。
+
+### Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。
+运行 reinstall_pytorch.ps1 脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD-Trainer Installer 的管理脚本进行更新，方法参看：[SD-Trainer Installer - 更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
