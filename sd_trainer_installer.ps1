@@ -42,6 +42,8 @@ $Env:UV_HTTP_TIMEOUT = 30
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
+$Env:PYTHONUTF8 = 1
+$Env:PYTHONIOENCODING = "utf8"
 $Env:CACHE_HOME = "$PSScriptRoot/SD-Trainer/cache"
 $Env:HF_HOME = "$PSScriptRoot/SD-Trainer/cache/huggingface"
 $Env:MATPLOTLIBRC = "$PSScriptRoot/SD-Trainer/cache"
@@ -408,6 +410,8 @@ function Write-Launch-Script {
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -530,6 +534,8 @@ function Write-Update-Script {
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -891,6 +897,8 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -1235,6 +1243,8 @@ function Write-Download-Model-Script {
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -1527,6 +1537,8 @@ function Write-Env-Activate-Script {
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
