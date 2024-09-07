@@ -51,6 +51,7 @@ _✨一键安装 SD-Trainer_
     - [以一种访问权限不允许的方式做了一个访问套接字的尝试](#以一种访问权限不允许的方式做了一个访问套接字的尝试)
     - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
     - [Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。](#torch-版本低于-230将无法正常训练-flux-模型请考虑升级到更新的版本)
+    - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
     - [命令的使用](#命令的使用)
     - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
 
@@ -374,6 +375,9 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 ### Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。
 运行 reinstall_pytorch.ps1 脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD-Trainer Installer 的管理脚本进行更新，方法参看：[SD-Trainer Installer - 更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+
+### NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
+训练使用的模型可能有问题，尝试更换模型。
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
