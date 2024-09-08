@@ -515,3 +515,6 @@ Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
 >```
 >
 >保存后使用`launch.ps1`启动 Kohya GUI 时将自动调用浏览器打开界面并设置界面为中文。
+
+>[!WARNING]  
+>如果通过 get_sd_trainer_installer.ps1 下载最新的 SD-Trainer Installer 来更新管理脚本，需要再次编辑 sd_trainer_installer.ps1，按照上方的步骤修改代码，再运行，以保证更新后的管理脚本能够正常的在 Kohya GUI 上运行。
