@@ -1,4 +1,7 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
+# SD-Trainer Installer 版本和检查更新间隔
+$SD_TRAINER_INSTALLER_VERSION = 100
+$UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 # $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
@@ -379,12 +382,17 @@ function Check-Install {
     Install-SD-Trainer
     Install-PyTorch
     Install-SD-Trainer-Dependence
+
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -430,6 +438,97 @@ function Write-Launch-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+# 修复 PyTorch 的 libomp 问题
+function Fix-PyTorch {
+    `$content = `"
+import importlib.util
+import shutil
+import os
+import ctypes
+import logging
+
+
+torch_spec = importlib.util.find_spec('torch')
+for folder in torch_spec.submodule_search_locations:
+    lib_folder = os.path.join(folder, 'lib')
+    test_file = os.path.join(lib_folder, 'fbgemm.dll')
+    dest = os.path.join(lib_folder, 'libomp140.x86_64.dll')
+    if os.path.exists(dest):
+        break
+
+    with open(test_file, 'rb') as f:
+        contents = f.read()
+        if b'libomp140.x86_64.dll' not in contents:
+            break
+    try:
+        mydll = ctypes.cdll.LoadLibrary(test_file)
+    except FileNotFoundError as e:
+        logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
+        shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
+`"
+
+    python -c `"`$content`"
+}
+
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
+        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    catch {
+        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    finally {
+        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD-Trainer Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+                if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
+                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Start-Sleep -Seconds 1
+                } else {
+                    Print-Msg `"SD-Trainer Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                }
+            }
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Start-Sleep -Seconds 1
+    }
 }
 
 
@@ -480,6 +579,8 @@ if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
 `$current_path = Get-Location
 `$current_path = `$current_path.ToString()
 
+Fix-PyTorch
+Check-SD-Trainer-Installer-Update
 Print-Msg `"启动 SD-Trainer 中`"
 Set-Location `"`$PSScriptRoot/lora-scripts`"
 python gui.py `$args.ToString().Split()
@@ -500,6 +601,9 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -650,6 +754,65 @@ print(get_cuda_ver(torch_ver))
     }
 }
 
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
+        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    catch {
+        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    finally {
+        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD-Trainer Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+                if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
+                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Start-Sleep -Seconds 1
+                } else {
+                    Print-Msg `"SD-Trainer Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                }
+            }
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Start-Sleep -Seconds 1
+    }
+}
+
 
 # 设置 uv 的使用状态
 if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -726,6 +889,8 @@ if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像
 # 记录上次的路径
 `$current_path = Get-Location
 `$current_path = `$current_path.ToString()
+
+Check-SD-Trainer-Installer-Update
 
 `$update_fail = 0
 Print-Msg `"拉取 SD-Trainer 更新内容中`"
@@ -836,8 +1001,7 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 }
 
 # 可用的下载源
-`$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
-`$count = `$urls.Length
+`$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
 `$i = 0
 
 New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
@@ -853,7 +1017,7 @@ ForEach (`$url in `$urls) {
     } else {
         Print-Msg `"下载 SD-Trainer Installer 脚本失败`"
         `$i += 1
-        if (`$i -lt `$count) {
+        if (`$i -lt `$urls.Length) {
             Print-Msg `"重试下载 SD-Trainer Installer 脚本`"
         } else {
             Print-Msg `"更新 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
@@ -872,6 +1036,9 @@ Read-Host | Out-Null
 # 重装 PyTorch 脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -919,6 +1086,65 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
+        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    catch {
+        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    finally {
+        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD-Trainer Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+                if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
+                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Start-Sleep -Seconds 1
+                } else {
+                    Print-Msg `"SD-Trainer Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                }
+            }
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Start-Sleep -Seconds 1
+    }
+}
+
 
 # 设置 uv 的使用状态
 if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -946,6 +1172,8 @@ if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自
 } else {
     Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
+
+Check-SD-Trainer-Installer-Update
 
 # PyTorch 版本列表
 `$content = `"
@@ -1133,6 +1361,29 @@ while (`$True) {
             `$pip_find_links_arg = `"`"
             `$go_to = 1
         }
+        22 {
+            `$torch_ver = `"torch==2.4.1+cu118 torchvision==0.19.1+cu118 torchaudio==2.4.1+cu118`"
+            `$xformers_ver = `"xformers==0.0.26.post1+cu118`"
+            `$go_to = 1
+        }
+        23 {
+            `$torch_ver = `"torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121`"
+            `$xformers_ver = `"xformers==`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$pip_find_links_arg = `"`"
+            `$go_to = 1
+        }
+        24 {
+            `$torch_ver = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
+            `$xformers_ver = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$pip_find_links_arg = `"`"
+            `$go_to = 1
+        }
         exit {
             Print-Msg `"退出 PyTorch 重装脚本`"
             `$to_exit = 1
@@ -1218,6 +1469,9 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Download-Model-Script {
     $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -1264,6 +1518,66 @@ function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
 }
 
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
+        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    catch {
+        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+    }
+    finally {
+        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD-Trainer Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+                if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
+                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Start-Sleep -Seconds 1
+                } else {
+                    Print-Msg `"SD-Trainer Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                }
+            }
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Start-Sleep -Seconds 1
+    }
+}
+
+Check-SD-Trainer-Installer-Update
 
 `$to_exit = 0
 while (`$True) {
@@ -1512,6 +1826,9 @@ Read-Host | Out-Null
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -1592,6 +1909,41 @@ function global:Update-Aria2 {
     }
 }
 
+# SD-Trainer Installer 更新检测
+function global:Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+        if (`$?) {
+            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                Print-Msg `"SD-Trainer Installer 有新版本可用`"
+                Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                Start-Sleep -Seconds 1
+            } else {
+                Print-Msg `"SD-Trainer Installer 已是最新版本`"
+            }
+            break
+        } else {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+            } else {
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+            }
+        }
+    }
+}
+
 # 列出 SD-Trainer Installer 内置命令
 function global:List-CMD {
     Write-Host `"
@@ -1605,6 +1957,7 @@ Github：https://github.com/licyk
 
     Update-uv
     Update-Aria2
+    Check-SD-Trainer-Installer-Update
     List-CMD
 
 更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
