@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 101
+$SD_TRAINER_INSTALLER_VERSION = 102
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -813,6 +813,8 @@ function Check-SD-Trainer-Installer-Update {
 }
 
 
+Print-Msg `"初始化中`"
+
 # 设置 uv 的使用状态
 if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
     Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
@@ -981,6 +983,8 @@ function Print-Msg (`$msg) {
 }
 
 
+Print-Msg `"初始化中`"
+
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
@@ -1144,6 +1148,8 @@ function Check-SD-Trainer-Installer-Update {
     }
 }
 
+
+Print-Msg `"初始化中`"
 
 # 设置 uv 的使用状态
 if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -1576,6 +1582,9 @@ function Check-SD-Trainer-Installer-Update {
     }
 }
 
+
+Print-Msg `"初始化中`"
+
 Check-SD-Trainer-Installer-Update
 
 `$to_exit = 0
@@ -1826,8 +1835,8 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 # SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+`$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -1962,6 +1971,8 @@ Github：https://github.com/licyk
 }
 
 
+Print-Msg `"初始化中`"
+
 # 代理配置
 `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
 if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
@@ -2073,6 +2084,8 @@ https://gh.idayer.com/https://github.com
 如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
 
 设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
+
+SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 SD-Trainer Installer 更新检查。
 
 更多详细的帮助可在下面的链接查看。
 SD-Trainer Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
