@@ -192,6 +192,9 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
+>[!NOTE]  
+>uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，但这将降低 Python 软件包的安装速度。
+
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
 

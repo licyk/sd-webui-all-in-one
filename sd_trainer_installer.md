@@ -297,6 +297,9 @@ Fri Jun  7 19:07:00 2024
 InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
+>[!NOTE]  
+>uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，但这将降低 Python 软件包的安装速度。
+
 ### 运行脚本时出现中文乱码
 这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
 
