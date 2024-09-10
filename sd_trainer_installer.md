@@ -110,7 +110,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 运行 update.ps1 脚本。
 
 ### 设置 SD-Trainer 启动参数
-要设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
+要设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
 >[!NOTE]  
 >SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts - 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
@@ -291,14 +291,19 @@ Fri Jun  7 19:07:00 2024
 直接将 SD-Trainer 文件夹移动到别的路径即可。
 
 ### 更新 SD-Trainer 管理脚本
-运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer 后，返回上一个目录并运行 sd_trainer_installer.ps1。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer 后，返回上一个目录并运行 sd_trainer_installer.ps1。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+
+如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 SD-Trainer Installer 更新检查。
+
+>[!WARNING]  
+>通常不建议禁用 SD-Trainer Installer 的更新检查，当 SD-Trainer 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
 ### 设置 uv 包管理器
 InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，但这将降低 Python 软件包的安装速度。
+>uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
 
 ### 运行脚本时出现中文乱码
 这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
@@ -369,7 +374,7 @@ SD-Trainer 默认开启 arb 桶，自动处理不同分辨率的图片，无需�
 ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000): 以一种访问权限不允许的方式做了一个访问套接字的尝试。
 ```
 
-这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在 launch.ps1 所在目录创建 launch_args.txt 文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存 launch_args.txt 文件后使用 launch.ps1 重新启动 SD-Trainer。
+这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在 launch.ps1 所在目录创建`launch_args.txt`文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存`launch_args.txt`文件后使用 launch.ps1 重新启动 SD-Trainer。
 
 ### AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
 这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。

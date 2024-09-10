@@ -117,7 +117,12 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 运行 get_invokeai_installer.ps1 脚本。
 
 ### 更新 InvokeAI 管理脚本
-运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer 后，返回上一个目录并运行 invokeai_installer.ps1。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
+InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer 后，返回上一个目录并运行 invokeai_installer.ps1。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
+
+如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 InvokeAI Installer 更新检查。
+
+>[!WARNING]  
+>通常不建议禁用 InvokeAI Installer 的更新检查，当 InvokeAI 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
 ### 恢复被修改 / 删除的脚本
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 InvokeAI Installer 重新生成这些脚本。
@@ -193,7 +198,7 @@ InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，但这将降低 Python 软件包的安装速度。
+>uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
 
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
