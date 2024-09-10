@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$InvokeAI_INSTALLER_VERSION = 100
+$INVOKEAI_INSTALLER_VERSION = 101
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -340,6 +340,7 @@ function Check-Install {
     Get-Model-Config-File
 
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+    Remove-Item -Path "$PSScriptRoot/InvokeAI/new_version.txt" 2> $null
 }
 
 
@@ -347,7 +348,7 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 # InvokeAI Installer 版本和检查更新间隔
-`$InvokeAI_INSTALLER_VERSION = $InvokeAI_INSTALLER_VERSION
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
@@ -407,14 +408,14 @@ function Check-InvokeAI-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -424,10 +425,10 @@ function Check-InvokeAI-Installer-Update {
             Print-Msg `"检查 InvokeAI Installer 更新中`"
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"InvokeAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-                if (`$latest_version -gt `$InvokeAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -513,7 +514,7 @@ Read-Host | Out-Null
 function Write-Update-Script {
     $content = "
 # InvokeAI Installer 版本和检查更新间隔
-`$InvokeAI_INSTALLER_VERSION = $InvokeAI_INSTALLER_VERSION
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
@@ -597,14 +598,14 @@ function Check-InvokeAI-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -614,10 +615,10 @@ function Check-InvokeAI-Installer-Update {
             Print-Msg `"检查 InvokeAI Installer 更新中`"
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"InvokeAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-                if (`$latest_version -gt `$InvokeAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -694,6 +695,8 @@ if (`$?) {
             Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
         }
         Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+    } else {
+        Print-Msg `"InvokeAI 依赖更新失败`"
     }
 } else {
     Print-Msg `"InvokeAI 内核更新失败`"
@@ -709,7 +712,7 @@ Read-Host | Out-Null
 function Write-InvokeAI-DB-Fix-Script {
     $content = "
 # InvokeAI Installer 版本和检查更新间隔
-`$InvokeAI_INSTALLER_VERSION = $InvokeAI_INSTALLER_VERSION
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
@@ -769,14 +772,14 @@ function Check-InvokeAI-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -786,10 +789,10 @@ function Check-InvokeAI-Installer-Update {
             Print-Msg `"检查 InvokeAI Installer 更新中`"
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"InvokeAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-                if (`$latest_version -gt `$InvokeAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -885,8 +888,8 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 # InvokeAI Installer 版本和检查更新间隔
-`$InvokeAI_INSTALLER_VERSION = $InvokeAI_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+`$Env:INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
+`$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -923,8 +926,6 @@ function Write-Env-Activate-Script {
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-# 记录激活环境脚本所在路径
-`$Env:ACTIVATE_SCRIPTS_PATH = `$PSScriptRoot
 
 
 # 提示信息
@@ -954,17 +955,17 @@ function global:Check-InvokeAI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME/cache`" -Force > `$null
 
-    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/../update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/cache/invokeai_installer.ps1`"
         if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"InvokeAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-            if (`$latest_version -gt `$InvokeAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            Remove-Item -Path `"`$Env:CACHE_HOME/cache/invokeai_installer.ps1`"
+            if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../new_version.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                 Start-Sleep -Seconds 1
@@ -1047,7 +1048,7 @@ Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: http
 function Write-PyTorch-ReInstall-Script {
     $content = "
 # InvokeAI Installer 版本和检查更新间隔
-`$InvokeAI_INSTALLER_VERSION = $InvokeAI_INSTALLER_VERSION
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
@@ -1131,14 +1132,14 @@ function Check-InvokeAI-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -1148,10 +1149,10 @@ function Check-InvokeAI-Installer-Update {
             Print-Msg `"检查 InvokeAI Installer 更新中`"
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"InvokeAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-                if (`$latest_version -gt `$InvokeAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1

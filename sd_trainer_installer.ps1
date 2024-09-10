@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 100
+$SD_TRAINER_INSTALLER_VERSION = 101
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -30,9 +30,6 @@ $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/SD-Trainer/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/SD-Trainer/git/bin"
 $Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
-# 记录脚本所在路径
-$CURRENT_PATH = Get-Location
-$CURRENT_PATH = $CURRENT_PATH.ToString()
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
@@ -304,6 +301,8 @@ function Install-PyTorch {
 
 # 安装 SD-Trainer 依赖
 function Install-SD-Trainer-Dependence {
+    # 记录脚本所在路径
+    $current_path = $(Get-Location).ToString()
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts"
     Print-Msg "安装 SD-Trainer 内核依赖中"
     if ($USE_UV) {
@@ -315,7 +314,7 @@ function Install-SD-Trainer-Dependence {
         Print-Msg "SD-Trainer 内核依赖安装成功"
     } else {
         Print-Msg "SD-Trainer 内核依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        Set-Location "$CURRENT_PATH"
+        Set-Location "$current_path"
         Read-Host | Out-Null
         exit 1
     }
@@ -331,11 +330,11 @@ function Install-SD-Trainer-Dependence {
         Print-Msg "SD-Trainer 依赖安装成功"
     } else {
         Print-Msg "SD-Trainer 依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        Set-Location "$CURRENT_PATH"
+        Set-Location "$current_path"
         Read-Host | Out-Null
         exit 1
     }
-    Set-Location "$CURRENT_PATH"
+    Set-Location "$current_path"
 }
 
 
@@ -487,14 +486,14 @@ function Check-SD-Trainer-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -507,7 +506,7 @@ function Check-SD-Trainer-Installer-Update {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -769,14 +768,14 @@ function Check-SD-Trainer-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -789,7 +788,7 @@ function Check-SD-Trainer-Installer-Update {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -1101,14 +1100,14 @@ function Check-SD-Trainer-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -1121,7 +1120,7 @@ function Check-SD-Trainer-Installer-Update {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -1470,8 +1469,8 @@ Read-Host | Out-Null
 function Write-Download-Model-Script {
     $content = "
 # SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+`$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
@@ -1533,14 +1532,14 @@ function Check-SD-Trainer-Installer-Update {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = `$(Get-Content `"`$PSScriptRoot/update_time.txt`")
-        `$last_update_time = `$(Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
-        `$last_update_time = `$(Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     finally {
-        `$update_time = `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
         `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
     }
 
@@ -1553,7 +1552,7 @@ function Check-SD-Trainer-Installer-Update {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 1
@@ -1869,8 +1868,6 @@ function Write-Env-Activate-Script {
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-# 记录激活环境脚本所在路径
-`$Env:ACTIVATE_SCRIPTS_PATH = `$PSScriptRoot
 
 
 # 提示符信息
@@ -1898,11 +1895,11 @@ function global:Update-uv {
 function global:Update-Aria2 {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     Print-Msg `"下载 Aria2 中`"
-    New-Item -ItemType Directory -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`"
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/aria2c.exe`"
     if (`$?) {
         Print-Msg `"更新 Aria2 中`"
-        Move-Item -Path `"`$Env:ACTIVATE_SCRIPTS_PATH/cache/aria2c.exe`" -Destination `"`$Env:ACTIVATE_SCRIPTS_PATH/git/bin/aria2c.exe`" -Force
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:CACHE_HOME/../git/bin/aria2c.exe`" -Force
         Print-Msg `"更新 Aria2 完成`"
     } else {
         Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -1915,17 +1912,17 @@ function global:Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/../update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 SD-Trainer Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
         if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            Remove-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`"
+                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../new_version.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                 Start-Sleep -Seconds 1
