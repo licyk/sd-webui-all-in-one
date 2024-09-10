@@ -62,7 +62,6 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
 ```
-输入 `Y` 并回车以确认。
 
 >[!NOTE]  
 >关于 PowerShell 执行策略的说明：[关于执行策略 - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
@@ -80,13 +79,13 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ## 安装
 将 InvokeAI Installer 下载至本地，右键该脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
 
-||InvokeAI Installer 下载地址|
-|---|---|
-|↓|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
-|↓|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1)|
-|↓|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
-|↓|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
-|↓|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
+|InvokeAI Installer 下载地址|
+|---|
+|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
+|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1)|
+|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
+|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
+|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 
 在 InvokeAI Installer 成功安装 InvokeAI 后，在 InvokeAI 文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
 
@@ -198,7 +197,7 @@ InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行。或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
 
 ### 显存占用很大
 检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
