@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 103
+$SD_TRAINER_INSTALLER_VERSION = 104
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1476,8 +1476,8 @@ Read-Host | Out-Null
 function Write-Download-Model-Script {
     $content = "
 # SD-Trainer Installer 版本和检查更新间隔
-`$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
-`$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
