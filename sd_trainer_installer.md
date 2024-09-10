@@ -20,7 +20,6 @@ _✨一键安装 SD-Trainer_
     - [设置 SD-Trainer 启动参数](#设置-sd-trainer-启动参数)
     - [进入 SD-Trainer 所在的 Python 环境](#进入-sd-trainer-所在的-python-环境)
     - [获取最新的 SD-Trainer Installer 脚本](#获取最新的-sd-trainer-installer-脚本)
-    - [更新管理脚本](#更新管理脚本)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
     - [设置 Github 镜像源](#设置-github-镜像源)
@@ -52,6 +51,7 @@ _✨一键安装 SD-Trainer_
     - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
     - [Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。](#torch-版本低于-230将无法正常训练-flux-模型请考虑升级到更新的版本)
     - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
+    - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
     - [命令的使用](#命令的使用)
     - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
 
@@ -93,8 +93,9 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |---|---|
 |↓|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)|
 |↓|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1)|
-|↓|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
-|↓|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
+|↓|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)|
+|↓|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
+|↓|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
 
 在 SD-Trainer Installer 成功安装 SD-Trainer 后，在 SD-Trainer 文件夹中可以看到 SD-Trainer 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer Installer。
 
@@ -126,9 +127,6 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 ### 获取最新的 SD-Trainer Installer 脚本
 运行 get_sd_trainer_installer.ps1 脚本。
-
-### 更新管理脚本
-运行 get_sd_trainer_installer.ps1 脚本获取最新的 SD-Trainer Installer 脚本，然后运行 SD-Trainer Installer 后将会把本地的管理脚本进行更新。
 
 ### 恢复被修改 / 删除的脚本
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 SD-Trainer Installer 重新生成这些脚本。
@@ -293,7 +291,7 @@ Fri Jun  7 19:07:00 2024
 直接将 SD-Trainer 文件夹移动到别的路径即可。
 
 ### 更新 SD-Trainer 管理脚本
-运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer，并运行一次 SD-Trainer Installer。SD-Trainer Installer 在安装过程无报错时并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer 后，返回上一个目录并运行 sd_trainer_installer.ps1。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
 
 ### 设置 uv 包管理器
 InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
@@ -379,6 +377,9 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 ### NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
 训练使用的模型可能有问题，尝试更换模型。
 
+### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
+下载 [Visual C++ Runtime](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
 
@@ -451,6 +452,11 @@ Update-Aria2
 - 列出 SD-Trainer Installer 内置命令
 ```powershell
 List-CMD
+```
+
+- 检查 SD-Trainer Installer 更新
+```powershell
+Check-SD-Trainer-Installer-Update
 ```
 
 ### 使用 SD-Trainer Installer 安装 Kohya GUI

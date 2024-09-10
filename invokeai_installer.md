@@ -20,7 +20,7 @@ _✨一键安装 InvokeAI_
     - [修复 InvokeAI 图库出现无效图片](#修复-invokeai-图库出现无效图片)
     - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
     - [获取最新的 InvokeAI Installer 脚本](#获取最新的-invokeai-installer-脚本)
-    - [更新管理脚本](#更新管理脚本)
+    - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [设置 InvokeAI 中文](#设置-invokeai-中文)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
@@ -38,12 +38,12 @@ _✨一键安装 InvokeAI_
     - [卸载 InvokeAI](#卸载-invokeai)
     - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
     - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
-    - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
     - [配置代理](#配置代理)
     - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
     - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
+    - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
     - [命令的使用](#命令的使用)
 
 
@@ -84,8 +84,9 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |---|---|
 |↓|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
 |↓|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1)|
-|↓|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
-|↓|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
+|↓|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)|
+|↓|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
+|↓|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 
 在 InvokeAI Installer 成功安装 InvokeAI 后，在 InvokeAI 文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
 
@@ -115,8 +116,8 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ### 获取最新的 InvokeAI Installer 脚本
 运行 get_invokeai_installer.ps1 脚本。
 
-### 更新管理脚本
-运行 get_invokeai_installer.ps1 脚本获取最新的 InvokeAI Installer 脚本，然后运行 InvokeAI Installer 后将会把本地的管理脚本进行更新。
+### 更新 InvokeAI 管理脚本
+运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer 后，返回上一个目录并运行 invokeai_installer.ps1。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
 
 ### 恢复被修改 / 删除的脚本
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 InvokeAI Installer 重新生成这些脚本。
@@ -235,9 +236,6 @@ invokeai
 7 directories, 2 files
 ```
 
-### 更新 InvokeAI 管理脚本
-运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer，并运行一次 InvokeAI Installer。
-
 ### 配置代理
 如果出现某些文件无法下载，比如在控制台出现`由于连接芳在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败`之类的报错时，可以尝试配置代理，有以下两种方法。
 
@@ -297,6 +295,9 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 ### 运行 InvokeAI 时 InvokeAI 出现崩溃
 尝试增加 Windows 系统虚拟内存。
+
+### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
+下载 [Visual C++ Runtime](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
 
 ### 命令的使用
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
@@ -377,4 +378,9 @@ Update-uv
 - 列出 InvokeAI Installer 内置命令
 ```powershell
 List-CMD
+```
+
+- 检查 InvokeAI Installer 更新
+```powershell
+Check-InvokeAI-Installer-Update
 ```
