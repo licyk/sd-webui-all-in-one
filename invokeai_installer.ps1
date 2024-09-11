@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 105
+$INVOKEAI_INSTALLER_VERSION = 106
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -46,33 +46,36 @@ function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI Installer]:: $msg"
 }
 
-Print-Msg "初始化中"
 
 # 代理配置
-$Env:NO_PROXY = "localhost,127.0.0.1,::1"
-if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
-    $INTERNET_SETTING = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
-        $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
-        $Env:HTTP_PROXY = $proxy_value
-        $Env:HTTPS_PROXY = $proxy_value
-        Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
-    } elseif ($INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
-        $Env:HTTP_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
-        $Env:HTTPS_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
-        Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
+function Set-Proxy {
+    $Env:NO_PROXY = "localhost,127.0.0.1,::1"
+    if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
+        $INTERNET_SETTING = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
+            $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+            $Env:HTTP_PROXY = $proxy_value
+            $Env:HTTPS_PROXY = $proxy_value
+            Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
+        } elseif ($INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            $Env:HTTP_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
+            $Env:HTTPS_PROXY = "http://$($INTERNET_SETTING.ProxyServer)"
+            Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
+        }
+    } else {
+        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
     }
-} else {
-    Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
 }
 
 # 设置 uv 的使用状态
-if (Test-Path "$PSScriptRoot/disable_uv.txt") {
-    Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
-    $USE_UV = $false
-} else {
-    Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
-    $USE_UV = $true
+function Set-uv {
+    if (Test-Path "$PSScriptRoot/disable_uv.txt") {
+        Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
+        $Global:USE_UV = $false
+    } else {
+        Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
+        $Global:USE_UV = $true
+    }
 }
 
 # 下载并解压 Python
@@ -388,10 +391,12 @@ function Write-Launch-Script {
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
@@ -452,57 +457,70 @@ function Check-InvokeAI-Installer-Update {
     }
 }
 
-Print-Msg `"初始化中`"
 
 # 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
+
 
 # Huggingface 镜像源
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
-    } else { # 使用默认设置
-        `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"使用默认 HuggingFace 镜像源`"
+function Set-HuggingFace-Mirror {
+    if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置huggingface镜像源
+        if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在huggingface镜像源配置
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+            `$Env:HF_ENDPOINT = `$hf_mirror_value
+            Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        } else { # 使用默认设置
+            `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
+            Print-Msg `"使用默认 HuggingFace 镜像源`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-Check-InvokeAI-Installer-Update
 
-Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址, 进入 InvokeAI 的界面`"
-Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
-Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
-Start-Sleep -Seconds 2
-Print-Msg `"调用浏览器打开地址中`"
-Start-Process `"http://127.0.0.1:9090`"
-Print-Msg `"启动 InvokeAI 中`"
-invokeai-web --root `"`$PSScriptRoot/invokeai`"
-`$req = `$?
-if (`$req) {
-    Print-Msg `"InvokeAI 正常退出`"
-} else {
-    Print-Msg `"InvokeAI 出现异常, 已退出`"
+function Main {
+    Print-Msg `"初始化中`"
+    Set-Proxy
+    Set-HuggingFace-Mirror
+    Check-InvokeAI-Installer-Update
+
+    Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址, 进入 InvokeAI 的界面`"
+    Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
+    Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
+    Start-Sleep -Seconds 2
+    Print-Msg `"调用浏览器打开地址中`"
+    Start-Process `"http://127.0.0.1:9090`"
+    Print-Msg `"启动 InvokeAI 中`"
+    invokeai-web --root `"`$PSScriptRoot/invokeai`"
+    `$req = `$?
+    if (`$req) {
+        Print-Msg `"InvokeAI 正常退出`"
+    } else {
+        Print-Msg `"InvokeAI 出现异常, 已退出`"
+    }
 }
 
+###################
+
+Main
 Read-Host | Out-Null
 "
 
@@ -554,10 +572,12 @@ function Write-Update-Script {
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
@@ -582,6 +602,7 @@ print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
     `$pytorch_ver = `$(python -c `"`$content`")
     return `$pytorch_ver
 }
+
 
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
@@ -643,67 +664,80 @@ function Check-InvokeAI-Installer-Update {
 }
 
 
-Print-Msg `"初始化中`"
-
 # 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
+
 
 # 设置 uv 的使用状态
-if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        `$Global:USE_UV = `$true
+    }
 }
 
-Check-InvokeAI-Installer-Update
 
-Print-Msg `"更新 InvokeAI 内核中`"
-`$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
-if (`$USE_UV) {
-    uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
-} else {
-    python -m pip install InvokeAI --upgrade --no-deps --no-warn-script-location --use-pep517
-}
+function Main {
+    Print-Msg `"初始化中`"
+    Set-Proxy
+    Set-uv
+    Check-InvokeAI-Installer-Update
 
-if (`$?) {
-    Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
-    `$pytorch_ver = Get-PyTorch-Version
-    `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
+    Print-Msg `"更新 InvokeAI 内核中`"
+    `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$USE_UV) {
-        uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+        uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
     } else {
-        python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location --use-pep517
+        python -m pip install InvokeAI --upgrade --no-deps --no-warn-script-location --use-pep517
     }
+
     if (`$?) {
-        if (`$ver -eq `$ver_) {
-            Print-Msg `"InvokeAI 已为最新版, 当前版本：`$ver_`"
+        Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
+        `$pytorch_ver = Get-PyTorch-Version
+        `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
+        if (`$USE_UV) {
+            uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
         } else {
-            Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
+            python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location --use-pep517
         }
-        Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+        if (`$?) {
+            if (`$ver -eq `$ver_) {
+                Print-Msg `"InvokeAI 已为最新版, 当前版本：`$ver_`"
+            } else {
+                Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
+            }
+            Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+        } else {
+            Print-Msg `"InvokeAI 依赖更新失败`"
+        }
     } else {
-        Print-Msg `"InvokeAI 依赖更新失败`"
+        Print-Msg `"InvokeAI 内核更新失败`"
     }
-} else {
-    Print-Msg `"InvokeAI 内核更新失败`"
 }
+
+###################
+
+Main
 Read-Host | Out-Null
 "
 
@@ -755,10 +789,12 @@ function Write-InvokeAI-DB-Fix-Script {
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
@@ -820,12 +856,18 @@ function Check-InvokeAI-Installer-Update {
 }
 
 
-Print-Msg `"初始化中`"
-Check-InvokeAI-Installer-Update
+function Main {
+    Print-Msg `"初始化中`"
+    Check-InvokeAI-Installer-Update
 
-Print-Msg `"修复 InvokeAI 数据库中`"
-invokeai-db-maintenance --operation all --root `"`$PSScriptRoot/invokeai`"
-Print-Msg `"修复 InvokeAI 数据库完成`"
+    Print-Msg `"修复 InvokeAI 数据库中`"
+    invokeai-db-maintenance --operation all --root `"`$PSScriptRoot/invokeai`"
+    Print-Msg `"修复 InvokeAI 数据库完成`"
+}
+
+###################
+
+Main
 Read-Host | Out-Null
 "
 
@@ -842,48 +884,55 @@ function Print-Msg (`$msg) {
 }
 
 
-Print-Msg `"初始化中`"
-
 # 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
 
-# 可用的下载源
-`$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
-`$count = `$urls.Length
-`$i = 0
 
-ForEach (`$url in `$urls) {
-    Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
-    Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-    if (`$?) {
-        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-        `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-        Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
-        break
-    } else {
-        Print-Msg `"下载 InvokeAI Installer 脚本失败`"
-        `$i += 1
-        if (`$i -lt `$count) {
-            Print-Msg `"重试下载 InvokeAI Installer 脚本`"
+function Main {
+    Print-Msg `"初始化中`"
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$count = `$urls.Length
+    `$i = 0
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
+        if (`$?) {
+            Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+            `$parentDirectory = Split-Path `$PSScriptRoot -Parent
+            Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
+            break
+        } else {
+            Print-Msg `"下载 InvokeAI Installer 脚本失败`"
+            `$i += 1
+            if (`$i -lt `$count) {
+                Print-Msg `"重试下载 InvokeAI Installer 脚本`"
+            }
         }
     }
 }
 
+###################
+
+Main
 Read-Host | Out-Null
 "
 
@@ -935,15 +984,18 @@ function Write-Env-Activate-Script {
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 
+
 # 提示信息
 function global:prompt {
     `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
+
 # 消息输出
 function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # 更新 uv
 function global:Update-uv {
@@ -955,6 +1007,7 @@ function global:Update-uv {
         Print-Msg `"更新 uv 失败, 可尝试重新运行更新命令`"
     }
 }
+
 
 # InvokeAI Installer 更新检测
 function global:Check-InvokeAI-Installer-Update {
@@ -971,7 +1024,7 @@ function global:Check-InvokeAI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             Remove-Item -Path `"`$Env:CACHE_HOME/cache/invokeai_installer.ps1`"
-            if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+            if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
                 New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../new_version.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
@@ -990,6 +1043,7 @@ function global:Check-InvokeAI-Installer-Update {
         }
     }
 }
+
 
 # 列出 InvokeAI Installer 内置命令
 function global:List-CMD {
@@ -1011,42 +1065,55 @@ Github：https://github.com/licyk
 }
 
 
-Print-Msg `"初始化中`"
-
 # 代理配置
-`$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-    `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
 }
+
 
 # HuggingFace 镜像源
-if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置 HuggingFace 镜像源
-    if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
-        `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
-    } else { # 使用默认设置
-        `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Print-Msg `"使用默认 HuggingFace 镜像源`"
+function Set-HuggingFace-Mirror {
+    if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+        if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+            `$Env:HF_ENDPOINT = `$hf_mirror_value
+            Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        } else { # 使用默认设置
+            `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
+            Print-Msg `"使用默认 HuggingFace 镜像源`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
     }
-} else {
-    Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
 }
 
-Print-Msg `"激活 InvokeAI Env`"
-Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+
+funtion Main {
+    Print-Msg `"初始化中`"
+    Set-Proxy
+    Set-HuggingFace-Mirror
+    Print-Msg `"激活 InvokeAI Env`"
+    Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+}
+
+###################
+
+Main
 "
 
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/activate.ps1" -Value $content
@@ -1097,10 +1164,12 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
 
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
@@ -1125,6 +1194,7 @@ print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
     `$pytorch_ver = `$(python -c `"`$content`")
     return `$pytorch_ver
 }
+
 
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
@@ -1186,41 +1256,49 @@ function Check-InvokeAI-Installer-Update {
 }
 
 
-Print-Msg `"初始化中`"
-
 # 设置 uv 的使用状态
-if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-    Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-    `$USE_UV = `$false
-} else {
-    Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-    `$USE_UV = `$true
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        `$Global:USE_UV = `$true
+    }
 }
 
-Check-InvokeAI-Installer-Update
 
-Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
-Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-`$arg = Read-Host `"=========================================>`"
-if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-    Print-Msg `"卸载原有的 PyTorch`"
-    python -m pip uninstall torch torchvision xformers -y
-    Print-Msg `"重新安装 PyTorch`"
-    `$pytorch_ver = Get-PyTorch-Version
-    if (`$USE_UV) {
-        uv pip install `$pytorch_ver.ToString().Split() --find-links `"`$PIP_FIND_MIRROR`"
+function Main {
+    Print-Msg `"初始化中`"
+    Set-uv
+    Check-InvokeAI-Installer-Update
+
+    Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
+    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    `$arg = Read-Host `"=========================================>`"
+    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+        Print-Msg `"卸载原有的 PyTorch`"
+        python -m pip uninstall torch torchvision xformers -y
+        Print-Msg `"重新安装 PyTorch`"
+        `$pytorch_ver = Get-PyTorch-Version
+        if (`$USE_UV) {
+            uv pip install `$pytorch_ver.ToString().Split() --find-links `"`$PIP_FIND_MIRROR`"
+        } else {
+            python -m pip install `$pytorch_ver.ToString().Split() --no-warn-script-location --use-pep517
+        }
+        if (`$?) {
+            Print-Msg `"重新安装 PyTorch 成功`"
+        } else {
+            Print-Msg `"重新安装 PyTorch 失败, 请重新运行 PyTorch 重装脚本`"
+        }
     } else {
-        python -m pip install `$pytorch_ver.ToString().Split() --no-warn-script-location --use-pep517
+        Print-Msg `"取消重装 PyTorch`"
     }
-    if (`$?) {
-        Print-Msg `"重新安装 PyTorch 成功`"
-    } else {
-        Print-Msg `"重新安装 PyTorch 失败, 请重新运行 PyTorch 重装脚本`"
-    }
-} else {
-    Print-Msg `"取消重装 PyTorch`"
 }
 
+###################
+
+Main
 Read-Host | Out-Null
 "
 
@@ -1235,6 +1313,7 @@ function Write-Download-Config-Script {
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
 }
+
 
 # 下载配置文件
 function Download-Config-File(`$url, `$path) {
@@ -1254,12 +1333,9 @@ function Download-Config-File(`$url, `$path) {
     }
 }
 
+
 # 预下载模型配置文件
 function Get-Model-Config-File {
-    Print-Msg `"预下载模型配置文件中`"
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/stable-diffusion`" -Force > `$null
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/controlnet`" -Force > `$null
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_base.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml`"
@@ -1276,13 +1352,23 @@ function Get-Model-Config-File {
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml`" `"`$PSScriptRoot/invokeai/configs/stable-diffusion/v2-midas-inference.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml`" `"`$PSScriptRoot/invokeai/configs/controlnet/cldm_v15.yaml`"
     Download-Config-File `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml`" `"`$PSScriptRoot/invokeai/configs/controlnet/cldm_v21.yaml`"
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/stable-diffusion`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/controlnet`" -Force > `$null
+    Print-Msg `"预下载模型配置文件中`"
+    Get-Model-Config-File
     Print-Msg `"模型配置文件下载完成`"
 }
 
-Print-Msg `"初始化中`"
+###################
 
-New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
-Get-Model-Config-File
+Main
 Read-Host | Out-Null
 "
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/download_config.ps1" -Value $content
@@ -1349,6 +1435,9 @@ Reddit 社区：https://www.reddit.com/r/invokeai
 
 # 主程序
 function Main {
+    Print-Msg "初始化中"
+    Set-Proxy
+    Set-uv
     Print-Msg "启动 InvokeAI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
