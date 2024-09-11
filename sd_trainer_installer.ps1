@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 105
+$SD_TRAINER_INSTALLER_VERSION = 106
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -522,6 +522,7 @@ function Check-SD-Trainer-Installer-Update {
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
+                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -827,6 +828,7 @@ function Check-SD-Trainer-Installer-Update {
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
+                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1189,6 +1191,7 @@ function Check-SD-Trainer-Installer-Update {
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
+                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1250,29 +1253,29 @@ function Main {
 
     # PyTorch 版本列表
     `$content = `"
-    -----------------------------------------------------
-    - 1、Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14
-    - 2、Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16
-    - 3、Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18
-    - 4、Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22
-    - 5、Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23
-    - 6、Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23
-    - 7、Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1
-    - 8、Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1
-    - 9、Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24
-    - 10、Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24
-    - 11、Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25
-    - 12、Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25
-    - 13、Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1
-    - 14、Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1
-    - 15、Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1
-    - 16、Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1
-    - 17、Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27
-    - 18、Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27
-    - 19、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
-    - 20、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
-    - 21、Torch 2.4.0 (CUDA 12.4)
-    -----------------------------------------------------
+-----------------------------------------------------
+- 1、Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14
+- 2、Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16
+- 3、Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18
+- 4、Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22
+- 5、Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23
+- 6、Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23
+- 7、Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1
+- 8、Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1
+- 9、Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24
+- 10、Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24
+- 11、Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25
+- 12、Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25
+- 13、Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1
+- 14、Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1
+- 15、Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1
+- 16、Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1
+- 17、Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27
+- 18、Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27
+- 19、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
+- 20、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
+- 21、Torch 2.4.0 (CUDA 12.4)
+-----------------------------------------------------
     `"
 
     `$to_exit = 0
@@ -1639,6 +1642,7 @@ function Check-SD-Trainer-Installer-Update {
                     Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
+                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1669,42 +1673,42 @@ function Main {
         `$go_to = 0
         Print-Msg `"可下载的模型列表`"
         `$content = `"
-    -----------------------------------------------------
-    模型序号 | 模型名称 | 模型种类
+-----------------------------------------------------
+模型序号 | 模型名称 | 模型种类
 
-    - 1、v1-5-pruned-emaonly (SD 1.5)
-    - 2、animefull-final-pruned (SD 1.5)
-    - 3、v2-1_768-ema-pruned (SD 2.1)
-    - 4、wd-1-4-anime_e2 (SD 2.1)
-    - 5、wd-mofu-fp16 (SD 2.1)
-    - 6、sd_xl_base_1.0_0.9vae (SDXL)
-    - 7、animagine-xl-3.0 (SDXL)
-    - 8、animagine-xl-3.1 (SDXL)
-    - 9、kohaku-xl-delta-rev1 (SDXL)
-    - 10、kohakuXLEpsilon_rev1 (SDXL)
-    - 11、kohaku-xl-epsilon-rev2 (SDXL)
-    - 12、kohaku-xl-epsilon-rev3 (SDXL)
-    - 13、kohaku-xl-zeta (SDXL)
-    - 14、ponyDiffusionV6XL_v6 (SDXL)
-    - 15、pdForAnime_v20 (SDXL)
-    - 16、starryXLV52_v52 (SDXL)
-    - 17、heartOfAppleXL_v20 (SDXL)
-    - 18、heartOfAppleXL_v30 (SDXL)
-    - 19、flux1-schnell (FLUX.1)
-    - 20、flux1-schnell-fp8 (FLUX.1)
-    - 21、flux1-dev (FLUX.1)
-    - 22、flux1-dev-fp8 (FLUX.1)
-    - 23、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-    - 24、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-    - 25、sdxl_fp16_fix_vae (SDXL VAE)
-    - 26、sdxl_vae (SDXL VAE)
-    - 27、ae (FLUX.1 VAE)
-    - 28、clip_l (FLUX.1 CLIP)
-    - 29、t5xxl_fp16 (FLUX.1 CLIP)
-    - 30、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
+- 1、v1-5-pruned-emaonly (SD 1.5)
+- 2、animefull-final-pruned (SD 1.5)
+- 3、v2-1_768-ema-pruned (SD 2.1)
+- 4、wd-1-4-anime_e2 (SD 2.1)
+- 5、wd-mofu-fp16 (SD 2.1)
+- 6、sd_xl_base_1.0_0.9vae (SDXL)
+- 7、animagine-xl-3.0 (SDXL)
+- 8、animagine-xl-3.1 (SDXL)
+- 9、kohaku-xl-delta-rev1 (SDXL)
+- 10、kohakuXLEpsilon_rev1 (SDXL)
+- 11、kohaku-xl-epsilon-rev2 (SDXL)
+- 12、kohaku-xl-epsilon-rev3 (SDXL)
+- 13、kohaku-xl-zeta (SDXL)
+- 14、ponyDiffusionV6XL_v6 (SDXL)
+- 15、pdForAnime_v20 (SDXL)
+- 16、starryXLV52_v52 (SDXL)
+- 17、heartOfAppleXL_v20 (SDXL)
+- 18、heartOfAppleXL_v30 (SDXL)
+- 19、flux1-schnell (FLUX.1)
+- 20、flux1-schnell-fp8 (FLUX.1)
+- 21、flux1-dev (FLUX.1)
+- 22、flux1-dev-fp8 (FLUX.1)
+- 23、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 24、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 25、sdxl_fp16_fix_vae (SDXL VAE)
+- 26、sdxl_vae (SDXL VAE)
+- 27、ae (FLUX.1 VAE)
+- 28、clip_l (FLUX.1 CLIP)
+- 29、t5xxl_fp16 (FLUX.1 CLIP)
+- 30、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
 
-    关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
-    -----------------------------------------------------
+关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
+-----------------------------------------------------
     `"
 
         Write-Host `$content
@@ -2023,6 +2027,7 @@ function global:Check-SD-Trainer-Installer-Update {
                 Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                 Start-Sleep -Seconds 2
             } else {
+                Remove-Item -Path `"`$Env:CACHE_HOME/../new_version.txt`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
             break
