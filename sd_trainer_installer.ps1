@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 106
+$SD_TRAINER_INSTALLER_VERSION = 107
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -13,6 +13,7 @@ $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # Github 镜像源列表
 $GITHUB_MIRROR_LIST = @(
+    "https://ghp.ci/https://github.com",
     "https://mirror.ghproxy.com/https://github.com",
     "https://ghproxy.net/https://github.com",
     "https://gitclone.com/github.com",
@@ -643,6 +644,7 @@ function Write-Update-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gitclone.com/github.com`",
