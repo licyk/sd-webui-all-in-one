@@ -172,6 +172,7 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 
 |可用的 Github 镜像源|
 |---|
+|https://ghp.ci/https://github.com|
 |https://mirror.ghproxy.com/https://github.com|
 |https://ghproxy.net/https://github.com|
 |https://gitclone.com/github.com|
