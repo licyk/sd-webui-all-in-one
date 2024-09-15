@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 108
+$SD_TRAINER_INSTALLER_VERSION = 109
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1981,6 +1981,27 @@ function Print-Msg (`$msg) {
 }
 
 
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    }
+}
+
+
 # 获取代理设置
 function Get-Proxy-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
@@ -2464,6 +2485,7 @@ function Get-SD-Trainer-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
+    Set-Proxy
     while (`$true) {
         `$go_to = 0
         Print-Msg `"-----------------------------------------------------`"

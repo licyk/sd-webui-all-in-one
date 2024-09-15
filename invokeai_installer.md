@@ -39,6 +39,7 @@ _✨一键安装 InvokeAI_
     - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
     - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
     - [配置代理](#配置代理)
+    - [管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)
     - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
@@ -145,6 +146,7 @@ $ tree -L 2
 │   ├── launch.ps1                  # 启动 InvokeAI 的脚本
 │   ├── python                      # Python 目录
 │   ├── reinstall_pytorch.ps1       # 重装 PyTorch 脚本
+│   ├── settings.ps1                # 管理 InvokeAI Installer 设置的脚本
 │   └── update.ps1                  # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1          # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
@@ -260,6 +262,9 @@ invokeai
 
 >[!NOTE]  
 >配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
+
+### 管理 InvokeAI Installer 设置
+运行 settings.ps1，根据提示进行设置管理和调整。
 
 ### 运行脚本时出现中文乱码
 这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。

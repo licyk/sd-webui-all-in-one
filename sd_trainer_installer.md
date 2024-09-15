@@ -36,6 +36,7 @@ _✨一键安装 SD-Trainer_
     - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
     - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
     - [设置 uv 包管理器](#设置-uv-包管理器)
+    - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
     - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
     - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
     - [RuntimeError: Directory 'frontend/dist' does not exist](#runtimeerror-directory-frontenddist-does-not-exist)
@@ -150,6 +151,7 @@ $ tree -L 2
 │   ├── models                        # download_models.ps1 下载模型脚本
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
+│   ├── settings.ps1                  # 管理 SD-Trainer Installer 设置的脚本
 │   └── update.ps1                    # 更新 SD-Trainer 的脚本
 ├── sd_trainer_installer.ps1          # SD-Trainer Installer 放在 SD-Trainer 文件夹外面，和 SD-Trainer 文件夹同级
 └── QQ Files
@@ -299,11 +301,14 @@ SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新�
 >通常不建议禁用 SD-Trainer Installer 的更新检查，当 SD-Trainer 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
 ### 设置 uv 包管理器
-InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
+SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
 >uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+
+### 管理 SD-Trainer Installer 设置
+运行 settings.ps1，根据提示进行设置管理和调整。
 
 ### 运行脚本时出现中文乱码
 这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
