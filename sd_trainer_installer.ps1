@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 109
+$SD_TRAINER_INSTALLER_VERSION = 110
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -597,6 +597,7 @@ function Get-SD-Trainer-Launch-Args {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     `$args = Get-SD-Trainer-Launch-Args
@@ -932,6 +933,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-uv
     Set-Proxy
     Set-Github-Mirror
@@ -1031,6 +1033,7 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-SD-Trainer-Install-Script {
     $content = "
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
@@ -1060,6 +1063,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
@@ -1249,6 +1253,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-uv
     Set-Proxy
     Check-SD-Trainer-Installer-Update
@@ -1279,7 +1284,7 @@ function Main {
 - 21、Torch 2.4.0 (CUDA 12.4)
 - 22、Torch 2.4.1 (CUDA 11.8)
 - 23、Torch 2.4.1 (CUDA 12.1)
-- 24、Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28
+- 24、Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1
 -----------------------------------------------------
     `"
 
@@ -1462,7 +1467,7 @@ function Main {
             }
             24 {
                 `$torch_ver = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
-                `$xformers_ver = `"xformers==0.0.28`"
+                `$xformers_ver = `"xformers===0.0.28.post1`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
@@ -1674,6 +1679,7 @@ function Check-SD-Trainer-Installer-Update {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
 
     Check-SD-Trainer-Installer-Update
 
@@ -2485,6 +2491,7 @@ function Get-SD-Trainer-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
     while (`$true) {
         `$go_to = 0
@@ -2778,6 +2785,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"SD-Trainer Installer 版本: v`$Env:SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -2851,6 +2859,8 @@ https://gh.idayer.com/https://github.com
 
 设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
+SD-Trainer Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
+
 SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 SD-Trainer Installer 更新检查。
 
 更多详细的帮助可在下面的链接查看。
@@ -2880,6 +2890,7 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 # 主程序
 function Main {
     Print-Msg "初始化中"
+    Print-Msg "SD-Trainer Installer 版本: v$SD_TRAINER_INSTALLER_VERSION"
     Set-Proxy
     Set-uv
     Print-Msg "启动 SD-Trainer 安装程序"

@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 109
+$INVOKEAI_INSTALLER_VERSION = 110
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -499,6 +499,7 @@ function Set-HuggingFace-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     Check-InvokeAI-Installer-Update
@@ -701,6 +702,7 @@ function Set-uv {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     Set-uv
     Check-InvokeAI-Installer-Update
@@ -861,6 +863,7 @@ function Check-InvokeAI-Installer-Update {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Check-InvokeAI-Installer-Update
 
     Print-Msg `"修复 InvokeAI 数据库中`"
@@ -881,6 +884,7 @@ Read-Host | Out-Null
 # 获取安装脚本
 function Write-InvokeAI-Install-Script {
     $content = "
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
@@ -910,6 +914,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
     `$count = `$urls.Length
@@ -1094,6 +1099,7 @@ function Set-uv {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-uv
     Check-InvokeAI-Installer-Update
 
@@ -1133,6 +1139,7 @@ Read-Host | Out-Null
 # 下载模型配置文件脚本
 function Write-Download-Config-Script {
     $content = "
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
@@ -1181,6 +1188,7 @@ function Get-Model-Config-File {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/stable-diffusion`" -Force > `$null
@@ -1623,6 +1631,7 @@ function Get-InvokeAI-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     while (`$true) {
         `$go_to = 0
@@ -1864,8 +1873,9 @@ function Set-HuggingFace-Mirror {
 }
 
 
-funtion Main {
+function Main {
     Print-Msg `"初始化中`"
+    Print-Msg `"InvokeAI Installer 版本: v`$Env:INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     Print-Msg `"激活 InvokeAI Env`"
@@ -1928,7 +1938,9 @@ https://huggingface.sukaka.top
 脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
 如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
 
-SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 SD-Trainer Installer 更新检查。
+InvokeAI Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
+
+InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 InvokeAI Installer 更新检查。
 
 更多详细的帮助可在下面的链接查看。
 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
@@ -1944,6 +1956,7 @@ Reddit 社区：https://www.reddit.com/r/invokeai
 # 主程序
 function Main {
     Print-Msg "初始化中"
+    Print-Msg "InvokeAI Installer 版本: v$INVOKEAI_INSTALLER_VERSION"
     Set-Proxy
     Set-uv
     Print-Msg "启动 InvokeAI 安装程序"
