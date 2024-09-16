@@ -309,7 +309,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 尝试增加 Windows 系统虚拟内存。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Visual C++ Runtime](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
 
 ### 命令的使用
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：

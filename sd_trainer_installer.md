@@ -391,7 +391,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 训练使用的模型可能有问题，尝试更换模型。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Visual C++ Runtime](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
 
 ### 命令的使用
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
