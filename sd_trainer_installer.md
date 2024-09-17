@@ -203,7 +203,7 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 >配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
 
 ### 添加模型
-在 SD-Trainer 中可以选择本地已下载的模型，如果有下载某些用于训练的模型（非融合模型），可以使用 download_models.ps1 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
+在 SD-Trainer 中可以选择本地已下载的模型，如果没有下载某些用于训练的模型（非融合模型），可以使用 download_models.ps1 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
 
 ### 模型训练的方法
 推荐的哔哩哔哩 UP 主：
