@@ -1,6 +1,6 @@
 @echo off
 
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+>nul 2>&1 "%SYSTEMROOT%\system32\icacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
     echo :: Requesting administrative privileges
     goto UACPrompt
@@ -19,15 +19,16 @@ if '%errorlevel%' NEQ '0' (
     if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
     pushd "%CD%" 
     CD /D "%~dp0"
+    goto configureEnv
 
-title Configuration environment
-echo :: Set PowerShell execution policies
-echo :: Executing command: "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
-powershell "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
-echo :: Enable long paths supported
-echo :: Executing command: "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
-powershell "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
-echo :: Configuration completed
-echo :: Exit environment configuration script 
-
-pause
+:configureEnv
+    title Configure environment
+    echo :: Set PowerShell execution policies
+    echo :: Executing command: "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
+    powershell "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
+    echo :: Enable long paths supported
+    echo :: Executing command: "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
+    powershell "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
+    echo :: Configure completed
+    echo :: Exit environment configuration script 
+    pause
