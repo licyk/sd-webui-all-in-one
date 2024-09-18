@@ -48,6 +48,9 @@ _✨一键安装 InvokeAI_
   - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [命令的使用](#命令的使用)
+    - [使用自动环境激活脚本](#使用自动环境激活脚本)
+    - [手动输入命令激活](#手动输入命令激活)
+    - [常用命令](#常用命令)
 
 ***
 
@@ -182,6 +185,7 @@ $ tree -L 2
 │   ├── python                      # Python 目录
 │   ├── reinstall_pytorch.ps1       # 重装 PyTorch 脚本
 │   ├── settings.ps1                # 管理 InvokeAI Installer 设置的脚本
+│   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
 │   └── update.ps1                  # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1          # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
@@ -371,14 +375,25 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ## 命令的使用
+使用命令前需要激活环境，有以下 2 种方式激活。
+
+
+### 使用自动环境激活脚本
+运行 terminal.ps1 后将自动打开 PowerShell 并激活 InvokeAI Env。
+
+
+### 手动输入命令激活
 在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
 
 ```powershell
 .\activate.ps1
 ```
+
 >[!NOTE]  
 >在 PowerShell 中一定要显示`[InvokeAI-Env]`才算进入了环境，这样才能使用下面的命令。
 
+
+### 常用命令
 
 - 启动 InvokeAI
 ```powershell

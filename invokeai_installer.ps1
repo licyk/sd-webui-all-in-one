@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 110
+$INVOKEAI_INSTALLER_VERSION = 111
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1891,6 +1891,21 @@ Main
 }
 
 
+# 快捷启动终端脚本, 启动后将自动运行环境激活脚本
+function Write-Launch-Terminal-Script {
+    $content = "
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+}
+
+Print-Msg `"执行 InvokeAI Installer 激活环境脚本`"
+powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
+"
+
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/terminal.ps1" -Value $content
+}
+
+
 # 帮助文档
 function Write-ReadMe {
     $content = "==================================
@@ -1914,6 +1929,7 @@ fix_db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片�
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
 download_config.ps1：下载模型配置文件，当删除 invokeai 文件夹后，InvokeAI 将重新下载模型配置文件，但在无代理的情况下可能下载失败，所以可以通过该脚本进行下载。
 settings.ps1：管理 InvokeAI Installer 的设置。
+terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
 help.txt：帮助文档。
 
 
@@ -1972,6 +1988,7 @@ function Main {
     Write-PyTorch-ReInstall-Script
     Write-Download-Config-Script
     Write-InvokeAI-Installer-Settings-Script
+    Write-Launch-Terminal-Script
     Write-ReadMe
     Print-Msg "InvokeAI 安装结束, 安装路径为 $PSScriptRoot\InvokeAI"
     Print-Msg "关于该 InvokeAI 版本的更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest"

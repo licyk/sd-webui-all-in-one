@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 110
+$SD_TRAINER_INSTALLER_VERSION = 111
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2802,6 +2802,21 @@ Main
 }
 
 
+# 快捷启动终端脚本, 启动后将自动运行环境激活脚本
+function Write-Launch-Terminal-Script {
+    $content = "
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
+powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
+"
+
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/terminal.ps1" -Value $content
+}
+
+
 # 帮助文档
 function Write-ReadMe {
     $content = "==================================
@@ -2826,6 +2841,7 @@ launch.ps1：启动 SD-Trainer 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 settings.ps1：管理 SD-Trainer Installer 的设置。
+terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 help.txt：帮助文档。
 
 
@@ -2905,6 +2921,7 @@ function Main {
     Write-Download-Model-Script
     Write-SD-Trainer-Installer-Settings-Script
     Write-Env-Activate-Script
+    Write-Launch-Terminal-Script
     Write-ReadMe
     Print-Msg "SD-Trainer 安装结束, 安装路径为 $PSScriptRoot\SD-Trainer"
     Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看"

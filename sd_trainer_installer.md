@@ -56,6 +56,9 @@ _✨一键安装 SD-Trainer_
   - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [命令的使用](#命令的使用)
+    - [使用自动环境激活脚本](#使用自动环境激活脚本)
+    - [手动输入命令激活](#手动输入命令激活)
+    - [常用命令](#常用命令)
   - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
 
 ***
@@ -183,6 +186,7 @@ $ tree -L 2
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
 │   ├── settings.ps1                  # 管理 SD-Trainer Installer 设置的脚本
+│   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 SD-Trainer Installer 的虚拟环境脚本
 │   └── update.ps1                    # 更新 SD-Trainer 的脚本
 ├── sd_trainer_installer.ps1          # SD-Trainer Installer 放在 SD-Trainer 文件夹外面，和 SD-Trainer 文件夹同级
 └── QQ Files
@@ -458,6 +462,14 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 
 ## 命令的使用
+使用命令前需要激活环境，有以下 2 种方式激活。
+
+
+### 使用自动环境激活脚本
+运行 terminal.ps1 后将自动打开 PowerShell 并激活 SD-Trainer Env。
+
+
+### 手动输入命令激活
 在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
 
 ```powershell
@@ -466,6 +478,8 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 >[!NOTE]  
 >在 PowerShell 中一定要显示`[SD-Trainer Env]`才算进入了环境，这样才能使用下面的命令。
 
+
+### 常用命令
 
 - 清理安装时产生的 Pip 缓存
 ```powershell
