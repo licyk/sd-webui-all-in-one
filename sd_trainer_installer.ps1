@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 111
+$SD_TRAINER_INSTALLER_VERSION = 112
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -625,6 +625,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/launch.ps1") {
+        Print-Msg "更新 launch.ps1 中"
+    } else {
+        Print-Msg "生成 launch.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/launch.ps1" -Value $content
 }
 
@@ -1026,6 +1031,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/update.ps1") {
+        Print-Msg "更新 update.ps1 中"
+    } else {
+        Print-Msg "生成 update.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/update.ps1" -Value $content
 }
 
@@ -1098,6 +1108,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/get_sd_trainer_installer.ps1") {
+        Print-Msg "更新 get_sd_trainer_installer.ps1 中"
+    } else {
+        Print-Msg "生成 get_sd_trainer_installer.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/get_sd_trainer_installer.ps1" -Value $content
 }
 
@@ -1557,6 +1572,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/reinstall_pytorch.ps1") {
+        Print-Msg "更新 reinstall_pytorch.ps1 中"
+    } else {
+        Print-Msg "生成 reinstall_pytorch.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/reinstall_pytorch.ps1" -Value $content
 }
 
@@ -1928,6 +1948,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/download_models.ps1") {
+        Print-Msg "更新 download_models.ps1 中"
+    } else {
+        Print-Msg "生成 download_models.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/download_models.ps1" -Value $content
 }
 
@@ -2577,6 +2602,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/settings.ps1") {
+        Print-Msg "更新 settings.ps1 中"
+    } else {
+        Print-Msg "生成 settings.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/settings.ps1" -Value $content
 }
 
@@ -2798,6 +2828,11 @@ function Main {
 Main
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/activate.ps1") {
+        Print-Msg "更新 activate.ps1 中"
+    } else {
+        Print-Msg "生成 activate.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/activate.ps1" -Value $content
 }
 
@@ -2813,6 +2848,11 @@ Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/terminal.ps1") {
+        Print-Msg "更新 terminal.ps1 中"
+    } else {
+        Print-Msg "生成 terminal.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/terminal.ps1" -Value $content
 }
 
@@ -2887,8 +2927,9 @@ SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
 青龙圣者：https://space.bilibili.com/219296
 秋葉aaaki：https://space.bilibili.com/12566101
 琥珀青葉：https://space.bilibili.com/507303431
+观看这些 UP 主的视频可获得一些训练模型的教程。
 
-一些训练模型的教程：
+其他的一些训练模型的教程：
 https://rentry.org/59xed3
 https://civitai.com/articles/2056
 https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
@@ -2899,6 +2940,11 @@ https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-abou
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
 "
 
+    if (Test-Path "$PSScriptRoot/SD-Trainer/help.txt") {
+        Print-Msg "更新 help.txt 中"
+    } else {
+        Print-Msg "生成 help.txt 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/help.txt" -Value $content
 }
 
@@ -2910,10 +2956,11 @@ function Main {
     Set-Proxy
     Set-uv
     Print-Msg "启动 SD-Trainer 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
+    Print-Msg "即将进行安装的路径: $PSScriptRoot\SD-Trainer"
     Check-Install
-    Print-Msg "添加启动脚本和文档中"
+    Print-Msg "添加管理脚本和文档中"
     Write-Launch-Script
     Write-Update-Script
     Write-SD-Trainer-Install-Script
@@ -2923,8 +2970,9 @@ function Main {
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
-    Print-Msg "SD-Trainer 安装结束, 安装路径为 $PSScriptRoot\SD-Trainer"
-    Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看"
+    Print-Msg "SD-Trainer 安装结束, 安装路径为: $PSScriptRoot\SD-Trainer"
+    Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer Installer 使用文档"
+    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Print-Msg "退出 SD-Trainer Installer"
 }
 

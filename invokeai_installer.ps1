@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 111
+$INVOKEAI_INSTALLER_VERSION = 112
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -526,6 +526,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/launch.ps1") {
+        Print-Msg "更新 launch.ps1 中"
+    } else {
+        Print-Msg "生成 launch.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/launch.ps1" -Value $content
 }
 
@@ -745,6 +750,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/update.ps1") {
+        Print-Msg "更新 update.ps1 中"
+    } else {
+        Print-Msg "生成 update.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update.ps1" -Value $content
 }
 
@@ -877,6 +887,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/fix_db.ps1") {
+        Print-Msg "更新 fix_db.ps1 中"
+    } else {
+        Print-Msg "生成 fix_db.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
 }
 
@@ -944,6 +959,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/get_invokeai_installer.ps1") {
+        Print-Msg "更新 get_invokeai_installer.ps1 中"
+    } else {
+        Print-Msg "生成 get_invokeai_installer.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/get_invokeai_installer.ps1" -Value $content
 }
 
@@ -1132,6 +1152,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/reinstall_pytorch.ps1") {
+        Print-Msg "更新 reinstall_pytorch.ps1 中"
+    } else {
+        Print-Msg "生成 reinstall_pytorch.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/reinstall_pytorch.ps1" -Value $content
 }
 
@@ -1203,6 +1228,12 @@ function Main {
 Main
 Read-Host | Out-Null
 "
+
+    if (Test-Path "$PSScriptRoot/InvokeAI/download_config.ps1") {
+        Print-Msg "更新 download_config.ps1 中"
+    } else {
+        Print-Msg "生成 download_config.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/download_config.ps1" -Value $content
 }
 
@@ -1705,6 +1736,11 @@ Main
 Read-Host | Out-Null
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/settings.ps1") {
+        Print-Msg "更新 settings.ps1 中"
+    } else {
+        Print-Msg "生成 settings.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/settings.ps1" -Value $content
 }
 
@@ -1887,6 +1923,11 @@ function Main {
 Main
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/activate.ps1") {
+        Print-Msg "更新 activate.ps1 中"
+    } else {
+        Print-Msg "生成 activates.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/activate.ps1" -Value $content
 }
 
@@ -1902,6 +1943,11 @@ Print-Msg `"执行 InvokeAI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/terminal.ps1") {
+        Print-Msg "更新 terminal.ps1 中"
+    } else {
+        Print-Msg "生成 terminal.ps1 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/terminal.ps1" -Value $content
 }
 
@@ -1965,6 +2011,11 @@ InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
 "
 
+    if (Test-Path "$PSScriptRoot/InvokeAI/help.txt") {
+        Print-Msg "更新 help.txt 中"
+    } else {
+        Print-Msg "生成 help.txt 中"
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/help.txt" -Value $content
 }
 
@@ -1976,10 +2027,11 @@ function Main {
     Set-Proxy
     Set-uv
     Print-Msg "启动 InvokeAI 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "即将进行安装的路径: $PSScriptRoot\InvokeAI"
     Check-Install
-    Print-Msg "添加启动脚本和文档中"
+    Print-Msg "添加管理脚本和文档中"
     Write-Launch-Script
     Write-Update-Script
     Write-InvokeAI-DB-Fix-Script
@@ -1990,9 +2042,9 @@ function Main {
     Write-InvokeAI-Installer-Settings-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
-    Print-Msg "InvokeAI 安装结束, 安装路径为 $PSScriptRoot\InvokeAI"
-    Print-Msg "关于该 InvokeAI 版本的更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest"
-    Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看"
+    Print-Msg "InvokeAI 安装结束, 安装路径为: $PSScriptRoot\InvokeAI"
+    Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
     Print-Msg "退出 InvokeAI Installer"
 }
 

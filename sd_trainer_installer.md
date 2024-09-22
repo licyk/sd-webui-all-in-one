@@ -64,7 +64,7 @@ _✨一键安装 SD-Trainer_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的 PowerShell 脚本。
+一个在 Windows 系统上部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 
@@ -76,7 +76,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 下面提供 2 种方法进行环境配置。
 
 ## 使用自动环境配置脚本
-下载环境自动配置脚本，双击运行后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
+下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
 |---|
@@ -94,6 +94,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 
 ### 解除脚本限制
 使用管理员权限打开 PowerShell，运行以下命令：
+
 ```powershell
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
@@ -104,6 +105,7 @@ Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
 ### 启用 Windows 长路径支持
 在刚刚的 PowerShell 中运行下面的命令：
+
 ```powershell
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 ```
@@ -114,7 +116,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 安装
-将 SD-Trainer Installer 下载至本地，右键该脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
+将 SD-Trainer Installer 下载至本地，右键`sd_trainer_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
 
 |SD-Trainer Installer 下载地址|
 |---|
@@ -129,22 +131,23 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 使用
-在 SD-Trainer 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择使用 PowerShell 运行后即可运行。在 lora-scripts 文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
+在 SD-Trainer 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在 lora-scripts 文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
 
 
 ## 启动 SD-Trainer
-运行 launch.ps1 脚本。
+运行`launch.ps1`脚本。
 
 
 ## 更新 SD-Trainer
-运行 update.ps1 脚本。
+运行`update.ps1`脚本，如果遇到更新 SD-Trainer 失败的情况可尝试重新运行`update.ps1`脚本。
 
 
 ## 设置 SD-Trainer 启动参数
-要设置 SD-Trainer 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
+要设置 SD-Trainer 的启动参数，可以在和`launch.ps1`脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
 >[!NOTE]  
->SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts - 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
+>1. SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts - 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 进入 SD-Trainer 所在的 Python 环境
@@ -157,9 +160,11 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 这样就进入 SD-Trainer 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
 
+或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 SD-Trainer 所在的 Python。
+
 
 ## 获取最新的 SD-Trainer Installer 脚本
-运行 get_sd_trainer_installer.ps1 脚本。
+运行`get_sd_trainer_installer.ps1`脚本，运行成功后将会把 SD-Trainer Installer 保存在 SD-Trainer 文件夹的上一级目录中。
 
 
 ## 恢复被修改 / 删除的脚本
@@ -205,6 +210,9 @@ SD-Trainer Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜�
 
 如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建`disable_hf_mirror.txt`文件，再次启动脚本时将禁用 HuggingFace 镜像源。
 
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+
 
 ## 设置 Github 镜像源
 SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新 SD-Trainer 的速度，默认在启动脚本时自动检测可用的 Github 镜像源并设置。如果需要自定义 Github 镜像源，可以在和脚本同级的目录创建`gh_mirror.txt`文件，在文件中填写 Github 镜像源的地址后保存，再次启动脚本时将取消自动检测可用的 Github 镜像源，而是读取该文件的配置并设置 Github 镜像源。
@@ -220,6 +228,9 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 |https://gh.idayer.com/https://github.com|
 
 如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
+
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 配置代理
@@ -238,11 +249,13 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 在和脚本同级的路径中创建一个`disable_proxy.txt`文件，再次启动脚本时将禁用设置代理。
 
 >[!NOTE]  
->配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
+>1. 配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置。
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+
 
 
 ## 添加模型
-在 SD-Trainer 中可以选择本地已下载的模型，如果没有下载某些用于训练的模型（非融合模型），可以使用 download_models.ps1 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
+在 SD-Trainer 中可以选择本地已下载的模型，如果没有下载某些用于训练的模型（非融合模型），可以使用`download_models.ps1`脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
 
 
 ## 模型训练的方法
@@ -250,8 +263,9 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 - 青龙圣者：https://space.bilibili.com/219296
 - 秋葉aaaki：https://space.bilibili.com/12566101
 - 琥珀青葉：https://space.bilibili.com/507303431
+观看这些 UP 主的视频可获得一些训练模型的教程。
 
-一些训练模型的教程：
+其他的一些训练模型的教程：
 - https://rentry.org/59xed3
 - https://civitai.com/articles/2056
 - https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
@@ -280,11 +294,12 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 
 
 ## 重装 PyTorch
-运行 reinstall_pytorch.ps1 脚本，并根据脚本提示的内容进行操作。
+运行`reinstall_pytorch.ps1`脚本，并根据脚本提示的内容进行操作。
 
 
 ## PowerShell 中出现 xFormers 报错
 在控制台中出现有关 xFormers 的警告信息，类似下面的内容。
+
 ```
 WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built for:
     PyTorch 2.2.1+cu118 with CUDA 1108 (you have 2.2.2+cu121)
@@ -292,21 +307,24 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
   Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
   Memory-efficient attention, SwiGLU, sparse and more won't be available.
 ```
-这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall_pytorch.ps1 重装 PyTorch。
+
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行`reinstall_pytorch.ps1`重装 PyTorch。
 
 
 ## SD-Trainer 无法正常调用显卡
-尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用 reinstall_pytorch.ps1 重装 PyTorch。
+尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用`reinstall_pytorch.ps1`重装 PyTorch。
 
 >[!NOTE]  
 >Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
 
 如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
+
 ```powershell
 nvidia-smi
 ```
 
 可以看到 PowerShell 中显示的以下信息。
+
 ```
 Fri Jun  7 19:07:00 2024
 +-----------------------------------------------------------------------------------------+
@@ -342,12 +360,15 @@ Fri Jun  7 19:07:00 2024
 
 
 ## 更新 SD-Trainer 管理脚本
-SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行 get_sd_trainer_installer.ps1 获取最新的 SD-Trainer Installer 后，返回上一个目录并运行 sd_trainer_installer.ps1。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行`get_sd_trainer_installer.ps1`获取最新的 SD-Trainer Installer 后，返回上一个目录并运行`sd_trainer_installer.ps1`。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
 
 如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 SD-Trainer Installer 更新检查。
 
 >[!WARNING]  
 >通常不建议禁用 SD-Trainer Installer 的更新检查，当 SD-Trainer 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
+
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 设置 uv 包管理器
@@ -355,11 +376,12 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>1. uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 管理 SD-Trainer Installer 设置
-运行 settings.ps1，根据提示进行设置管理和调整。
+运行`settings.ps1`，根据提示进行设置管理和调整。
 
 
 ## 运行脚本时出现中文乱码
@@ -373,6 +395,7 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 
 ## 无法使用 PowerShell 运行
 运行 PowerShell 脚本时出现以下错误。
+
 ```
 .\sd_trainer_installer.ps1 : 无法加载文件 D:\SD-Trainer\sd_trainer_installer.ps1。
 未对文件 D:\SD-Trainer\sd_trainer_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
@@ -387,17 +410,21 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
 
 这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
+
 ```powershell
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
+或者使用[自动环境配置脚本](#使用自动环境配置脚本)解除 Windows 系统对运行 PowerShell 脚本的限制。
+
 
 ## RuntimeError: Directory 'frontend/dist' does not exist
-SD-Trainer 组件缺失，重新运行 update.ps1 或者 sd_trainer_installer.ps1 进行修复。
+SD-Trainer 组件缺失，重新运行`update.ps1`或者`sd_trainer_installer.ps1`进行修复。
 
 
 ## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
 运行 SD-Trainer Installer 时出现以下类似的错误。
+
 ```
 ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
     rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
@@ -442,7 +469,10 @@ SD-Trainer 默认开启 arb 桶，自动处理不同分辨率的图片，无需�
 ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000): 以一种访问权限不允许的方式做了一个访问套接字的尝试。
 ```
 
-这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在 launch.ps1 所在目录创建`launch_args.txt`文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存`launch_args.txt`文件后使用 launch.ps1 重新启动 SD-Trainer。
+这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在`launch.ps1`所在目录创建`launch_args.txt`文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存`launch_args.txt`文件后使用`launch.ps1`重新启动 SD-Trainer。
+
+>[!NOTE]  
+>设置 SD-Trainer 启动参数的方法可参考[设置 SD-Trainer 启动参数](#设置-sd-trainer-启动参数)。
 
 
 ## AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
@@ -450,7 +480,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 
 ## Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。
-运行 reinstall_pytorch.ps1 脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD-Trainer Installer 的管理脚本进行更新，方法参看：[SD-Trainer Installer - 更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+运行`reinstall_pytorch.ps1`脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD-Trainer Installer 的管理脚本进行更新，方法参看：[SD-Trainer Installer - 更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
 
 
 ## NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
@@ -466,7 +496,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 
 ### 使用自动环境激活脚本
-运行 terminal.ps1 后将自动打开 PowerShell 并激活 SD-Trainer Env。
+运行`terminal.ps1`后将自动打开 PowerShell 并激活 SD-Trainer Env。
 
 
 ### 手动输入命令激活
@@ -628,4 +658,4 @@ Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
 >保存后使用`launch.ps1`启动 Kohya GUI 时将自动调用浏览器打开界面并设置界面为中文。
 
 >[!WARNING]  
->如果通过 get_sd_trainer_installer.ps1 下载最新的 SD-Trainer Installer 来更新管理脚本，需要再次编辑 sd_trainer_installer.ps1，按照上方的步骤修改代码，再运行，以保证更新后的管理脚本能够正常的在 Kohya GUI 上运行。
+>如果通过`get_sd_trainer_installer.ps1`下载最新的 SD-Trainer Installer 来更新管理脚本，需要再次编辑`sd_trainer_installer.ps1`，按照上方的步骤修改代码，再运行，以保证更新后的管理脚本能够正常的在 Kohya GUI 上运行。

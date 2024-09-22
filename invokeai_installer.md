@@ -33,7 +33,6 @@ _✨一键安装 InvokeAI_
   - [配置 InvokeAI](#配置-invokeai)
   - [下载 InvokeAI 模型配置文件](#下载-invokeai-模型配置文件)
   - [设置 uv 包管理器](#设置-uv-包管理器)
-  - [显存占用很大](#显存占用很大)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
   - [重装 PyTorch / xFormers](#重装-pytorch--xformers)
   - [InvokeAI 无法正常调用显卡](#invokeai-无法正常调用显卡)
@@ -55,7 +54,7 @@ _✨一键安装 InvokeAI_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 脚本。
+一个在 Windows 系统上部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 
@@ -68,7 +67,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 
 
 ## 使用自动环境配置脚本
-下载环境自动配置脚本，双击运行后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
+下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
 |---|
@@ -86,6 +85,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 
 ### 解除脚本限制
 使用管理员权限打开 PowerShell，运行以下命令：
+
 ```powershell
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
@@ -97,6 +97,7 @@ Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
 ### 启用 Windows 长路径支持
 在刚刚的 PowerShell 中运行下面的命令：
+
 ```powershell
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 ```
@@ -107,7 +108,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 安装
-将 InvokeAI Installer 下载至本地，右键该脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
+将 InvokeAI Installer 下载至本地，右键`invokeai_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
 
 |InvokeAI Installer 下载地址|
 |---|
@@ -122,7 +123,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 使用
-在 InvokeAI 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择使用 PowerShell 运行后即可运行。
+在 InvokeAI 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
 
 
 ## 启动 InvokeAI
@@ -130,11 +131,11 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 更新 InvokeAI
-运行 update.ps1 脚本。
+运行 update.ps1 脚本，如果遇到更新 InvokeAI 失败的情况可尝试重新运行`update.ps1`脚本。
 
 
 ## 修复 InvokeAI 图库出现无效图片
-在 InvokeAI 的图片保存目录删除图片后，会发现 InvokeAI 的图库中图片还存在，并且显示损坏，无法查看，可以运行 fix_db.ps1 进行修复。
+在 InvokeAI 的图片保存目录删除图片后，会发现 InvokeAI 的图库中图片还存在，并且显示损坏，无法查看，可以运行`fix_db.ps1`进行修复。
 
 
 ## 进入 InvokeAI 所在的 Python 环境
@@ -145,21 +146,25 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 .\activate.ps1
 ```
 
-
 这样就进入 InvokeAI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
+
+或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 InvokeAI 所在的 Python。
 
 
 ## 获取最新的 InvokeAI Installer 脚本
-运行 get_invokeai_installer.ps1 脚本。
+运行`get_invokeai_installer.ps1`脚本，运行成功后将会把 InvokeAI Installer 保存在 InvokeAI 文件夹的上一级目录中。
 
 
 ## 更新 InvokeAI 管理脚本
-InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行 get_invokeai_installer.ps1 获取最新的 InvokeAI Installer 后，返回上一个目录并运行 invokeai_installer.ps1。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
+InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行`get_invokeai_installer.ps1`获取最新的 InvokeAI Installer 后，返回上一个目录并运行`invokeai_installer.ps1`。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
 
 如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 InvokeAI Installer 更新检查。
 
 >[!WARNING]  
 >通常不建议禁用 InvokeAI Installer 的更新检查，当 InvokeAI 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
+
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 恢复被修改 / 删除的脚本
@@ -180,7 +185,7 @@ $ tree -L 2
 │   ├── fix_db.ps1                  # 修复 InvokeAI 数据库的脚本
 │   ├── get_invokeai_installer.ps1  # 获取最新的 InvokeAI Installer 的脚本
 │   ├── help.txt                    # 帮助文档
-│   ├── invokeai                    # InvokeAI 生成的图片和模型存放路径
+│   ├── invokeai                    # InvokeAI 生成的图片 / 模型 / 工作流 / 配置文件路径
 │   ├── launch.ps1                  # 启动 InvokeAI 的脚本
 │   ├── python                      # Python 目录
 │   ├── reinstall_pytorch.ps1       # 重装 PyTorch 脚本
@@ -208,6 +213,9 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建`disable_mirror.txt`文件，再次启动脚本时将禁用 HuggingFace 镜像源。
 
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+
 
 ## 添加模型
 在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
@@ -232,14 +240,16 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 
 ## 配置 InvokeAI
-在`InvokeAI/invokeai`路径下，可以看到`invokeai.yaml`配置文件，如果需要修改，请参考`invokeai.example.yaml`文件内的示例。如果因为修改`invokeai.yaml`后导致 InvokeAI 的功能异常，请将该文件删除来重置 InvokeAI 配置。
+在`InvokeAI/invokeai`路径下，可以看到`invokeai.yaml`配置文件，如果需要修改，请参考`invokeai.example.yaml`文件内的示例，或者参考 [Configuration - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/features/CONFIGURATION) 进行设置。
+
+如果因为修改`invokeai.yaml`后导致 InvokeAI 的功能异常，请将该文件删除来重置 InvokeAI 配置。
 
 >[!NOTE]  
 >在大多数情况下并不需要修改该配置文件，因为 InvokeAI 会自动选择最佳的配置。
 
 
 ## 下载 InvokeAI 模型配置文件
-运行 download_config.ps1 脚本。
+运行`download_config.ps1`脚本。
 
 
 ## 设置 uv 包管理器
@@ -247,15 +257,13 @@ InvokeAI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
-
-
-## 显存占用很大
-检查 xFomers 是否正确安装，可以运行 InvokeAI Install 查看 xFormers 是否被正确安装。
+>1. uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## PowerShell 中出现 xFormers 报错
 在控制台中出现有关 xFormers 的警告信息，类似下面的内容。
+
 ```
 WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built for:
     PyTorch 2.2.1+cu118 with CUDA 1108 (you have 2.2.2+cu121)
@@ -263,15 +271,16 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
   Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
   Memory-efficient attention, SwiGLU, sparse and more won't be available.
 ```
-这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 reinstall_pytorch.ps1 脚本进行修复。
+
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行`reinstall_pytorch.ps1`脚本进行修复。
 
 
 ## 重装 PyTorch / xFormers
-运行 reinstall_pytorch.ps1 脚本。
+运行`reinstall_pytorch.ps1`脚本。
 
 
 ## InvokeAI 无法正常调用显卡
-尝试将显卡驱动更至最新或者运行 reinstall_pytorch.ps1 脚本重装 PyTorch。
+尝试将显卡驱动更至最新或者运行`reinstall_pytorch.ps1`脚本重装 PyTorch。
 
 
 ## 卸载 InvokeAI
@@ -317,11 +326,12 @@ invokeai
 在和脚本同级的路径中创建一个`disable_proxy.txt`文件，再次启动脚本时将禁用设置代理。
 
 >[!NOTE]  
->配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置
+>1. 配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置。
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 管理 InvokeAI Installer 设置
-运行 settings.ps1，根据提示进行设置管理和调整。
+运行`settings.ps1`，根据提示进行设置管理和调整。
 
 
 ## 运行脚本时出现中文乱码
@@ -335,6 +345,7 @@ invokeai
 
 ## 无法使用 PowerShell 运行
 运行 PowerShell 脚本时出现以下错误。
+
 ```
 .\invokeai_installer.ps1 : 无法加载文件 D:\InvokeAI\invokeai_installer.ps1。
 未对文件 D:\InvokeAI\invokeai_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
@@ -349,13 +360,17 @@ invokeai
 或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
 
 这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
+
 ```powershell
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
+或者使用[自动环境配置脚本](#使用自动环境配置脚本)解除 Windows 系统对运行 PowerShell 脚本的限制。
+
 
 ## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
 运行 InvokeAI Installer 时出现以下类似的错误。
+
 ```
 ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
     rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
@@ -363,7 +378,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
              Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
 ```
 
-这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 InvokeAI/cache/pip 文件夹删除，再重新运行 InvokeAI。
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 InvokeAI/cache/pip 文件夹删除，再重新运行 InvokeAI Installer。
 
 
 ## 运行 InvokeAI 时 InvokeAI 出现崩溃
@@ -379,7 +394,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ### 使用自动环境激活脚本
-运行 terminal.ps1 后将自动打开 PowerShell 并激活 InvokeAI Env。
+运行`terminal.ps1`后将自动打开 PowerShell 并激活 InvokeAI Env。
 
 
 ### 手动输入命令激活
