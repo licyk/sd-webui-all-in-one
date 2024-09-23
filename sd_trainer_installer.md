@@ -642,7 +642,7 @@ python kohya_gui.py `$args.ToString().Split()
 3. 
 
 ```
-Set-Location `"`$PSScriptRoot/lora-scripts/scripts`"
+Set-Location `"`$PSScriptRoot/lora-scripts/scripts/dev`"
 ```
 
 找到这行代码后将该行代码改成下面的。
@@ -655,7 +655,7 @@ Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
 
 
 ```
-Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts"
+Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts/dev"
 ```
 
 找到这行代码后将该行代码改成下面的。
