@@ -435,7 +435,8 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -453,7 +454,8 @@ function Check-InvokeAI-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -648,7 +650,8 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -666,7 +669,8 @@ function Check-InvokeAI-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -847,7 +851,8 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -865,7 +870,8 @@ function Check-InvokeAI-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -1081,7 +1087,8 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -1099,7 +1106,8 @@ function Check-InvokeAI-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -1571,13 +1579,20 @@ function Check-InvokeAI-Installer-Update {
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
-                Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                Start-Sleep -Seconds 2
+                Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                Set-Location `"`$PSScriptRoot/..`"
+                Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+                Read-Host | Out-Null
+                ./invokeai_installer.ps1
+                Set-Location `"`$PSScriptRoot`"
+                Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                Read-Host | Out-Null
+                exit 0
             } else {
+                Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
@@ -1678,7 +1693,7 @@ function Main {
         Print-Msg `"2. 进入 Python 包管理器设置`"
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 InvokeAI Installer 自动检查更新设置`"
-        Print-Msg `"5. 检查 InvokeAI Installer 管理脚本更新`"
+        Print-Msg `"5. 更新 InvokeAI Installer 管理脚本`"
         Print-Msg `"6. 检查环境完整性`"
         Print-Msg `"7. 查看 InvokeAI Installer 文档`"
         Print-Msg `"8. 退出 InvokeAI Installer 设置`"
@@ -1830,12 +1845,20 @@ function global:Check-InvokeAI-Installer-Update {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../new_version.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
-                Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                Start-Sleep -Seconds 2
+                Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                Set-Location `"`$Env:CACHE_HOME/../..`"
+                Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
+                Read-Host | Out-Null
+                ./invokeai_installer.ps1
+                Set-Location `"`$Env:CACHE_HOME/..`"
+                Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                Read-Host | Out-Null
+                exit 0
             } else {
                 Remove-Item -Path `"`$Env:CACHE_HOME/../new_version.txt`" 2> `$null
+                Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
             break
@@ -2020,18 +2043,8 @@ Reddit 社区：https://www.reddit.com/r/invokeai
 }
 
 
-# 主程序
-function Main {
-    Print-Msg "初始化中"
-    Print-Msg "InvokeAI Installer 版本: v$INVOKEAI_INSTALLER_VERSION"
-    Set-Proxy
-    Set-uv
-    Print-Msg "启动 InvokeAI 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
-    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
-    Print-Msg "即将进行安装的路径: $PSScriptRoot\InvokeAI"
-    Check-Install
-    Print-Msg "添加管理脚本和文档中"
+# 写入管理脚本和文档
+function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
     Write-InvokeAI-DB-Fix-Script
@@ -2042,10 +2055,50 @@ function Main {
     Write-InvokeAI-Installer-Settings-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
+}
+
+
+# 执行安装
+function Use-Install-Mode {
+    Set-Proxy
+    Set-uv
+    Print-Msg "启动 InvokeAI 安装程序"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "即将进行安装的路径: $PSScriptRoot\InvokeAI"
+    Check-Install
+    Print-Msg "添加管理脚本和文档中"
+    Write-Manager-Scripts
     Print-Msg "InvokeAI 安装结束, 安装路径为: $PSScriptRoot\InvokeAI"
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
     Print-Msg "退出 InvokeAI Installer"
+    Read-Host | Out-Null
+}
+
+
+# 执行管理脚本更新
+function Use-Update-Mode {
+    Print-Msg "更新管理脚本和文档中"
+    Write-Manager-Scripts
+    Print-Msg "更新管理脚本和文档完成"
+}
+
+
+# 主程序
+function Main {
+    Print-Msg "初始化中"
+    Print-Msg "InvokeAI Installer 版本: v$INVOKEAI_INSTALLER_VERSION"
+    if (Test-Path "$PSScriptRoot/InvokeAI/use_update_mode.txt") {
+        Print-Msg "使用更新模式"
+        Remove-Item -Path "$PSScriptRoot/InvokeAI/use_update_mode.txt" 2> $null
+        Remove-Item -Path "$PSScriptRoot/InvokeAI/new_version.txt" 2> $null
+        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Use-Update-Mode
+    } else {
+        Print-Msg "使用安装模式"
+        Use-Install-Mode
+    }
 }
 
 
@@ -2053,4 +2106,3 @@ function Main {
 
 
 Main
-Read-Host | Out-Null

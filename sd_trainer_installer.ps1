@@ -311,7 +311,7 @@ function Install-PyTorch {
 function Install-SD-Trainer-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts"
+    Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts/dev"
     Print-Msg "安装 SD-Trainer 内核依赖中"
     if ($USE_UV) {
         uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
@@ -520,7 +520,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -538,7 +539,8 @@ function Check-SD-Trainer-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -833,7 +835,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -851,7 +854,8 @@ function Check-SD-Trainer-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -972,7 +976,7 @@ function Main {
         Print-Msg `"更新 SD-Trainer 内核依赖中`"
         `$pytorch_ver = Get-PyTorch-Version
         Set-Pip-Extra-Index-URL-For-CUDA
-        Set-Location `"`$PSScriptRoot/lora-scripts/scripts`"
+        Set-Location `"`$PSScriptRoot/lora-scripts/scripts/dev`"
         if (`$USE_UV) {
             uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
         } else {
@@ -1209,7 +1213,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -1227,7 +1232,8 @@ function Check-SD-Trainer-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -1673,7 +1679,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
                     Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
                     Start-Sleep -Seconds 2
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
@@ -1691,7 +1698,8 @@ function Check-SD-Trainer-Installer-Update {
         }
     } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
         Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
+        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
+        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
         Start-Sleep -Seconds 2
     }
 }
@@ -2410,13 +2418,20 @@ function Check-SD-Trainer-Installer-Update {
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
             if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                Start-Sleep -Seconds 2
+                Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                Set-Location `"`$PSScriptRoot/..`"
+                Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                Read-Host | Out-Null
+                ./sd_trainer_installer.ps1
+                Set-Location `"`$PSScriptRoot`"
+                Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                Read-Host | Out-Null
+                exit 0
             } else {
+                Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
@@ -2536,7 +2551,7 @@ function Main {
         Print-Msg `"4. 进入 Github 镜像源设置`"
         Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
         Print-Msg `"6. 进入 SD-Trainer 启动参数设置`"
-        Print-Msg `"7. 检查 SD-Trainer Installer 管理脚本更新`"
+        Print-Msg `"7. 更新 SD-Trainer Installer 管理脚本`"
         Print-Msg `"8. 检查环境完整性`"
         Print-Msg `"9. 查看 SD-Trainer Installer 文档`"
         Print-Msg `"10. 退出 SD-Trainer Installer 设置`"
@@ -2713,14 +2728,21 @@ function global:Check-SD-Trainer-Installer-Update {
         Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$latest_version -gt `$Env:SD_TRAINER_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../new_version.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                Print-Msg `"更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                Start-Sleep -Seconds 2
+                Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                Set-Location `"`$Env:CACHE_HOME/../..`"
+                Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`" -Force
+                Read-Host | Out-Null
+                ./sd_trainer_installer.ps1
+                Set-Location `"`$Env:CACHE_HOME/..`"
+                Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                Read-Host | Out-Null
+                exit 0
             } else {
                 Remove-Item -Path `"`$Env:CACHE_HOME/../new_version.txt`" 2> `$null
+                Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
             break
@@ -2949,18 +2971,8 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 }
 
 
-# 主程序
-function Main {
-    Print-Msg "初始化中"
-    Print-Msg "SD-Trainer Installer 版本: v$SD_TRAINER_INSTALLER_VERSION"
-    Set-Proxy
-    Set-uv
-    Print-Msg "启动 SD-Trainer 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
-    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
-    Print-Msg "即将进行安装的路径: $PSScriptRoot\SD-Trainer"
-    Check-Install
-    Print-Msg "添加管理脚本和文档中"
+# 写入管理脚本和文档
+function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
     Write-SD-Trainer-Install-Script
@@ -2970,10 +2982,50 @@ function Main {
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
+}
+
+
+# 执行安装
+function Use-Install-Mode {
+    Set-Proxy
+    Set-uv
+    Print-Msg "启动 SD-Trainer 安装程序"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
+    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
+    Print-Msg "即将进行安装的路径: $PSScriptRoot\SD-Trainer"
+    Check-Install
+    Print-Msg "添加管理脚本和文档中"
+    Write-Manager-Scripts
     Print-Msg "SD-Trainer 安装结束, 安装路径为: $PSScriptRoot\SD-Trainer"
     Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Print-Msg "退出 SD-Trainer Installer"
+    Read-Host | Out-Null
+}
+
+
+# 执行管理脚本更新
+function Use-Update-Mode {
+    Print-Msg "更新管理脚本和文档中"
+    Write-Manager-Scripts
+    Print-Msg "更新管理脚本和文档完成"
+}
+
+
+# 主程序
+function Main {
+    Print-Msg "初始化中"
+    Print-Msg "SD-Trainer Installer 版本: v$SD_TRAINER_INSTALLER_VERSION"
+    if (Test-Path "$PSScriptRoot/SD-Trainer/use_update_mode.txt") {
+        Print-Msg "使用更新模式"
+        Remove-Item -Path "$PSScriptRoot/SD-Trainer/use_update_mode.txt" 2> $null
+        Remove-Item -Path "$PSScriptRoot/SD-Trainer/new_version.txt" 2> $null
+        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Use-Update-Mode
+    } else {
+        Print-Msg "使用安装模式"
+        Use-Install-Mode
+    }
 }
 
 
@@ -2981,4 +3033,3 @@ function Main {
 
 
 Main
-Read-Host | Out-Null
