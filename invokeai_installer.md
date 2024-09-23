@@ -23,6 +23,9 @@ _✨一键安装 InvokeAI_
   - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
   - [获取最新的 InvokeAI Installer 脚本](#获取最新的-invokeai-installer-脚本)
   - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
+    - [使用 InvokeAI Installer 配置管理器进行更新](#使用-invokeai-installer-配置管理器进行更新)
+    - [手动运行 InvokeAI Installer 进行更新](#手动运行-invokeai-installer-进行更新)
+    - [使用命令更新](#使用命令更新)
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 InvokeAI 中文](#设置-invokeai-中文)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
@@ -156,7 +159,22 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 更新 InvokeAI 管理脚本
-InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行`get_invokeai_installer.ps1`获取最新的 InvokeAI Installer 后，返回上一个目录并运行`invokeai_installer.ps1`。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
+InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
+
+可选择下方 3 种方法中的其中 1 个方法进行更新。
+
+
+### 使用 InvokeAI Installer 配置管理器进行更新
+运行`settings.ps1`，选择`更新 InvokeAI Installer 管理脚本`功能进行更新，更新完成后需关闭 InvokeAI Installer 管理脚本以应用更新。
+
+
+### 手动运行 InvokeAI Installer 进行更新
+运行`get_invokeai_installer.ps1`获取最新的 InvokeAI Installer 后，返回上一个目录并运行`invokeai_installer.ps1`。InvokeAI Installer 在安装过程无报错并完整的运行所有安装流程后，InvokeAI 的管理脚本将会得到更新。
+
+
+### 使用命令更新
+参考[命令的使用](#命令的使用)的方法进入 InvokeAI Env，并运行`Check-InvokeAI-Installer-Update`命令进行更新。
+
 
 如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 InvokeAI Installer 更新检查。
 

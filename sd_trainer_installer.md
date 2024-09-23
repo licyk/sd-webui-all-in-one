@@ -37,6 +37,9 @@ _✨一键安装 SD-Trainer_
   - [卸载 SD-Trainer](#卸载-sd-trainer)
   - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
   - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+    - [使用 SD-Trainer Installer 配置管理器进行更新](#使用-sd-trainer-installer-配置管理器进行更新)
+    - [手动运行 SD-Trainer Installer 进行更新](#手动运行-sd-trainer-installer-进行更新)
+    - [使用命令更新](#使用命令更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
@@ -360,7 +363,22 @@ Fri Jun  7 19:07:00 2024
 
 
 ## 更新 SD-Trainer 管理脚本
-SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。运行`get_sd_trainer_installer.ps1`获取最新的 SD-Trainer Installer 后，返回上一个目录并运行`sd_trainer_installer.ps1`。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
+
+可选择下方 3 种方法中的其中 1 个方法进行更新。
+
+
+### 使用 SD-Trainer Installer 配置管理器进行更新
+运行`settings.ps1`，选择`更新 SD-Trainer Installer 管理脚本`功能进行更新，更新完成后需关闭 SD-Trainer Installer 管理脚本以应用更新。
+
+
+### 手动运行 SD-Trainer Installer 进行更新
+运行`get_sd_trainer_installer.ps1`获取最新的 SD-Trainer Installer 后，返回上一个目录并运行`sd_trainer_installer.ps1`。SD-Trainer Installer 在安装过程无报错并完整的运行所有安装流程后，SD-Trainer 的管理脚本将会得到更新。
+
+
+### 使用命令更新
+参考[命令的使用](#命令的使用)的方法进入 SD-Trainer Env，并运行`Check-SD-Trainer-Installer-Update`命令进行更新。
+
 
 如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 SD-Trainer Installer 更新检查。
 
