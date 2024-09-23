@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 112
+$SD_TRAINER_INSTALLER_VERSION = 113
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -41,6 +41,7 @@ $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
 $Env:PYTHONUTF8 = 1
@@ -272,7 +273,7 @@ function Install-PyTorch {
         if ($USE_UV) {
             uv pip install $PYTORCH_VER.ToString().Split() --find-links $PIP_FIND_MIRROR
         } else {
-            python -m pip install $PYTORCH_VER.ToString().Split() --no-warn-script-location
+            python -m pip install $PYTORCH_VER.ToString().Split()
         }
         if ($?) {
             Print-Msg "PyTorch 安装成功"
@@ -292,7 +293,7 @@ function Install-PyTorch {
         if ($USE_UV) {
             uv pip install $XFORMERS_VER --no-deps --find-links $PIP_FIND_MIRROR
         } else {
-            python -m pip install $XFORMERS_VER --no-deps --no-warn-script-location
+            python -m pip install $XFORMERS_VER --no-deps
         }
         if ($?) {
             Print-Msg "xFormers 安装成功"
@@ -316,7 +317,7 @@ function Install-SD-Trainer-Dependence {
     if ($USE_UV) {
         uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
     } else {
-        python -m pip install -r requirements.txt --no-warn-script-location
+        python -m pip install -r requirements.txt
     }
     if ($?) {
         Print-Msg "SD-Trainer 内核依赖安装成功"
@@ -332,7 +333,7 @@ function Install-SD-Trainer-Dependence {
     if ($USE_UV) {
         uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
     } else {
-        python -m pip install -r requirements.txt --no-warn-script-location
+        python -m pip install -r requirements.txt
     }
     if ($?) {
         Print-Msg "SD-Trainer 依赖安装成功"
@@ -424,6 +425,7 @@ function Write-Launch-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -675,6 +677,7 @@ function Write-Update-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -980,7 +983,7 @@ function Main {
         if (`$USE_UV) {
             uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
+            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
         }
         if (`$?) {
             Print-Msg `"SD-Trainer 内核依赖更新成功`"
@@ -996,7 +999,7 @@ function Main {
         if (`$USE_UV) {
             uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location
+            python -m pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
         }
         if (`$?) {
             Print-Msg `"SD-Trainer 依赖更新成功`"
@@ -1150,6 +1153,7 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -1540,7 +1544,7 @@ function Main {
         if (`$USE_UV) {
             uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg `$pip_find_links_arg.ToString().Split()
         } else {
-            python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg --no-warn-script-location
+            python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
         }
         if (`$?) {
             Print-Msg `"安装 PyTorch 成功`"
@@ -1555,7 +1559,7 @@ function Main {
             if (`$USE_UV) {
                 uv pip install `$xformers_ver `$force_reinstall_arg --no-deps `$pip_find_links_arg.ToString().Split()
             } else {
-                python -m pip install `$xformers_ver `$force_reinstall_arg --no-deps --no-warn-script-location
+                python -m pip install `$xformers_ver `$force_reinstall_arg --no-deps
             }
             if (`$?) {
                 Print-Msg `"安装 xFormers 成功`"
@@ -1616,6 +1620,7 @@ function Write-Download-Model-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -1994,6 +1999,7 @@ function Write-SD-Trainer-Installer-Settings-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -2424,7 +2430,6 @@ function Check-SD-Trainer-Installer-Update {
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                 Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                Read-Host | Out-Null
                 ./sd_trainer_installer.ps1
                 Set-Location `"`$PSScriptRoot`"
                 Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
@@ -2654,6 +2659,7 @@ function Write-Env-Activate-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -2734,7 +2740,6 @@ function global:Check-SD-Trainer-Installer-Update {
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                 Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`" -Force
-                Read-Host | Out-Null
                 ./sd_trainer_installer.ps1
                 Set-Location `"`$Env:CACHE_HOME/..`"
                 Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"

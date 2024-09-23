@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 112
+$INVOKEAI_INSTALLER_VERSION = 113
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -21,6 +21,7 @@ $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
 $Env:PYTHONUTF8 = 1
@@ -122,7 +123,7 @@ function Install-Pip {
     if ($?) { # 检测是否下载成功
         # 执行 get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
-        python "$PSScriptRoot/InvokeAI/cache/get-pip.py" --no-warn-script-location
+        python "$PSScriptRoot/InvokeAI/cache/get-pip.py"
         if ($?) { # 检测是否安装成功
             Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
             Print-Msg "Pip 安装成功"
@@ -162,7 +163,7 @@ function Install-InvokeAI {
     if ($USE_UV) {
         uv pip install InvokeAI --no-deps --find-links $PIP_FIND_MIRROR
     } else {
-        python -m pip install InvokeAI --no-deps --no-warn-script-location --use-pep517
+        python -m pip install InvokeAI --no-deps --use-pep517
     }
     if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
@@ -199,7 +200,7 @@ print(f'{torch_ver}+cu118 {torchvision_ver}+cu118 {xformers_ver}+cu118')
     if ($USE_UV) {
         uv pip install "InvokeAI[xformers]" $requirements.ToString().Split() --find-links $PIP_FIND_MIRROR
     } else {
-        python -m pip install "InvokeAI[xformers]" $requirements.ToString().Split() --no-warn-script-location --use-pep517
+        python -m pip install "InvokeAI[xformers]" $requirements.ToString().Split() --use-pep517
     }
     if ($?) {
         Print-Msg "InvokeAI 依赖安装成功"
@@ -371,6 +372,7 @@ function Write-Launch-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -561,6 +563,7 @@ function Write-Update-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -721,7 +724,7 @@ function Main {
     if (`$USE_UV) {
         uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
     } else {
-        python -m pip install InvokeAI --upgrade --no-deps --no-warn-script-location --use-pep517
+        python -m pip install InvokeAI --upgrade --no-deps --use-pep517
     }
 
     if (`$?) {
@@ -731,7 +734,7 @@ function Main {
         if (`$USE_UV) {
             uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --no-warn-script-location --use-pep517
+            python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
         }
         if (`$?) {
             if (`$ver -eq `$ver_) {
@@ -787,6 +790,7 @@ function Write-InvokeAI-DB-Fix-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -998,6 +1002,7 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -1142,7 +1147,7 @@ function Main {
         if (`$USE_UV) {
             uv pip install `$pytorch_ver.ToString().Split() --find-links `"`$PIP_FIND_MIRROR`"
         } else {
-            python -m pip install `$pytorch_ver.ToString().Split() --no-warn-script-location --use-pep517
+            python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
         }
         if (`$?) {
             Print-Msg `"重新安装 PyTorch 成功`"
@@ -1270,6 +1275,7 @@ function Write-InvokeAI-Installer-Settings-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -1579,13 +1585,12 @@ function Check-InvokeAI-Installer-Update {
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
+            if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                 Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                Read-Host | Out-Null
                 ./invokeai_installer.ps1
                 Set-Location `"`$PSScriptRoot`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
@@ -1784,6 +1789,7 @@ function Write-Env-Activate-Script {
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
 `$Env:PYTHONUTF8 = 1
@@ -1850,7 +1856,6 @@ function global:Check-InvokeAI-Installer-Update {
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                 Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
-                Read-Host | Out-Null
                 ./invokeai_installer.ps1
                 Set-Location `"`$Env:CACHE_HOME/..`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
