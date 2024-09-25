@@ -244,9 +244,10 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 
 ## InvokeAI 的使用方法
 推荐下面的教程：  
-- [给所有想学习AI辅助绘画的人的入门课](https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140)
-- [InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI)
+- [给所有想学习AI辅助绘画的人的入门课（基于 InvokeAI 3.7.0）](https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140)
+- [InvokeAI 官方入门教程（基于 InvokeAI 5.x）](https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO)
 - [InvokeAI 官方视频教程](https://www.youtube.com/@invokeai)
+- [InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI)
 - [Reddit 社区](https://www.reddit.com/r/invokeai)
 
 除了上面的教程，也可以通过 Google 等平台搜索教程。
