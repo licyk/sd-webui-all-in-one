@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 116
+$INVOKEAI_INSTALLER_VERSION = 117
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -515,19 +515,41 @@ function Set-HuggingFace-Mirror {
 }
 
 
+# 获取 InvokeAI 的网页端口
+function Get-InvokeAI-Launch-Port {
+    `$port = `"9090`"
+    if (!(Test-Path `"`$PSScriptRoot/invokeai/invokeai.yaml`")) {
+        return `$port
+    }
+
+    Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
+        `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
+        foreach (`$match in `$matches) {
+            `$key = `$match.Groups[1].Value
+            `$value = `$match.Groups[2].Value
+            if ((`$key -eq `"port`") -and (!(`$match.Groups[0].Value -eq `"`"))) {
+                `$port = `$value
+                break
+            }
+        }
+    }
+    return `$port
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     Check-InvokeAI-Installer-Update
-
-    Print-Msg `"将使用浏览器打开 http://127.0.0.1:9090 地址, 进入 InvokeAI 的界面`"
+    `$port = Get-InvokeAI-Launch-Port
+    Print-Msg `"将使用浏览器打开 http://127.0.0.1:`$port 地址, 进入 InvokeAI 的界面`"
     Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
     Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
     Start-Sleep -Seconds 2
     Print-Msg `"调用浏览器打开地址中`"
-    Start-Process `"http://127.0.0.1:9090`"
+    Start-Process `"http://127.0.0.1:`$port`"
     Print-Msg `"启动 InvokeAI 中`"
     invokeai-web --root `"`$PSScriptRoot/invokeai`"
     `$req = `$?
