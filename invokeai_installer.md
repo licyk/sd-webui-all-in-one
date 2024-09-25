@@ -208,13 +208,16 @@ $ tree -L 2
 │   ├── python                      # Python 目录
 │   ├── reinstall_pytorch.ps1       # 重装 PyTorch 脚本
 │   ├── settings.ps1                # 管理 InvokeAI Installer 设置的脚本
-│   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
+│   ├── terminal.ps1                # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
 │   └── update.ps1                  # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1          # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
 
 7 directories, 8 files
 ```
+
+>[!WARNING]  
+>`InvokeAI`文件夹的名称切勿修改，修改后将导致 InvokeAI Installer 更新管理脚本时出现异常。
 
 
 ## 设置 InvokeAI 中文

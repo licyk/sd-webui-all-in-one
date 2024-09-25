@@ -202,6 +202,9 @@ $ tree -L 2
 8 directories, 9 files
 ```
 
+>[!WARNING]  
+>`SD-Trainer`文件夹的名称切勿修改，修改后将导致 SD-Trainer Installer 更新管理脚本时出现异常。
+
 
 ## 设置 HuggingFace 镜像
 SD-Trainer Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建`hf_mirror.txt`文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
