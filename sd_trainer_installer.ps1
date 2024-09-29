@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 117
+$SD_TRAINER_INSTALLER_VERSION = 118
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -95,14 +95,14 @@ function Set-uv {
         Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         Print-Msg "Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢"
         Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败"
-        Print-Msg "更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
+        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
         Print-Msg "uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败"
         Print-Msg "如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer"
         Print-Msg "也可以在当前的目录创建一个 disable_uv.txt 文件, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度"
-        Print-Msg "更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
+        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $true
     }
 }
@@ -527,8 +527,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
-                    `$arg = Read-Host `"=========================================>`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -863,8 +863,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
-                    `$arg = Read-Host `"=========================================>`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -916,14 +916,14 @@ function Set-uv {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
         Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
         Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
         Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$true
     }
 }
@@ -1269,8 +1269,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
-                    `$arg = Read-Host `"=========================================>`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -1322,14 +1322,14 @@ function Set-uv {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
         Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
         Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
         Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$true
     }
 }
@@ -1763,8 +1763,8 @@ function Check-SD-Trainer-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
-                    `$arg = Read-Host `"=========================================>`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf

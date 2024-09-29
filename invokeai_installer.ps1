@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 119
+$INVOKEAI_INSTALLER_VERSION = 120
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -74,14 +74,14 @@ function Set-uv {
         Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         Print-Msg "Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢"
         Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败"
-        Print-Msg "更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
+        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
         Print-Msg "uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败"
         Print-Msg "如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer"
         Print-Msg "也可以在当前的目录创建一个 disable_uv.txt 文件, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度"
-        Print-Msg "更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
+        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $true
     }
 }
@@ -456,7 +456,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
@@ -728,7 +728,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
@@ -802,14 +802,14 @@ function Set-uv {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
         Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
         Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
         Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$true
     }
 }
@@ -866,166 +866,6 @@ Read-Host | Out-Null
         Print-Msg "生成 update.ps1 中"
     }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update.ps1" -Value $content
-}
-
-
-# 数据库修复
-function Write-InvokeAI-DB-Fix-Script {
-    $content = "
-# InvokeAI Installer 版本和检查更新间隔
-`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-
-
-
-# 消息输出
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
-}
-
-
-# InvokeAI Installer 更新检测
-function Check-InvokeAI-Installer-Update {
-    # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
-    `$i = 0
-
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
-
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 InvokeAI Installer 的自动检查更新功能`"
-        return
-    }
-
-    # 获取更新时间间隔
-    try {
-        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
-        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    catch {
-        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    finally {
-        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
-        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
-    }
-
-    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
-        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 InvokeAI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
-                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
-                    `$arg = Read-Host `"=========================================>`"
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                            Print-Msg `"终止 InvokeAI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
-                        Set-Location `"`$PSScriptRoot/..`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        ./invokeai_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
-                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                        Print-Msg `"跳过 InvokeAI Installer 更新`"
-                    }
-                } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                    Print-Msg `"InvokeAI Installer 已是最新版本`"
-                }
-                break
-            } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 InvokeAI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 InvokeAI Installer 更新失败`"
-                }
-            }
-        }
-    }
-}
-
-
-function Main {
-    Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
-    Check-InvokeAI-Installer-Update
-
-    Print-Msg `"修复 InvokeAI 数据库中`"
-    invokeai-db-maintenance --operation all --root `"`$PSScriptRoot/invokeai`"
-    Print-Msg `"修复 InvokeAI 数据库完成`"
-}
-
-###################
-
-Main
-Read-Host | Out-Null
-"
-
-    if (Test-Path "$PSScriptRoot/InvokeAI/fix_db.ps1") {
-        Print-Msg "更新 fix_db.ps1 中"
-    } else {
-        Print-Msg "生成 fix_db.ps1 中"
-    }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/fix_db.ps1" -Value $content
 }
 
 
@@ -1214,7 +1054,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
@@ -1267,14 +1107,14 @@ function Set-uv {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
         Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
         Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
         Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$true
     }
 }
@@ -2224,7 +2064,6 @@ Reddit 社区：https://www.reddit.com/r/invokeai
 function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
-    Write-InvokeAI-DB-Fix-Script
     Write-InvokeAI-Install-Script
     Write-Env-Activate-Script
     Write-PyTorch-ReInstall-Script
