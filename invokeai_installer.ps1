@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 117
+$INVOKEAI_INSTALLER_VERSION = 118
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -358,7 +358,6 @@ function Check-Install {
     Get-Model-Config-File
 
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
-    Remove-Item -Path "$PSScriptRoot/InvokeAI/new_version.txt" 2> $null
 }
 
 
@@ -447,15 +446,40 @@ function Check-InvokeAI-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                            Print-Msg `"终止 InvokeAI Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+                        ./invokeai_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 InvokeAI Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -468,11 +492,6 @@ function Check-InvokeAI-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -699,15 +718,40 @@ function Check-InvokeAI-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                            Print-Msg `"终止 InvokeAI Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+                        ./invokeai_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 InvokeAI Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -720,11 +764,6 @@ function Check-InvokeAI-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -901,15 +940,40 @@ function Check-InvokeAI-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                            Print-Msg `"终止 InvokeAI Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+                        ./invokeai_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 InvokeAI Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -922,11 +986,6 @@ function Check-InvokeAI-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -1138,15 +1197,40 @@ function Check-InvokeAI-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"InvokeAI Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                            Print-Msg `"终止 InvokeAI Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
+                        ./invokeai_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 InvokeAI Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -1159,11 +1243,6 @@ function Check-InvokeAI-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"InvokeAI Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 InvokeAI Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E6%9B%B4%E6%96%B0-invokeai-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -1639,6 +1718,17 @@ function Check-InvokeAI-Installer-Update {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                    Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                    Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                    Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                    Print-Msg `"终止 InvokeAI Installer 的更新`"
+                    return
+                }
                 Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
                 ./invokeai_installer.ps1
@@ -1648,7 +1738,6 @@ function Check-InvokeAI-Installer-Update {
                 exit 0
             } else {
                 Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
@@ -1900,11 +1989,21 @@ function global:Check-InvokeAI-Installer-Update {
         Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
                 New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                `$folder_name = Split-Path `$Env:CACHE_HOME/.. -Leaf
+                if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../update_time.txt`" 2> `$null
+                    Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                    Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                    Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
+                    Print-Msg `"终止 InvokeAI Installer 的更新`"
+                    return
+                }
                 Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
                 ./invokeai_installer.ps1
@@ -1913,7 +2012,6 @@ function global:Check-InvokeAI-Installer-Update {
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/../new_version.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
@@ -2150,7 +2248,6 @@ function Main {
     if (Test-Path "$PSScriptRoot/InvokeAI/use_update_mode.txt") {
         Print-Msg "使用更新模式"
         Remove-Item -Path "$PSScriptRoot/InvokeAI/use_update_mode.txt" 2> $null
-        Remove-Item -Path "$PSScriptRoot/InvokeAI/new_version.txt" 2> $null
         Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {

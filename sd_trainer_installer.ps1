@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 115
+$SD_TRAINER_INSTALLER_VERSION = 116
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -518,15 +518,40 @@ function Check-SD-Trainer-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                            Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                        ./sd_trainer_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 SD-Trainer Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -539,11 +564,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -834,15 +854,40 @@ function Check-SD-Trainer-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                            Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                        ./sd_trainer_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 SD-Trainer Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -855,11 +900,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -1213,15 +1253,40 @@ function Check-SD-Trainer-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                            Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                        ./sd_trainer_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 SD-Trainer Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1234,11 +1299,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -1680,15 +1740,40 @@ function Check-SD-Trainer-Installer-Update {
             Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/new_version.txt`" -Force > `$null
-                    Print-Msg `"SD-Trainer Installer 有新版本可用`"
-                    Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-                    Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-                    Start-Sleep -Seconds 2
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 或 no 回车`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                            Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Set-Location `"`$PSScriptRoot/..`"
+                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                        ./sd_trainer_installer.ps1
+                        Set-Location `"`$PSScriptRoot`"
+                        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 SD-Trainer Installer 更新`"
+                    }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/new_version.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1701,11 +1786,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    } elseif (Test-Path `"`$PSScriptRoot/new_version.txt`") {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"运行 settings.ps1 并选择 更新 SD-Trainer Installer 管理脚本 功能进行更新`"
-        Print-Msg `"详细的更新方法可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E6%9B%B4%E6%96%B0-sd-trainer-%E7%AE%A1%E7%90%86%E8%84%9A%E6%9C%AC`"
-        Start-Sleep -Seconds 2
     }
 }
 
@@ -2434,11 +2514,22 @@ function Check-SD-Trainer-Installer-Update {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                    Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                    Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                    Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                    return
+                }
                 Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
                 ./sd_trainer_installer.ps1
                 Set-Location `"`$PSScriptRoot`"
-                Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
@@ -2745,11 +2836,22 @@ function global:Check-SD-Trainer-Installer-Update {
                 New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                `$folder_name = Split-Path `$Env:CACHE_HOME/.. -Leaf
+                if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:CACHE_HOME/../update_time.txt`" 2> `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                    Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                    Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                    Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                    return
+                }
                 Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`" -Force
                 ./sd_trainer_installer.ps1
                 Set-Location `"`$Env:CACHE_HOME/..`"
-                Print-Msg `"更新结束, 需重新启动 SD-trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
