@@ -37,6 +37,7 @@ _✨一键安装 SD-Trainer_
   - [卸载 SD-Trainer](#卸载-sd-trainer)
   - [移动 SD-Trainer 的路径](#移动-sd-trainer-的路径)
   - [更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
+    - [直接更新](#直接更新)
     - [使用 SD-Trainer Installer 配置管理器进行更新](#使用-sd-trainer-installer-配置管理器进行更新)
     - [手动运行 SD-Trainer Installer 进行更新](#手动运行-sd-trainer-installer-进行更新)
     - [使用命令更新](#使用命令更新)
@@ -371,7 +372,11 @@ Fri Jun  7 19:07:00 2024
 ## 更新 SD-Trainer 管理脚本
 SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
 
-可选择下方 3 种方法中的其中 1 个方法进行更新。
+可选择下方 4 种方法中的其中 1 个方法进行更新。
+
+
+### 直接更新
+当检测到有新版的 SD-Trainer Installer 时，将询问是否进行更新，输入`y`并回车后将运行 SD-Trainer Installer 进行更新。
 
 
 ### 使用 SD-Trainer Installer 配置管理器进行更新

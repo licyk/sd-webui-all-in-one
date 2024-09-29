@@ -23,6 +23,7 @@ _✨一键安装 InvokeAI_
   - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
   - [获取最新的 InvokeAI Installer 脚本](#获取最新的-invokeai-installer-脚本)
   - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
+    - [直接更新](#直接更新)
     - [使用 InvokeAI Installer 配置管理器进行更新](#使用-invokeai-installer-配置管理器进行更新)
     - [手动运行 InvokeAI Installer 进行更新](#手动运行-invokeai-installer-进行更新)
     - [使用命令更新](#使用命令更新)
@@ -164,7 +165,11 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ## 更新 InvokeAI 管理脚本
 InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
 
-可选择下方 3 种方法中的其中 1 个方法进行更新。
+可选择下方 4 种方法中的其中 1 个方法进行更新。
+
+
+### 直接更新
+当检测到有新版的 InvokeAI Installer 时，将询问是否进行更新，输入`y`并回车后将运行 InvokeAI Installer 进行更新。
 
 
 ### 使用 InvokeAI Installer 配置管理器进行更新
