@@ -548,24 +548,28 @@ python -m pip cache purge
 
 - 安装某个 Pip 软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名 
 python -m pip install <package_name>
 ```
 
 
 - 更新某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> -U
 ```
 
 
 - 重装某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> --force-reinstall
 ```
 
 
 - 卸载某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip uninstall <package_name>
 ```
 
@@ -574,7 +578,8 @@ python -m pip uninstall <package_name>
 
 
 - 使用 uv 安装软件包
-```
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 uv pip install <package_name>
 ```
 >[!NOTE]  
@@ -589,13 +594,15 @@ git pull --recurse-submodules
 
 - 运行某个 Python 脚本
 ```powershell
+# 命令中的 <python_script.py> 替换成要执行的 Python 脚本路径
 python <python_script.py>
 ```
 
 
 - 下载文件
 ```powershell
-aria2c <url> -c -x <thread_count> -d <dir> -o <output_file_name>
+# 命令中的 <url> 替换成下载链接，<dir> 替换成下载到的路径，<output_file_name> 替换成保存的文件名
+aria2c <url> -c -s 16 -x 16 -d <dir> -o <output_file_name>
 ```
 
 
@@ -620,6 +627,49 @@ List-CMD
 - 检查 SD-Trainer Installer 更新
 ```powershell
 Check-SD-Trainer-Installer-Update
+```
+
+- 查看并切换 SD-Trainer 的版本
+```powershell
+# 列出当前的所有版本
+git -C lora-scripts tag
+# 运行该命令后将进入 Git 的交互式界面
+# 使用 u 键上翻， d 键下翻，或者使用方向键翻页，使用 q 键退出
+# 一般 git tag 命令将列出下面类似的输出
+# v0.1.0
+# v0.2.0
+# v1.1.0
+# v1.4.0
+# v1.6.0
+# v1.7.0
+# v1.7.3
+# ...
+# 这是使用 Git Tag 标记的版本，可以使用 Tag 作为版本号进行切换
+
+# 使用 Tag 切换版本
+# 命令中的 <Git Tag> 替换成对应的 Tag
+git -C lora-scripts reset --hard --recurse-submodules <Git Tag>
+
+# 使用 git log 查看某个提交信息对应的 Hash 值
+git -C lora-scripts log
+# 这将得到类似的输出信息
+# commit 9aace3e94c2c41a44e3df403329abd0518467bf5 (HEAD -> main, tag: v1.9.0)
+# Author: Akegarasu <akiba@anzu.link>
+# Date:   Sat Aug 31 22:32:52 2024 +0800
+#
+#     add vae_batch_size
+#
+# commit 931392e3c90aab20473175c9196d70fcfe039491
+# Author: Akegarasu <akiba@anzu.link>
+# Date:   Sat Aug 31 22:31:04 2024 +0800
+#
+#     tagger
+#
+# commit 后面对应的字符串为该提交信息对应的 Hash 值
+
+# 可以使用该 Hash 切换版本
+# 命令中的 <Git Commit Hash> 替换成对应的 Hash 值
+git -C lora-scripts reset --hard --recurse-submodules <Git Commit Hash>
 ```
 
 

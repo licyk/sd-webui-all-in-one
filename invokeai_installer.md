@@ -466,24 +466,28 @@ python -m pip cache purge
 
 - 安装某个 Pip 软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name>
 ```
 
 
 - 更新某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> -U
 ```
 
 
 - 重装某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> --force-reinstall
 ```
 
 
 - 卸载某个软件包
 ```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip uninstall <package_name>
 ```
 
@@ -500,7 +504,8 @@ python -m pip install controlnet_aux
 
 
 - 使用 uv 安装软件包
-```
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
 uv pip install <package_name>
 ```
 >[!NOTE]  
@@ -522,4 +527,21 @@ List-CMD
 - 检查 InvokeAI Installer 更新
 ```powershell
 Check-InvokeAI-Installer-Update
+```
+
+- 查看可用的 InvokeAI 版本并切换
+```powershell
+# 查询 PyPI 上 InvokeAI 可用的版本
+python -m pip index versions invokeai
+# 运行后将会输出所有可用的版本和已安装的版本
+# WARNING: pip index is currently an experimental command. It may be removed/changed in a future release without prior warning.
+# WARNING: Skipping page https://mirror.baidu.com/pypi/simple/invokeai/ because the GET request got Content-Type: application/octet-stream. The only supported Content-Types are application/vnd.pypi.simple.v1+json, application/vnd.pypi.simple.v1+html, and text/html
+# invokeai (5.0.0)
+# Available versions: 5.0.0, 4.2.9, 4.2.8, 4.2.7.post1, 4.2.7, 4.2.6.post1, 4.2.6, 4.2.5, 4.2.4, 4.2.3, 4.2.2.post1, 4.2.2, 4.2.1, 4.2.0, 4.1.0, 4.0.4, 4.0.3, 4.0.2, 4.0.1, 4.0.0, 3.7.0, 3.6.3, 3.6.2, 3.6.1, 3.6.0, 3.5.1, 3.5.0, 3.4.0.post2, 3.4.0.post1, 3.4.0, 3.3.0.post3, 3.3.0.post2, 3.3.0.post1, 3.3.0, 3.2.0, 3.1.1, 3.1.0, 3.0.2.post1, 3.0.2, 3.0.1.post3, 3.0.1.post2, 3.0.1.post1, 3.0.1, 3.0.0, 2.3.5.post2, 2.3.5.post1, 2.3.5, 2.3.4.post1, 2.3.4, 2.3.3, 2.3.2.post1, 2.3.2, 2.3.1.post2, 2.3.1.post1, 2.3.1, 2.3.0, 2.2.5, 2.2.4.7, 2.2.4.6, 2.2.4.5
+#   INSTALLED: 4.2.9
+#   LATEST:    5.0.0
+
+# 切换到指定的版本
+# 命令中的 <Version> 替换成要切换的版本
+python -m pip install invokeai==<Version>
 ```
