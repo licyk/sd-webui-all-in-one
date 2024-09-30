@@ -19,7 +19,6 @@ _✨一键安装 InvokeAI_
 - [使用](#使用)
   - [启动 InvokeAI](#启动-invokeai)
   - [更新 InvokeAI](#更新-invokeai)
-  - [修复 InvokeAI 图库出现无效图片](#修复-invokeai-图库出现无效图片)
   - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
   - [获取最新的 InvokeAI Installer 脚本](#获取最新的-invokeai-installer-脚本)
   - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
@@ -141,10 +140,6 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 运行 update.ps1 脚本，如果遇到更新 InvokeAI 失败的情况可尝试重新运行`update.ps1`脚本。
 
 
-## 修复 InvokeAI 图库出现无效图片
-在 InvokeAI 的图片保存目录删除图片后，会发现 InvokeAI 的图库中图片还存在，并且显示损坏，无法查看，可以运行`fix_db.ps1`进行修复。
-
-
 ## 进入 InvokeAI 所在的 Python 环境
 如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的 python 文件夹添加到环境变量，这将会导致不良的后果产生。  
 正确的方法是在 InvokeAI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 InvokeAI Env：
@@ -208,7 +203,6 @@ $ tree -L 2
 │   ├── activate.ps1                # 进入 InvokeAI Env 的脚本
 │   ├── cache                       # 缓存文件夹
 │   ├── download_config.ps1         # 下载模型配置文件脚本
-│   ├── fix_db.ps1                  # 修复 InvokeAI 数据库的脚本
 │   ├── get_invokeai_installer.ps1  # 获取最新的 InvokeAI Installer 的脚本
 │   ├── help.txt                    # 帮助文档
 │   ├── invokeai                    # InvokeAI 生成的图片 / 模型 / 工作流 / 配置文件路径

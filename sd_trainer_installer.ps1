@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 118
+$SD_TRAINER_INSTALLER_VERSION = 119
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -94,7 +94,7 @@ function Set-uv {
     if (Test-Path "$PSScriptRoot/disable_uv.txt") {
         Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         Print-Msg "Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢"
-        Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败"
+        Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败"
         Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $false
     } else {
@@ -915,7 +915,7 @@ function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
+        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
         Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
@@ -1321,7 +1321,7 @@ function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
+        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
         Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
@@ -1843,18 +1843,19 @@ function Main {
 - 17、heartOfAppleXL_v20 (SDXL)
 - 18、heartOfAppleXL_v30 (SDXL)
 - 19、Illustrious-XL-v0.1 (SDXL)
-- 20、flux1-schnell (FLUX.1)
-- 21、flux1-schnell-fp8 (FLUX.1)
-- 22、flux1-dev (FLUX.1)
-- 23、flux1-dev-fp8 (FLUX.1)
-- 24、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 25、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 26、sdxl_fp16_fix_vae (SDXL VAE)
-- 27、sdxl_vae (SDXL VAE)
-- 28、ae (FLUX.1 VAE)
-- 29、clip_l (FLUX.1 CLIP)
-- 30、t5xxl_fp16 (FLUX.1 CLIP)
-- 31、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
+- 20、Illustrious-XL-v0.1-GUIDED (SDXL)
+- 21、flux1-schnell (FLUX.1)
+- 22、flux1-schnell-fp8 (FLUX.1)
+- 23、flux1-dev (FLUX.1)
+- 24、flux1-dev-fp8 (FLUX.1)
+- 25、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 26、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 27、sdxl_fp16_fix_vae (SDXL VAE)
+- 28、sdxl_vae (SDXL VAE)
+- 29、ae (FLUX.1 VAE)
+- 30、clip_l (FLUX.1 CLIP)
+- 31、t5xxl_fp16 (FLUX.1 CLIP)
+- 32、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
 
 关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
@@ -1962,61 +1963,66 @@ function Main {
                 `$go_to = 1
             }
             20 {
+                `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`"
+                `$model_name = `"Illustrious-XL-v0.1-GUIDED.safetensors`"
+                `$go_to = 1
+            }
+            21 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
                 `$model_name = `"flux1-schnell.safetensors`"
                 `$go_to = 1
             }
-            21 {
+            22 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`"
                 `$model_name = `"flux1-schnell-fp8.safetensors`"
                 `$go_to = 1
             }
-            22 {
+            23 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
                 `$model_name = `"flux1-dev.safetensors`"
                 `$go_to = 1
             }
-            23 {
+            24 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`"
                 `$model_name = `"flux1-dev-fp8.safetensors`"
                 `$go_to = 1
             }
-            24 {
+            25 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
                 `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
-            25 {
+            26 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
                 `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
-            26 {
+            27 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
                 `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
                 `$go_to = 1
             }
-            27 {
+            28 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
                 `$model_name = `"sdxl_vae.safetensors`"
                 `$go_to = 1
             }
-            28 {
+            29 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
                 `$model_name = `"ae.safetensors`"
                 `$go_to = 1
             }
-            29 {
+            30 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
                 `$model_name = `"clip_l.safetensors`"
                 `$go_to = 1
             }
-            30 {
+            31 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`"
                 `$model_name = `"t5xxl_fp16.safetensors`"
                 `$go_to = 1
             }
-            31 {
+            32 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`"
                 `$model_name = `"t5xxl_fp8_e4m3fn.safetensors`"
                 `$go_to = 1

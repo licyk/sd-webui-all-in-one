@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 120
+$INVOKEAI_INSTALLER_VERSION = 121
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -73,7 +73,7 @@ function Set-uv {
     if (Test-Path "$PSScriptRoot/disable_uv.txt") {
         Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         Print-Msg "Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢"
-        Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败"
+        Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败"
         Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $false
     } else {
@@ -801,7 +801,7 @@ function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
+        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
         Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
@@ -1106,7 +1106,7 @@ function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安卓失败`"
+        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
         Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
@@ -2010,7 +2010,6 @@ activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后�
 get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 launch.ps1：启动 InvokeAI 的脚本。
-fix_db.ps1：修复 InvokeAI 数据库脚本，解决删除 InvokeAI 的图片后在界面中出现无效图片的问题。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
 download_config.ps1：下载模型配置文件，当删除 invokeai 文件夹后，InvokeAI 将重新下载模型配置文件，但在无代理的情况下可能下载失败，所以可以通过该脚本进行下载。
 settings.ps1：管理 InvokeAI Installer 的设置。
