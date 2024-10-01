@@ -52,7 +52,22 @@ _✨一键安装 InvokeAI_
   - [命令的使用](#命令的使用)
     - [使用自动环境激活脚本](#使用自动环境激活脚本)
     - [手动输入命令激活](#手动输入命令激活)
-    - [常用命令](#常用命令)
+  - [常用命令](#常用命令)
+    - [启动 InvokeAI](#启动-invokeai-1)
+    - [查看 InvokeAI 的版本](#查看-invokeai-的版本)
+    - [修复 InvokeAI 数据库](#修复-invokeai-数据库)
+    - [从旧版 InvokeAI 导入图片到新版的 InvokeAI](#从旧版-invokeai-导入图片到新版的-invokeai)
+    - [清理安装时产生的 Pip 缓存](#清理安装时产生的-pip-缓存)
+    - [安装某个 Pip 软件包](#安装某个-pip-软件包)
+    - [更新某个软件包](#更新某个软件包)
+    - [重装某个软件包](#重装某个软件包)
+    - [卸载某个软件包](#卸载某个软件包)
+    - [解决 ModuleNotFoundError: No module named 'controlnet\_aux'](#解决-modulenotfounderror-no-module-named-controlnet_aux)
+    - [使用 uv 安装软件包](#使用-uv-安装软件包)
+    - [更新 uv](#更新-uv)
+    - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
+    - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
+    - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
 
 ***
 
@@ -133,11 +148,11 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 启动 InvokeAI
-运行 launch.ps1 脚本。
+运行`launch.ps1`脚本。
 
 
 ## 更新 InvokeAI
-运行 update.ps1 脚本，如果遇到更新 InvokeAI 失败的情况可尝试重新运行`update.ps1`脚本。
+运行`update.ps1`脚本，如果遇到更新 InvokeAI 失败的情况可尝试重新运行`update.ps1`脚本。
 
 
 ## 进入 InvokeAI 所在的 Python 环境
@@ -165,6 +180,8 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 
 ### 直接更新
 当检测到有新版的 InvokeAI Installer 时，将询问是否进行更新，输入`y`并回车后将运行 InvokeAI Installer 进行更新。
+
+如果遇到更新终止警告，这是因为 InvokeAI Installer 的管理脚本所在文件夹的名称不是`InvokeAI`，请按照提示修改文件夹名称为`InvokeAI`后再次进行更新。
 
 
 ### 使用 InvokeAI Installer 配置管理器进行更新
@@ -435,67 +452,67 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 >在 PowerShell 中一定要显示`[InvokeAI-Env]`才算进入了环境，这样才能使用下面的命令。
 
 
-### 常用命令
+## 常用命令
 
-- 启动 InvokeAI
+### 启动 InvokeAI
 ```powershell
 invokeai-web
 ```
 
 
-- 查看 InvokeAI 的版本
+### 查看 InvokeAI 的版本
 ```powershell
 invokeai-web --version
 ```
 
 
-- 修复 InvokeAI 数据库
+### 修复 InvokeAI 数据库
 ```powershell
 invokeai-db-maintenance --operation all
 ```
 
 
-- 从旧版 InvokeAI 导入图片到新版的 InvokeAI
+### 从旧版 InvokeAI 导入图片到新版的 InvokeAI
 ```powershell
 invokeai-import-images
 ```
 
 
-- 清理安装时产生的 Pip 缓存
+### 清理安装时产生的 Pip 缓存
 ```powershell
 python -m pip cache purge
 ```
 
 
-- 安装某个 Pip 软件包
+### 安装某个 Pip 软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name>
 ```
 
 
-- 更新某个软件包
+### 更新某个软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> -U
 ```
 
 
-- 重装某个软件包
+### 重装某个软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip install <package_name> --force-reinstall
 ```
 
 
-- 卸载某个软件包
+### 卸载某个软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名
 python -m pip uninstall <package_name>
 ```
 
 
-- 解决 ModuleNotFoundError: No module named 'controlnet_aux'
+### 解决 ModuleNotFoundError: No module named 'controlnet_aux'
 ```powershell
 python -m pip cache remove controlnet_aux
 python -m pip uninstall controlnet_aux -y
@@ -506,7 +523,7 @@ python -m pip install controlnet_aux
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
 
-- 使用 uv 安装软件包
+### 使用 uv 安装软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名
 uv pip install <package_name>
@@ -515,24 +532,24 @@ uv pip install <package_name>
 >uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
 
 
-- 更新 uv
+### 更新 uv
 ```powershell
 Update-uv
 ```
 
 
-- 列出 InvokeAI Installer 内置命令
+### 列出 InvokeAI Installer 内置命令
 ```powershell
 List-CMD
 ```
 
 
-- 检查 InvokeAI Installer 更新
+### 检查 InvokeAI Installer 更新
 ```powershell
 Check-InvokeAI-Installer-Update
 ```
 
-- 查看可用的 InvokeAI 版本并切换
+### 查看可用的 InvokeAI 版本并切换
 ```powershell
 # 查询 PyPI 上 InvokeAI 可用的版本
 python -m pip index versions invokeai
