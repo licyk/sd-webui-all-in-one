@@ -306,6 +306,9 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 ## InvokeAI 无法正常调用显卡
 尝试将显卡驱动更至最新或者运行`reinstall_pytorch.ps1`脚本重装 PyTorch。
 
+>[!NOTE]  
+>Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
+
 
 ## 卸载 InvokeAI
 使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。
