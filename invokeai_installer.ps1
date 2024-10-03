@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 122
+$INVOKEAI_INSTALLER_VERSION = 123
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -20,7 +20,7 @@ $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 # $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
-$Env:UV_CONCURRENT_DOWNLOADS = 16
+$Env:UV_CONCURRENT_DOWNLOADS = 50
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
@@ -73,16 +73,10 @@ function Set-Proxy {
 function Set-uv {
     if (Test-Path "$PSScriptRoot/disable_uv.txt") {
         Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
-        Print-Msg "Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢"
-        Print-Msg "如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败"
-        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
-        Print-Msg "uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败"
-        Print-Msg "如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer"
-        Print-Msg "也可以在当前的目录创建一个 disable_uv.txt 文件, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度"
-        Print-Msg "更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8"
+        Print-Msg "当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装"
         $Global:USE_UV = $true
     }
 }
@@ -170,6 +164,10 @@ function Install-InvokeAI {
     Print-Msg "正在下载 InvokeAI"
     if ($USE_UV) {
         uv pip install InvokeAI --no-deps --find-links $PIP_FIND_MIRROR
+        if (!($?)) {
+            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+            python -m pip install InvokeAI --no-deps --use-pep517
+        }
     } else {
         python -m pip install InvokeAI --no-deps --use-pep517
     }
@@ -221,8 +219,12 @@ print(ver_list)
     Print-Msg "安装 InvokeAI 依赖中"
     if ($USE_UV) {
         uv pip install "InvokeAI[xformers]" $requirements.ToString().Split() --find-links $PIP_FIND_MIRROR
+        if (!($?)) {
+            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+            python -m pip install "InvokeAI[xformers]" --use-pep517
+        }
     } else {
-        python -m pip install "InvokeAI[xformers]" $requirements.ToString().Split() --use-pep517
+        python -m pip install "InvokeAI[xformers]" --use-pep517
     }
     if ($?) {
         Print-Msg "InvokeAI 依赖安装成功"
@@ -392,7 +394,7 @@ function Write-Launch-Script {
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 16
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -626,7 +628,7 @@ function Write-Update-Script {
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 16
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -803,16 +805,10 @@ function Set-Proxy {
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
-        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
-        Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
-        Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
     }
 }
@@ -829,6 +825,10 @@ function Main {
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$USE_UV) {
         uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install InvokeAI --upgrade --no-deps --use-pep517
+        }
     } else {
         python -m pip install InvokeAI --upgrade --no-deps --use-pep517
     }
@@ -839,8 +839,12 @@ function Main {
         `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
         if (`$USE_UV) {
             uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `"InvokeAI[xformers]`" --upgrade --use-pep517
+            }
         } else {
-            python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
+            python -m pip install `"InvokeAI[xformers]`" --upgrade --use-pep517
         }
         if (`$?) {
             if (`$ver -eq `$ver_) {
@@ -967,7 +971,7 @@ function Write-PyTorch-ReInstall-Script {
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 16
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -1109,16 +1113,10 @@ function Check-InvokeAI-Installer-Update {
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        Print-Msg `"Pip 包管理器相比于比 uv 包管理器, 安装 Python 软件包的速度较慢`"
-        Print-Msg `"如果需要加速 Python 软件包的安装, 可将 disable_uv.txt 配置文件删除, 或者运行 settings.ps1, 将 Python 包管理器切换成 uv, 这将启用 uv 作为 Python 包管理器, 但可能在网络环境稳定性差时容易导致 Python 软件包安装失败`"
-        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"uv 包管理器对网络的稳定性要求较高, 当网络不稳定时可能会导致 uv 安装 Python 软件包失败`"
-        Print-Msg `"如果出现安装 Python 软件包失败的问题, 可重新运行 SD-Trainer Installer`"
-        Print-Msg `"也可以在当前的目录创建一个 disable_uv.txt 文件, 或者运行 settings.ps1, 将 Python 包管理器切换成 Pip, 这将禁用 uv, 使用 Pip 作为 Python 包管理器, 但这将降低 Python 软件包的安装速度`"
-        Print-Msg `"更多关于 uv 的说明可阅读: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md#%E8%AE%BE%E7%BD%AE-uv-%E5%8C%85%E7%AE%A1%E7%90%86%E5%99%A8`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
     }
 }
@@ -1140,6 +1138,10 @@ function Main {
         `$pytorch_ver = Get-PyTorch-Version
         if (`$USE_UV) {
             uv pip install `$pytorch_ver.ToString().Split() --find-links `"`$PIP_FIND_MIRROR`"
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
+            }
         } else {
             python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
         }
@@ -1268,7 +1270,7 @@ function Write-InvokeAI-Installer-Settings-Script {
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 16
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -1794,7 +1796,7 @@ function Write-Env-Activate-Script {
 # `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 16
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
