@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 124
+$INVOKEAI_INSTALLER_VERSION = 125
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2004,10 +2004,21 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2119,6 +2130,123 @@ function global:Check-InvokeAI-Installer-Update {
 }
 
 
+# 安装 Git
+function global:Install-Git {
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip`"
+    if (Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`") {
+        Print-Msg `"Git 已安装`"
+        return
+    }
+    Print-Msg `"正在下载 Git`"
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/PortableGit.zip`"
+    if (`$?) { # 检测是否下载成功并解压
+        # 创建 Git 文件夹
+        if (!(Test-Path `"`$Env:CACHE_HOME/../git`")) {
+            New-Item -ItemType Directory -Force -Path `$Env:CACHE_HOME/../git > `$null
+        }
+        # 解压 Git
+        Print-Msg `"正在解压 Git`"
+        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$Env:CACHE_HOME/../git`" -Force
+        Remove-Item -Path `"`$Env:CACHE_HOME/PortableGit.zip`"
+        Print-Msg `"Git 安装成功`"
+        return `$true
+    } else {
+        Print-Msg `"Git 安装失败, 可重新运行命令重试安装`"
+        return `$false
+    }
+}
+
+
+# 启用 Github 镜像源
+function global:Test-Github-Mirror {
+    if (Test-Path `"`$Env:CACHE_HOME/../disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    } else {
+        `$Env:GIT_CONFIG_GLOBAL = `"`$Env:CACHE_HOME/../.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$Env:CACHE_HOME/../.gitconfig`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/../.gitconfig`" -Force
+        }
+
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        } else { # 自动检测可用镜像源并使用
+            `$status = 0
+            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+                Print-Msg `"测试 Github 镜像源: `$i`"
+                if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+                    Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+                }
+                git clone `$i/licyk/empty `$Env:CACHE_HOME/github-mirror-test --quiet
+                if (`$?) {
+                    Print-Msg `"该 Github 镜像源可用`"
+                    `$github_mirror = `$i
+                    `$status = 1
+                    break
+                } else {
+                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+                }
+            }
+            if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+                Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+            }
+            if (`$status -eq 0) {
+                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+            } else {
+                Print-Msg `"设置 Github 镜像源`"
+                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            }
+        }
+    }
+}
+
+
+# 安装 InvokeAI 自定义节点
+function global:Install-InvokeAI-Node (`$url) {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
+    if (Test-Path `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`") {
+        Print-Msg `"`$node_name 自定义节点已安装`"
+        return
+    } else {
+        `$items = Get-ChildItem `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`" -Recurse
+        if (`$items.Count -ne 0) {
+            Print-Msg `"`$node_name 自定义节点已安装`"
+            return
+        }
+    }
+
+    Print-Msg `"安装 `$node_name 自定义节点中`"
+    git clone `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
+    if (`$?) {
+        Print-Msg `"`$node_name 自定义节点安装成功`"
+    } else {
+        Print-Msg `"`$node_name 自定义节点安装失败`"
+    }
+}
+
+
 # 列出 InvokeAI Installer 内置命令
 function global:List-CMD {
     Write-Host `"
@@ -2132,6 +2260,8 @@ Github：https://github.com/licyk
 
     Update-uv
     Check-InvokeAI-Installer-Update
+    Install-Git
+    Install-InvokeAI-Node
     List-CMD
 
 更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md

@@ -67,6 +67,8 @@ _✨一键安装 InvokeAI_
     - [更新 uv](#更新-uv)
     - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
     - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
+    - [安装 InvokeAI 自定义节点](#安装-invokeai-自定义节点)
+    - [安装 Git](#安装-git)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
 
 ***
@@ -550,6 +552,19 @@ List-CMD
 ```powershell
 Check-InvokeAI-Installer-Update
 ```
+
+
+### 安装 InvokeAI 自定义节点
+```powershell
+Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
+```
+
+
+### 安装 Git
+```powershell
+Install-Git
+```
+
 
 ### 查看可用的 InvokeAI 版本并切换
 ```powershell
