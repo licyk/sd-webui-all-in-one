@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 126
+$INVOKEAI_INSTALLER_VERSION = 127
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -777,45 +777,6 @@ function Write-Update-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
-}
-
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version {
-    `$content = `"
-from importlib.metadata import requires
-
-
-pytorch_ver = []
-cuda_ver = '+cu118'
-ver_list = ''
-
-invokeai_requires = requires('invokeai')
-
-
-for i in invokeai_requires:
-    if i.startswith('torch=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchvision=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchaudio=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-
-for i in pytorch_ver:
-    ver_list = f'{ver_list} {i}'
-
-
-print(ver_list)
-`"
-
-    `$pytorch_ver = `$(python -c `"`$content`")
-    return `$pytorch_ver
 }
 
 
