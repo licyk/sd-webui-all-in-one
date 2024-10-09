@@ -69,6 +69,8 @@ _✨一键安装 InvokeAI_
     - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
     - [安装 InvokeAI 自定义节点](#安装-invokeai-自定义节点)
     - [安装 Git](#安装-git)
+    - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
+    - [使用 Git 下载项目](#使用-git-下载项目)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
 
 ***
@@ -563,6 +565,20 @@ Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
 ### 安装 Git
 ```powershell
 Install-Git
+```
+
+
+### 测试并启用 Github 镜像源
+```powershell
+Test-Github-Mirror
+# 可用于加速从 Github 下载项目
+```
+
+
+### 使用 Git 下载项目
+```powershell
+Git-Clone <Repo Url> <Path>
+# <Repo Url> 为 Github 仓库的链接，<Path> 为下载到本地的路径，可不填
 ```
 
 

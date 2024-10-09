@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 121
+$SD_TRAINER_INSTALLER_VERSION = 122
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -24,6 +24,8 @@ $GITHUB_MIRROR_LIST = @(
 # PyTorch 版本
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers==0.0.26.post1+cu118"
+# uv 最低版本
+$UV_MINIMUM_VER = "0.4.19"
 # SD-Trainer 仓库地址
 $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 # PATH
@@ -37,7 +39,7 @@ $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
 $Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 # $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
-# $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
+$Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -99,6 +101,65 @@ function Set-uv {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
         Print-Msg "当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装"
         $Global:USE_UV = $true
+    }
+}
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    $content = "
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '$UV_MINIMUM_VER'
+print(is_uv_need_update())
+"
+    Print-Msg "检测 uv 是否需要更新"
+    $status = $(python -c "$content")
+    if ($status -eq "True") {
+        Print-Msg "更新 uv 中"
+        python -m pip install -U "uv>=$UV_MINIMUM_VER"
+        if ($?) {
+            Print-Msg "uv 更新成功"
+        } else {
+            Print-Msg "uv 更新失败, 可能会造成 uv 部分功能异常"
+        }
+    } else {
+        Print-Msg "uv 无需更新"
     }
 }
 
@@ -273,7 +334,7 @@ function Install-PyTorch {
     if (!($?)) {
         Print-Msg "安装 PyTorch 中"
         if ($USE_UV) {
-            uv pip install $PYTORCH_VER.ToString().Split() --find-links $PIP_FIND_MIRROR
+            uv pip install $PYTORCH_VER.ToString().Split()
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
                 python -m pip install $PYTORCH_VER.ToString().Split()
@@ -297,7 +358,7 @@ function Install-PyTorch {
     if (!($?)) {
         Print-Msg "安装 xFormers 中"
         if ($USE_UV) {
-            uv pip install $XFORMERS_VER --no-deps --find-links $PIP_FIND_MIRROR
+            uv pip install $XFORMERS_VER --no-deps
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
                 python -m pip install $XFORMERS_VER --no-deps
@@ -325,7 +386,7 @@ function Install-SD-Trainer-Dependence {
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts/dev"
     Print-Msg "安装 SD-Trainer 内核依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
+        uv pip install -r requirements.txt
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
             python -m pip install -r requirements.txt
@@ -345,7 +406,7 @@ function Install-SD-Trainer-Dependence {
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts"
     Print-Msg "安装 SD-Trainer 依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements.txt --find-links $PIP_FIND_MIRROR
+        uv pip install -r requirements.txt
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
             python -m pip install -r requirements.txt
@@ -403,6 +464,7 @@ function Check-Install {
         Print-Msg "uv 未安装"
         Install-uv
     }
+    Check-uv-Version
 
     Test-Github-Mirror
     Install-SD-Trainer
@@ -427,6 +489,8 @@ function Write-Launch-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -438,7 +502,7 @@ function Write-Launch-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -700,6 +764,8 @@ function Write-Update-Script {
     `"https://ghps.cc/https://github.com`",
     `"https://gh.idayer.com/https://github.com`"
 )
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -711,7 +777,7 @@ function Write-Update-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -923,6 +989,65 @@ function Check-SD-Trainer-Installer-Update {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -932,6 +1057,7 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
+        Check-uv-Version
     }
 }
 
@@ -1041,7 +1167,7 @@ function Main {
         Set-Pip-Extra-Index-URL-For-CUDA
         Set-Location `"`$PSScriptRoot/lora-scripts/scripts/dev`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install -r requirements.txt --upgrade
@@ -1061,7 +1187,7 @@ function Main {
         Print-Msg `"更新 SD-Trainer 依赖中`"
         Set-Location `"`$PSScriptRoot/lora-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade --find-links `"`$PIP_FIND_MIRROR`"
+            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install -r requirements.txt --upgrade
@@ -1208,6 +1334,8 @@ function Write-PyTorch-ReInstall-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1219,7 +1347,7 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -1334,6 +1462,65 @@ function Check-SD-Trainer-Installer-Update {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -1343,6 +1530,7 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
+        Check-uv-Version
     }
 }
 
@@ -1406,7 +1594,6 @@ function Main {
     `"
 
     `$to_exit = 0
-    `$pip_find_links_arg = `"--find-links `$PIP_FIND_MIRROR`"
 
     while (`$True) {
         Print-Msg `"PyTorch 版本列表`"
@@ -1450,7 +1637,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             7 {
@@ -1464,7 +1651,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             9 {
@@ -1478,7 +1665,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             11 {
@@ -1492,7 +1679,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             13 {
@@ -1506,7 +1693,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             15 {
@@ -1520,7 +1707,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             17 {
@@ -1536,7 +1723,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             19 {
@@ -1552,7 +1739,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             21 {
@@ -1561,7 +1748,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             22 {
@@ -1570,7 +1757,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             23 {
@@ -1579,7 +1766,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             24 {
@@ -1588,7 +1775,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$pip_find_links_arg = `"`"
+                `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             exit {
@@ -1634,7 +1821,7 @@ function Main {
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
         if (`$USE_UV) {
-            uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg `$pip_find_links_arg.ToString().Split()
+            uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
@@ -1653,7 +1840,7 @@ function Main {
         if (!(`$xformers_ver -eq `"`")) {
             Print-Msg `"重装 xFormers 中`"
             if (`$USE_UV) {
-                uv pip install `$xformers_ver `$force_reinstall_arg --no-deps `$pip_find_links_arg.ToString().Split()
+                uv pip install `$xformers_ver `$force_reinstall_arg --no-deps
                 if (!(`$?)) {
                     Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                     python -m pip install `$xformers_ver `$force_reinstall_arg --no-deps
@@ -1705,6 +1892,8 @@ function Write-Download-Model-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1716,7 +1905,7 @@ function Write-Download-Model-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -2117,6 +2306,8 @@ function Write-SD-Trainer-Installer-Settings-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -2128,7 +2319,7 @@ function Write-SD-Trainer-Installer-Settings-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -2789,6 +2980,8 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -2800,7 +2993,7 @@ function Write-Env-Activate-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50

@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 125
+$INVOKEAI_INSTALLER_VERSION = 126
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -10,6 +10,8 @@ $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
+# uv 最低版本
+$UV_MINIMUM_VER = "0.4.19"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/InvokeAI/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/InvokeAI/python/Scripts"
@@ -20,7 +22,7 @@ $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
 $Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
 # $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
-# $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
+$Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -44,6 +46,7 @@ $Env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
 $Env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
 $Env:UV_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/uv"
 $Env:UV_PYTHON = "$PSScriptRoot/InvokeAI/python/python.exe"
+
 
 
 # 消息输出
@@ -72,6 +75,7 @@ function Set-Proxy {
     }
 }
 
+
 # 设置 uv 的使用状态
 function Set-uv {
     if (Test-Path "$PSScriptRoot/disable_uv.txt") {
@@ -83,6 +87,66 @@ function Set-uv {
         $Global:USE_UV = $true
     }
 }
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    $content = "
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '$UV_MINIMUM_VER'
+print(is_uv_need_update())
+"
+    Print-Msg "检测 uv 是否需要更新"
+    $status = $(python -c "$content")
+    if ($status -eq "True") {
+        Print-Msg "更新 uv 中"
+        python -m pip install -U "uv>=$UV_MINIMUM_VER"
+        if ($?) {
+            Print-Msg "uv 更新成功"
+        } else {
+            Print-Msg "uv 更新失败, 可能会造成 uv 部分功能异常"
+        }
+    } else {
+        Print-Msg "uv 无需更新"
+    }
+}
+
 
 # 下载并解压 Python
 function Install-Python {
@@ -167,7 +231,7 @@ function Install-InvokeAI {
     $invokeai_ver = "InvokeAI==5.0.2"
     Print-Msg "正在下载 InvokeAI"
     if ($USE_UV) {
-        uv pip install $invokeai_ver --no-deps --find-links $PIP_FIND_MIRROR
+        uv pip install $invokeai_ver --no-deps
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
             python -m pip install $invokeai_ver --no-deps --use-pep517
@@ -216,13 +280,13 @@ else:
     print(False)
 "
 
-    $pip_find_links_arg = "--find-links $PIP_FIND_MIRROR"
     $status = $(python -c "$content") # 检查 InvokeAI 是否大于 5.0.2
     if ($status -eq "True") {
         $cuda_ver = "+cu124"
         $Env:PIP_FIND_LINKS = " "
-        $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU124
+        $Env:UV_FIND_LINKS = " "
         $Env:PIP_EXTRA_INDEX_URL = "$Env:PIP_EXTRA_INDEX_URL $PIP_EXTRA_INDEX_MIRROR_CU124"
+        $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU124
     } else {
         $cuda_ver = "+cu118"
     }
@@ -265,7 +329,7 @@ print(ver_list)
     $pytorch_ver = $(python -c "$content") # 获取 PyTorch 版本
     Print-Msg "安装 InvokeAI 依赖中"
     if ($USE_UV) {
-        uv pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split() $pip_find_links_arg.ToString().Split()
+        uv pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split()
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
             python -m pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split() --use-pep517
@@ -396,6 +460,7 @@ function Check-Install {
         Print-Msg "uv 未安装"
         Install-uv
     }
+    Check-uv-Version
 
     Print-Msg "检查是否安装 InvokeAI"
     python -m pip show invokeai --quiet 2> $null
@@ -431,6 +496,8 @@ function Write-Launch-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -441,7 +508,7 @@ function Write-Launch-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -668,6 +735,8 @@ function Write-Update-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -678,7 +747,7 @@ function Write-Update-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -854,6 +923,65 @@ function Set-Proxy {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -863,6 +991,7 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
+        Check-uv-Version
     }
 }
 
@@ -953,7 +1082,7 @@ function Main {
     Print-Msg `"更新 InvokeAI 内核中`"
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     if (`$USE_UV) {
-        uv pip install InvokeAI --upgrade --no-deps --find-links `"`$PIP_FIND_MIRROR`"
+        uv pip install InvokeAI --upgrade --no-deps
         if (!(`$?)) {
             Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
             python -m pip install InvokeAI --upgrade --no-deps --use-pep517
@@ -968,13 +1097,12 @@ function Main {
         # 检查 InvokeAI 版本是否大于 5.0.2
         `$status = Check-InvokeAI-Version
 
-        `$pip_find_links_arg = `"--find-links `$PIP_FIND_MIRROR`"
         if (`$status -eq `"True`") {
             `$cuda_ver = `"+cu124`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$pip_find_links_arg = `"`"
-            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+            `$Env:UV_FIND_LINKS = `" `"
             `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
         } else {
             `$cuda_ver = `"+cu118`"
         }
@@ -984,7 +1112,7 @@ function Main {
 
         `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
         if (`$USE_UV) {
-            uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade `$pip_find_links_arg.ToString().Split()
+            uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
@@ -1107,6 +1235,8 @@ function Write-PyTorch-ReInstall-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1117,7 +1247,7 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -1309,6 +1439,65 @@ function Check-InvokeAI-Installer-Update {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
@@ -1318,6 +1507,7 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
+        Check-uv-Version
     }
 }
 
@@ -1338,13 +1528,12 @@ function Main {
         # 检查 InvokeAI 版本是否大于 5.0.2
         `$status = Check-InvokeAI-Version
 
-        `$pip_find_links_arg = `"--find-links `$PIP_FIND_MIRROR`"
         if (`$status -eq `"True`") {
             `$cuda_ver = `"+cu124`"
             `$Env:PIP_FIND_LINKS = `" `"
-            `$pip_find_links_arg = `"`"
-            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+            `$Env:UV_FIND_LINKS = `" `"
             `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
         } else {
             `$cuda_ver = `"+cu118`"
         }
@@ -1352,7 +1541,7 @@ function Main {
         # 获取 PyTorch 版本
         `$pytorch_ver = Get-PyTorch-Version `$cuda_ver
         if (`$USE_UV) {
-            uv pip install `$pytorch_ver.ToString().Split() `$pip_find_links_arg.ToString().Split()
+            uv pip install `$pytorch_ver.ToString().Split()
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
@@ -1475,6 +1664,8 @@ function Write-InvokeAI-Installer-Settings-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -1485,7 +1676,7 @@ function Write-InvokeAI-Installer-Settings-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -2014,6 +2205,8 @@ function Write-Env-Activate-Script {
     `"https://ghps.cc/https://github.com`",
     `"https://gh.idayer.com/https://github.com`"
 )
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
@@ -2025,7 +2218,7 @@ function Write-Env-Activate-Script {
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-# `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
@@ -2133,7 +2326,7 @@ function global:Check-InvokeAI-Installer-Update {
 # 安装 Git
 function global:Install-Git {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip`"
-    if (Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`") {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -or(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`")) {
         Print-Msg `"Git 已安装`"
         return
     }
@@ -2226,23 +2419,76 @@ function global:Install-InvokeAI-Node (`$url) {
     }
 
     `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    if (Test-Path `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`") {
-        Print-Msg `"`$node_name 自定义节点已安装`"
-        return
+    if (!(Test-Path `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`")) {
+        `$status = 1
     } else {
         `$items = Get-ChildItem `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`" -Recurse
-        if (`$items.Count -ne 0) {
-            Print-Msg `"`$node_name 自定义节点已安装`"
-            return
+        if (`$items.Count -eq 0) {
+            `$status = 1
         }
     }
 
-    Print-Msg `"安装 `$node_name 自定义节点中`"
-    git clone `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
-    if (`$?) {
-        Print-Msg `"`$node_name 自定义节点安装成功`"
+    if (`$status -eq 1) {
+        Print-Msg `"安装 `$node_name 自定义节点中`"
+        git clone `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
+        if (`$?) {
+            Print-Msg `"`$node_name 自定义节点安装成功`"
+        } else {
+            Print-Msg `"`$node_name 自定义节点安装失败`"
+        }
     } else {
-        Print-Msg `"`$node_name 自定义节点安装失败`"
+        Print-Msg `"`$node_name 自定义节点已安装`"
+    }
+}
+
+
+# 安装 InvokeAI 自定义节点
+function global:Git-Clone (`$url, `$path) {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$repo_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
+    if (`$path.Length -ne 0) {
+        `$repo_path = `$path
+    } else {
+        `$repo_path = `"`$(`$(Get-Location).ToString())/`$repo_name`"
+    }
+    if (!(Test-Path `"`$repo_path`")) {
+        `$status = 1
+    } else {
+        `$items = Get-ChildItem `"`$repo_path`" -Recurse
+        if (`$items.Count -eq 0) {
+            `$status = 1
+        }
+    }
+
+    if (`$status -eq 1) {
+        Print-Msg `"下载 `$repo_name 中`"
+        git clone `$url `"`$path`"
+        if (`$?) {
+            Print-Msg `"`$repo_name 下载成功`"
+        } else {
+            Print-Msg `"`$repo_name 下载失败`"
+        }
+    } else {
+        Print-Msg `"`$repo_name 已存在`"
     }
 }
 
@@ -2262,6 +2508,8 @@ Github：https://github.com/licyk
     Check-InvokeAI-Installer-Update
     Install-Git
     Install-InvokeAI-Node
+    Git-Clone
+    Test-Github-Mirror
     List-CMD
 
 更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
