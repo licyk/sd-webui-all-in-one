@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+  delete:
+  create:
+
+jobs:
+  Release-Files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List files in the repository
+        run: |
+          cd "${{ github.workspace }}"
+          ls "${{ github.workspace }}"
+      - name: Release SD-Trainer Installer
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset sd_trainer_installer sd_trainer_installer.ps1 -y || true
+          gh release upload sd_trainer_installer sd_trainer_installer.ps1
+
+      - name: Release InvokeAI Installer
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset invokeai_installer invokeai_installer.ps1 -y || true
+          gh release upload invokeai_installer invokeai_installer.ps1
+
+      - name: Release Config
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset archive configure_env.bat -y || true
+          gh release upload archive configure_env.bat
+
+          gh release delete-asset archive fooocus_config.json -y || true
+          gh release upload archive fooocus_config.json
+
+          gh release delete-asset archive fooocus_path_config_colab.json -y || true
+          gh release upload archive fooocus_path_config_colab.json
+
+          gh release delete-asset archive fooocus_path_config_kaggle.json -y || true
+          gh release upload archive fooocus_path_config_kaggle.json
+
+          gh release delete-asset archive fooocus_zh_cn.json -y || true
+          gh release upload archive fooocus_zh_cn.json
+
+          gh release delete-asset archive libtcmalloc_minimal.so.4 -y || true
+          gh release upload archive libtcmalloc_minimal.so.4
+
+          gh release delete-asset archive sd_webui_config.json -y || true
+          gh release upload archive sd_webui_config.json
