@@ -1633,11 +1633,11 @@ function Main {
             }
             6 {
                 `$torch_ver = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
-                `$xformers_ver = `"xformers==0.0.23`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.23`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             7 {
@@ -1647,11 +1647,11 @@ function Main {
             }
             8 {
                 `$torch_ver = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
-                `$xformers_ver = `"xformers==0.0.23.post1`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.23.post1`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             9 {
@@ -1661,11 +1661,11 @@ function Main {
             }
             10 {
                 `$torch_ver = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
-                `$xformers_ver = `"xformers==0.0.24`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.24`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             11 {
@@ -1675,11 +1675,11 @@ function Main {
             }
             12 {
                 `$torch_ver = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
-                `$xformers_ver = `"xformers==0.0.25`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.25`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             13 {
@@ -1689,11 +1689,11 @@ function Main {
             }
             14 {
                 `$torch_ver = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
-                `$xformers_ver = `"xformers==0.0.25.post1`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.25.post1`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             15 {
@@ -1703,11 +1703,11 @@ function Main {
             }
             16 {
                 `$torch_ver = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
-                `$xformers_ver = `"xformers==0.0.26.post1`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$xformers_ver = `"xformers===0.0.26.post1`"
+                # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                # `$Env:PIP_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `" `"
                 `$go_to = 1
             }
             17 {
