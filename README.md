@@ -9,6 +9,7 @@
 
 使用时请按顺序执行 Jupyter Notebook 单元。
 
+
 ## 可用的 Jupyter Notebook 
 - [sd_webui_all_in_one.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one.ipynb)：支持部署多种 WebUI 的 Jupyter Notebook。
 - [sd_webui_all_in_one_colab.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one_colab.ipynb)：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
@@ -17,6 +18,7 @@
 - [sd_trainer_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_trainer_kaggle.ipynb)：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
 - [sd_scripts_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_scripts_kaggle.ipynb)：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
 
+
 ### 主要功能
 1. 功能初始化：导入 SD WebUI All In One 所使用的功能
 2. 参数配置：配置安装参数和远程访问方式
@@ -24,10 +26,12 @@
 4. 安装：根据配置安装对应的 WebUI
 5. 启动：根据配置启动对应的 WebUI
 
+
 ### 其他功能
 1. 自定义模型 / 扩展下载配置：设置要下载的模型 / 扩展参数
 2. 自定义模型 / 扩展下载：根据配置进行下载模型 / 扩展
 3. 更新：将已安装的 WebUI 进行更新
+
 
 ### 提示
 1. 在参数配置界面，请填写工作区路径，选择要使用的 WebUI，根据自己的需求选择内网穿透方式（用于访问 WebUI 界面），再根据自己的需求选择模型和扩展。
@@ -36,6 +40,14 @@
 4. [Ngrok](https://ngrok.com) 内网穿透的稳定性高，使用前需要填写 Ngrok Token，可在 [Ngrok](https://ngrok.com) 官网获取。
 5. 在启动时将启动内网穿透，可在控制台输出中看到内网穿透地址，用于访问 WebUI 界面。
 
-## PowerShell 脚本
-- [invokeai_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1)：Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 脚本。详细的说明[点击此处](./invokeai_installer.md)阅读。
-- [sd_trainer_installer.ps1](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)：Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 脚本。详细的说明[点击此处](./sd_trainer_installer.md)阅读。
+
+# InvokeAI Installer
+Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
+
+详细的说明[点击此处](./invokeai_installer.md)阅读。
+
+
+# SD-Trainer Installer
+Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的脚本，包含启动，管理 SD-Trainer 的工具。
+
+详细的说明[点击此处](./sd_trainer_installer.md)阅读。
