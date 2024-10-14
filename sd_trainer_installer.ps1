@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 124
+$SD_TRAINER_INSTALLER_VERSION = 125
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -254,6 +254,7 @@ function Test-Github-Mirror {
 
         if (Test-Path "$PSScriptRoot/gh_mirror.txt") { # 使用自定义 Github 镜像源
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
+            git config --global --add safe.directory "*"
             git config --global url."$github_mirror".insteadOf "https://github.com"
             Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         } else { # 自动检测可用镜像源并使用
@@ -281,6 +282,7 @@ function Test-Github-Mirror {
                 Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
             } else {
                 Print-Msg "设置 Github 镜像源"
+                git config --global --add safe.directory "*"
                 git config --global url."$github_mirror".insteadOf "https://github.com"
             }
         }
@@ -1095,6 +1097,7 @@ function Set-Github-Mirror {
 
         if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
             `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
             git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
             Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         } else { # 自动检测可用镜像源并使用
@@ -1122,6 +1125,7 @@ function Set-Github-Mirror {
                 Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
             } else {
                 Print-Msg `"设置 Github 镜像源`"
+                git config --global --add safe.directory `"*`"
                 git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
             }
         }
@@ -3188,6 +3192,7 @@ function Set-Github-Mirror {
                 Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
             }
             `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
             git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
             Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         }
