@@ -741,6 +741,9 @@ git -C lora-scripts reset --hard --recurse-submodules <Git Commit Hash>
 # 先下载融合 LoRA 的工具
 git clone https://github.com/KohakuBlueleaf/LyCORIS
 
+# 安装 kohya scripts 的 library 库
+python -m pip install -e lora-scripts/scripts/dev
+
 # 接下来就能进行模型融合了，比如我要融合的 LoRA 模型为 artist_all_in_one_2-000036.safetensors，Stable Diffusion 模型为 animagine-xl-3.1.safetensors，先把这 2 个模型放到当前的文件夹，接下来就可以进行模型融合
 python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-000036.safetensors licyk_style_v0.1.safetensors --is_sdxl --dtype fp16
 
