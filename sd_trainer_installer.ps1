@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 125
+$SD_TRAINER_INSTALLER_VERSION = 126
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -385,26 +385,6 @@ function Install-PyTorch {
 function Install-SD-Trainer-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts/dev"
-    Print-Msg "安装 SD-Trainer 内核依赖中"
-    if ($USE_UV) {
-        uv pip install -r requirements.txt
-        if (!($?)) {
-            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install -r requirements.txt
-        }
-    } else {
-        python -m pip install -r requirements.txt
-    }
-    if ($?) {
-        Print-Msg "SD-Trainer 内核依赖安装成功"
-    } else {
-        Print-Msg "SD-Trainer 内核依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        Set-Location "$current_path"
-        Read-Host | Out-Null
-        exit 1
-    }
-
     Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts"
     Print-Msg "安装 SD-Trainer 依赖中"
     if ($USE_UV) {
@@ -1166,32 +1146,10 @@ function Main {
             `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         }
 
-        Print-Msg `"更新 SD-Trainer 内核依赖中`"
-        `$pytorch_ver = Get-PyTorch-Version
-        Set-Pip-Extra-Index-URL-For-CUDA
-        Set-Location `"`$PSScriptRoot/lora-scripts/scripts/dev`"
-        if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
-            if (!(`$?)) {
-                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r requirements.txt --upgrade
-            }
-        } else {
-            python -m pip install -r requirements.txt --upgrade
-        }
-        if (`$?) {
-            Print-Msg `"SD-Trainer 内核依赖更新成功`"
-            `$core_req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"SD-Trainer 内核依赖更新失败`"
-            `$core_req_update_msg = `"更新失败`"
-            `$update_fail = 1
-        }
-
         Print-Msg `"更新 SD-Trainer 依赖中`"
         Set-Location `"`$PSScriptRoot/lora-scripts`"
         if (`$USE_UV) {
-            uv pip install -r requirements.txt `$pytorch_ver.ToString().Split() --upgrade
+            uv pip install -r requirements.txt `$(Get-PyTorch-Version).ToString().Split() --upgrade
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install -r requirements.txt --upgrade
@@ -1212,7 +1170,6 @@ function Main {
     } else {
         Print-Msg `"拉取 SD-Trainer 更新内容失败`"
         `$core_update_msg = `"拉取 SD-Trainer 更新内容失败, 无法进行更新`"
-        `$core_req_update_msg = `"因 SD-Trainer 组件新失败, 不进行更新`"
         `$req_update_msg = `"因 SD-Trainer 组件更新失败, 不进行更新`"
         `$update_fail = 1
     }
@@ -1220,7 +1177,6 @@ function Main {
     Print-Msg `"==================================================================`"
     Print-Msg `"SD-Trainer 更新结果：`"
     Print-Msg `"SD-Trainer 组件: `$core_update_msg`"
-    Print-Msg `"SD-Trainer 内核依赖: `$core_req_update_msg`"
     Print-Msg `"SD-Trainer 依赖: `$req_update_msg`"
     Print-Msg `"==================================================================`"
     if (`$update_fail -eq 0) {
@@ -2063,18 +2019,21 @@ function Main {
 - 18、heartOfAppleXL_v30 (SDXL)
 - 19、Illustrious-XL-v0.1 (SDXL)
 - 20、Illustrious-XL-v0.1-GUIDED (SDXL)
-- 21、flux1-schnell (FLUX.1)
-- 22、flux1-schnell-fp8 (FLUX.1)
-- 23、flux1-dev (FLUX.1)
-- 24、flux1-dev-fp8 (FLUX.1)
-- 25、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 26、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 27、sdxl_fp16_fix_vae (SDXL VAE)
-- 28、sdxl_vae (SDXL VAE)
-- 29、ae (FLUX.1 VAE)
-- 30、clip_l (FLUX.1 CLIP)
-- 31、t5xxl_fp16 (FLUX.1 CLIP)
-- 32、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
+- 21、noobaiXLNAIXL_earlyAccessVersion (SDXL)
+- 22、flux1-schnell (FLUX.1)
+- 23、flux1-schnell-fp8 (FLUX.1)
+- 24、flux1-dev (FLUX.1)
+- 25、flux1-dev-fp8 (FLUX.1)
+- 26、ashen0209-flux1-dev2pro (FLUX.1)
+- 27、nyanko7-flux-dev-de-distill (FLUX.1)
+- 28、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 29、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 30、sdxl_fp16_fix_vae (SDXL VAE)
+- 31、sdxl_vae (SDXL VAE)
+- 32、ae (FLUX.1 VAE)
+- 33、clip_l (FLUX.1 CLIP)
+- 34、t5xxl_fp16 (FLUX.1 CLIP)
+- 35、t5xxl_fp8_e4m3fn (FLUX.1 CLIP)
 
 关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
@@ -2187,61 +2146,76 @@ function Main {
                 `$go_to = 1
             }
             21 {
+                `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors`"
+                `$model_name = `"noobaiXLNAIXL_earlyAccessVersion.safetensors`"
+                `$go_to = 1
+            }
+            22 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
                 `$model_name = `"flux1-schnell.safetensors`"
                 `$go_to = 1
             }
-            22 {
+            23 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`"
                 `$model_name = `"flux1-schnell-fp8.safetensors`"
                 `$go_to = 1
             }
-            23 {
+            24 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
                 `$model_name = `"flux1-dev.safetensors`"
                 `$go_to = 1
             }
-            24 {
+            25 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`"
                 `$model_name = `"flux1-dev-fp8.safetensors`"
                 `$go_to = 1
             }
-            25 {
+            26 {
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`"
+                `$model_name = `"ashen0209-flux1-dev2pro.safetensors`"
+                `$go_to = 1
+            }
+            27 {
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`"
+                `$model_name = `"nyanko7-flux-dev-de-distill.safetensors`"
+                `$go_to = 1
+            }
+            28 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
                 `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
-            26 {
+            29 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
                 `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
-            27 {
+            30 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
                 `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
                 `$go_to = 1
             }
-            28 {
+            31 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
                 `$model_name = `"sdxl_vae.safetensors`"
                 `$go_to = 1
             }
-            29 {
+            32 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
                 `$model_name = `"ae.safetensors`"
                 `$go_to = 1
             }
-            30 {
+            33 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
                 `$model_name = `"clip_l.safetensors`"
                 `$go_to = 1
             }
-            31 {
+            34 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`"
                 `$model_name = `"t5xxl_fp16.safetensors`"
                 `$go_to = 1
             }
-            32 {
+            35 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`"
                 `$model_name = `"t5xxl_fp8_e4m3fn.safetensors`"
                 `$go_to = 1

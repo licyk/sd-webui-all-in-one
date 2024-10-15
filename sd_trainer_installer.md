@@ -407,31 +407,6 @@ python gui.py `$args.ToString().Split()
 python kohya_gui.py `$args.ToString().Split()
 ```
 
-3. 
-
-```
-Set-Location `"`$PSScriptRoot/lora-scripts/scripts/dev`"
-```
-
-找到这行代码后将该行代码改成下面的。
-
-```
-Set-Location `"`$PSScriptRoot/lora-scripts/sd-scripts`"
-```
-
-4. 
-
-
-```
-Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/scripts/dev"
-```
-
-找到这行代码后将该行代码改成下面的。
-
-```
-Set-Location "$PSScriptRoot/SD-Trainer/lora-scripts/sd-scripts"
-```
-
 修改完成后保存`sd_trainer_installer.ps1`并运行。
 
 >[!NOTE]  
