@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 128
+$SD_TRAINER_INSTALLER_VERSION = 129
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1600,7 +1600,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             7 {
@@ -1614,7 +1614,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             9 {
@@ -1628,7 +1628,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             11 {
@@ -1642,7 +1642,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             13 {
@@ -1656,7 +1656,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             15 {
@@ -1670,7 +1670,7 @@ function Main {
                 # `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 # `$Env:PIP_FIND_LINKS = `" `"
-                # `$Env:UV_FIND_LINKS = `" `"
+                # `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             17 {
@@ -1686,7 +1686,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             19 {
@@ -1702,7 +1702,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             21 {
@@ -1711,7 +1711,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             22 {
@@ -1720,7 +1720,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             23 {
@@ -1729,7 +1729,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             24 {
@@ -1738,7 +1738,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             25 {
@@ -1747,7 +1747,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             26 {
@@ -1756,7 +1756,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             27 {
@@ -1765,7 +1765,7 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
-                `$Env:UV_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
             exit {
