@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 130
+$INVOKEAI_INSTALLER_VERSION = 131
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -297,13 +297,10 @@ from importlib.metadata import requires
 
 pytorch_ver = []
 cuda_ver = '$cuda_ver'
-xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
 
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
 
 for i in invokeai_requires:
     if i.startswith('torch=='):
@@ -316,7 +313,7 @@ for i in invokeai_requires:
         pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
 
     if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+        pytorch_ver.append(i.split(';')[0].strip())
 
 
 for i in pytorch_ver:
@@ -1000,13 +997,10 @@ from importlib.metadata import requires
 
 pytorch_ver = []
 cuda_ver = '`$cuda_ver'
-xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
 
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
 
 for i in invokeai_requires:
     if i.startswith('torch=='):
@@ -1019,7 +1013,7 @@ for i in invokeai_requires:
         pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
 
     if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+        pytorch_ver.append(i.split(';')[0].strip())
 
 
 for i in pytorch_ver:
@@ -1284,13 +1278,10 @@ from importlib.metadata import requires
 
 pytorch_ver = []
 cuda_ver = '`$cuda_ver'
-xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
 
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
 
 for i in invokeai_requires:
     if i.startswith('torch=='):
@@ -1303,7 +1294,7 @@ for i in invokeai_requires:
         pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
 
     if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+        pytorch_ver.append(i.split(';')[0].strip())
 
 
 for i in pytorch_ver:
