@@ -383,8 +383,6 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 ## 使用 SD-Trainer Installer 安装 Kohya GUI
 [Kohya GUI](https://github.com/bmaltais/kohya_ss) 也可以用于模型训练。做完[环境配置](#环境配置)的步骤并将 SD-Trainer Installer 下载下来后，使用代码编辑器（不建议使用 Windows 记事本）编辑`sd_trainer_installer.ps1`，搜索以下内容。
 
-1. 
-
 ```powershell
 $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 ```
@@ -393,18 +391,6 @@ $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 
 ```powershell
 $SD_TRAINER_REPO = "https://github.com/bmaltais/kohya_ss"
-```
-
-2. 
-
-```powershell
-python gui.py `$args.ToString().Split()
-```
-
-找到这行代码后将该行代码改成下面的。
-
-```powershell
-python kohya_gui.py `$args.ToString().Split()
 ```
 
 修改完成后保存`sd_trainer_installer.ps1`并运行。
@@ -417,9 +403,6 @@ python kohya_gui.py `$args.ToString().Split()
 >```
 >
 >保存后使用`launch.ps1`启动 Kohya GUI 时将自动调用浏览器打开界面并设置界面为中文。
-
->[!WARNING]  
->如果通过`get_sd_trainer_installer.ps1`下载最新的 SD-Trainer Installer 来更新管理脚本，需要再次编辑`sd_trainer_installer.ps1`，按照上方的步骤修改代码，再运行，以保证更新后的管理脚本能够正常的在 Kohya GUI 上运行。
 
 
 ## 运行脚本时出现中文乱码
