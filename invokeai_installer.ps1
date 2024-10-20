@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 131
+$INVOKEAI_INSTALLER_VERSION = 132
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -150,11 +150,11 @@ print(is_uv_need_update())
 
 # 下载并解压 Python
 function Install-Python {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-embed-amd64.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-amd64.zip"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/python-3.10.11-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
         if (!(Test-Path "$PSScriptRoot/InvokeAI/python")) {
@@ -162,49 +162,11 @@ function Install-Python {
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
-        Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-embed-amd64.zip"
-        Modify-PythonPath
+        Expand-Archive -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
+        Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.11-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
-        exit 1
-    }
-}
-
-
-# 修改 python310._pth 文件的内容
-function Modify-PythonPath {
-    Print-Msg "修改 python310._pth 文件内容"
-    $content = @("python310.zip", ".", "", "# Uncomment to run site.main() automatically", "import site")
-    Set-Content -Path "$PSScriptRoot/InvokeAI/python/python310._pth" -Value $content
-}
-
-
-# 配置 Python 的 Pip 模块
-function Install-Pip {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/get-pip.py"
-
-    # 下载 get-pip.py
-    Print-Msg "正在下载 get-pip.py"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/get-pip.py"
-    if ($?) { # 检测是否下载成功
-        # 执行 get-pip.py
-        Print-Msg "通过 get-pip.py 安装 Pip 中"
-        python "$PSScriptRoot/InvokeAI/cache/get-pip.py"
-        if ($?) { # 检测是否安装成功
-            Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
-            Print-Msg "Pip 安装成功"
-        } else {
-            Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/get-pip.py"
-            Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-            Read-Host | Out-Null
-            exit 1
-        }
-    } else {
-        Print-Msg "下载 get-pip.py 失败"
-        Print-Msg "Pip 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -440,14 +402,6 @@ function Check-Install {
         Install-Python
     }
 
-    Print-Msg "检查是否安装 Pip"
-    python -c "import pip" 2> $null
-    if ($?) {
-        Print-Msg "Pip 已安装"
-    } else {
-        Print-Msg "Pip 未安装"
-        Install-Pip
-    }
 
     Print-Msg "检测是否安装 uv"
     python -m pip show uv --quiet 2> $null
@@ -2384,7 +2338,7 @@ function global:Install-InvokeAI-Node (`$url) {
 
     if (`$status -eq 1) {
         Print-Msg `"安装 `$node_name 自定义节点中`"
-        git clone `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
+        git clone --recurse-submodules `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
         if (`$?) {
             Print-Msg `"`$node_name 自定义节点安装成功`"
         } else {
@@ -2435,7 +2389,7 @@ function global:Git-Clone (`$url, `$path) {
 
     if (`$status -eq 1) {
         Print-Msg `"下载 `$repo_name 中`"
-        git clone `$url `"`$path`"
+        git clone --recurse-submodules `$url `"`$path`"
         if (`$?) {
             Print-Msg `"`$repo_name 下载成功`"
         } else {
