@@ -56,6 +56,9 @@ jobs:
           gh release delete-asset archive sd_webui_config.json -y || true
           gh release upload archive sd_webui_config.json
 
+          gh release delete-asset archive install_embed_python.ps1 -y || true
+          gh release upload archive install_embed_python.ps1
+
   Release-To-Gitee:
     runs-on: ubuntu-22.04
     steps:
