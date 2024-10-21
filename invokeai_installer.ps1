@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 132
+$INVOKEAI_INSTALLER_VERSION = 133
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -635,6 +635,21 @@ function Get-InvokeAI-Launch-Port {
 }
 
 
+# 写入 InvokeAI 启动脚本
+function Write-Launch-InvokeAI-Script {
+    `$content = `"
+import re
+import sys
+from invokeai.app.run_app import run_app
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(run_app())
+`"
+
+    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/launch_invokeai.py`" -Value `$content
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
@@ -649,9 +664,9 @@ function Main {
     Print-Msg `"调用浏览器打开地址中`"
     Start-Process `"http://127.0.0.1:`$port`"
     Print-Msg `"启动 InvokeAI 中`"
-    invokeai-web --root `"`$PSScriptRoot/invokeai`"
-    `$req = `$?
-    if (`$req) {
+    Write-Launch-InvokeAI-Script
+    python `"`$PSScriptRoot/cache/launch_invokeai.py`" --root `"`$PSScriptRoot/invokeai`"
+    if (`$?) {
         Print-Msg `"InvokeAI 正常退出`"
     } else {
         Print-Msg `"InvokeAI 出现异常, 已退出`"
