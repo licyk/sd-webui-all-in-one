@@ -36,7 +36,7 @@
     "default_image_number": 1,
     "default_aspect_ratio": "1008*1344",
     "checkpoint_downloads": {
-        "Illustrious-XL-v0.1.safetensors": "https://huggingface.co/OnomaAIResearch/Illustrious-xl-early-release-v0/resolve/main/Illustrious-XL-v0.1.safetensors"
+        "Illustrious-XL-v0.1.safetensors": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v0.1.safetensors"
     },
     "embeddings_downloads": {},
     "lora_downloads": {
@@ -164,5 +164,5 @@
     "default_metadata_scheme": "a1111",
     "default_clip_skip": 2,
     "default_black_out_nsfw": false,
-    "metadata_created_by": "Fooocus"
+    "metadata_created_by": "Created by Fooocus"
 }
