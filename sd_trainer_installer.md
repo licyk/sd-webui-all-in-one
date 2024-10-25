@@ -339,6 +339,8 @@ Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer
 ## 移动 SD-Trainer 的路径
 直接将 SD-Trainer 文件夹移动到别的路径即可。
 
+如果启用了自动创建 SD-Trainer 快捷启动方式的功能，移动 SD-Trainer 后原来的快捷启动方式将失效，需要运行`launch.ps1`更新快捷启动方式。
+
 
 ## 更新 SD-Trainer 管理脚本
 SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。

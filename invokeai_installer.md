@@ -370,6 +370,8 @@ Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\InvokeAI.l
 ## 移动 InvokeAI 的路径
 直接将 InvokeAI 文件夹移动到别的路径即可。
 
+如果启用了自动创建 InvokeAI 快捷启动方式的功能，移动 InvokeAI 后原来的快捷启动方式将失效，需要运行`launch.ps1`更新快捷启动方式。
+
 
 ## InvokeAI 文件夹用途
 在 InvokeAI 文件夹中，存在着 invokeai 文件夹，保存着模型和生成出来的图片等，以下为不同文件夹的用途。

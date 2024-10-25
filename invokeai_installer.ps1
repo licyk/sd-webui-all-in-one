@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 138
+$INVOKEAI_INSTALLER_VERSION = 139
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -548,10 +548,8 @@ function Check-InvokeAI-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        ./invokeai_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -677,7 +675,7 @@ function Create-InvokeAI-Shortcut {
         }
     }
 
-    Print-Msg `"保存 InvokeAI 快捷启动方式`"
+    Print-Msg `"更新 InvokeAI 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
@@ -849,10 +847,8 @@ function Check-InvokeAI-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        ./invokeai_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1184,7 +1180,7 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
     `$count = `$urls.Length
     `$i = 0
 
@@ -1408,10 +1404,8 @@ function Check-InvokeAI-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        ./invokeai_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2118,10 +2112,8 @@ function Check-InvokeAI-Installer-Update {
                     Print-Msg `"终止 InvokeAI Installer 的更新`"
                     return
                 }
-                Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                ./invokeai_installer.ps1
-                Set-Location `"`$PSScriptRoot`"
+                powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
@@ -2422,10 +2414,8 @@ function global:Check-InvokeAI-Installer-Update {
                     Print-Msg `"终止 InvokeAI Installer 的更新`"
                     return
                 }
-                Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
-                ./invokeai_installer.ps1
-                Set-Location `"`$Env:CACHE_HOME/..`"
+                powershell `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0

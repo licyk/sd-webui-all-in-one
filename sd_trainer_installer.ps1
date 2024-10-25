@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 136
+$SD_TRAINER_INSTALLER_VERSION = 137
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -601,10 +601,8 @@ function Check-SD-Trainer-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        ./sd_trainer_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -703,7 +701,7 @@ function Create-SD-Trainer-Shortcut {
         }
     }
 
-    Print-Msg `"保存 SD-Trainer 快捷启动方式`"
+    Print-Msg `"更新 SD-Trainer 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
@@ -993,10 +991,8 @@ function Check-SD-Trainer-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        ./sd_trainer_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1444,10 +1440,8 @@ function Check-SD-Trainer-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        ./sd_trainer_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2037,10 +2031,8 @@ function Check-SD-Trainer-Installer-Update {
                             Read-Host | Out-Null
                             exit 1
                         }
-                        Set-Location `"`$PSScriptRoot/..`"
                         Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        ./sd_trainer_installer.ps1
-                        Set-Location `"`$PSScriptRoot`"
+                        powershell `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2862,10 +2854,8 @@ function Check-SD-Trainer-Installer-Update {
                     Print-Msg `"终止 SD-Trainer Installer 的更新`"
                     return
                 }
-                Set-Location `"`$PSScriptRoot/..`"
                 Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                ./sd_trainer_installer.ps1
-                Set-Location `"`$PSScriptRoot`"
+                powershell `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
@@ -3192,10 +3182,8 @@ function global:Check-SD-Trainer-Installer-Update {
                     Print-Msg `"终止 SD-Trainer Installer 的更新`"
                     return
                 }
-                Set-Location `"`$Env:CACHE_HOME/../..`"
                 Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`" -Force
-                ./sd_trainer_installer.ps1
-                Set-Location `"`$Env:CACHE_HOME/..`"
+                powershell `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
