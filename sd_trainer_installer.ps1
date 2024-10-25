@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 135
+$SD_TRAINER_INSTALLER_VERSION = 136
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -683,6 +683,49 @@ function Get-SD-Trainer-Launch-Args {
 }
 
 
+# 设置 SD-Trainer 的快捷启动方式
+function Create-SD-Trainer-Shortcut {
+    `$filename = `"SD-Trainer`"
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/sd_trainer_icon.ico`"
+    `$shortcut_icon = `"`$PSScriptRoot/sd_trainer_icon.ico`"
+
+    if (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) {
+        return
+    }
+
+    Print-Msg `"检查 SD-Trainer 快捷启动方式中`"
+    if (!(Test-Path `"`$shortcut_icon`")) {
+        Print-Msg `"获取 SD-Trainer 图标中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/sd_trainer_icon.ico`"
+        if (!(`$?)) {
+            Print-Msg `"获取 SD-Trainer 图标失败, 无法创建 SD-Trainer 快捷启动方式`"
+            return
+        }
+    }
+
+    Print-Msg `"保存 SD-Trainer 快捷启动方式`"
+    `$shell = New-Object -ComObject WScript.Shell
+    `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
+    `$shortcut_path = `"`$desktop\`$filename.lnk`"
+    `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
+    `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
+    `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
+    `$shortcut.Arguments = `"-File ```"`$launch_script_path```"`"
+    `$shortcut.IconLocation = `$shortcut_icon
+
+    # 保存到桌面
+    `$shortcut.Save()
+    `$start_menu_path = `"`$Env:APPDATA/Microsoft/Windows/Start Menu/Programs`"
+    `$taskbar_path = `"`$Env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`"
+    # 保存到开始菜单
+    Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
+    # 固定到任务栏
+    # Copy-Item -Path `"`$shortcut_path`" -Destination `"`$taskbar_path`" -Force
+    # `$shell = New-Object -ComObject Shell.Application
+    # `$shell.Namespace([System.IO.Path]::GetFullPath(`$taskbar_path)).ParseName((Get-Item `$shortcut_path).Name).InvokeVerb('taskbarpin')
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
@@ -702,8 +745,9 @@ function Main {
         `$launch_script = `"gui.py`"
     }
 
-    Fix-PyTorch
     Check-SD-Trainer-Installer-Update
+    Create-SD-Trainer-Shortcut
+    Fix-PyTorch
     Print-Msg `"启动 SD-Trainer 中`"
     Set-Location `"`$PSScriptRoot/lora-scripts`"
     python `$launch_script.ToString() `$args.ToString().Split()
@@ -2442,6 +2486,16 @@ function Get-Launch-Args-Setting {
 }
 
 
+# 获取自动创建快捷启动方式
+function Get-Auto-Set-Launch-Shortcut-Setting {
+    if (Test-Path `"`$PSScriptRoot/enable_shortcut.txt`") {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return Read-Host `"===========================================>`"
@@ -2739,6 +2793,46 @@ function Update-SD-Trainer-Launch-Args-Setting {
 }
 
 
+# 自动创建 SD-Trainer 快捷启动方式设置
+function Auto-Set-Launch-Shortcut-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用自动创建 SD-Trainer 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 SD-Trainer 快捷启动方式`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
+                Print-Msg `"启用自动创建 SD-Trainer 快捷启动方式成功`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" 2> `$null
+                Print-Msg `"禁用自动创建 SD-Trainer 快捷启动方式成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 SD-Trainer Installer 更新
 function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
@@ -2888,6 +2982,7 @@ function Main {
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"SD-Trainer Installer 自动检查更新: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -2896,10 +2991,11 @@ function Main {
         Print-Msg `"4. 进入 Github 镜像源设置`"
         Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
         Print-Msg `"6. 进入 SD-Trainer 启动参数设置`"
-        Print-Msg `"7. 更新 SD-Trainer Installer 管理脚本`"
-        Print-Msg `"8. 检查环境完整性`"
-        Print-Msg `"9. 查看 SD-Trainer Installer 文档`"
-        Print-Msg `"10. 退出 SD-Trainer Installer 设置`"
+        Print-Msg `"7. 进入自动创建 SD-Trainer 快捷启动方式设置`"
+        Print-Msg `"8. 更新 SD-Trainer Installer 管理脚本`"
+        Print-Msg `"9. 检查环境完整性`"
+        Print-Msg `"10. 查看 SD-Trainer Installer 文档`"
+        Print-Msg `"11. 退出 SD-Trainer Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -2928,18 +3024,22 @@ function Main {
                 break
             }
             7 {
-                Check-SD-Trainer-Installer-Update
+                Auto-Set-Launch-Shortcut-Setting
                 break
             }
             8 {
-                Check-Env
+                Check-SD-Trainer-Installer-Update
                 break
             }
             9 {
-                Get-SD-Trainer-Installer-Help-Docs
+                Check-Env
                 break
             }
             10 {
+                Get-SD-Trainer-Installer-Help-Docs
+                break
+            }
+            11 {
                 `$go_to = 1
                 break
             }

@@ -43,6 +43,7 @@ _✨一键安装 InvokeAI_
   - [移动 InvokeAI 的路径](#移动-invokeai-的路径)
   - [InvokeAI 文件夹用途](#invokeai-文件夹用途)
   - [配置代理](#配置代理)
+  - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
@@ -378,6 +379,14 @@ invokeai
 >[!NOTE]  
 >1. 配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置。
 >2. 该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
+
+
+## 创建快捷启动方式
+在脚本同级目录创建`enable_shortcut.txt`文件，当运行`launch.ps1`时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 SD-Trainer。
+
+>[!NOTE]  
+>1. 如果 SD-Trainer 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
+>2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 管理 InvokeAI Installer 设置

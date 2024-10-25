@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 135
+$INVOKEAI_INSTALLER_VERSION = 136
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -657,12 +657,56 @@ if __name__ == '__main__':
 }
 
 
+# 设置 InvokeAI 的快捷启动方式
+function Create-InvokeAI-Shortcut {
+    `$filename = `"InvokeAI`"
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/invokeai_icon.ico`"
+    `$shortcut_icon = `"`$PSScriptRoot/invokeai_icon.ico`"
+
+    if (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) {
+        return
+    }
+
+    Print-Msg `"检查 InvokeAI 快捷启动方式中`"
+    if (!(Test-Path `"`$shortcut_icon`")) {
+        Print-Msg `"获取 InvokeAI 图标中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/invokeai_icon.ico`"
+        if (!(`$?)) {
+            Print-Msg `"获取 InvokeAI 图标失败, 无法创建 InvokeAI 快捷启动方式`"
+            return
+        }
+    }
+
+    Print-Msg `"保存 InvokeAI 快捷启动方式`"
+    `$shell = New-Object -ComObject WScript.Shell
+    `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
+    `$shortcut_path = `"`$desktop\`$filename.lnk`"
+    `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
+    `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
+    `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
+    `$shortcut.Arguments = `"-File ```"`$launch_script_path```"`"
+    `$shortcut.IconLocation = `$shortcut_icon
+
+    # 保存到桌面
+    `$shortcut.Save()
+    `$start_menu_path = `"`$Env:APPDATA/Microsoft/Windows/Start Menu/Programs`"
+    `$taskbar_path = `"`$Env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`"
+    # 保存到开始菜单
+    Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
+    # 固定到任务栏
+    # Copy-Item -Path `"`$shortcut_path`" -Destination `"`$taskbar_path`" -Force
+    # `$shell = New-Object -ComObject Shell.Application
+    # `$shell.Namespace([System.IO.Path]::GetFullPath(`$taskbar_path)).ParseName((Get-Item `$shortcut_path).Name).InvokeVerb('taskbarpin')
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
     Check-InvokeAI-Installer-Update
+    Create-InvokeAI-Shortcut
     `$port = Get-InvokeAI-Launch-Port
     Print-Msg `"将使用浏览器打开 http://127.0.0.1:`$port 地址, 进入 InvokeAI 的界面`"
     Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
@@ -1013,6 +1057,7 @@ function Main {
     Set-Proxy
     Set-uv
     Check-InvokeAI-Installer-Update
+    `$update_fail = 0
 
     Print-Msg `"更新 InvokeAI 内核中`"
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
@@ -1028,6 +1073,7 @@ function Main {
 
     if (`$?) {
         Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
+        `$core_update_msg = `"更新成功`"
 
         # 检查 InvokeAI 版本是否大于 5.0.2
         `$status = Check-InvokeAI-Version
@@ -1056,18 +1102,36 @@ function Main {
             python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
         }
         if (`$?) {
-            if (`$ver -eq `$ver_) {
-                Print-Msg `"InvokeAI 已为最新版, 当前版本：`$ver_`"
-            } else {
-                Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
-            }
-            Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+            Print-Msg `"InvokeAI 依赖更新成功`"
+            `$req_update_msg = `"更新成功`"
         } else {
             Print-Msg `"InvokeAI 依赖更新失败`"
+            `$req_update_msg = `"更新失败`"
+            `$update_fail = 1
         }
     } else {
         Print-Msg `"InvokeAI 内核更新失败`"
+        `$core_update_msg = `"更新失败`"
+        `$req_update_msg = `"由于内核更新失败, 不进行依赖更新`"
+        `$update_fail = 1
     }
+    Print-Msg `"==================================================================`"
+    Print-Msg `"InvokeAI 更新结果：`"
+    Print-Msg `"InvokeAI 核心: `$core_update_msg`"
+    Print-Msg `"InvokeAI 依赖: `$req_update_msg`"
+    Print-Msg `"==================================================================`"
+    if (`$update_fail -eq 0) {
+        if (`$ver -eq `$ver_) {
+            Print-Msg `"InvokeAI 更新成功, 当前版本：`$ver_`"
+        } else {
+            Print-Msg `"InvokeAI 更新成功, 版本：`$ver -> `$ver_`"
+        }
+        Print-Msg `"该版本更新日志：https://github.com/invoke-ai/InvokeAI/releases/latest`"
+    } else {
+        Print-Msg `"InvokeAI 更新失败, 请检查控制台日志。可尝试重新运行 InvokeAI 更新脚本进行重试`"
+    }
+
+    Print-Msg `"退出 InvokeAI 更新脚本`"
 }
 
 ###################
@@ -1710,12 +1774,12 @@ function Get-InvokeAI-Installer-Auto-Check-Update-Setting {
 }
 
 
-# 获取启动参数设置
-function Get-Launch-Args-Setting {
-    if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
-        return Get-Content `"`$PSScriptRoot/launch_args.txt`"
+# 获取自动创建快捷启动方式
+function Get-Auto-Set-Launch-Shortcut-Setting {
+    if (Test-Path `"`$PSScriptRoot/enable_shortcut.txt`") {
+        return `"启用`"
     } else {
-        return `"无`"
+        return `"禁用`"
     }
 }
 
@@ -1913,6 +1977,46 @@ function Update-InvokeAI-Installer-Auto-Check-Update-Setting {
 }
 
 
+# 自动创建 InvokeAI 快捷启动方式设置
+function Auto-Set-Launch-Shortcut-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前自动创建 InvokeAI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用自动创建 InvokeAI 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 InvokeAI 快捷启动方式`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
+                Print-Msg `"启用自动创建 InvokeAI 快捷启动方式成功`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" 2> `$null
+                Print-Msg `"禁用自动创建 InvokeAI 快捷启动方式成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 InvokeAI Installer 更新
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
@@ -2045,16 +2149,18 @@ function Main {
         Print-Msg `"Python 包管理器: `$(Get-Python-Package-Manager-Setting)`"
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"InvokeAI Installer 自动检查更新: `$(Get-InvokeAI-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"自动创建 InvokeAI 快捷启动方式: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
         Print-Msg `"2. 进入 Python 包管理器设置`"
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 InvokeAI Installer 自动检查更新设置`"
-        Print-Msg `"5. 更新 InvokeAI Installer 管理脚本`"
-        Print-Msg `"6. 检查环境完整性`"
-        Print-Msg `"7. 查看 InvokeAI Installer 文档`"
-        Print-Msg `"8. 退出 InvokeAI Installer 设置`"
+        Print-Msg `"5. 进入自动创建 InvokeAI 快捷启动方式设置`"
+        Print-Msg `"6. 更新 InvokeAI Installer 管理脚本`"
+        Print-Msg `"7. 检查环境完整性`"
+        Print-Msg `"8. 查看 InvokeAI Installer 文档`"
+        Print-Msg `"9. 退出 InvokeAI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -2075,18 +2181,22 @@ function Main {
                 break
             }
             5 {
-                Check-InvokeAI-Installer-Update
+                Auto-Set-Launch-Shortcut-Setting
                 break
             }
             6 {
-                Check-Env
+                Check-InvokeAI-Installer-Update
                 break
             }
             7 {
-                Get-InvokeAI-Installer-Help-Docs
+                Check-Env
                 break
             }
             8 {
+                Get-InvokeAI-Installer-Help-Docs
+                break
+            }
+            9 {
                 `$go_to = 1
                 break
             }
