@@ -69,6 +69,7 @@ _✨一键安装 InvokeAI_
     - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
     - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
     - [安装 InvokeAI 自定义节点](#安装-invokeai-自定义节点)
+  - [更新所有 InvokeAI 自定义节点](#更新所有-invokeai-自定义节点)
     - [安装 Git](#安装-git)
     - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
     - [使用 Git 下载项目](#使用-git-下载项目)
@@ -271,6 +272,8 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 推荐下面的教程：  
 - [给所有想学习AI辅助绘画的人的入门课（基于 InvokeAI 3.7.0）](https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140)
 - [InvokeAI 官方入门教程（基于 InvokeAI 5.x）](https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO)
+- [一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）](https://www.youtube.com/watch?v=Tl-69JvwJ2s)
+- [如何使用 InvokeAI 5.0 的新统一画布和工作流系统](https://www.youtube.com/watch?v=y80W3PjR0Gc)
 - [InvokeAI 官方视频教程](https://www.youtube.com/@invokeai)
 - [InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI)
 - [Reddit 社区](https://www.reddit.com/r/invokeai)
@@ -574,6 +577,12 @@ Check-InvokeAI-Installer-Update
 ### 安装 InvokeAI 自定义节点
 ```powershell
 Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
+```
+
+
+## 更新所有 InvokeAI 自定义节点
+```powershell
+Update-InvokeAI-Node
 ```
 
 

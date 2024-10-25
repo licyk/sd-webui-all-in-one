@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 136
+$INVOKEAI_INSTALLER_VERSION = 137
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2541,6 +2541,65 @@ function global:Git-Clone (`$url, `$path) {
 }
 
 
+# 更新所有 InvokeAI 自定义节点
+function global:Update-InvokeAI-Node {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$node_list = Get-ChildItem -Path `"`$Env:CACHE_HOME/../invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    `$sum = 0
+    `$count = 0
+    ForEach (`$node in `$node_list) {
+        if (Test-Path `"`$node/.git`") {
+            `$sum += 1
+        }
+    }
+    Print-Msg `"更新 InvokeAI 自定义节点中`"
+    ForEach (`$node in `$node_list) {
+        if (!(Test-Path `"`$node/.git`")) {
+            continue
+        }
+
+        `$count += 1
+        Print-Msg `"[`$count/`$sum]:: 更新 `$(`$(Get-Item `$node).Name) 自定义节点中`"
+        Fix-Git-Point-Off-Set `"`$node`"
+        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$node`" fetch --recurse-submodules
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            if (`$origin_ver -eq `$latest_ver) {
+                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点已为最新版`"
+            } else {
+                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
+            }
+        } else {
+            Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新失败`"
+        }
+    }
+    Print-Msg `"更新 InvokeAI 自定义节点完成`"
+}
+
+
 # 列出 InvokeAI Installer 内置命令
 function global:List-CMD {
     Write-Host `"
@@ -2558,6 +2617,7 @@ Github：https://github.com/licyk
     Install-InvokeAI-Node
     Git-Clone
     Test-Github-Mirror
+    Update-InvokeAI-Node
     List-CMD
 
 更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
@@ -2679,6 +2739,8 @@ InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标�
 使用 InvokeAI 时，建议阅读下列教程，以更快的了解并掌握使用 InvokeAI 的方法。
 给所有想学习AI辅助绘画的人的入门课 By Yuno779（基于 InvokeAI 3.7.0）：https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
 InvokeAI 官方入门教程（基于 InvokeAI 5.x）：https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO
+一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）：https://www.youtube.com/watch?v=Tl-69JvwJ2s
+如何使用 InvokeAI 5.0 的新统一画布和工作流系统：https://www.youtube.com/watch?v=y80W3PjR0Gc
 
 脚本为 InvokeAI 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 InvokeAI 的模型管理无法从 HuggingFace 下载模型的问题。
 如果想自定义 HuggingFace 镜像源，可以在本地创建 mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
