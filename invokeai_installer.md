@@ -337,6 +337,12 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 ## 卸载 InvokeAI
 使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。
 
+如果有 InvokeAI 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
+```powershell
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\InvokeAI.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\InvokeAI.lnk" -Force
+```
+
 
 ## 移动 InvokeAI 的路径
 直接将 InvokeAI 文件夹移动到别的路径即可。

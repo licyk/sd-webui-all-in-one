@@ -329,6 +329,12 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 ## 卸载 SD-Trainer
 使用 SD-Trainer Installer 安装 SD-Trainer 后，所有的文件都存放在 SD-Trainer 文件夹中，只需要删除 SD-Trainer 文件夹即可卸载 SD-Trainer。
 
+如果有 SD-Trainer 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
+```powershell
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Trainer.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer.lnk" -Force
+```
+
 
 ## 移动 SD-Trainer 的路径
 直接将 SD-Trainer 文件夹移动到别的路径即可。
