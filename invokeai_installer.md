@@ -29,6 +29,7 @@ _✨一键安装 InvokeAI_
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 InvokeAI 中文](#设置-invokeai-中文)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
+  - [设置 Github 镜像源](#设置-github-镜像源)
   - [添加模型](#添加模型)
   - [InvokeAI 的使用方法](#invokeai-的使用方法)
   - [重装 InvokeAI](#重装-invokeai)
@@ -264,6 +265,25 @@ InvokeAI Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像
 >该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
+## 设置 Github 镜像源
+InvokeAI Installer 为了加速访问 Github 的速度，如加快下载和更新 InvokeAI 自定义节点的速度，默认在启动脚本时自动检测可用的 Github 镜像源并设置。如果需要自定义 Github 镜像源，可以在和脚本同级的目录创建`gh_mirror.txt`文件，在文件中填写 Github 镜像源的地址后保存，再次启动脚本时将取消自动检测可用的 Github 镜像源，而是读取该文件的配置并设置 Github 镜像源。
+
+|可用的 Github 镜像源|
+|---|
+|https://ghp.ci/https://github.com|
+|https://mirror.ghproxy.com/https://github.com|
+|https://ghproxy.net/https://github.com|
+|https://gitclone.com/github.com|
+|https://gh-proxy.com/https://github.com|
+|https://ghps.cc/https://github.com|
+|https://gh.idayer.com/https://github.com|
+
+如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
+
+>[!NOTE]  
+>该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
+
+
 ## 添加模型
 在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
 
@@ -391,11 +411,11 @@ invokeai
 
 
 ## 创建快捷启动方式
-在脚本同级目录创建`enable_shortcut.txt`文件，当运行`launch.ps1`时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 SD-Trainer。
+在脚本同级目录创建`enable_shortcut.txt`文件，当运行`launch.ps1`时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 InvokeAI。
 
 >[!NOTE]  
->1. 如果 SD-Trainer 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
->2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+>1. 如果 InvokeAI 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
+>2. 该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 管理 InvokeAI Installer 设置

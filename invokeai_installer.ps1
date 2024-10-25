@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 137
+$INVOKEAI_INSTALLER_VERSION = 138
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1784,6 +1784,18 @@ function Get-Auto-Set-Launch-Shortcut-Setting {
 }
 
 
+# 获取 Github 镜像源设置
+function Get-Github-Mirror-Setting {
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") {
+        return `"禁用`"
+    } elseif (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") {
+        return `"启用 (使用自定义镜像源: `$(Get-Content `"`$PSScriptRoot/gh_mirror.txt`"))`"
+    } else {
+        return `"启用 (自动选择镜像源)`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return Read-Host `"=========================================>`"
@@ -2017,6 +2029,66 @@ function Auto-Set-Launch-Shortcut-Setting {
 }
 
 
+# 设置 Github 镜像源
+function Update-Github-Mirror-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 Github 镜像源 (自动检测可用的 Github 镜像源并使用)`"
+        Print-Msg `"2. 启用 Github 镜像源 (使用自定义 Github 镜像源)`"
+        Print-Msg `"3. 禁用 Github 镜像源`"
+        Print-Msg `"4. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
+                Print-Msg `"启用 Github 镜像成功, 在更新 SD-Trainer 时将自动检测可用的 Github 镜像源并使用`"
+                break
+            }
+            2 {
+                Print-Msg `"请输入 Github 镜像源地址`"
+                Print-Msg `"提示: 可用的 Github 镜像源有: `"
+                Print-Msg `"1. https://ghp.ci/https://github.com`"
+                Print-Msg `"2. https://mirror.ghproxy.com/https://github.com`"
+                Print-Msg `"3. https://ghproxy.net/https://github.com`"
+                Print-Msg `"4. https://gitclone.com/github.com`"
+                Print-Msg `"5. https://gh-proxy.com/https://github.com`"
+                Print-Msg `"6. https://ghps.cc/https://github.com`"
+                Print-Msg `"7. https://gh.idayer.com/https://github.com`"
+                Print-Msg `"输入 Github 镜像源地址后回车保存`"
+                `$github_mirror_address = Get-User-Input
+                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/gh_mirror.txt`" -Value `$github_mirror_address
+                Print-Msg `"启用 Github 镜像成功, 使用的 Github 镜像源为: `$github_mirror_address`"
+                break
+            }
+            3 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force > `$null
+                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
+                Print-Msg `"禁用 Github 镜像成功`"
+                break
+            }
+            4 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 InvokeAI Installer 更新
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
@@ -2150,6 +2222,7 @@ function Main {
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"InvokeAI Installer 自动检查更新: `$(Get-InvokeAI-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"自动创建 InvokeAI 快捷启动方式: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -2157,10 +2230,11 @@ function Main {
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 InvokeAI Installer 自动检查更新设置`"
         Print-Msg `"5. 进入自动创建 InvokeAI 快捷启动方式设置`"
-        Print-Msg `"6. 更新 InvokeAI Installer 管理脚本`"
-        Print-Msg `"7. 检查环境完整性`"
-        Print-Msg `"8. 查看 InvokeAI Installer 文档`"
-        Print-Msg `"9. 退出 InvokeAI Installer 设置`"
+        Print-Msg `"6. 进入 Github 镜像源设置`"
+        Print-Msg `"7. 更新 InvokeAI Installer 管理脚本`"
+        Print-Msg `"8. 检查环境完整性`"
+        Print-Msg `"9. 查看 InvokeAI Installer 文档`"
+        Print-Msg `"10. 退出 InvokeAI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -2185,18 +2259,22 @@ function Main {
                 break
             }
             6 {
-                Check-InvokeAI-Installer-Update
+                Update-Github-Mirror-Setting
                 break
             }
             7 {
-                Check-Env
+                Check-InvokeAI-Installer-Update
                 break
             }
             8 {
-                Get-InvokeAI-Installer-Help-Docs
+                Check-Env
                 break
             }
             9 {
+                Get-InvokeAI-Installer-Help-Docs
+                break
+            }
+            10 {
                 `$go_to = 1
                 break
             }
@@ -2537,6 +2615,25 @@ function global:Git-Clone (`$url, `$path) {
         }
     } else {
         Print-Msg `"`$repo_name 已存在`"
+    }
+}
+
+
+# 修复 Git 分支游离
+function global:Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
     }
 }
 
