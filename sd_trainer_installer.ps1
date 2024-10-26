@@ -1,12 +1,18 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 138
+$SD_TRAINER_INSTALLER_VERSION = 139
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
-$PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
-# $PIP_EXTRA_INDEX_MIRROR = "https://mirror.baidu.com/pypi/simple"
-$PIP_EXTRA_INDEX_MIRROR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
-$PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+$PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
+$PIP_INDEX_ADDR_ORI = "https://pypi.python.org/simple"
+$PIP_EXTRA_INDEX_ADDR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
+$PIP_EXTRA_INDEX_ADDR_ORI = "https://download.pytorch.org/whl"
+$PIP_FIND_ADDR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
+$PIP_FIND_ADDR_ORI = "https://download.pytorch.org/whl/torch_stable.html"
+$USE_PIP_MIRROR = if (!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) { $true } else { $false }
+$PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
+$PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
+$PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
 # $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
@@ -68,6 +74,16 @@ $Env:UV_PYTHON = "$PSScriptRoot/SD-Trainer/python/python.exe"
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][SD-Trainer Installer]:: $msg"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if ($USE_PIP_MIRROR) {
+        Print-Msg "使用 Pip 镜像源"
+    } else {
+        Print-Msg "检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源"
+    }
 }
 
 
@@ -464,9 +480,16 @@ function Write-Launch-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -513,6 +536,16 @@ function Write-Launch-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
 }
 
 
@@ -729,6 +762,7 @@ function Main {
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
     Set-HuggingFace-Mirror
+    Pip-Mirror-Status
     `$args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
     `$current_path = Get-Location
@@ -780,9 +814,16 @@ function Write-Update-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -839,6 +880,16 @@ function Write-Update-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
 }
 
 
@@ -1168,6 +1219,7 @@ function Main {
     Set-uv
     Set-Proxy
     Set-Github-Mirror
+    Pip-Mirror-Status
 
     # 记录上次的路径
     `$current_path = Get-Location
@@ -1336,9 +1388,16 @@ function Write-PyTorch-ReInstall-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -1385,6 +1444,16 @@ function Write-PyTorch-ReInstall-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
 }
 
 
@@ -1568,6 +1637,7 @@ function Main {
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-uv
     Set-Proxy
+    Pip-Mirror-Status
     Check-SD-Trainer-Installer-Update
 
     # PyTorch 版本列表
@@ -1927,9 +1997,16 @@ function Write-Download-Model-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -1976,6 +2053,16 @@ function Write-Download-Model-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
 }
 
 
@@ -2063,7 +2150,7 @@ function Check-SD-Trainer-Installer-Update {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
-
+    Pip-Mirror-Status
     Check-SD-Trainer-Installer-Update
 
     `$to_exit = 0
@@ -2339,9 +2426,16 @@ function Write-SD-Trainer-Installer-Settings-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -2388,6 +2482,16 @@ function Write-SD-Trainer-Installer-Settings-Script {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
 }
 
 
@@ -2481,6 +2585,16 @@ function Get-Launch-Args-Setting {
 # 获取自动创建快捷启动方式
 function Get-Auto-Set-Launch-Shortcut-Setting {
     if (Test-Path `"`$PSScriptRoot/enable_shortcut.txt`") {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
+# Pip 镜像源配置
+function Get-Pip-Mirror-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) {
         return `"启用`"
     } else {
         return `"禁用`"
@@ -2825,6 +2939,46 @@ function Auto-Set-Launch-Shortcut-Setting {
 }
 
 
+# Pip 镜像源设置
+function Pip-Mirror-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 Pip 镜像源`"
+        Print-Msg `"2. 禁用 Pip 镜像源`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" 2> `$null
+                Print-Msg `"启用 Pip 镜像源成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force > `$null
+                Print-Msg `"禁用 Pip 镜像源成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 SD-Trainer Installer 更新
 function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
@@ -2962,6 +3116,7 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
+    Pip-Mirror-Status
     while (`$true) {
         `$go_to = 0
         Print-Msg `"-----------------------------------------------------`"
@@ -2973,6 +3128,7 @@ function Main {
         Print-Msg `"SD-Trainer Installer 自动检查更新: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -2982,10 +3138,11 @@ function Main {
         Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
         Print-Msg `"6. 进入 SD-Trainer 启动参数设置`"
         Print-Msg `"7. 进入自动创建 SD-Trainer 快捷启动方式设置`"
-        Print-Msg `"8. 更新 SD-Trainer Installer 管理脚本`"
-        Print-Msg `"9. 检查环境完整性`"
-        Print-Msg `"10. 查看 SD-Trainer Installer 文档`"
-        Print-Msg `"11. 退出 SD-Trainer Installer 设置`"
+        Print-Msg `"8. 进入 Pip 镜像源设置`"
+        Print-Msg `"9. 更新 SD-Trainer Installer 管理脚本`"
+        Print-Msg `"10. 检查环境完整性`"
+        Print-Msg `"11. 查看 SD-Trainer Installer 文档`"
+        Print-Msg `"12. 退出 SD-Trainer Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -3018,18 +3175,22 @@ function Main {
                 break
             }
             8 {
-                Check-SD-Trainer-Installer-Update
+                Pip-Mirror-Setting
                 break
             }
             9 {
-                Check-Env
+                Check-SD-Trainer-Installer-Update
                 break
             }
             10 {
-                Get-SD-Trainer-Installer-Help-Docs
+                Check-Env
                 break
             }
             11 {
+                Get-SD-Trainer-Installer-Help-Docs
+                break
+            }
+            12 {
                 `$go_to = 1
                 break
             }
@@ -3067,9 +3228,16 @@ function Write-Env-Activate-Script {
 `$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # Pip 镜像源
-`$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
-`$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
-`$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
@@ -3083,7 +3251,7 @@ function Write-Env-Activate-Script {
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
@@ -3226,6 +3394,16 @@ Github：https://github.com/licyk
 }
 
 
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
+}
+
+
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
@@ -3289,6 +3467,7 @@ function Main {
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
+    Pip-Mirror-Status
     Print-Msg `"激活 SD-Trainer Env`"
     Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 }
@@ -3437,6 +3616,7 @@ function Write-Manager-Scripts {
 function Use-Install-Mode {
     Set-Proxy
     Set-uv
+    Pip-Mirror-Status
     Print-Msg "启动 SD-Trainer 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
