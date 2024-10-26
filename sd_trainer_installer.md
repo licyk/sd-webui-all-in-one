@@ -25,6 +25,7 @@ _✨一键安装 SD-Trainer_
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
+  - [设置 Pip 镜像源](#设置-pip-镜像源)
   - [配置代理](#配置代理)
     - [使用系统代理](#使用系统代理)
     - [使用配置文件](#使用配置文件)
@@ -262,6 +263,13 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
+## 设置 Pip 镜像源
+SD-Trainer Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，如果需要禁用 Pip 镜像源，可以在脚本同级目录创建`disable_pip_mirror.txt`文件，再次运行脚本时将 Pip 源切换至官方源。
+
+>[!NOTE]  
+>该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+
+
 ## 配置代理
 如果出现某些文件无法下载，比如在控制台出现`由于连接芳在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败`之类的报错时，可以尝试配置代理，有以下两种方法。
 
@@ -280,7 +288,6 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 >[!NOTE]  
 >1. 配置文件的优先级高于系统代理配置，所以当同时使用了两种方式配置代理，脚本将优先使用配置文件中的代理配置。
 >2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
 
 
 ## 添加模型
