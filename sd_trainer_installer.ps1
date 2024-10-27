@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 139
+$SD_TRAINER_INSTALLER_VERSION = 140
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2182,17 +2182,20 @@ function Main {
 - 19、Illustrious-XL-v0.1 (SDXL)
 - 20、Illustrious-XL-v0.1-GUIDED (SDXL)
 - 21、noobaiXLNAIXL_earlyAccessVersion (SDXL)
-- 22、flux1-schnell (FLUX.1)
-- 23、flux1-dev (FLUX.1)
-- 24、ashen0209-flux1-dev2pro (FLUX.1)
-- 25、nyanko7-flux-dev-de-distill (FLUX.1)
-- 26、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
-- 27、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
-- 28、sdxl_fp16_fix_vae (SDXL VAE)
-- 29、sdxl_vae (SDXL VAE)
-- 30、ae (FLUX.1 VAE)
-- 31、clip_l (FLUX.1 CLIP)
-- 32、t5xxl_fp16 (FLUX.1 CLIP)
+- 22、noobaiXLNAIXL_epsilonPred05Version (SDXL)
+- 23、noobaiXLNAIXL_vPredTestVersion (SDXL)
+- 24、noobaiXLNAIXL_epsilonPred075 (SDXL)
+- 25、flux1-schnell (FLUX.1)
+- 26、flux1-dev (FLUX.1)
+- 27、ashen0209-flux1-dev2pro (FLUX.1)
+- 28、nyanko7-flux-dev-de-distill (FLUX.1)
+- 29、vae-ft-ema-560000-ema-pruned (SD 1.5 VAE)
+- 30、vae-ft-mse-840000-ema-pruned (SD 1.5 VAE)
+- 31、sdxl_fp16_fix_vae (SDXL VAE)
+- 32、sdxl_vae (SDXL VAE)
+- 33、ae (FLUX.1 VAE)
+- 34、clip_l (FLUX.1 CLIP)
+- 35、t5xxl_fp16 (FLUX.1 CLIP)
 
 关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md
 -----------------------------------------------------
@@ -2206,162 +2209,142 @@ function Main {
         switch (`$arg) {
             1 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`"
-                `$model_name = `"v1-5-pruned-emaonly.safetensors`"
                 `$go_to = 1
             }
             2 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`"
-                `$model_name = `"animefull-final-pruned.safetensors`"
                 `$go_to = 1
             }
             3 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`"
-                `$model_name = `"v2-1_768-ema-pruned.safetensors`"
                 `$go_to = 1
             }
             4 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`"
-                `$model_name = `"wd-1-4-anime_e2.ckpt`"
                 `$go_to = 1
             }
             5 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`"
-                `$model_name = `"wd-mofu-fp16.safetensors`"
                 `$go_to = 1
             }
             6 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`"
-                `$model_name = `"sd_xl_base_1.0_0.9vae.safetensors`"
                 `$go_to = 1
             }
             7 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`"
-                `$model_name = `"animagine-xl-3.0.safetensors`"
                 `$go_to = 1
             }
             8 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`"
-                `$model_name = `"animagine-xl-3.1.safetensors`"
                 `$go_to = 1
             }
             9 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-delta-rev1.safetensors`"
-                `$model_name = `"kohaku-xl-delta-rev1.safetensors`"
                 `$go_to = 1
             }
             10 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors`"
-                `$model_name = `"kohakuXLEpsilon_rev1.safetensors`"
                 `$go_to = 1
             }
             11 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors`"
-                `$model_name = `"kohaku-xl-epsilon-rev2.safetensors`"
                 `$go_to = 1
             }
             12 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors`"
-                `$model_name = `"kohaku-xl-epsilon-rev3.safetensors`"
                 `$go_to = 1
             }
             13 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-zeta.safetensors`"
-                `$model_name = `"kohaku-xl-zeta.safetensors`"
                 `$go_to = 1
             }
             14 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`"
-                `$model_name = `"ponyDiffusionV6XL_v6.safetensors`"
                 `$go_to = 1
             }
             15 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`"
-                `$model_name = `"pdForAnime_v20.safetensors`"
                 `$go_to = 1
             }
             16 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors`"
-                `$model_name = `"starryXLV52_v52.safetensors`"
                 `$go_to = 1
             }
             17 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors`"
-                `$model_name = `"heartOfAppleXL_v20.safetensors`"
                 `$go_to = 1
             }
             18 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors`"
-                `$model_name = `"heartOfAppleXL_v30.safetensors`"
                 `$go_to = 1
             }
             19 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors`"
-                `$model_name = `"Illustrious-XL-v0.1.safetensors`"
                 `$go_to = 1
             }
             20 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`"
-                `$model_name = `"Illustrious-XL-v0.1-GUIDED.safetensors`"
                 `$go_to = 1
             }
             21 {
                 `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors`"
-                `$model_name = `"noobaiXLNAIXL_earlyAccessVersion.safetensors`"
                 `$go_to = 1
             }
             22 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
-                `$model_name = `"flux1-schnell.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred05Version.safetensors`"
                 `$go_to = 1
             }
             23 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
-                `$model_name = `"flux1-dev.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors`"
                 `$go_to = 1
             }
             24 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`"
-                `$model_name = `"ashen0209-flux1-dev2pro.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors`"
                 `$go_to = 1
             }
             25 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`"
-                `$model_name = `"nyanko7-flux-dev-de-distill.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`"
                 `$go_to = 1
             }
             26 {
-                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
-                `$model_name = `"vae-ft-ema-560000-ema-pruned.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`"
                 `$go_to = 1
             }
             27 {
-                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
-                `$model_name = `"vae-ft-mse-840000-ema-pruned.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`"
                 `$go_to = 1
             }
             28 {
-                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
-                `$model_name = `"sdxl_fp16_fix_vae.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`"
                 `$go_to = 1
             }
             29 {
-                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
-                `$model_name = `"sdxl_vae.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
             30 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
-                `$model_name = `"ae.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`"
                 `$go_to = 1
             }
             31 {
-                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
-                `$model_name = `"clip_l.safetensors`"
+                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`"
                 `$go_to = 1
             }
             32 {
+                `$url = `"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`"
+                `$go_to = 1
+            }
+            33 {
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`"
+                `$go_to = 1
+            }
+            34 {
+                `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`"
+                `$go_to = 1
+            }
+            35 {
                 `$url = `"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`"
-                `$model_name = `"t5xxl_fp16.safetensors`"
                 `$go_to = 1
             }
             exit {
@@ -2385,6 +2368,7 @@ function Main {
         exit 0
     }
 
+    `$model_name = Split-Path `$url -Leaf
     Print-Msg `"当前选择要下载的模型: `$model_name`"
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
