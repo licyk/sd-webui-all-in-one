@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 141
+$INVOKEAI_INSTALLER_VERSION = 142
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -731,6 +731,138 @@ function Create-InvokeAI-Shortcut {
 }
 
 
+# 设置 CUDA 内存分配器
+function Set-PyTorch-CUDA-Memory-Alloc {
+    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
+        Print-Msg `"检测是否可设置 CUDA 内存分配器`"
+    } else {
+        Print-Msg `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件, 已禁用自动设置 CUDA 内存分配器`"
+        return
+    }
+
+    `$content = `"
+import os
+import importlib.util
+import subprocess
+
+#Can't use pytorch to get the GPU names because the cuda malloc has to be set before the first import.
+def get_gpu_names():
+    if os.name == 'nt':
+        import ctypes
+
+        # Define necessary C structures and types
+        class DISPLAY_DEVICEA(ctypes.Structure):
+            _fields_ = [
+                ('cb', ctypes.c_ulong),
+                ('DeviceName', ctypes.c_char * 32),
+                ('DeviceString', ctypes.c_char * 128),
+                ('StateFlags', ctypes.c_ulong),
+                ('DeviceID', ctypes.c_char * 128),
+                ('DeviceKey', ctypes.c_char * 128)
+            ]
+
+        # Load user32.dll
+        user32 = ctypes.windll.user32
+
+        # Call EnumDisplayDevicesA
+        def enum_display_devices():
+            device_info = DISPLAY_DEVICEA()
+            device_info.cb = ctypes.sizeof(device_info)
+            device_index = 0
+            gpu_names = set()
+
+            while user32.EnumDisplayDevicesA(None, device_index, ctypes.byref(device_info), 0):
+                device_index += 1
+                gpu_names.add(device_info.DeviceString.decode('utf-8'))
+            return gpu_names
+        return enum_display_devices()
+    else:
+        gpu_names = set()
+        out = subprocess.check_output(['nvidia-smi', '-L'])
+        for l in out.split(b'\n'):
+            if len(l) > 0:
+                gpu_names.add(l.decode('utf-8').split(' (UUID')[0])
+        return gpu_names
+
+blacklist = {'GeForce GTX TITAN X', 'GeForce GTX 980', 'GeForce GTX 970', 'GeForce GTX 960', 'GeForce GTX 950', 'GeForce 945M',
+                'GeForce 940M', 'GeForce 930M', 'GeForce 920M', 'GeForce 910M', 'GeForce GTX 750', 'GeForce GTX 745', 'Quadro K620',
+                'Quadro K1200', 'Quadro K2200', 'Quadro M500', 'Quadro M520', 'Quadro M600', 'Quadro M620', 'Quadro M1000',
+                'Quadro M1200', 'Quadro M2000', 'Quadro M2200', 'Quadro M3000', 'Quadro M4000', 'Quadro M5000', 'Quadro M5500', 'Quadro M6000',
+                'GeForce MX110', 'GeForce MX130', 'GeForce 830M', 'GeForce 840M', 'GeForce GTX 850M', 'GeForce GTX 860M',
+                'GeForce GTX 1650', 'GeForce GTX 1630', 'Tesla M4', 'Tesla M6', 'Tesla M10', 'Tesla M40', 'Tesla M60'
+                }
+
+
+def cuda_malloc_supported():
+    try:
+        names = get_gpu_names()
+    except:
+        names = set()
+    for x in names:
+        if 'NVIDIA' in x:
+            for b in blacklist:
+                if b in x:
+                    return False
+    return True
+
+
+def is_nvidia_device():
+    try:
+        names = get_gpu_names()
+    except:
+        names = set()
+    for x in names:
+        if 'NVIDIA' in x:
+            return True
+    return False
+
+
+def get_pytorch_cuda_alloc_conf():
+    if is_nvidia_device():
+        if cuda_malloc_supported():
+            return 'cuda_malloc'
+        else:
+            return 'pytorch_malloc'
+    else:
+        return None
+
+
+if __name__ == '__main__':
+    try:
+        version = ''
+        torch_spec = importlib.util.find_spec('torch')
+        for folder in torch_spec.submodule_search_locations:
+            ver_file = os.path.join(folder, 'version.py')
+            if os.path.isfile(ver_file):
+                spec = importlib.util.spec_from_file_location('torch_version_import', ver_file)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                version = module.__version__
+        if int(version[0]) >= 2: #enable by default for torch version 2.0 and up
+            print(get_pytorch_cuda_alloc_conf())
+        else:
+            print(None)
+    except:
+        print(None)
+`"
+
+    `$status = `$(python -c `"`$content`")
+    switch (`$status) {
+        cuda_malloc {
+            Print-Msg `"设置 CUDA 内存分配器为 CUDA 内置异步分配器`"
+            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"backend:cudaMallocAsync`"
+        }
+        pytorch_malloc {
+            Print-Msg `"设置 CUDA 内存分配器为 PyTorch 原生分配器`"
+            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`"
+        }
+        Default {
+            Print-Msg `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`"
+        }
+    }
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
@@ -739,6 +871,7 @@ function Main {
     Pip-Mirror-Status
     Check-InvokeAI-Installer-Update
     Create-InvokeAI-Shortcut
+    Set-PyTorch-CUDA-Memory-Alloc
     `$port = Get-InvokeAI-Launch-Port
     Print-Msg `"将使用浏览器打开 http://127.0.0.1:`$port 地址, 进入 InvokeAI 的界面`"
     Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
@@ -1887,6 +2020,16 @@ function Get-Pip-Mirror-Setting {
 }
 
 
+# 获取 CUDA 内存分配器设置
+function Get-PyTorch-CUDA-Memory-Alloc-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return Read-Host `"=========================================>`"
@@ -2184,7 +2327,7 @@ function Update-Github-Mirror-Setting {
 function Pip-Mirror-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"当前 Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 启用 Pip 镜像源`"
         Print-Msg `"2. 禁用 Pip 镜像源`"
@@ -2202,6 +2345,46 @@ function Pip-Mirror-Setting {
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force > `$null
                 Print-Msg `"禁用 Pip 镜像源成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
+# CUDA 内存分配器设置
+function PyTorch-CUDA-Memory-Alloc-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用自动设置 CUDA 内存分配器`"
+        Print-Msg `"2. 禁用自动设置 CUDA 内存分配器`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`" 2> `$null
+                Print-Msg `"启用自动设置 CUDA 内存分配器成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`" -Force > `$null
+                Print-Msg `"禁用自动设置 CUDA 内存分配器成功`"
                 break
             }
             3 {
@@ -2354,6 +2537,7 @@ function Main {
         Print-Msg `"自动创建 InvokeAI 快捷启动方式: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -2363,10 +2547,11 @@ function Main {
         Print-Msg `"5. 进入自动创建 InvokeAI 快捷启动方式设置`"
         Print-Msg `"6. 进入 Github 镜像源设置`"
         Print-Msg `"7. 进入 Pip 镜像源设置`"
-        Print-Msg `"8. 更新 InvokeAI Installer 管理脚本`"
-        Print-Msg `"9. 检查环境完整性`"
-        Print-Msg `"10. 查看 InvokeAI Installer 文档`"
-        Print-Msg `"11. 退出 InvokeAI Installer 设置`"
+        Print-Msg `"8. 进入自动设置 CUDA 内存分配器设置`"
+        Print-Msg `"9. 更新 InvokeAI Installer 管理脚本`"
+        Print-Msg `"10. 检查环境完整性`"
+        Print-Msg `"11. 查看 InvokeAI Installer 文档`"
+        Print-Msg `"12. 退出 InvokeAI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -2399,18 +2584,22 @@ function Main {
                 break
             }
             8 {
-                Check-InvokeAI-Installer-Update
+                PyTorch-CUDA-Memory-Alloc-Setting
                 break
             }
             9 {
-                Check-Env
+                Check-InvokeAI-Installer-Update
                 break
             }
             10 {
-                Get-InvokeAI-Installer-Help-Docs
+                Check-Env
                 break
             }
             11 {
+                Get-InvokeAI-Installer-Help-Docs
+                break
+            }
+            12 {
                 `$go_to = 1
                 break
             }
