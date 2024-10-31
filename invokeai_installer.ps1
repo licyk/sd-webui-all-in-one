@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 142
+$INVOKEAI_INSTALLER_VERSION = 143
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -582,7 +582,7 @@ function Check-InvokeAI-Installer-Update {
                             exit 1
                         }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1032,7 +1032,7 @@ function Check-InvokeAI-Installer-Update {
                             exit 1
                         }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1607,7 +1607,7 @@ function Check-InvokeAI-Installer-Update {
                             exit 1
                         }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2433,7 +2433,7 @@ function Check-InvokeAI-Installer-Update {
                     return
                 }
                 Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                powershell `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                . `"`$PSScriptRoot/../invokeai_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
@@ -2755,7 +2755,7 @@ function global:Check-InvokeAI-Installer-Update {
                     return
                 }
                 Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
-                powershell `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`"
+                . `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
