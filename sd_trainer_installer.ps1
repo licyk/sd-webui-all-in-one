@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 142
+$SD_TRAINER_INSTALLER_VERSION = 143
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1803,6 +1803,9 @@ function Main {
 - 25、Torch 2.5.0 (CUDA 11.8)
 - 26、Torch 2.5.0 (CUDA 12.1)
 - 27、Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2
+- 28、Torch 2.5.1 (CUDA 11.8)
+- 29、Torch 2.5.1 (CUDA 12.1)
+- 30、Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3
 -----------------------------------------------------
     `"
 
@@ -2012,6 +2015,33 @@ function Main {
             27 {
                 `$torch_ver = `"torch==2.5.0+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.0+cu124`"
                 `$xformers_ver = `"xformers==0.0.28.post2`"
+                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            28 {
+                `$torch_ver = `"torch==2.5.1+cu118 torchvision==0.20.0+cu118 torchaudio==2.5.1+cu118`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            29 {
+                `$torch_ver = `"torch==2.5.1+cu121 torchvision==0.20.0+cu121 torchaudio==2.5.1+cu121`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            30 {
+                `$torch_ver = `"torch==2.5.1+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.1+cu124`"
+                `$xformers_ver = `"xformers==0.0.28.post3`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
