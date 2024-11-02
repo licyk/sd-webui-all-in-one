@@ -165,7 +165,7 @@
     ],
     "default_save_metadata_to_images": true,
     "default_metadata_scheme": "a1111",
-    "default_clip_skip": 1,
+    "default_clip_skip": 2,
     "default_black_out_nsfw": false,
     "metadata_created_by": "Created by Fooocus"
 }
