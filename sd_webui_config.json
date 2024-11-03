@@ -13,5 +13,8 @@
     "js_live_preview_in_modal_lightbox": true,
     "upscaler_for_img2img": "Lanczos",
     "emphasis": "No norm",
-    "samples_filename_pattern": "[datetime<%Y%m%d_%H%M%S>]_[model_name]_[sampler]"
+    "samples_filename_pattern": "[datetime<%Y%m%d_%H%M%S>]_[model_name]_[sampler]",
+    "extra_options_img2img": [
+        "upscaler_for_img2img"
+    ]
 }
