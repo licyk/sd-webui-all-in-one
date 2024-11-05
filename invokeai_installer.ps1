@@ -17,7 +17,7 @@ $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.4.26"
+$UV_MINIMUM_VER = "0.4.30"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/InvokeAI/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/InvokeAI/python/Scripts"
