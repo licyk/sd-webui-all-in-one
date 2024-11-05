@@ -144,16 +144,16 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 |[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
 
-在 InvokeAI Installer 成功安装 InvokeAI 后，在 InvokeAI 文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
+在 InvokeAI Installer 成功安装 InvokeAI 后，在`InvokeAI`文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
 
 >[!NOTE]  
 >1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
->2. 从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入 InvokeAI 文件夹运行`update.ps1`进行更新。
+>2. 从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入`InvokeAI`文件夹运行`update.ps1`进行更新。
 
 ***
 
 # 使用
-在 InvokeAI 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
+在`InvokeAI`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
 
 
 ## 启动 InvokeAI
@@ -165,7 +165,8 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 进入 InvokeAI 所在的 Python 环境
-如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的 python 文件夹添加到环境变量，这将会导致不良的后果产生。  
+如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
+
 正确的方法是在 InvokeAI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 InvokeAI Env：
 
 ```powershell
@@ -178,7 +179,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 获取最新的 InvokeAI Installer 脚本
-运行`get_invokeai_installer.ps1`脚本，运行成功后将会把 InvokeAI Installer 保存在 InvokeAI 文件夹的上一级目录中。
+运行`get_invokeai_installer.ps1`脚本，运行成功后将会把 InvokeAI Installer 保存在`InvokeAI`文件夹的上一级目录中。
 
 
 ## 更新 InvokeAI 管理脚本
@@ -215,10 +216,10 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 
 
 ## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 InvokeAI Installer 重新生成这些脚本。
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`invokeai_installer.ps1`重新生成这些脚本。
 
 >[!NOTE]  
->InvokeAI Installer 必须放在 InvokeAI 文件夹外运行，不知道放哪的可以参考下面的目录结构。
+>InvokeAI Installer 必须放在`InvokeAI`文件夹外运行，不知道放哪的可以参考下面的目录结构。
 
 ```
 $ tree -L 2
@@ -310,7 +311,7 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 
 ## 重装 InvokeAI
-如果 InvokeAI 因为严重损坏导致无法正常使用，可以将 InvokeAI 文件夹中的 python 文件夹删除，然后运行 InvokeAI Installer 重新部署 InvokeAI。
+如果 InvokeAI 因为严重损坏导致无法正常使用，可以将`InvokeAI`文件夹中的`python`文件夹删除，然后运行`invokeai_installer.ps1`重新部署 InvokeAI。
 
 
 ## 重置 InvokeAI 数据库
@@ -366,7 +367,7 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 
 
 ## 卸载 InvokeAI
-使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在 InvokeAI 文件夹中，只需要删除 InvokeAI 文件夹即可卸载 InvokeAI。
+使用 InvokeAI Installer 安装 InvokeAI 后，所有的文件都存放在`InvokeAI`文件夹中，只需要删除`InvokeAI`文件夹即可卸载 InvokeAI。
 
 如果有 InvokeAI 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
 ```powershell
@@ -376,13 +377,13 @@ Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\InvokeAI.l
 
 
 ## 移动 InvokeAI 的路径
-直接将 InvokeAI 文件夹移动到别的路径即可。
+直接将`InvokeAI`文件夹移动到别的路径即可。
 
 如果启用了自动创建 InvokeAI 快捷启动方式的功能，移动 InvokeAI 后原来的快捷启动方式将失效，需要运行`launch.ps1`更新快捷启动方式。
 
 
 ## InvokeAI 文件夹用途
-在 InvokeAI 文件夹中，存在着 invokeai 文件夹，保存着模型和生成出来的图片等，以下为不同文件夹的用途。
+在`InvokeAI`文件夹中，存在着`invokeai`文件夹，保存着模型和生成出来的图片等，以下为不同文件夹的用途。
 
 ```
 $ tree -L 1 invokeai
@@ -476,7 +477,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
              Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
 ```
 
-这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 InvokeAI/cache/pip 文件夹删除，再重新运行 InvokeAI Installer。
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将`InvokeAI/cache/pip`文件夹删除，再重新运行 InvokeAI Installer。
 
 
 ## 运行 InvokeAI 时 InvokeAI 出现崩溃
@@ -496,7 +497,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ### 手动输入命令激活
-在 InvokeAI 文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
+在`InvokeAI`文件夹打开 PowerShell，输入下面的命令激活 InvokeAI Env：
 
 ```powershell
 .\activate.ps1

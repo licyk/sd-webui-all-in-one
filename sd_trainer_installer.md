@@ -150,7 +150,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
 |[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
 
-在 SD-Trainer Installer 成功安装 SD-Trainer 后，在 SD-Trainer 文件夹中可以看到 SD-Trainer 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer Installer。
+在 SD-Trainer Installer 成功安装 SD-Trainer 后，在`SD-Trainer`文件夹中可以看到 SD-Trainer 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer Installer。
 
 >[!NOTE]  
 >如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
@@ -158,7 +158,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 使用
-在 SD-Trainer 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在 lora-scripts 文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
+在`SD-Trainer`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在`lora-scripts`文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
 
 
 ## 启动 SD-Trainer
@@ -178,7 +178,8 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 进入 SD-Trainer 所在的 Python 环境
-如果需要使用 Python、Pip、SD-Trainer 的命令时，请勿将 SD-Trainer 的 python 文件夹添加到环境变量，这将会导致不良的后果产生。  
+如果需要使用 Python、Pip、SD-Trainer 的命令时，请勿将 SD-Trainer 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
+
 正确的方法是在 SD-Trainer 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 SD-Trainer Env：
 
 ```powershell
@@ -191,14 +192,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 获取最新的 SD-Trainer Installer 脚本
-运行`get_sd_trainer_installer.ps1`脚本，运行成功后将会把 SD-Trainer Installer 保存在 SD-Trainer 文件夹的上一级目录中。
+运行`get_sd_trainer_installer.ps1`脚本，运行成功后将会把 SD-Trainer Installer 保存在`SD-Trainer`文件夹的上一级目录中。
 
 
 ## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 SD-Trainer Installer 重新生成这些脚本。
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`sd_trainer_installer.ps1`重新生成这些脚本。
 
 >[!NOTE]  
->SD-Trainer Installer 必须放在 SD-Trainer 文件夹外运行，不知道放哪的可以参考下面的目录结构。
+>SD-Trainer Installer 必须放在`SD-Trainer`文件夹外运行，不知道放哪的可以参考下面的目录结构。
 
 ```
 $ tree -L 2
@@ -315,18 +316,18 @@ SD-Trainer Installer 默认启用了 Pip 镜像源加速下载 Python 软件包�
 
 
 ## 重装 SD-Trainer
-将 SD-Trainer 文件夹中的 lora-scripts 文件夹删除，然后运行 SD-Trainer Installer 重新部署 SD-Trainer。
+将`SD-Trainer`文件夹中的`lora-scripts`文件夹删除，然后运行`sd_trainer_installer.ps1`重新部署 SD-Trainer。
 
 >[!NOTE]  
->如果 lora-scripts 文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除 lora-scripts 文件夹。
+>如果`lora-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`lora-scripts`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将 SD-Trainer 文件夹中的 python 文件夹删除，然后运行 SD-Trainer Installer 重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`SD-Trainer`文件夹中的`python`文件夹删除，然后运行`sd_trainer_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将 SD-Trainer 文件夹中的 git 文件夹删除，然后运行 SD-Trainer Installer 重新下载 Git。
+将`SD-Trainer`文件夹中的`git`文件夹删除，然后运行`sd_trainer_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -334,7 +335,7 @@ SD-Trainer Installer 默认启用了 Pip 镜像源加速下载 Python 软件包�
 
 
 ## 卸载 SD-Trainer
-使用 SD-Trainer Installer 安装 SD-Trainer 后，所有的文件都存放在 SD-Trainer 文件夹中，只需要删除 SD-Trainer 文件夹即可卸载 SD-Trainer。
+使用 SD-Trainer Installer 安装 SD-Trainer 后，所有的文件都存放在`SD-Trainer`文件夹中，只需要删除`SD-Trainer`文件夹即可卸载 SD-Trainer。
 
 如果有 SD-Trainer 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
 ```powershell
@@ -344,7 +345,7 @@ Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer
 
 
 ## 移动 SD-Trainer 的路径
-直接将 SD-Trainer 文件夹移动到别的路径即可。
+直接将`SD-Trainer`文件夹移动到别的路径即可。
 
 如果启用了自动创建 SD-Trainer 快捷启动方式的功能，移动 SD-Trainer 后原来的快捷启动方式将失效，需要运行`launch.ps1`更新快捷启动方式。
 
@@ -531,7 +532,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
              Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
 ```
 
-这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 SD-Trainer/cache/pip 文件夹删除，再重新运行 SD-Trainer Installer。
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将`SD-Trainer/cache/pip`文件夹删除，再重新运行 SD-Trainer Installer。
 
 
 ## RuntimeError: Error(s) in loading state_dict for UNet2DConditionModel
@@ -599,7 +600,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 
 ### 手动输入命令激活
-在 SD-Trainer 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
+在`SD-Trainer`文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer Env：
 
 ```powershell
 .\activate.ps1
