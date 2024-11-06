@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 104
+$COMFYUI_INSTALLER_VERSION = 105
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -76,7 +76,10 @@ $Env:UV_PYTHON = "$PSScriptRoot/ComfyUI/python/python.exe"
 
 # 消息输出
 function Print-Msg ($msg) {
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][ComfyUI Installer]:: $msg"
+    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
+    Write-Host "[ComfyUI Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host ":: " -ForegroundColor Blue -NoNewline
+    Write-Host "$msg"
 }
 
 
@@ -559,7 +562,10 @@ function Write-Launch-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -841,6 +847,10 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+        }
         Check-uv-Version
     }
 }
@@ -2095,7 +2105,10 @@ function Write-Update-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -2354,6 +2367,10 @@ function Set-uv {
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -2436,14 +2453,8 @@ function Main {
     Set-Proxy
     Set-Github-Mirror
     Pip-Mirror-Status
-
-    # 记录上次的路径
-    `$current_path = Get-Location
-    `$current_path = `$current_path.ToString()
-
     Check-ComfyUI-Installer-Update
 
-    `$update_fail = 0
     Print-Msg `"拉取 ComfyUI 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/ComfyUI`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
@@ -2454,52 +2465,14 @@ function Main {
         `$commit_hash = `$(git -C `"`$PSScriptRoot/ComfyUI`" log origin/`$branch --max-count 1 --format=`"%h`")
         git -C `"`$PSScriptRoot/ComfyUI`" reset --hard `$commit_hash --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        
+
         if (`$core_origin_ver -eq `$core_latest_ver) {
-            Print-Msg `"ComfyUI 已为最新版`"
-            `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
+            Print-Msg `"ComfyUI 已为最新版, 当前版本：`$core_origin_ver`"
         } else {
-            Print-Msg `"ComfyUI 更新成功`"
-            `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+            Print-Msg `"ComfyUI 更新成功, 版本：`$core_origin_ver -> `$core_latest_ve`"
         }
-
-        Print-Msg `"更新 ComfyUI 依赖中`"
-        Set-Location `"`$PSScriptRoot/ComfyUI`"
-        if (`$USE_UV) {
-            uv pip install -r requirements.txt `$(Get-PyTorch-Version).ToString().Split() --upgrade
-            if (!(`$?)) {
-                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r requirements.txt --upgrade
-            }
-        } else {
-            python -m pip install -r requirements.txt --upgrade
-        }
-        if (`$?) {
-            Print-Msg `"ComfyUI 依赖更新成功`"
-            `$req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"ComfyUI 依赖更新失败`"
-            `$req_update_msg = `"更新失败`"
-            `$update_fail = 1
-        }
-
-        Set-Location `"`$current_path`"
     } else {
         Print-Msg `"拉取 ComfyUI 更新内容失败`"
-        `$core_update_msg = `"拉取 ComfyUI 更新内容失败, 无法进行更新`"
-        `$req_update_msg = `"因 ComfyUI 组件更新失败, 不进行更新`"
-        `$update_fail = 1
-    }
-
-    Print-Msg `"==================================================================`"
-    Print-Msg `"ComfyUI 更新结果：`"
-    Print-Msg `"ComfyUI 组件: `$core_update_msg`"
-    Print-Msg `"ComfyUI 依赖: `$req_update_msg`"
-    Print-Msg `"==================================================================`"
-    if (`$update_fail -eq 0) {
-        Print-Msg `"ComfyUI 更新成功`"
-    } else {
-        Print-Msg `"ComfyUI 更新失败, 请检查控制台日志。可尝试重新运行 ComfyUI 更新脚本进行重试`"
     }
 
     Print-Msg `"退出 ComfyUI 更新脚本`"
@@ -2526,7 +2499,10 @@ function Write-ComfyUI-Install-Script {
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -2662,7 +2638,10 @@ function Write-PyTorch-ReInstall-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -2824,6 +2803,10 @@ function Set-uv {
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -3234,7 +3217,10 @@ function Write-Download-Model-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -3697,7 +3683,10 @@ function Write-ComfyUI-Installer-Settings-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -4631,7 +4620,10 @@ function global:prompt {
 
 # 消息输出
 function global:Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -5150,7 +5142,10 @@ Main
 function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][ComfyUI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 Print-Msg `"执行 ComfyUI Installer 激活环境脚本`"

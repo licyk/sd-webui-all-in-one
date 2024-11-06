@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 144
+$INVOKEAI_INSTALLER_VERSION = 145
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -57,7 +57,10 @@ $Env:UV_PYTHON = "$PSScriptRoot/InvokeAI/python/python.exe"
 
 # 消息输出
 function Print-Msg ($msg) {
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][InvokeAI Installer]:: $msg"
+    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
+    Write-Host "[InvokeAI Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host ":: " -ForegroundColor Blue -NoNewline
+    Write-Host "$msg"
 }
 
 
@@ -515,7 +518,10 @@ function Write-Launch-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -965,7 +971,10 @@ function Write-Update-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1336,7 +1345,10 @@ function Write-InvokeAI-Install-Script {
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1463,7 +1475,10 @@ function Write-PyTorch-ReInstall-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1777,7 +1792,10 @@ function Write-Download-Config-Script {
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1909,7 +1927,10 @@ function Write-InvokeAI-Installer-Settings-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -2710,7 +2731,10 @@ function global:prompt {
 
 # 消息输出
 function global:Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -3159,7 +3183,10 @@ Main
 function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][InvokeAI Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 Print-Msg `"执行 InvokeAI Installer 激活环境脚本`"

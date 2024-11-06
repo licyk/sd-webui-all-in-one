@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 148
+$SD_TRAINER_INSTALLER_VERSION = 149
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -76,7 +76,10 @@ $Env:UV_PYTHON = "$PSScriptRoot/SD-Trainer/python/python.exe"
 
 # 消息输出
 function Print-Msg ($msg) {
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")][SD-Trainer Installer]:: $msg"
+    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
+    Write-Host "[SD-Trainer Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host ":: " -ForegroundColor Blue -NoNewline
+    Write-Host "$msg"
 }
 
 
@@ -546,7 +549,10 @@ function Write-Launch-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -908,8 +914,7 @@ function Main {
     Pip-Mirror-Status
     `$args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
-    `$current_path = Get-Location
-    `$current_path = `$current_path.ToString()
+    `$current_path = `$(Get-Location).ToString()
 
     # 检测使用的启动脚本
     if (Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") {
@@ -1026,7 +1031,10 @@ function Write-Update-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1285,6 +1293,10 @@ function Set-uv {
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -1369,8 +1381,7 @@ function Main {
     Pip-Mirror-Status
 
     # 记录上次的路径
-    `$current_path = Get-Location
-    `$current_path = `$current_path.ToString()
+    `$current_path = `$(Get-Location).ToString()
 
     Check-SD-Trainer-Installer-Update
 
@@ -1457,7 +1468,10 @@ function Write-SD-Trainer-Install-Script {
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1593,7 +1607,10 @@ function Write-PyTorch-ReInstall-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -1755,6 +1772,10 @@ function Set-uv {
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -2165,7 +2186,10 @@ function Write-Download-Model-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -2591,7 +2615,10 @@ function Write-SD-Trainer-Installer-Settings-Script {
 
 # 消息输出
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -3459,7 +3486,10 @@ function global:prompt {
 
 # 消息输出
 function global:Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -3732,7 +3762,10 @@ Main
 function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")][SD-Trainer Installer]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
