@@ -36,9 +36,12 @@ $UV_MINIMUM_VER = "0.4.30"
 $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
+$PYTHON_EXTRA_PATH = "$PSScriptRoot/SD-Trainer/lora-scripts/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/SD-Trainer/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/SD-Trainer/lora-scripts/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/SD-Trainer/git/bin"
-$Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
+$GIT_EXTRA_PATH = "$PSScriptRoot/SD-Trainer/lora-scripts/git/bin"
+$Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
@@ -498,9 +501,12 @@ function Write-Launch-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -975,9 +981,12 @@ function Write-Update-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -1539,9 +1548,12 @@ function Write-PyTorch-ReInstall-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2108,9 +2120,12 @@ function Write-Download-Model-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2531,9 +2546,12 @@ function Write-SD-Trainer-Installer-Settings-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -3389,9 +3407,12 @@ function Write-Env-Activate-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
@@ -3602,6 +3623,7 @@ Github：https://github.com/licyk
     Update-uv
     Update-Aria2
     Check-SD-Trainer-Installer-Update
+    Install-Hanamizuki
     List-CMD
 
 更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
