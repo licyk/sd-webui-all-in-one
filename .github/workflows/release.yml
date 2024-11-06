@@ -30,6 +30,14 @@ jobs:
           gh release delete-asset invokeai_installer invokeai_installer.ps1 -y || true
           gh release upload invokeai_installer invokeai_installer.ps1
 
+      - name: Release ComfyUI Installer
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset comfyui_installer comfyui_installer.ps1  -y || true
+          gh release upload comfyui_installer comfyui_installer.ps1 
+
       - name: Release config
         shell: bash
         env:
