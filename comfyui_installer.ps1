@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 101
+$COMFYUI_INSTALLER_VERSION = 102
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -491,6 +491,16 @@ function Write-Launch-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
@@ -500,10 +510,10 @@ function Write-Launch-Script {
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
@@ -694,6 +704,127 @@ function Set-HuggingFace-Mirror {
         }
     } else {
         Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+    }
+}
+
+
+# Github 镜像源
+function Set-Github-Mirror {
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    } else {
+        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        }
+
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        } else { # 自动检测可用镜像源并使用
+            `$status = 0
+            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+                Print-Msg `"测试 Github 镜像源: `$i`"
+                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+                }
+                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+                if (`$?) {
+                    Print-Msg `"该 Github 镜像源可用`"
+                    `$github_mirror = `$i
+                    `$status = 1
+                    break
+                } else {
+                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+                }
+            }
+            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+            }
+            if (`$status -eq 0) {
+                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+            } else {
+                Print-Msg `"设置 Github 镜像源`"
+                git config --global --add safe.directory `"*`"
+                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            }
+        }
+    }
+}
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        `$Global:USE_UV = `$true
+        Check-uv-Version
     }
 }
 
@@ -1525,13 +1656,16 @@ if __name__ == '__main__':
         Print-Msg `"您通常情况下可以选择忽略该警告并继续运行`"
         Write-Host `"-------------------------------------------------------------------------------`"
         Write-Host `"发生冲突的组件:`"
-        Write-Host `$(Get-Content `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`")
+        `$content = Get-Content `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`"
+        for (`$i = 0; `$i -lt `$content.Length; `$i++) {
+            Write-Host `$content[`$i]
+        }
         Write-Host `"-------------------------------------------------------------------------------`"
         Print-Msg `"是否按顺序安装冲突依赖 (yes/no) ?`"
         Print-Msg `"提示:`"
         Print-Msg `"如果不选择按顺序安装冲突依赖, 则跳过安装冲突依赖直接运行 ComfyUI`"
         Print-Msg `"输入 yes 或 no 后回车`"
-        `$option = Read-Host `"===========================================>`"
+        `$option = Read-Host `"========================================>`"
         if (`$option -eq `"yes`" -or `$option -eq `"y`" -or `$option -eq `"YES`" -or `$option -eq `"Y`") {
             Print-Msg `"按顺序安装冲突组件依赖中`"
         } else {
@@ -1546,35 +1680,35 @@ if __name__ == '__main__':
         return
     }
     `$requirement_list = Get-Content `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`"
-    `$sum = `$requirement_list.Length
+    `$sum = if (`$requirement_list.GetType().Name -eq `"String`") { 1 } else { `$requirement_list.Length }
     for (`$i = 0; `$i -lt `$sum; `$i++) {
-        `$path = `$requirement_list[`$i]
+        `$path = if (`$requirement_list.GetType().Name -eq `"String`") { `$requirement_list } else { `$requirement_list[`$i] }
         `$name = Split-Path `$(Split-Path `$path -Parent) -Leaf
 
-        Print-Msg `"[`$i/`$sum]:: 安装 `$name 组件依赖中`"
+        Print-Msg `"[`$(`$i + 1)/`$sum]:: 安装 `$name 组件依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$path`"
             if (!(`$?)) {
-                Print-Msg `"[`$i/`$sum]:: 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                Print-Msg `"[`$(`$i + 1)/`$sum]:: 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install -r `"`$path`"
             }
         } else {
             python -m pip install -r `"`$path`"
         }
         if (`$?) {
-            Print-Msg `"[`$i/`$sum]:: `$name 组件依赖安装成功`"
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装成功`"
         } else {
-            Print-Msg `"[`$i/`$sum]:: `$name 组件依赖安装失败, 可能会导致该组件缺失依赖出现运行异常`"
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装失败, 可能会导致该组件缺失依赖出现运行异常`"
         }
 
         `$install_script = `"`$(Split-Path `$path -Parent)/install.py`"
         if (Test-Path `"`$install_script`") {
-            Print-Msg `"[`$i/`$sum]:: 执行 `$name 的依赖安装脚本中`"
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: 执行 `$name 的依赖安装脚本中`"
             python `"`$install_script`"
             if (`$?) {
-                Print-Msg `"[`$i/`$sum]:: `$name 组件依赖安装脚本执行成功`"
+                Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装脚本执行成功`"
             } else {
-                Print-Msg `"[`$i/`$sum]:: `$name 组件依赖安装脚本执行失败, 可能会导致该组件缺失依赖出现运行异常`"
+                Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装脚本执行失败, 可能会导致该组件缺失依赖出现运行异常`"
             }
         }
     }
@@ -1829,7 +1963,9 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
     Set-Proxy
+    Set-Github-Mirror
     Set-HuggingFace-Mirror
+    Set-uv
     Pip-Mirror-Status
     `$args = Get-ComfyUI-Launch-Args
     # 记录上次的路径
