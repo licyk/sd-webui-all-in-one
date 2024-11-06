@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 103
+$COMFYUI_INSTALLER_VERSION = 104
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -36,11 +36,11 @@ $UV_MINIMUM_VER = "0.4.30"
 $COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/ComfyUI/python"
-$PYTHON_EXTRA_PATH = "$PSScriptRoot/ComfyUI/python"
+$PYTHON_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/ComfyUI/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/ComfyUI/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/ComfyUI/git/bin"
-$GIT_EXTRA_PATH = "$PSScriptRoot/ComfyUI/git/bin"
+$GIT_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -430,15 +430,20 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI/models" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if (Test-Path "$PSScriptRoot/ComfyUI/python/python.exe") {
+    if ((Test-Path "$PSScriptRoot/ComfyUI/python/python.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
         Install-Python
     }
 
+    # 切换 uv 指定的 Python
+    if (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe") {
+        $Env:UV_PYTHON = "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe"
+    }
+
     Print-Msg "检测是否安装 Git"
-    if (Test-Path "$PSScriptRoot/ComfyUI/git/bin/git.exe") {
+    if ((Test-Path "$PSScriptRoot/ComfyUI/git/bin/git.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -446,7 +451,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if (Test-Path "$PSScriptRoot/ComfyUI/git/bin/aria2c.exe") {
+    if ((Test-Path "$PSScriptRoot/ComfyUI/git/bin/aria2c.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"

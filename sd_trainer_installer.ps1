@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 147
+$SD_TRAINER_INSTALLER_VERSION = 148
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -434,15 +434,20 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$PSScriptRoot/SD-Trainer/models" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if (Test-Path "$PSScriptRoot/SD-Trainer/python/python.exe") {
+    if ((Test-Path "$PSScriptRoot/SD-Trainer/python/python.exe") -or (Test-Path "$PSScriptRoot/SD-Trainer/lora-scripts/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
         Install-Python
     }
 
+    # 切换 uv 指定的 Python
+    if (Test-Path "$PSScriptRoot/SD-Trainer/lora-scripts/python/python.exe") {
+        $Env:UV_PYTHON = "$PSScriptRoot/SD-Trainer/lora-scripts/python/python.exe"
+    }
+
     Print-Msg "检测是否安装 Git"
-    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/git.exe") {
+    if ((Test-Path "$PSScriptRoot/SD-Trainer/git/bin/git.exe") -or (Test-Path "$PSScriptRoot/SD-Trainer/lora-scripts/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -450,7 +455,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if (Test-Path "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe") {
+    if ((Test-Path "$PSScriptRoot/SD-Trainer/git/bin/aria2c.exe") -or (Test-Path "$PSScriptRoot/SD-Trainer/lora-scripts/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
