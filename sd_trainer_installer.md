@@ -46,6 +46,7 @@ _✨一键安装 SD-Trainer_
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
+  - [使用绘世启动器](#使用绘世启动器)
   - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
@@ -80,6 +81,7 @@ _✨一键安装 SD-Trainer_
     - [下载文件](#下载文件)
     - [更新 uv](#更新-uv)
     - [更新 Aria2](#更新-aria2)
+    - [安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)
     - [列出 SD-Trainer Installer 内置命令](#列出-sd-trainer-installer-内置命令)
     - [检查 SD-Trainer Installer 更新](#检查-sd-trainer-installer-更新)
     - [查看并切换 SD-Trainer 的版本](#查看并切换-sd-trainer-的版本)
@@ -405,6 +407,70 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 运行`settings.ps1`，根据提示进行设置管理和调整。
 
 
+## 使用绘世启动器
+SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进行启动，使用绘世启动器前需要调整目录结构使绘世启动器能够正确识别到环境。
+
+将`SD-Trainer/python`目录移动到`SD-Trainer/lora-scripts/python`，`SD-Trainer/git`移动到`SD-Trainer/lora-scripts/git`。
+
+移动前目录的结构如下。
+
+```
+.
+├── SD-Trainer
+│   ├── activate.ps1
+│   ├── cache
+│   ├── download_models.ps1
+│   ├── get_comfyui_installer.ps1
+│   ├── git                           # Git 目录
+│   ├── help.txt
+│   ├── launch.ps1
+│   ├── lora-scripts                  # SD-Trainer 路径
+│   │   ├── ...
+│   │   └── gui.py
+│   ├── models
+│   ├── python                        # Python 目录
+│   ├── reinstall_pytorch.ps1
+│   ├── settings.ps1
+│   ├── terminal.ps1
+│   └── update.ps1
+└── sd_trainer_installer.ps1          
+```
+
+移动 Python 和 Git 之后的目录结构。
+
+```
+.
+├── SD-Trainer
+│   ├── activate.ps1
+│   ├── cache
+│   ├── download_models.ps1
+│   ├── get_sd_trainer_installer.ps1
+│   ├── help.txt
+│   ├── launch.ps1
+│   ├── lora-scripts                  # SD-Trainer 路径
+│   │   ├── git                       # Git 目录
+│   │   ├── python                    # Python 目录
+│   │   ├── ...
+│   │   └── main.py
+│   ├── models
+│   ├── reinstall_pytorch.ps1
+│   ├── settings.ps1
+│   ├── terminal.ps1
+│   └── update.ps1
+└── sd_trainer_installer.ps1          
+```
+
+再下载绘世启动器放到`SD-Trainer/lora-scripts`目录中，就可以通过启动器启动 SD-Trainer。
+
+|绘世启动器下载|
+|---|
+|[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
+|[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+|[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+
+如果使用自动的方法，可以参考[命令的使用](#命令的使用)中的[安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)命令，该命令可一键配置下载绘世启动器并配置。
+
+
 ## 使用 SD-Trainer Installer 安装 Kohya GUI
 [Kohya GUI](https://github.com/bmaltais/kohya_ss) 也可以用于模型训练。做完[环境配置](#环境配置)的步骤并将 SD-Trainer Installer 下载下来后，使用代码编辑器（不建议使用 Windows 记事本）编辑`sd_trainer_installer.ps1`，搜索以下内容。
 
@@ -686,6 +752,12 @@ Update-uv
 ### 更新 Aria2
 ```powershell
 Update-Aria2
+```
+
+
+### 安装绘世启动器并自动配置绘世启动器所需的环境
+```powershell
+Install-Hanamizuki
 ```
 
 

@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 149
+$SD_TRAINER_INSTALLER_VERSION = 150
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3575,7 +3575,7 @@ function global:Check-SD-Trainer-Installer-Update {
 
 # 安装绘世启动器
 function global:Install-Hanamizuki {
-    `$urls = @(`"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
+    `$urls = @(`"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`", `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
 
     if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`") {
         Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`"))`"

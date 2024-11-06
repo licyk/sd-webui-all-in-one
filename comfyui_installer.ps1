@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 105
+$COMFYUI_INSTALLER_VERSION = 106
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4757,20 +4757,6 @@ function global:Test-Github-Mirror {
 
 # 安装 ComfyUI 自定义节点
 function global:Install-ComfyUI-Node (`$url) {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 无法调用 Git 安装 ComfyUI 自定义节点`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -4803,20 +4789,6 @@ function global:Install-ComfyUI-Node (`$url) {
 
 # Git 下载命令
 function global:Git-Clone (`$url, `$path) {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 这将导致无法调用 Git 命令`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -4873,20 +4845,6 @@ function global:Fix-Git-Point-Off-Set {
 
 # 更新所有 ComfyUI 自定义节点
 function global:Update-ComfyUI-Node {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 无法调用 Git 安装 ComfyUI 自定义节点`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -4949,7 +4907,7 @@ function global:List-Node {
 
 # 安装绘世启动器
 function global:Install-Hanamizuki {
-    `$urls = @(`"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
+    `$urls = @(`"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`", `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
 
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`") {
         Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
