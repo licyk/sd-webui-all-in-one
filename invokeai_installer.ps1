@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 143
+$INVOKEAI_INSTALLER_VERSION = 144
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2698,6 +2698,7 @@ function Write-Env-Activate-Script {
 `$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:INVOKEAI_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
@@ -2733,34 +2734,34 @@ function global:Check-InvokeAI-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/../update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:CACHE_HOME/.. -Leaf
+                `$folder_name = Split-Path `$Env:INVOKEAI_INSTALLER_ROOT -Leaf
                 if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../update_time.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/cache/invokeai_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/update_time.txt`" 2> `$null
                     Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
                     Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
                     Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
                     Print-Msg `"终止 InvokeAI Installer 的更新`"
                     return
                 }
-                Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`" -Force
-                . `"`$Env:CACHE_HOME/../../invokeai_installer.ps1`"
+                Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`" -Force
+                . `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
+                Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
@@ -2780,7 +2781,7 @@ function global:Check-InvokeAI-Installer-Update {
 # 安装 Git
 function global:Install-Git {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip`"
-    if ((Get-Command git -ErrorAction SilentlyContinue) -or(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`")) {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -or(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`")) {
         Print-Msg `"Git 已安装`"
         return
     }
@@ -2788,12 +2789,12 @@ function global:Install-Git {
     Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/PortableGit.zip`"
     if (`$?) { # 检测是否下载成功并解压
         # 创建 Git 文件夹
-        if (!(Test-Path `"`$Env:CACHE_HOME/../git`")) {
-            New-Item -ItemType Directory -Force -Path `$Env:CACHE_HOME/../git > `$null
+        if (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git`")) {
+            New-Item -ItemType Directory -Force -Path `$Env:INVOKEAI_INSTALLER_ROOT/git > `$null
         }
         # 解压 Git
         Print-Msg `"正在解压 Git`"
-        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$Env:CACHE_HOME/../git`" -Force
+        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$Env:INVOKEAI_INSTALLER_ROOT/git`" -Force
         Remove-Item -Path `"`$Env:CACHE_HOME/PortableGit.zip`"
         Print-Msg `"Git 安装成功`"
         return `$true
@@ -2806,12 +2807,12 @@ function global:Install-Git {
 
 # 启用 Github 镜像源
 function global:Test-Github-Mirror {
-    if (Test-Path `"`$Env:CACHE_HOME/../disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+    if (Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
     } else {
-        `$Env:GIT_CONFIG_GLOBAL = `"`$Env:CACHE_HOME/../.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$Env:CACHE_HOME/../.gitconfig`") {
-            Remove-Item -Path `"`$Env:CACHE_HOME/../.gitconfig`" -Force
+        `$Env:GIT_CONFIG_GLOBAL = `"`$Env:INVOKEAI_INSTALLER_ROOT/.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/.gitconfig`") {
+            Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/.gitconfig`" -Force
         }
 
         if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
@@ -2855,7 +2856,7 @@ function global:Test-Github-Mirror {
 # 安装 InvokeAI 自定义节点
 function global:Install-InvokeAI-Node (`$url) {
     Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
         Print-Msg `"检测到 Git 未安装`"
         `$status = Install-Git
         if (`$status) {
@@ -2898,16 +2899,16 @@ function global:Install-InvokeAI-Node (`$url) {
 }
 
 
-# 安装 InvokeAI 自定义节点
+# Git 下载命令
 function global:Git-Clone (`$url, `$path) {
     Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
         Print-Msg `"检测到 Git 未安装`"
         `$status = Install-Git
         if (`$status) {
             Print-Msg `"Git 安装成功`"
         } else {
-            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
+            Print-Msg `"Git 安装失败, 这将导致无法调用 Git 命令`"
             return
         }
     } else {
@@ -2959,8 +2960,8 @@ function global:Fix-Git-Point-Off-Set {
         if (!(`$?)) {
             Print-Msg `"检测到出现分支游离, 进行修复中`"
             git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化git子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" submodule init # 初始化 Git 子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程 HEAD 所指分支
             git -C `"`$path`" checkout `$branch # 切换到主分支
             git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
         }
@@ -2971,7 +2972,7 @@ function global:Fix-Git-Point-Off-Set {
 # 更新所有 InvokeAI 自定义节点
 function global:Update-InvokeAI-Node {
     Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:CACHE_HOME/../git/bin/git.exe`"))) {
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
         Print-Msg `"检测到 Git 未安装`"
         `$status = Install-Git
         if (`$status) {
@@ -2990,7 +2991,7 @@ function global:Update-InvokeAI-Node {
         `$global:is_test_gh_mirror = 1
     }
 
-    `$node_list = Get-ChildItem -Path `"`$Env:CACHE_HOME/../invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    `$node_list = Get-ChildItem -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
     ForEach (`$node in `$node_list) {
@@ -3027,6 +3028,34 @@ function global:Update-InvokeAI-Node {
 }
 
 
+# 列出已安装的 InvokeAI 自定义节点
+function global:List-Node {
+    `$node_list = Get-ChildItem -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    Print-Msg `"当前 ComfyUI 已安装的自定义节点`"
+    `$count = 0
+    ForEach (`$i in `$node_list) {
+        if (Test-Path `"`$i`" -PathType Container) {
+            `$count += 1
+            `$name = [System.IO.Path]::GetFileNameWithoutExtension(`"`$i`")
+            Print-Msg `"- `$name`"
+        }
+    }
+    Print-Msg `"ComfyUI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`"))`"
+    Print-Msg `"ComfyUI 自定义节点数量: `$count`"
+}
+
+
+# 设置 Python 命令别名
+function global:pip {
+    python -m pip @args
+}
+
+Set-Alias pip3 pip
+Set-Alias pip3.10 pip
+Set-Alias python3 python
+Set-Alias python3.10 python
+
+
 # 列出 InvokeAI Installer 内置命令
 function global:List-CMD {
     Write-Host `"
@@ -3044,7 +3073,9 @@ Github：https://github.com/licyk
     Install-InvokeAI-Node
     Git-Clone
     Test-Github-Mirror
+    Fix-Git-Point-Off-Set
     Update-InvokeAI-Node
+    List-Node
     List-CMD
 
 更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md

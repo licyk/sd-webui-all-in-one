@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 146
+$SD_TRAINER_INSTALLER_VERSION = 147
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3421,6 +3421,7 @@ function Write-Env-Activate-Script {
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:SD_TRAINER_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
@@ -3456,7 +3457,7 @@ function global:Update-Aria2 {
     Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/aria2c.exe`"
     if (`$?) {
         Print-Msg `"更新 Aria2 中`"
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:CACHE_HOME/../git/bin/aria2c.exe`" -Force
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_TRAINER_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
         Print-Msg `"更新 Aria2 完成`"
     } else {
         Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -3472,34 +3473,34 @@ function global:Check-SD-Trainer-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/../update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 SD-Trainer Installer 更新中`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:SD_TRAINER_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:CACHE_HOME/.. -Leaf
+                `$folder_name = Split-Path `$Env:SD_TRAINER_INSTALLER_ROOT -Leaf
                 if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../cache/sd_trainer_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../update_time.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/update_time.txt`" 2> `$null
                     Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
                     Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
                     Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
                     Print-Msg `"终止 SD-Trainer Installer 的更新`"
                     return
                 }
-                Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`" -Force
-                . `"`$Env:CACHE_HOME/../../sd_trainer_installer.ps1`"
+                Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/../sd_trainer_installer.ps1`" -Force
+                . `"`$Env:SD_TRAINER_INSTALLER_ROOT/../sd_trainer_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
+                Remove-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
@@ -3514,6 +3515,77 @@ function global:Check-SD-Trainer-Installer-Update {
         }
     }
 }
+
+
+# 安装绘世启动器
+function global:Install-Hanamizuki {
+    `$urls = @(`"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
+
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`"))`"
+    } else {
+        ForEach (`$url in `$urls) {
+            Print-Msg `"下载绘世启动器中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki.exe`"
+            if (`$?) {
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki.exe`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`"))`"
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试下载绘世启动器中`"
+                } else {
+                    Print-Msg `"下载绘世启动器失败`"
+                }
+            }
+        }
+    }
+
+    Print-Msg `"检查绘世启动器运行环境`"
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`")) {
+        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`") {
+            Print-Msg `"尝试将 Python 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\lora-scripts 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts`" -Force
+            if (`$?) {
+                Print-Msg `"Python 路径移动成功`"
+            } else {
+                Print-Msg `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`"
+                Print-Msg `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+        }
+    }
+
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/git/bin/git.exe`")) {
+        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`") {
+            Print-Msg `"尝试将 Git 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\lora-scripts 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts`" -Force
+            if (`$?) {
+                Print-Msg `"Git 路径移动成功`"
+            } else {
+                Print-Msg `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`"
+                Print-Msg `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+        }
+    }
+
+    Print-Msg `"检查绘世启动器运行环境结束`"
+}
+
+
+# 设置 Python 命令别名
+function global:pip {
+    python -m pip @args
+}
+
+Set-Alias pip3 pip
+Set-Alias pip3.10 pip
+Set-Alias python3 python
+Set-Alias python3.10 python
 
 
 # 列出 SD-Trainer Installer 内置命令

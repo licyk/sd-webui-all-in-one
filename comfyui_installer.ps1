@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 102
+$COMFYUI_INSTALLER_VERSION = 103
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -36,9 +36,12 @@ $UV_MINIMUM_VER = "0.4.30"
 $COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/ComfyUI/python"
+$PYTHON_EXTRA_PATH = "$PSScriptRoot/ComfyUI/python"
 $PYTHON_SCRIPTS_PATH = "$PSScriptRoot/ComfyUI/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/ComfyUI/python/Scripts"
 $GIT_PATH = "$PSScriptRoot/ComfyUI/git/bin"
-$Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
+$GIT_EXTRA_PATH = "$PSScriptRoot/ComfyUI/git/bin"
+$Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
@@ -467,6 +470,11 @@ function Check-Install {
     Install-PyTorch
     Install-ComfyUI-Dependence
 
+    if (!(Test-Path "$PSScriptRoot/ComfyUI/launch_args.txt")) {
+        Print-Msg "设置默认 ComfyUI 启动参数"
+        $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
+        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/launch_args.txt" -Value $content
+    }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
@@ -506,9 +514,12 @@ function Write-Launch-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
@@ -627,7 +638,7 @@ function Check-ComfyUI-Installer-Update {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -2039,9 +2050,12 @@ function Write-Update-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2224,7 +2238,7 @@ function Check-ComfyUI-Installer-Update {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -2603,9 +2617,12 @@ function Write-PyTorch-ReInstall-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2691,7 +2708,7 @@ function Check-ComfyUI-Installer-Update {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -2876,7 +2893,7 @@ function Main {
         Print-Msg `"提示:`"
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
-        `$arg = Read-Host `"===========================================>`"
+        `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {
             1 {
@@ -3064,7 +3081,7 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$use_force_reinstall = Read-Host `"===========================================>`"
+    `$use_force_reinstall = Read-Host `"========================================>`"
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
@@ -3080,7 +3097,7 @@ function Main {
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$install_torch = Read-Host `"===========================================>`"
+    `$install_torch = Read-Host `"========================================>`"
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
@@ -3172,9 +3189,12 @@ function Write-Download-Model-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -3260,7 +3280,7 @@ function Check-ComfyUI-Installer-Update {
                     New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         `$folder_name = Split-Path `$PSScriptRoot -Leaf
@@ -3363,7 +3383,7 @@ function Main {
         Write-Host `$content
         Print-Msg `"请选择要下载的模型`"
         Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出模型下载脚本`"
-        `$arg = Read-Host `"===========================================>`"
+        `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {
             1 {
@@ -3576,7 +3596,7 @@ function Main {
     Print-Msg `"当前选择要下载的模型: `$model_name`"
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_model = Read-Host `"===========================================>`"
+    `$download_model = Read-Host `"========================================>`"
 
     if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
         Print-Msg `"模型将下载至 `$PSScriptRoot\ComfyUI\models\`$type 目录中`"
@@ -3632,9 +3652,12 @@ function Write-ComfyUI-Installer-Settings-Script {
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -3812,7 +3835,7 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"===========================================>`"
+    return Read-Host `"========================================>`"
 }
 
 
@@ -4542,13 +4565,26 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
@@ -4578,6 +4614,7 @@ function Write-Env-Activate-Script {
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
@@ -4613,7 +4650,7 @@ function global:Update-Aria2 {
     Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/aria2c.exe`"
     if (`$?) {
         Print-Msg `"更新 Aria2 中`"
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:CACHE_HOME/../git/bin/aria2c.exe`" -Force
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
         Print-Msg `"更新 Aria2 完成`"
     } else {
         Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
@@ -4629,34 +4666,34 @@ function global:Check-ComfyUI-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/../update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:COMFYUI_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 ComfyUI Installer 更新中`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:COMFYUI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" -Force > `$null
+                New-Item -ItemType File -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"ComfyUI Installer 有新版本可用`"
                 Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:CACHE_HOME/.. -Leaf
+                `$folder_name = Split-Path `$Env:COMFYUI_INSTALLER_ROOT -Leaf
                 if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:CACHE_HOME/../update_time.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/cache/comfyui_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
+                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/update_time.txt`" 2> `$null
                     Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
                     Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
                     Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
                     Print-Msg `"终止 ComfyUI Installer 的更新`"
                     return
                 }
-                Move-Item -Path `"`$Env:CACHE_HOME/comfyui_installer.ps1`" `"`$Env:CACHE_HOME/../../comfyui_installer.ps1`" -Force
-                . `"`$Env:CACHE_HOME/../../comfyui_installer.ps1`"
+                Move-Item -Path `"`$Env:CACHE_HOME/comfyui_installer.ps1`" `"`$Env:COMFYUI_INSTALLER_ROOT/../comfyui_installer.ps1`" -Force
+                . `"`$Env:COMFYUI_INSTALLER_ROOT/../comfyui_installer.ps1`"
                 Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/../use_update_mode.txt`" 2> `$null
+                Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_installer.ps1`" 2> `$null
                 Print-Msg `"ComfyUI Installer 已是最新版本`"
             }
@@ -4673,6 +4710,317 @@ function global:Check-ComfyUI-Installer-Update {
 }
 
 
+# 启用 Github 镜像源
+function global:Test-Github-Mirror {
+    if (Test-Path `"`$Env:CACHE_HOME/../disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    } else {
+        `$Env:GIT_CONFIG_GLOBAL = `"`$Env:CACHE_HOME/../.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$Env:CACHE_HOME/../.gitconfig`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/../.gitconfig`" -Force
+        }
+
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        } else { # 自动检测可用镜像源并使用
+            `$status = 0
+            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+                Print-Msg `"测试 Github 镜像源: `$i`"
+                if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+                    Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+                }
+                git clone `$i/licyk/empty `$Env:CACHE_HOME/github-mirror-test --quiet
+                if (`$?) {
+                    Print-Msg `"该 Github 镜像源可用`"
+                    `$github_mirror = `$i
+                    `$status = 1
+                    break
+                } else {
+                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+                }
+            }
+            if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+                Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+            }
+            if (`$status -eq 0) {
+                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+            } else {
+                Print-Msg `"设置 Github 镜像源`"
+                git config --global --add safe.directory `"*`"
+                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            }
+        }
+    }
+}
+
+
+# 安装 ComfyUI 自定义节点
+function global:Install-ComfyUI-Node (`$url) {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 无法调用 Git 安装 ComfyUI 自定义节点`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
+    if (!(Test-Path `"`$Env:INVOKEAI_ROOT/ComfyUI/custom_nodes/`$node_name`")) {
+        `$status = 1
+    } else {
+        `$items = Get-ChildItem `"`$Env:INVOKEAI_ROOT/ComfyUI/custom_nodes/`$node_name`" -Recurse
+        if (`$items.Count -eq 0) {
+            `$status = 1
+        }
+    }
+
+    if (`$status -eq 1) {
+        Print-Msg `"安装 `$node_name 自定义节点中`"
+        git clone --recurse-submodules `$url `"`$Env:INVOKEAI_ROOT/ComfyUI/custom_nodes/`$node_name`"
+        if (`$?) {
+            Print-Msg `"`$node_name 自定义节点安装成功`"
+        } else {
+            Print-Msg `"`$node_name 自定义节点安装失败`"
+        }
+    } else {
+        Print-Msg `"`$node_name 自定义节点已安装`"
+    }
+}
+
+
+# Git 下载命令
+function global:Git-Clone (`$url, `$path) {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 这将导致无法调用 Git 命令`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$repo_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
+    if (`$path.Length -ne 0) {
+        `$repo_path = `$path
+    } else {
+        `$repo_path = `"`$(`$(Get-Location).ToString())/`$repo_name`"
+    }
+    if (!(Test-Path `"`$repo_path`")) {
+        `$status = 1
+    } else {
+        `$items = Get-ChildItem `"`$repo_path`" -Recurse
+        if (`$items.Count -eq 0) {
+            `$status = 1
+        }
+    }
+
+    if (`$status -eq 1) {
+        Print-Msg `"下载 `$repo_name 中`"
+        git clone --recurse-submodules `$url `"`$path`"
+        if (`$?) {
+            Print-Msg `"`$repo_name 下载成功`"
+        } else {
+            Print-Msg `"`$repo_name 下载失败`"
+        }
+    } else {
+        Print-Msg `"`$repo_name 已存在`"
+    }
+}
+
+
+# 修复 Git 分支游离
+function global:Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化 Git 子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程 HEAD 所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# 更新所有 ComfyUI 自定义节点
+function global:Update-ComfyUI-Node {
+    Print-Msg `"检测 Git 是否安装`"
+    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/git.exe`"))) {
+        Print-Msg `"检测到 Git 未安装`"
+        `$status = Install-Git
+        if (`$status) {
+            Print-Msg `"Git 安装成功`"
+        } else {
+            Print-Msg `"Git 安装失败, 无法调用 Git 安装 ComfyUI 自定义节点`"
+            return
+        }
+    } else {
+        Print-Msg `"Git 已安装`"
+    }
+
+    # 应用 Github 镜像源
+    if (`$global:is_test_gh_mirror -ne 1) {
+        Test-Github-Mirror
+        `$global:is_test_gh_mirror = 1
+    }
+
+    `$node_list = Get-ChildItem -Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes`" | Select-Object -ExpandProperty FullName
+    `$sum = 0
+    `$count = 0
+    ForEach (`$node in `$node_list) {
+        if (Test-Path `"`$node/.git`") {
+            `$sum += 1
+        }
+    }
+    Print-Msg `"更新 ComfyUI 自定义节点中`"
+    ForEach (`$node in `$node_list) {
+        if (!(Test-Path `"`$node/.git`")) {
+            continue
+        }
+
+        `$count += 1
+        Print-Msg `"[`$count/`$sum]:: 更新 `$(`$(Get-Item `$node).Name) 自定义节点中`"
+        Fix-Git-Point-Off-Set `"`$node`"
+        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$node`" fetch --recurse-submodules
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            if (`$origin_ver -eq `$latest_ver) {
+                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点已为最新版`"
+            } else {
+                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
+            }
+        } else {
+            Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新失败`"
+        }
+    }
+    Print-Msg `"更新 ComfyUI 自定义节点完成`"
+}
+
+
+# 列出已安装的 ComfyUI 自定义节点
+function global:List-Node {
+    `$node_list = Get-ChildItem -Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes`" | Select-Object -ExpandProperty FullName
+    Print-Msg `"当前 ComfyUI 已安装的自定义节点`"
+    `$count = 0
+    ForEach (`$i in `$node_list) {
+        if (Test-Path `"`$i`" -PathType Container) {
+            `$count += 1
+            `$name = [System.IO.Path]::GetFileNameWithoutExtension(`"`$i`")
+            Print-Msg `"- `$name`"
+        }
+    }
+    Print-Msg `"ComfyUI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes`"))`"
+    Print-Msg `"ComfyUI 自定义节点数量: `$count`"
+}
+
+
+# 安装绘世启动器
+function global:Install-Hanamizuki {
+    `$urls = @(`"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
+
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
+    } else {
+        ForEach (`$url in `$urls) {
+            Print-Msg `"下载绘世启动器中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki.exe`"
+            if (`$?) {
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki.exe`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试下载绘世启动器中`"
+                } else {
+                    Print-Msg `"下载绘世启动器失败`"
+                }
+            }
+        }
+    }
+
+    Print-Msg `"检查绘世启动器运行环境`"
+    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/python/python.exe`")) {
+        if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`") {
+            Print-Msg `"尝试将 Python 移动至 `$Env:COMFYUI_INSTALLER_ROOT\ComfyUI 中`"
+            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI`" -Force
+            if (`$?) {
+                Print-Msg `"Python 路径移动成功`"
+            } else {
+                Print-Msg `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`"
+                Print-Msg `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 ComfyUI Installer 修复环境`"
+        }
+    }
+
+    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/git/bin/git.exe`")) {
+        if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`") {
+            Print-Msg `"尝试将 Git 移动至 `$Env:COMFYUI_INSTALLER_ROOT\ComfyUI 中`"
+            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI`" -Force
+            if (`$?) {
+                Print-Msg `"Git 路径移动成功`"
+            } else {
+                Print-Msg `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`"
+                Print-Msg `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 ComfyUI Installer 修复环境`"
+        }
+    }
+
+    Print-Msg `"检查绘世启动器运行环境结束`"
+}
+
+
+# 设置 Python 命令别名
+function global:pip {
+    python -m pip @args
+}
+
+Set-Alias pip3 pip
+Set-Alias pip3.10 pip
+Set-Alias python3 python
+Set-Alias python3.10 python
+
+
 # 列出 ComfyUI Installer 内置命令
 function global:List-CMD {
     Write-Host `"
@@ -4687,6 +5035,13 @@ Github：https://github.com/licyk
     Update-uv
     Update-Aria2
     Check-ComfyUI-Installer-Update
+    Test-Github-Mirror
+    Install-ComfyUI-Node
+    Git-Clone
+    Fix-Git-Point-Off-Set
+    Update-ComfyUI-Node
+    Install-Hanamizuki
+    List-Node
     List-CMD
 
 更多帮助信息可在 ComfyUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
@@ -4867,6 +5222,14 @@ https://gh.idayer.com/https://github.com
 ComfyUI Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
 
 ComfyUI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 ComfyUI Installer 更新检查。
+
+ComfyUI 的使用教程：
+https://sdnote.netlify.app/guide/comfyui
+https://sdnote.netlify.app/help/comfyui
+https://www.aigodlike.com
+https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
+https://comfyanonymous.github.io/ComfyUI_examples
+https://blenderneko.github.io/ComfyUI-docs
 
 更多详细的帮助可在下面的链接查看。
 ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
