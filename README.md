@@ -51,3 +51,13 @@ Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的
 Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的脚本，包含启动，管理 SD-Trainer 的工具。
 
 详细的说明[点击此处](./sd_trainer_installer.md)阅读。
+
+
+# ComfyUI Installer
+Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
+
+详细的说明[点击此处](./comfyui_installer.md)阅读。
+
+
+# Python Installer
+[install_embed_python.ps1](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/)：Windows 平台一键安装便携式 Python，可用做测试。
