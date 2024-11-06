@@ -313,6 +313,8 @@ function Git-CLone {
         [String]$path
     )
 
+    $name = [System.IO.Path]::GetFileNameWithoutExtension("$url")
+    Print-Msg "检测 $name 是否已安装"
     $status = 0
     if (!(Test-Path "$path")) {
         $status = 1
@@ -322,7 +324,6 @@ function Git-CLone {
             $status = 1
         }
     }
-    $name = [System.IO.Path]::GetFileNameWithoutExtension("$url")
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
@@ -1945,7 +1946,8 @@ else:
 # 检查 ComfyUI 运行环境
 function Check-ComfyUI-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 ComfyUI 运行环境检测`"
+        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`"
+        return
     } else {
         Print-Msg `"检查 ComfyUI 运行环境中`"
     }
@@ -1969,8 +1971,7 @@ function Main {
     Pip-Mirror-Status
     `$args = Get-ComfyUI-Launch-Args
     # 记录上次的路径
-    `$current_path = Get-Location
-    `$current_path = `$current_path.ToString()
+    `$current_path = `$(Get-Location).ToString()
 
     Check-ComfyUI-Installer-Update
     Create-ComfyUI-Shortcut
@@ -3789,6 +3790,16 @@ function Get-Pip-Mirror-Setting {
 }
 
 
+# 获取 ComfyUI 运行环境检测配置
+function Get-ComfyUI-Env-Check-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
 # 获取 CUDA 内存分配器设置
 function Get-PyTorch-CUDA-Memory-Alloc-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
@@ -4216,6 +4227,46 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# ComfyUI 运行环境检测设置
+function ComfyUI-Env-Check-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 ComfyUI 运行环境检测设置: `$(Get-ComfyUI-Env-Check-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 ComfyUI 运行环境检测`"
+        Print-Msg `"2. 禁用 ComfyUI 运行环境检测`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" 2> `$null
+                Print-Msg `"启用 ComfyUI 运行环境检测成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
+                Print-Msg `"禁用 ComfyUI 运行环境检测成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 ComfyUI Installer 更新
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
@@ -4367,6 +4418,7 @@ function Main {
         Print-Msg `"自动创建 ComfyUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
+        Print-Msg `"ComfyUI 运行环境检测设置: `$(Get-ComfyUI-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -4378,10 +4430,11 @@ function Main {
         Print-Msg `"7. 进入自动创建 ComfyUI 快捷启动方式设置`"
         Print-Msg `"8. 进入 Pip 镜像源设置`"
         Print-Msg `"9. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"10. 更新 ComfyUI Installer 管理脚本`"
-        Print-Msg `"11. 检查环境完整性`"
-        Print-Msg `"12. 查看 ComfyUI Installer 文档`"
-        Print-Msg `"13. 退出 ComfyUI Installer 设置`"
+        Print-Msg `"10. 进入 ComfyUI 运行环境检测设置`"
+        Print-Msg `"11. 更新 ComfyUI Installer 管理脚本`"
+        Print-Msg `"12. 检查环境完整性`"
+        Print-Msg `"13. 查看 ComfyUI Installer 文档`"
+        Print-Msg `"14. 退出 ComfyUI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -4422,18 +4475,22 @@ function Main {
                 break
             }
             10 {
-                Check-ComfyUI-Installer-Update
+                ComfyUI-Env-Check-Setting
                 break
             }
             11 {
-                Check-Env
+                Check-ComfyUI-Installer-Update
                 break
             }
             12 {
-                Get-ComfyUI-Installer-Help-Docs
+                Check-Env
                 break
             }
             13 {
+                Get-ComfyUI-Installer-Help-Docs
+                break
+            }
+            14 {
                 `$go_to = 1
                 break
             }
