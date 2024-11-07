@@ -47,6 +47,7 @@ _✨一键安装 SD-Trainer_
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
   - [使用绘世启动器](#使用绘世启动器)
+  - [SD-Trainer Installer 对 Python / Git 环境的识别](#sd-trainer-installer-对-python--git-环境的识别)
   - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
@@ -325,11 +326,11 @@ SD-Trainer Installer 默认启用了 Pip 镜像源加速下载 Python 软件包�
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`SD-Trainer`文件夹中的`python`文件夹删除，然后运行`sd_trainer_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`SD-Trainer/python`和`SD-Trainer/lora-scripts/python`文件夹删除，然后运行`sd_trainer_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`SD-Trainer`文件夹中的`git`文件夹删除，然后运行`sd_trainer_installer.ps1`重新下载 Git。
+将`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`文件夹删除，然后运行`sd_trainer_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -469,6 +470,16 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 |[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 
 如果使用自动的方法，可以参考[命令的使用](#命令的使用)中的[安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)命令，该命令可一键配置下载绘世启动器并配置。
+
+
+## SD-Trainer Installer 对 Python / Git 环境的识别
+SD-Trainer Installer 通常情况下不会去调用系统环境中的 Python / Git，所以在安装过程会安装一个独立的 Python / Git 避免收到系统环境中的 Python / Git 影响。
+
+SD-Trainer Installer 可以识别到的 Python 路径为`SD-Trainer/python`和`SD-Trainer/lora-scripts/python`，当两者同时存在时，优先使用后者。
+
+可以识别到的 Git 路径为`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`，当两者同时存在时，优先使用后者。
+
+如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD-Trainer Installer 重新安装 Python / Git。
 
 
 ## 使用 SD-Trainer Installer 安装 Kohya GUI
@@ -710,7 +721,7 @@ python -m pip install <package_name> --force-reinstall
 python -m pip uninstall <package_name>
 ```
 
->推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
+>推荐使用`python -m pip`的写法，`pip`的写法也可用。SD-Trainer Installer 默认将`pip`命令链接到`python -m pip`避免直接调用`pip`。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
 

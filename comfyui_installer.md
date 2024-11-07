@@ -48,6 +48,7 @@ _✨一键安装 ComfyUI_
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)
+  - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [ComfyUI 提示'Torch 无法使用 GPU，您无法正常开始训练'](#comfyui-提示torch-无法使用-gpu您无法正常开始训练)
@@ -435,11 +436,11 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`ComfyUI`文件夹中的`python`文件夹删除，然后运行`comfyui_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`ComfyUI/python`和`ComfyUI/ComfyUI/python`文件夹删除，然后运行`comfyui_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`ComfyUI`文件夹中的`git`文件夹删除，然后运行`comfyui_installer.ps1`重新下载 Git。
+将`ComfyUI/git`和`ComfyUI/ComfyUI/git`文件夹删除，然后运行`comfyui_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -515,6 +516,16 @@ ComfyUI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 
 ## 管理 ComfyUI Installer 设置
 运行`settings.ps1`，根据提示进行设置管理和调整。
+
+
+## ComfyUI Installer 对 Python / Git 环境的识别
+ComfyUI Installer 通常情况下不会去调用系统环境中的 Python / Git，所以在安装过程会安装一个独立的 Python / Git 避免收到系统环境中的 Python / Git 影响。
+
+ComfyUI Installer 可以识别到的 Python 路径为`ComfyUI/python`和`ComfyUI/ComfyUI/python`，当两者同时存在时，优先使用后者。
+
+可以识别到的 Git 路径为`ComfyUI/git`和`ComfyUI/ComfyUI/git`，当两者同时存在时，优先使用后者。
+
+如果这两个路径 Python / Git 都不存在时，此时 ComfyUI 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 ComfyUI Installer 重新安装 Python / Git。
 
 
 ## 运行脚本时出现中文乱码
@@ -695,7 +706,7 @@ python -m pip install <package_name> --force-reinstall
 python -m pip uninstall <package_name>
 ```
 
->推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
+>推荐使用`python -m pip`的写法，`pip`的写法也可用。ComfyUI Installer 默认将`pip`命令链接到`python -m pip`避免直接调用`pip`。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
 

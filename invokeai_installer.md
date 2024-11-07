@@ -574,7 +574,7 @@ python -m pip uninstall controlnet_aux -y
 python -m pip install controlnet_aux
 ```
 
->推荐使用`python -m pip`的写法，因为`pip`的写法可能会带来一些问题。  
+>推荐使用`python -m pip`的写法，`pip`的写法也可用。InvokeAI Installer 默认将`pip`命令链接到`python -m pip`避免直接调用`pip`。  
 >参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
 
 
