@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 152
+$SD_TRAINER_INSTALLER_VERSION = 153
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -191,11 +191,11 @@ print(is_uv_need_update())
 
 # 下载并解压 Python
 function Install-Python {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-amd64.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/SD-Trainer/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
         if (!(Test-Path "$PSScriptRoot/SD-Trainer/python")) {
@@ -203,8 +203,8 @@ function Install-Python {
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip" -DestinationPath "$PSScriptRoot/SD-Trainer/python" -Force
-        Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.11-amd64.zip"
+        Expand-Archive -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.15-amd64.zip" -DestinationPath "$PSScriptRoot/SD-Trainer/python" -Force
+        Remove-Item -Path "$PSScriptRoot/SD-Trainer/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
