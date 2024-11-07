@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 106
+$COMFYUI_INSTALLER_VERSION = 107
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -136,8 +136,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -788,8 +788,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -1066,8 +1066,8 @@ def get_args():
 
 # 判断 2 个版本的大小, 前面大返回 1, 后面大返回 -1, 相同返回 0
 def compare_versions(version1, version2):
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')  # 将版本号 2 拆分成数字列表
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
@@ -1469,8 +1469,8 @@ def get_package_name(pkg: str) -> str:
 
 # 判断 2 个版本的大小, 前面大返回 1, 后面大返回 -1, 相同返回 0
 def compare_versions(version1, version2):
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')  # 将版本号 2 拆分成数字列表
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
@@ -2309,8 +2309,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -2745,8 +2745,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
