@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 150
+$SD_TRAINER_INSTALLER_VERSION = 151
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -136,8 +136,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -1235,8 +1238,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -1714,8 +1720,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
