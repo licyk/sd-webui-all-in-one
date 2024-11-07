@@ -136,8 +136,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -788,8 +791,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -2309,8 +2315,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
@@ -2745,8 +2754,11 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
-    nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('+', '.').split(".")  # 将版本号 1 拆分成数字列表
-    nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('+', '.').split(".")  # 将版本号 2 拆分成数字列表
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
 
     for i in range(max(len(nums1), len(nums2))):
         num1 = int(nums1[i]) if i < len(nums1) else 0
