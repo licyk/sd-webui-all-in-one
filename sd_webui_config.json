@@ -16,5 +16,6 @@
     "samples_filename_pattern": "[datetime<%Y%m%d_%H%M%S>]_[model_name]_[sampler]",
     "extra_options_img2img": [
         "upscaler_for_img2img"
-    ]
+    ],
+    "img2img_color_correction": true
 }
