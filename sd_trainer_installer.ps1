@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 154
+$SD_TRAINER_INSTALLER_VERSION = 155
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -913,6 +913,7 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
     Set-Proxy
+    Check-SD-Trainer-Installer-Update
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
     `$args = Get-SD-Trainer-Launch-Args
@@ -928,7 +929,6 @@ function Main {
         `$launch_script = `"gui.py`"
     }
 
-    Check-SD-Trainer-Installer-Update
     Create-SD-Trainer-Shortcut
     Fix-PyTorch
     Set-PyTorch-CUDA-Memory-Alloc
@@ -1381,15 +1381,14 @@ function Set-Github-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
-    Set-uv
     Set-Proxy
+    Check-SD-Trainer-Installer-Update
+    Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
 
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
-
-    Check-SD-Trainer-Installer-Update
 
     `$update_fail = 0
     Print-Msg `"拉取 SD-Trainer 更新内容中`"
@@ -1505,6 +1504,7 @@ function Set-Proxy {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
@@ -1815,10 +1815,10 @@ function Set-Proxy {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
-    Set-uv
     Set-Proxy
-    Pip-Mirror-Status
     Check-SD-Trainer-Installer-Update
+    Set-uv
+    Pip-Mirror-Status
 
     # PyTorch 版本列表
     `$content = `"
@@ -2188,6 +2188,27 @@ function Pip-Mirror-Status {
 }
 
 
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    }
+}
+
+
 # SD-Trainer Installer 更新检测
 function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
@@ -2272,8 +2293,9 @@ function Check-SD-Trainer-Installer-Update {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
-    Pip-Mirror-Status
+    Set-Proxy
     Check-SD-Trainer-Installer-Update
+    Pip-Mirror-Status
 
     `$to_exit = 0
     while (`$True) {

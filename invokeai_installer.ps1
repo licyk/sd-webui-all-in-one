@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 148
+$INVOKEAI_INSTALLER_VERSION = 149
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -879,9 +879,9 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
+    Check-InvokeAI-Installer-Update
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
-    Check-InvokeAI-Installer-Update
     Create-InvokeAI-Shortcut
     Set-PyTorch-CUDA-Memory-Alloc
     `$port = Get-InvokeAI-Launch-Port
@@ -1256,9 +1256,9 @@ function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
     Set-Proxy
+    Check-InvokeAI-Installer-Update
     Set-uv
     Pip-Mirror-Status
-    Check-InvokeAI-Installer-Update
     `$update_fail = 0
 
     Print-Msg `"更新 InvokeAI 内核中`"
@@ -1388,6 +1388,7 @@ function Set-Proxy {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
     `$count = `$urls.Length
@@ -1500,6 +1501,27 @@ function Pip-Mirror-Status {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
         Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
 }
 
@@ -1744,9 +1766,10 @@ function Set-uv {
 function Main {
     Print-Msg `"初始化中`"
     Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Set-Proxy
+    Check-InvokeAI-Installer-Update
     Set-uv
     Pip-Mirror-Status
-    Check-InvokeAI-Installer-Update
 
     Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
