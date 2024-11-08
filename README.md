@@ -60,4 +60,4 @@ Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 
 
 
 # Python Installer
-[install_embed_python.ps1](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/)：Windows 平台一键安装便携式 Python，可用做测试。
+[install_embed_python.ps1](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/install_embed_python.ps1)：Windows 平台一键安装便携式 Python，可用做测试。
