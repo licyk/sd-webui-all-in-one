@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 116
+$COMFYUI_INSTALLER_VERSION = 117
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -484,6 +484,24 @@ function Check-Install {
         Print-Msg "设置默认 ComfyUI 启动参数"
         $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
         Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/launch_args.txt" -Value $content
+    }
+
+    if (!(Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/user/default/comfy.settings.json")) {
+        Print-Msg "设置默认 ComfyUI 设置"
+        $json_content = @{
+            "Comfy.Settings.ExtensionPanel" = $true
+            "DZ.Debug.enabled" = $true
+            "Comfy.UseNewMenu" = "Top"
+            "AGL.Locale" = "zh-CN"
+        }
+        $json_content = $json_content | ConvertTo-Json -Depth 4
+        New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI/ComfyUI/user/default" -Force > $null
+        # 创建一个不带 BOM 的 UTF-8 编码器
+        $utf8Encoding = New-Object System.Text.UTF8Encoding($false)
+        # 使用 StreamWriter 来写入文件
+        $streamWriter = [System.IO.StreamWriter]::new("$PSScriptRoot/ComfyUI/ComfyUI/user/default/comfy.settings.json", $false, $utf8Encoding)
+        $streamWriter.Write($json_content)
+        $streamWriter.Close()
     }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
