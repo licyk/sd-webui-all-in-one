@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 115
+$COMFYUI_INSTALLER_VERSION = 116
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1791,7 +1791,7 @@ def get_onnxruntime_support_cuda_version() -> tuple:
 
 # 截取版本号
 def get_version(ver: str) -> str:
-    return ''.join(re.findall(r'\d+', ver.split('=').pop().strip()))
+    return ''.join(re.findall(r'[\d.]+', ver.split('=').pop().strip()))
 
 
 # 判断版本
