@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 158
+$SD_TRAINER_INSTALLER_VERSION = 159
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2351,6 +2351,11 @@ function Get-Model-List {
 function List-Model(`$model_list) {
     `$count = 0
     `$point = `"None`"
+    Write-Host `"模型序号`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型种类`" -ForegroundColor Cyan
     for (`$i = 0; `$i -lt `$model_list.Count; `$i++) {
         `$content = `$model_list[`$i]
         `$count += 1
@@ -2360,10 +2365,12 @@ function List-Model(`$model_list) {
         `$type = `$content[2]
         if (`$point -ne `$ver) {
             Write-Host
-            Write-Host `"- `$ver`"
+            Write-Host `"- `$ver`" -ForegroundColor Cyan
         }
         `$point = `$ver
-        Write-Host `"  - `${count}、`$name (`$ver)`"
+        Write-Host `"  - `${count}、`" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`$name `" -ForegroundColor White -NoNewline
+        Write-Host `"(`$ver)`" -ForegroundColor Cyan
     }
     Write-Host
 }
@@ -2383,7 +2390,6 @@ function Main {
     while (`$True) {
         Print-Msg `"可下载的模型列表`"
         Write-Host `"-----------------------------------------------------`"
-        Write-Host `"模型序号 | 模型名称 | 模型种类`"
         List-Model `$model_list
         Write-Host `"关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
         Write-Host `"-----------------------------------------------------`"
