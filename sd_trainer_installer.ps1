@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 157
+$SD_TRAINER_INSTALLER_VERSION = 158
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2293,12 +2293,16 @@ function Check-SD-Trainer-Installer-Update {
 # 模型列表
 function Get-Model-List {
     `$model_list = New-Object System.Collections.ArrayList
+
     # >>>>>>>>>> Start
+    # SD 1.5
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    # SD 2.1
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`", `"SD 2.1`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
+    # SDXL
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -2321,18 +2325,24 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    # FLUX
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`", `"FLUX`", `"unet`")) | Out-Null
+    # SD 1.5 VAE
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
+    # SDXL VAE
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
+    # FLUX VAE
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`", `"FLUX VAE`", `"vae`")) | Out-Null
+    # FLUX CLIP
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
     # <<<<<<<<<< End
+
     return `$model_list
 }
 
@@ -2340,6 +2350,7 @@ function Get-Model-List {
 # 展示模型列表
 function List-Model(`$model_list) {
     `$count = 0
+    `$point = `"None`"
     for (`$i = 0; `$i -lt `$model_list.Count; `$i++) {
         `$content = `$model_list[`$i]
         `$count += 1
@@ -2347,8 +2358,14 @@ function List-Model(`$model_list) {
         `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
         `$ver = `$content[1]
         `$type = `$content[2]
-        Write-Host `"- `${count}、`$name (`$ver)`"
+        if (`$point -ne `$ver) {
+            Write-Host
+            Write-Host `"- `$ver`"
+        }
+        `$point = `$ver
+        Write-Host `"  - `${count}、`$name (`$ver)`"
     }
+    Write-Host
 }
 
 
@@ -2367,9 +2384,7 @@ function Main {
         Print-Msg `"可下载的模型列表`"
         Write-Host `"-----------------------------------------------------`"
         Write-Host `"模型序号 | 模型名称 | 模型种类`"
-        Write-Host
         List-Model `$model_list
-        Write-Host
         Write-Host `"关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
         Write-Host `"-----------------------------------------------------`"
         Print-Msg `"请选择要下载的模型`"
@@ -2397,6 +2412,8 @@ function Main {
                 }
                 `$content = `$model_list[(`$arg - 1)]
                 `$url = `$content[0]
+                `$ver = `$content[1]
+                `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
                 `$go_to = 1
                 break
             }
@@ -2413,20 +2430,20 @@ function Main {
         exit 0
     }
 
-    `$model_name = Split-Path `$url -Leaf
-    Print-Msg `"当前选择要下载的模型: `$model_name`"
+    Print-Msg `"当前选择要下载的模型: `$name (`$ver)`"
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
     `$download_model = Read-Host `"===========================================>`"
 
     if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
         Print-Msg `"模型将下载至 `$PSScriptRoot\models 目录中`"
-        Print-Msg `"下载 `$model_name 模型中`"
+        Print-Msg `"下载 `$name 模型中`"
+        `$model_name = Split-Path `$url -Leaf
         aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$PSScriptRoot/models`" -o `$model_name
         if (`$?) {
-            Print-Msg `"`$model_name 模型下载成功`"
+            Print-Msg `"`$name 模型下载成功`"
         } else {
-            Print-Msg `"`$model_name 模型下载失败`"
+            Print-Msg `"`$name 模型下载失败`"
         }
     }
 
