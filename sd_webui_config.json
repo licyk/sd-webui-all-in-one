@@ -7,7 +7,7 @@
     "save_to_dirs": false,
     "grid_save_to_dirs": false,
     "export_for_4chan": false,
-    "CLIP_stop_at_last_layers": 1,
+    "CLIP_stop_at_last_layers": 2,
     "localization": "zh-Hans (Stable)",
     "show_progress_every_n_steps": 1,
     "js_live_preview_in_modal_lightbox": true,
@@ -15,7 +15,9 @@
     "emphasis": "No norm",
     "samples_filename_pattern": "[datetime<%Y%m%d_%H%M%S>]_[model_name]_[sampler]",
     "extra_options_img2img": [
-        "upscaler_for_img2img"
+        "upscaler_for_img2img",
+        "img2img_color_correction",
+        "img2img_fix_steps"
     ],
     "img2img_color_correction": true
 }
