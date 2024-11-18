@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 160
+$SD_TRAINER_INSTALLER_VERSION = 161
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -80,6 +80,16 @@ function Print-Msg ($msg) {
     Write-Host "[SD-Trainer Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    $ver = $([string]$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    $major = ($ver[0..($ver.Length - 3)])
+    $minor = $ver[-2]
+    $micro = $ver[-1]
+    Print-Msg "SD-Trainer Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -559,6 +569,16 @@ function Print-Msg (`$msg) {
 }
 
 
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -911,7 +931,7 @@ if __name__ == '__main__':
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
     Set-HuggingFace-Mirror
@@ -1038,6 +1058,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1380,7 +1410,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
     Set-uv
@@ -1471,12 +1501,25 @@ Read-Host | Out-Null
 function Write-SD-Trainer-Install-Script {
     $content = "
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+
+
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1503,7 +1546,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
@@ -1617,6 +1660,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1814,7 +1867,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
     Set-uv
@@ -2178,6 +2231,16 @@ function Print-Msg (`$msg) {
 }
 
 
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -2380,7 +2443,7 @@ function List-Model(`$model_list) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
     Pip-Mirror-Status
@@ -2401,7 +2464,6 @@ function Main {
 
         switch (`$arg) {
             exit {
-                Print-Msg `"退出模型下载脚本`"
                 `$to_exit = 1
                 `$go_to = 1
                 break
@@ -2542,6 +2604,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -3224,7 +3296,7 @@ function Get-SD-Trainer-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Pip-Mirror-Status
     while (`$true) {
@@ -3413,6 +3485,16 @@ function global:Print-Msg (`$msg) {
     Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -3658,7 +3740,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"SD-Trainer Installer 版本: v`$Env:SD_TRAINER_INSTALLER_VERSION`"
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -3841,7 +3923,7 @@ function Use-Update-Mode {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Print-Msg "SD-Trainer Installer 版本: v$SD_TRAINER_INSTALLER_VERSION"
+    Get-SD-Trainer-Installer-Version
     if (Test-Path "$PSScriptRoot/SD-Trainer/use_update_mode.txt") {
         Print-Msg "使用更新模式"
         Remove-Item -Path "$PSScriptRoot/SD-Trainer/use_update_mode.txt" 2> $null

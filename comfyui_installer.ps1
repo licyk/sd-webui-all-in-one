@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 121
+$COMFYUI_INSTALLER_VERSION = 122
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -80,6 +80,16 @@ function Print-Msg ($msg) {
     Write-Host "[ComfyUI Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    $ver = $([string]$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    $major = ($ver[0..($ver.Length - 3)])
+    $minor = $ver[-2]
+    $micro = $ver[-1]
+    Print-Msg "ComfyUI Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -586,6 +596,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -2015,7 +2035,7 @@ function Check-ComfyUI-Env {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Check-ComfyUI-Installer-Update
     Set-Github-Mirror
@@ -2135,6 +2155,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -2477,7 +2507,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Check-ComfyUI-Installer-Update
     Set-uv
@@ -2526,12 +2556,25 @@ Read-Host | Out-Null
 function Write-ComfyUI-Install-Script {
     $content = "
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+
+
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -2558,7 +2601,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
@@ -2672,6 +2715,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -2869,7 +2922,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Check-ComfyUI-Installer-Update
     Set-uv
@@ -3233,6 +3286,16 @@ function Print-Msg (`$msg) {
 }
 
 
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -3433,6 +3496,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_fp8_scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_turbo.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
     # SD 3 Text Encoder
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_g.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_l.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
@@ -3442,6 +3506,7 @@ function Get-Model-List {
     # FLUX
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4-v2.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q2_K.gguf`", `"FLUX`", `"unet`")) | Out-Null
@@ -3662,7 +3727,7 @@ function List-Model(`$model_list) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Check-ComfyUI-Installer-Update
     Pip-Mirror-Status
@@ -3683,7 +3748,6 @@ function Main {
 
         switch (`$arg) {
             exit {
-                Print-Msg `"退出模型下载脚本`"
                 `$to_exit = 1
                 `$go_to = 1
                 break
@@ -3825,6 +3889,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -4557,7 +4631,7 @@ function Get-ComfyUI-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Pip-Mirror-Status
     while (`$true) {
@@ -5142,6 +5216,16 @@ Github：https://github.com/licyk
 }
 
 
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -5211,7 +5295,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"ComfyUI Installer 版本: v`$Env:COMFYUI_INSTALLER_VERSION`"
+    Get-ComfyUI-Installer-Version
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -5386,7 +5470,7 @@ function Use-Update-Mode {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Print-Msg "ComfyUI Installer 版本: v$COMFYUI_INSTALLER_VERSION"
+    Get-ComfyUI-Installer-Version
     if (Test-Path "$PSScriptRoot/ComfyUI/use_update_mode.txt") {
         Print-Msg "使用更新模式"
         Remove-Item -Path "$PSScriptRoot/ComfyUI/use_update_mode.txt" 2> $null

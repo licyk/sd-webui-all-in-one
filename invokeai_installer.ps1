@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 149
+$INVOKEAI_INSTALLER_VERSION = 150
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -61,6 +61,16 @@ function Print-Msg ($msg) {
     Write-Host "[InvokeAI Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    $ver = $([string]$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    $major = ($ver[0..($ver.Length - 3)])
+    $minor = $ver[-2]
+    $micro = $ver[-1]
+    Print-Msg "InvokeAI Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -531,6 +541,16 @@ function Print-Msg (`$msg) {
 }
 
 
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -877,7 +897,7 @@ if __name__ == '__main__':
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     Check-InvokeAI-Installer-Update
     Set-HuggingFace-Mirror
@@ -981,6 +1001,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1254,7 +1284,7 @@ print(ver_list)
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     Check-InvokeAI-Installer-Update
     Set-uv
@@ -1355,12 +1385,25 @@ Read-Host | Out-Null
 function Write-InvokeAI-Install-Script {
     $content = "
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
+
+
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1387,7 +1430,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
@@ -1495,6 +1538,16 @@ function Print-Msg (`$msg) {
 }
 
 
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # Pip 镜像源状态
 function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -1765,7 +1818,7 @@ function Set-uv {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     Check-InvokeAI-Installer-Update
     Set-uv
@@ -1831,12 +1884,25 @@ Read-Host | Out-Null
 function Write-Download-Config-Script {
     $content = "
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
+
+
+
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1882,7 +1948,7 @@ function Get-Model-Config-File {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/invokeai/configs/stable-diffusion`" -Force > `$null
@@ -1972,6 +2038,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -2585,7 +2661,7 @@ function Get-InvokeAI-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     Pip-Mirror-Status
     while (`$true) {
@@ -3158,6 +3234,16 @@ function Pip-Mirror-Status {
 }
 
 
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
@@ -3198,7 +3284,7 @@ function Set-HuggingFace-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Print-Msg `"InvokeAI Installer 版本: v`$Env:INVOKEAI_INSTALLER_VERSION`"
+    Get-InvokeAI-Installer-Version
     Set-Proxy
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
@@ -3358,7 +3444,7 @@ function Use-Update-Mode {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Print-Msg "InvokeAI Installer 版本: v$INVOKEAI_INSTALLER_VERSION"
+    Get-InvokeAI-Installer-Version
     if (Test-Path "$PSScriptRoot/InvokeAI/use_update_mode.txt") {
         Print-Msg "使用更新模式"
         Remove-Item -Path "$PSScriptRoot/InvokeAI/use_update_mode.txt" 2> $null
