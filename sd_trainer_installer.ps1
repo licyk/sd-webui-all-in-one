@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 161
+$SD_TRAINER_INSTALLER_VERSION = 162
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -31,7 +31,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.0"
+$UV_MINIMUM_VER = "0.5.2"
 # SD-Trainer 仓库地址
 $SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
 # PATH
@@ -3488,16 +3488,6 @@ function global:Print-Msg (`$msg) {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
-    `$major = (`$ver[0..(`$ver.Length - 3)])
-    `$minor = `$ver[-2]
-    `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
 # 更新 uv
 function global:Update-uv {
     Print-Msg `"更新 uv 中`"
@@ -3668,6 +3658,16 @@ Github：https://github.com/licyk
 
 更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$Env:SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
