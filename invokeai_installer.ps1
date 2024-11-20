@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 151
+$INVOKEAI_INSTALLER_VERSION = 152
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3385,7 +3385,8 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 
 更多详细的帮助可在下面的链接查看。
 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-InvokeAI 官方文档：https://invoke-ai.github.io/InvokeAI
+InvokeAI 官方文档 1：https://invoke-ai.github.io/InvokeAI
+InvokeAI 官方文档 2：https://support.invoke.ai/support/solutions
 InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
 "

@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 124
+$COMFYUI_INSTALLER_VERSION = 125
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -647,8 +647,9 @@ for folder in torch_spec.submodule_search_locations:
         logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
         shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
 `"
-
+    Print-Msg `"检测 PyTorch 的 libomp 问题中`"
     python -c `"`$content`"
+    Print-Msg `"PyTorch 检查完成`"
 }
 
 
@@ -1263,6 +1264,7 @@ if __name__ == '__main__':
     path = args.requirement_path
     print(validate_requirements(path))
 `"
+    Print-Msg `"检查 ComfyUI 内核依赖完整性中`"
     if (!(Test-Path `"`$PSScriptRoot/cache`")) {
         New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
     }
@@ -1713,7 +1715,7 @@ if __name__ == '__main__':
     write_content_to_file(notice, term_sd_notice_path)
     write_content_to_file(path_list, term_sd_need_install_requirement_path)
 `"
-    Print-Msg `"检测 ComfyUI 运行环境组件依赖中`"
+    Print-Msg `"检查 ComfyUI 运行环境组件依赖中`"
     if (!(Test-Path `"`$PSScriptRoot/cache`")) {
         New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
     }
@@ -1749,7 +1751,7 @@ if __name__ == '__main__':
 
     # 安装组件依赖
     if (!(Test-Path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`")) {
-        Print-Msg `"ComfyUI 无组件依赖缺失`"
+        Print-Msg `"ComfyUI 运行环境无组件依赖缺失`"
         return
     }
     `$requirement_list = Get-Content `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`"
@@ -1991,6 +1993,7 @@ if ver > 1:
 else:
     print(False)
 `"
+    Print-Msg `"检查 Numpy 版本中`"
     `$status = `$(python -c `"`$content`")
 
     if (`$status -eq `"True`") {
