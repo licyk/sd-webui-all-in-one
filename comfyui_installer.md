@@ -51,7 +51,6 @@ _✨一键安装 ComfyUI_
   - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
-  - [ComfyUI 提示'Torch 无法使用 GPU，您无法正常开始训练'](#comfyui-提示torch-无法使用-gpu您无法正常开始训练)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
   - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
   - [CUDA out of memory](#cuda-out-of-memory)
@@ -560,46 +559,6 @@ Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
 或者使用[自动环境配置脚本](#使用自动环境配置脚本)解除 Windows 系统对运行 PowerShell 脚本的限制。
-
-
-## ComfyUI 提示'Torch 无法使用 GPU，您无法正常开始训练'
-尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用`reinstall_pytorch.ps1`重装 PyTorch。
-
->[!NOTE]  
->Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
-
-如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
-
-```powershell
-nvidia-smi
-```
-
-可以看到 PowerShell 中显示的以下信息。
-
-```
-Fri Jun  7 19:07:00 2024
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 552.44                 Driver Version: 552.44         CUDA Version: 12.4     |
-|-----------------------------------------+------------------------+----------------------+
-| GPU  Name                     TCC/WDDM  | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|                                         |                        |               MIG M. |
-|=========================================+========================+======================|
-|   0  NVIDIA GeForce RTX 4060 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
-| N/A   51C    P0             16W /   95W |       0MiB /   8188MiB |      0%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
-
-+-----------------------------------------------------------------------------------------+
-| Processes:                                                                              |
-|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
-|        ID   ID                                                               Usage      |
-|=========================================================================================|
-|  No running processes found                                                             |
-+-----------------------------------------------------------------------------------------+
-```
-
-`CUDA Version`后面显示的数字即为显卡驱动支持最高的 CUDA 版本。
 
 
 ## PowerShell 中出现 xFormers 报错
