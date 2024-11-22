@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 126
+$COMFYUI_INSTALLER_VERSION = 127
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1728,6 +1728,7 @@ if __name__ == '__main__':
 
     if (Test-Path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`") {
         Print-Msg `"检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用`"
+        Print-Msg `"您可以进入 ComfyUI 后使用 ComfyUI Manager 禁用或者卸载冲突的插件, 也可以进入 `$PSScriptRoot/ComfyUI/custom_nodes 路径, 将冲突插件的文件夹名称进行修改, 加上 .disabled 后缀后即可禁用插件, 或者直接删除插件的文件夹以卸载插件`"
         Print-Msg `"您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况`"
         Print-Msg `"您通常情况下可以选择忽略该警告并继续运行`"
         Write-Host `"-------------------------------------------------------------------------------`"
