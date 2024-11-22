@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 162
+$SD_TRAINER_INSTALLER_VERSION = 163
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2416,6 +2416,8 @@ function Get-Model-List {
 function List-Model(`$model_list) {
     `$count = 0
     `$point = `"None`"
+    Print-Msg `"可下载的模型列表`"
+    Write-Host `"-----------------------------------------------------`"
     Write-Host `"模型序号`" -ForegroundColor Yellow -NoNewline
     Write-Host `" | `" -NoNewline
     Write-Host `"模型名称`" -ForegroundColor White -NoNewline
@@ -2438,6 +2440,48 @@ function List-Model(`$model_list) {
         Write-Host `"(`$ver)`" -ForegroundColor Cyan
     }
     Write-Host
+    Write-Host `"关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+# 列出要下载的模型
+function List-Download-Task (`$download_list) {
+    Print-Msg `"当前选择要下载的模型`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"模型名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型种类`" -ForegroundColor Cyan
+    Write-Host
+    for (`$i = 0; `$i -lt `$download_list.Count; `$i++) {
+        `$content = `$download_list[`$i]
+        `$name = `$content[0]
+        `$type = `$content[2]
+        Write-Host `"- `$name`" -ForegroundColor White -NoNewline
+        Write-Host `" (`$type) `" -ForegroundColor Cyan
+    }
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+# 模型下载器
+function Model-Downloader (`$download_list) {
+    `$sum = `$download_list.Count
+    for (`$i = 0; `$i -lt `$download_list.Count; `$i++) {
+        `$content = `$download_list[`$i]
+        `$name = `$content[0]
+        `$url = `$content[1]
+        `$type = `$content[2]
+        `$path = ([System.IO.Path]::GetFullPath(`$content[3]))
+        `$model_name = Split-Path `$url -Leaf
+        Print-Msg `"[`$(`$i + 1)/`$sum]:: 下载 `$name (`$type) 模型到 `$path 中`"
+        aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$path`" -o `"`$model_name`"
+        if (`$?) {
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载成功`"
+        } else {
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载失败`"
+        }
+    }
 }
 
 
@@ -2450,17 +2494,15 @@ function Main {
 
     `$to_exit = 0
     `$go_to = 0
+    `$has_error = `$false
     `$model_list = Get-Model-List
+    `$download_list = New-Object System.Collections.ArrayList
 
     while (`$True) {
-        Print-Msg `"可下载的模型列表`"
-        Write-Host `"-----------------------------------------------------`"
         List-Model `$model_list
-        Write-Host `"关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
-        Write-Host `"-----------------------------------------------------`"
         Print-Msg `"请选择要下载的模型`"
-        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出模型下载脚本`"
-        `$arg = Read-Host `"===========================================>`"
+        Print-Msg `"提示: 输入数字后回车, 如果需要下载多个模型, 可以输入多个数字并使用空格隔开, 或者输入 exit 退出模型下载脚本`"
+        `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {
             exit {
@@ -2469,21 +2511,37 @@ function Main {
                 break
             }
             Default {
-                try {
-                    `$arg = [int]`$arg
+                `$arg = `$arg.Split() # 拆分成列表
+                ForEach (`$i in `$arg) {
+                    try {
+                        # 检测输入是否符合列表
+                        `$i = [int]`$i
+                        if ((!((`$i -ge 1) -and (`$i -le `$model_list.Count)))) {
+                            `$has_error = `$true
+                            break
+                        }
+
+                        # 创建下载列表
+                        `$content = `$model_list[(`$i - 1)]
+                        `$url = `$content[0] # 下载链接
+                        `$type = `$content[1] # 类型
+                        `$path = `"`$PSScriptRoot/models`" # 模型放置路径
+                        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        `$download_list.Add(@(`$name, `$url, `$type, `$path)) | Out-Null # 添加列表
+                    }
+                    catch {
+                        Print-Msg `"输入有误, 请重试`"
+                        `$has_error = `$true
+                        break
+                    }
                 }
-                catch {
-                    Print-Msg `"输入有误, 请重试`"
+
+                if (`$has_error) {
+                    `$has_error = `$false
+                    `$download_list.Clear() # 出现错误时清除下载列表
                     break
                 }
-                if (!((`$arg -ge 1) -and (`$arg -le `$model_list.Count))) {
-                    Print-Msg `"输入有误, 请重试`"
-                    break
-                }
-                `$content = `$model_list[(`$arg - 1)]
-                `$url = `$content[0]
-                `$ver = `$content[1]
-                `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+
                 `$go_to = 1
                 break
             }
@@ -2500,21 +2558,12 @@ function Main {
         exit 0
     }
 
-    Print-Msg `"当前选择要下载的模型: `$name (`$ver)`"
+    List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_model = Read-Host `"===========================================>`"
-
-    if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
-        Print-Msg `"模型将下载至 `$PSScriptRoot\models 目录中`"
-        Print-Msg `"下载 `$name 模型中`"
-        `$model_name = Split-Path `$url -Leaf
-        aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$PSScriptRoot/models`" -o `$model_name
-        if (`$?) {
-            Print-Msg `"`$name 模型下载成功`"
-        } else {
-            Print-Msg `"`$name 模型下载失败`"
-        }
+    `$download_operate = Read-Host `"========================================>`"
+    if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
+        Model-Downloader `$download_list
     }
 
     Print-Msg `"退出模型下载脚本`"

@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 125
+$COMFYUI_INSTALLER_VERSION = 126
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -503,6 +503,7 @@ function Check-Install {
             "DZ.Debug.enabled" = $true
             "Comfy.UseNewMenu" = "Top"
             "AGL.Locale" = "zh-CN"
+            "Comfy.RerouteBeta" = $true
         }
         $json_content = $json_content | ConvertTo-Json -Depth 4
         New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI/ComfyUI/user/default" -Force > $null
@@ -3445,6 +3446,8 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl_edit.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0-base.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -3654,7 +3657,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad_prompt_version2.pt`", `"Embedding`", `"embeddings`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/ng_deepnegative_v1_75t.pt`", `"Embedding`", `"embeddings`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/verybadimagenegative_v1.3.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    # ControlNet
+    # SD 1.5 ControlNet
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_ip2p_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_shuffle_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1e_sd15_tile_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
@@ -3672,6 +3675,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_brightness.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_illumination.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_qrcode_monster.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    # SDXL ControlNet
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/mistoLine_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/destitech-controlnet-inpaint-dreamer-sdxl.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
@@ -3682,10 +3686,28 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartAnime.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsNormalMidas.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsSoftedgeHed.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    # FLUX ControlNet
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-redux-dev.safetensors`", `"FLUX ControlNet`", `"style_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-depth-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-hed-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Depth.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Upscaler.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-instantx-controlnet-union.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-mistoline.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-shakker-labs-controlnet-union-pro.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     # CLIP Vision
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_g.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_h.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_vitl.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/sigclip_vision_patch14_384.safetensors`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     # IP Adapter
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_light.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
@@ -3704,6 +3726,8 @@ function Get-Model-List {
 function List-Model(`$model_list) {
     `$count = 0
     `$point = `"None`"
+    Print-Msg `"可下载的模型列表`"
+    Write-Host `"-----------------------------------------------------`"
     Write-Host `"模型序号`" -ForegroundColor Yellow -NoNewline
     Write-Host `" | `" -NoNewline
     Write-Host `"模型名称`" -ForegroundColor White -NoNewline
@@ -3726,6 +3750,48 @@ function List-Model(`$model_list) {
         Write-Host `"(`$ver)`" -ForegroundColor Cyan
     }
     Write-Host
+    Write-Host `"关于部分模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+# 列出要下载的模型
+function List-Download-Task (`$download_list) {
+    Print-Msg `"当前选择要下载的模型`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"模型名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型种类`" -ForegroundColor Cyan
+    Write-Host
+    for (`$i = 0; `$i -lt `$download_list.Count; `$i++) {
+        `$content = `$download_list[`$i]
+        `$name = `$content[0]
+        `$type = `$content[2]
+        Write-Host `"- `$name`" -ForegroundColor White -NoNewline
+        Write-Host `" (`$type) `" -ForegroundColor Cyan
+    }
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+# 模型下载器
+function Model-Downloader (`$download_list) {
+    `$sum = `$download_list.Count
+    for (`$i = 0; `$i -lt `$download_list.Count; `$i++) {
+        `$content = `$download_list[`$i]
+        `$name = `$content[0]
+        `$url = `$content[1]
+        `$type = `$content[2]
+        `$path = ([System.IO.Path]::GetFullPath(`$content[3]))
+        `$model_name = Split-Path `$url -Leaf
+        Print-Msg `"[`$(`$i + 1)/`$sum]:: 下载 `$name (`$type) 模型到 `$path 中`"
+        aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$path`" -o `"`$model_name`"
+        if (`$?) {
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载成功`"
+        } else {
+            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载失败`"
+        }
+    }
 }
 
 
@@ -3738,16 +3804,14 @@ function Main {
 
     `$to_exit = 0
     `$go_to = 0
+    `$has_error = `$false
     `$model_list = Get-Model-List
+    `$download_list = New-Object System.Collections.ArrayList
 
     while (`$True) {
-        Print-Msg `"可下载的模型列表`"
-        Write-Host `"-----------------------------------------------------`"
         List-Model `$model_list
-        Write-Host `"关于部分模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md`"
-        Write-Host `"-----------------------------------------------------`"
         Print-Msg `"请选择要下载的模型`"
-        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出模型下载脚本`"
+        Print-Msg `"提示: 输入数字后回车, 如果需要下载多个模型, 可以输入多个数字并使用空格隔开, 或者输入 exit 退出模型下载脚本`"
         `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {
@@ -3757,22 +3821,37 @@ function Main {
                 break
             }
             Default {
-                try {
-                    `$arg = [int]`$arg
+                `$arg = `$arg.Split() # 拆分成列表
+                ForEach (`$i in `$arg) {
+                    try {
+                        # 检测输入是否符合列表
+                        `$i = [int]`$i
+                        if ((!((`$i -ge 1) -and (`$i -le `$model_list.Count)))) {
+                            `$has_error = `$true
+                            break
+                        }
+
+                        # 创建下载列表
+                        `$content = `$model_list[(`$i - 1)]
+                        `$url = `$content[0] # 下载链接
+                        `$type = `$content[1] # 类型
+                        `$path = `"`$PSScriptRoot/ComfyUI/models/`$(`$content[2])`" # 模型放置路径
+                        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        `$download_list.Add(@(`$name, `$url, `$type, `$path)) | Out-Null # 添加列表
+                    }
+                    catch {
+                        Print-Msg `"输入有误, 请重试`"
+                        `$has_error = `$true
+                        break
+                    }
                 }
-                catch {
-                    Print-Msg `"输入有误, 请重试`"
+
+                if (`$has_error) {
+                    `$has_error = `$false
+                    `$download_list.Clear() # 出现错误时清除下载列表
                     break
                 }
-                if (!((`$arg -ge 1) -and (`$arg -le `$model_list.Count))) {
-                    Print-Msg `"输入有误, 请重试`"
-                    break
-                }
-                `$content = `$model_list[(`$arg - 1)]
-                `$url = `$content[0]
-                `$ver = `$content[1]
-                `$type = `$content[2]
-                `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+
                 `$go_to = 1
                 break
             }
@@ -3789,21 +3868,12 @@ function Main {
         exit 0
     }
 
-    Print-Msg `"当前选择要下载的模型: `$name (`$ver)`"
+    List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_model = Read-Host `"========================================>`"
-
-    if (`$download_model -eq `"yes`" -or `$download_model -eq `"y`" -or `$download_model -eq `"YES`" -or `$download_model -eq `"Y`") {
-        Print-Msg `"模型将下载至 `$PSScriptRoot\ComfyUI\models\`$type 目录中`"
-        Print-Msg `"下载 `$name 模型中`"
-        `$model_name = Split-Path `$url -Leaf
-        aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 `$url -d `"`$PSScriptRoot/ComfyUI/models/`$type`" -o `$model_name
-        if (`$?) {
-            Print-Msg `"`$name 模型下载成功`"
-        } else {
-            Print-Msg `"`$name 模型下载失败`"
-        }
+    `$download_operate = Read-Host `"========================================>`"
+    if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
+        Model-Downloader `$download_list
     }
 
     Print-Msg `"退出模型下载脚本`"
