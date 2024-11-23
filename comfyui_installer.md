@@ -335,6 +335,31 @@ comfyui:
 #     loras: models/loras/
 #     upscale_models: models/upscale_models/
 #     vae: models/vae/
+#     classifiers: models/classifiers/
+#     clip_vision: models/clip_vision/
+#     diffusers: models/diffusers/
+#     diffusion_models: models/diffusion_models/
+#     gligen: models/gligen/
+#     hypernetworks: models/hypernetworks/
+#     photomaker: models/photomaker/
+#     style_models: models/style_models/
+#     unet: models/unet/
+#     vae_approx: models/vae_approx/
+#     animatediff_models: models/animatediff_models/
+#     animatediff_motion_lora: models/animatediff_motion_lora/
+#     animatediff_video_formats: models/animatediff_video_formats/
+#     ipadapter: models/ipadapter/
+#     liveportrait: models/liveportrait/
+#     insightface: models/insightface/
+#     layerstyle: models/layerstyle/
+#     LLM: models/LLM/
+#     Joy_caption: models/Joy_caption/
+#     sams: models/sams/
+#     blip: models/blip/
+#     CogVideo: models/CogVideo/
+#     xlabs: models/xlabs/
+#     instantid: models/instantid/
+#     custom_nodes: custom_nodes/
 
 
 #other_ui:
