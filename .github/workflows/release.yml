@@ -67,49 +67,49 @@ jobs:
           gh release delete-asset archive install_embed_python.ps1 -y || true
           gh release upload archive install_embed_python.ps1
 
-  Release-To-Gitee:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: List files in the repository
-        run: |
-          cd "${{ github.workspace }}"
-          ls "${{ github.workspace }}"
-      - name: Release config script to Gitee
-        uses: nicennnnnnnlee/action-gitee-release@v1.0.5
-        with:
-          gitee_owner: licyk
-          gitee_repo: sd-webui-all-in-one
-          gitee_token: ${{ secrets.gitee_token }}
-          gitee_release_id: archive
-          gitee_upload_retry_times: 3
-          # gitee_file_path: ${{ github.workspace }}
-          # gitee_file_name: configure_env.bat
-          gitee_files: |
-              configure_env.bat
+  # Release-To-Gitee:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: List files in the repository
+  #       run: |
+  #         cd "${{ github.workspace }}"
+  #         ls "${{ github.workspace }}"
+  #     - name: Release config script to Gitee
+  #       uses: nicennnnnnnlee/action-gitee-release@v1.0.5
+  #       with:
+  #         gitee_owner: licyk
+  #         gitee_repo: sd-webui-all-in-one
+  #         gitee_token: ${{ secrets.gitee_token }}
+  #         gitee_release_id: archive
+  #         gitee_upload_retry_times: 3
+  #         # gitee_file_path: ${{ github.workspace }}
+  #         # gitee_file_name: configure_env.bat
+  #         gitee_files: |
+  #             configure_env.bat
 
-      - name: Release SD-Trainer Installer to Gitee
-        uses: nicennnnnnnlee/action-gitee-release@v1.0.5
-        with:
-          gitee_owner: licyk
-          gitee_repo: sd-webui-all-in-one
-          gitee_token: ${{ secrets.gitee_token }}
-          gitee_release_id: sd_trainer_installer
-          gitee_upload_retry_times: 3
-          # gitee_file_path: ${{ github.workspace }}
-          # gitee_file_name: sd_trainer_installer.ps1
-          gitee_files: |
-              sd_trainer_installer.ps1
+  #     - name: Release SD-Trainer Installer to Gitee
+  #       uses: nicennnnnnnlee/action-gitee-release@v1.0.5
+  #       with:
+  #         gitee_owner: licyk
+  #         gitee_repo: sd-webui-all-in-one
+  #         gitee_token: ${{ secrets.gitee_token }}
+  #         gitee_release_id: sd_trainer_installer
+  #         gitee_upload_retry_times: 3
+  #         # gitee_file_path: ${{ github.workspace }}
+  #         # gitee_file_name: sd_trainer_installer.ps1
+  #         gitee_files: |
+  #             sd_trainer_installer.ps1
 
-      - name: Release InvokeAI Installer to Gitee
-        uses: nicennnnnnnlee/action-gitee-release@v1.0.5
-        with:
-          gitee_owner: licyk
-          gitee_repo: sd-webui-all-in-one
-          gitee_token: ${{ secrets.gitee_token }}
-          gitee_release_id: invokeai_installer
-          gitee_upload_retry_times: 3
-          # gitee_file_path: ${{ github.workspace }}
-          # gitee_file_name: invokeai_installer.ps1
-          gitee_files: |
-              invokeai_installer.ps1
+  #     - name: Release InvokeAI Installer to Gitee
+  #       uses: nicennnnnnnlee/action-gitee-release@v1.0.5
+  #       with:
+  #         gitee_owner: licyk
+  #         gitee_repo: sd-webui-all-in-one
+  #         gitee_token: ${{ secrets.gitee_token }}
+  #         gitee_release_id: invokeai_installer
+  #         gitee_upload_retry_times: 3
+  #         # gitee_file_path: ${{ github.workspace }}
+  #         # gitee_file_name: invokeai_installer.ps1
+  #         gitee_files: |
+  #             invokeai_installer.ps1
