@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 128
+$COMFYUI_INSTALLER_VERSION = 129
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3697,7 +3697,6 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-depth-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-hed-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Depth.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Upscaler.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
@@ -3717,6 +3716,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter-plus_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors`", `"FLUX IP Adapter`", `"controlnet`")) | Out-Null
     # <<<<<<<<<< End
 
     return `$model_list
@@ -3740,7 +3740,6 @@ function List-Model(`$model_list) {
         `$url = `$content[0]
         `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
         `$ver = `$content[1]
-        `$type = `$content[2]
         if (`$point -ne `$ver) {
             Write-Host
             Write-Host `"- `$ver`" -ForegroundColor Cyan
@@ -3768,9 +3767,12 @@ function List-Download-Task (`$download_list) {
         `$content = `$download_list[`$i]
         `$name = `$content[0]
         `$type = `$content[2]
-        Write-Host `"- `$name`" -ForegroundColor White -NoNewline
+        Write-Host `"- `" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`$name`" -ForegroundColor White -NoNewline
         Write-Host `" (`$type) `" -ForegroundColor Cyan
     }
+    Write-Host
+    Write-Host `"总共要下载的模型数量: `$(`$i)`" -ForegroundColor White
     Write-Host `"-----------------------------------------------------`"
 }
 
@@ -3812,7 +3814,10 @@ function Main {
     while (`$True) {
         List-Model `$model_list
         Print-Msg `"请选择要下载的模型`"
-        Print-Msg `"提示: 输入数字后回车, 如果需要下载多个模型, 可以输入多个数字并使用空格隔开, 或者输入 exit 退出模型下载脚本`"
+        Print-Msg `"提示:`"
+        Print-Msg `"1. 输入数字后回车`"
+        Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
+        Print-Msg `"3. 输入 exit 退出模型下载脚本`"
         `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {
@@ -3838,7 +3843,21 @@ function Main {
                         `$type = `$content[1] # 类型
                         `$path = `"`$PSScriptRoot/ComfyUI/models/`$(`$content[2])`" # 模型放置路径
                         `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
-                        `$download_list.Add(@(`$name, `$url, `$type, `$path)) | Out-Null # 添加列表
+                        `$task = @(`$name, `$url, `$type, `$path)
+                        # 检查重复元素
+                        `$has_duplicate = `$false
+                        for (`$j = 0; `$j -lt `$download_list.Count; `$j++) {
+                            `$task_tmp = `$download_list[`$j]
+                            `$comparison = Compare-Object -ReferenceObject `$task_tmp -DifferenceObject `$task
+                            if (`$comparison.Count -eq 0) {
+                                `$has_duplicate = `$true
+                                break
+                            }
+                        }
+                        if (!(`$has_duplicate)) {
+                            `$download_list.Add(`$task) | Out-Null # 添加列表
+                        }
+                        `$has_duplicate = `$false
                     }
                     catch {
                         `$has_error = `$true
