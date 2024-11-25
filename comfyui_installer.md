@@ -19,6 +19,7 @@ _✨一键安装 ComfyUI_
 - [使用](#使用)
   - [启动 ComfyUI](#启动-comfyui)
   - [更新 ComfyUI](#更新-comfyui)
+  - [更新 ComfyUI 自定义节点](#更新-comfyui-自定义节点)
   - [设置 ComfyUI 启动参数](#设置-comfyui-启动参数)
   - [进入 ComfyUI 所在的 Python 环境](#进入-comfyui-所在的-python-环境)
   - [获取最新的 ComfyUI Installer 脚本](#获取最新的-comfyui-installer-脚本)
@@ -165,6 +166,10 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 ## 更新 ComfyUI
 运行`update.ps1`脚本，如果遇到更新 ComfyUI 失败的情况可尝试重新运行`update.ps1`脚本。
+
+
+## 更新 ComfyUI 自定义节点
+运行`update_node.ps1`脚本，如果遇到更新 ComfyUI 自定义节点失败的情况可尝试重新运行`update_node.ps1`脚本。
 
 
 ## 设置 ComfyUI 启动参数
