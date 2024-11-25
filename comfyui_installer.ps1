@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 131
+$COMFYUI_INSTALLER_VERSION = 132
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2202,84 +2202,6 @@ function Fix-Git-Point-Off-Set {
 }
 
 
-# 获取 PyTorch 版本
-function Get-PyTorch-Version {
-    `$content = `"
-from importlib.metadata import version
-
-pytorch_version = []
-
-try:
-    pytorch_version.append('torch==' + version('torch'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchvision==' + version('torchvision'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchaudio==' + version('torchaudio'))
-except:
-    pass
-
-try:
-    pytorch_version.append('xformers==' + version('xformers'))
-except:
-    pass
-
-version_list = ''
-
-for i in pytorch_version:
-    version_list = f'{version_list} {i}'
-
-print(version_list)
-`"
-
-    `$pytorch_ver = `$(python -c `"`$content`")
-    return `$pytorch_ver
-}
-
-
-# 为 CUDA 设置镜像源
-function Set-Pip-Extra-Index-URL-For-CUDA {
-    `$content = `"
-from importlib.metadata import version
-
-def get_cuda_ver(ver):
-    if 'cu124' in ver:
-        return 'cu124'
-    
-    if 'cu121' in ver:
-        return 'cu121'
-    
-    return 'other'
-
-
-try:
-    torch_ver = version('torch')
-except:
-    torch_ver = ''
-
-print(get_cuda_ver(torch_ver))
-`"
-
-    `$cuda_ver = `$(python -c `"`$content`")
-
-    if (`$cuda_ver -eq `"cu124`") {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-    } elseif (`$cuda_ver -eq `"cu121`") {  
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-    } else {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
-    }
-}
-
-
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
@@ -2674,84 +2596,6 @@ function Fix-Git-Point-Off-Set {
             git -C `"`$path`" checkout `$branch # 切换到主分支
             git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
         }
-    }
-}
-
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version {
-    `$content = `"
-from importlib.metadata import version
-
-pytorch_version = []
-
-try:
-    pytorch_version.append('torch==' + version('torch'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchvision==' + version('torchvision'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchaudio==' + version('torchaudio'))
-except:
-    pass
-
-try:
-    pytorch_version.append('xformers==' + version('xformers'))
-except:
-    pass
-
-version_list = ''
-
-for i in pytorch_version:
-    version_list = f'{version_list} {i}'
-
-print(version_list)
-`"
-
-    `$pytorch_ver = `$(python -c `"`$content`")
-    return `$pytorch_ver
-}
-
-
-# 为 CUDA 设置镜像源
-function Set-Pip-Extra-Index-URL-For-CUDA {
-    `$content = `"
-from importlib.metadata import version
-
-def get_cuda_ver(ver):
-    if 'cu124' in ver:
-        return 'cu124'
-    
-    if 'cu121' in ver:
-        return 'cu121'
-    
-    return 'other'
-
-
-try:
-    torch_ver = version('torch')
-except:
-    torch_ver = ''
-
-print(get_cuda_ver(torch_ver))
-`"
-
-    `$cuda_ver = `$(python -c `"`$content`")
-
-    if (`$cuda_ver -eq `"cu124`") {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-    } elseif (`$cuda_ver -eq `"cu121`") {  
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-    } else {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
     }
 }
 
