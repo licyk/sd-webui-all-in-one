@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 167
+$SD_TRAINER_INSTALLER_VERSION = 168
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2428,7 +2428,8 @@ function List-Model(`$model_list) {
         `$content = `$model_list[`$i]
         `$count += 1
         `$url = `$content[0]
-        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        `$name = [System.IO.Path]::GetFileName(`$url)
         `$ver = `$content[1]
         if (`$point -ne `$ver) {
             Write-Host
@@ -2488,6 +2489,44 @@ function Model-Downloader (`$download_list) {
 }
 
 
+# 获取用户输入
+function Get-User-Input {
+    return Read-Host `"===========================================>`"
+}
+
+
+# 搜索模型列表
+function Search-Model-List (`$model_list, `$key) {
+    `$count = 0
+    `$result = 0
+    Print-Msg `"模型列表搜索结果`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"模型序号`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型种类`" -ForegroundColor Cyan
+    for (`$i = 0; `$i -lt `$model_list.Count; `$i++) {
+        `$content = `$model_list[`$i]
+        `$count += 1
+        `$url = `$content[0]
+        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        `$name = [System.IO.Path]::GetFileName(`$url)
+        `$ver = `$content[1]
+
+        if (`$name -like `"*`$key*`") {
+            Write-Host `" - `${count}、`" -ForegroundColor Yellow -NoNewline
+            Write-Host `"`$name `" -ForegroundColor White -NoNewline
+            Write-Host `"(`$ver)`" -ForegroundColor Cyan
+            `$result += 1
+        }
+    }
+    Write-Host
+    Write-Host `"搜索 `$key 得到的结果数量: `$result`" -ForegroundColor White
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
@@ -2500,21 +2539,41 @@ function Main {
     `$has_error = `$false
     `$model_list = Get-Model-List
     `$download_list = New-Object System.Collections.ArrayList
+    `$after_list_model_option = `"`"
 
     while (`$True) {
         List-Model `$model_list
+        switch (`$after_list_model_option) {
+            list_search_result {
+                Search-Model-List `$model_list `$find_key
+                break
+            }
+            display_input_error {
+                Print-Msg `"输入有误, 请重试`"
+            }
+            Default {
+                break
+            }
+        }
+        `$after_list_model_option = `"`"
         Print-Msg `"请选择要下载的模型`"
         Print-Msg `"提示:`"
         Print-Msg `"1. 输入数字后回车`"
         Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
-        Print-Msg `"3. 输入 exit 退出模型下载脚本`"
-        `$arg = Read-Host `"===========================================>`"
+        Print-Msg `"3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型`"
+        Print-Msg `"4. 输入 exit 退出模型下载脚本`"
+        `$arg = Get-User-Input
 
         switch (`$arg) {
             exit {
                 `$to_exit = 1
                 `$go_to = 1
                 break
+            }
+            search {
+                Print-Msg `"请输入要从模型列表搜索的模型名称`"
+                `$find_key = Get-User-Input
+                `$after_list_model_option = `"list_search_result`"
             }
             Default {
                 `$arg = `$arg.Split() # 拆分成列表
@@ -2532,7 +2591,8 @@ function Main {
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
                         `$path = `"`$PSScriptRoot/models`" # 模型放置路径
-                        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
                         # 检查重复元素
                         `$has_duplicate = `$false
@@ -2556,7 +2616,7 @@ function Main {
                 }
 
                 if (`$has_error) {
-                    Print-Msg `"输入有误, 请重试`"
+                    `$after_list_model_option = `"display_input_error`"
                     `$has_error = `$false
                     `$download_list.Clear() # 出现错误时清除下载列表
                     break
@@ -2581,7 +2641,7 @@ function Main {
     List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_operate = Read-Host `"===========================================>`"
+    `$download_operate = Get-User-Input
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }

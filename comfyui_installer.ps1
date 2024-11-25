@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 130
+$COMFYUI_INSTALLER_VERSION = 131
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2557,6 +2557,536 @@ Read-Host | Out-Null
 }
 
 
+# 更新脚本
+function Write-Update-Node-Script {
+    $content = "
+# ComfyUI Installer 版本和检查更新间隔
+`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# Pip 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 ComfyUI Installer 版本
+function Get-ComfyUI-Installer-Version {
+    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
+}
+
+
+# 修复 Git 分支游离
+function Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# 获取 PyTorch 版本
+function Get-PyTorch-Version {
+    `$content = `"
+from importlib.metadata import version
+
+pytorch_version = []
+
+try:
+    pytorch_version.append('torch==' + version('torch'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchvision==' + version('torchvision'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchaudio==' + version('torchaudio'))
+except:
+    pass
+
+try:
+    pytorch_version.append('xformers==' + version('xformers'))
+except:
+    pass
+
+version_list = ''
+
+for i in pytorch_version:
+    version_list = f'{version_list} {i}'
+
+print(version_list)
+`"
+
+    `$pytorch_ver = `$(python -c `"`$content`")
+    return `$pytorch_ver
+}
+
+
+# 为 CUDA 设置镜像源
+function Set-Pip-Extra-Index-URL-For-CUDA {
+    `$content = `"
+from importlib.metadata import version
+
+def get_cuda_ver(ver):
+    if 'cu124' in ver:
+        return 'cu124'
+    
+    if 'cu121' in ver:
+        return 'cu121'
+    
+    return 'other'
+
+
+try:
+    torch_ver = version('torch')
+except:
+    torch_ver = ''
+
+print(get_cuda_ver(torch_ver))
+`"
+
+    `$cuda_ver = `$(python -c `"`$content`")
+
+    if (`$cuda_ver -eq `"cu124`") {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif (`$cuda_ver -eq `"cu121`") {  
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    } else {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
+    }
+}
+
+
+# ComfyUI Installer 更新检测
+function Check-ComfyUI-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 ComfyUI Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
+                            Print-Msg `"终止 ComfyUI Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 ComfyUI Installer 更新`"
+                    }
+                } else {
+                    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                    Print-Msg `"ComfyUI Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                }
+            }
+        }
+    }
+}
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+        }
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    }
+}
+
+
+# Github 镜像源
+function Set-Github-Mirror {
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    } else {
+        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        }
+
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        } else { # 自动检测可用镜像源并使用
+            `$status = 0
+            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+                Print-Msg `"测试 Github 镜像源: `$i`"
+                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+                }
+                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+                if (`$?) {
+                    Print-Msg `"该 Github 镜像源可用`"
+                    `$github_mirror = `$i
+                    `$status = 1
+                    break
+                } else {
+                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+                }
+            }
+            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+            }
+            if (`$status -eq 0) {
+                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+            } else {
+                Print-Msg `"设置 Github 镜像源`"
+                git config --global --add safe.directory `"*`"
+                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            }
+        }
+    }
+}
+
+
+# 列出更新结果
+function List-Update-Status (`$update_status) {
+    `$success = 0
+    `$failed = 0
+    `$sum = 0
+    Print-Msg `"当前 ComfyUI 自定义节点更新结果`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"自定义节点名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"更新结果`" -ForegroundColor Cyan
+    Write-Host
+    for (`$i = 0; `$i -lt `$update_status.Count; `$i++) {
+        `$content = `$update_status[`$i]
+        `$name = `$content[0]
+        `$ver = `$content[1]
+        `$status = `$content[2]
+        `$sum += 1
+        if (`$status) {
+            `$success += 1
+        } else {
+            `$failed += 1
+        }
+        Write-Host `"- `" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`$name`" -ForegroundColor White -NoNewline
+        Write-Host `": `$ver `" -ForegroundColor Cyan
+    }
+    Write-Host
+    Write-Host `"[●: `$sum | ✓: `$success | ×: `$failed]`" -ForegroundColor White
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-ComfyUI-Installer-Version
+    Set-Proxy
+    Check-ComfyUI-Installer-Update
+    Set-uv
+    Set-Github-Mirror
+    Pip-Mirror-Status
+
+    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/ComfyUI/custom_nodes`" | Select-Object -ExpandProperty FullName
+    `$sum = 0
+    `$count = 0
+    ForEach (`$node in `$node_list) {
+        if (Test-Path `"`$node/.git`") {
+            `$sum += 1
+        }
+    }
+
+    Print-Msg `"更新 ComfyUI 自定义节点中`"
+    `$update_status = New-Object System.Collections.ArrayList
+    ForEach (`$node in `$node_list) {
+        if (!(Test-Path `"`$node/.git`")) {
+            continue
+        }
+
+        `$count += 1
+        `$node_name = `$(`$(Get-Item `$node).Name)
+        Print-Msg `"[`$count/`$sum]:: 更新 `$node_name 自定义节点中`"
+        Fix-Git-Point-Off-Set `"`$node`"
+        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$node`" fetch --recurse-submodules
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            if (`$origin_ver -eq `$latest_ver) {
+                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点已为最新版`"
+                `$update_status.Add(@(`$node_name, `"已为最新版`", `$true)) | Out-Null
+            } else {
+                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                `$update_status.Add(@(`$node_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
+            }
+        } else {
+            Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新失败`"
+            `$update_status.Add(@(`$node_name, `"更新失败`", `$false)) | Out-Null
+        }
+    }
+
+    List-Update-Status `$update_status
+
+    Print-Msg `"退出 ComfyUI 自定义节点更新脚本`"
+}
+
+###################
+
+Main
+Read-Host | Out-Null
+"
+
+    if (Test-Path "$PSScriptRoot/ComfyUI/update_node.ps1") {
+        Print-Msg "更新 update_node.ps1 中"
+    } else {
+        Print-Msg "生成 update_node.ps1 中"
+    }
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_node.ps1" -Value $content
+}
+
+
 # 获取安装脚本
 function Write-ComfyUI-Install-Script {
     $content = "
@@ -3694,8 +4224,35 @@ function Get-Model-List {
     # FLUX ControlNet
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-redux-dev.safetensors`", `"FLUX ControlNet`", `"style_models`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q3_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_1.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_1.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q6_K.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q8_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank128.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank256.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank32.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank4.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank64.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank8.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
@@ -3742,7 +4299,8 @@ function List-Model(`$model_list) {
         `$content = `$model_list[`$i]
         `$count += 1
         `$url = `$content[0]
-        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        `$name = [System.IO.Path]::GetFileName(`$url)
         `$ver = `$content[1]
         if (`$point -ne `$ver) {
             Write-Host
@@ -3802,6 +4360,44 @@ function Model-Downloader (`$download_list) {
 }
 
 
+# 获取用户输入
+function Get-User-Input {
+    return Read-Host `"========================================>`"
+}
+
+
+# 搜索模型列表
+function Search-Model-List (`$model_list, `$key) {
+    `$count = 0
+    `$result = 0
+    Print-Msg `"模型列表搜索结果`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"模型序号`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"模型种类`" -ForegroundColor Cyan
+    for (`$i = 0; `$i -lt `$model_list.Count; `$i++) {
+        `$content = `$model_list[`$i]
+        `$count += 1
+        `$url = `$content[0]
+        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url)
+        `$name = [System.IO.Path]::GetFileName(`$url)
+        `$ver = `$content[1]
+
+        if (`$name -like `"*`$key*`") {
+            Write-Host `" - `${count}、`" -ForegroundColor Yellow -NoNewline
+            Write-Host `"`$name `" -ForegroundColor White -NoNewline
+            Write-Host `"(`$ver)`" -ForegroundColor Cyan
+            `$result += 1
+        }
+    }
+    Write-Host
+    Write-Host `"搜索 `$key 得到的结果数量: `$result`" -ForegroundColor White
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
@@ -3814,21 +4410,41 @@ function Main {
     `$has_error = `$false
     `$model_list = Get-Model-List
     `$download_list = New-Object System.Collections.ArrayList
+    `$after_list_model_option = `"`"
 
     while (`$True) {
         List-Model `$model_list
+        switch (`$after_list_model_option) {
+            list_search_result {
+                Search-Model-List `$model_list `$find_key
+                break
+            }
+            display_input_error {
+                Print-Msg `"输入有误, 请重试`"
+            }
+            Default {
+                break
+            }
+        }
+        `$after_list_model_option = `"`"
         Print-Msg `"请选择要下载的模型`"
         Print-Msg `"提示:`"
         Print-Msg `"1. 输入数字后回车`"
         Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
-        Print-Msg `"3. 输入 exit 退出模型下载脚本`"
-        `$arg = Read-Host `"========================================>`"
+        Print-Msg `"3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型`"
+        Print-Msg `"4. 输入 exit 退出模型下载脚本`"
+        `$arg = Get-User-Input
 
         switch (`$arg) {
             exit {
                 `$to_exit = 1
                 `$go_to = 1
                 break
+            }
+            search {
+                Print-Msg `"请输入要从模型列表搜索的模型名称`"
+                `$find_key = Get-User-Input
+                `$after_list_model_option = `"list_search_result`"
             }
             Default {
                 `$arg = `$arg.Split() # 拆分成列表
@@ -3846,7 +4462,8 @@ function Main {
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
                         `$path = `"`$PSScriptRoot/ComfyUI/models/`$(`$content[2])`" # 模型放置路径
-                        `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
+                        `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
                         # 检查重复元素
                         `$has_duplicate = `$false
@@ -3870,7 +4487,7 @@ function Main {
                 }
 
                 if (`$has_error) {
-                    Print-Msg `"输入有误, 请重试`"
+                    `$after_list_model_option = `"display_input_error`"
                     `$has_error = `$false
                     `$download_list.Clear() # 出现错误时清除下载列表
                     break
@@ -3895,7 +4512,7 @@ function Main {
     List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_operate = Read-Host `"========================================>`"
+    `$download_operate = Get-User-Input
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }
@@ -5459,6 +6076,7 @@ models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 get_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本，运行后将会在与 ComfyUI 文件夹同级的目录中生成 comfyui_installer.ps1 安装脚本。
 update.ps1：更新 ComfyUI 的脚本，可使用该脚本更新 ComfyUI。
+update_node.ps1：更新 ComfyUI 自定义节点的脚本，可使用该脚本更新 ComfyUI 自定义节点。
 launch.ps1：启动 ComfyUI 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
@@ -5527,6 +6145,7 @@ ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
 function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
+    Write-Update-Node-Script
     Write-ComfyUI-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
