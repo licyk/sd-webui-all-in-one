@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 132
+$COMFYUI_INSTALLER_VERSION = 133
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3299,6 +3299,23 @@ function Set-Proxy {
 }
 
 
+# 获取 xFormers 版本
+function Get-xFormers-Version {
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    ver = version('xformers')
+except:
+    ver = None
+
+print(ver)
+`"
+    `$status = `$(python -c `"`$content`")
+    return `$status
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
@@ -3547,11 +3564,11 @@ function Main {
             exit 1
         }
 
-        if (!(`$xformers_ver -eq `"`")) {
+        if (`$xformers_ver -ne `"`") {
             Print-Msg `"重装 xFormers 中`"
             if (`$USE_UV) {
-                python -m pip show xformers --quiet 2> `$null
-                if (`$?) {
+                `$current_xf_ver = Get-xFormers-Version
+                if (`$xformers_ver.Split(`"=`")[-1] -ne `$current_xf_ver) {
                     Print-Msg `"卸载原有 xFormers 中`"
                     python -m pip uninstall xformers -y
                 }
