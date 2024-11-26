@@ -20,6 +20,7 @@ _✨一键安装 SD-Trainer_
   - [启动 SD-Trainer](#启动-sd-trainer)
   - [更新 SD-Trainer](#更新-sd-trainer)
   - [设置 SD-Trainer 启动参数](#设置-sd-trainer-启动参数)
+  - [切换 SD-Trainer 分支](#切换-sd-trainer-分支)
   - [进入 SD-Trainer 所在的 Python 环境](#进入-sd-trainer-所在的-python-环境)
   - [获取最新的 SD-Trainer Installer 脚本](#获取最新的-sd-trainer-installer-脚本)
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
@@ -48,7 +49,6 @@ _✨一键安装 SD-Trainer_
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
   - [使用绘世启动器](#使用绘世启动器)
   - [SD-Trainer Installer 对 Python / Git 环境的识别](#sd-trainer-installer-对-python--git-环境的识别)
-  - [使用 SD-Trainer Installer 安装 Kohya GUI](#使用-sd-trainer-installer-安装-kohya-gui)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [SD-Trainer 提示'Torch 无法使用 GPU，您无法正常开始训练'](#sd-trainer-提示torch-无法使用-gpu您无法正常开始训练)
@@ -143,7 +143,16 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 安装
-将 SD-Trainer Installer 下载至本地，右键`sd_trainer_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
+SD-Trainer Installer 默认情况下安装的是 [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts) 分支，如果需要指定安装的分支，需要在 SD-Trainer Installer 所在路径创建配置文件，以下为不同配置文件对应的 SD-Trainer 分支。
+
+|配置文件名|对应安装的分支|
+|---|---|
+|`install_sd_trainer.txt`|[Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)|
+|`install_kohya_gui.txt`|[bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)|
+
+创建配置文件后，将 SD-Trainer Installer 下载至本地，和配置文件放在一起。
+
+右键`sd_trainer_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
 
 |SD-Trainer Installer 下载地址|
 |---|
@@ -178,6 +187,15 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 >[!NOTE]  
 >1. SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts ### 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
 >2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+
+
+## 切换 SD-Trainer 分支
+运行`switch_branch.ps1`脚本，根据提示选择分支并切换。
+
+支持切换到的分支如下。
+
+- [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 
 
 ## 进入 SD-Trainer 所在的 Python 环境
@@ -221,6 +239,7 @@ $ tree -L 2
 │   ├── models                        # download_models.ps1 下载模型脚本
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
+│   ├── switch_branch.ps1             # 切换 SD-Trainer 分支的脚本
 │   ├── settings.ps1                  # 管理 SD-Trainer Installer 设置的脚本
 │   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 SD-Trainer Installer 的虚拟环境脚本
 │   └── update.ps1                    # 更新 SD-Trainer 的脚本
@@ -431,6 +450,7 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 │   ├── models
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1
+│   ├── switch_branch.ps1
 │   ├── settings.ps1
 │   ├── terminal.ps1
 │   └── update.ps1
@@ -455,6 +475,7 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 │   │   └── main.py
 │   ├── models
 │   ├── reinstall_pytorch.ps1
+│   ├── switch_branch.ps1
 │   ├── settings.ps1
 │   ├── terminal.ps1
 │   └── update.ps1
@@ -480,31 +501,6 @@ SD-Trainer Installer 可以识别到的 Python 路径为`SD-Trainer/python`和`S
 可以识别到的 Git 路径为`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`，当两者同时存在时，优先使用后者。
 
 如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD-Trainer Installer 重新安装 Python / Git。
-
-
-## 使用 SD-Trainer Installer 安装 Kohya GUI
-[Kohya GUI](https://github.com/bmaltais/kohya_ss) 也可以用于模型训练。做完[环境配置](#环境配置)的步骤并将 SD-Trainer Installer 下载下来后，使用代码编辑器（不建议使用 Windows 记事本）编辑`sd_trainer_installer.ps1`，搜索以下内容。
-
-```powershell
-$SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
-```
-
-找到这行代码后将该行代码改成下面的。
-
-```powershell
-$SD_TRAINER_REPO = "https://github.com/bmaltais/kohya_ss"
-```
-
-修改完成后保存`sd_trainer_installer.ps1`并运行。
-
->[!NOTE]  
->Kohya GUI 默认为英文界面，并且启动后默认不会自动调用浏览器打开界面，可以在`launch.ps1`所在位置创建一个`launch_args.txt`文件并打开，填入以下启动参数。
->
->```
->--inbrowser --language zh-CN
->```
->
->保存后使用`launch.ps1`启动 Kohya GUI 时将自动调用浏览器打开界面并设置界面为中文。
 
 
 ## 运行脚本时出现中文乱码

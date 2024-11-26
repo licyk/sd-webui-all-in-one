@@ -76,8 +76,6 @@ _✨一键安装 ComfyUI_
     - [测试可用的 Github 镜像源并应用](#测试可用的-github-镜像源并应用)
     - [安装 ComfyUI 自定义节点](#安装-comfyui-自定义节点)
     - [Git 下载命令](#git-下载命令)
-    - [修复 Git 仓库的指针漂移](#修复-git-仓库的指针漂移)
-    - [更新所有 ComfyUI 自定义节点](#更新所有-comfyui-自定义节点)
     - [安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)
     - [列出 ComfyUI 已存在的自定义节点](#列出-comfyui-已存在的自定义节点)
     - [列出 ComfyUI Installer 内置命令](#列出-comfyui-installer-内置命令)
@@ -87,7 +85,7 @@ _✨一键安装 ComfyUI_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [ComfyUI](https://github.com/Akegarasu/ComfyUI) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows 系统上部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 
@@ -760,19 +758,6 @@ Git-Clone <url> <path>
 ```
 
 
-### 修复 Git 仓库的指针漂移
-```powershell
-# <path> 为 Git 仓库的路径
-Fix-Git-Point-Off-Set <path>
-```
-
-
-### 更新所有 ComfyUI 自定义节点
-```powershell
-Update-ComfyUI-Node
-```
-
-
 ### 安装绘世启动器并自动配置绘世启动器所需的环境
 ```powershell
 Install-Hanamizuki
@@ -781,7 +766,7 @@ Install-Hanamizuki
 
 ### 列出 ComfyUI 已存在的自定义节点
 ```powershell
-List-CMD
+List-Node
 ```
 
 

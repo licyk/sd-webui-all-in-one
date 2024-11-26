@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 170
+$SD_TRAINER_INSTALLER_VERSION = 171
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -33,7 +33,13 @@ $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.5.2"
 # SD-Trainer 仓库地址
-$SD_TRAINER_REPO = "https://github.com/Akegarasu/lora-scripts"
+$SD_TRAINER_REPO = if (Test-Path "$PSScriptRoot/install_sd_trainer.txt") {
+    "https://github.com/Akegarasu/lora-scripts"
+} elseif (Test-Path "$PSScriptRoot/install_kohya_gui.txt") {
+    "https://github.com/bmaltais/kohya_ss"
+} else {
+    "https://github.com/Akegarasu/lora-scripts"
+}
 # PATH
 $PYTHON_PATH = "$PSScriptRoot/SD-Trainer/python"
 $PYTHON_EXTRA_PATH = "$PSScriptRoot/SD-Trainer/lora-scripts/python"
@@ -1494,6 +1500,582 @@ Read-Host | Out-Null
         Print-Msg "生成 update.ps1 中"
     }
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/update.ps1" -Value $content
+}
+
+
+# 分支切换脚本
+function Write-Switch-Branch-Script {
+    $content = "
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# Pip 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
+}
+
+
+# 修复 Git 分支游离
+function Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# 获取 PyTorch 版本
+function Get-PyTorch-Version {
+    `$content = `"
+from importlib.metadata import version
+
+pytorch_version = []
+
+try:
+    pytorch_version.append('torch==' + version('torch'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchvision==' + version('torchvision'))
+except:
+    pass
+
+try:
+    pytorch_version.append('torchaudio==' + version('torchaudio'))
+except:
+    pass
+
+try:
+    pytorch_version.append('xformers==' + version('xformers'))
+except:
+    pass
+
+version_list = ''
+
+for i in pytorch_version:
+    version_list = f'{version_list} {i}'
+
+print(version_list)
+`"
+
+    `$pytorch_ver = `$(python -c `"`$content`")
+    return `$pytorch_ver
+}
+
+
+# 为 CUDA 设置镜像源
+function Set-Pip-Extra-Index-URL-For-CUDA {
+    `$content = `"
+from importlib.metadata import version
+
+def get_cuda_ver(ver):
+    if 'cu124' in ver:
+        return 'cu124'
+    
+    if 'cu121' in ver:
+        return 'cu121'
+    
+    return 'other'
+
+
+try:
+    torch_ver = version('torch')
+except:
+    torch_ver = ''
+
+print(get_cuda_ver(torch_ver))
+`"
+
+    `$cuda_ver = `$(python -c `"`$content`")
+
+    if (`$cuda_ver -eq `"cu124`") {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif (`$cuda_ver -eq `"cu121`") {  
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    } else {
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
+    }
+}
+
+
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD-Trainer Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
+                    Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"===========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
+                        if (!(`$folder_name -eq `"SD-Trainer`")) { # 检测脚本所在文件夹是否符合要求
+                            Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
+                            Print-Msg `"检测到 SD-Trainer Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
+                            Print-Msg `"当前 SD-Trainer Installer 管理脚本所在文件夹名称: `$folder_name`"
+                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 SD-Trainer, 再重新更新 SD-Trainer Installer 管理脚本`"
+                            Print-Msg `"终止 SD-Trainer Installer 的更新`"
+                            Read-Host | Out-Null
+                            exit 1
+                        }
+                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
+                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`"
+                        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                        Print-Msg `"跳过 SD-Trainer Installer 更新`"
+                    }
+                } else {
+                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
+                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
+                    Print-Msg `"SD-Trainer Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                }
+            }
+        }
+    }
+}
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+        }
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
+        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$Env:HTTP_PROXY = `$proxy_value
+            `$Env:HTTPS_PROXY = `$proxy_value
+            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    }
+}
+
+
+# Github 镜像源
+function Set-Github-Mirror {
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    } else {
+        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        }
+
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            git config --global --add safe.directory `"*`"
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        } else { # 自动检测可用镜像源并使用
+            `$status = 0
+            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+                Print-Msg `"测试 Github 镜像源: `$i`"
+                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+                }
+                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+                if (`$?) {
+                    Print-Msg `"该 Github 镜像源可用`"
+                    `$github_mirror = `$i
+                    `$status = 1
+                    break
+                } else {
+                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+                }
+            }
+            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+            }
+            if (`$status -eq 0) {
+                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+            } else {
+                Print-Msg `"设置 Github 镜像源`"
+                git config --global --add safe.directory `"*`"
+                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            }
+        }
+    }
+}
+
+
+# 获取 SD-Trainer 分支
+function Get-SD-Trainer-Branch {
+    `$remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/lora-scripts`" symbolic-ref --quiet HEAD 2> `$null)
+    if (`$ref -eq `$null) {
+        `$ref = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h`")
+    }
+
+    return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
+}
+
+
+# 切换 SD-Trainer 分支
+function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
+    `$preview_url = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+
+    if (`$use_submod) {
+        `$use_submodules = `"--recurse-submodules`"
+    } else {
+        `$use_submodules = `"`"
+    }
+
+    Print-Msg `"SD-Trainer 远程源替换: `$preview_url -> `$remote`"
+    git -C `"`$PSScriptRoot/lora-scripts`" remote set-url origin `"`$remote`" # 替换远程源
+
+    # 处理 Git 子模块
+    if (`$use_submod) {
+        Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
+        git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+    } else {
+        Print-Msg `"禁用 SD-Trainer 的 Git 子模块`"
+        git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+    }
+
+    Print-Msg `"拉取 SD-Trainer 远程源更新`"
+    git -C `"`$PSScriptRoot/lora-scripts`" fetch `$use_submodules.ToString() # 拉取远程源内容
+    if (`$?) {
+        `$commit_hash=`$(git -C `"`$PSScriptRoot/lora-scripts`" log `"origin/`$branch`" --max-count 1 --format=`"%h`") # 获取最新的提交内容的 Hash
+        Print-Msg `"切换 SD-Trainer 分支至 `$branch`"
+        git -C `"`$PSScriptRoot/lora-scripts`" checkout `"`${branch}`" # 切换分支
+        Print-Msg `"应用 SD-Trainer 远程源的更新`"
+        git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"`$commit_hash`" # 切换到最新的提交内容上
+        Print-Msg `"切换 SD-Trainer 完成`"
+    } else {
+        Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
+        Print-Msg `"尝试回退 SD-Trainer 的更改`"
+        git -C `"`$PSScriptRoot/lora-scripts`" remote set-url origin `"`$preview_url`"
+        if (`$use_submod) {
+            git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+        } else {
+            git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+        }
+        Print-Msg `"回退 SD-Trainer 分支更改完成`"
+        Print-Msg `"切换 SD-Trainer 分支更改失败`"
+    }
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-SD-Trainer-Installer-Version
+    Set-Proxy
+    Check-SD-Trainer-Installer-Update
+    Set-uv
+    Set-Github-Mirror
+    Pip-Mirror-Status
+    `$content = `"
+-----------------------------------------------------
+- 1、Akegarasu - SD-Trainer 分支
+- 2、bmaltais - Kohya GUI 分支
+-----------------------------------------------------
+`"
+
+    `$to_exit = 0
+
+    while (`$True) {
+        Print-Msg `"SD-Trainer 分支列表`"
+        `$go_to = 0
+        Write-Host `$content
+        Print-Msg `"当前 SD-Trainer 分支: `$(Get-SD-Trainer-Branch)`"
+        Print-Msg `"请选择 SD-Trainer 分支`"
+        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
+        `$arg = Read-Host `"=========================================>`"
+
+        switch (`$arg) {
+            1 {
+                `$remote = `"https://github.com/Akegarasu/lora-scripts`"
+                `$branch = `"main`"
+                `$branch_name = `"Akegarasu - SD-Trainer 分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            2 {
+                `$remote = `"https://github.com/bmaltais/kohya_ss`"
+                `$branch = `"master`"
+                `$branch_name = `"bmaltais - Kohya GUI 分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            exit {
+                Print-Msg `"退出 PyTorch 重装脚本`"
+                `$to_exit = 1
+                `$go_to = 1
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+
+    if (`$to_exit -eq 1) {
+        Read-Host | Out-Null
+        exit 0
+    }
+
+    Print-Msg `"是否切换 SD-Trainer 分支到 `$branch_name ?`"
+    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    `$operate = Read-Host `"=========================================>`"
+
+    if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
+        Print-Msg `"开始切换 SD-Trainer 分支`"
+        Switch-SD-Trainer-Branch `$remote `$branch `$use_submod
+    } else {
+        Print-Msg `"取消切换 SD-Trainer 分支`"
+    }
+    Print-Msg `"退出 SD-Trainer 分支切换脚本`"
+}
+
+###################
+
+Main
+Read-Host | Out-Null
+"
+
+    if (Test-Path "$PSScriptRoot/SD-Trainer/switch_branch.ps1") {
+        Print-Msg "更新 switch_branch.ps1 中"
+    } else {
+        Print-Msg "生成 switch_branch.ps1 中"
+    }
+    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/SD-Trainer/switch_branch.ps1" -Value $content
 }
 
 
@@ -4031,6 +4613,7 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
+    Write-Switch-Branch-Script
     Write-SD-Trainer-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
@@ -4050,6 +4633,13 @@ function Use-Install-Mode {
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Print-Msg "即将进行安装的路径: $PSScriptRoot\SD-Trainer"
+    if (Test-Path "$PSScriptRoot/install_sd_trainer.txt") {
+        Print-Msg "检测到 install_sd_trainer.txt 配置文件, 选择安装 Akegarasu/SD-Trainer"
+    } elseif (Test-Path "$PSScriptRoot/install_kohya_gui.txt") {
+        Print-Msg "检测到 install_kohya_gui.txt 配置文件, 选择安装 bmaltais/Kohya GUI"
+    } else {
+        Print-Msg "未指定安装的训练器, 默认选择安装 Akegarasu/SD-Trainer"
+    }
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts

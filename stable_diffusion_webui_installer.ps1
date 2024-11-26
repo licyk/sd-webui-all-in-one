@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 102
+$SD_WEBUI_INSTALLER_VERSION = 103
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1020,7 +1020,7 @@ function Get-stable-diffusion-webui-Launch-Args {
 
 # 设置 stable-diffusion-webui 的快捷启动方式
 function Create-stable-diffusion-webui-Shortcut {
-    `$filename = `"stable-diffusion-webui`"
+    `$filename = `"SD-WebUI`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
@@ -2683,7 +2683,7 @@ function Main {
                 `$go_to = 1
             }
             exit {
-                Print-Msg `"退出 PyTorch 重装脚本`"
+                Print-Msg `"退出 stable-diffusion-webui 分支切换脚本`"
                 `$to_exit = 1
                 `$go_to = 1
             }
@@ -5592,6 +5592,7 @@ Read-Host | Out-Null
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/settings.ps1" -Value $content
 }
 
+
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
@@ -5668,7 +5669,7 @@ function Write-Env-Activate-Script {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[stable-diffusion-webui Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[SD WebUI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
