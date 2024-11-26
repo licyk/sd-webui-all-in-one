@@ -59,5 +59,11 @@ Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 
 详细的说明[点击此处](./comfyui_installer.md)阅读。
 
 
+# SD WebUI Installer
+Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [stable-diffusion-webui-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
+
+详细的说明[点击此处](./stable_diffusion_webui_installer.md)阅读。
+
+
 # Python Installer
 [install_embed_python.ps1](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/install_embed_python.ps1)：Windows 平台一键安装便携式 Python，可用做测试。
