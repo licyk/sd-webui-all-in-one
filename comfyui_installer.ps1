@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 136
+$COMFYUI_INSTALLER_VERSION = 137
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1276,13 +1276,13 @@ if __name__ == '__main__':
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 ComfyUI 内核有依赖缺失, 安装 ComfyUI 依赖中`"
         if (`$USE_UV) {
-            uv pip install `"`$PSScriptRoot/ComfyUI/requirements.txt`"
+            uv pip install -r `"`$PSScriptRoot/ComfyUI/requirements.txt`"
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `"`$PSScriptRoot/ComfyUI/requirements.txt`"
+                python -m pip install -r `"`$PSScriptRoot/ComfyUI/requirements.txt`"
             }
         } else {
-            python -m pip install `"`$PSScriptRoot/ComfyUI/requirements.txt`"
+            python -m pip install -r `"`$PSScriptRoot/ComfyUI/requirements.txt`"
         }
         if (`$?) {
             Print-Msg `"ComfyUI 依赖安装成功`"
