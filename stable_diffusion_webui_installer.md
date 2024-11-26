@@ -333,12 +333,8 @@ SD WebUI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 - 秋葉aaaki：https://space.bilibili.com/12566101
 
 Stable Diffusion WebUI 的使用教程：
-- https://sdnote.netlify.app/guide/Stable Diffusion WebUI
-- https://sdnote.netlify.app/help/Stable Diffusion WebUI
-- https://www.aigodlike.com
-- https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
-- https://comfyanonymous.github.io/Stable Diffusion WebUI_examples
-- https://blenderneko.github.io/Stable Diffusion WebUI-docs
+- https://sdnote.netlify.app/guide/sd_webui
+- https://sdnote.netlify.app/help/sd_webui
 
 
 ## 使用绘世启动器
