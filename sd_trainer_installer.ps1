@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 169
+$SD_TRAINER_INSTALLER_VERSION = 170
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3891,6 +3891,9 @@ function Main {
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     Pip-Mirror-Status
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`"
+    }
     Print-Msg `"激活 SD-Trainer Env`"
     Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 }
