@@ -38,6 +38,14 @@ jobs:
           gh release delete-asset comfyui_installer comfyui_installer.ps1  -y || true
           gh release upload comfyui_installer comfyui_installer.ps1 
 
+      - name: Release SD WebUI Installer
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1  -y || true
+          gh release upload stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1 
+
       - name: Release config
         shell: bash
         env:
