@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 171
+$SD_TRAINER_INSTALLER_VERSION = 172
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1605,25 +1605,6 @@ function Pip-Mirror-Status {
 }
 
 
-# 修复 Git 分支游离
-function Fix-Git-Point-Off-Set {
-    param(
-        `$path
-    )
-    if (Test-Path `"`$path/.git`") {
-        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
-        if (!(`$?)) {
-            Print-Msg `"检测到出现分支游离, 进行修复中`"
-            git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化git子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
-            git -C `"`$path`" checkout `$branch # 切换到主分支
-            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-        }
-    }
-}
-
-
 # 获取 PyTorch 版本
 function Get-PyTorch-Version {
     `$content = `"
@@ -1948,6 +1929,8 @@ function Get-SD-Trainer-Branch {
 function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
     `$preview_url = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
 
+    Set-Github-Mirror # 设置 Github 镜像源
+
     if (`$use_submod) {
         `$use_submodules = `"--recurse-submodules`"
     } else {
@@ -1996,7 +1979,6 @@ function Main {
     Set-Proxy
     Check-SD-Trainer-Installer-Update
     Set-uv
-    Set-Github-Mirror
     Pip-Mirror-Status
     `$content = `"
 -----------------------------------------------------

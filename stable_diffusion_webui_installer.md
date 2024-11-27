@@ -187,7 +187,7 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
 
 
 ## 更新 Stable Diffusion WebUI 扩展
-运行`update_node.ps1`脚本，如果遇到更新 Stable Diffusion WebUI 扩展失败的情况可尝试重新运行`update_node.ps1`脚本。
+运行`update_extension.ps1`脚本，如果遇到更新 Stable Diffusion WebUI 扩展失败的情况可尝试重新运行`update_extension.ps1`脚本。
 
 
 ## 设置 Stable Diffusion WebUI 启动参数
@@ -253,6 +253,7 @@ $ tree -L 2
 │   ├── switch_branch.ps1                         # 切换 Stable Diffusion WebUI 分支的脚本
 │   ├── settings.ps1                              # 管理 SD WebUI Installer 设置的脚本
 │   ├── terminal.ps1                              # 自动打开 PowerShell 并激活 SD WebUI Installer 的虚拟环境脚本
+│   ├── update_extension.ps1                      # 更新 Stable Diffusion WebUI 扩展
 │   └── update.ps1                                # 更新 Stable Diffusion WebUI 的脚本
 ├── stable_diffusion_webui_installer.ps1          # SD WebUI Installer 放在 Stable Diffusion WebUI 文件夹外面，和 Stable Diffusion WebUI 文件夹同级
 └── QQ Files
@@ -363,6 +364,7 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   ├── switch_branch.ps1
 │   ├── settings.ps1
 │   ├── terminal.ps1
+│   ├── update_extension.ps1
 │   └── update.ps1
 └── stable_diffusion_webui_installer.ps1          
 ```
@@ -388,6 +390,7 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   ├── switch_branch.ps1
 │   ├── settings.ps1
 │   ├── terminal.ps1
+│   ├── update_extension.ps1
 │   └── update.ps1
 └── stable_diffusion_webui_installer.ps1          
 ```
