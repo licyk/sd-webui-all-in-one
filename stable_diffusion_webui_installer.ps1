@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 105
+$SD_WEBUI_INSTALLER_VERSION = 106
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -428,6 +428,15 @@ function Install-PyTorch {
 function Install-CLIP {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip"
 
+    Print-Msg "检测是否需要安装 CLIP 软件包"
+    python -m pip show clip --quiet 2> $null
+    if ($?) {
+        Print-Msg "CLIP 软件包已安装"
+        return
+    } else {
+        Print-Msg "安装 CLIP 软件包中"
+    }    
+
     if ($USE_UV) {
         uv pip install $url
         if (!($?)) {
@@ -441,7 +450,6 @@ function Install-CLIP {
         Print-Msg "CLIP 软件包安装成功"
     } else {
         Print-Msg "CLIP 软件包安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Set-Location "$current_path"
         Read-Host | Out-Null
         exit 1
     }
