@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 139
+$COMFYUI_INSTALLER_VERSION = 140
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4948,7 +4948,7 @@ function Update-ComfyUI-Launch-Args-Setting {
         switch (`$arg) {
             1 {
                 Print-Msg `"请输入 ComfyUI 启动参数`"
-                Print-Msg `"提示: ComfyUI 可用的启动参数可阅读: https://github.com/Akegarasu/ComfyUI?tab=readme-ov-file#program-arguments`"
+                Print-Msg `"提示: 保存启动参数后原本的启动参数配置将被覆盖`"
                 Print-Msg `"输入启动参数后回车保存`"
                 `$comfyui_launch_args = Get-User-Input
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$comfyui_launch_args

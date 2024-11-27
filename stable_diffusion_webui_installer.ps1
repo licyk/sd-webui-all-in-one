@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 104
+$SD_WEBUI_INSTALLER_VERSION = 105
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5132,7 +5132,7 @@ function Update-stable-diffusion-webui-Launch-Args-Setting {
         switch (`$arg) {
             1 {
                 Print-Msg `"请输入 stable-diffusion-webui 启动参数`"
-                Print-Msg `"提示: stable-diffusion-webui 可用的启动参数可阅读: https://github.com/Akegarasu/stable-diffusion-webui?tab=readme-ov-file#program-arguments`"
+                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, stable-diffusion-webui 可用的启动参数可阅读: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings`"
                 Print-Msg `"输入启动参数后回车保存`"
                 `$stable_diffusion_webui_launch_args = Get-User-Input
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$stable_diffusion_webui_launch_args
