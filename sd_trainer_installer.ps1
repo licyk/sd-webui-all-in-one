@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 173
+$SD_TRAINER_INSTALLER_VERSION = 174
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1952,12 +1952,20 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
     Print-Msg `"拉取 SD-Trainer 远程源更新`"
     git -C `"`$PSScriptRoot/lora-scripts`" fetch `$use_submodules.ToString() # 拉取远程源内容
     if (`$?) {
-        `$commit_hash=`$(git -C `"`$PSScriptRoot/lora-scripts`" log `"origin/`$branch`" --max-count 1 --format=`"%h`") # 获取最新的提交内容的 Hash
+        if (`$use_submod) {
+            Print-Msg `"清理原有的 Git 子模块`"
+            git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+        }
         Print-Msg `"切换 SD-Trainer 分支至 `$branch`"
         git -C `"`$PSScriptRoot/lora-scripts`" checkout `"`${branch}`" # 切换分支
         Print-Msg `"应用 SD-Trainer 远程源的更新`"
-        git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"`$commit_hash`" # 切换到最新的提交内容上
-        Print-Msg `"切换 SD-Trainer 完成`"
+        if (`$use_submod) {
+            Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
+            git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"origin/`$branch`"
+            git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+        }
+        git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        Print-Msg `"切换 SD-Trainer 分支完成`"
     } else {
         Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
         Print-Msg `"尝试回退 SD-Trainer 的更改`"
@@ -4520,6 +4528,7 @@ activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后�
 get_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本，运行后将会在与 SD-Trainer 文件夹同级的目录中生成 sd_trainer_installer.ps1 安装脚本。
 update.ps1：更新 SD-Trainer 的脚本，可使用该脚本更新 SD-Trainer。
 launch.ps1：启动 SD-Trainer 的脚本。
+switch_branch.ps1：切换 SD-Trainer 分支。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 settings.ps1：管理 SD-Trainer Installer 的设置。

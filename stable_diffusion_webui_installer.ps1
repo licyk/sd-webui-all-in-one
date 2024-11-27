@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 107
+$SD_WEBUI_INSTALLER_VERSION = 108
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2562,12 +2562,20 @@ function Switch-stable-diffusion-webui-Branch (`$remote, `$branch, `$use_submod)
     Print-Msg `"拉取 stable-diffusion-webui 远程源更新`"
     git -C `"`$PSScriptRoot/stable-diffusion-webui`" fetch `$use_submodules.ToString() # 拉取远程源内容
     if (`$?) {
-        `$commit_hash=`$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" log `"origin/`$branch`" --max-count 1 --format=`"%h`") # 获取最新的提交内容的 Hash
+        if (`$use_submod) {
+            Print-Msg `"清理原有的 Git 子模块`"
+            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule deinit --all -f
+        }
         Print-Msg `"切换 stable-diffusion-webui 分支至 `$branch`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" checkout `"`${branch}`" # 切换分支
+        git -C `"`$PSScriptRoot/stable-diffusion-webui`" checkout `"`${branch}`" `$use_submodules.ToString() --force # 切换分支
         Print-Msg `"应用 stable-diffusion-webui 远程源的更新`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset `$use_submodules.ToString() --hard `"`$commit_hash`" # 切换到最新的提交内容上
-        Print-Msg `"切换 stable-diffusion-webui 完成`"
+        if (`$use_submod) {
+            Print-Msg `"更新 stable-diffusion-webui 的 Git 子模块信息`"
+            git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset `$use_submodules.ToString() --hard `"origin/`$branch`"
+            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule update --init --recursive
+        }
+        git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        Print-Msg `"切换 stable-diffusion-webui 分支完成`"
     } else {
         Print-Msg `"拉取 stable-diffusion-webui 远程源更新失败, 取消分支切换`"
         Print-Msg `"尝试回退 stable-diffusion-webui 的更改`"
