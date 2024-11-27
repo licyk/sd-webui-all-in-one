@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 106
+$SD_WEBUI_INSTALLER_VERSION = 107
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -556,7 +556,6 @@ function Check-Install {
         Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-lora-block-weight"
         Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-model-toolkit"
         Git-CLone "https://github.com/Tencent/LightDiffusionFlow" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/LightDiffusionFlow"
-        Git-CLone "https://github.com/mix1009/model-keyword" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/model-keyword"
         Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-haku-img"
     }
     Install-PyTorch
