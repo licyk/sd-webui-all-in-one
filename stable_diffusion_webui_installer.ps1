@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 111
+$SD_WEBUI_INSTALLER_VERSION = 112
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -96,7 +96,7 @@ function Print-Msg ($msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     $ver = $([string]$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     $major = ($ver[0..($ver.Length - 3)])
     $minor = $ver[-2]
@@ -466,7 +466,7 @@ function Install-CLIP {
 
 
 # 安装 stable-diffusion-webui 依赖
-function Install-stable-diffusion-webui-Dependence {
+function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
@@ -537,48 +537,51 @@ function Check-Install {
     Check-uv-Version
 
     Test-Github-Mirror
-    Git-CLone "$SD_WEBUI_REPO" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
+    $sd_webui_path = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
+    $sd_webui_repositories_path = "$sd_webui_path/repositories"
+    $sd_webui_extension_path = "$sd_webui_path/extensions"
+    Git-CLone "$SD_WEBUI_REPO" "$sd_webui_path"
     # SD WebUI 组件
-    Git-CLone "https://github.com/salesforce/BLIP" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/BLIP"
-    Git-CLone "https://github.com/Stability-AI/stablediffusion" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/stable-diffusion-stability-ai"
-    Git-CLone "https://github.com/Stability-AI/generative-models" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/generative-models"
-    Git-CLone "https://github.com/crowsonkb/k-diffusion" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/k-diffusion"
-    Git-CLone "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/stable-diffusion-webui-assets"
+    Git-CLone "https://github.com/salesforce/BLIP" "$sd_webui_repositories_path/BLIP"
+    Git-CLone "https://github.com/Stability-AI/stablediffusion" "$sd_webui_repositories_path/stable-diffusion-stability-ai"
+    Git-CLone "https://github.com/Stability-AI/generative-models" "$sd_webui_repositories_path/generative-models"
+    Git-CLone "https://github.com/crowsonkb/k-diffusion" "$sd_webui_repositories_path/k-diffusion"
+    Git-CLone "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets" "$sd_webui_repositories_path/stable-diffusion-webui-assets"
     if (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
-        Git-CLone "https://github.com/lllyasviel/huggingface_guess" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/huggingface_guess"
-        Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/google_blockly_prototypes"
+        Git-CLone "https://github.com/lllyasviel/huggingface_guess" "$sd_webui_repositories_path/huggingface_guess"
+        Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$sd_webui_repositories_path/google_blockly_prototypes"
     }
     # SD WebUI 扩展
-    Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/ultimate-upscale-for-automatic1111"
-    Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-tagcomplete"
-    Git-CLone "https://github.com/Bing-su/adetailer" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/adetailer"
-    Git-CLone "https://github.com/zanllp/sd-webui-infinite-image-browsing" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-infinite-image-browsing"
-    Git-CLone "https://github.com/huchenlei/sd-webui-openpose-editor" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-openpose-editor"
-    Git-CLone "https://github.com/Physton/sd-webui-prompt-all-in-one" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-prompt-all-in-one"
-    Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-wd14-tagger"
-    Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-localization-zh_Hans"
+    Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
+    Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
+    Git-CLone "https://github.com/Bing-su/adetailer" "$sd_webui_extension_path/adetailer"
+    Git-CLone "https://github.com/zanllp/sd-webui-infinite-image-browsing" "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
+    Git-CLone "https://github.com/huchenlei/sd-webui-openpose-editor" "$sd_webui_extension_path/sd-webui-openpose-editor"
+    Git-CLone "https://github.com/Physton/sd-webui-prompt-all-in-one" "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
+    Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$sd_webui_extension_path/sd-webui-wd14-tagger"
+    Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
 
     # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
     if ((!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) -and (!(Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt"))) {
-        Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-controlnet"
-        Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/multidiffusion-upscaler-for-automatic1111"
-        Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-dynamic-thresholding"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-regional-prompter"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-lora-block-weight"
+        Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$sd_webui_extension_path/sd-webui-controlnet"
+        Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
+        Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$sd_webui_extension_path/sd-dynamic-thresholding"
+        Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
+        Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$sd_webui_extension_path/sd-webui-lora-block-weight"
     }
 
     # 非 SD WebUI Forge 时安装的扩展
     if (!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) {
-        Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-model-toolkit"
-        Git-CLone "https://github.com/Tencent/LightDiffusionFlow" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/LightDiffusionFlow"
-        Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-haku-img"
-        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-model-converter"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-supermerger"
-        Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-segment-anything"
+        Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
+        Git-CLone "https://github.com/Tencent/LightDiffusionFlow" "$sd_webui_extension_path/LightDiffusionFlow"
+        Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
+        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
+        Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
+        Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
     }
     Install-PyTorch
     Install-CLIP
-    Install-stable-diffusion-webui-Dependence
+    Install-Stable-Diffusion-WebUI-Dependence
 
     if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/launch_args.txt")) {
         Print-Msg "设置默认 stable-diffusion-webui 启动参数"
@@ -730,7 +733,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -784,7 +787,7 @@ for folder in torch_spec.submodule_search_locations:
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -1031,7 +1034,7 @@ function Set-uv {
 
 
 # stable-diffusion-webui 启动参数
-function Get-stable-diffusion-webui-Launch-Args {
+function Get-Stable-Diffusion-WebUI-Launch-Args {
     if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
         `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
         Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件, 已读取该启动参数配置文件并应用启动参数`"
@@ -1044,7 +1047,7 @@ function Get-stable-diffusion-webui-Launch-Args {
 
 
 # 设置 stable-diffusion-webui 的快捷启动方式
-function Create-stable-diffusion-webui-Shortcut {
+function Create-Stable-Diffusion-WebUI-Shortcut {
     `$filename = `"SD-WebUI`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
@@ -1219,7 +1222,7 @@ if __name__ == '__main__':
 
 
 # 检查 stable-diffusion-webui 依赖完整性
-function Check-stable-diffusion-webui-Requirements {
+function Check-Stable-Diffusion-WebUI-Requirements {
     `$content = `"
 import os
 import re
@@ -1452,7 +1455,7 @@ function Check-Extension-Is-Disabled (`$name) {
 
 
 # 检查 stable-diffusion-webui 环境中组件依赖
-function Check-stable-diffusion-webui-Env-Requirements {
+function Check-Stable-Diffusion-WebUI-Env-Requirements {
     `$current_python_path = `$Env:PYTHONPATH
     `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/stable-diffusion-webui`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
     Print-Msg `"检查 stable-diffusion-webui 扩展依赖中`"
@@ -1751,7 +1754,7 @@ else:
 
 
 # 检查 stable-diffusion-webui 运行环境
-function Check-stable-diffusion-webui-Env {
+function Check-Stable-Diffusion-WebUI-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
         Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 stable-diffusion-webui 运行环境检测, 这可能会导致 stable-diffusion-webui 运行环境中存在的问题无法被发现并解决`"
         return
@@ -1759,8 +1762,8 @@ function Check-stable-diffusion-webui-Env {
         Print-Msg `"检查 stable-diffusion-webui 运行环境中`"
     }
 
-    Check-stable-diffusion-webui-Requirements
-    Check-stable-diffusion-webui-Env-Requirements
+    Check-Stable-Diffusion-WebUI-Requirements
+    Check-Stable-Diffusion-WebUI-Env-Requirements
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
@@ -1768,21 +1771,85 @@ function Check-stable-diffusion-webui-Env {
 }
 
 
+# 设置 SD WebUI 扩展列表镜像源
+function Set-Stable-Diffusion-WebUI-Extension-List-Mirror {
+    # 扩展列表地址: https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Stable Diffusion WebUI 扩展列表镜像源`"
+        return
+    }
+
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源`"
+        Print-Msg `"测试 `$github_mirror 是否可用`"
+        `$github_mirror = `$github_mirror -creplace `"github.com`", `"raw.githubusercontent.com`"
+        `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
+        Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
+        if (`$?) {
+            Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
+            `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
+        } else {
+            Print-Msg `"该镜像源不可用, 取消设置 Stable Diffusion WebUI 扩展列表镜像源`"
+        }
+        return
+    }
+
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        `$github_mirror = `$i -creplace `"github.com`", `"raw.githubusercontent.com`"
+        `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
+        Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
+        if (`$?) {
+            Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
+            `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消设置 Stable Diffusion WebUI 扩展列表镜像源`"
+    }
+}
+
+
+# 设置 ControlNet 扩展依赖镜像源
+function Set-ControlNet-Extension-Requirement-Mirror {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"检测到使用 Pip 镜像源, 为 ControlNet 扩展依赖的安装设置 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到使用 Pip 官方源, 使用 ControlNet 扩展默认的 Pip 镜像源`"
+        return
+    }
+    `$Env:INSIGHTFACE_WHEEL = `"insightface`"
+    `$Env:HANDREFINER_WHEEL = `"handrefinerportable`"
+    `$Env:DEPTH_ANYTHING_WHEEL = `"depth_anything`"
+    `$Env:CLIP_PACKAGE = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip`"
+    `$Env:PIP_FIND_LINKS = `"`$Env:PIP_FIND_LINKS https://licyk.github.io/t/pypi/index_ms_mirror.html`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Set-Github-Mirror
     Set-HuggingFace-Mirror
     Set-uv
     Pip-Mirror-Status
-    `$args = Get-stable-diffusion-webui-Launch-Args
+    Set-Stable-Diffusion-WebUI-Extension-List-Mirror
+    Set-ControlNet-Extension-Requirement-Mirror
+    `$args = Get-Stable-Diffusion-WebUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
 
-    Create-stable-diffusion-webui-Shortcut
-    Check-stable-diffusion-webui-Env
+    Create-Stable-Diffusion-WebUI-Shortcut
+    Check-Stable-Diffusion-WebUI-Env
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 stable-diffusion-webui 中`"
     Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
@@ -1894,7 +1961,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -1933,7 +2000,7 @@ function Fix-Git-Point-Off-Set {
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -2164,9 +2231,9 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
@@ -2292,7 +2359,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -2312,7 +2379,7 @@ function Pip-Mirror-Status {
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -2542,7 +2609,7 @@ function Set-Github-Mirror {
 
 
 # 获取 SD WebUI 分支
-function Get-stable-diffusion-webui-Branch {
+function Get-Stable-Diffusion-WebUI-Branch {
     `$remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
     `$ref = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
@@ -2554,7 +2621,7 @@ function Get-stable-diffusion-webui-Branch {
 
 
 # 切换 SD WebUI 分支
-function Switch-stable-diffusion-webui-Branch (`$remote, `$branch, `$use_submod) {
+function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod) {
     `$preview_url = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
@@ -2611,9 +2678,9 @@ function Switch-stable-diffusion-webui-Branch (`$remote, `$branch, `$use_submod)
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Set-uv
     Pip-Mirror-Status
     `$content = `"
@@ -2621,8 +2688,8 @@ function Main {
 - 1、AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
 - 2、AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支
 - 3、lllyasviel - Stable-Diffusion-WebUI-Forge 分支
-- 4、Panchovix - stable-diffusion-webui-reForge 主分支
-- 5、Panchovix - stable-diffusion-webui-reForge 测试分支
+- 4、Panchovix - Stable-Diffusion-WebUI-reForge 主分支
+- 5、Panchovix - Stable-Diffusion-WebUI-reForge 测试分支
 - 6、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
 - 7、vladmandic - SD.NEXT 主分支
 - 8、vladmandic - SD.NEXT 测试分支
@@ -2635,7 +2702,7 @@ function Main {
         Print-Msg `"stable-diffusion-webui 分支列表`"
         `$go_to = 0
         Write-Host `$content
-        Print-Msg `"当前 stable-diffusion-webui 分支: `$(Get-stable-diffusion-webui-Branch)`"
+        Print-Msg `"当前 stable-diffusion-webui 分支: `$(Get-Stable-Diffusion-WebUI-Branch)`"
         Print-Msg `"请选择 stable-diffusion-webui 分支`"
         Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 stable-diffusion-webui 分支切换脚本`"
         `$arg = Read-Host `"=========================================>`"
@@ -2665,14 +2732,14 @@ function Main {
             4 {
                 `$remote = `"https://github.com/Panchovix/stable-diffusion-webui-reForge`"
                 `$branch = `"main`"
-                `$branch_name = `"Panchovix - stable-diffusion-webui-reForge 主分支`"
+                `$branch_name = `"Panchovix - Stable-Diffusion-WebUI-reForge 主分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
             5 {
                 `$remote = `"https://github.com/Panchovix/stable-diffusion-webui-reForge`"
                 `$branch = `"dev_upstream`"
-                `$branch_name = `"Panchovix - stable-diffusion-webui-reForge 测试分支`"
+                `$branch_name = `"Panchovix - Stable-Diffusion-WebUI-reForge 测试分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
@@ -2723,7 +2790,7 @@ function Main {
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 stable-diffusion-webui 分支`"
-        Switch-stable-diffusion-webui-Branch `$remote `$branch `$use_submod
+        Switch-Stable-Diffusion-WebUI-Branch `$remote `$branch `$use_submod
     } else {
         Print-Msg `"取消切换 stable-diffusion-webui 分支`"
     }
@@ -2828,7 +2895,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -2867,7 +2934,7 @@ function Fix-Git-Point-Off-Set {
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -3134,9 +3201,9 @@ function List-Update-Status (`$update_status) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
@@ -3202,7 +3269,7 @@ Read-Host | Out-Null
 
 
 # 获取安装脚本
-function Write-stable-diffusion-webui-Install-Script {
+function Write-Stable-Diffusion-WebUI-Install-Script {
     $content = "
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 
@@ -3218,7 +3285,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -3250,7 +3317,7 @@ function Set-Proxy {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
@@ -3368,7 +3435,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -3388,7 +3455,7 @@ function Pip-Mirror-Status {
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -3588,9 +3655,9 @@ print(ver)
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Set-uv
     Pip-Mirror-Status
 
@@ -4007,7 +4074,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -4048,7 +4115,7 @@ function Set-Proxy {
 
 
 # SD WebUI Installer 更新检测
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -4542,9 +4609,9 @@ function Search-Model-List (`$model_list, `$key) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Pip-Mirror-Status
 
     `$to_exit = 0
@@ -4678,7 +4745,7 @@ Read-Host | Out-Null
 
 
 # SD WebUI Installer 设置脚本
-function Write-stable-diffusion-webui-Installer-Settings-Script {
+function Write-Stable-Diffusion-WebUI-Installer-Settings-Script {
     $content = "
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -4750,7 +4817,7 @@ function Print-Msg (`$msg) {
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -4837,7 +4904,7 @@ function Get-Github-Mirror-Setting {
 
 
 # 获取 SD WebUI Installer 自动检测更新设置
-function Get-stable-diffusion-webui-Installer-Auto-Check-Update-Setting {
+function Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         return `"禁用`"
     } else {
@@ -4877,7 +4944,7 @@ function Get-Pip-Mirror-Setting {
 
 
 # 获取 stable-diffusion-webui 运行环境检测配置
-function Get-stable-diffusion-webui-Env-Check-Setting {
+function Get-Stable-Diffusion-WebUI-Env-Check-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
         return `"启用`"
     } else {
@@ -5110,10 +5177,10 @@ function Update-Github-Mirror-Setting {
 
 
 # SD WebUI Installer 自动检查更新设置
-function Update-stable-diffusion-webui-Installer-Auto-Check-Update-Setting {
+function Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD WebUI Installer 自动检测更新设置: `$(Get-stable-diffusion-webui-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"当前 SD WebUI Installer 自动检测更新设置: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 启用 SD WebUI Installer 自动更新检查`"
         Print-Msg `"2. 禁用 SD WebUI Installer 自动更新检查`"
@@ -5150,7 +5217,7 @@ function Update-stable-diffusion-webui-Installer-Auto-Check-Update-Setting {
 
 
 # stable-diffusion-webui 启动参数设置
-function Update-stable-diffusion-webui-Launch-Args-Setting {
+function Update-Stable-Diffusion-WebUI-Launch-Args-Setting {
     while (`$true) {
         `$go_to = 0
         Print-Msg `"当前 stable-diffusion-webui 启动参数: `$(Get-Launch-Args-Setting)`"
@@ -5314,10 +5381,10 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 
 
 # stable-diffusion-webui 运行环境检测设置
-function stable-diffusion-webui-Env-Check-Setting {
+function Stable-Diffusion-WebUI-Env-Check-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 stable-diffusion-webui 运行环境检测设置: `$(Get-stable-diffusion-webui-Env-Check-Setting)`"
+        Print-Msg `"当前 stable-diffusion-webui 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 启用 stable-diffusion-webui 运行环境检测`"
         Print-Msg `"2. 禁用 stable-diffusion-webui 运行环境检测`"
@@ -5354,7 +5421,7 @@ function stable-diffusion-webui-Env-Check-Setting {
 
 
 # 检查 SD WebUI Installer 更新
-function Check-stable-diffusion-webui-Installer-Update {
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -5480,7 +5547,7 @@ function Check-Env {
 
 
 # 查看 SD WebUI Installer 文档
-function Get-stable-diffusion-webui-Installer-Help-Docs {
+function Get-Stable-Diffusion-WebUI-Installer-Help-Docs {
     Print-Msg `"调用浏览器打开 SD WebUI Installer 文档中`"
     Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md`"
 }
@@ -5488,7 +5555,7 @@ function Get-stable-diffusion-webui-Installer-Help-Docs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Pip-Mirror-Status
     while (`$true) {
@@ -5499,12 +5566,12 @@ function Main {
         Print-Msg `"Python 包管理器: `$(Get-Python-Package-Manager-Setting)`"
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
-        Print-Msg `"SD WebUI Installer 自动检查更新: `$(Get-stable-diffusion-webui-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"SD WebUI Installer 自动检查更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"stable-diffusion-webui 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"自动创建 stable-diffusion-webui 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
-        Print-Msg `"stable-diffusion-webui 运行环境检测设置: `$(Get-stable-diffusion-webui-Env-Check-Setting)`"
+        Print-Msg `"stable-diffusion-webui 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -5541,11 +5608,11 @@ function Main {
                 break
             }
             5 {
-                Update-stable-diffusion-webui-Installer-Auto-Check-Update-Setting
+                Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting
                 break
             }
             6 {
-                Update-stable-diffusion-webui-Launch-Args-Setting
+                Update-Stable-Diffusion-WebUI-Launch-Args-Setting
                 break
             }
             7 {
@@ -5561,11 +5628,11 @@ function Main {
                 break
             }
             10 {
-                stable-diffusion-webui-Env-Check-Setting
+                Stable-Diffusion-WebUI-Env-Check-Setting
                 break
             }
             11 {
-                Check-stable-diffusion-webui-Installer-Update
+                Check-Stable-Diffusion-WebUI-Installer-Update
                 break
             }
             12 {
@@ -5573,7 +5640,7 @@ function Main {
                 break
             }
             13 {
-                Get-stable-diffusion-webui-Installer-Help-Docs
+                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
                 break
             }
             14 {
@@ -5726,7 +5793,7 @@ function global:Update-Aria2 {
 
 
 # SD WebUI Installer 更新检测
-function global:Check-stable-diffusion-webui-Installer-Update {
+function global:Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -5826,7 +5893,7 @@ function global:Test-Github-Mirror {
 
 
 # 安装 stable-diffusion-webui 扩展
-function global:Install-stable-diffusion-webui-Extension (`$url) {
+function global:Install-Stable-Diffusion-WebUI-Extension (`$url) {
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -6004,9 +6071,9 @@ Github：https://github.com/licyk
 
     Update-uv
     Update-Aria2
-    Check-stable-diffusion-webui-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Test-Github-Mirror
-    Install-stable-diffusion-webui-Extension
+    Install-Stable-Diffusion-WebUI-Extension
     Git-Clone
     Install-Hanamizuki
     List-Extension
@@ -6018,7 +6085,7 @@ Github：https://github.com/licyk
 
 
 # 显示 SD WebUI Installer 版本
-function Get-stable-diffusion-webui-Installer-Version {
+function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$ver = `$([string]`$Env:SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
@@ -6096,7 +6163,7 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -6234,10 +6301,10 @@ function Write-Manager-Scripts {
     Write-Update-Script
     Write-Update-Extension-Script
     Write-Switch-Branch-Script
-    Write-stable-diffusion-webui-Install-Script
+    Write-Stable-Diffusion-WebUI-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
-    Write-stable-diffusion-webui-Installer-Settings-Script
+    Write-Stable-Diffusion-WebUI-Installer-Settings-Script
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
@@ -6288,7 +6355,7 @@ function Use-Update-Mode {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Get-stable-diffusion-webui-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     if (Test-Path "$PSScriptRoot/stable-diffusion-webui/use_update_mode.txt") {
         Print-Msg "使用更新模式"
         Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/use_update_mode.txt" 2> $null
