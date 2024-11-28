@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 109
+$SD_WEBUI_INSTALLER_VERSION = 110
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -559,7 +559,7 @@ function Check-Install {
     Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-localization-zh_Hans"
 
     # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
-    if ((!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) -or (!(Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt"))) {
+    if ((!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) -and (!(Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt"))) {
         Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-controlnet"
         Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/multidiffusion-upscaler-for-automatic1111"
         Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-dynamic-thresholding"
@@ -574,6 +574,7 @@ function Check-Install {
         Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-haku-img"
         Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-model-converter"
         Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-supermerger"
+        Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-segment-anything"
     }
     Install-PyTorch
     Install-CLIP
