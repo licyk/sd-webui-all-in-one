@@ -210,7 +210,8 @@ $ tree -L 1
 要设置 Stable Diffusion WebUI 的启动参数，可以在和`launch.ps1`脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 Stable Diffusion WebUI 启动脚本时将自动读取该文件内的启动参数并应用。
 
 >[!NOTE]  
->该设置可通过[管理 SD WebUI Installer 设置](#管理-sd-webui-installer-设置)中提到的的`settings.ps1`进行修改。
+>1. Stable Diffusion WebUI 支持的启动参数可阅读：[Command Line Arguments and Settings · AUTOMATIC1111/stable-diffusion-webui Wiki](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings)。
+>2. 该设置可通过[管理 SD WebUI Installer 设置](#管理-sd-webui-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 切换 Stable Diffusion WebUI 分支
