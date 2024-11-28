@@ -17,7 +17,11 @@
     "extra_options_img2img": [
         "upscaler_for_img2img",
         "img2img_color_correction",
-        "img2img_fix_steps"
+        "img2img_fix_steps",
+        "img2img_extra_noise"
+    ],
+    "extra_options_txt2img": [
+        "img2img_extra_noise"
     ],
     "img2img_color_correction": true
 }
