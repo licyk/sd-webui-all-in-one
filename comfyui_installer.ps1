@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 140
+$COMFYUI_INSTALLER_VERSION = 141
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -333,6 +333,7 @@ function Git-CLone {
     )
 
     $name = [System.IO.Path]::GetFileNameWithoutExtension("$url")
+    $folder_name = [System.IO.Path]::GetFileName("$path")
     Print-Msg "检测 $name 是否已安装"
     $status = 0
     if (!(Test-Path "$path")) {
@@ -346,8 +347,16 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        git clone --recurse-submodules $url "$path"
+        $cache_path = "$PSScriptRoot/ComfyUI/cache/$folder_name"
+        # 清理缓存路径
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force -Recurse
+        }
+        git clone --recurse-submodules $url "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
+            Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
             Print-Msg "$name 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -5616,10 +5625,12 @@ function global:Install-ComfyUI-Node (`$url) {
     }
 
     `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes/`$node_name`")) {
+    `$cache_path = `"`$Env:CACHE_HOME/`$node_name`"
+    `$path = `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes/`$node_name`"
+    if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
-        `$items = Get-ChildItem `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes/`$node_name`" -Recurse
+        `$items = Get-ChildItem `"`$path`" -Recurse
         if (`$items.Count -eq 0) {
             `$status = 1
         }
@@ -5627,8 +5638,15 @@ function global:Install-ComfyUI-Node (`$url) {
 
     if (`$status -eq 1) {
         Print-Msg `"安装 `$node_name 自定义节点中`"
-        git clone --recurse-submodules `$url `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes/`$node_name`"
+        # 清理缓存路径
+        if (Test-Path `"`$cache_path`") {
+            Remove-Item -Path `"`$cache_path`" -Force -Recurse
+        }
+        git clone --recurse-submodules `$url `"`$cache_path`"
         if (`$?) {
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
+            Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
             Print-Msg `"`$node_name 自定义节点安装成功`"
         } else {
             Print-Msg `"`$node_name 自定义节点安装失败`"
@@ -5988,6 +6006,7 @@ https://www.aigodlike.com
 https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
 https://comfyanonymous.github.io/ComfyUI_examples
 https://blenderneko.github.io/ComfyUI-docs
+https://comfyui-wiki.com/zh
 
 更多详细的帮助可在下面的链接查看。
 ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md

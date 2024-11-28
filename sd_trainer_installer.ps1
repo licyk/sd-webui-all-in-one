@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 174
+$SD_TRAINER_INSTALLER_VERSION = 175
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -343,10 +343,19 @@ function Install-SD-Trainer {
         }
     }
 
+    $path = "$PSScriptRoot/SD-Trainer/lora-scripts"
+    $cache_path = "$PSScriptRoot/SD-Trainer/cache/lora-scripts"
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
-        git clone --recurse-submodules $SD_TRAINER_REPO "$PSScriptRoot/SD-Trainer/lora-scripts"
+        # 清理缓存路径
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force -Recurse
+        }
+        git clone --recurse-submodules $SD_TRAINER_REPO "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
+            Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "SD-Trainer 安装成功"
         } else {
             Print-Msg "SD-Trainer 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"

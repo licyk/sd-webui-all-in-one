@@ -390,6 +390,7 @@ ComfyUI 的使用教程：
 - https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
 - https://comfyanonymous.github.io/ComfyUI_examples
 - https://blenderneko.github.io/ComfyUI-docs
+- https://comfyui-wiki.com/zh
 
 
 ## 使用绘世启动器

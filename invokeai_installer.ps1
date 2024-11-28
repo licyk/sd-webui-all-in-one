@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 152
+$INVOKEAI_INSTALLER_VERSION = 153
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3017,10 +3017,12 @@ function global:Install-InvokeAI-Node (`$url) {
     }
 
     `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    if (!(Test-Path `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`")) {
+    `$cache_path = `"`$Env:CACHE_HOME/`$node_name`"
+    `$path = `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
+    if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
-        `$items = Get-ChildItem `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`" -Recurse
+        `$items = Get-ChildItem `"`$path`" -Recurse
         if (`$items.Count -eq 0) {
             `$status = 1
         }
@@ -3028,8 +3030,15 @@ function global:Install-InvokeAI-Node (`$url) {
 
     if (`$status -eq 1) {
         Print-Msg `"安装 `$node_name 自定义节点中`"
-        git clone --recurse-submodules `$url `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
+        # 清理缓存路径
+        if (Test-Path `"`$cache_path`") {
+            Remove-Item -Path `"`$cache_path`" -Force -Recurse
+        }
+        git clone --recurse-submodules `$url `"`$cache_path`"
         if (`$?) {
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
+            Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
             Print-Msg `"`$node_name 自定义节点安装成功`"
         } else {
             Print-Msg `"`$node_name 自定义节点安装失败`"

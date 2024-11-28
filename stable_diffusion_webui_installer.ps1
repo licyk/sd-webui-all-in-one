@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 108
+$SD_WEBUI_INSTALLER_VERSION = 109
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -345,6 +345,7 @@ function Git-CLone {
     )
 
     $name = [System.IO.Path]::GetFileNameWithoutExtension("$url")
+    $folder_name = [System.IO.Path]::GetFileName("$path")
     Print-Msg "检测 $name 是否已安装"
     $status = 0
     if (!(Test-Path "$path")) {
@@ -358,8 +359,16 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        git clone --recurse-submodules $url "$path"
+        $cache_path = "$PSScriptRoot/stable-diffusion-webui/cache/$folder_name"
+        # 清理缓存路径
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force -Recurse
+        }
+        git clone --recurse-submodules $url "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
+            Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
             Print-Msg "$name 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -535,6 +544,10 @@ function Check-Install {
     Git-CLone "https://github.com/Stability-AI/generative-models" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/generative-models"
     Git-CLone "https://github.com/crowsonkb/k-diffusion" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/k-diffusion"
     Git-CLone "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/stable-diffusion-webui-assets"
+    if (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
+        Git-CLone "https://github.com/lllyasviel/huggingface_guess" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/huggingface_guess"
+        Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/repositories/google_blockly_prototypes"
+    }
     # SD WebUI 扩展
     Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/ultimate-upscale-for-automatic1111"
     Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-tagcomplete"
@@ -545,18 +558,22 @@ function Check-Install {
     Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-wd14-tagger"
     Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-localization-zh_Hans"
 
-    # 非 SD WebUI Forge 时安装的扩展
-    if (!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) {
+    # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
+    if ((!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) -or (!(Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt"))) {
         Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-controlnet"
         Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/multidiffusion-upscaler-for-automatic1111"
         Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-dynamic-thresholding"
-        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-model-converter"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-supermerger"
         Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-regional-prompter"
         Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-lora-block-weight"
+    }
+
+    # 非 SD WebUI Forge 时安装的扩展
+    if (!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) {
         Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/stable-diffusion-webui-model-toolkit"
         Git-CLone "https://github.com/Tencent/LightDiffusionFlow" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/LightDiffusionFlow"
         Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/a1111-sd-webui-haku-img"
+        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-model-converter"
+        Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/extensions/sd-webui-supermerger"
     }
     Install-PyTorch
     Install-CLIP
@@ -5816,10 +5833,12 @@ function global:Install-stable-diffusion-webui-Extension (`$url) {
     }
 
     `$extension_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions/`$extension_name`")) {
+    `$cache_path = `"`$Env:CACHE_HOME/`$extension_name`"
+    `$path = `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions/`$extension_name`"
+    if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
-        `$items = Get-ChildItem `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions/`$extension_name`" -Recurse
+        `$items = Get-ChildItem `"`$path`" -Recurse
         if (`$items.Count -eq 0) {
             `$status = 1
         }
@@ -5827,8 +5846,15 @@ function global:Install-stable-diffusion-webui-Extension (`$url) {
 
     if (`$status -eq 1) {
         Print-Msg `"安装 `$extension_name 扩展中`"
-        git clone --recurse-submodules `$url `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions/`$extension_name`"
+        # 清理缓存路径
+        if (Test-Path `"`$cache_path`") {
+            Remove-Item -Path `"`$cache_path`" -Force -Recurse
+        }
+        git clone --recurse-submodules `$url `"`$cache_path`"
         if (`$?) {
+            # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
+            Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
             Print-Msg `"`$extension_name 扩展安装成功`"
         } else {
             Print-Msg `"`$extension_name 扩展安装失败`"
