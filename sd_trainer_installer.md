@@ -150,7 +150,23 @@ SD-Trainer Installer 默认情况下安装的是 [Akegarasu/SD-Trainer](https://
 |`install_sd_trainer.txt`|[Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)|
 |`install_kohya_gui.txt`|[bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)|
 
-创建配置文件后，将 SD-Trainer Installer 下载至本地，和配置文件放在一起。
+创建配置文件后，将 SD-Trainer Installer 下载至本地，和配置文件放在一起，如下所示。
+
+```
+$ tree -L 1
+.
+├── 119966207_p0_master1200.jpg
+├── 437A9AE81C043B83110F55316EC7789E.png
+├── BaiduNetdiskDownload
+├── BaiduNetdiskWorkspace
+├── install_sd_trainer.txt    # 这是配置文件
+├── QQDownloads
+├── sd_trainer_installer.ps1  # 这是 SD-Trainer Installer
+├── z-noob_artist.csv
+└── 得意黑_横屏.prtextstyle
+
+4 directories, 6 files
+```
 
 右键`sd_trainer_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer Installer 将安装 SD-Trainer 至本地。
 

@@ -155,7 +155,23 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
 |`install_sd_webui_amdgpu.txt`|[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
 |`install_sd_next.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|
 
-创建配置文件后，将 SD WebUI Installer 下载至本地，和配置文件放在一起。
+创建配置文件后，将 SD WebUI Installer 下载至本地，和配置文件放在一起，如下所示。
+
+```
+$ tree -L 1
+.
+├── 119966207_p0_master1200.jpg
+├── 437A9AE81C043B83110F55316EC7789E.png
+├── BaiduNetdiskDownload
+├── BaiduNetdiskWorkspace
+├── install_sd_webui.txt                  # 这是配置文件
+├── QQDownloads
+├── stable_diffusion_webui_installer.ps1  # 这是 SD WebUI Installer
+├── z-noob_artist.csv
+└── 得意黑_横屏.prtextstyle
+
+4 directories, 6 files
+```
 
 右键`stable_diffusion_webui_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD WebUI Installer 将安装 Stable Diffusion WebUI 至本地。
 
