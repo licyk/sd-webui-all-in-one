@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 113
+$SD_WEBUI_INSTALLER_VERSION = 114
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6327,13 +6327,13 @@ function Use-Install-Mode {
     if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
         Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
     } elseif (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
-        Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
+        Print-Msg "检测到 install_sd_webui_forge.txt 配置文件, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
     } elseif (Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") {
-        Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
+        Print-Msg "检测到 install_sd_webui_reforge.txt 配置文件, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
     } elseif (Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") {
-        Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
+        Print-Msg "检测到 install_sd_webui_amdgpu.txt 配置文件, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
     } elseif (Test-Path "$PSScriptRoot/install_sd_next.txt") {
-        Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 vladmandic/SD.NEXT"
+        Print-Msg "检测到 install_sd_next.txt 配置文件, 选择安装 vladmandic/SD.NEXT"
     } else {
         Print-Msg "未指定安装的 SD WebUI 分支, 默认选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
     }
