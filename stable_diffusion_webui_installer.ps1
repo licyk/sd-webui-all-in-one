@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 114
+$SD_WEBUI_INSTALLER_VERSION = 115
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -540,7 +540,10 @@ function Check-Install {
     $sd_webui_path = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
     $sd_webui_repositories_path = "$sd_webui_path/repositories"
     $sd_webui_extension_path = "$sd_webui_path/extensions"
+
+    # SD WebUi 核心
     Git-CLone "$SD_WEBUI_REPO" "$sd_webui_path"
+
     # SD WebUI 组件
     Git-CLone "https://github.com/salesforce/BLIP" "$sd_webui_repositories_path/BLIP"
     Git-CLone "https://github.com/Stability-AI/stablediffusion" "$sd_webui_repositories_path/stable-diffusion-stability-ai"
@@ -551,6 +554,7 @@ function Check-Install {
         Git-CLone "https://github.com/lllyasviel/huggingface_guess" "$sd_webui_repositories_path/huggingface_guess"
         Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$sd_webui_repositories_path/google_blockly_prototypes"
     }
+
     # SD WebUI 扩展
     Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
     Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
@@ -573,12 +577,12 @@ function Check-Install {
     # 非 SD WebUI Forge 时安装的扩展
     if (!(Test-Path "$PSScriptRoot/install_sd_webui_forge.txt")) {
         Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
-        Git-CLone "https://github.com/Tencent/LightDiffusionFlow" "$sd_webui_extension_path/LightDiffusionFlow"
         Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
         Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
         Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
         Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
     }
+
     Install-PyTorch
     Install-CLIP
     Install-Stable-Diffusion-WebUI-Dependence
@@ -639,6 +643,7 @@ function Check-Install {
         $streamWriter.Write($json_content)
         $streamWriter.Close()
     }
+
     $checkpoint_path = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/models/Stable-diffusion"
     if (!(Get-ChildItem -Path $checkpoint_path -Filter "*.safetensors")) {
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors"
@@ -650,6 +655,7 @@ function Check-Install {
             Print-Msg "下载模型失败"
         }
     }
+
     Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
