@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 115
+$SD_WEBUI_INSTALLER_VERSION = 116
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -32,7 +32,7 @@ $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+c
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.5.2"
-# stable-diffusion-webui 仓库地址
+# Stable Diffusion WebUI 仓库地址
 $SD_WEBUI_REPO = if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
     "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
 } elseif (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
@@ -229,7 +229,7 @@ function Install-Python {
         Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
-        Print-Msg "Python 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -252,7 +252,7 @@ function Install-Git {
         Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/PortableGit.zip"
         Print-Msg "Git 安装成功"
     } else {
-        Print-Msg "Git 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -268,7 +268,7 @@ function Install-Aria2 {
         Move-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/aria2c.exe" -Destination "$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
-        Print-Msg "Aria2 下载失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -282,7 +282,7 @@ function Install-uv {
     if ($?) {
         Print-Msg "uv 下载成功"
     } else {
-        Print-Msg "uv 下载失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "uv 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -371,7 +371,7 @@ function Git-CLone {
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
-            Print-Msg "$name 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+            Print-Msg "$name 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
             Read-Host | Out-Null
             exit 1
         }
@@ -399,7 +399,7 @@ function Install-PyTorch {
         if ($?) {
             Print-Msg "PyTorch 安装成功"
         } else {
-            Print-Msg "PyTorch 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+            Print-Msg "PyTorch 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
             Read-Host | Out-Null
             exit 1
         }
@@ -423,7 +423,7 @@ function Install-PyTorch {
         if ($?) {
             Print-Msg "xFormers 安装成功"
         } else {
-            Print-Msg "xFormers 安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+            Print-Msg "xFormers 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
             Read-Host | Out-Null
             exit 1
         }
@@ -458,19 +458,19 @@ function Install-CLIP {
     if ($?) {
         Print-Msg "CLIP 软件包安装成功"
     } else {
-        Print-Msg "CLIP 软件包安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "CLIP 软件包安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
 }
 
 
-# 安装 stable-diffusion-webui 依赖
+# 安装 Stable Diffusion WebUI 依赖
 function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
-    Print-Msg "安装 stable-diffusion-webui 依赖中"
+    Print-Msg "安装 Stable Diffusion WebUI 依赖中"
     if ($USE_UV) {
         uv pip install -r requirements_versions.txt
         if (!($?)) {
@@ -481,9 +481,9 @@ function Install-Stable-Diffusion-WebUI-Dependence {
         python -m pip install -r requirements_versions.txt
     }
     if ($?) {
-        Print-Msg "stable-diffusion-webui 依赖安装成功"
+        Print-Msg "Stable Diffusion WebUI 依赖安装成功"
     } else {
-        Print-Msg "stable-diffusion-webui 依赖安装失败, 终止 stable-diffusion-webui 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "Stable Diffusion WebUI 依赖安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Set-Location "$current_path"
         Read-Host | Out-Null
         exit 1
@@ -588,7 +588,7 @@ function Check-Install {
     Install-Stable-Diffusion-WebUI-Dependence
 
     if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/launch_args.txt")) {
-        Print-Msg "设置默认 stable-diffusion-webui 启动参数"
+        Print-Msg "设置默认 Stable Diffusion WebUI 启动参数"
         if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
             $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start"
         } elseif (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
@@ -606,7 +606,7 @@ function Check-Install {
     }
 
     if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/config.json")) {
-        Print-Msg "设置默认 stable-diffusion-webui 设置"
+        Print-Msg "设置默认 Stable Diffusion WebUI 设置"
         $json_content = @{
             "quicksettings_list" = @(
                 "sd_model_checkpoint",
@@ -1043,7 +1043,7 @@ function Set-uv {
 }
 
 
-# stable-diffusion-webui 启动参数
+# Stable Diffusion WebUI 启动参数
 function Get-Stable-Diffusion-WebUI-Launch-Args {
     if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
         `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
@@ -1056,7 +1056,7 @@ function Get-Stable-Diffusion-WebUI-Launch-Args {
 }
 
 
-# 设置 stable-diffusion-webui 的快捷启动方式
+# 设置 Stable Diffusion WebUI 的快捷启动方式
 function Create-Stable-Diffusion-WebUI-Shortcut {
     `$filename = `"SD-WebUI`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
@@ -1066,17 +1066,17 @@ function Create-Stable-Diffusion-WebUI-Shortcut {
         return
     }
 
-    Print-Msg `"检查 stable-diffusion-webui 快捷启动方式中`"
+    Print-Msg `"检查 Stable Diffusion WebUI 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
-        Print-Msg `"获取 stable-diffusion-webui 图标中`"
+        Print-Msg `"获取 Stable Diffusion WebUI 图标中`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
         if (!(`$?)) {
-            Print-Msg `"获取 stable-diffusion-webui 图标失败, 无法创建 stable-diffusion-webui 快捷启动方式`"
+            Print-Msg `"获取 Stable Diffusion WebUI 图标失败, 无法创建 Stable Diffusion WebUI 快捷启动方式`"
             return
         }
     }
 
-    Print-Msg `"更新 stable-diffusion-webui 快捷启动方式`"
+    Print-Msg `"更新 Stable Diffusion WebUI 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
@@ -1231,7 +1231,7 @@ if __name__ == '__main__':
 }
 
 
-# 检查 stable-diffusion-webui 依赖完整性
+# 检查 Stable Diffusion WebUI 依赖完整性
 function Check-Stable-Diffusion-WebUI-Requirements {
     `$content = `"
 import os
@@ -1407,7 +1407,7 @@ if __name__ == '__main__':
     path = args.requirement_path
     print(validate_requirements(path))
 `"
-    Print-Msg `"检查 stable-diffusion-webui 内核依赖完整性中`"
+    Print-Msg `"检查 Stable Diffusion WebUI 内核依赖完整性中`"
     if (!(Test-Path `"`$PSScriptRoot/cache`")) {
         New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
     }
@@ -1416,7 +1416,7 @@ if __name__ == '__main__':
     `$status = `$(python `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`")
 
     if (`$status -eq `"False`") {
-        Print-Msg `"检测到 stable-diffusion-webui 内核有依赖缺失, 安装 stable-diffusion-webui 依赖中`"
+        Print-Msg `"检测到 Stable Diffusion WebUI 内核有依赖缺失, 安装 Stable Diffusion WebUI 依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
             if (!(`$?)) {
@@ -1427,12 +1427,12 @@ if __name__ == '__main__':
             python -m pip install -r `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
         }
         if (`$?) {
-            Print-Msg `"stable-diffusion-webui 依赖安装成功`"
+            Print-Msg `"Stable Diffusion WebUI 依赖安装成功`"
         } else {
-            Print-Msg `"stable-diffusion-webui 依赖安装失败, 这将会导致 stable-diffusion-webui 缺失依赖无法正常运行`"
+            Print-Msg `"Stable Diffusion WebUI 依赖安装失败, 这将会导致 Stable Diffusion WebUI 缺失依赖无法正常运行`"
         }
     } else {
-        Print-Msg `"stable-diffusion-webui 无缺失依赖`"
+        Print-Msg `"Stable Diffusion WebUI 无缺失依赖`"
     }
 }
 
@@ -1464,11 +1464,11 @@ function Check-Extension-Is-Disabled (`$name) {
 }
 
 
-# 检查 stable-diffusion-webui 环境中组件依赖
+# 检查 Stable Diffusion WebUI 环境中组件依赖
 function Check-Stable-Diffusion-WebUI-Env-Requirements {
     `$current_python_path = `$Env:PYTHONPATH
     `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/stable-diffusion-webui`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
-    Print-Msg `"检查 stable-diffusion-webui 扩展依赖中`"
+    Print-Msg `"检查 Stable Diffusion WebUI 扩展依赖中`"
     `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
 
     `$sum = 0
@@ -1498,9 +1498,9 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
             }
         }
     }
-    Print-Msg `"stable-diffusion-webui 扩展依赖检查完成`"
+    Print-Msg `"Stable Diffusion WebUI 扩展依赖检查完成`"
 
-    Print-Msg `"检查 stable-diffusion-webui 内置扩展依赖中`"
+    Print-Msg `"检查 Stable Diffusion WebUI 内置扩展依赖中`"
     `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions-builtin`" | Select-Object -ExpandProperty FullName
 
     `$sum = 0
@@ -1530,7 +1530,7 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
             }
         }
     }
-    Print-Msg `"stable-diffusion-webui 内置扩展依赖检查完成`"
+    Print-Msg `"Stable Diffusion WebUI 内置扩展依赖检查完成`"
     `$Env:PYTHONPATH = `$current_python_path
 }
 
@@ -1763,13 +1763,13 @@ else:
 }
 
 
-# 检查 stable-diffusion-webui 运行环境
+# 检查 Stable Diffusion WebUI 运行环境
 function Check-Stable-Diffusion-WebUI-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 stable-diffusion-webui 运行环境检测, 这可能会导致 stable-diffusion-webui 运行环境中存在的问题无法被发现并解决`"
+        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 Stable Diffusion WebUI 运行环境检测, 这可能会导致 Stable Diffusion WebUI 运行环境中存在的问题无法被发现并解决`"
         return
     } else {
-        Print-Msg `"检查 stable-diffusion-webui 运行环境中`"
+        Print-Msg `"检查 Stable Diffusion WebUI 运行环境中`"
     }
 
     Check-Stable-Diffusion-WebUI-Requirements
@@ -1777,7 +1777,7 @@ function Check-Stable-Diffusion-WebUI-Env {
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
-    Print-Msg `"stable-diffusion-webui 运行环境检查完成`"
+    Print-Msg `"Stable Diffusion WebUI 运行环境检查完成`"
 }
 
 
@@ -1861,14 +1861,14 @@ function Main {
     Create-Stable-Diffusion-WebUI-Shortcut
     Check-Stable-Diffusion-WebUI-Env
     Set-PyTorch-CUDA-Memory-Alloc
-    Print-Msg `"启动 stable-diffusion-webui 中`"
+    Print-Msg `"启动 Stable Diffusion WebUI 中`"
     Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
     python launch.py `$args.ToString().Split()
     `$req = `$?
     if (`$req) {
-        Print-Msg `"stable-diffusion-webui 正常退出`"
+        Print-Msg `"Stable Diffusion WebUI 正常退出`"
     } else {
-        Print-Msg `"stable-diffusion-webui 出现异常, 已退出`"
+        Print-Msg `"Stable Diffusion WebUI 出现异常, 已退出`"
     }
     Set-Location `"`$current_path`"
 }
@@ -2248,27 +2248,27 @@ function Main {
     Set-Github-Mirror
     Pip-Mirror-Status
 
-    Print-Msg `"拉取 stable-diffusion-webui 更新内容中`"
+    Print-Msg `"拉取 Stable Diffusion WebUI 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/stable-diffusion-webui`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     `$branch = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
     git -C `"`$PSScriptRoot/stable-diffusion-webui`" fetch --recurse-submodules
     if (`$?) {
-        Print-Msg `"应用 stable-diffusion-webui 更新中`"
+        Print-Msg `"应用 Stable Diffusion WebUI 更新中`"
         `$commit_hash = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" log origin/`$branch --max-count 1 --format=`"%h`")
         git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset --hard `$commit_hash --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
-            Print-Msg `"stable-diffusion-webui 已为最新版, 当前版本：`$core_origin_ver`"
+            Print-Msg `"Stable Diffusion WebUI 已为最新版, 当前版本：`$core_origin_ver`"
         } else {
-            Print-Msg `"stable-diffusion-webui 更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+            Print-Msg `"Stable Diffusion WebUI 更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         }
     } else {
-        Print-Msg `"拉取 stable-diffusion-webui 更新内容失败`"
+        Print-Msg `"拉取 Stable Diffusion WebUI 更新内容失败`"
     }
 
-    Print-Msg `"退出 stable-diffusion-webui 更新脚本`"
+    Print-Msg `"退出 Stable Diffusion WebUI 更新脚本`"
 }
 
 ###################
@@ -2632,7 +2632,8 @@ function Get-Stable-Diffusion-WebUI-Branch {
 
 # 切换 SD WebUI 分支
 function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod) {
-    `$preview_url = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
+    `$sd_webui_path = `"`$PSScriptRoot/stable-diffusion-webui`"
+    `$preview_url = `$(git -C `"`$sd_webui_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
 
@@ -2642,46 +2643,47 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
         `$use_submodules = `"`"
     }
 
-    Print-Msg `"stable-diffusion-webui 远程源替换: `$preview_url -> `$remote`"
-    git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote set-url origin `"`$remote`" # 替换远程源
+    Print-Msg `"Stable Diffusion WebUI 远程源替换: `$preview_url -> `$remote`"
+    git -C `"`$sd_webui_path`" remote set-url origin `"`$remote`" # 替换远程源
 
     # 处理 Git 子模块
     if (`$use_submod) {
-        Print-Msg `"更新 stable-diffusion-webui 的 Git 子模块信息`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule update --init --recursive
+        Print-Msg `"更新 Stable Diffusion WebUI 的 Git 子模块信息`"
+        git -C `"`$sd_webui_path`" submodule update --init --recursive
     } else {
-        Print-Msg `"禁用 stable-diffusion-webui 的 Git 子模块`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule deinit --all -f
+        Print-Msg `"禁用 Stable Diffusion WebUI 的 Git 子模块`"
+        git -C `"`$sd_webui_path`" submodule deinit --all -f
     }
 
-    Print-Msg `"拉取 stable-diffusion-webui 远程源更新`"
-    git -C `"`$PSScriptRoot/stable-diffusion-webui`" fetch `$use_submodules.ToString() # 拉取远程源内容
+    Print-Msg `"拉取 Stable Diffusion WebUI 远程源更新`"
+    git -C `"`$sd_webui_path`" fetch # 拉取远程源内容
     if (`$?) {
         if (`$use_submod) {
             Print-Msg `"清理原有的 Git 子模块`"
-            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule deinit --all -f
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
         }
-        Print-Msg `"切换 stable-diffusion-webui 分支至 `$branch`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" checkout `"`${branch}`" `$use_submodules.ToString() --force # 切换分支
-        Print-Msg `"应用 stable-diffusion-webui 远程源的更新`"
+        Print-Msg `"切换 Stable Diffusion WebUI 分支至 `$branch`"
+        git -C `"`$sd_webui_path`" checkout `"`${branch}`" --force # 切换分支
+        Print-Msg `"应用 Stable Diffusion WebUI 远程源的更新`"
         if (`$use_submod) {
-            Print-Msg `"更新 stable-diffusion-webui 的 Git 子模块信息`"
-            git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset `$use_submodules.ToString() --hard `"origin/`$branch`"
-            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule update --init --recursive
+            Print-Msg `"更新 Stable Diffusion WebUI 的 Git 子模块信息`"
+            git -C `"`$sd_webui_path`" reset --hard `"origin/`$branch`"
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
+            git -C `"`$sd_webui_path`" submodule update --init --recursive
         }
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
-        Print-Msg `"切换 stable-diffusion-webui 分支完成`"
+        git -C `"`$sd_webui_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        Print-Msg `"切换 Stable Diffusion WebUI 分支完成`"
     } else {
-        Print-Msg `"拉取 stable-diffusion-webui 远程源更新失败, 取消分支切换`"
-        Print-Msg `"尝试回退 stable-diffusion-webui 的更改`"
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote set-url origin `"`$preview_url`"
+        Print-Msg `"拉取 Stable Diffusion WebUI 远程源更新失败, 取消分支切换`"
+        Print-Msg `"尝试回退 Stable Diffusion WebUI 的更改`"
+        git -C `"`$sd_webui_path`" remote set-url origin `"`$preview_url`"
         if (`$use_submod) {
-            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule deinit --all -f
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
         } else {
-            git -C `"`$PSScriptRoot/stable-diffusion-webui`" submodule update --init --recursive
+            git -C `"`$sd_webui_path`" submodule update --init --recursive
         }
-        Print-Msg `"回退 stable-diffusion-webui 分支更改完成`"
-        Print-Msg `"切换 stable-diffusion-webui 分支更改失败`"
+        Print-Msg `"回退 Stable Diffusion WebUI 分支更改完成`"
+        Print-Msg `"切换 Stable Diffusion WebUI 分支更改失败`"
     }
 }
 
@@ -2709,12 +2711,12 @@ function Main {
     `$to_exit = 0
 
     while (`$True) {
-        Print-Msg `"stable-diffusion-webui 分支列表`"
+        Print-Msg `"Stable Diffusion WebUI 分支列表`"
         `$go_to = 0
         Write-Host `$content
-        Print-Msg `"当前 stable-diffusion-webui 分支: `$(Get-Stable-Diffusion-WebUI-Branch)`"
-        Print-Msg `"请选择 stable-diffusion-webui 分支`"
-        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 stable-diffusion-webui 分支切换脚本`"
+        Print-Msg `"当前 Stable Diffusion WebUI 分支: `$(Get-Stable-Diffusion-WebUI-Branch)`"
+        Print-Msg `"请选择 Stable Diffusion WebUI 分支`"
+        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 Stable Diffusion WebUI 分支切换脚本`"
         `$arg = Read-Host `"=========================================>`"
 
         switch (`$arg) {
@@ -2775,7 +2777,7 @@ function Main {
                 `$go_to = 1
             }
             exit {
-                Print-Msg `"退出 stable-diffusion-webui 分支切换脚本`"
+                Print-Msg `"退出 Stable Diffusion WebUI 分支切换脚本`"
                 `$to_exit = 1
                 `$go_to = 1
             }
@@ -2794,17 +2796,17 @@ function Main {
         exit 0
     }
 
-    Print-Msg `"是否切换 stable-diffusion-webui 分支到 `$branch_name ?`"
+    Print-Msg `"是否切换 Stable Diffusion WebUI 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
     `$operate = Read-Host `"=========================================>`"
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
-        Print-Msg `"开始切换 stable-diffusion-webui 分支`"
+        Print-Msg `"开始切换 Stable Diffusion WebUI 分支`"
         Switch-Stable-Diffusion-WebUI-Branch `$remote `$branch `$use_submod
     } else {
-        Print-Msg `"取消切换 stable-diffusion-webui 分支`"
+        Print-Msg `"取消切换 Stable Diffusion WebUI 分支`"
     }
-    Print-Msg `"退出 stable-diffusion-webui 分支切换脚本`"
+    Print-Msg `"退出 Stable Diffusion WebUI 分支切换脚本`"
 }
 
 ###################
@@ -3178,7 +3180,7 @@ function List-Update-Status (`$update_status) {
     `$success = 0
     `$failed = 0
     `$sum = 0
-    Print-Msg `"当前 stable-diffusion-webui 扩展更新结果`"
+    Print-Msg `"当前 Stable Diffusion WebUI 扩展更新结果`"
     Write-Host `"-----------------------------------------------------`"
     Write-Host `"扩展名称`" -ForegroundColor White -NoNewline
     Write-Host `" | `" -NoNewline
@@ -3227,7 +3229,7 @@ function Main {
         }
     }
 
-    Print-Msg `"更新 stable-diffusion-webui 扩展中`"
+    Print-Msg `"更新 Stable Diffusion WebUI 扩展中`"
     `$update_status = New-Object System.Collections.ArrayList
     ForEach (`$node in `$node_list) {
         if (!(Test-Path `"`$node/.git`")) {
@@ -3260,7 +3262,7 @@ function Main {
 
     List-Update-Status `$update_status
 
-    Print-Msg `"退出 stable-diffusion-webui 扩展更新脚本`"
+    Print-Msg `"退出 Stable Diffusion WebUI 扩展更新脚本`"
 }
 
 ###################
@@ -4953,7 +4955,7 @@ function Get-Pip-Mirror-Setting {
 }
 
 
-# 获取 stable-diffusion-webui 运行环境检测配置
+# 获取 Stable Diffusion WebUI 运行环境检测配置
 function Get-Stable-Diffusion-WebUI-Env-Check-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
         return `"启用`"
@@ -5144,7 +5146,7 @@ function Update-Github-Mirror-Setting {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
-                Print-Msg `"启用 Github 镜像成功, 在更新 stable-diffusion-webui 时将自动检测可用的 Github 镜像源并使用`"
+                Print-Msg `"启用 Github 镜像成功, 在更新 Stable Diffusion WebUI 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
             2 {
@@ -5226,14 +5228,14 @@ function Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
 }
 
 
-# stable-diffusion-webui 启动参数设置
+# Stable Diffusion WebUI 启动参数设置
 function Update-Stable-Diffusion-WebUI-Launch-Args-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 stable-diffusion-webui 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"当前 Stable Diffusion WebUI 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 设置 stable-diffusion-webui 启动参数`"
-        Print-Msg `"2. 删除 stable-diffusion-webui 启动参数`"
+        Print-Msg `"1. 设置 Stable Diffusion WebUI 启动参数`"
+        Print-Msg `"2. 删除 Stable Diffusion WebUI 启动参数`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -5241,17 +5243,17 @@ function Update-Stable-Diffusion-WebUI-Launch-Args-Setting {
 
         switch (`$arg) {
             1 {
-                Print-Msg `"请输入 stable-diffusion-webui 启动参数`"
-                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, stable-diffusion-webui 可用的启动参数可阅读: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings`"
+                Print-Msg `"请输入 Stable Diffusion WebUI 启动参数`"
+                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, Stable Diffusion WebUI 可用的启动参数可阅读: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings`"
                 Print-Msg `"输入启动参数后回车保存`"
                 `$stable_diffusion_webui_launch_args = Get-User-Input
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$stable_diffusion_webui_launch_args
-                Print-Msg `"设置 stable-diffusion-webui 启动参数成功, 使用的 stable-diffusion-webui 启动参数为: `$stable_diffusion_webui_launch_args`"
+                Print-Msg `"设置 Stable Diffusion WebUI 启动参数成功, 使用的 Stable Diffusion WebUI 启动参数为: `$stable_diffusion_webui_launch_args`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" 2> `$null
-                Print-Msg `"删除 stable-diffusion-webui 启动参数成功`"
+                Print-Msg `"删除 Stable Diffusion WebUI 启动参数成功`"
                 break
             }
             3 {
@@ -5270,14 +5272,14 @@ function Update-Stable-Diffusion-WebUI-Launch-Args-Setting {
 }
 
 
-# 自动创建 stable-diffusion-webui 快捷启动方式设置
+# 自动创建 Stable Diffusion WebUI 快捷启动方式设置
 function Auto-Set-Launch-Shortcut-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前自动创建 stable-diffusion-webui 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"当前自动创建 Stable Diffusion WebUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用自动创建 stable-diffusion-webui 快捷启动方式`"
-        Print-Msg `"2. 禁用自动创建 stable-diffusion-webui 快捷启动方式`"
+        Print-Msg `"1. 启用自动创建 Stable Diffusion WebUI 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 Stable Diffusion WebUI 快捷启动方式`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -5286,12 +5288,12 @@ function Auto-Set-Launch-Shortcut-Setting {
         switch (`$arg) {
             1 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
-                Print-Msg `"启用自动创建 stable-diffusion-webui 快捷启动方式成功`"
+                Print-Msg `"启用自动创建 Stable Diffusion WebUI 快捷启动方式成功`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" 2> `$null
-                Print-Msg `"禁用自动创建 stable-diffusion-webui 快捷启动方式成功`"
+                Print-Msg `"禁用自动创建 Stable Diffusion WebUI 快捷启动方式成功`"
                 break
             }
             3 {
@@ -5390,14 +5392,14 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
-# stable-diffusion-webui 运行环境检测设置
+# Stable Diffusion WebUI 运行环境检测设置
 function Stable-Diffusion-WebUI-Env-Check-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 stable-diffusion-webui 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
+        Print-Msg `"当前 Stable Diffusion WebUI 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 stable-diffusion-webui 运行环境检测`"
-        Print-Msg `"2. 禁用 stable-diffusion-webui 运行环境检测`"
+        Print-Msg `"1. 启用 Stable Diffusion WebUI 运行环境检测`"
+        Print-Msg `"2. 禁用 Stable Diffusion WebUI 运行环境检测`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -5406,12 +5408,12 @@ function Stable-Diffusion-WebUI-Env-Check-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" 2> `$null
-                Print-Msg `"启用 stable-diffusion-webui 运行环境检测成功`"
+                Print-Msg `"启用 Stable Diffusion WebUI 运行环境检测成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
-                Print-Msg `"禁用 stable-diffusion-webui 运行环境检测成功`"
+                Print-Msg `"禁用 Stable Diffusion WebUI 运行环境检测成功`"
                 break
             }
             3 {
@@ -5577,11 +5579,11 @@ function Main {
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"SD WebUI Installer 自动检查更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
-        Print-Msg `"stable-diffusion-webui 启动参数: `$(Get-Launch-Args-Setting)`"
-        Print-Msg `"自动创建 stable-diffusion-webui 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"自动创建 Stable Diffusion WebUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
-        Print-Msg `"stable-diffusion-webui 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -5589,11 +5591,11 @@ function Main {
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
         Print-Msg `"5. 进入 SD WebUI Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 stable-diffusion-webui 启动参数设置`"
-        Print-Msg `"7. 进入自动创建 stable-diffusion-webui 快捷启动方式设置`"
+        Print-Msg `"6. 进入 Stable Diffusion WebUI 启动参数设置`"
+        Print-Msg `"7. 进入自动创建 Stable Diffusion WebUI 快捷启动方式设置`"
         Print-Msg `"8. 进入 Pip 镜像源设置`"
         Print-Msg `"9. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"10. 进入 stable-diffusion-webui 运行环境检测设置`"
+        Print-Msg `"10. 进入 Stable Diffusion WebUI 运行环境检测设置`"
         Print-Msg `"11. 更新 SD WebUI Installer 管理脚本`"
         Print-Msg `"12. 检查环境完整性`"
         Print-Msg `"13. 查看 SD WebUI Installer 文档`"
@@ -5902,7 +5904,7 @@ function global:Test-Github-Mirror {
 }
 
 
-# 安装 stable-diffusion-webui 扩展
+# 安装 Stable Diffusion WebUI 扩展
 function global:Install-Stable-Diffusion-WebUI-Extension (`$url) {
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
@@ -5980,10 +5982,10 @@ function global:Git-Clone (`$url, `$path) {
 }
 
 
-# 列出已安装的 stable-diffusion-webui 扩展
+# 列出已安装的 Stable Diffusion WebUI 扩展
 function global:List-Extension {
     `$node_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
-    Print-Msg `"当前 stable-diffusion-webui 已安装的扩展`"
+    Print-Msg `"当前 Stable Diffusion WebUI 已安装的扩展`"
     `$count = 0
     ForEach (`$i in `$node_list) {
         if (Test-Path `"`$i`" -PathType Container) {
@@ -5992,8 +5994,8 @@ function global:List-Extension {
             Print-Msg `"- `$name`"
         }
     }
-    Print-Msg `"stable-diffusion-webui 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`"))`"
-    Print-Msg `"stable-diffusion-webui 扩展数量: `$count`"
+    Print-Msg `"Stable Diffusion WebUI 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`"))`"
+    Print-Msg `"Stable Diffusion WebUI 扩展数量: `$count`"
 }
 
 
@@ -6182,7 +6184,7 @@ function Main {
     if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/python/python.exe`") {
         `$Env:UV_PYTHON = `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/python/python.exe`"
     }
-    Print-Msg `"激活 stable-diffusion-webui Env`"
+    Print-Msg `"激活 Stable Diffusion WebUI Env`"
     Print-Msg `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md`"
 }
 
@@ -6231,9 +6233,9 @@ SD WebUI Installer created by licyk
 Github：https://github.com/licyk
 ==================================
 
-这是关于 stable-diffusion-webui 的简单使用文档。
+这是关于 Stable Diffusion WebUI 的简单使用文档。
 
-使用 SD WebUI Installer 进行安装并安装成功后，将在当前目录生成 stable-diffusion-webui 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+使用 SD WebUI Installer 进行安装并安装成功后，将在当前目录生成 Stable Diffusion WebUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
 cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
@@ -6241,11 +6243,11 @@ git：Git 的存放路径。
 stable-diffusion-webui：stable-diffusion-webui 存放的文件夹。
 models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-get_stable_diffusion_webui_installer.ps1：获取最新的 SD WebUI Installer 安装脚本，运行后将会在与 stable-diffusion-webui 文件夹同级的目录中生成 stable_diffusion_webui_installer.ps1 安装脚本。
-update.ps1：更新 stable-diffusion-webui 的脚本，可使用该脚本更新 stable-diffusion-webui。
-update_extension.ps1：更新 stable-diffusion-webui 扩展的脚本，可使用该脚本更新 stable-diffusion-webui 扩展。
-switch_branch.ps1：切换 stable-diffusion-webui 分支。
-launch.ps1：启动 stable-diffusion-webui 的脚本。
+get_stable_diffusion_webui_installer.ps1：获取最新的 SD WebUI Installer 安装脚本，运行后将会在与 Stable Diffusion WebUI 文件夹同级的目录中生成 stable_diffusion_webui_installer.ps1 安装脚本。
+update.ps1：更新 Stable Diffusion WebUI 的脚本，可使用该脚本更新 stable-diffusion-webui。
+update_extension.ps1：更新 Stable Diffusion WebUI 扩展的脚本，可使用该脚本更新 Stable Diffusion WebUI 扩展。
+switch_branch.ps1：切换 Stable Diffusion WebUI 分支。
+launch.ps1：启动 Stable Diffusion WebUI 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 settings.ps1：管理 SD WebUI Installer 的设置。
@@ -6253,9 +6255,9 @@ terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚�
 help.txt：帮助文档。
 
 
-要启动 stable-diffusion-webui，可在 stable-diffusion-webui 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 stable-diffusion-webui 启动完成，启动完成后将自动打开浏览器进入 stable-diffusion-webui 界面。
+要启动 stable-diffusion-webui，可在 Stable Diffusion WebUI 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 Stable Diffusion WebUI 启动完成，启动完成后将自动打开浏览器进入 Stable Diffusion WebUI 界面。
 
-脚本为 stable-diffusion-webui 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 stable-diffusion-webui 无法从 HuggingFace 下载模型的问题。
+脚本为 Stable Diffusion WebUI 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 Stable Diffusion WebUI 无法从 HuggingFace 下载模型的问题。
 如果想自定义 HuggingFace 镜像源，可以在本地创建 hf_mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
 如果需要禁用 HuggingFace 镜像源，则创建 disable_hf_mirror.txt 文件，启动脚本时将不再设置 HuggingFace 镜像源。
 
@@ -6263,7 +6265,7 @@ help.txt：帮助文档。
 https://hf-mirror.com
 https://huggingface.sukaka.top
 
-为了解决访问 Github 速度慢的问题，脚本默认启用 Github 镜像源，在运行 SD WebUI Installer 或者 stable-diffusion-webui 更新脚本时将自动测试可用的 Github 镜像源并设置。
+为了解决访问 Github 速度慢的问题，脚本默认启用 Github 镜像源，在运行 SD WebUI Installer 或者 Stable Diffusion WebUI 更新脚本时将自动测试可用的 Github 镜像源并设置。
 如果想自定义 Github 镜像源，可以在本地创建 gh_mirror.txt 文件，在文本中填写 Github 镜像源的地址后保存，再次启动脚本时将自动读取配置。
 如果需要禁用 Github 镜像源，则创建 disable_gh_mirror.txt 文件，启动脚本时将不再设置 Github 镜像源。
 
@@ -6281,19 +6283,19 @@ https://gh.idayer.com/https://github.com
 脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
 如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
 
-设置 stable-diffusion-webui 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 stable-diffusion-webui 启动脚本时将自动读取该文件内的启动参数并应用。
+设置 Stable Diffusion WebUI 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 Stable Diffusion WebUI 启动脚本时将自动读取该文件内的启动参数并应用。
 
 SD WebUI Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
 
 SD WebUI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 SD WebUI Installer 更新检查。
 
-stable-diffusion-webui 的使用教程：
+Stable Diffusion WebUI 的使用教程：
 https://sdnote.netlify.app/guide/sd_webui
 https://sdnote.netlify.app/help/sd_webui
 
 更多详细的帮助可在下面的链接查看。
 SD WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-stable-diffusion-webui 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
+Stable Diffusion WebUI 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
 "
 
     if (Test-Path "$PSScriptRoot/stable-diffusion-webui/help.txt") {
@@ -6326,7 +6328,7 @@ function Use-Install-Mode {
     Set-Proxy
     Set-uv
     Pip-Mirror-Status
-    Print-Msg "启动 stable-diffusion-webui 安装程序"
+    Print-Msg "启动 Stable Diffusion WebUI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD WebUI Installer, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
     Print-Msg "即将进行安装的路径: $PSScriptRoot\stable-diffusion-webui"
@@ -6346,8 +6348,8 @@ function Use-Install-Mode {
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Print-Msg "stable-diffusion-webui 安装结束, 安装路径为: $PSScriptRoot\stable-diffusion-webui"
-    Print-Msg "帮助文档可在 stable-diffusion-webui 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
+    Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $PSScriptRoot\stable-diffusion-webui"
+    Print-Msg "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
     Print-Msg "退出 SD WebUI Installer"
     Read-Host | Out-Null

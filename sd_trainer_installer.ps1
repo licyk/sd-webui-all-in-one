@@ -1,6 +1,6 @@
 ﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 175
+$SD_TRAINER_INSTALLER_VERSION = 176
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1936,7 +1936,8 @@ function Get-SD-Trainer-Branch {
 
 # 切换 SD-Trainer 分支
 function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
-    `$preview_url = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+    `$sd_trainer_path = `"`$PSScriptRoot/lora-scripts`"
+    `$preview_url = `$(git -C `"`$sd_trainer_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
 
@@ -1947,42 +1948,43 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
     }
 
     Print-Msg `"SD-Trainer 远程源替换: `$preview_url -> `$remote`"
-    git -C `"`$PSScriptRoot/lora-scripts`" remote set-url origin `"`$remote`" # 替换远程源
+    git -C `"`$sd_trainer_path`" remote set-url origin `"`$remote`" # 替换远程源
 
     # 处理 Git 子模块
     if (`$use_submod) {
         Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
-        git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+        git -C `"`$sd_trainer_path`" submodule update --init --recursive
     } else {
         Print-Msg `"禁用 SD-Trainer 的 Git 子模块`"
-        git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+        git -C `"`$sd_trainer_path`" submodule deinit --all -f
     }
 
     Print-Msg `"拉取 SD-Trainer 远程源更新`"
-    git -C `"`$PSScriptRoot/lora-scripts`" fetch `$use_submodules.ToString() # 拉取远程源内容
+    git -C `"`$sd_trainer_path`" fetch # 拉取远程源内容
     if (`$?) {
         if (`$use_submod) {
             Print-Msg `"清理原有的 Git 子模块`"
-            git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
         }
         Print-Msg `"切换 SD-Trainer 分支至 `$branch`"
-        git -C `"`$PSScriptRoot/lora-scripts`" checkout `"`${branch}`" # 切换分支
+        git -C `"`$sd_trainer_path`" checkout `"`${branch}`" --force # 切换分支
         Print-Msg `"应用 SD-Trainer 远程源的更新`"
         if (`$use_submod) {
             Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
-            git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"origin/`$branch`"
-            git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`"
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+            git -C `"`$sd_trainer_path`" submodule update --init --recursive
         }
-        git -C `"`$PSScriptRoot/lora-scripts`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        git -C `"`$sd_trainer_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
         Print-Msg `"切换 SD-Trainer 分支完成`"
     } else {
         Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
         Print-Msg `"尝试回退 SD-Trainer 的更改`"
-        git -C `"`$PSScriptRoot/lora-scripts`" remote set-url origin `"`$preview_url`"
+        git -C `"`$sd_trainer_path`" remote set-url origin `"`$preview_url`"
         if (`$use_submod) {
-            git -C `"`$PSScriptRoot/lora-scripts`" submodule deinit --all -f
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
         } else {
-            git -C `"`$PSScriptRoot/lora-scripts`" submodule update --init --recursive
+            git -C `"`$sd_trainer_path`" submodule update --init --recursive
         }
         Print-Msg `"回退 SD-Trainer 分支更改完成`"
         Print-Msg `"切换 SD-Trainer 分支更改失败`"
@@ -2013,7 +2015,7 @@ function Main {
         Print-Msg `"当前 SD-Trainer 分支: `$(Get-SD-Trainer-Branch)`"
         Print-Msg `"请选择 SD-Trainer 分支`"
         Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
-        `$arg = Read-Host `"=========================================>`"
+        `$arg = Read-Host `"===========================================>`"
 
         switch (`$arg) {
             1 {
@@ -2052,7 +2054,7 @@ function Main {
 
     Print-Msg `"是否切换 SD-Trainer 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$operate = Read-Host `"=========================================>`"
+    `$operate = Read-Host `"===========================================>`"
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 SD-Trainer 分支`"
