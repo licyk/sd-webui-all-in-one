@@ -272,7 +272,7 @@ $ tree -L 2
 │   ├── terminal.ps1                              # 自动打开 PowerShell 并激活 SD WebUI Installer 的虚拟环境脚本
 │   ├── update_extension.ps1                      # 更新 Stable Diffusion WebUI 扩展
 │   └── update.ps1                                # 更新 Stable Diffusion WebUI 的脚本
-├── stable_diffusion_webui_installer.ps1          # SD WebUI Installer 放在 Stable Diffusion WebUI 文件夹外面，和 Stable Diffusion WebUI 文件夹同级
+├── stable_diffusion_webui_installer.ps1          # SD WebUI Installer 放在 stable-diffusion-webui 文件夹外面，和 stable-diffusion-webui 文件夹同级
 └── QQ Files
 
 8 directories, 9 files
