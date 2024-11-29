@@ -585,7 +585,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ## CUDA out of memory
-确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
+尝试使用 Tiled VAE，降低出图分辨率。
 
 
 ## DefaultCPUAllocator: not enough memory
@@ -715,7 +715,7 @@ Test-Github-Mirror
 ### 安装 Stable Diffusion WebUI 扩展
 ```powershell
 # <url> 为 Stable Diffusion WebUI 扩展的下载链接
-Install-stable-diffusion-webui-Extension <url>
+Install-Stable-Diffusion-WebUI-Extension <url>
 ```
 
 
@@ -746,7 +746,7 @@ List-CMD
 
 ### 检查 SD WebUI Installer 更新
 ```powershell
-Check-stable-diffusion-webui-Installer-Update
+Check-Stable-Diffusion-WebUI-Installer-Update
 ```
 
 ### 查看并切换 Stable Diffusion WebUI 的版本

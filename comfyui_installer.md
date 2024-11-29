@@ -621,7 +621,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ## CUDA out of memory
-确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
+尝试使用分块编 / 解码 VAE 节点，降低出图分辨率。
 
 
 ## DefaultCPUAllocator: not enough memory
