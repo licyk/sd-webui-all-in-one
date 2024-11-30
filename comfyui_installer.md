@@ -50,6 +50,7 @@ _✨一键安装 ComfyUI_
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)
   - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
+  - [使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
@@ -150,7 +151,8 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 在 ComfyUI Installer 成功安装 ComfyUI 后，在`ComfyUI`文件夹中可以看到 ComfyUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 ComfyUI Installer。
 
 >[!NOTE]  
->如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>2. ComfyUI Installer 支持使用在命令行中通过参数配置 ComfyUI 的安装参数，具体说明可阅读[使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)。
 
 ***
 
@@ -557,6 +559,22 @@ ComfyUI Installer 可以识别到的 Python 路径为`ComfyUI/python`和`ComfyUI
 可以识别到的 Git 路径为`ComfyUI/git`和`ComfyUI/ComfyUI/git`，当两者同时存在时，优先使用后者。
 
 如果这两个路径 Python / Git 都不存在时，此时 ComfyUI 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 ComfyUI Installer 重新安装 Python / Git。
+
+
+## 使用命令运行 ComfyUI Installer
+ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支持的参数如下。
+
+|参数|作用|
+|---|---|
+|`-InstallPath` <ComfyUI 安装路径>|指定安装 ComfyUI 的路径，使用绝对路径进行指定。|
+|`-UseUpdateMode`|使用 ComfyUI Installer 的更新脚本模式，不进行 ComfyUI 的安装。|
+|`-Help`|显示 ComfyUI Installer 可用的命令行参数。|
+
+例如在`D:/Download`这个路径安装 ComfyUI，则在 ComfyUI Installer 所在路径打开 PowerShell，使用参数运行 ComfyUI Installer。
+
+```powershell
+.\comfyui_installer.ps1 -InstallPath "D:/Download"
+```
 
 
 ## 运行脚本时出现中文乱码

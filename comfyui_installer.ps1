@@ -5,7 +5,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 142
+$COMFYUI_INSTALLER_VERSION = 143
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -111,20 +111,22 @@ function Pip-Mirror-Status {
 # 代理配置
 function Set-Proxy {
     $Env:NO_PROXY = "localhost,127.0.0.1,::1"
-    if (!(Test-Path "$PSScriptRoot/disable_proxy.txt")) { # 检测是否禁用自动设置镜像源
-        $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-        if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
-            $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
-            $Env:HTTP_PROXY = $proxy_value
-            $Env:HTTPS_PROXY = $proxy_value
-            Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
-        } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-            $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
-            Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path "$PSScriptRoot/disable_proxy.txt") {
         Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
+        return
+    }
+
+    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
+        $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+        $Env:HTTP_PROXY = $proxy_value
+        $Env:HTTPS_PROXY = $proxy_value
+        Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
+    } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
+        $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+        Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
 }
 
@@ -286,46 +288,52 @@ function Install-uv {
 function Test-Github-Mirror {
     if (Test-Path "$PSScriptRoot/disable_gh_mirror.txt") { # 禁用 Github 镜像源
         Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源"
-    } else {
-        $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
-        if (Test-Path "$InstallPath/.gitconfig") {
-            Remove-Item -Path "$InstallPath/.gitconfig" -Force
-        }
+        return
+    } 
 
-        if (Test-Path "$PSScriptRoot/gh_mirror.txt") { # 使用自定义 Github 镜像源
-            $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
-            git config --global --add safe.directory "*"
-            git config --global url."$github_mirror".insteadOf "https://github.com"
-            Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
-        } else { # 自动检测可用镜像源并使用
-            $status = 0
-            ForEach($i in $GITHUB_MIRROR_LIST) {
-                Print-Msg "测试 Github 镜像源: $i"
-                if (Test-Path "$InstallPath/cache/github-mirror-test") {
-                    Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
-                }
-                git clone $i/licyk/empty $PSScriptRoot/ComfyUI/cache/github-mirror-test --quiet
-                if ($?) {
-                    Print-Msg "该 Github 镜像源可用"
-                    $github_mirror = $i
-                    $status = 1
-                    break
-                } else {
-                    Print-Msg "镜像源不可用, 更换镜像源进行测试"
-                }
-            }
-            if (Test-Path "$InstallPath/cache/github-mirror-test") {
-                Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
-            }
-            if ($status -eq 0) {
-                Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
-                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-            } else {
-                Print-Msg "设置 Github 镜像源"
-                git config --global --add safe.directory "*"
-                git config --global url."$github_mirror".insteadOf "https://github.com"
-            }
+    $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
+    if (Test-Path "$InstallPath/.gitconfig") {
+        Remove-Item -Path "$InstallPath/.gitconfig" -Force
+    }
+
+    # 使用自定义 Github 镜像源
+    if (Test-Path "$PSScriptRoot/gh_mirror.txt") {
+        $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
+        git config --global --add safe.directory "*"
+        git config --global url."$github_mirror".insteadOf "https://github.com"
+        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    $status = 0
+    ForEach($i in $GITHUB_MIRROR_LIST) {
+        Print-Msg "测试 Github 镜像源: $i"
+        if (Test-Path "$InstallPath/cache/github-mirror-test") {
+            Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
         }
+        git clone "$i/licyk/empty" "$InstallPath/cache/github-mirror-test" --quiet
+        if ($?) {
+            Print-Msg "该 Github 镜像源可用"
+            $github_mirror = $i
+            $status = 1
+            break
+        } else {
+            Print-Msg "镜像源不可用, 更换镜像源进行测试"
+        }
+    }
+
+    if (Test-Path "$InstallPath/cache/github-mirror-test") {
+        Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+    }
+
+    if ($status -eq 0) {
+        Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg "设置 Github 镜像源"
+        git config --global --add safe.directory "*"
+        git config --global url."$github_mirror".insteadOf "https://github.com"
     }
 }
 
@@ -737,20 +745,22 @@ function Check-ComfyUI-Installer-Update {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -776,46 +786,49 @@ function Set-HuggingFace-Mirror {
 function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-    } else {
-        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-        }
+        return
+    }
+    
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+    }
 
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-            git config --global --add safe.directory `"*`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        } else { # 自动检测可用镜像源并使用
-            `$status = 0
-            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-                Print-Msg `"测试 Github 镜像源: `$i`"
-                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-                }
-                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
-                if (`$?) {
-                    Print-Msg `"该 Github 镜像源可用`"
-                    `$github_mirror = `$i
-                    `$status = 1
-                    break
-                } else {
-                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-                }
-            }
-            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-            }
-            if (`$status -eq 0) {
-                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-            } else {
-                Print-Msg `"设置 Github 镜像源`"
-                git config --global --add safe.directory `"*`"
-                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            }
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
         }
+        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    }
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
 
@@ -2350,20 +2363,22 @@ function Set-uv {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -2372,46 +2387,49 @@ function Set-Proxy {
 function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-    } else {
-        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-        }
+        return
+    }
+    
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+    }
 
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-            git config --global --add safe.directory `"*`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        } else { # 自动检测可用镜像源并使用
-            `$status = 0
-            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-                Print-Msg `"测试 Github 镜像源: `$i`"
-                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-                }
-                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
-                if (`$?) {
-                    Print-Msg `"该 Github 镜像源可用`"
-                    `$github_mirror = `$i
-                    `$status = 1
-                    break
-                } else {
-                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-                }
-            }
-            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-            }
-            if (`$status -eq 0) {
-                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-            } else {
-                Print-Msg `"设置 Github 镜像源`"
-                git config --global --add safe.directory `"*`"
-                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            }
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
         }
+        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    }
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
 
@@ -2733,20 +2751,22 @@ function Set-uv {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -2755,46 +2775,49 @@ function Set-Proxy {
 function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-    } else {
-        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-        }
+        return
+    }
+    
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+    }
 
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-            git config --global --add safe.directory `"*`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        } else { # 自动检测可用镜像源并使用
-            `$status = 0
-            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-                Print-Msg `"测试 Github 镜像源: `$i`"
-                if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-                }
-                git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
-                if (`$?) {
-                    Print-Msg `"该 Github 镜像源可用`"
-                    `$github_mirror = `$i
-                    `$status = 1
-                    break
-                } else {
-                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-                }
-            }
-            if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-                Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
-            }
-            if (`$status -eq 0) {
-                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-            } else {
-                Print-Msg `"设置 Github 镜像源`"
-                git config --global --add safe.directory `"*`"
-                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            }
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
         }
+        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    }
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
 
@@ -2933,20 +2956,22 @@ function Get-ComfyUI-Installer-Version {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -3239,20 +3264,22 @@ function Set-uv {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -3717,20 +3744,22 @@ function Pip-Mirror-Status {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -4494,20 +4523,22 @@ function Pip-Mirror-Status {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -5474,48 +5505,52 @@ function global:Check-ComfyUI-Installer-Update {
 
 # 启用 Github 镜像源
 function global:Test-Github-Mirror {
-    if (Test-Path `"`$Env:CACHE_HOME/../disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-    } else {
-        `$Env:GIT_CONFIG_GLOBAL = `"`$Env:CACHE_HOME/../.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$Env:CACHE_HOME/../.gitconfig`") {
-            Remove-Item -Path `"`$Env:CACHE_HOME/../.gitconfig`" -Force
-        }
+        return
+    }
 
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-            git config --global --add safe.directory `"*`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        } else { # 自动检测可用镜像源并使用
-            `$status = 0
-            ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-                Print-Msg `"测试 Github 镜像源: `$i`"
-                if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-                    Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-                }
-                git clone `$i/licyk/empty `$Env:CACHE_HOME/github-mirror-test --quiet
-                if (`$?) {
-                    Print-Msg `"该 Github 镜像源可用`"
-                    `$github_mirror = `$i
-                    `$status = 1
-                    break
-                } else {
-                    Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-                }
-            }
-            if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-                Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-            }
-            if (`$status -eq 0) {
-                Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-                Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
-            } else {
-                Print-Msg `"设置 Github 镜像源`"
-                git config --global --add safe.directory `"*`"
-                git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            }
+    # 设置 Git 配置文件路径
+    `$Env:GIT_CONFIG_GLOBAL = `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`"
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`") {
+        Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`" -Force
+    }
+
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+    }
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
 
@@ -5735,20 +5770,22 @@ function Pip-Mirror-Status {
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
-        `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-            `$Env:HTTP_PROXY = `$proxy_value
-            `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-        } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-            `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-        }
-    } else {
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
         Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -5774,17 +5811,18 @@ function Set-HuggingFace-Mirror {
 function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-    } else {
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-            `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-            if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-                Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
-            }
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-            git config --global --add safe.directory `"*`"
-            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
         }
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     }
 }
 

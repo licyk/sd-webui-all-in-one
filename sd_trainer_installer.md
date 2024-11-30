@@ -49,6 +49,7 @@ _✨一键安装 SD-Trainer_
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
   - [使用绘世启动器](#使用绘世启动器)
   - [SD-Trainer Installer 对 Python / Git 环境的识别](#sd-trainer-installer-对-python--git-环境的识别)
+  - [使用命令运行 SD-Trainer Installer](#使用命令运行-sd-trainer-installer)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [SD-Trainer 提示'Torch 无法使用 GPU，您无法正常开始训练'](#sd-trainer-提示torch-无法使用-gpu您无法正常开始训练)
@@ -181,7 +182,8 @@ $ tree -L 1
 在 SD-Trainer Installer 成功安装 SD-Trainer 后，在`SD-Trainer`文件夹中可以看到 SD-Trainer 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer Installer。
 
 >[!NOTE]  
->如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>2. SD-Trainer Installer 支持使用在命令行中通过参数配置 SD-Trainer 的安装参数，具体说明可阅读[使用命令运行 SD-Trainer Installer](#使用命令运行-sd-trainer-installer)。
 
 ***
 
@@ -502,7 +504,7 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 
 |绘世启动器下载|
 |---|
-|[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
+|[下载地址 1](https://modelscope.cn/models/licyks/SD-Trainer-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
 |[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 |[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 
@@ -517,6 +519,23 @@ SD-Trainer Installer 可以识别到的 Python 路径为`SD-Trainer/python`和`S
 可以识别到的 Git 路径为`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`，当两者同时存在时，优先使用后者。
 
 如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD-Trainer Installer 重新安装 Python / Git。
+
+
+## 使用命令运行 SD-Trainer Installer
+SD-Trainer Installer 支持使用命令参数设置安装 SD-Trainer 的参数，支持的参数如下。
+
+|参数|作用|
+|---|---|
+|`-InstallPath` <SD-Trainer 安装路径>|指定安装 SD-Trainer 的路径，使用绝对路径进行指定。|
+|`InstallBranch` <SD-Trainer 分支名>|指定 SD-Trainer Installer 安装的 SD-Trainer 的分支，SD-Trainer 分支名对应的分支如下：</br>`sd_trainer`: [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)</br>`kohya_gui`: [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
+|`-UseUpdateMode`|使用 SD-Trainer Installer 的更新脚本模式，不进行 SD-Trainer 的安装。|
+|`-Help`|显示 SD-Trainer Installer 可用的命令行参数。|
+
+例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer Installer。
+
+```powershell
+.\sd_trainer_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
+```
 
 
 ## 运行脚本时出现中文乱码

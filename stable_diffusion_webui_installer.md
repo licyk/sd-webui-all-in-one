@@ -50,6 +50,7 @@ _✨一键安装 Stable Diffusion WebUI_
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 SD WebUI Installer 设置](#管理-sd-webui-installer-设置)
   - [SD WebUI Installer 对 Python / Git 环境的识别](#sd-webui-installer-对-python--git-环境的识别)
+  - [使用命令运行 SD WebUI Installer](#使用命令运行-sd-webui-installer)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
@@ -186,7 +187,8 @@ $ tree -L 1
 在 SD WebUI Installer 成功安装 Stable Diffusion WebUI 后，在`stable-diffusion-webui`文件夹中可以看到 Stable Diffusion WebUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD WebUI Installer。
 
 >[!NOTE]  
->如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
+>2. SD WebUI Installer 支持使用在命令行中通过参数配置 Stable Diffusion WebUI 的安装参数，具体说明可阅读[使用命令运行 SD WebUI Installer](#使用命令运行-sd-webui-installer)。
 
 ***
 
@@ -521,6 +523,23 @@ SD WebUI Installer 可以识别到的 Python 路径为`stable-diffusion-webui/py
 可以识别到的 Git 路径为`stable-diffusion-webui/git`和`stable-diffusion-webui/stable-diffusion-webui/git`，当两者同时存在时，优先使用后者。
 
 如果这两个路径 Python / Git 都不存在时，此时 Stable Diffusion WebUI 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD WebUI Installer 重新安装 Python / Git。
+
+
+## 使用命令运行 SD WebUI Installer
+SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI 的参数，支持的参数如下。
+
+|参数|作用|
+|---|---|
+|`-InstallPath` <Stable Diffusion WebUI 安装路径>|指定安装 Stable Diffusion WebUI 的路径，使用绝对路径进行指定。|
+|`InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：</br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)</br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)</br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)
+|`-UseUpdateMode`|使用 SD WebUI Installer 的更新脚本模式，不进行 Stable Diffusion WebUI 的安装。|
+|`-Help`|显示 SD WebUI Installer 可用的命令行参数。|
+
+例如在`D:/Download`这个路径安装 [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)，则在 SD WebUI Installer 所在路径打开 PowerShell，使用参数运行 SD WebUI Installer。
+
+```powershell
+.\stable_diffusion_webui_installer.ps1 -InstallPath "D:/Download" -InstallBranch "sd_webui_forge"
+```
 
 
 ## 运行脚本时出现中文乱码

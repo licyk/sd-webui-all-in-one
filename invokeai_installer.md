@@ -47,6 +47,7 @@ _✨一键安装 InvokeAI_
   - [配置代理](#配置代理)
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)
+  - [使用命令运行 InvokeAI Installer](#使用命令运行-invokeai-installer)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
@@ -149,6 +150,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 >[!NOTE]  
 >1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
 >2. 从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入`InvokeAI`文件夹运行`update.ps1`进行更新。
+>3. InvokeAI Installer 支持使用在命令行中通过参数配置 InvokeAI 的安装参数，具体说明可阅读[使用命令运行 InvokeAI Installer](#使用命令运行-invokeai-installer)。
 
 ***
 
@@ -432,6 +434,22 @@ invokeai
 
 ## 管理 InvokeAI Installer 设置
 运行`settings.ps1`，根据提示进行设置管理和调整。
+
+
+## 使用命令运行 InvokeAI Installer
+InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支持的参数如下。
+
+|参数|作用|
+|---|---|
+|`-InstallPath` <InvokeAI 安装路径>|指定安装 InvokeAI 的路径，使用绝对路径进行指定。|
+|`-UseUpdateMode`|使用 InvokeAI Installer 的更新脚本模式，不进行 InvokeAI 的安装。|
+|`-Help`|显示 InvokeAI Installer 可用的命令行参数。|
+
+例如在`D:/Download`这个路径安装 InvokeAI，则在 InvokeAI Installer 所在路径打开 PowerShell，使用参数运行 InvokeAI Installer。
+
+```powershell
+.\invokeai_installer.ps1 -InstallPath "D:/Download"
+```
 
 
 ## 运行脚本时出现中文乱码
