@@ -1,6 +1,11 @@
-﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
+﻿param (
+    [string]$InstallPath = "$PSScriptRoot/InvokeAI",
+    [switch]$UseUpdateMode,
+    [switch]$Help
+)
+# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 153
+$INVOKEAI_INSTALLER_VERSION = 154
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -19,8 +24,8 @@ $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.5.2"
 # PATH
-$PYTHON_PATH = "$PSScriptRoot/InvokeAI/python"
-$PYTHON_SCRIPTS_PATH = "$PSScriptRoot/InvokeAI/python/Scripts"
+$PYTHON_PATH = "$InstallPath/python"
+$PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
 $Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -38,20 +43,20 @@ $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
 $Env:PYTHONUTF8 = 1
 $Env:PYTHONIOENCODING = "utf8"
-$Env:CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
-$Env:HF_HOME = "$PSScriptRoot/InvokeAI/cache/huggingface"
-$Env:MATPLOTLIBRC = "$PSScriptRoot/InvokeAI/cache"
-$Env:MODELSCOPE_CACHE = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
-$Env:MS_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache/modelscope/hub"
-$Env:SYCL_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/libsycl_cache"
-$Env:TORCH_HOME = "$PSScriptRoot/InvokeAI/cache/torch"
-$Env:U2NET_HOME = "$PSScriptRoot/InvokeAI/cache/u2net"
-$Env:XDG_CACHE_HOME = "$PSScriptRoot/InvokeAI/cache"
-$Env:PIP_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/pip"
-$Env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/InvokeAI/cache/pycache"
-$Env:INVOKEAI_ROOT = "$PSScriptRoot/InvokeAI/invokeai"
-$Env:UV_CACHE_DIR = "$PSScriptRoot/InvokeAI/cache/uv"
-$Env:UV_PYTHON = "$PSScriptRoot/InvokeAI/python/python.exe"
+$Env:CACHE_HOME = "$InstallPath/cache"
+$Env:HF_HOME = "$InstallPath/cache/huggingface"
+$Env:MATPLOTLIBRC = "$InstallPath/cache"
+$Env:MODELSCOPE_CACHE = "$InstallPath/cache/modelscope/hub"
+$Env:MS_CACHE_HOME = "$InstallPath/cache/modelscope/hub"
+$Env:SYCL_CACHE_DIR = "$InstallPath/cache/libsycl_cache"
+$Env:TORCH_HOME = "$InstallPath/cache/torch"
+$Env:U2NET_HOME = "$InstallPath/cache/u2net"
+$Env:XDG_CACHE_HOME = "$InstallPath/cache"
+$Env:PIP_CACHE_DIR = "$InstallPath/cache/pip"
+$Env:PYTHONPYCACHEPREFIX = "$InstallPath/cache/pycache"
+$Env:INVOKEAI_ROOT = "$InstallPath/invokeai"
+$Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
+$Env:UV_PYTHON = "$InstallPath/python/python.exe"
 
 
 
@@ -186,16 +191,16 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/InvokeAI/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
-        if (!(Test-Path "$PSScriptRoot/InvokeAI/python")) {
-            New-Item -ItemType Directory -Force -Path "$PSScriptRoot/InvokeAI/python" > $null
+        if (!(Test-Path "$InstallPath/python")) {
+            New-Item -ItemType Directory -Force -Path "$InstallPath/python" > $null
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.15-amd64.zip" -DestinationPath "$PSScriptRoot/InvokeAI/python" -Force
-        Remove-Item -Path "$PSScriptRoot/InvokeAI/cache/python-3.10.15-amd64.zip"
+        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$InstallPath/python" -Force
+        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
@@ -351,11 +356,11 @@ function Install-PyPatchMatch {
     $url_1 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll"
     $url_2 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll"
 
-    if (!(Test-Path "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
+    if (!(Test-Path "$InstallPath/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
-        Invoke-WebRequest -Uri $url_1 -OutFile "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll"
+        Invoke-WebRequest -Uri $url_1 -OutFile "$InstallPath/cache/libpatchmatch_windows_amd64.dll"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/libpatchmatch_windows_amd64.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll" -Force
+            Move-Item -Path "$InstallPath/cache/libpatchmatch_windows_amd64.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll" -Force
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
         } else {
             Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
@@ -364,11 +369,11 @@ function Install-PyPatchMatch {
         Print-Msg "无需下载 libpatchmatch_windows_amd64.dll"
     }
 
-    if (!(Test-Path "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
+    if (!(Test-Path "$InstallPath/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
         Print-Msg "下载 opencv_world460.dll 中"
-        Invoke-WebRequest -Uri $url_2 -OutFile "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll"
+        Invoke-WebRequest -Uri $url_2 -OutFile "$InstallPath/cache/opencv_world460.dll"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/opencv_world460.dll" -Destination "$PSScriptRoot/InvokeAI/python/Lib/site-packages/patchmatch/opencv_world460.dll" -Force
+            Move-Item -Path "$InstallPath/cache/opencv_world460.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/opencv_world460.dll" -Force
             Print-Msg "下载 opencv_world460.dll 成功"
         } else {
             Print-Msg "下载 opencv_world460.dll 失败"
@@ -385,9 +390,9 @@ function Download-Config-File($url, $path) {
     $name = $url.split("/")[$length - 1]
     if (!(Test-Path $path)) {
         Print-Msg "下载 $name 中"
-        Invoke-WebRequest -Uri $url.ToString() -OutFile "$PSScriptRoot/InvokeAI/cache/$name"
+        Invoke-WebRequest -Uri $url.ToString() -OutFile "$InstallPath/cache/$name"
         if ($?) {
-            Move-Item -Path "$PSScriptRoot/InvokeAI/cache/$name" -Destination "$path" -Force
+            Move-Item -Path "$InstallPath/cache/$name" -Destination "$path" -Force
             Print-Msg "$name 下载成功"
         } else {
             Print-Msg "$name 下载失败"
@@ -401,40 +406,40 @@ function Download-Config-File($url, $path) {
 # 预下载模型配置文件
 function Get-Model-Config-File {
     Print-Msg "预下载模型配置文件中"
-    New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion" -Force > $null
-    New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet" -Force > $null
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-finetune.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-finetune_style.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet/cldm_v15.yaml"
-    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "$PSScriptRoot/InvokeAI/invokeai/configs/controlnet/cldm_v21.yaml"
+    New-Item -ItemType Directory -Path "$InstallPath/invokeai/configs/stable-diffusion" -Force > $null
+    New-Item -ItemType Directory -Path "$InstallPath/invokeai/configs/controlnet" -Force > $null
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_base.yaml" "$InstallPath/invokeai/configs/stable-diffusion/sd_xl_base.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_inpaint.yaml" "$InstallPath/invokeai/configs/stable-diffusion/sd_xl_inpaint.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/sd_xl_refiner.yaml" "$InstallPath/invokeai/configs/stable-diffusion/sd_xl_refiner.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-finetune_style.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-finetune_style.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference-v.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inference.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-inpainting-inference.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v1-m1-finetune.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v1-m1-finetune.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference-v.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v2-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inference.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v2-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference-v.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v2-inpainting-inference-v.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-inpainting-inference.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v2-inpainting-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/stable-diffusion/v2-midas-inference.yaml" "$InstallPath/invokeai/configs/stable-diffusion/v2-midas-inference.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v15.yaml" "$InstallPath/invokeai/configs/controlnet/cldm_v15.yaml"
+    Download-Config-File "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/configs/controlnet/cldm_v21.yaml" "$InstallPath/invokeai/configs/controlnet/cldm_v21.yaml"
     Print-Msg "模型配置文件下载完成"
 }
 
 
 # 安装
 function Check-Install {
-    if (!(Test-Path "$PSScriptRoot/InvokeAI")) {
-        New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI" > $null
+    if (!(Test-Path "$InstallPath")) {
+        New-Item -ItemType Directory -Path "$InstallPath" > $null
     }
 
-    if (!(Test-Path "$PSScriptRoot/InvokeAI/cache")) {
-        New-Item -ItemType Directory -Path "$PSScriptRoot/InvokeAI/cache" > $null
+    if (!(Test-Path "$InstallPath/cache")) {
+        New-Item -ItemType Directory -Path "$InstallPath/cache" > $null
     }
 
     Print-Msg "检测是否安装 Python"
-    if (Test-Path "$PSScriptRoot/InvokeAI/python/python.exe") {
+    if (Test-Path "$InstallPath/python/python.exe") {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -469,7 +474,7 @@ function Check-Install {
     Print-Msg "检测是否需要下载模型配置文件"
     Get-Model-Config-File
 
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
@@ -595,37 +600,22 @@ function Check-InvokeAI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                            Print-Msg `"终止 InvokeAI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -927,12 +917,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/launch.ps1") {
+    if (Test-Path "$InstallPath/launch.ps1") {
         Print-Msg "更新 launch.ps1 中"
     } else {
         Print-Msg "生成 launch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch.ps1" -Value $content
 }
 
 
@@ -1058,37 +1048,22 @@ function Check-InvokeAI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                            Print-Msg `"终止 InvokeAI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -1372,12 +1347,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/update.ps1") {
+    if (Test-Path "$InstallPath/update.ps1") {
         Print-Msg "更新 update.ps1 中"
     } else {
         Print-Msg "生成 update.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update.ps1" -Value $content
 }
 
 
@@ -1461,12 +1436,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/get_invokeai_installer.ps1") {
+    if (Test-Path "$InstallPath/get_invokeai_installer.ps1") {
         Print-Msg "更新 get_invokeai_installer.ps1 中"
     } else {
         Print-Msg "生成 get_invokeai_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/get_invokeai_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/get_invokeai_installer.ps1" -Value $content
 }
 
 
@@ -1693,37 +1668,22 @@ function Check-InvokeAI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                            Print-Msg `"终止 InvokeAI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -1871,12 +1831,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/reinstall_pytorch.ps1") {
+    if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
         Print-Msg "更新 reinstall_pytorch.ps1 中"
     } else {
         Print-Msg "生成 reinstall_pytorch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -1964,12 +1924,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/download_config.ps1") {
+    if (Test-Path "$InstallPath/download_config.ps1") {
         Print-Msg "更新 download_config.ps1 中"
     } else {
         Print-Msg "生成 download_config.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/download_config.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/download_config.ps1" -Value $content
 }
 
 
@@ -2556,27 +2516,14 @@ function Check-InvokeAI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                    Print-Msg `"终止 InvokeAI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                . `"`$PSScriptRoot/../invokeai_installer.ps1`"
+                . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
@@ -2760,12 +2707,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/settings.ps1") {
+    if (Test-Path "$InstallPath/settings.ps1") {
         Print-Msg "更新 settings.ps1 中"
     } else {
         Print-Msg "生成 settings.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/settings.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/settings.ps1" -Value $content
 }
 
 
@@ -2882,27 +2829,14 @@ function global:Check-InvokeAI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:INVOKEAI_INSTALLER_ROOT -Leaf
-                if (!(`$folder_name -eq `"InvokeAI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/cache/invokeai_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 InvokeAI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 InvokeAI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 InvokeAI, 再重新更新 InvokeAI Installer 管理脚本`"
-                    Print-Msg `"终止 InvokeAI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`" -Force
-                . `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`"
+                . `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`" -InstallPath `"`$Env:INVOKEAI_INSTALLER_ROOT`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
@@ -3306,12 +3240,12 @@ function Main {
 Main
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/activate.ps1") {
+    if (Test-Path "$InstallPath/activate.ps1") {
         Print-Msg "更新 activate.ps1 中"
     } else {
         Print-Msg "生成 activates.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/activate.ps1" -Value $content
 }
 
 
@@ -3329,12 +3263,12 @@ Print-Msg `"执行 InvokeAI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/terminal.ps1") {
+    if (Test-Path "$InstallPath/terminal.ps1") {
         Print-Msg "更新 terminal.ps1 中"
     } else {
         Print-Msg "生成 terminal.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/terminal.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/terminal.ps1" -Value $content
 }
 
 
@@ -3400,17 +3334,18 @@ InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
 "
 
-    if (Test-Path "$PSScriptRoot/InvokeAI/help.txt") {
+    if (Test-Path "$InstallPath/help.txt") {
         Print-Msg "更新 help.txt 中"
     } else {
         Print-Msg "生成 help.txt 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/help.txt" -Value $content
 }
 
 
 # 写入管理脚本和文档
 function Write-Manager-Scripts {
+    New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
     Write-Launch-Script
     Write-Update-Script
     Write-InvokeAI-Install-Script
@@ -3431,11 +3366,11 @@ function Use-Install-Mode {
     Print-Msg "启动 InvokeAI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
-    Print-Msg "即将进行安装的路径: $PSScriptRoot\InvokeAI"
+    Print-Msg "即将进行安装的路径: $InstallPath"
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Print-Msg "InvokeAI 安装结束, 安装路径为: $PSScriptRoot\InvokeAI"
+    Print-Msg "InvokeAI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
     Print-Msg "退出 InvokeAI Installer"
@@ -3451,14 +3386,44 @@ function Use-Update-Mode {
 }
 
 
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    $content = "
+使用:
+    .\invokeai_installer.ps1 -InstallPath <安装 InvokeAI 的绝对路径> -UseUpdateMode -Help
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -InstallPath <安装 InvokeAI 的绝对路径>
+        指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
+        例如: .\invokeai_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Donwload 这个路径
+
+    -UseUpdateMode
+        指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+"
+    Write-Host $content
+    exit 0
+}
+
+
 # 主程序
 function Main {
     Print-Msg "初始化中"
     Get-InvokeAI-Installer-Version
-    if (Test-Path "$PSScriptRoot/InvokeAI/use_update_mode.txt") {
+    if ($Help) {
+        Get-InvokeAI-Installer-Cmdlet-Help
+    }
+
+    # TODO: Deprecate Test-Path "$InstallPath/use_update_mode.txt"
+    if ((Test-Path "$InstallPath/use_update_mode.txt") -or ($UseUpdateMode)) {
         Print-Msg "使用更新模式"
-        Remove-Item -Path "$PSScriptRoot/InvokeAI/use_update_mode.txt" 2> $null
-        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/InvokeAI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Remove-Item -Path "$InstallPath/use_update_mode.txt" 2> $null
+        Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {
         Print-Msg "使用安装模式"

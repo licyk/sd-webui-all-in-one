@@ -1,6 +1,11 @@
-﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
+﻿param (
+    [string]$InstallPath = "$PSScriptRoot/ComfyUI",
+    [switch]$UseUpdateMode,
+    [switch]$Help
+)
+# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 141
+$COMFYUI_INSTALLER_VERSION = 142
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -35,12 +40,12 @@ $UV_MINIMUM_VER = "0.5.2"
 # ComfyUI 仓库地址
 $COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
 # PATH
-$PYTHON_PATH = "$PSScriptRoot/ComfyUI/python"
-$PYTHON_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/python"
-$PYTHON_SCRIPTS_PATH = "$PSScriptRoot/ComfyUI/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/python/Scripts"
-$GIT_PATH = "$PSScriptRoot/ComfyUI/git/bin"
-$GIT_EXTRA_PATH = "$PSScriptRoot/ComfyUI/ComfyUI/git/bin"
+$PYTHON_PATH = "$InstallPath/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/ComfyUI/python"
+$PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/ComfyUI/python/Scripts"
+$GIT_PATH = "$InstallPath/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/ComfyUI/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -58,19 +63,19 @@ $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
 $Env:PYTHONUTF8 = 1
 $Env:PYTHONIOENCODING = "utf8"
-$Env:CACHE_HOME = "$PSScriptRoot/ComfyUI/cache"
-$Env:HF_HOME = "$PSScriptRoot/ComfyUI/cache/huggingface"
-$Env:MATPLOTLIBRC = "$PSScriptRoot/ComfyUI/cache"
-$Env:MODELSCOPE_CACHE = "$PSScriptRoot/ComfyUI/cache/modelscope/hub"
-$Env:MS_CACHE_HOME = "$PSScriptRoot/ComfyUI/cache/modelscope/hub"
-$Env:SYCL_CACHE_DIR = "$PSScriptRoot/ComfyUI/cache/libsycl_cache"
-$Env:TORCH_HOME = "$PSScriptRoot/ComfyUI/cache/torch"
-$Env:U2NET_HOME = "$PSScriptRoot/ComfyUI/cache/u2net"
-$Env:XDG_CACHE_HOME = "$PSScriptRoot/ComfyUI/cache"
-$Env:PIP_CACHE_DIR = "$PSScriptRoot/ComfyUI/cache/pip"
-$Env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/ComfyUI/cache/pycache"
-$Env:UV_CACHE_DIR = "$PSScriptRoot/ComfyUI/cache/uv"
-$Env:UV_PYTHON = "$PSScriptRoot/ComfyUI/python/python.exe"
+$Env:CACHE_HOME = "$InstallPath/cache"
+$Env:HF_HOME = "$InstallPath/cache/huggingface"
+$Env:MATPLOTLIBRC = "$InstallPath/cache"
+$Env:MODELSCOPE_CACHE = "$InstallPath/cache/modelscope/hub"
+$Env:MS_CACHE_HOME = "$InstallPath/cache/modelscope/hub"
+$Env:SYCL_CACHE_DIR = "$InstallPath/cache/libsycl_cache"
+$Env:TORCH_HOME = "$InstallPath/cache/torch"
+$Env:U2NET_HOME = "$InstallPath/cache/u2net"
+$Env:XDG_CACHE_HOME = "$InstallPath/cache"
+$Env:PIP_CACHE_DIR = "$InstallPath/cache/pip"
+$Env:PYTHONPYCACHEPREFIX = "$InstallPath/cache/pycache"
+$Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
+$Env:UV_PYTHON = "$InstallPath/python/python.exe"
 
 
 
@@ -205,16 +210,16 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/ComfyUI/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
-        if (!(Test-Path "$PSScriptRoot/ComfyUI/python")) {
-            New-Item -ItemType Directory -Force -Path "$PSScriptRoot/ComfyUI/python" > $null
+        if (!(Test-Path "$InstallPath/python")) {
+            New-Item -ItemType Directory -Force -Path "$InstallPath/python" > $null
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/ComfyUI/cache/python-3.10.15-amd64.zip" -DestinationPath "$PSScriptRoot/ComfyUI/python" -Force
-        Remove-Item -Path "$PSScriptRoot/ComfyUI/cache/python-3.10.15-amd64.zip"
+        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$InstallPath/python" -Force
+        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -228,16 +233,16 @@ function Install-Python {
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/ComfyUI/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Git 文件夹
-        if (!(Test-Path "$PSScriptRoot/ComfyUI/git")) {
+        if (!(Test-Path "$InstallPath/git")) {
             New-Item -ItemType Directory -Force -Path $PSScriptRoot/ComfyUI/git > $null
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$PSScriptRoot/ComfyUI/cache/PortableGit.zip" -DestinationPath "$PSScriptRoot/ComfyUI/git" -Force
-        Remove-Item -Path "$PSScriptRoot/ComfyUI/cache/PortableGit.zip"
+        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$InstallPath/git" -Force
+        Remove-Item -Path "$InstallPath/cache/PortableGit.zip"
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -251,9 +256,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/ComfyUI/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/ComfyUI/cache/aria2c.exe" -Destination "$PSScriptRoot/ComfyUI/git/bin/aria2c.exe" -Force
+        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -282,9 +287,9 @@ function Test-Github-Mirror {
     if (Test-Path "$PSScriptRoot/disable_gh_mirror.txt") { # 禁用 Github 镜像源
         Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源"
     } else {
-        $Env:GIT_CONFIG_GLOBAL = "$PSScriptRoot/ComfyUI/.gitconfig" # 设置 Git 配置文件路径
-        if (Test-Path "$PSScriptRoot/ComfyUI/.gitconfig") {
-            Remove-Item -Path "$PSScriptRoot/ComfyUI/.gitconfig" -Force
+        $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
+        if (Test-Path "$InstallPath/.gitconfig") {
+            Remove-Item -Path "$InstallPath/.gitconfig" -Force
         }
 
         if (Test-Path "$PSScriptRoot/gh_mirror.txt") { # 使用自定义 Github 镜像源
@@ -296,8 +301,8 @@ function Test-Github-Mirror {
             $status = 0
             ForEach($i in $GITHUB_MIRROR_LIST) {
                 Print-Msg "测试 Github 镜像源: $i"
-                if (Test-Path "$PSScriptRoot/ComfyUI/cache/github-mirror-test") {
-                    Remove-Item -Path "$PSScriptRoot/ComfyUI/cache/github-mirror-test" -Force -Recurse
+                if (Test-Path "$InstallPath/cache/github-mirror-test") {
+                    Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
                 }
                 git clone $i/licyk/empty $PSScriptRoot/ComfyUI/cache/github-mirror-test --quiet
                 if ($?) {
@@ -309,8 +314,8 @@ function Test-Github-Mirror {
                     Print-Msg "镜像源不可用, 更换镜像源进行测试"
                 }
             }
-            if (Test-Path "$PSScriptRoot/ComfyUI/cache/github-mirror-test") {
-                Remove-Item -Path "$PSScriptRoot/ComfyUI/cache/github-mirror-test" -Force -Recurse
+            if (Test-Path "$InstallPath/cache/github-mirror-test") {
+                Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
             }
             if ($status -eq 0) {
                 Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
@@ -347,7 +352,7 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        $cache_path = "$PSScriptRoot/ComfyUI/cache/$folder_name"
+        $cache_path = "$InstallPath/cache/$folder_name"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
@@ -425,7 +430,7 @@ function Install-PyTorch {
 function Install-ComfyUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$PSScriptRoot/ComfyUI/ComfyUI"
+    Set-Location "$InstallPath/ComfyUI"
     Print-Msg "安装 ComfyUI 依赖中"
     if ($USE_UV) {
         uv pip install -r requirements.txt
@@ -450,11 +455,11 @@ function Install-ComfyUI-Dependence {
 
 # 安装
 function Check-Install {
-    New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI" -Force > $null
-    New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI/cache" -Force > $null
+    New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
+    New-Item -ItemType Directory -Path "$InstallPath/cache" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$PSScriptRoot/ComfyUI/python/python.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/ComfyUI/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -462,12 +467,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe") {
-        $Env:UV_PYTHON = "$PSScriptRoot/ComfyUI/ComfyUI/python/python.exe"
+    if (Test-Path "$InstallPath/ComfyUI/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/ComfyUI/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$PSScriptRoot/ComfyUI/git/bin/git.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/ComfyUI/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -475,7 +480,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$PSScriptRoot/ComfyUI/git/bin/aria2c.exe") -or (Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/ComfyUI/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -493,19 +498,19 @@ function Check-Install {
     Check-uv-Version
 
     Test-Github-Mirror
-    Git-CLone "$COMFYUI_REPO" "$PSScriptRoot/ComfyUI/ComfyUI"
-    Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$PSScriptRoot/ComfyUI/ComfyUI/custom_nodes/ComfyUI-Manager"
-    Git-CLone "https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION" "$PSScriptRoot/ComfyUI/ComfyUI/custom_nodes/AIGODLIKE-COMFYUI-TRANSLATION"
+    Git-CLone "$COMFYUI_REPO" "$InstallPath/ComfyUI"
+    Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$InstallPath/ComfyUI/custom_nodes/ComfyUI-Manager"
+    Git-CLone "https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION" "$InstallPath/ComfyUI/custom_nodes/AIGODLIKE-COMFYUI-TRANSLATION"
     Install-PyTorch
     Install-ComfyUI-Dependence
 
-    if (!(Test-Path "$PSScriptRoot/ComfyUI/launch_args.txt")) {
+    if (!(Test-Path "$InstallPath/launch_args.txt")) {
         Print-Msg "设置默认 ComfyUI 启动参数"
         $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
-        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/launch_args.txt" -Value $content
+        Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
-    if (!(Test-Path "$PSScriptRoot/ComfyUI/ComfyUI/user/default/comfy.settings.json")) {
+    if (!(Test-Path "$InstallPath/ComfyUI/user/default/comfy.settings.json")) {
         Print-Msg "设置默认 ComfyUI 设置"
         $json_content = @{
             "Comfy.Settings.ExtensionPanel" = $true
@@ -515,15 +520,15 @@ function Check-Install {
             "Comfy.RerouteBeta" = $true
         }
         $json_content = $json_content | ConvertTo-Json -Depth 4
-        New-Item -ItemType Directory -Path "$PSScriptRoot/ComfyUI/ComfyUI/user/default" -Force > $null
+        New-Item -ItemType Directory -Path "$InstallPath/ComfyUI/user/default" -Force > $null
         # 创建一个不带 BOM 的 UTF-8 编码器
         $utf8Encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $streamWriter = [System.IO.StreamWriter]::new("$PSScriptRoot/ComfyUI/ComfyUI/user/default/comfy.settings.json", $false, $utf8Encoding)
+        $streamWriter = [System.IO.StreamWriter]::new("$InstallPath/ComfyUI/user/default/comfy.settings.json", $false, $utf8Encoding)
         $streamWriter.Write($json_content)
         $streamWriter.Close()
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
@@ -697,37 +702,22 @@ function Check-ComfyUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                            Print-Msg `"终止 ComfyUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 ComfyUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"ComfyUI Installer 已是最新版本`"
                 }
                 break
@@ -2081,12 +2071,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/launch.ps1") {
+    if (Test-Path "$InstallPath/launch.ps1") {
         Print-Msg "更新 launch.ps1 中"
     } else {
         Print-Msg "生成 launch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch.ps1" -Value $content
 }
 
 
@@ -2245,37 +2235,22 @@ function Check-ComfyUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                            Print-Msg `"终止 ComfyUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 ComfyUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"ComfyUI Installer 已是最新版本`"
                 }
                 break
@@ -2479,12 +2454,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/update.ps1") {
+    if (Test-Path "$InstallPath/update.ps1") {
         Print-Msg "更新 update.ps1 中"
     } else {
         Print-Msg "生成 update.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update.ps1" -Value $content
 }
 
 
@@ -2643,37 +2618,22 @@ function Check-ComfyUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                            Print-Msg `"终止 ComfyUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 ComfyUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"ComfyUI Installer 已是最新版本`"
                 }
                 break
@@ -2935,12 +2895,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/update_node.ps1") {
+    if (Test-Path "$InstallPath/update_node.ps1") {
         Print-Msg "更新 update_node.ps1 中"
     } else {
         Print-Msg "生成 update_node.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_node.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_node.ps1" -Value $content
 }
 
 
@@ -3029,12 +2989,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/get_comfyui_installer.ps1") {
+    if (Test-Path "$InstallPath/get_comfyui_installer.ps1") {
         Print-Msg "更新 get_comfyui_installer.ps1 中"
     } else {
         Print-Msg "生成 get_comfyui_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/get_comfyui_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/get_comfyui_installer.ps1" -Value $content
 }
 
 
@@ -3164,37 +3124,22 @@ function Check-ComfyUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                            Print-Msg `"终止 ComfyUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 ComfyUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"ComfyUI Installer 已是最新版本`"
                 }
                 break
@@ -3668,12 +3613,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/reinstall_pytorch.ps1") {
+    if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
         Print-Msg "更新 reinstall_pytorch.ps1 中"
     } else {
         Print-Msg "生成 reinstall_pytorch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -3824,37 +3769,22 @@ function Check-ComfyUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                            Print-Msg `"终止 ComfyUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                        . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 ComfyUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"ComfyUI Installer 已是最新版本`"
                 }
                 break
@@ -4460,12 +4390,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/download_models.ps1") {
+    if (Test-Path "$InstallPath/download_models.ps1") {
         Print-Msg "更新 download_models.ps1 中"
     } else {
         Print-Msg "生成 download_models.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/download_models.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/download_models.ps1" -Value $content
 }
 
 
@@ -5160,27 +5090,14 @@ function Check-ComfyUI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"ComfyUI Installer 有新版本可用`"
                 Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                    Print-Msg `"终止 ComfyUI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" `"`$PSScriptRoot/../comfyui_installer.ps1`" -Force
-                . `"`$PSScriptRoot/../comfyui_installer.ps1`"
+                . `"`$PSScriptRoot/../comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_installer.ps1`" 2> `$null
                 Print-Msg `"ComfyUI Installer 已是最新版本`"
             }
@@ -5391,12 +5308,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/settings.ps1") {
+    if (Test-Path "$InstallPath/settings.ps1") {
         Print-Msg "更新 settings.ps1 中"
     } else {
         Print-Msg "生成 settings.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/settings.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/settings.ps1" -Value $content
 }
 
 # 虚拟环境激活脚本
@@ -5531,27 +5448,14 @@ function global:Check-ComfyUI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:COMFYUI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"ComfyUI Installer 有新版本可用`"
                 Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:COMFYUI_INSTALLER_ROOT -Leaf
-                if (!(`$folder_name -eq `"ComfyUI`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/cache/comfyui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 ComfyUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 ComfyUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 ComfyUI, 再重新更新 ComfyUI Installer 管理脚本`"
-                    Print-Msg `"终止 ComfyUI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$Env:CACHE_HOME/comfyui_installer.ps1`" `"`$Env:COMFYUI_INSTALLER_ROOT/../comfyui_installer.ps1`" -Force
-                . `"`$Env:COMFYUI_INSTALLER_ROOT/../comfyui_installer.ps1`"
+                . `"`$Env:COMFYUI_INSTALLER_ROOT/../comfyui_installer.ps1`" -InstallPath `"`$Env:COMFYUI_INSTALLER_ROOT`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_installer.ps1`" 2> `$null
                 Print-Msg `"ComfyUI Installer 已是最新版本`"
             }
@@ -5904,12 +5808,12 @@ function Main {
 Main
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/activate.ps1") {
+    if (Test-Path "$InstallPath/activate.ps1") {
         Print-Msg "更新 activate.ps1 中"
     } else {
         Print-Msg "生成 activate.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/activate.ps1" -Value $content
 }
 
 
@@ -5927,12 +5831,12 @@ Print-Msg `"执行 ComfyUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/terminal.ps1") {
+    if (Test-Path "$InstallPath/terminal.ps1") {
         Print-Msg "更新 terminal.ps1 中"
     } else {
         Print-Msg "生成 terminal.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/terminal.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/terminal.ps1" -Value $content
 }
 
 
@@ -6013,12 +5917,12 @@ ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/bl
 ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
 "
 
-    if (Test-Path "$PSScriptRoot/ComfyUI/help.txt") {
+    if (Test-Path "$InstallPath/help.txt") {
         Print-Msg "更新 help.txt 中"
     } else {
         Print-Msg "生成 help.txt 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/help.txt" -Value $content
 }
 
 
@@ -6045,11 +5949,11 @@ function Use-Install-Mode {
     Print-Msg "启动 ComfyUI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 ComfyUI Installer, 更多的说明请阅读 ComfyUI Installer 使用文档"
     Print-Msg "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md"
-    Print-Msg "即将进行安装的路径: $PSScriptRoot\ComfyUI"
+    Print-Msg "即将进行安装的路径: $InstallPath"
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Print-Msg "ComfyUI 安装结束, 安装路径为: $PSScriptRoot\ComfyUI"
+    Print-Msg "ComfyUI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 ComfyUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 ComfyUI Installer 使用文档"
     Print-Msg "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md"
     Print-Msg "退出 ComfyUI Installer"
@@ -6065,14 +5969,44 @@ function Use-Update-Mode {
 }
 
 
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    $content = "
+使用:
+    .\comfyui_installer.ps1 -InstallPath <安装 ComfyUI 的绝对路径> -UseUpdateMode -Help
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -InstallPath <安装 ComfyUI 的绝对路径>
+        指定 ComfyUI Installer 安装 ComfyUI 的路径, 使用绝对路径表示
+        例如: .\comfyui_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Donwload 这个路径
+
+    -UseUpdateMode
+        指定 ComfyUI Installer 使用更新模式, 只对 ComfyUI Installer 的管理脚本进行更新
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+"
+    Write-Host $content
+    exit 0
+}
+
+
 # 主程序
 function Main {
     Print-Msg "初始化中"
     Get-ComfyUI-Installer-Version
-    if (Test-Path "$PSScriptRoot/ComfyUI/use_update_mode.txt") {
+    if ($Help) {
+        Get-ComfyUI-Installer-Cmdlet-Help
+    }
+
+    # TODO: Deprecate Test-Path "$InstallPath/use_update_mode.txt"
+    if ((Test-Path "$InstallPath/use_update_mode.txt") -or ($UseUpdateMode)) {
         Print-Msg "使用更新模式"
-        Remove-Item -Path "$PSScriptRoot/ComfyUI/use_update_mode.txt" 2> $null
-        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/ComfyUI/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Remove-Item -Path "$InstallPath/use_update_mode.txt" 2> $null
+        Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {
         Print-Msg "使用安装模式"

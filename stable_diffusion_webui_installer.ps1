@@ -1,6 +1,12 @@
-﻿# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
+﻿param (
+    [string]$InstallPath = "$PSScriptRoot/stable-diffusion-webui",
+    [string]$InstallBranch,
+    [switch]$UseUpdateMode,
+    [switch]$Help
+)
+# 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 116
+$SD_WEBUI_INSTALLER_VERSION = 117
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -47,12 +53,12 @@ $SD_WEBUI_REPO = if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
     "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
 }
 # PATH
-$PYTHON_PATH = "$PSScriptRoot/stable-diffusion-webui/python"
-$PYTHON_EXTRA_PATH = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/python"
-$PYTHON_SCRIPTS_PATH = "$PSScriptRoot/stable-diffusion-webui/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/python/Scripts"
-$GIT_PATH = "$PSScriptRoot/stable-diffusion-webui/git/bin"
-$GIT_EXTRA_PATH = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/git/bin"
+$PYTHON_PATH = "$InstallPath/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/python"
+$PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/python/Scripts"
+$GIT_PATH = "$InstallPath/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -70,19 +76,19 @@ $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
 $Env:PYTHONUTF8 = 1
 $Env:PYTHONIOENCODING = "utf8"
-$Env:CACHE_HOME = "$PSScriptRoot/stable-diffusion-webui/cache"
-$Env:HF_HOME = "$PSScriptRoot/stable-diffusion-webui/cache/huggingface"
-$Env:MATPLOTLIBRC = "$PSScriptRoot/stable-diffusion-webui/cache"
-$Env:MODELSCOPE_CACHE = "$PSScriptRoot/stable-diffusion-webui/cache/modelscope/hub"
-$Env:MS_CACHE_HOME = "$PSScriptRoot/stable-diffusion-webui/cache/modelscope/hub"
-$Env:SYCL_CACHE_DIR = "$PSScriptRoot/stable-diffusion-webui/cache/libsycl_cache"
-$Env:TORCH_HOME = "$PSScriptRoot/stable-diffusion-webui/cache/torch"
-$Env:U2NET_HOME = "$PSScriptRoot/stable-diffusion-webui/cache/u2net"
-$Env:XDG_CACHE_HOME = "$PSScriptRoot/stable-diffusion-webui/cache"
-$Env:PIP_CACHE_DIR = "$PSScriptRoot/stable-diffusion-webui/cache/pip"
-$Env:PYTHONPYCACHEPREFIX = "$PSScriptRoot/stable-diffusion-webui/cache/pycache"
-$Env:UV_CACHE_DIR = "$PSScriptRoot/stable-diffusion-webui/cache/uv"
-$Env:UV_PYTHON = "$PSScriptRoot/stable-diffusion-webui/python/python.exe"
+$Env:CACHE_HOME = "$InstallPath/cache"
+$Env:HF_HOME = "$InstallPath/cache/huggingface"
+$Env:MATPLOTLIBRC = "$InstallPath/cache"
+$Env:MODELSCOPE_CACHE = "$InstallPath/cache/modelscope/hub"
+$Env:MS_CACHE_HOME = "$InstallPath/cache/modelscope/hub"
+$Env:SYCL_CACHE_DIR = "$InstallPath/cache/libsycl_cache"
+$Env:TORCH_HOME = "$InstallPath/cache/torch"
+$Env:U2NET_HOME = "$InstallPath/cache/u2net"
+$Env:XDG_CACHE_HOME = "$InstallPath/cache"
+$Env:PIP_CACHE_DIR = "$InstallPath/cache/pip"
+$Env:PYTHONPYCACHEPREFIX = "$InstallPath/cache/pycache"
+$Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
+$Env:UV_PYTHON = "$InstallPath/python/python.exe"
 
 
 
@@ -217,16 +223,16 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/stable-diffusion-webui/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Python 文件夹
-        if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/python")) {
-            New-Item -ItemType Directory -Force -Path "$PSScriptRoot/stable-diffusion-webui/python" > $null
+        if (!(Test-Path "$InstallPath/python")) {
+            New-Item -ItemType Directory -Force -Path "$InstallPath/python" > $null
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$PSScriptRoot/stable-diffusion-webui/cache/python-3.10.15-amd64.zip" -DestinationPath "$PSScriptRoot/stable-diffusion-webui/python" -Force
-        Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/python-3.10.15-amd64.zip"
+        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$InstallPath/python" -Force
+        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -240,16 +246,16 @@ function Install-Python {
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/stable-diffusion-webui/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         # 创建 Git 文件夹
-        if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/git")) {
+        if (!(Test-Path "$InstallPath/git")) {
             New-Item -ItemType Directory -Force -Path $PSScriptRoot/stable-diffusion-webui/git > $null
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$PSScriptRoot/stable-diffusion-webui/cache/PortableGit.zip" -DestinationPath "$PSScriptRoot/stable-diffusion-webui/git" -Force
-        Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/PortableGit.zip"
+        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$InstallPath/git" -Force
+        Remove-Item -Path "$InstallPath/cache/PortableGit.zip"
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -263,9 +269,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$PSScriptRoot/stable-diffusion-webui/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/aria2c.exe" -Destination "$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe" -Force
+        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -294,9 +300,9 @@ function Test-Github-Mirror {
     if (Test-Path "$PSScriptRoot/disable_gh_mirror.txt") { # 禁用 Github 镜像源
         Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源"
     } else {
-        $Env:GIT_CONFIG_GLOBAL = "$PSScriptRoot/stable-diffusion-webui/.gitconfig" # 设置 Git 配置文件路径
-        if (Test-Path "$PSScriptRoot/stable-diffusion-webui/.gitconfig") {
-            Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/.gitconfig" -Force
+        $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
+        if (Test-Path "$InstallPath/.gitconfig") {
+            Remove-Item -Path "$InstallPath/.gitconfig" -Force
         }
 
         if (Test-Path "$PSScriptRoot/gh_mirror.txt") { # 使用自定义 Github 镜像源
@@ -308,8 +314,8 @@ function Test-Github-Mirror {
             $status = 0
             ForEach($i in $GITHUB_MIRROR_LIST) {
                 Print-Msg "测试 Github 镜像源: $i"
-                if (Test-Path "$PSScriptRoot/stable-diffusion-webui/cache/github-mirror-test") {
-                    Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/github-mirror-test" -Force -Recurse
+                if (Test-Path "$InstallPath/cache/github-mirror-test") {
+                    Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
                 }
                 git clone $i/licyk/empty $PSScriptRoot/stable-diffusion-webui/cache/github-mirror-test --quiet
                 if ($?) {
@@ -321,8 +327,8 @@ function Test-Github-Mirror {
                     Print-Msg "镜像源不可用, 更换镜像源进行测试"
                 }
             }
-            if (Test-Path "$PSScriptRoot/stable-diffusion-webui/cache/github-mirror-test") {
-                Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/cache/github-mirror-test" -Force -Recurse
+            if (Test-Path "$InstallPath/cache/github-mirror-test") {
+                Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
             }
             if ($status -eq 0) {
                 Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
@@ -359,7 +365,7 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        $cache_path = "$PSScriptRoot/stable-diffusion-webui/cache/$folder_name"
+        $cache_path = "$InstallPath/cache/$folder_name"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
@@ -469,7 +475,7 @@ function Install-CLIP {
 function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
+    Set-Location "$InstallPath/stable-diffusion-webui"
     Print-Msg "安装 Stable Diffusion WebUI 依赖中"
     if ($USE_UV) {
         uv pip install -r requirements_versions.txt
@@ -494,11 +500,11 @@ function Install-Stable-Diffusion-WebUI-Dependence {
 
 # 安装
 function Check-Install {
-    New-Item -ItemType Directory -Path "$PSScriptRoot/stable-diffusion-webui" -Force > $null
-    New-Item -ItemType Directory -Path "$PSScriptRoot/stable-diffusion-webui/cache" -Force > $null
+    New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
+    New-Item -ItemType Directory -Path "$InstallPath/cache" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$PSScriptRoot/stable-diffusion-webui/python/python.exe") -or (Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -506,12 +512,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/python/python.exe") {
-        $Env:UV_PYTHON = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/python/python.exe"
+    if (Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/stable-diffusion-webui/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$PSScriptRoot/stable-diffusion-webui/git/bin/git.exe") -or (Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -519,7 +525,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe") -or (Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -537,7 +543,7 @@ function Check-Install {
     Check-uv-Version
 
     Test-Github-Mirror
-    $sd_webui_path = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui"
+    $sd_webui_path = "$InstallPath/stable-diffusion-webui"
     $sd_webui_repositories_path = "$sd_webui_path/repositories"
     $sd_webui_extension_path = "$sd_webui_path/extensions"
 
@@ -587,7 +593,7 @@ function Check-Install {
     Install-CLIP
     Install-Stable-Diffusion-WebUI-Dependence
 
-    if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/launch_args.txt")) {
+    if (!(Test-Path "$InstallPath/launch_args.txt")) {
         Print-Msg "设置默认 Stable Diffusion WebUI 启动参数"
         if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
             $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start"
@@ -602,10 +608,10 @@ function Check-Install {
         } else {
             $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start"
         }
-        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/launch_args.txt" -Value $content
+        Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
-    if (!(Test-Path "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/config.json")) {
+    if (!(Test-Path "$InstallPath/stable-diffusion-webui/config.json")) {
         Print-Msg "设置默认 Stable Diffusion WebUI 设置"
         $json_content = @{
             "quicksettings_list" = @(
@@ -639,12 +645,12 @@ function Check-Install {
         # 创建一个不带 BOM 的 UTF-8 编码器
         $utf8Encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $streamWriter = [System.IO.StreamWriter]::new("$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/config.json", $false, $utf8Encoding)
+        $streamWriter = [System.IO.StreamWriter]::new("$InstallPath/stable-diffusion-webui/config.json", $false, $utf8Encoding)
         $streamWriter.Write($json_content)
         $streamWriter.Close()
     }
 
-    $checkpoint_path = "$PSScriptRoot/stable-diffusion-webui/stable-diffusion-webui/models/Stable-diffusion"
+    $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
     if (!(Get-ChildItem -Path $checkpoint_path -Filter "*.safetensors")) {
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors"
         Print-Msg "预下载模型中"
@@ -656,7 +662,7 @@ function Check-Install {
         }
     }
 
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
@@ -830,37 +836,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -1879,12 +1870,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/launch.ps1") {
+    if (Test-Path "$InstallPath/launch.ps1") {
         Print-Msg "更新 launch.ps1 中"
     } else {
         Print-Msg "生成 launch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/launch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch.ps1" -Value $content
 }
 
 
@@ -2043,37 +2034,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -2277,12 +2253,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/update.ps1") {
+    if (Test-Path "$InstallPath/update.ps1") {
         Print-Msg "更新 update.ps1 中"
     } else {
         Print-Msg "生成 update.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/update.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update.ps1" -Value $content
 }
 
 
@@ -2422,37 +2398,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -2815,12 +2776,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/switch_branch.ps1") {
+    if (Test-Path "$InstallPath/switch_branch.ps1") {
         Print-Msg "更新 switch_branch.ps1 中"
     } else {
         Print-Msg "生成 switch_branch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/switch_branch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/switch_branch.ps1" -Value $content
 }
 
 
@@ -2979,37 +2940,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -3271,12 +3217,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/update_extension.ps1") {
+    if (Test-Path "$InstallPath/update_extension.ps1") {
         Print-Msg "更新 update_extension.ps1 中"
     } else {
         Print-Msg "生成 update_extension.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/update_extension.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_extension.ps1" -Value $content
 }
 
 
@@ -3365,12 +3311,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/get_stable_diffusion_webui_installer.ps1") {
+    if (Test-Path "$InstallPath/get_stable_diffusion_webui_installer.ps1") {
         Print-Msg "更新 get_stable_diffusion_webui_installer.ps1 中"
     } else {
         Print-Msg "生成 get_stable_diffusion_webui_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/get_stable_diffusion_webui_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/get_stable_diffusion_webui_installer.ps1" -Value $content
 }
 
 
@@ -3500,37 +3446,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -4004,12 +3935,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/reinstall_pytorch.ps1") {
+    if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
         Print-Msg "更新 reinstall_pytorch.ps1 中"
     } else {
         Print-Msg "生成 reinstall_pytorch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -4160,37 +4091,22 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
             if (`$?) {
                 `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                        if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                            Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                            Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                            Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                            Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                            Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                            Print-Msg `"终止 SD WebUI Installer 的更新`"
-                            Read-Host | Out-Null
-                            exit 1
-                        }
                         Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                        . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
                         Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                        Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                         Print-Msg `"跳过 SD WebUI Installer 更新`"
                     }
                 } else {
                     Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                     Print-Msg `"SD WebUI Installer 已是最新版本`"
                 }
                 break
@@ -4747,12 +4663,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/download_models.ps1") {
+    if (Test-Path "$InstallPath/download_models.ps1") {
         Print-Msg "更新 download_models.ps1 中"
     } else {
         Print-Msg "生成 download_models.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/download_models.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/download_models.ps1" -Value $content
 }
 
 
@@ -5447,27 +5363,14 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD WebUI Installer 有新版本可用`"
                 Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                `$folder_name = Split-Path `$PSScriptRoot -Leaf
-                if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$PSScriptRoot/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$PSScriptRoot`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                    Print-Msg `"终止 SD WebUI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-                . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`"
+                . `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$PSScriptRoot/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
                 Print-Msg `"SD WebUI Installer 已是最新版本`"
             }
@@ -5678,12 +5581,12 @@ Main
 Read-Host | Out-Null
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/settings.ps1") {
+    if (Test-Path "$InstallPath/settings.ps1") {
         Print-Msg "更新 settings.ps1 中"
     } else {
         Print-Msg "生成 settings.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/settings.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/settings.ps1" -Value $content
 }
 
 
@@ -5819,27 +5722,14 @@ function global:Check-Stable-Diffusion-WebUI-Installer-Update {
         if (`$?) {
             `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$Env:SD_WEBUI_INSTALLER_VERSION) {
-                New-Item -ItemType File -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/use_update_mode.txt`" -Force > `$null
                 Print-Msg `"SD WebUI Installer 有新版本可用`"
                 Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                `$folder_name = Split-Path `$Env:SD_WEBUI_INSTALLER_ROOT -Leaf
-                if (!(`$folder_name -eq `"stable-diffusion-webui`")) { # 检测脚本所在文件夹是否符合要求
-                    Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/cache/stable_diffusion_webui_installer.ps1`" 2> `$null
-                    Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
-                    Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/update_time.txt`" 2> `$null
-                    Print-Msg `"检测到 SD WebUI Installer 管理脚本所在文件夹名称不符合要求, 无法直接进行更新`"
-                    Print-Msg `"当前 SD WebUI Installer 管理脚本所在文件夹名称: `$folder_name`"
-                    Print-Msg `"请前往 `$(Split-Path `"`$(Split-Path `"`$Env:CACHE_HOME`")`") 路径, 将名称为 `$folder_name 的文件夹改名为 stable-diffusion-webui, 再重新更新 SD WebUI Installer 管理脚本`"
-                    Print-Msg `"终止 SD WebUI Installer 的更新`"
-                    return
-                }
                 Move-Item -Path `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/../stable_diffusion_webui_installer.ps1`" -Force
-                . `"`$Env:SD_WEBUI_INSTALLER_ROOT/../stable_diffusion_webui_installer.ps1`"
+                . `"`$Env:SD_WEBUI_INSTALLER_ROOT/../stable_diffusion_webui_installer.ps1`" -InstallPath `"`$Env:SD_WEBUI_INSTALLER_ROOT`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/use_update_mode.txt`" 2> `$null
                 Remove-Item -Path `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" 2> `$null
                 Print-Msg `"SD WebUI Installer 已是最新版本`"
             }
@@ -6193,12 +6083,12 @@ function Main {
 Main
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/activate.ps1") {
+    if (Test-Path "$InstallPath/activate.ps1") {
         Print-Msg "更新 activate.ps1 中"
     } else {
         Print-Msg "生成 activate.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/activate.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/activate.ps1" -Value $content
 }
 
 
@@ -6216,12 +6106,12 @@ Print-Msg `"执行 SD WebUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/terminal.ps1") {
+    if (Test-Path "$InstallPath/terminal.ps1") {
         Print-Msg "更新 terminal.ps1 中"
     } else {
         Print-Msg "生成 terminal.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/terminal.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/terminal.ps1" -Value $content
 }
 
 
@@ -6298,17 +6188,18 @@ SD WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/b
 Stable Diffusion WebUI 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
 "
 
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/help.txt") {
+    if (Test-Path "$InstallPath/help.txt") {
         Print-Msg "更新 help.txt 中"
     } else {
         Print-Msg "生成 help.txt 中"
     }
-    Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/help.txt" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/help.txt" -Value $content
 }
 
 
 # 写入管理脚本和文档
 function Write-Manager-Scripts {
+    New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
     Write-Launch-Script
     Write-Update-Script
     Write-Update-Extension-Script
@@ -6331,24 +6222,24 @@ function Use-Install-Mode {
     Print-Msg "启动 Stable Diffusion WebUI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD WebUI Installer, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
-    Print-Msg "即将进行安装的路径: $PSScriptRoot\stable-diffusion-webui"
-    if (Test-Path "$PSScriptRoot/install_sd_webui.txt") {
-        Print-Msg "检测到 install_sd_webui.txt 配置文件, 选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
-    } elseif (Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") {
-        Print-Msg "检测到 install_sd_webui_forge.txt 配置文件, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
-    } elseif (Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") {
-        Print-Msg "检测到 install_sd_webui_reforge.txt 配置文件, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
-    } elseif (Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") {
-        Print-Msg "检测到 install_sd_webui_amdgpu.txt 配置文件, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
-    } elseif (Test-Path "$PSScriptRoot/install_sd_next.txt") {
-        Print-Msg "检测到 install_sd_next.txt 配置文件, 选择安装 vladmandic/SD.NEXT"
+    Print-Msg "即将进行安装的路径: $InstallPath"
+    if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+        Print-Msg "检测到 install_sd_webui.txt 配置文件 / 命令行参数 -InstallBranch sd_webui, 选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+        Print-Msg "检测到 install_sd_webui_forge.txt 配置文件 / 命令行参数 -InstallBranch sd_webui_forge, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+        Print-Msg "检测到 install_sd_webui_reforge.txt 配置文件 / 命令行参数 -InstallBranch sd_webui_reforge, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+        Print-Msg "检测到 install_sd_webui_amdgpu.txt 配置文件 / 命令行参数 -InstallBranch sd_webui_amdgpu, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+        Print-Msg "检测到 install_sd_next.txt 配置文件 / 命令行参数 -InstallBranch sdnext, 选择安装 vladmandic/SD.NEXT"
     } else {
         Print-Msg "未指定安装的 SD WebUI 分支, 默认选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
     }
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $PSScriptRoot\stable-diffusion-webui"
+    Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
     Print-Msg "退出 SD WebUI Installer"
@@ -6364,14 +6255,53 @@ function Use-Update-Mode {
 }
 
 
+# 帮助信息
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
+    $content = "
+使用:
+    .\stable_diffusion_webui_installer.ps1 -InstallPath <安装 Stable Diffusion WebUI 的绝对路径> -InstallBranch <安装的 Stable Diffusion WebUI 分支> -UseUpdateMode -Help
+
+参数:
+    -Help
+        获取 SD WebUI Installer 的帮助信息
+
+    -InstallPath <安装 Stable Diffusion WebUI 的绝对路径>
+        指定 SD WebUI Installer 安装 Stable Diffusion WebUI 的路径, 使用绝对路径表示
+        例如: .\stable_diffusion_webui_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD WebUI Installer 安装 Stable Diffusion WebUI 到 D:\Donwload 这个路径
+
+    -InstallBranch (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_amdgpu, sdnext)
+        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支
+        支持指定安装的分支如下:
+            sd_webui:           AUTOMATIC1111/Stable-Diffusion-WebUI
+            sd_webui_forge:     lllyasviel/Stable-Diffusion-WebUI-Forge
+            sd_webui_reforge:   Panchovix/Stable-Diffusion-WebUI-reForge
+            sd_webui_amdgpu:    lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
+            sdnext:             vladmandic/SD.NEXT
+
+    -UseUpdateMode
+        指定 SD WebUI Installer 使用更新模式, 只对 SD WebUI Installer 的管理脚本进行更新
+
+
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
+"
+    Write-Host $content
+    exit 0
+}
+
+
 # 主程序
 function Main {
     Print-Msg "初始化中"
     Get-Stable-Diffusion-WebUI-Installer-Version
-    if (Test-Path "$PSScriptRoot/stable-diffusion-webui/use_update_mode.txt") {
+    if ($Help) {
+        Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
+    }
+
+    # TODO: Deprecate Test-Path "$InstallPath/use_update_mode.txt"
+    if ((Test-Path "$InstallPath/use_update_mode.txt") -or ($UseUpdateMode)) {
         Print-Msg "使用更新模式"
-        Remove-Item -Path "$PSScriptRoot/stable-diffusion-webui/use_update_mode.txt" 2> $null
-        Set-Content -Encoding UTF8 -Path "$PSScriptRoot/stable-diffusion-webui/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Remove-Item -Path "$InstallPath/use_update_mode.txt" 2> $null
+        Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {
         Print-Msg "使用安装模式"
