@@ -5,7 +5,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 155
+$INVOKEAI_INSTALLER_VERSION = 156
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -899,6 +899,13 @@ function Main {
     Pip-Mirror-Status
     Create-InvokeAI-Shortcut
     Set-PyTorch-CUDA-Memory-Alloc
+
+    python -m pip show invokeai --quiet 2> `$null
+    if (!(`$?)) {
+        Print-Msg `"检测到 InvokeAI 未正确安装, 请运行 InvokeAI Installer 进行修复`"
+        return
+    }
+
     `$port = Get-InvokeAI-Launch-Port
     Print-Msg `"将使用浏览器打开 http://127.0.0.1:`$port 地址, 进入 InvokeAI 的界面`"
     Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"

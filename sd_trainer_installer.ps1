@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 179
+$SD_TRAINER_INSTALLER_VERSION = 180
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -953,6 +953,12 @@ function Main {
     Check-SD-Trainer-Installer-Update
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        return
+    }
+
     `$args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
@@ -1423,6 +1429,11 @@ function Main {
     Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        return
+    }
 
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
@@ -1981,6 +1992,12 @@ function Main {
     Check-SD-Trainer-Installer-Update
     Set-uv
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        return
+    }
+
     `$content = `"
 -----------------------------------------------------
 - 1、Akegarasu - SD-Trainer 分支

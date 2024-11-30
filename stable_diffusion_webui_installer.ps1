@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 118
+$SD_WEBUI_INSTALLER_VERSION = 119
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1859,6 +1859,12 @@ function Main {
     Pip-Mirror-Status
     Set-Stable-Diffusion-WebUI-Extension-List-Mirror
     Set-ControlNet-Extension-Requirement-Mirror
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
+
     `$args = Get-Stable-Diffusion-WebUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
@@ -2242,6 +2248,11 @@ function Main {
     Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
 
     Print-Msg `"拉取 Stable Diffusion WebUI 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/stable-diffusion-webui`"
@@ -2680,6 +2691,12 @@ function Main {
     Check-Stable-Diffusion-WebUI-Installer-Update
     Set-uv
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
+
     `$content = `"
 -----------------------------------------------------
 - 1、AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
@@ -3194,6 +3211,11 @@ function Main {
     Set-uv
     Set-Github-Mirror
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
 
     `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
     `$sum = 0
@@ -4576,6 +4598,11 @@ function Main {
     Set-Proxy
     Check-Stable-Diffusion-WebUI-Installer-Update
     Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
 
     `$to_exit = 0
     `$go_to = 0
