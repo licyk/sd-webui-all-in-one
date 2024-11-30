@@ -5,7 +5,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 156
+$INVOKEAI_INSTALLER_VERSION = 157
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1371,7 +1371,7 @@ Read-Host | Out-Null
 
 
 # 获取安装脚本
-function Write-InvokeAI-Install-Script {
+function Write-Launch-InvokeAI-Install-Script {
     $content = "
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 
@@ -1419,45 +1419,60 @@ function Set-Proxy {
 }
 
 
-function Main {
-    Print-Msg `"初始化中`"
-    Get-InvokeAI-Installer-Version
-    Set-Proxy
+# 下载 InvokeAI Installer
+function Download-InvokeAI-Installer {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
-    `$count = `$urls.Length
     `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
 
     ForEach (`$url in `$urls) {
         Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
         if (`$?) {
-            Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -Destination `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-            `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-            Print-Msg `"下载 InvokeAI Installer 脚本成功, 脚本路径为 `$parentDirectory\invokeai_installer.ps1`"
+            Print-Msg `"下载 InvokeAI Installer 脚本成功`"
             break
         } else {
             Print-Msg `"下载 InvokeAI Installer 脚本失败`"
             `$i += 1
-            if (`$i -lt `$count) {
+            if (`$i -lt `$urls.Length) {
                 Print-Msg `"重试下载 InvokeAI Installer 脚本`"
+            } else {
+                Print-Msg `"下载 InvokeAI Installer 脚本失败, 可尝试重新运行 InvokeAI Installer 下载脚本`"
+                return `$false
             }
         }
+    }
+    return `$true
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-InvokeAI-Installer-Version
+    Set-Proxy
+
+    `$status = Download-InvokeAI-Installer
+    if (`$status) {
+        Print-Msg `"运行 InvokeAI Installer 中`"
+        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
+    } else {
+        Read-Host | Out-Null
     }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
-    if (Test-Path "$InstallPath/get_invokeai_installer.ps1") {
-        Print-Msg "更新 get_invokeai_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_invokeai_installer.ps1") {
+        Print-Msg "更新 launch_invokeai_installer.ps1 中"
     } else {
-        Print-Msg "生成 get_invokeai_installer.ps1 中"
+        Print-Msg "生成 launch_invokeai_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/get_invokeai_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch_invokeai_installer.ps1" -Value $content
 }
 
 
@@ -2399,7 +2414,7 @@ function Update-Github-Mirror-Setting {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
-                Print-Msg `"启用 Github 镜像成功, 在更新 SD-Trainer 时将自动检测可用的 Github 镜像源并使用`"
+                Print-Msg `"启用 Github 镜像成功, 在更新 InvokeAI 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
             2 {
@@ -3315,7 +3330,7 @@ cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 invokeai：InvokeAI 存放模型、图片等的文件夹。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
-get_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
+launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 launch.ps1：启动 InvokeAI 的脚本。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
@@ -3375,7 +3390,7 @@ function Write-Manager-Scripts {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
     Write-Launch-Script
     Write-Update-Script
-    Write-InvokeAI-Install-Script
+    Write-Launch-InvokeAI-Install-Script
     Write-Env-Activate-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Config-Script

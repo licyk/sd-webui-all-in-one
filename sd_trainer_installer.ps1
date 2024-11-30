@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 180
+$SD_TRAINER_INSTALLER_VERSION = 181
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2080,7 +2080,7 @@ Read-Host | Out-Null
 
 
 # 获取安装脚本
-function Write-SD-Trainer-Install-Script {
+function Write-Launch-SD-Trainer-Install-Script {
     $content = "
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 
@@ -2128,10 +2128,8 @@ function Set-Proxy {
 }
 
 
-function Main {
-    Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Set-Proxy
+# 下载 SD-Trainer Installer
+function Download-SD-Trainer-Installer {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
@@ -2142,9 +2140,7 @@ function Main {
         Print-Msg `"正在下载最新的 SD-Trainer Installer 脚本`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
         if (`$?) {
-            Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -Destination `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-            `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-            Print-Msg `"下载 SD-Trainer Installer 脚本成功, 脚本路径为 `$parentDirectory\sd_trainer_installer.ps1`"
+            Print-Msg `"下载 SD-Trainer Installer 脚本成功`"
             break
         } else {
             Print-Msg `"下载 SD-Trainer Installer 脚本失败`"
@@ -2152,26 +2148,40 @@ function Main {
             if (`$i -lt `$urls.Length) {
                 Print-Msg `"重试下载 SD-Trainer Installer 脚本`"
             } else {
-                Print-Msg `"更新 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
+                Print-Msg `"下载 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
+                return `$false
             }
         }
     }
+    return `$true
+}
 
-    Print-Msg `"退出 SD-Trainer Installer 下载脚本`"
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-SD-Trainer-Installer-Version
+    Set-Proxy
+
+    `$status = Download-SD-Trainer-Installer
+    if (`$status) {
+        Print-Msg `"运行 SD-Trainer Installer 中`"
+        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
+    } else {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
-    if (Test-Path "$InstallPath/get_sd_trainer_installer.ps1") {
-        Print-Msg "更新 get_sd_trainer_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_sd_trainer_installer.ps1") {
+        Print-Msg "更新 launch_sd_trainer_installer.ps1 中"
     } else {
-        Print-Msg "生成 get_sd_trainer_installer.ps1 中"
+        Print-Msg "生成 launch_sd_trainer_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/get_sd_trainer_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch_sd_trainer_installer.ps1" -Value $content
 }
 
 
@@ -4491,7 +4501,7 @@ git：Git 的存放路径。
 lora-scripts：SD-Trainer 存放的文件夹。
 models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-get_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本，运行后将会在与 SD-Trainer 文件夹同级的目录中生成 sd_trainer_installer.ps1 安装脚本。
+launch_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本，运行后将会在与 SD-Trainer 文件夹同级的目录中生成 sd_trainer_installer.ps1 安装脚本。
 update.ps1：更新 SD-Trainer 的脚本，可使用该脚本更新 SD-Trainer。
 launch.ps1：启动 SD-Trainer 的脚本。
 switch_branch.ps1：切换 SD-Trainer 分支。
@@ -4572,7 +4582,7 @@ function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
     Write-Switch-Branch-Script
-    Write-SD-Trainer-Install-Script
+    Write-Launch-SD-Trainer-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
     Write-SD-Trainer-Installer-Settings-Script

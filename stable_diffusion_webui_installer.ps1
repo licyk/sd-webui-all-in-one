@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 119
+$SD_WEBUI_INSTALLER_VERSION = 120
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3278,7 +3278,7 @@ Read-Host | Out-Null
 
 
 # 获取安装脚本
-function Write-Stable-Diffusion-WebUI-Install-Script {
+function Write-Launch-Stable-Diffusion-WebUI-Install-Script {
     $content = "
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 
@@ -3326,10 +3326,8 @@ function Set-Proxy {
 }
 
 
-function Main {
-    Print-Msg `"初始化中`"
-    Get-Stable-Diffusion-WebUI-Installer-Version
-    Set-Proxy
+# 下载 SD WebUI Installer
+function Download-Stable-Diffusion-WebUI-Installer {
     # 可用的下载源
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
@@ -3340,9 +3338,7 @@ function Main {
         Print-Msg `"正在下载最新的 SD WebUI Installer 脚本`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
         if (`$?) {
-            Move-Item -Path `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -Destination `"`$PSScriptRoot/../stable_diffusion_webui_installer.ps1`" -Force
-            `$parentDirectory = Split-Path `$PSScriptRoot -Parent
-            Print-Msg `"下载 SD WebUI Installer 脚本成功, 脚本路径为 `$parentDirectory\stable_diffusion_webui_installer.ps1`"
+            Print-Msg `"下载 SD WebUI Installer 脚本成功`"
             break
         } else {
             Print-Msg `"下载 SD WebUI Installer 脚本失败`"
@@ -3350,26 +3346,41 @@ function Main {
             if (`$i -lt `$urls.Length) {
                 Print-Msg `"重试下载 SD WebUI Installer 脚本`"
             } else {
-                Print-Msg `"更新 SD WebUI Installer 脚本失败, 可尝试重新运行 SD WebUI Installer 下载脚本`"
+                Print-Msg `"下载 SD WebUI Installer 脚本失败, 可尝试重新运行 SD WebUI Installer 下载脚本`"
+                return `$false
             }
         }
     }
+    return `$true
+}
 
-    Print-Msg `"退出 SD WebUI Installer 下载脚本`"
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Set-Proxy
+
+    `$status = Download-Stable-Diffusion-WebUI-Installer
+
+    if (`$status) {
+        Print-Msg `"运行 SD WebUI Installer 中`"
+        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
+    } else {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
-    if (Test-Path "$InstallPath/get_stable_diffusion_webui_installer.ps1") {
-        Print-Msg "更新 get_stable_diffusion_webui_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_stable_diffusion_webui_installer.ps1") {
+        Print-Msg "更新 launch_stable_diffusion_webui_installer.ps1 中"
     } else {
-        Print-Msg "生成 get_stable_diffusion_webui_installer.ps1 中"
+        Print-Msg "生成 launch_stable_diffusion_webui_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/get_stable_diffusion_webui_installer.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/launch_stable_diffusion_webui_installer.ps1" -Value $content
 }
 
 
@@ -6204,7 +6215,7 @@ git：Git 的存放路径。
 stable-diffusion-webui：stable-diffusion-webui 存放的文件夹。
 models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-get_stable_diffusion_webui_installer.ps1：获取最新的 SD WebUI Installer 安装脚本，运行后将会在与 Stable Diffusion WebUI 文件夹同级的目录中生成 stable_diffusion_webui_installer.ps1 安装脚本。
+launch_stable_diffusion_webui_installer.ps1：获取最新的 SD WebUI Installer 安装脚本，运行后将会在与 Stable Diffusion WebUI 文件夹同级的目录中生成 stable_diffusion_webui_installer.ps1 安装脚本。
 update.ps1：更新 Stable Diffusion WebUI 的脚本，可使用该脚本更新 stable-diffusion-webui。
 update_extension.ps1：更新 Stable Diffusion WebUI 扩展的脚本，可使用该脚本更新 Stable Diffusion WebUI 扩展。
 switch_branch.ps1：切换 Stable Diffusion WebUI 分支。
@@ -6275,7 +6286,7 @@ function Write-Manager-Scripts {
     Write-Update-Script
     Write-Update-Extension-Script
     Write-Switch-Branch-Script
-    Write-Stable-Diffusion-WebUI-Install-Script
+    Write-Launch-Stable-Diffusion-WebUI-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
     Write-Stable-Diffusion-WebUI-Installer-Settings-Script
