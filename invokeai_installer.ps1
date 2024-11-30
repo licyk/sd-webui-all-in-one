@@ -5,7 +5,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 157
+$INVOKEAI_INSTALLER_VERSION = 158
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3330,7 +3330,7 @@ cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 invokeai：InvokeAI 存放模型、图片等的文件夹。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
-launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本，运行后将会在与 InvokeAI 文件夹同级的目录中生成 invokeai_installer.ps1 安装脚本。
+launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本并运行。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 launch.ps1：启动 InvokeAI 的脚本。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
@@ -3464,7 +3464,7 @@ function Main {
     # TODO: Deprecate Test-Path "$InstallPath/use_update_mode.txt"
     if ((Test-Path "$InstallPath/use_update_mode.txt") -or ($UseUpdateMode)) {
         Print-Msg "使用更新模式"
-        Remove-Item -Path "$InstallPath/use_update_mode.txt" 2> $null
+        Remove-Item -Path "$InstallPath/use_update_mode.txt" -Force 2> $null
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {

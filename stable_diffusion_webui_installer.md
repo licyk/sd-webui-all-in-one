@@ -23,7 +23,7 @@ _✨一键安装 Stable Diffusion WebUI_
   - [设置 Stable Diffusion WebUI 启动参数](#设置-stable-diffusion-webui-启动参数)
   - [切换 Stable Diffusion WebUI 分支](#切换-stable-diffusion-webui-分支)
   - [进入 Stable Diffusion WebUI 所在的 Python 环境](#进入-stable-diffusion-webui-所在的-python-环境)
-  - [获取最新的 SD WebUI Installer 脚本](#获取最新的-sd-webui-installer-脚本)
+  - [获取最新的 SD WebUI Installer 并运行](#获取最新的-sd-webui-installer-并运行)
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
@@ -44,7 +44,7 @@ _✨一键安装 Stable Diffusion WebUI_
   - [更新 Stable Diffusion WebUI 管理脚本](#更新-stable-diffusion-webui-管理脚本)
     - [直接更新](#直接更新)
     - [使用 SD WebUI Installer 配置管理器进行更新](#使用-sd-webui-installer-配置管理器进行更新)
-    - [手动运行 SD WebUI Installer 进行更新](#手动运行-sd-webui-installer-进行更新)
+    - [运行 SD WebUI Installer 进行更新](#运行-sd-webui-installer-进行更新)
     - [使用命令更新](#使用命令更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
@@ -242,8 +242,8 @@ $ tree -L 1
 或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 Stable Diffusion WebUI 所在的 Python。
 
 
-## 获取最新的 SD WebUI Installer 脚本
-运行`get_stable_diffusion_webui_installer.ps1`脚本，运行成功后将会把 SD WebUI Installer 保存在`stable-diffusion-webui`文件夹的上一级目录中。
+## 获取最新的 SD WebUI Installer 并运行
+运行`launch_stable_diffusion_webui_installer.ps1`脚本。
 
 
 ## 恢复被修改 / 删除的脚本
@@ -257,24 +257,24 @@ $ tree -L 2
 .
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
-├── stable-diffusion-webui                        # 这是 Stable Diffusion WebUI 文件夹
-│   ├── activate.ps1                              # 进入 Stable Diffusion WebUI Env 的脚本
-│   ├── cache                                     # 缓存文件夹
-│   ├── download_models.ps1                       # 下载模型的脚本
-│   ├── get_stable_diffusion_webui_installer.ps1  # 获取最新的 SD WebUI Installer 的脚本
-│   ├── git                                       # Git 目录
-│   ├── help.txt                                  # 帮助文档
-│   ├── launch.ps1                                # 启动 Stable Diffusion WebUI 的脚本
-│   ├── stable-diffusion-webui                    # Stable Diffusion WebUI 路径
-│   ├── models                                    # download_models.ps1 下载模型脚本
-│   ├── python                                    # Python 目录
-│   ├── reinstall_pytorch.ps1                     # 重新安装 PyTorch 的脚本
-│   ├── switch_branch.ps1                         # 切换 Stable Diffusion WebUI 分支的脚本
-│   ├── settings.ps1                              # 管理 SD WebUI Installer 设置的脚本
-│   ├── terminal.ps1                              # 自动打开 PowerShell 并激活 SD WebUI Installer 的虚拟环境脚本
-│   ├── update_extension.ps1                      # 更新 Stable Diffusion WebUI 扩展
-│   └── update.ps1                                # 更新 Stable Diffusion WebUI 的脚本
-├── stable_diffusion_webui_installer.ps1          # SD WebUI Installer 放在 stable-diffusion-webui 文件夹外面，和 stable-diffusion-webui 文件夹同级
+├── stable-diffusion-webui                            # 这是 Stable Diffusion WebUI 文件夹
+│   ├── activate.ps1                                  # 进入 Stable Diffusion WebUI Env 的脚本
+│   ├── cache                                         # 缓存文件夹
+│   ├── download_models.ps1                           # 下载模型的脚本
+│   ├── launch_stable_diffusion_webui_installer.ps1   # 获取最新的 SD WebUI Installer 的脚本
+│   ├── git                                           # Git 目录
+│   ├── help.txt                                      # 帮助文档
+│   ├── launch.ps1                                    # 启动 Stable Diffusion WebUI 的脚本
+│   ├── stable-diffusion-webui                        # Stable Diffusion WebUI 路径
+│   ├── models                                        # download_models.ps1 下载模型脚本
+│   ├── python                                        # Python 目录
+│   ├── reinstall_pytorch.ps1                         # 重新安装 PyTorch 的脚本
+│   ├── switch_branch.ps1                             # 切换 Stable Diffusion WebUI 分支的脚本
+│   ├── settings.ps1                                  # 管理 SD WebUI Installer 设置的脚本
+│   ├── terminal.ps1                                  # 自动打开 PowerShell 并激活 SD WebUI Installer 的虚拟环境脚本
+│   ├── update_extension.ps1                          # 更新 Stable Diffusion WebUI 扩展
+│   └── update.ps1                                    # 更新 Stable Diffusion WebUI 的脚本
+├── stable_diffusion_webui_installer.ps1              # SD WebUI Installer 放在 stable-diffusion-webui 文件夹外面，和 stable-diffusion-webui 文件夹同级
 └── QQ Files
 
 8 directories, 9 files
@@ -370,7 +370,7 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   ├── activate.ps1
 │   ├── cache
 │   ├── download_models.ps1
-│   ├── get_stable_diffusion_webui_installer.ps1
+│   ├── launch_stable_diffusion_webui_installer.ps1
 │   ├── git                           # Git 目录
 │   ├── help.txt
 │   ├── launch.ps1
@@ -396,7 +396,7 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   ├── activate.ps1
 │   ├── cache
 │   ├── download_models.ps1
-│   ├── get_stable_diffusion_webui_installer.ps1
+│   ├── launch_stable_diffusion_webui_installer.ps1
 │   ├── help.txt
 │   ├── launch.ps1
 │   ├── stable-diffusion-webui        # Stable Diffusion WebUI 路径
@@ -474,8 +474,8 @@ SD WebUI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 运行`settings.ps1`，选择`更新 SD WebUI Installer 管理脚本`功能进行更新，更新完成后需关闭 SD WebUI Installer 管理脚本以应用更新。
 
 
-### 手动运行 SD WebUI Installer 进行更新
-运行`get_stable_diffusion_webui_installer.ps1`获取最新的 SD WebUI Installer 后，返回上一个目录并运行`stable_diffusion_webui_installer.ps1`。SD WebUI Installer 在安装过程无报错并完整的运行所有安装流程后，Stable Diffusion WebUI 的管理脚本将会得到更新。
+### 运行 SD WebUI Installer 进行更新
+运行`launch_stable_diffusion_webui_installer.ps1`获取最新的 SD WebUI Installer 后，脚本会自动运行新版 SD WebUI Installer 进行更新。
 
 
 ### 使用命令更新

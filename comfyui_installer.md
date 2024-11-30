@@ -22,7 +22,7 @@ _✨一键安装 ComfyUI_
   - [更新 ComfyUI 自定义节点](#更新-comfyui-自定义节点)
   - [设置 ComfyUI 启动参数](#设置-comfyui-启动参数)
   - [进入 ComfyUI 所在的 Python 环境](#进入-comfyui-所在的-python-环境)
-  - [获取最新的 ComfyUI Installer 脚本](#获取最新的-comfyui-installer-脚本)
+  - [获取最新的 ComfyUI Installer 并运行](#获取最新的-comfyui-installer-并运行)
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
@@ -44,7 +44,7 @@ _✨一键安装 ComfyUI_
   - [更新 ComfyUI 管理脚本](#更新-comfyui-管理脚本)
     - [直接更新](#直接更新)
     - [使用 ComfyUI Installer 配置管理器进行更新](#使用-comfyui-installer-配置管理器进行更新)
-    - [手动运行 ComfyUI Installer 进行更新](#手动运行-comfyui-installer-进行更新)
+    - [运行 ComfyUI Installer 进行更新](#运行-comfyui-installer-进行更新)
     - [使用命令更新](#使用命令更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
@@ -193,8 +193,8 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 ComfyUI 所在的 Python。
 
 
-## 获取最新的 ComfyUI Installer 脚本
-运行`get_comfyui_installer.ps1`脚本，运行成功后将会把 ComfyUI Installer 保存在`ComfyUI`文件夹的上一级目录中。
+## 获取最新的 ComfyUI Installer 并运行
+运行`launch_comfyui_installer.ps1`脚本。
 
 
 ## 恢复被修改 / 删除的脚本
@@ -208,15 +208,15 @@ $ tree -L 2
 .
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
-├── ComfyUI                        # 这是 ComfyUI 文件夹
+├── ComfyUI                           # 这是 ComfyUI 文件夹
 │   ├── activate.ps1                  # 进入 ComfyUI Env 的脚本
 │   ├── cache                         # 缓存文件夹
 │   ├── download_models.ps1           # 下载模型的脚本
-│   ├── get_comfyui_installer.ps1  # 获取最新的 ComfyUI Installer 的脚本
+│   ├── launch_comfyui_installer.ps1  # 获取最新的 ComfyUI Installer 的脚本
 │   ├── git                           # Git 目录
 │   ├── help.txt                      # 帮助文档
 │   ├── launch.ps1                    # 启动 ComfyUI 的脚本
-│   ├── ComfyUI                  # ComfyUI 路径
+│   ├── ComfyUI                       # ComfyUI 路径
 │   ├── models                        # download_models.ps1 下载模型脚本
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
@@ -224,7 +224,7 @@ $ tree -L 2
 │   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 ComfyUI Installer 的虚拟环境脚本
 │   ├── update_node.ps1               # 更新 ComfyUI 自定义节点
 │   └── update.ps1                    # 更新 ComfyUI 的脚本
-├── comfyui_installer.ps1          # ComfyUI Installer 放在 ComfyUI 文件夹外面，和 ComfyUI 文件夹同级
+├── comfyui_installer.ps1             # ComfyUI Installer 放在 ComfyUI 文件夹外面，和 ComfyUI 文件夹同级
 └── QQ Files
 
 8 directories, 9 files
@@ -408,7 +408,7 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 │   ├── activate.ps1
 │   ├── cache
 │   ├── download_models.ps1
-│   ├── get_comfyui_installer.ps1
+│   ├── launch_comfyui_installer.ps1
 │   ├── git                           # Git 目录
 │   ├── help.txt
 │   ├── launch.ps1
@@ -433,7 +433,7 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 │   ├── activate.ps1
 │   ├── cache
 │   ├── download_models.ps1
-│   ├── get_comfyui_installer.ps1
+│   ├── launch_comfyui_installer.ps1
 │   ├── help.txt
 │   ├── launch.ps1
 │   ├── ComfyUI                       # ComfyUI 路径
@@ -510,8 +510,8 @@ ComfyUI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 运行`settings.ps1`，选择`更新 ComfyUI Installer 管理脚本`功能进行更新，更新完成后需关闭 ComfyUI Installer 管理脚本以应用更新。
 
 
-### 手动运行 ComfyUI Installer 进行更新
-运行`get_comfyui_installer.ps1`获取最新的 ComfyUI Installer 后，返回上一个目录并运行`comfyui_installer.ps1`。ComfyUI Installer 在安装过程无报错并完整的运行所有安装流程后，ComfyUI 的管理脚本将会得到更新。
+### 运行 ComfyUI Installer 进行更新
+运行`launch_comfyui_installer.ps1`获取最新的 ComfyUI Installer 后，脚本会自动运行新版 ComfyUI Installer 进行更新。
 
 
 ### 使用命令更新
