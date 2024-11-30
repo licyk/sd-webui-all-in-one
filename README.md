@@ -76,7 +76,7 @@ Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的
 
 
 ## SD-Trainer Installer
-Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的脚本，包含启动，管理 SD-Trainer 的工具。
+Windows 平台一键部署 [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
 
 详细的说明[点击此处](./sd_trainer_installer.md)阅读。
 
