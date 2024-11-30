@@ -469,8 +469,6 @@ SD WebUI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 ### 直接更新
 当检测到有新版的 SD WebUI Installer 时，将询问是否进行更新，输入`y`并回车后将运行 SD WebUI Installer 进行更新。
 
-如果遇到更新终止警告，这是因为 SD WebUI Installer 的管理脚本所在文件夹的名称不是`stable-diffusion-webui`，请按照提示修改文件夹名称为`stable-diffusion-webui`后再次进行更新。
-
 
 ### 使用 SD WebUI Installer 配置管理器进行更新
 运行`settings.ps1`，选择`更新 SD WebUI Installer 管理脚本`功能进行更新，更新完成后需关闭 SD WebUI Installer 管理脚本以应用更新。
