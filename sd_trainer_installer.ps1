@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 178
+$SD_TRAINER_INSTALLER_VERSION = 179
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -246,7 +246,7 @@ function Install-Git {
     if ($?) { # 检测是否下载成功并解压
         # 创建 Git 文件夹
         if (!(Test-Path "$InstallPath/git")) {
-            New-Item -ItemType Directory -Force -Path $PSScriptRoot/SD-Trainer/git > $null
+            New-Item -ItemType Directory -Force -Path "$InstallPath/git" > $null
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
