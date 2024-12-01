@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 121
+$SD_WEBUI_INSTALLER_VERSION = 122
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -484,15 +484,20 @@ function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/stable-diffusion-webui"
+    $dep_path = "$InstallPath/stable-diffusion-webui/requirements_versions.txt"
+    # SD Next
+    if (!(Test-Path "$dep_path")) {
+        $dep_path = "$InstallPath/stable-diffusion-webui/requirements.txt"
+    }
     Print-Msg "安装 Stable Diffusion WebUI 依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements_versions.txt
+        uv pip install -r "$dep_path"
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install -r requirements_versions.txt
+            python -m pip install -r "$dep_path"
         }
     } else {
-        python -m pip install -r requirements_versions.txt
+        python -m pip install -r "$dep_path"
     }
     if ($?) {
         Print-Msg "Stable Diffusion WebUI 依赖安装成功"
@@ -1418,18 +1423,24 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" -Value `$content
 
-    `$status = `$(python `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`")
+    `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
+    # SD Next
+    if (!(Test-Path `"`$dep_path`")) {
+        `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements.txt`"
+    }
+
+    `$status = `$(python `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 Stable Diffusion WebUI 内核有依赖缺失, 安装 Stable Diffusion WebUI 依赖中`"
         if (`$USE_UV) {
-            uv pip install -r `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
+            uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
+                python -m pip install -r `"`$dep_path`"
             }
         } else {
-            python -m pip install -r `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
+            python -m pip install -r `"`$dep_path`"
         }
         if (`$?) {
             Print-Msg `"Stable Diffusion WebUI 依赖安装成功`"
@@ -2669,6 +2680,7 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
         }
         git -C `"`$sd_webui_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
         Print-Msg `"切换 Stable Diffusion WebUI 分支完成`"
+        `$global:status = `$true
     } else {
         Print-Msg `"拉取 Stable Diffusion WebUI 远程源更新失败, 取消分支切换`"
         Print-Msg `"尝试回退 Stable Diffusion WebUI 的更改`"
@@ -2680,7 +2692,27 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
         }
         Print-Msg `"回退 Stable Diffusion WebUI 分支更改完成`"
         Print-Msg `"切换 Stable Diffusion WebUI 分支更改失败`"
+        `$global:status = `$false
     }
+}
+
+
+# 重置 repositories 中的组件
+function Reset-Repositories {
+    `$repositories_path = `"`$PSScriptRoot/stable-diffusion-webui/repositories`"
+    if (!(Test-Path `"`$repositories_path`")) {
+        return
+    }
+
+    Print-Msg `"重置 Stable Diffusion WebUI 组件状态中`"
+    `$repositories_list = Get-ChildItem -Path `"`$repositories_path`" | Select-Object -ExpandProperty FullName
+    ForEach (`$rep_path in `$repositories_list) {
+        if (Test-Path `"`$rep_path/.git`") {
+            git -C `"`$rep_path`" reset --hard --recurse-submodules
+        }
+    }
+
+    Print-Msg `"重置 Stable Diffusion WebUI 组件状态完成`"
 }
 
 
@@ -2805,6 +2837,12 @@ function Main {
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 Stable Diffusion WebUI 分支`"
         Switch-Stable-Diffusion-WebUI-Branch `$remote `$branch `$use_submod
+        Reset-Repositories
+        if (`$status) {
+            Print-Msg `"切换 Stable Diffusion WebUI 分支成功`"
+        } else {
+            Print-Msg `"切换 Stable Diffusion WebUI 分支失败, 可尝试重新运行 Stable Diffusion WebUI 分支切换脚本`"
+        }
     } else {
         Print-Msg `"取消切换 Stable Diffusion WebUI 分支`"
     }
@@ -3217,33 +3255,33 @@ function Main {
         return
     }
 
-    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
-    ForEach (`$node in `$node_list) {
-        if (Test-Path `"`$node/.git`") {
+    ForEach (`$extension in `$extension_list) {
+        if (Test-Path `"`$extension/.git`") {
             `$sum += 1
         }
     }
 
     Print-Msg `"更新 Stable Diffusion WebUI 扩展中`"
     `$update_status = New-Object System.Collections.ArrayList
-    ForEach (`$node in `$node_list) {
-        if (!(Test-Path `"`$node/.git`")) {
+    ForEach (`$extension in `$extension_list) {
+        if (!(Test-Path `"`$extension/.git`")) {
             continue
         }
 
         `$count += 1
-        `$extension_name = `$(`$(Get-Item `$node).Name)
+        `$extension_name = `$(`$(Get-Item `$extension).Name)
         Print-Msg `"[`$count/`$sum]:: 更新 `$extension_name 扩展中`"
-        Fix-Git-Point-Off-Set `"`$node`"
-        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-        git -C `"`$node`" fetch --recurse-submodules
+        Fix-Git-Point-Off-Set `"`$extension`"
+        `$origin_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$extension`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$extension`" fetch --recurse-submodules
         if (`$?) {
-            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
-            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
-            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            `$commit_hash = `$(git -C `"`$extension`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$extension`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
             if (`$origin_ver -eq `$latest_ver) {
                 Print-Msg `"[`$count/`$sum]:: `$extension_name 扩展已为最新版`"
                 `$update_status.Add(@(`$extension_name, `"已为最新版`", `$true)) | Out-Null
@@ -5952,10 +5990,10 @@ function global:Git-Clone (`$url, `$path) {
 
 # 列出已安装的 Stable Diffusion WebUI 扩展
 function global:List-Extension {
-    `$node_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
     Print-Msg `"当前 Stable Diffusion WebUI 已安装的扩展`"
     `$count = 0
-    ForEach (`$i in `$node_list) {
+    ForEach (`$i in `$extension_list) {
         if (Test-Path `"`$i`" -PathType Container) {
             `$count += 1
             `$name = [System.IO.Path]::GetFileNameWithoutExtension(`"`$i`")

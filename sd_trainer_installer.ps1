@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 182
+$SD_TRAINER_INSTALLER_VERSION = 183
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1969,7 +1969,7 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$sd_trainer_path`" submodule update --init --recursive
         }
         git -C `"`$sd_trainer_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
-        Print-Msg `"切换 SD-Trainer 分支完成`"
+        Print-Msg `"切换 SD-Trainer 分支成功`"
     } else {
         Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
         Print-Msg `"尝试回退 SD-Trainer 的更改`"
@@ -1980,7 +1980,7 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$sd_trainer_path`" submodule update --init --recursive
         }
         Print-Msg `"回退 SD-Trainer 分支更改完成`"
-        Print-Msg `"切换 SD-Trainer 分支更改失败`"
+        Print-Msg `"切换 SD-Trainer 分支更改失败, 可尝试重新运行 SD-Trainer 分支切换脚本`"
     }
 }
 
