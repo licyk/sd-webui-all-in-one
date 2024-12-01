@@ -5,7 +5,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 159
+$INVOKEAI_INSTALLER_VERSION = 160
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -190,22 +190,40 @@ print(is_uv_need_update())
 # 下载并解压 Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
+    $cache_path = "$InstallPath/cache/python_tmp"
+    $path = "$InstallPath/python"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
-        # 创建 Python 文件夹
-        if (!(Test-Path "$InstallPath/python")) {
-            New-Item -ItemType Directory -Force -Path "$InstallPath/python" > $null
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$InstallPath/python" -Force
+        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Move-Item -Path "$cache_path" -Destination "$path" -Force
         Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+        Read-Host | Out-Null
+        exit 1
+    }
+}
+
+
+# 下载 Aria2
+function Install-Aria2 {
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
+    Print-Msg "正在下载 Aria2"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
+    if ($?) {
+        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/python/Scripts/aria2c.exe" -Force
+        Print-Msg "Aria2 下载成功"
+    } else {
+        Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -448,6 +466,13 @@ function Check-Install {
         Install-Python
     }
 
+    Print-Msg "检测是否安装 Aria2"
+    if (Test-Path "$InstallPath/python/Scripts/aria2c.exe") {
+        Print-Msg "Aria2 已安装"
+    } else {
+        Print-Msg "Aria2 未安装"
+        Install-Aria2
+    }
 
     Print-Msg "检测是否安装 uv"
     python -m pip show uv --quiet 2> $null
@@ -607,17 +632,14 @@ function Check-InvokeAI-Installer-Update {
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -1065,17 +1087,14 @@ function Check-InvokeAI-Installer-Update {
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -1706,17 +1725,14 @@ function Check-InvokeAI-Installer-Update {
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -2023,17 +2039,14 @@ function Check-InvokeAI-Installer-Update {
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 InvokeAI Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                     Print-Msg `"InvokeAI Installer 已是最新版本`"
                 }
                 break
@@ -3330,13 +3343,11 @@ function Check-InvokeAI-Installer-Update {
             if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                Move-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" `"`$PSScriptRoot/../invokeai_installer.ps1`" -Force
-                . `"`$PSScriptRoot/../invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$PSScriptRoot/cache/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
             break
@@ -3371,6 +3382,13 @@ function Check-Env {
         `$broken = 1
     }
 
+    if (Test-Path `"`$PSScriptRoot/python/Scripts/aria2c.exe`") {
+        `$aria2_status = `"已安装`"
+    } else {
+        `$aria2_status = `"未安装`"
+        `$broken = 1
+    }
+
     python -m pip show invokeai --quiet 2> `$null
     if (`$?) {
         `$invokeai_status = `"已安装`"
@@ -3399,6 +3417,7 @@ function Check-Env {
     Print-Msg `"当前环境:`"
     Print-Msg `"Python: `$python_status`"
     Print-Msg `"uv: `$uv_status`"
+    Print-Msg `"Aria2: `$aria2_status`"
     Print-Msg `"PyTorch: `$torch_status`"
     Print-Msg `"xFormers: `$xformers_status`"
     Print-Msg `"InvokeAI: `$invokeai_status`"
@@ -3643,13 +3662,11 @@ function global:Check-InvokeAI-Installer-Update {
             if (`$latest_version -gt `$Env:INVOKEAI_INSTALLER_VERSION) {
                 Print-Msg `"InvokeAI Installer 有新版本可用`"
                 Print-Msg `"调用 InvokeAI Installer 进行更新中`"
-                Move-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`" -Force
-                . `"`$Env:INVOKEAI_INSTALLER_ROOT/../invokeai_installer.ps1`" -InstallPath `"`$Env:INVOKEAI_INSTALLER_ROOT`" -UseUpdateMode
+                . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$Env:INVOKEAI_INSTALLER_ROOT`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/invokeai_installer.ps1`" 2> `$null
                 Print-Msg `"InvokeAI Installer 已是最新版本`"
             }
             break
@@ -3668,6 +3685,9 @@ function global:Check-InvokeAI-Installer-Update {
 # 安装 Git
 function global:Install-Git {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip`"
+    `$cache_path = `"`$Env:CACHE_HOME/git_tmp`"
+    `$path = `"`$Env:INVOKEAI_INSTALLER_ROOT/git`"
+
     if ((Get-Command git -ErrorAction SilentlyContinue) -or(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`")) {
         Print-Msg `"Git 已安装`"
         return
@@ -3675,13 +3695,13 @@ function global:Install-Git {
     Print-Msg `"正在下载 Git`"
     Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/PortableGit.zip`"
     if (`$?) { # 检测是否下载成功并解压
-        # 创建 Git 文件夹
-        if (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git`")) {
-            New-Item -ItemType Directory -Force -Path `$Env:INVOKEAI_INSTALLER_ROOT/git > `$null
+        if (Test-Path `"`$cache_path`") {
+            Remove-Item -Path `"`$cache_path`" -Force
         }
         # 解压 Git
         Print-Msg `"正在解压 Git`"
-        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$Env:INVOKEAI_INSTALLER_ROOT/git`" -Force
+        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$cache_path`" -Force
+        Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
         Remove-Item -Path `"`$Env:CACHE_HOME/PortableGit.zip`"
         Print-Msg `"Git 安装成功`"
         return `$true
@@ -3767,7 +3787,7 @@ function global:Install-InvokeAI-Node (`$url) {
     }
 
     `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    `$cache_path = `"`$Env:CACHE_HOME/`$node_name`"
+    `$cache_path = `"`$Env:CACHE_HOME/`${node_name}_tmp`"
     `$path = `"`$Env:INVOKEAI_ROOT/nodes/`$node_name`"
     if (!(Test-Path `"`$path`")) {
         `$status = 1

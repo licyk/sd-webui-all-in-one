@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 184
+$SD_TRAINER_INSTALLER_VERSION = 185
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -216,18 +216,20 @@ print(is_uv_need_update())
 # 下载并解压 Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
+    $cache_path = "$InstallPath/cache/python_tmp"
+    $path = "$InstallPath/python"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
-        # 创建 Python 文件夹
-        if (!(Test-Path "$InstallPath/python")) {
-            New-Item -ItemType Directory -Force -Path "$InstallPath/python" > $null
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$InstallPath/python" -Force
+        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Move-Item -Path "$cache_path" -Destination "$path" -Force
         Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
         Print-Msg "Python 安装成功"
     } else {
@@ -241,16 +243,19 @@ function Install-Python {
 # 下载并解压 Git
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
+    $cache_path = "$InstallPath/cache/git_tmp"
+    $path = "$InstallPath/git"
+
     Print-Msg "正在下载 Git"
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
-        # 创建 Git 文件夹
-        if (!(Test-Path "$InstallPath/git")) {
-            New-Item -ItemType Directory -Force -Path "$InstallPath/git" > $null
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$InstallPath/git" -Force
+        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        Move-Item -Path "$cache_path" -Destination "$path" -Force
         Remove-Item -Path "$InstallPath/cache/PortableGit.zip"
         Print-Msg "Git 安装成功"
     } else {
@@ -358,7 +363,7 @@ function Install-SD-Trainer {
     }
 
     $path = "$InstallPath/lora-scripts"
-    $cache_path = "$InstallPath/cache/lora-scripts"
+    $cache_path = "$InstallPath/cache/lora-scripts_tmp"
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
         # 清理缓存路径
@@ -697,17 +702,14 @@ function Check-SD-Trainer-Installer-Update {
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 SD-Trainer Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1247,17 +1249,14 @@ function Check-SD-Trainer-Installer-Update {
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 SD-Trainer Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -1741,17 +1740,14 @@ function Check-SD-Trainer-Installer-Update {
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 SD-Trainer Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -2325,17 +2321,14 @@ function Check-SD-Trainer-Installer-Update {
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 SD-Trainer Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -2920,17 +2913,14 @@ function Check-SD-Trainer-Installer-Update {
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                        . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
                     } else {
-                        Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                         Print-Msg `"跳过 SD-Trainer Installer 更新`"
                     }
                 } else {
-                    Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                     Print-Msg `"SD-Trainer Installer 已是最新版本`"
                 }
                 break
@@ -3907,13 +3897,11 @@ function Check-SD-Trainer-Installer-Update {
             if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                Move-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -Force
-                . `"`$PSScriptRoot/../sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
             break
@@ -3962,7 +3950,7 @@ function Check-Env {
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") {
+    if ((Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/kohya_gui.py`")) {
         `$sd_trainer_status = `"已安装`"
     } else {
         `$sd_trainer_status = `"未安装`"
@@ -4249,13 +4237,11 @@ function global:Check-SD-Trainer-Installer-Update {
             if (`$latest_version -gt `$Env:SD_TRAINER_INSTALLER_VERSION) {
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                Move-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/../sd_trainer_installer.ps1`" -Force
-                . `"`$Env:SD_TRAINER_INSTALLER_ROOT/../sd_trainer_installer.ps1`" -InstallPath `"`$Env:SD_TRAINER_INSTALLER_ROOT`" -UseUpdateMode
+                . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$Env:SD_TRAINER_INSTALLER_ROOT`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
             } else {
-                Remove-Item -Path `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" 2> `$null
                 Print-Msg `"SD-Trainer Installer 已是最新版本`"
             }
             break
