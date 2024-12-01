@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 183
+$SD_TRAINER_INSTALLER_VERSION = 184
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -521,6 +521,13 @@ function Check-Install {
     Install-SD-Trainer
     Install-PyTorch
     Install-SD-Trainer-Dependence
+
+    # 设置 Kohya GUI 的启动参数
+    if ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
+        Print-Msg "设置默认 Kohya GUI 启动参数"
+        $content = "--inbrowser --language zh-CN"
+        Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
+    }
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -2013,7 +2020,9 @@ function Main {
         Write-Host `$content
         Print-Msg `"当前 SD-Trainer 分支: `$(Get-SD-Trainer-Branch)`"
         Print-Msg `"请选择 SD-Trainer 分支`"
-        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
+        Print-Msg `"提示:`"
+        Print-Msg `"1. 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
+        Print-Msg `"2. 切换分支后, 需要清除原来的启动参数, 因为 Akegarasu/SD-Trainer 分支的启动参数和 bmaltais/Kohya GUI 参数互不兼容, 可通过 settings.ps1 脚本中的启动参数设置进行清除`"
         `$arg = Read-Host `"===========================================>`"
 
         switch (`$arg) {
@@ -2971,6 +2980,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred077.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred11Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred06Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -3729,7 +3739,10 @@ function Update-SD-Trainer-Launch-Args-Setting {
         switch (`$arg) {
             1 {
                 Print-Msg `"请输入 SD-Trainer 启动参数`"
-                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, SD-Trainer 可用的启动参数可阅读: https://github.com/Akegarasu/lora-scripts?tab=readme-ov-file#program-arguments`"
+                Print-Msg `"提示:`"
+                Print-Msg `"1. 保存启动参数后原有的启动参数将被覆盖`"
+                Print-Msg `"2. SD-Trainer 可用的启动参数可阅读: https://github.com/Akegarasu/lora-scripts?tab=readme-ov-file#program-arguments`"
+                Print-Msg `"3. Kohya GUI 可用的启动参数可阅读: https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service`"
                 Print-Msg `"输入启动参数后回车保存`"
                 `$sd_trainer_launch_args = Get-User-Input
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$sd_trainer_launch_args

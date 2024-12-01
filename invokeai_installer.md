@@ -236,6 +236,7 @@ $ tree -L 2
 │   ├── launch.ps1                      # 启动 InvokeAI 的脚本
 │   ├── python                          # Python 目录
 │   ├── reinstall_pytorch.ps1           # 重装 PyTorch 脚本
+│   ├── download_models.ps1             # 模型下载脚本
 │   ├── settings.ps1                    # 管理 InvokeAI Installer 设置的脚本
 │   ├── terminal.ps1                    # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
 │   └── update.ps1                      # 更新 InvokeAI 的脚本
@@ -294,7 +295,7 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 
 ## 添加模型
-在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
+如果没有下载模型，可以使用`download_models.ps1`脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
 
 
 ## InvokeAI 的使用方法

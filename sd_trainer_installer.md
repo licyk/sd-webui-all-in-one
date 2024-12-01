@@ -204,7 +204,8 @@ $ tree -L 1
 
 >[!NOTE]  
 >1. SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts ### 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
->2. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
+>2. Kohya GUI 可用的启动参数可阅读：[bmaltais/kohya_ss - Starting GUI Service](https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service)
+>3. 该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 
 ## 切换 SD-Trainer 分支
@@ -214,6 +215,8 @@ $ tree -L 1
 
 - [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
 - [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
+
+切换分支后需要删去原有的启动参数，因为两个不同的分支的启动参数互不兼容，可将`launch_args.txt`删除或者通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行删除。
 
 
 ## 进入 SD-Trainer 所在的 Python 环境
