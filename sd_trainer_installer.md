@@ -216,7 +216,9 @@ $ tree -L 1
 - [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
 - [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 
-切换分支后需要删去原有的启动参数，因为两个不同的分支的启动参数互不兼容，可将`launch_args.txt`删除或者通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行删除。
+>[!NOTE]  
+>1. 切换分支后需要删去原有的启动参数，因为两个不同的分支的启动参数互不兼容，可将`launch_args.txt`删除或者通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行删除。
+>2. 切换分支后，因为两个分支需要的依赖版本不一致，需要对依赖进行更新，可通过运行`update.ps1`进行依赖更新，保证 SD-Trainer 能够正常运行。
 
 
 ## 进入 SD-Trainer 所在的 Python 环境

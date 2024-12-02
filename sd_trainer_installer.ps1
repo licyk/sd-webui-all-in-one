@@ -6,7 +6,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 185
+$SD_TRAINER_INSTALLER_VERSION = 186
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2019,6 +2019,7 @@ function Main {
         Print-Msg `"提示:`"
         Print-Msg `"1. 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
         Print-Msg `"2. 切换分支后, 需要清除原来的启动参数, 因为 Akegarasu/SD-Trainer 分支的启动参数和 bmaltais/Kohya GUI 参数互不兼容, 可通过 settings.ps1 脚本中的启动参数设置进行清除`"
+        Print-Msg `"3. 切换分支后, 需要更新依赖, 可通过运行 update.ps1 进行依赖更新`"
         `$arg = Read-Host `"===========================================>`"
 
         switch (`$arg) {
