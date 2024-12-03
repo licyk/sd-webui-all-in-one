@@ -442,6 +442,10 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |---|---|
 |`-InstallPath` <InvokeAI 安装路径>|指定安装 InvokeAI 的路径，使用绝对路径进行指定。|
 |`-UseUpdateMode`|使用 InvokeAI Installer 的更新脚本模式，不进行 InvokeAI 的安装。|
+|`-DisablePipMirror`|禁用 InvokeAI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
+|`-DisableProxy`|禁用 InvokeAI Installer 自动设置代理服务器。|
+|`·UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
+|`-DisableUV`|禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
 |`-Help`|显示 InvokeAI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 InvokeAI，则在 InvokeAI Installer 所在路径打开 PowerShell，使用参数运行 InvokeAI Installer。

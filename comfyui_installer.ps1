@@ -1,11 +1,17 @@
 ﻿param (
     [string]$InstallPath = "$PSScriptRoot/ComfyUI",
     [switch]$UseUpdateMode,
+    [switch]$DisablePipMirror,
+    [switch]$DisableProxy,
+    [string]$UseCustomProxy,
+    [switch]$DisableUV,
+    [switch]$DisableGithubMirror,
+    [string]$UseCustomGithubMirror,
     [switch]$Help
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 151
+$COMFYUI_INSTALLER_VERSION = 152
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -14,7 +20,7 @@ $PIP_EXTRA_INDEX_ADDR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 $PIP_EXTRA_INDEX_ADDR_ORI = "https://download.pytorch.org/whl"
 $PIP_FIND_ADDR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 $PIP_FIND_ADDR_ORI = "https://download.pytorch.org/whl/torch_stable.html"
-$USE_PIP_MIRROR = if (!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) { $true } else { $false }
+$USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) -and (!($DisablePipMirror))) { $true } else { $false }
 $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
 $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
@@ -103,7 +109,7 @@ function Pip-Mirror-Status {
     if ($USE_PIP_MIRROR) {
         Print-Msg "使用 Pip 镜像源"
     } else {
-        Print-Msg "检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源"
+        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / 命令行参数 -DisablePipMirror, 已将 Pip 源切换至官方源"
     }
 }
 
@@ -112,17 +118,21 @@ function Pip-Mirror-Status {
 function Set-Proxy {
     $Env:NO_PROXY = "localhost,127.0.0.1,::1"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path "$PSScriptRoot/disable_proxy.txt") {
-        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理"
+    if ((Test-Path "$PSScriptRoot/disable_proxy.txt") -or ($DisableProxy)) {
+        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件 / 命令行参数 -DisableProxy, 禁用自动设置代理"
         return
     }
 
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if (Test-Path "$PSScriptRoot/proxy.txt") { # 本地存在代理配置
-        $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy -ne "")) { # 本地存在代理配置
+        if ($UseCustomProxy -ne "") {
+            $proxy_value = $UseCustomProxy
+        } else {
+            $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+        }
         $Env:HTTP_PROXY = $proxy_value
         $Env:HTTPS_PROXY = $proxy_value
-        Print-Msg "检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理"
+        Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / 命令行参数 -UseCustomProxy, 已读取代理配置文件并设置代理"
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
         $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
@@ -133,8 +143,8 @@ function Set-Proxy {
 
 # 设置 uv 的使用状态
 function Set-uv {
-    if (Test-Path "$PSScriptRoot/disable_uv.txt") {
-        Print-Msg "检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
+    if ((Test-Path "$PSScriptRoot/disable_uv.txt") -or ($DisableUV)) {
+        Print-Msg "检测到 disable_uv.txt 配置文件 / 命令行参数 -DisableUV, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
@@ -217,13 +227,13 @@ function Install-Python {
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
-            Remove-Item -Path "$cache_path" -Force
+            Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
         Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip"
+        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -243,13 +253,13 @@ function Install-Git {
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
-            Remove-Item -Path "$cache_path" -Force
+            Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
         Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force
+        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force -Recurse
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -291,22 +301,26 @@ function Install-uv {
 
 # Github 镜像测试
 function Test-Github-Mirror {
-    if (Test-Path "$PSScriptRoot/disable_gh_mirror.txt") { # 禁用 Github 镜像源
-        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源"
+    if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -DisableGithubMirror, 禁用 Github 镜像源"
         return
     } 
 
     $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
     if (Test-Path "$InstallPath/.gitconfig") {
-        Remove-Item -Path "$InstallPath/.gitconfig" -Force
+        Remove-Item -Path "$InstallPath/.gitconfig" -Force -Recurse
     }
 
     # 使用自定义 Github 镜像源
-    if (Test-Path "$PSScriptRoot/gh_mirror.txt") {
-        $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
+    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($UseCustomGithubMirror -ne "")) {
+        if ($UseCustomGithubMirror -ne "") {
+            $github_mirror = $UseCustomGithubMirror
+        } else {
+            $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
+        }
         git config --global --add safe.directory "*"
         git config --global url."$github_mirror".insteadOf "https://github.com"
-        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -UseCustomGithubMirror, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         return
     }
 
@@ -793,7 +807,7 @@ function Set-Github-Mirror {
     
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
@@ -1735,8 +1749,8 @@ if __name__ == '__main__':
         New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
     }
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/check_comfyui_env.py`" -Value `$content
-    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`" 2> `$null
-    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`" 2> `$null
+    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`" -Force -Recurse 2> `$null
+    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`" -Force -Recurse 2> `$null
 
     python `"`$PSScriptRoot/cache/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/ComfyUI`" --conflict-depend-notice-path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`" `
 
@@ -2397,7 +2411,7 @@ function Set-Github-Mirror {
     
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
@@ -2787,7 +2801,7 @@ function Set-Github-Mirror {
     
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
@@ -3025,6 +3039,7 @@ function Main {
     `$status = Download-ComfyUI-Installer
     if (`$status) {
         Print-Msg `"运行 ComfyUI Installer 中`"
+        `$arg = Get-Local-Setting
         . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
     } else {
         Read-Host | Out-Null
@@ -4696,8 +4711,8 @@ function Update-Proxy-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_proxy.txt`" 2> `$null
-                Remove-Item -Path `"`$PSScriptRoot/proxy.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_proxy.txt`" -Force -Recurse 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/proxy.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用代理成功, 当设置了系统代理后将自动读取并使用`"
                 break
             }
@@ -4705,14 +4720,14 @@ function Update-Proxy-Setting {
                 Print-Msg `"请输入代理服务器地址`"
                 Print-Msg `"提示: 代理地址可查看代理软件获取, 代理地址的格式如 http://127.0.0.1:10809、socks://127.0.0.1:7890 等, 输入后回车保存`"
                 `$proxy_address = Get-User-Input
-                Remove-Item -Path `"`$PSScriptRoot/disable_proxy.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_proxy.txt`" -Force -Recurse 2> `$null
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/proxy.txt`" -Value `$proxy_address
                 Print-Msg `"启用代理成功, 使用的代理服务器为: `$proxy_address`"
                 break
             }
             3 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_proxy.txt`" -Force > `$null
-                Remove-Item -Path `"`$PSScriptRoot/proxy.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/proxy.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"禁用代理成功`"
                 break
             }
@@ -4747,7 +4762,7 @@ function Update-Python-Package-Manager-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_uv.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_uv.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"设置 uv 作为 Python 包管理器成功`"
                 break
             }
@@ -4788,8 +4803,8 @@ function Update-HuggingFace-Mirror-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" 2> `$null
-                Remove-Item -Path `"`$PSScriptRoot/hf_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" -Force -Recurse 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/hf_mirror.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用 HuggingFace 镜像成功, 使用默认的 HuggingFace 镜像源 (https://hf-mirror.com)`"
                 break
             }
@@ -4800,14 +4815,14 @@ function Update-HuggingFace-Mirror-Setting {
                 Print-Msg `"2. https://huggingface.sukaka.top`"
                 Print-Msg `"输入 HuggingFace 镜像源地址后回车保存`"
                 `$huggingface_mirror_address = Get-User-Input
-                Remove-Item -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" -Force -Recurse 2> `$null
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/hf_mirror.txt`" -Value `$huggingface_mirror_address
                 Print-Msg `"启用 HuggingFace 镜像成功, 使用的 HuggingFace 镜像源为: `$huggingface_mirror_address`"
                 break
             }
             3 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" -Force > `$null
-                Remove-Item -Path `"`$PSScriptRoot/hf_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/hf_mirror.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"禁用 HuggingFace 镜像成功`"
                 break
             }
@@ -4843,8 +4858,8 @@ function Update-Github-Mirror-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
-                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用 Github 镜像成功, 在更新 ComfyUI 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
@@ -4860,14 +4875,14 @@ function Update-Github-Mirror-Setting {
                 Print-Msg `"7. https://gh.idayer.com/https://github.com`"
                 Print-Msg `"输入 Github 镜像源地址后回车保存`"
                 `$github_mirror_address = Get-User-Input
-                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/gh_mirror.txt`" -Value `$github_mirror_address
                 Print-Msg `"启用 Github 镜像成功, 使用的 Github 镜像源为: `$github_mirror_address`"
                 break
             }
             3 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force > `$null
-                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"禁用 Github 镜像成功`"
                 break
             }
@@ -4902,7 +4917,7 @@ function Update-ComfyUI-Installer-Auto-Check-Update-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_update.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_update.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用 ComfyUI Installer 自动更新检查成功`"
                 break
             }
@@ -4951,7 +4966,7 @@ function Update-ComfyUI-Launch-Args-Setting {
                 break
             }
             2 {
-                Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"删除 ComfyUI 启动参数成功`"
                 break
             }
@@ -4991,7 +5006,7 @@ function Auto-Set-Launch-Shortcut-Setting {
                 break
             }
             2 {
-                Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"禁用自动创建 ComfyUI 快捷启动方式成功`"
                 break
             }
@@ -5026,7 +5041,7 @@ function Pip-Mirror-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用 Pip 镜像源成功`"
                 break
             }
@@ -5066,7 +5081,7 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用自动设置 CUDA 内存分配器成功`"
                 break
             }
@@ -5106,7 +5121,7 @@ function ComfyUI-Env-Check-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" 2> `$null
+                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
                 Print-Msg `"启用 ComfyUI 运行环境检测成功`"
                 break
             }
@@ -5534,7 +5549,7 @@ function global:Test-Github-Mirror {
     # 设置 Git 配置文件路径
     `$Env:GIT_CONFIG_GLOBAL = `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`"
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`") {
-        Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`" -Force
+        Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`" -Force -Recurse
     }
 
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`") { # 使用自定义 Github 镜像源
@@ -5838,7 +5853,7 @@ function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
         if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force
+            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
         }
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
@@ -6046,6 +6061,32 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
     -UseUpdateMode
         指定 ComfyUI Installer 使用更新模式, 只对 ComfyUI Installer 的管理脚本进行更新
 
+        -DisablePipMirror
+        禁用 ComfyUI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+
+    -DisableUV
+        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghp.ci/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 "
@@ -6065,7 +6106,7 @@ function Main {
     # TODO: Deprecate Test-Path "$InstallPath/use_update_mode.txt"
     if ((Test-Path "$InstallPath/use_update_mode.txt") -or ($UseUpdateMode)) {
         Print-Msg "使用更新模式"
-        Remove-Item -Path "$InstallPath/use_update_mode.txt" -Force 2> $null
+        Remove-Item -Path "$InstallPath/use_update_mode.txt" -Force -Recurse 2> $null
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
         Use-Update-Mode
     } else {

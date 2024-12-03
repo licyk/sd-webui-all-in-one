@@ -532,6 +532,12 @@ SD-Trainer Installer 支持使用命令参数设置安装 SD-Trainer 的参数�
 |`-InstallPath` <SD-Trainer 安装路径>|指定安装 SD-Trainer 的路径，使用绝对路径进行指定。|
 |`InstallBranch` <SD-Trainer 分支名>|指定 SD-Trainer Installer 安装的 SD-Trainer 的分支，SD-Trainer 分支名对应的分支如下：</br>`sd_trainer`: [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)</br>`kohya_gui`: [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 |`-UseUpdateMode`|使用 SD-Trainer Installer 的更新脚本模式，不进行 SD-Trainer 的安装。|
+|`-DisablePipMirror`|禁用 SD-Trainer Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
+|`-DisableProxy`|禁用 SD-Trainer Installer 自动设置代理服务器。|
+|`·UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
+|`-DisableUV`|禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
+|`-DisableGithubMirror`|禁用 SD-Trainer Installer 自动设置 Github 镜像源。|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghp.ci/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
 |`-Help`|显示 SD-Trainer Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer Installer。
