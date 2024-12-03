@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 127
+$SD_WEBUI_INSTALLER_VERSION = 128
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3427,6 +3427,18 @@ function Get-Local-Setting {
             `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
+    }
+
+    if (Test-Path `"`$PSScriptRoot/install_sd_webui.txt`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_webui_forge.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_webui_reforge.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_webui_amdgpu.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_next.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"sdnext`")
     }
 
     return `$arg
