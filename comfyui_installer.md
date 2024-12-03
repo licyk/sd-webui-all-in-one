@@ -150,6 +150,33 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 在 ComfyUI Installer 成功安装 ComfyUI 后，在`ComfyUI`文件夹中可以看到 ComfyUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 ComfyUI Installer。
 
+<details>
+<summary><strong>查看 ComfyUI Installer 为 ComfyUI 预装的扩展</strong></summary>
+
+|ComfyUI 扩展|
+|---|
+|[ltdrdata/ComfyUI-Manager](https://github.com/ltdrdata/ComfyUI-Manager)|
+|[AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION](https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION)|
+|[Fannovel16/comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux)|
+|[Kosinkadink/ComfyUI-Advanced-ControlNet](https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet)|
+|[cubiq/ComfyUI_IPAdapter_plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus)|
+|[kijai/ComfyUI-Marigold](https://github.com/kijai/ComfyUI-Marigold)|
+|[pythongosssss/ComfyUI-WD14-Tagger](https://github.com/pythongosssss/ComfyUI-WD14-Tagger)|
+|[BlenderNeko/ComfyUI_TiledKSampler](https://github.com/BlenderNeko/ComfyUI_TiledKSampler)|
+|[pythongosssss/ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts)|
+|[LEv145/images-grid-comfy-plugin](https://github.com/LEv145/images-grid-comfy-plugin)|
+|[ssitu/ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale)|
+|[AlekPet/ComfyUI_Custom_Nodes_AlekPet](https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet)|
+|[talesofai/comfyui-browser](https://github.com/talesofai/comfyui-browser)|
+|[ltdrdata/ComfyUI-Inspire-Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack)|
+|[Suzie1/ComfyUI_Comfyroll_CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes)|
+|[crystian/ComfyUI-Crystools](https://github.com/crystian/ComfyUI-Crystools)|
+|[shiimizu/ComfyUI-TiledDiffusion](https://github.com/shiimizu/ComfyUI-TiledDiffusion)|
+|[huchenlei/ComfyUI-openpose-editor](https://github.com/huchenlei/ComfyUI-openpose-editor)|
+|[licyk/ComfyUI-Restart-Sampler](https://github.com/licyk/ComfyUI-Restart-Sampler)|
+
+</details>
+
 >[!NOTE]  
 >1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
 >2. ComfyUI Installer 支持使用在命令行中通过参数配置 ComfyUI 的安装参数，具体说明可阅读[使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)。

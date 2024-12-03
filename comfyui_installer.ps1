@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 152
+$COMFYUI_INSTALLER_VERSION = 153
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -525,9 +525,30 @@ function Check-Install {
     Check-uv-Version
 
     Test-Github-Mirror
-    Git-CLone "$COMFYUI_REPO" "$InstallPath/ComfyUI"
-    Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$InstallPath/ComfyUI/custom_nodes/ComfyUI-Manager"
-    Git-CLone "https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION" "$InstallPath/ComfyUI/custom_nodes/AIGODLIKE-COMFYUI-TRANSLATION"
+    $comfyui_path = "$InstallPath/ComfyUI"
+    $custom_node_path = "$comfyui_path/custom_nodes"
+    Git-CLone "$COMFYUI_REPO" "$comfyui_path"
+    # ComfyUI 扩展
+    Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
+    Git-CLone "https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION" "$custom_node_path/AIGODLIKE-COMFYUI-TRANSLATION"
+    Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
+    Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
+    Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"
+    Git-CLone "https://github.com/kijai/ComfyUI-Marigold" "$custom_node_path/ComfyUI-Marigold"
+    Git-CLone "https://github.com/pythongosssss/ComfyUI-WD14-Tagger" "$custom_node_path/ComfyUI-WD14-Tagger"
+    Git-CLone "https://github.com/BlenderNeko/ComfyUI_TiledKSampler" "$custom_node_path/ComfyUI_TiledKSampler"
+    Git-CLone "https://github.com/pythongosssss/ComfyUI-Custom-Scripts" "$custom_node_path/ComfyUI-Custom-Scripts"
+    Git-CLone "https://github.com/LEv145/images-grid-comfy-plugin" "$custom_node_path/images-grid-comfy-plugin"
+    Git-CLone "https://github.com/ssitu/ComfyUI_UltimateSDUpscale" "$custom_node_path/ComfyUI_UltimateSDUpscale"
+    Git-CLone "https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet" "$custom_node_path/ComfyUI_Custom_Nodes_AlekPet"
+    Git-CLone "https://github.com/talesofai/comfyui-browser" "$custom_node_path/comfyui-browser"
+    Git-CLone "https://github.com/ltdrdata/ComfyUI-Inspire-Pack" "$custom_node_path/ComfyUI-Inspire-Pack"
+    Git-CLone "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes" "$custom_node_path/ComfyUI_Comfyroll_CustomNodes"
+    Git-CLone "https://github.com/crystian/ComfyUI-Crystools" "$custom_node_path/ComfyUI-Crystools"
+    Git-CLone "https://github.com/shiimizu/ComfyUI-TiledDiffusion" "$custom_node_path/ComfyUI-TiledDiffusion"
+    Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
+    Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
+
     Install-PyTorch
     Install-ComfyUI-Dependence
 
@@ -3031,6 +3052,39 @@ function Download-ComfyUI-Installer {
 }
 
 
+# 获取本地配置文件参数
+function Get-Local-Setting {
+    `$arg = @{}
+    if (Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") {
+        `$arg.Add(`"-DisablePipMirror`", `$true)
+    }
+
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+        `$arg.Add(`"-DisableProxy`", `$true)
+    } else {
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
+        }
+    }
+
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        `$arg.Add(`"-DisableUV`", `$true)
+    }
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") {
+        `$arg.Add(`"-DisableGithubMirror`", `$true)
+    } else {
+        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
+        }
+    }
+
+    return `$arg
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
@@ -3040,7 +3094,7 @@ function Main {
     if (`$status) {
         Print-Msg `"运行 ComfyUI Installer 中`"
         `$arg = Get-Local-Setting
-        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
+        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" @arg
     } else {
         Read-Host | Out-Null
     }

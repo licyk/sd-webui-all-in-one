@@ -186,6 +186,35 @@ $ tree -L 1
 
 在 SD WebUI Installer 成功安装 Stable Diffusion WebUI 后，在`stable-diffusion-webui`文件夹中可以看到 Stable Diffusion WebUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD WebUI Installer。
 
+<details>
+<summary><strong>查看 SD WebUI Installer 为 Stable Diffusion WebUI 预装的扩展</strong></summary>
+
+|Stable Diffusion WebUI 分支|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
+|---|---|---|---|
+|扩展 1|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
+|扩展 2|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
+|扩展 3|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
+|扩展 4|[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+|扩展 5|[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
+|扩展 6|[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|
+|扩展 7|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|
+|扩展 8|[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
+|扩展 9|[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|无|
+|扩展 10|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|无|
+|扩展 11|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|无|
+|扩展 12|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|无|
+|扩展 13|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|无|
+|扩展 14|[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|无|无|
+|扩展 15|[multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|无|无|
+|扩展 16|[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|无|无|
+|扩展 17|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|无|无|
+|扩展 18|[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|无|无|
+
+>[!NOTE]  
+>由于不同分支对扩展的兼容性不同，部分扩展在某些分支上不会被安装。
+
+</details>
+
 >[!NOTE]  
 >1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
 >2. SD WebUI Installer 支持使用在命令行中通过参数配置 Stable Diffusion WebUI 的安装参数，具体说明可阅读[使用命令运行 SD WebUI Installer](#使用命令运行-sd-webui-installer)。

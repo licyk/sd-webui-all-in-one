@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 163
+$INVOKEAI_INSTALLER_VERSION = 164
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1475,6 +1475,30 @@ function Download-InvokeAI-Installer {
 }
 
 
+# 获取本地配置文件参数
+function Get-Local-Setting {
+    `$arg = @{}
+    if (Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") {
+        `$arg.Add(`"-DisablePipMirror`", `$true)
+    }
+
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+        `$arg.Add(`"-DisableProxy`", `$true)
+    } else {
+        if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
+        }
+    }
+
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        `$arg.Add(`"-DisableUV`", `$true)
+    }
+
+    return `$arg
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
@@ -1483,7 +1507,8 @@ function Main {
     `$status = Download-InvokeAI-Installer
     if (`$status) {
         Print-Msg `"运行 InvokeAI Installer 中`"
-        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`"
+        `$arg = Get-Local-Setting
+        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" @arg
     } else {
         Read-Host | Out-Null
     }
