@@ -251,7 +251,7 @@ $ tree -L 2
 │   ├── activate.ps1                      # 进入 SD-Trainer Env 的脚本
 │   ├── cache                             # 缓存文件夹
 │   ├── download_models.ps1               # 下载模型的脚本
-│   ├── launch_sd_trainer_installer.ps1   # 获取最新的 SD-Trainer Installer 的脚本
+│   ├── launch_sd_trainer_installer.ps1   # 获取最新的 SD-Trainer Installer 并运行的脚本
 │   ├── git                               # Git 目录
 │   ├── help.txt                          # 帮助文档
 │   ├── launch.ps1                        # 启动 SD-Trainer 的脚本
@@ -263,7 +263,7 @@ $ tree -L 2
 │   ├── settings.ps1                      # 管理 SD-Trainer Installer 设置的脚本
 │   ├── terminal.ps1                      # 自动打开 PowerShell 并激活 SD-Trainer Installer 的虚拟环境脚本
 │   └── update.ps1                        # 更新 SD-Trainer 的脚本
-├── sd_trainer_installer.ps1              # SD-Trainer Installer 放在 SD-Trainer 文件夹外面，和 SD-Trainer 文件夹同级
+├── sd_trainer_installer.ps1              # SD-Trainer Installer 一般放在 SD-Trainer 文件夹外面，和 SD-Trainer 文件夹同级
 └── QQ Files
 
 8 directories, 9 files

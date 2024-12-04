@@ -287,7 +287,7 @@ $ tree -L 2
 │   ├── activate.ps1                                  # 进入 Stable Diffusion WebUI Env 的脚本
 │   ├── cache                                         # 缓存文件夹
 │   ├── download_models.ps1                           # 下载模型的脚本
-│   ├── launch_stable_diffusion_webui_installer.ps1   # 获取最新的 SD WebUI Installer 的脚本
+│   ├── launch_stable_diffusion_webui_installer.ps1   # 获取最新的 SD WebUI Installer 并运行的脚本
 │   ├── git                                           # Git 目录
 │   ├── help.txt                                      # 帮助文档
 │   ├── launch.ps1                                    # 启动 Stable Diffusion WebUI 的脚本
@@ -300,7 +300,7 @@ $ tree -L 2
 │   ├── terminal.ps1                                  # 自动打开 PowerShell 并激活 SD WebUI Installer 的虚拟环境脚本
 │   ├── update_extension.ps1                          # 更新 Stable Diffusion WebUI 扩展
 │   └── update.ps1                                    # 更新 Stable Diffusion WebUI 的脚本
-├── stable_diffusion_webui_installer.ps1              # SD WebUI Installer 放在 stable-diffusion-webui 文件夹外面，和 stable-diffusion-webui 文件夹同级
+├── stable_diffusion_webui_installer.ps1              # SD WebUI Installer 一般放在 stable-diffusion-webui 文件夹外面，和 stable-diffusion-webui 文件夹同级
 └── QQ Files
 
 8 directories, 9 files

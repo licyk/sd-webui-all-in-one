@@ -231,18 +231,19 @@ $ tree -L 2
 │   ├── activate.ps1                    # 进入 InvokeAI Env 的脚本
 │   ├── cache                           # 缓存文件夹
 │   ├── download_config.ps1             # 下载模型配置文件脚本
-│   ├── launch_invokeai_installer.ps1   # 获取最新的 InvokeAI Installer 的脚本
+│   ├── launch_invokeai_installer.ps1   # 获取最新的 InvokeAI Installer 并运行的脚本
 │   ├── help.txt                        # 帮助文档
 │   ├── invokeai                        # InvokeAI 生成的图片 / 模型 / 工作流 / 配置文件路径
 │   ├── launch.ps1                      # 启动 InvokeAI 的脚本
 │   ├── python                          # Python 目录
+│   ├── git                             # Git 目录
 │   ├── reinstall_pytorch.ps1           # 重装 PyTorch 脚本
 │   ├── download_models.ps1             # 模型下载脚本
 │   ├── settings.ps1                    # 管理 InvokeAI Installer 设置的脚本
 │   ├── terminal.ps1                    # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
 │   ├── update_node.ps1                 # 更新 InvokeAI 自定义节点的脚本
 │   └── update.ps1                      # 更新 InvokeAI 的脚本
-├── invokeai_installer.ps1              # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
+├── invokeai_installer.ps1              # InvokeAI Installer 一般放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
 
 7 directories, 8 files
