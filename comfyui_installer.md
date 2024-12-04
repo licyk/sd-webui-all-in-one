@@ -484,18 +484,18 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 
 
 ## 重装 ComfyUI
-将`ComfyUI`文件夹中的`ComfyUI`文件夹删除，然后运行`comfyui_installer.ps1`重新部署 ComfyUI。
+将`ComfyUI`文件夹中的`ComfyUI`文件夹删除，然后运行`launch_comfyui_installer.ps1`重新部署 ComfyUI。
 
 >[!NOTE]  
 >如果`ComfyUI`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`ComfyUI`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`ComfyUI/python`和`ComfyUI/ComfyUI/python`文件夹删除，然后运行`comfyui_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`ComfyUI/python`和`ComfyUI/ComfyUI/python`文件夹删除，然后运行`launch_comfyui_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`ComfyUI/git`和`ComfyUI/ComfyUI/git`文件夹删除，然后运行`comfyui_installer.ps1`重新下载 Git。
+将`ComfyUI/git`和`ComfyUI/ComfyUI/git`文件夹删除，然后运行`launch_comfyui_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch

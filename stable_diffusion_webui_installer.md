@@ -449,18 +449,18 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 
 
 ## 重装 Stable Diffusion WebUI
-将`stable-diffusion-webui`文件夹中的`stable-diffusion-webui`文件夹删除，然后运行`stable_diffusion_webui_installer.ps1`重新部署 Stable Diffusion WebUI。
+将`stable-diffusion-webui`文件夹中的`stable-diffusion-webui`文件夹删除，然后运行`launch_stable_diffusion_webui_installer.ps1`重新部署 Stable Diffusion WebUI。
 
 >[!NOTE]  
 >如果`stable-diffusion-webui`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`stable-diffusion-webui`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`stable-diffusion-webui/python`和`stable-diffusion-webui/stable-diffusion-webui/python`文件夹删除，然后运行`stable_diffusion_webui_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`stable-diffusion-webui/python`和`stable-diffusion-webui/stable-diffusion-webui/python`文件夹删除，然后运行`launch_stable_diffusion_webui_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`stable-diffusion-webui/git`和`stable-diffusion-webui/stable-diffusion-webui/git`文件夹删除，然后运行`stable_diffusion_webui_installer.ps1`重新下载 Git。
+将`stable-diffusion-webui/git`和`stable-diffusion-webui/stable-diffusion-webui/git`文件夹删除，然后运行`launch_stable_diffusion_webui_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch

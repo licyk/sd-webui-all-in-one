@@ -35,6 +35,8 @@ _✨一键安装 InvokeAI_
   - [添加模型](#添加模型)
   - [InvokeAI 的使用方法](#invokeai-的使用方法)
   - [重装 InvokeAI](#重装-invokeai)
+  - [重装 Python 环境](#重装-python-环境)
+  - [重装 Git](#重装-git)
   - [重置 InvokeAI 数据库](#重置-invokeai-数据库)
   - [配置 InvokeAI](#配置-invokeai)
   - [下载 InvokeAI 模型配置文件](#下载-invokeai-模型配置文件)
@@ -313,7 +315,15 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 
 ## 重装 InvokeAI
-如果 InvokeAI 因为严重损坏导致无法正常使用，可以将`InvokeAI`文件夹中的`python`文件夹删除，然后运行`invokeai_installer.ps1`重新部署 InvokeAI。
+如果 InvokeAI 因为严重损坏导致无法正常使用，可以将`InvokeAI`文件夹中的`python`文件夹删除，然后运行`launch_invokeai_installer.ps1`重新部署 InvokeAI。
+
+
+## 重装 Python 环境
+如果 Python 环境出现严重损坏，可以将`InvokeAI/python`文件夹删除，然后运行`launch_invokeai_installer.ps1`重新构建 Python 环境。
+
+
+## 重装 Git
+将`InvokeAI/git`文件夹删除，然后运行`launch_invokeai_installer.ps1`重新下载 Git。
 
 
 ## 重置 InvokeAI 数据库

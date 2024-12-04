@@ -355,18 +355,18 @@ SD-Trainer Installer 默认启用了 Pip 镜像源加速下载 Python 软件包�
 
 
 ## 重装 SD-Trainer
-将`SD-Trainer`文件夹中的`lora-scripts`文件夹删除，然后运行`sd_trainer_installer.ps1`重新部署 SD-Trainer。
+将`SD-Trainer`文件夹中的`lora-scripts`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新部署 SD-Trainer。
 
 >[!NOTE]  
 >如果`lora-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`lora-scripts`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`SD-Trainer/python`和`SD-Trainer/lora-scripts/python`文件夹删除，然后运行`sd_trainer_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`SD-Trainer/python`和`SD-Trainer/lora-scripts/python`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`文件夹删除，然后运行`sd_trainer_installer.ps1`重新下载 Git。
+将`SD-Trainer/git`和`SD-Trainer/lora-scripts/git`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -630,7 +630,7 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 
 
 ## RuntimeError: Directory 'frontend/dist' does not exist
-SD-Trainer 组件缺失，重新运行`update.ps1`或者`sd_trainer_installer.ps1`进行修复。
+SD-Trainer 组件缺失，重新运行`update.ps1`或者`launch_sd_trainer_installer.ps1`进行修复。
 
 
 ## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE

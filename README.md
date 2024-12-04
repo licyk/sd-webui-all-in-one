@@ -66,7 +66,7 @@ _✨快速部署，简单易用_
 ***
 
 # Installer
-适用于 Windows 平台一键部署 AI 的工具。
+适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。
 
 
 ## InvokeAI Installer
