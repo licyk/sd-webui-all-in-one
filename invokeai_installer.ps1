@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 166
+$INVOKEAI_INSTALLER_VERSION = 167
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -349,7 +349,7 @@ else:
     }
 
     $content = "
-from importlib.metadata import requires
+from importlib.metadata import requires, version
 
 
 pytorch_ver = []
@@ -358,6 +358,7 @@ xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
+invokeai_version = version('invokeai')
 
 if cuda_ver == '+cu118':
     xf_cuda_ver = cuda_ver
@@ -380,6 +381,7 @@ for i in invokeai_requires:
 for i in pytorch_ver:
     ver_list = f'{ver_list} {i}'
 
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list}'
 
 print(ver_list)
 "
@@ -387,13 +389,13 @@ print(ver_list)
     $pytorch_ver = $(python -c "$content") # 获取 PyTorch 版本
     Print-Msg "安装 InvokeAI 依赖中"
     if ($USE_UV) {
-        uv pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split()
+        uv pip install $pytorch_ver.ToString().Split()
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split() --use-pep517
+            python -m pip install $pytorch_ver.ToString().Split() --use-pep517
         }
     } else {
-        python -m pip install "InvokeAI[xformers]" $pytorch_ver.ToString().Split() --use-pep517
+        python -m pip install $pytorch_ver.ToString().Split() --use-pep517
     }
     if ($?) {
         Print-Msg "InvokeAI 依赖安装成功"
@@ -1296,7 +1298,7 @@ else:
 # 获取 PyTorch 版本
 function Get-PyTorch-Version (`$cuda_ver) {
     `$content = `"
-from importlib.metadata import requires
+from importlib.metadata import requires, version
 
 
 pytorch_ver = []
@@ -1305,6 +1307,7 @@ xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
+invokeai_version = version('invokeai')
 
 if cuda_ver == '+cu118':
     xf_cuda_ver = cuda_ver
@@ -1327,6 +1330,7 @@ for i in invokeai_requires:
 for i in pytorch_ver:
     ver_list = f'{ver_list} {i}'
 
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list}'
 
 print(ver_list)
 `"
@@ -1378,13 +1382,13 @@ function Main {
 
         `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
         if (`$USE_UV) {
-            uv pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade
+            uv pip install `$pytorch_ver.ToString().Split()
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
+                python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
             }
         } else {
-            python -m pip install `"InvokeAI[xformers]`" `$pytorch_ver.ToString().Split() --upgrade --use-pep517
+            python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
         }
         if (`$?) {
             Print-Msg `"InvokeAI 依赖更新成功`"
