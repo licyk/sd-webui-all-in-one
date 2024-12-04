@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 165
+$INVOKEAI_INSTALLER_VERSION = 166
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1454,6 +1454,16 @@ function Write-Update-Node-Script {
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghp.ci/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # PATH
