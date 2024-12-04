@@ -19,6 +19,7 @@ _✨一键安装 InvokeAI_
 - [使用](#使用)
   - [启动 InvokeAI](#启动-invokeai)
   - [更新 InvokeAI](#更新-invokeai)
+  - [更新 InvokeAI 自定义节点](#更新-invokeai-自定义节点)
   - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
   - [获取最新的 InvokeAI Installer 并运行](#获取最新的-invokeai-installer-并运行)
   - [更新 InvokeAI 管理脚本](#更新-invokeai-管理脚本)
@@ -69,11 +70,10 @@ _✨一键安装 InvokeAI_
     - [解决 ModuleNotFoundError: No module named 'controlnet\_aux'](#解决-modulenotfounderror-no-module-named-controlnet_aux)
     - [使用 uv 安装软件包](#使用-uv-安装软件包)
     - [更新 uv](#更新-uv)
+    - [更新 Aria2](#更新-aria2)
     - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
     - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
     - [安装 InvokeAI 自定义节点](#安装-invokeai-自定义节点)
-  - [更新所有 InvokeAI 自定义节点](#更新所有-invokeai-自定义节点)
-    - [安装 Git](#安装-git)
     - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
     - [使用 Git 下载项目](#使用-git-下载项目)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
@@ -166,6 +166,10 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 运行`update.ps1`脚本，如果遇到更新 InvokeAI 失败的情况可尝试重新运行`update.ps1`脚本。
 
 
+## 更新 InvokeAI 自定义节点
+运行`update_node.ps1`脚本，如果遇到更新 InvokeAI 自定义节点失败的情况可尝试重新运行`update_node.ps1`脚本。
+
+
 ## 进入 InvokeAI 所在的 Python 环境
 如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
 
@@ -216,10 +220,7 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 
 
 ## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`invokeai_installer.ps1`重新生成这些脚本。
-
->[!NOTE]  
->InvokeAI Installer 必须放在`InvokeAI`文件夹外运行，不知道放哪的可以参考下面的目录结构。
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_invokeai_installer.ps1`重新生成这些脚本。
 
 ```
 $ tree -L 2
@@ -239,15 +240,13 @@ $ tree -L 2
 │   ├── download_models.ps1             # 模型下载脚本
 │   ├── settings.ps1                    # 管理 InvokeAI Installer 设置的脚本
 │   ├── terminal.ps1                    # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
+│   ├── update_node.ps1                 # 更新 InvokeAI 自定义节点的脚本
 │   └── update.ps1                      # 更新 InvokeAI 的脚本
 ├── invokeai_installer.ps1              # InvokeAI Installer 放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
 
 7 directories, 8 files
 ```
-
->[!WARNING]  
->`InvokeAI`文件夹的名称切勿修改，修改后将导致 InvokeAI Installer 更新管理脚本时出现异常。
 
 
 ## 设置 InvokeAI 中文
@@ -615,6 +614,12 @@ Update-uv
 ```
 
 
+### 更新 Aria2
+```powershell
+Update-Aria2
+```
+
+
 ### 列出 InvokeAI Installer 内置命令
 ```powershell
 List-CMD
@@ -630,18 +635,6 @@ Check-InvokeAI-Installer-Update
 ### 安装 InvokeAI 自定义节点
 ```powershell
 Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
-```
-
-
-## 更新所有 InvokeAI 自定义节点
-```powershell
-Update-InvokeAI-Node
-```
-
-
-### 安装 Git
-```powershell
-Install-Git
 ```
 
 

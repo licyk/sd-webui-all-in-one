@@ -240,10 +240,7 @@ $ tree -L 1
 
 
 ## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`sd_trainer_installer.ps1`重新生成这些脚本。
-
->[!NOTE]  
->SD-Trainer Installer 必须放在`SD-Trainer`文件夹外运行，不知道放哪的可以参考下面的目录结构。
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_sd_trainer_installer.ps1`重新生成这些脚本。
 
 ```
 $ tree -L 2
@@ -271,9 +268,6 @@ $ tree -L 2
 
 8 directories, 9 files
 ```
-
->[!WARNING]  
->`SD-Trainer`文件夹的名称切勿修改，修改后将导致 SD-Trainer Installer 更新管理脚本时出现异常。
 
 
 ## 设置 HuggingFace 镜像

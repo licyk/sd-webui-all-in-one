@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 164
+$INVOKEAI_INSTALLER_VERSION = 165
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -30,7 +30,8 @@ $UV_MINIMUM_VER = "0.5.2"
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
+$GIT_PATH = "$InstallPath/git/bin"
+$Env:PATH = "$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
@@ -222,16 +223,42 @@ function Install-Python {
 }
 
 
+# 下载并解压 Git
+function Install-Git {
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
+    $cache_path = "$InstallPath/cache/git_tmp"
+    $path = "$InstallPath/git"
+
+    Print-Msg "正在下载 Git"
+    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
+    if ($?) { # 检测是否下载成功并解压
+        if (Test-Path "$cache_path") {
+            Remove-Item -Path "$cache_path" -Force -Recurse
+        }
+        # 解压 Git
+        Print-Msg "正在解压 Git"
+        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        Move-Item -Path "$cache_path" -Destination "$path" -Force
+        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force -Recurse
+        Print-Msg "Git 安装成功"
+    } else {
+        Print-Msg "Git 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+        Read-Host | Out-Null
+        exit 1
+    }
+}
+
+
 # 下载 Aria2
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
     Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/python/Scripts/aria2c.exe" -Force
+        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
-        Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        Print-Msg "Aria2 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -474,8 +501,16 @@ function Check-Install {
         Install-Python
     }
 
+    Print-Msg "检测是否安装 Git"
+    if (Test-Path "$InstallPath/git/bin/git.exe") {
+        Print-Msg "Git 已安装"
+    } else {
+        Print-Msg "Git 未安装"
+        Install-Git
+    }
+
     Print-Msg "检测是否安装 Aria2"
-    if (Test-Path "$InstallPath/python/Scripts/aria2c.exe") {
+    if (Test-Path "$InstallPath/git/bin/aria2c.exe") {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -538,7 +573,8 @@ function Write-Launch-Script {
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -993,7 +1029,8 @@ function Write-Update-Script {
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -1397,6 +1434,437 @@ Read-Host | Out-Null
 }
 
 
+# 更新脚本
+function Write-Update-Node-Script {
+    $content = "
+# InvokeAI Installer 版本和检查更新间隔
+`$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# Pip 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[InvokeAI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 InvokeAI Installer 版本
+function Get-InvokeAI-Installer-Version {
+    `$ver = `$([string]`$INVOKEAI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"InvokeAI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# Pip 镜像源状态
+function Pip-Mirror-Status {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"使用 Pip 镜像源`"
+    } else {
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+    }
+}
+
+
+# 修复 Git 分支游离
+function Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# InvokeAI Installer 更新检测
+function Check-InvokeAI-Installer-Update {
+    # 可用的下载源
+    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 InvokeAI Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 InvokeAI Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/invokeai_installer.ps1`" | Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
+                    Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = Read-Host `"=========================================>`"
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 InvokeAI Installer 进行更新中`"
+                        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        Print-Msg `"更新结束, 需重新启动 InvokeAI Installer 管理脚本以应用更新, 回车退出 InvokeAI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Print-Msg `"跳过 InvokeAI Installer 更新`"
+                    }
+                } else {
+                    Print-Msg `"InvokeAI Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 InvokeAI Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 InvokeAI Installer 更新失败`"
+                }
+            }
+        }
+    }
+}
+
+
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+}
+
+
+# Github 镜像源
+function Set-Github-Mirror {
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+    
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    }
+
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        }
+        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
+        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    }
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global --add safe.directory `"*`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+    }
+}
+
+
+# 列出更新结果
+function List-Update-Status (`$update_status) {
+    `$success = 0
+    `$failed = 0
+    `$sum = 0
+    Print-Msg `"当前 InvokeAI 自定义节点更新结果`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"自定义节点名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"更新结果`" -ForegroundColor Cyan
+    Write-Host
+    for (`$i = 0; `$i -lt `$update_status.Count; `$i++) {
+        `$content = `$update_status[`$i]
+        `$name = `$content[0]
+        `$ver = `$content[1]
+        `$status = `$content[2]
+        `$sum += 1
+        if (`$status) {
+            `$success += 1
+        } else {
+            `$failed += 1
+        }
+        Write-Host `"- `" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`${name}: `" -ForegroundColor White -NoNewline
+        if (`$status) {
+            Write-Host `"`$ver `" -ForegroundColor Cyan
+        } else {
+            Write-Host `"`$ver `" -ForegroundColor Red
+        }
+    }
+    Write-Host
+    Write-Host `"[●: `$sum | ✓: `$success | ×: `$failed]`" -ForegroundColor White
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-InvokeAI-Installer-Version
+    Set-Proxy
+    Check-InvokeAI-Installer-Update
+    Set-uv
+    Set-Github-Mirror
+    Pip-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/invokeai/nodes`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 invokeai 文件夹, 无法更新 InvokeAI 自定义节点`"
+        return
+    }
+
+    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    `$sum = 0
+    `$count = 0
+    ForEach (`$node in `$node_list) {
+        if (Test-Path `"`$node/.git`") {
+            `$sum += 1
+        }
+    }
+
+    Print-Msg `"更新 InvokeAI 自定义节点中`"
+    `$update_status = New-Object System.Collections.ArrayList
+    ForEach (`$node in `$node_list) {
+        if (!(Test-Path `"`$node/.git`")) {
+            continue
+        }
+
+        `$count += 1
+        `$node_name = `$(`$(Get-Item `$node).Name)
+        Print-Msg `"[`$count/`$sum]:: 更新 `$node_name 自定义节点中`"
+        Fix-Git-Point-Off-Set `"`$node`"
+        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$node`" fetch --recurse-submodules
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            if (`$origin_ver -eq `$latest_ver) {
+                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点已为最新版`"
+                `$update_status.Add(@(`$node_name, `"已为最新版`", `$true)) | Out-Null
+            } else {
+                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                `$update_status.Add(@(`$node_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
+            }
+        } else {
+            Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新失败`"
+            `$update_status.Add(@(`$node_name, `"更新失败`", `$false)) | Out-Null
+        }
+    }
+
+    List-Update-Status `$update_status
+
+    Print-Msg `"退出 InvokeAI 自定义节点更新脚本`"
+}
+
+###################
+
+Main
+Read-Host | Out-Null
+"
+
+    if (Test-Path "$InstallPath/update_node.ps1") {
+        Print-Msg "更新 update_node.ps1 中"
+    } else {
+        Print-Msg "生成 update_node.ps1 中"
+    }
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_node.ps1" -Value $content
+}
+
+
 # 获取安装脚本
 function Write-Launch-InvokeAI-Install-Script {
     $content = "
@@ -1553,7 +2021,8 @@ function Write-PyTorch-ReInstall-Script {
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -1947,7 +2416,8 @@ function Write-Download-Model-Script {
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -2817,7 +3287,8 @@ function Write-InvokeAI-Installer-Settings-Script {
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
@@ -3410,6 +3881,13 @@ function Check-Env {
         `$broken = 1
     }
 
+    if (Test-Path `"`$PSScriptRoot/git/bin/git.exe`") {
+        `$git_status = `"已安装`"
+    } else {
+        `$git_status = `"未安装`"
+        `$broken = 1
+    }
+
     python -m pip show uv --quiet 2> `$null
     if (`$?) {
         `$uv_status = `"已安装`"
@@ -3418,7 +3896,7 @@ function Check-Env {
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/python/Scripts/aria2c.exe`") {
+    if (Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
@@ -3452,6 +3930,7 @@ function Check-Env {
     Print-Msg `"-----------------------------------------------------`"
     Print-Msg `"当前环境:`"
     Print-Msg `"Python: `$python_status`"
+    Print-Msg `"Git: `$git_status`"
     Print-Msg `"uv: `$uv_status`"
     Print-Msg `"Aria2: `$aria2_status`"
     Print-Msg `"PyTorch: `$torch_status`"
@@ -3681,6 +4160,22 @@ function global:Update-uv {
 }
 
 
+# 更新 Aria2
+function global:Update-Aria2 {
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
+    Print-Msg `"下载 Aria2 中`"
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/aria2c.exe`"
+    if (`$?) {
+        Print-Msg `"更新 Aria2 中`"
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
+        Print-Msg `"更新 Aria2 完成`"
+    } else {
+        Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
+    }
+}
+
+
 # InvokeAI Installer 更新检测
 function global:Check-InvokeAI-Installer-Update {
     # 可用的下载源
@@ -3714,36 +4209,6 @@ function global:Check-InvokeAI-Installer-Update {
                 Print-Msg `"检查 InvokeAI Installer 更新失败`"
             }
         }
-    }
-}
-
-
-# 安装 Git
-function global:Install-Git {
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip`"
-    `$cache_path = `"`$Env:CACHE_HOME/git_tmp`"
-    `$path = `"`$Env:INVOKEAI_INSTALLER_ROOT/git`"
-
-    if ((Get-Command git -ErrorAction SilentlyContinue) -or(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`")) {
-        Print-Msg `"Git 已安装`"
-        return
-    }
-    Print-Msg `"正在下载 Git`"
-    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/PortableGit.zip`"
-    if (`$?) { # 检测是否下载成功并解压
-        if (Test-Path `"`$cache_path`") {
-            Remove-Item -Path `"`$cache_path`" -Force -Recurse
-        }
-        # 解压 Git
-        Print-Msg `"正在解压 Git`"
-        Expand-Archive -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -DestinationPath `"`$cache_path`" -Force
-        Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
-        Remove-Item -Path `"`$Env:CACHE_HOME/PortableGit.zip`" -Force -Recurse
-        Print-Msg `"Git 安装成功`"
-        return `$true
-    } else {
-        Print-Msg `"Git 安装失败, 可重新运行命令重试安装`"
-        return `$false
     }
 }
 
@@ -3802,20 +4267,6 @@ function global:Test-Github-Mirror {
 
 # 安装 InvokeAI 自定义节点
 function global:Install-InvokeAI-Node (`$url) {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -3857,20 +4308,6 @@ function global:Install-InvokeAI-Node (`$url) {
 
 # Git 下载命令
 function global:Git-Clone (`$url, `$path) {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 这将导致无法调用 Git 命令`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
@@ -3903,84 +4340,6 @@ function global:Git-Clone (`$url, `$path) {
     } else {
         Print-Msg `"`$repo_name 已存在`"
     }
-}
-
-
-# 修复 Git 分支游离
-function global:Fix-Git-Point-Off-Set {
-    param(
-        `$path
-    )
-    if (Test-Path `"`$path/.git`") {
-        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
-        if (!(`$?)) {
-            Print-Msg `"检测到出现分支游离, 进行修复中`"
-            git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化 Git 子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程 HEAD 所指分支
-            git -C `"`$path`" checkout `$branch # 切换到主分支
-            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-        }
-    }
-}
-
-
-# 更新所有 InvokeAI 自定义节点
-function global:Update-InvokeAI-Node {
-    Print-Msg `"检测 Git 是否安装`"
-    if ((!(Get-Command git -ErrorAction SilentlyContinue)) -and (!(Test-Path `"`$Env:INVOKEAI_INSTALLER_ROOT/git/bin/git.exe`"))) {
-        Print-Msg `"检测到 Git 未安装`"
-        `$status = Install-Git
-        if (`$status) {
-            Print-Msg `"Git 安装成功`"
-        } else {
-            Print-Msg `"Git 安装失败, 无法调用 Git 安装 InvokeAI 自定义节点`"
-            return
-        }
-    } else {
-        Print-Msg `"Git 已安装`"
-    }
-
-    # 应用 Github 镜像源
-    if (`$global:is_test_gh_mirror -ne 1) {
-        Test-Github-Mirror
-        `$global:is_test_gh_mirror = 1
-    }
-
-    `$node_list = Get-ChildItem -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`" | Select-Object -ExpandProperty FullName
-    `$sum = 0
-    `$count = 0
-    ForEach (`$node in `$node_list) {
-        if (Test-Path `"`$node/.git`") {
-            `$sum += 1
-        }
-    }
-    Print-Msg `"更新 InvokeAI 自定义节点中`"
-    ForEach (`$node in `$node_list) {
-        if (!(Test-Path `"`$node/.git`")) {
-            continue
-        }
-
-        `$count += 1
-        Print-Msg `"[`$count/`$sum]:: 更新 `$(`$(Get-Item `$node).Name) 自定义节点中`"
-        Fix-Git-Point-Off-Set `"`$node`"
-        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-        git -C `"`$node`" fetch --recurse-submodules
-        if (`$?) {
-            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
-            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
-            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-            if (`$origin_ver -eq `$latest_ver) {
-                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点已为最新版`"
-            } else {
-                Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
-            }
-        } else {
-            Print-Msg `"[`$count/`$sum]:: `$(`$(Get-Item `$node).Name) 自定义节点更新失败`"
-        }
-    }
-    Print-Msg `"更新 InvokeAI 自定义节点完成`"
 }
 
 
@@ -4024,13 +4383,11 @@ Github：https://github.com/licyk
 当前可用的 InvokeAI Installer 内置命令：
 
     Update-uv
+    Update-Aria2
     Check-InvokeAI-Installer-Update
-    Install-Git
     Install-InvokeAI-Node
     Git-Clone
     Test-Github-Mirror
-    Fix-Git-Point-Off-Set
-    Update-InvokeAI-Node
     List-Node
     List-CMD
 
@@ -4165,6 +4522,7 @@ invokeai：InvokeAI 存放模型、图片等的文件夹。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
 launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本并运行。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
+update_node.ps1：更新 InvokeAI 自定义节点的脚本，可使用该脚本更新 InvokeAI 自定义节点。
 launch.ps1：启动 InvokeAI 的脚本。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
 download_config.ps1：下载模型配置文件，当删除 invokeai 文件夹后，InvokeAI 将重新下载模型配置文件，但在无代理的情况下可能下载失败，所以可以通过该脚本进行下载。
@@ -4224,6 +4582,7 @@ function Write-Manager-Scripts {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
     Write-Launch-Script
     Write-Update-Script
+    Write-Update-Node-Script
     Write-Launch-InvokeAI-Install-Script
     Write-Env-Activate-Script
     Write-PyTorch-ReInstall-Script

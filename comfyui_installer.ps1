@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 153
+$COMFYUI_INSTALLER_VERSION = 154
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -548,6 +548,7 @@ function Check-Install {
     Git-CLone "https://github.com/shiimizu/ComfyUI-TiledDiffusion" "$custom_node_path/ComfyUI-TiledDiffusion"
     Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
     Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
+    Git-CLone "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one" "$custom_node_path/WeiLin-ComfyUI-prompt-all-in-one"
 
     Install-PyTorch
     Install-ComfyUI-Dependence
