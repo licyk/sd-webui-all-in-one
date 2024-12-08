@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 131
+$SD_WEBUI_INSTALLER_VERSION = 132
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1323,14 +1323,10 @@ def get_pkg_ver_from_lib(pkg_name: str) -> str:
     return ver
 
 
-# 确认是否安装某个软件包
+# 判断是否有软件包未安装
 def is_installed(package: str) -> bool:
-    #
-    # This function was adapted from code written by vladimandic: https://github.com/vladmandic/automatic/commits/master
-    #
-
-    # Remove brackets and their contents from the line using regular expressions
-    # e.g., diffusers[torch]==0.10.2 becomes diffusers==0.10.2
+    # 使用正则表达式删除括号和括号内的内容
+    # 如: diffusers[torch]==0.10.2 -> diffusers==0.10.2
     package = re.sub(r'\[.*?\]', '', package)
 
     try:
@@ -1341,7 +1337,7 @@ def is_installed(package: str) -> bool:
         ]
         pkgs = [
             p.split('/')[-1] for p in pkgs
-        ]   # get only package name if installing from URL
+        ]   # 如果软件包从网址获取则只截取名字
 
         for pkg in pkgs:
             # 去除从 Git 链接安装的软件包后面的 .git
@@ -1352,6 +1348,8 @@ def is_installed(package: str) -> bool:
                 pkg_name, pkg_version = [x.strip() for x in pkg.split('==')]
             elif '<=' in pkg:
                 pkg_name, pkg_version = [x.strip() for x in pkg.split('<=')]
+            elif '!=' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('!=')]
             elif '<' in pkg:
                 pkg_name, pkg_version = [x.strip() for x in pkg.split('<')]
             elif '>' in pkg:
@@ -1374,6 +1372,12 @@ def is_installed(package: str) -> bool:
                     elif '<=' in pkg:
                         # ok = version <= pkg_version
                         if compare_versions(version, pkg_version) == -1 or compare_versions(version, pkg_version) == 0:
+                            ok = True
+                        else:
+                            ok = False
+                    elif '!=' in pkg:
+                        # ok = version != pkg_version
+                        if compare_versions(version, pkg_version) != 0:
                             ok = True
                         else:
                             ok = False
