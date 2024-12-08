@@ -109,7 +109,9 @@
         "ill-xl-01-WERI_1.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-WERI_1.safetensors",
         "ill-xl-01-HARURI_1-000032.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-HARURI_1-000032.safetensors",
         "ill-xl-01-mmafu_1-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-mmafu_1-000030.safetensors",
-        "ill-xl-01-kamishiro_piyo_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-kamishiro_piyo_1-000038.safetensors"
+        "ill-xl-01-kamishiro_piyo_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-kamishiro_piyo_1-000038.safetensors",
+        "ill-xl-01-hoshi_snacherubi_1-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-hoshi_snacherubi_1-000030.safetensors",
+        "ill-xl-01-shanshanziyu_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-shanshanziyu_1-000034.safetensors"
     },
     "vae_downloads": {
         "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
