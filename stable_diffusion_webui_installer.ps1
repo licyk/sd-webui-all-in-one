@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 134
+$SD_WEBUI_INSTALLER_VERSION = 135
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1877,6 +1877,8 @@ function Set-ControlNet-Extension-Requirement-Mirror {
     `$Env:INSIGHTFACE_WHEEL = `"insightface`"
     `$Env:HANDREFINER_WHEEL = `"handrefinerportable`"
     `$Env:DEPTH_ANYTHING_WHEEL = `"depth_anything`"
+    `$Env:DEPTH_ANYTHING_V2_WHEEL = `"depth_anything_v2`"
+    `$Env:DSINE_WHEEL = `"dsine`"
     `$Env:CLIP_PACKAGE = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip`"
     `$Env:PIP_FIND_LINKS = `"`$Env:PIP_FIND_LINKS https://licyk.github.io/t/pypi/index_ms_mirror.html`"
 }
