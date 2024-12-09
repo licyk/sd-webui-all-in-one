@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 132
+$SD_WEBUI_INSTALLER_VERSION = 133
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -604,6 +604,7 @@ function Check-Install {
     Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
     Git-CLone "https://github.com/Haoming02/sd-webui-mosaic-outpaint" "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
     Git-CLone "https://github.com/Haoming02/sd-webui-resource-monitor" "$sd_webui_extension_path/sd-webui-resource-monitor"
+    Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
 
     # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
     if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
