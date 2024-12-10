@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 158
+$COMFYUI_INSTALLER_VERSION = 159
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -219,21 +219,26 @@ print(is_uv_need_update())
 # 下载并解压 Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
-    $cache_path = "$InstallPath/cache/python_tmp"
+    $cache_path = "$Env:CACHE_HOME/python_tmp"
     $path = "$InstallPath/python"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -246,20 +251,25 @@ function Install-Python {
 # 下载并解压 Git
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
-    $cache_path = "$InstallPath/cache/git_tmp"
+    $cache_path = "$Env:CACHE_HOME/git_tmp"
     $path = "$InstallPath/git"
 
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -273,9 +283,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
+        Move-Item -Path "$Env:CACHE_HOME/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
@@ -328,10 +338,10 @@ function Test-Github-Mirror {
     $status = 0
     ForEach($i in $GITHUB_MIRROR_LIST) {
         Print-Msg "测试 Github 镜像源: $i"
-        if (Test-Path "$InstallPath/cache/github-mirror-test") {
-            Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+        if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+            Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
         }
-        git clone "$i/licyk/empty" "$InstallPath/cache/github-mirror-test" --quiet
+        git clone "$i/licyk/empty" "$Env:CACHE_HOME/github-mirror-test" --quiet
         if ($?) {
             Print-Msg "该 Github 镜像源可用"
             $github_mirror = $i
@@ -342,8 +352,8 @@ function Test-Github-Mirror {
         }
     }
 
-    if (Test-Path "$InstallPath/cache/github-mirror-test") {
-        Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+    if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+        Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
     }
 
     if ($status -eq 0) {
@@ -379,15 +389,19 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        $cache_path = "$InstallPath/cache/${folder_name}_tmp"
+        $cache_path = "$Env:CACHE_HOME/${folder_name}_tmp"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         git clone --recurse-submodules $url "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 清理空文件夹
+            if (Test-Path "$path") {
+                $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+                Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+            }
             # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
@@ -483,7 +497,7 @@ function Install-ComfyUI-Dependence {
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
-    New-Item -ItemType Directory -Path "$InstallPath/cache" -Force > $null
+    New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
     if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/ComfyUI/python/python.exe")) {
@@ -577,6 +591,12 @@ function Check-Install {
         $streamWriter.Write($json_content)
         $streamWriter.Close()
     }
+
+    # 清理缓存
+    Print-Msg "清理下载 Python 软件包的缓存中"
+    python -m pip cache purge
+    uv cache clean
+
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
@@ -723,7 +743,7 @@ function Check-ComfyUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 ComfyUI Installer 的自动检查更新功能`"
@@ -747,16 +767,16 @@ function Check-ComfyUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 ComfyUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -844,10 +864,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -857,8 +877,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -1320,12 +1340,12 @@ if __name__ == '__main__':
     print(validate_requirements(path))
 `"
     Print-Msg `"检查 ComfyUI 内核依赖完整性中`"
-    if (!(Test-Path `"`$PSScriptRoot/cache`")) {
-        New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
+    if (!(Test-Path `"`$Env:CACHE_HOME`")) {
+        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
-    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/check_comfyui_requirement.py`" -Value `$content
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_requirement.py`" -Value `$content
 
-    `$status = `$(python `"`$PSScriptRoot/cache/check_comfyui_requirement.py`" --requirement-path `"`$PSScriptRoot/ComfyUI/requirements.txt`")
+    `$status = `$(python `"`$Env:CACHE_HOME/check_comfyui_requirement.py`" --requirement-path `"`$PSScriptRoot/ComfyUI/requirements.txt`")
 
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 ComfyUI 内核有依赖缺失, 安装 ComfyUI 依赖中`"
@@ -1786,23 +1806,23 @@ if __name__ == '__main__':
     write_content_to_file(path_list, term_sd_need_install_requirement_path)
 `"
     Print-Msg `"检查 ComfyUI 运行环境组件依赖中`"
-    if (!(Test-Path `"`$PSScriptRoot/cache`")) {
-        New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
+    if (!(Test-Path `"`$Env:CACHE_HOME`")) {
+        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
-    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/check_comfyui_env.py`" -Value `$content
-    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`" -Force -Recurse 2> `$null
-    Remove-Item -Path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`" -Force -Recurse 2> `$null
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_env.py`" -Value `$content
+    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" -Force -Recurse 2> `$null
+    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" -Force -Recurse 2> `$null
 
-    python `"`$PSScriptRoot/cache/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/ComfyUI`" --conflict-depend-notice-path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`" `
+    python `"`$Env:CACHE_HOME/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/ComfyUI`" --conflict-depend-notice-path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" `
 
-    if (Test-Path `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`") {
+    if (Test-Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`") {
         Print-Msg `"检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用`"
         Print-Msg `"您可以进入 ComfyUI 后使用 ComfyUI Manager 禁用或者卸载冲突的插件, 也可以进入 `$PSScriptRoot/ComfyUI/custom_nodes 路径, 将冲突插件的文件夹名称进行修改, 加上 .disabled 后缀后即可禁用插件, 或者直接删除插件的文件夹以卸载插件`"
         Print-Msg `"您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况`"
         Print-Msg `"您通常情况下可以选择忽略该警告并继续运行`"
         Write-Host `"-------------------------------------------------------------------------------`"
         Write-Host `"发生冲突的组件:`"
-        `$content = Get-Content `"`$PSScriptRoot/cache/comfyui_conflict_requirement_list.txt`"
+        `$content = Get-Content `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`"
         for (`$i = 0; `$i -lt `$content.Length; `$i++) {
             Write-Host `$content[`$i]
         }
@@ -1821,11 +1841,11 @@ if __name__ == '__main__':
     }
 
     # 安装组件依赖
-    if (!(Test-Path `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`")) {
+    if (!(Test-Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`")) {
         Print-Msg `"ComfyUI 运行环境无组件依赖缺失`"
         return
     }
-    `$requirement_list = Get-Content `"`$PSScriptRoot/cache/comfyui_requirement_list.txt`"
+    `$requirement_list = Get-Content `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`"
     `$sum = if (`$requirement_list.GetType().Name -eq `"String`") { 1 } else { `$requirement_list.Length }
     for (`$i = 0; `$i -lt `$sum; `$i++) {
         `$path = if (`$requirement_list.GetType().Name -eq `"String`") { `$requirement_list } else { `$requirement_list[`$i] }
@@ -2283,7 +2303,7 @@ function Check-ComfyUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 ComfyUI Installer 的自动检查更新功能`"
@@ -2307,16 +2327,16 @@ function Check-ComfyUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 ComfyUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2467,10 +2487,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2480,8 +2500,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -2673,7 +2693,7 @@ function Check-ComfyUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 ComfyUI Installer 的自动检查更新功能`"
@@ -2697,16 +2717,16 @@ function Check-ComfyUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 ComfyUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2857,10 +2877,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2870,8 +2890,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -3878,7 +3898,7 @@ function Check-ComfyUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 ComfyUI Installer 的自动检查更新功能`"
@@ -3902,16 +3922,16 @@ function Check-ComfyUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 ComfyUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -5231,18 +5251,18 @@ function Check-ComfyUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 ComfyUI Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
         if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                 Print-Msg `"ComfyUI Installer 有新版本可用`"
                 Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
@@ -5698,8 +5718,12 @@ function global:Install-ComfyUI-Node (`$url) {
         }
         git clone --recurse-submodules `$url `"`$cache_path`"
         if (`$?) {
+            # 清理空文件夹
+            if (Test-Path `"`$path`") {
+                `$random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+                Move-Item -Path `"`$path`" -Destination `"`$Env:CACHE_HOME/`$random_string`" -Force
+            }
             # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
             Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
             Print-Msg `"`$node_name 自定义节点安装成功`"
         } else {

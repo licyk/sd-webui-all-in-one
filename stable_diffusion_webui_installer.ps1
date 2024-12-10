@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 135
+$SD_WEBUI_INSTALLER_VERSION = 136
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -232,21 +232,26 @@ print(is_uv_need_update())
 # 下载并解压 Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
-    $cache_path = "$InstallPath/cache/python_tmp"
+    $cache_path = "$Env:CACHE_HOME/python_tmp"
     $path = "$InstallPath/python"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -259,20 +264,25 @@ function Install-Python {
 # 下载并解压 Git
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
-    $cache_path = "$InstallPath/cache/git_tmp"
+    $cache_path = "$Env:CACHE_HOME/git_tmp"
     $path = "$InstallPath/git"
 
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -286,9 +296,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
+        Move-Item -Path "$Env:CACHE_HOME/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
@@ -341,10 +351,10 @@ function Test-Github-Mirror {
     $status = 0
     ForEach($i in $GITHUB_MIRROR_LIST) {
         Print-Msg "测试 Github 镜像源: $i"
-        if (Test-Path "$InstallPath/cache/github-mirror-test") {
-            Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+        if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+            Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
         }
-        git clone "$i/licyk/empty" "$InstallPath/cache/github-mirror-test" --quiet
+        git clone "$i/licyk/empty" "$Env:CACHE_HOME/github-mirror-test" --quiet
         if ($?) {
             Print-Msg "该 Github 镜像源可用"
             $github_mirror = $i
@@ -355,8 +365,8 @@ function Test-Github-Mirror {
         }
     }
 
-    if (Test-Path "$InstallPath/cache/github-mirror-test") {
-        Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+    if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+        Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
     }
 
     if ($status -eq 0) {
@@ -392,15 +402,19 @@ function Git-CLone {
 
     if ($status -eq 1) {
         Print-Msg "正在下载 $name"
-        $cache_path = "$InstallPath/cache/${folder_name}_tmp"
+        $cache_path = "$Env:CACHE_HOME/${folder_name}_tmp"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         git clone --recurse-submodules $url "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 清理空文件夹
+            if (Test-Path "$path") {
+                $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+                Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+            }
             # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
@@ -533,7 +547,7 @@ function Install-Stable-Diffusion-WebUI-Dependence {
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
-    New-Item -ItemType Directory -Path "$InstallPath/cache" -Force > $null
+    New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
     if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe")) {
@@ -697,6 +711,11 @@ function Check-Install {
         }
     }
 
+    # 清理缓存
+    Print-Msg "清理下载 Python 软件包的缓存中"
+    python -m pip cache purge
+    uv cache clean
+
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
@@ -843,7 +862,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -867,16 +886,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -965,10 +984,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -978,8 +997,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -1441,10 +1460,10 @@ if __name__ == '__main__':
     print(validate_requirements(path))
 `"
     Print-Msg `"检查 Stable Diffusion WebUI 内核依赖完整性中`"
-    if (!(Test-Path `"`$PSScriptRoot/cache`")) {
-        New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" > `$null
+    if (!(Test-Path `"`$Env:CACHE_HOME`")) {
+        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
-    Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" -Value `$content
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_stable_diffusion_webui_requirement.py`" -Value `$content
 
     `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
     # SD Next
@@ -1452,7 +1471,7 @@ if __name__ == '__main__':
         `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements.txt`"
     }
 
-    `$status = `$(python `"`$PSScriptRoot/cache/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$dep_path`")
+    `$status = `$(python `"`$Env:CACHE_HOME/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 Stable Diffusion WebUI 内核有依赖缺失, 安装 Stable Diffusion WebUI 依赖中`"
@@ -2062,7 +2081,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -2086,16 +2105,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2246,10 +2265,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2259,8 +2278,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -2433,7 +2452,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -2457,16 +2476,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2617,10 +2636,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2630,8 +2649,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -3010,7 +3029,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -3034,16 +3053,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -3194,10 +3213,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -3207,8 +3226,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -3582,7 +3601,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -3606,16 +3625,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -4228,7 +4247,7 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
@@ -4252,16 +4271,16 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"=========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -5529,18 +5548,18 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 SD WebUI Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
         if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
                 Print-Msg `"SD WebUI Installer 有新版本可用`"
                 Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                . `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
@@ -5996,8 +6015,12 @@ function global:Install-Stable-Diffusion-WebUI-Extension (`$url) {
         }
         git clone --recurse-submodules `$url `"`$cache_path`"
         if (`$?) {
+            # 清理空文件夹
+            if (Test-Path `"`$path`") {
+                `$random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+                Move-Item -Path `"`$path`" -Destination `"`$Env:CACHE_HOME/`$random_string`" -Force
+            }
             # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
             Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
             Print-Msg `"`$extension_name 扩展安装成功`"
         } else {

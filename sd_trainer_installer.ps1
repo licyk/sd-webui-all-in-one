@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 190
+$SD_TRAINER_INSTALLER_VERSION = 191
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -226,21 +226,26 @@ print(is_uv_need_update())
 # 下载并解压 Python
 function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
-    $cache_path = "$InstallPath/cache/python_tmp"
+    $cache_path = "$Env:CACHE_HOME/python_tmp"
     $path = "$InstallPath/python"
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-3.10.15-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/python-3.10.15-amd64.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -253,20 +258,25 @@ function Install-Python {
 # 下载并解压 Git
 function Install-Git {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
-    $cache_path = "$InstallPath/cache/git_tmp"
+    $cache_path = "$Env:CACHE_HOME/git_tmp"
     $path = "$InstallPath/git"
 
     Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/PortableGit.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Git
         Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$InstallPath/cache/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/PortableGit.zip" -DestinationPath "$cache_path" -Force
+        # 清理空文件夹
+        if (Test-Path "$path") {
+            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        }
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$InstallPath/cache/PortableGit.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -280,9 +290,9 @@ function Install-Git {
 function Install-Aria2 {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
     Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$InstallPath/cache/aria2c.exe"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
     if ($?) {
-        Move-Item -Path "$InstallPath/cache/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
+        Move-Item -Path "$Env:CACHE_HOME/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
@@ -335,10 +345,10 @@ function Test-Github-Mirror {
     $status = 0
     ForEach($i in $GITHUB_MIRROR_LIST) {
         Print-Msg "测试 Github 镜像源: $i"
-        if (Test-Path "$InstallPath/cache/github-mirror-test") {
-            Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+        if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+            Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
         }
-        git clone "$i/licyk/empty" "$InstallPath/cache/github-mirror-test" --quiet
+        git clone "$i/licyk/empty" "$Env:CACHE_HOME/github-mirror-test" --quiet
         if ($?) {
             Print-Msg "该 Github 镜像源可用"
             $github_mirror = $i
@@ -349,8 +359,8 @@ function Test-Github-Mirror {
         }
     }
 
-    if (Test-Path "$InstallPath/cache/github-mirror-test") {
-        Remove-Item -Path "$InstallPath/cache/github-mirror-test" -Force -Recurse
+    if (Test-Path "$Env:CACHE_HOME/github-mirror-test") {
+        Remove-Item -Path "$Env:CACHE_HOME/github-mirror-test" -Force -Recurse
     }
 
     if ($status -eq 0) {
@@ -377,7 +387,7 @@ function Install-SD-Trainer {
     }
 
     $path = "$InstallPath/lora-scripts"
-    $cache_path = "$InstallPath/cache/lora-scripts_tmp"
+    $cache_path = "$Env:CACHE_HOME/lora-scripts_tmp"
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
         # 清理缓存路径
@@ -386,8 +396,12 @@ function Install-SD-Trainer {
         }
         git clone --recurse-submodules $SD_TRAINER_REPO "$cache_path"
         if ($?) { # 检测是否下载成功
+            # 清理空文件夹
+            if (Test-Path "$path") {
+                $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+                Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+            }
             # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "SD-Trainer 安装成功"
         } else {
@@ -494,8 +508,7 @@ function Install-SD-Trainer-Dependence {
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
-    New-Item -ItemType Directory -Path "$InstallPath/cache" -Force > $null
-    New-Item -ItemType Directory -Path "$InstallPath/models" -Force > $null
+    New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
     if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/lora-scripts/python/python.exe")) {
@@ -547,6 +560,11 @@ function Check-Install {
         $content = "--inbrowser --language zh-CN"
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
+
+    # 清理缓存
+    Print-Msg "清理下载 Python 软件包的缓存中"
+    python -m pip cache purge
+    uv cache clean
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -683,7 +701,7 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
@@ -707,16 +725,16 @@ function Check-SD-Trainer-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD-Trainer Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1230,7 +1248,7 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
@@ -1254,16 +1272,16 @@ function Check-SD-Trainer-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD-Trainer Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1414,10 +1432,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -1427,8 +1445,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -1721,7 +1739,7 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
@@ -1745,16 +1763,16 @@ function Check-SD-Trainer-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD-Trainer Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -1905,10 +1923,10 @@ function Set-Github-Mirror {
     `$status = 0
     ForEach(`$i in `$GITHUB_MIRROR_LIST) {
         Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-            Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$PSScriptRoot/cache/github-mirror-test`" --quiet
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -1918,8 +1936,8 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
-    if (Test-Path `"`$PSScriptRoot/cache/github-mirror-test`") {
-        Remove-Item -Path `"`$PSScriptRoot/cache/github-mirror-test`" -Force -Recurse
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
@@ -2343,7 +2361,7 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
@@ -2367,16 +2385,16 @@ function Check-SD-Trainer-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD-Trainer Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -2935,7 +2953,7 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
@@ -2959,16 +2977,16 @@ function Check-SD-Trainer-Installer-Update {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
         ForEach (`$url in `$urls) {
             Print-Msg `"检查 SD-Trainer Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
                 if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
                     `$arg = Read-Host `"===========================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                         Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                         Read-Host | Out-Null
                         exit 0
@@ -3942,18 +3960,18 @@ function Check-SD-Trainer-Installer-Update {
     `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`")
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 SD-Trainer Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
         if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" | Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
             if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
                 Print-Msg `"SD-Trainer Installer 有新版本可用`"
                 Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-                . `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
                 Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
                 Read-Host | Out-Null
                 exit 0
