@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 159
+$COMFYUI_INSTALLER_VERSION = 160
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -329,6 +329,7 @@ function Test-Github-Mirror {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
         }
         git config --global --add safe.directory "*"
+        git config --global core.longpaths true
         git config --global url."$github_mirror".insteadOf "https://github.com"
         Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -UseCustomGithubMirror, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         return
@@ -362,6 +363,7 @@ function Test-Github-Mirror {
     } else {
         Print-Msg "设置 Github 镜像源"
         git config --global --add safe.directory "*"
+        git config --global core.longpaths true
         git config --global url."$github_mirror".insteadOf "https://github.com"
     }
 }
@@ -855,6 +857,7 @@ function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -886,6 +889,7 @@ function Set-Github-Mirror {
     } else {
         Print-Msg `"设置 Github 镜像源`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -2478,6 +2482,7 @@ function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -2509,6 +2514,7 @@ function Set-Github-Mirror {
     } else {
         Print-Msg `"设置 Github 镜像源`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -2868,6 +2874,7 @@ function Set-Github-Mirror {
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -2899,6 +2906,7 @@ function Set-Github-Mirror {
     } else {
         Print-Msg `"设置 Github 镜像源`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -5654,6 +5662,7 @@ function global:Test-Github-Mirror {
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -5685,6 +5694,7 @@ function global:Test-Github-Mirror {
     } else {
         Print-Msg `"设置 Github 镜像源`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -5960,6 +5970,7 @@ function Set-Github-Mirror {
         }
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         git config --global --add safe.directory `"*`"
+        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     }
