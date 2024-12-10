@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 192
+$SD_TRAINER_INSTALLER_VERSION = 193
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -244,6 +244,7 @@ function Install-Python {
             $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
             Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
         }
+        New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
         Move-Item -Path "$cache_path" -Destination "$path" -Force
         Remove-Item -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
@@ -275,6 +276,7 @@ function Install-Git {
             $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
             Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
         }
+        New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
         Move-Item -Path "$cache_path" -Destination "$path" -Force
         Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
         Print-Msg "Git 安装成功"
@@ -404,6 +406,7 @@ function Install-SD-Trainer {
                 Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
             }
             # 将下载好的文件从缓存文件夹移动到指定路径
+            New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "SD-Trainer 安装成功"
         } else {
