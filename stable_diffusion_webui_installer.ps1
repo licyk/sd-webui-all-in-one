@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 140
+$SD_WEBUI_INSTALLER_VERSION = 141
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -326,14 +326,18 @@ function Install-uv {
 
 # Github 镜像测试
 function Test-Github-Mirror {
-    if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($DisableGithubMirror)) { # 禁用 Github 镜像源
-        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -DisableGithubMirror, 禁用 Github 镜像源"
-        return
-    } 
-
     $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
     if (Test-Path "$InstallPath/.gitconfig") {
         Remove-Item -Path "$InstallPath/.gitconfig" -Force -Recurse
+    }
+
+    # 默认 Git 配置
+    git config --global --add safe.directory "*"
+    git config --global core.longpaths true
+
+    if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -DisableGithubMirror, 禁用 Github 镜像源"
+        return
     }
 
     # 使用自定义 Github 镜像源
@@ -343,8 +347,6 @@ function Test-Github-Mirror {
         } else {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
         }
-        git config --global --add safe.directory "*"
-        git config --global core.longpaths true
         git config --global url."$github_mirror".insteadOf "https://github.com"
         Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -UseCustomGithubMirror, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         return
@@ -374,11 +376,8 @@ function Test-Github-Mirror {
 
     if ($status -eq 0) {
         Print-Msg "无可用 Github 镜像源, 取消使用 Github 镜像源"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg "设置 Github 镜像源"
-        git config --global --add safe.directory "*"
-        git config --global core.longpaths true
         git config --global url."$github_mirror".insteadOf "https://github.com"
     }
 }
@@ -967,20 +966,22 @@ function Set-HuggingFace-Mirror {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-    
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -1003,16 +1004,15 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
+
     if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
         Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
+
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg `"设置 Github 镜像源`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -2250,20 +2250,23 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-    
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+    
+
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -2286,16 +2289,15 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
+
     if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
         Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
+
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg `"设置 Github 镜像源`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -2623,20 +2625,22 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-    
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -2659,16 +2663,15 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
+
     if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
         Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
+
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg `"设置 Github 镜像源`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -3202,20 +3205,22 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-    
     `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -3238,16 +3243,15 @@ function Set-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
+
     if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
         Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
+
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg `"设置 Github 镜像源`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -5953,20 +5957,22 @@ function global:Check-Stable-Diffusion-WebUI-Installer-Update {
 
 # 启用 Github 镜像源
 function global:Test-Github-Mirror {
-    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-
     `$Env:GIT_CONFIG_GLOBAL = `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`") {
         Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`" -Force -Recurse
     }
 
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+
     if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`") { # 使用自定义 Github 镜像源
         `$github_mirror = Get-Content `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
@@ -5989,16 +5995,15 @@ function global:Test-Github-Mirror {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
+
     if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
         Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
     }
+
     if (`$status -eq 0) {
         Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-        Remove-Item -Path env:GIT_CONFIG_GLOBAL -Force
     } else {
         Print-Msg `"设置 Github 镜像源`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
     }
 }
@@ -6264,19 +6269,22 @@ function Set-HuggingFace-Mirror {
 
 # Github 镜像源
 function Set-Github-Mirror {
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    }
+
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
     if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
         return
     }
 
     if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-        if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-            Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
-        }
         `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global --add safe.directory `"*`"
-        git config --global core.longpaths true
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     }
