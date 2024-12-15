@@ -1,0 +1,40 @@
+name: Sync Repo To Other Repo
+
+on:
+  push:
+  delete:
+  create:
+
+jobs:
+  Sync-To-Gitee:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Sync to Gitee
+      uses: wearerequired/git-mirror-action@master
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
+      with:
+        source-repo: git@github.com:licyk/sd-webui-all-in-one.git
+        destination-repo: git@gitee.com:licyk/sd-webui-all-in-one.git
+
+  Sync-To-Gitlab:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Sync to Gitlab
+      uses: wearerequired/git-mirror-action@master
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
+      with:
+        source-repo: git@github.com:licyk/sd-webui-all-in-one.git
+        destination-repo: git@gitlab.com:licyk/sd-webui-all-in-one.git
+
+  Sync-To-Bitbucket:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Sync to Bitbucket
+      uses: wearerequired/git-mirror-action@master
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
+      with:
+        source-repo: git@github.com:licyk/sd-webui-all-in-one.git
+        destination-repo: git@bitbucket.org:licyks/sd-webui-all-in-one.git
