@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 180
+$INVOKEAI_INSTALLER_VERSION = 181
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4586,6 +4586,7 @@ help.txt：帮助文档。
 InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 Language 选项选择简体中文即可将界面语言设置为中文。
 
 使用 InvokeAI 时，建议阅读下列教程，以更快的了解并掌握使用 InvokeAI 的方法。
+InvokeAI - SDNote：https://sdnote.netlify.app/guide/invokeai
 给所有想学习AI辅助绘画的人的入门课 By Yuno779（基于 InvokeAI 3.7.0）：https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
 InvokeAI 官方入门教程（基于 InvokeAI 5.x）：https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO
 一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）：https://www.youtube.com/watch?v=Tl-69JvwJ2s

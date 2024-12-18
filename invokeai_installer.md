@@ -302,6 +302,7 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 ## InvokeAI 的使用方法
 推荐下面的教程：  
+- [InvokeAI - SD Note](https://sdnote.netlify.app/guide/invokeai)
 - [给所有想学习AI辅助绘画的人的入门课（基于 InvokeAI 3.7.0）](https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140)
 - [InvokeAI 官方入门教程（基于 InvokeAI 5.x）](https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO)
 - [一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）](https://www.youtube.com/watch?v=Tl-69JvwJ2s)
