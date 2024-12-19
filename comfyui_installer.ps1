@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 169
+$COMFYUI_INSTALLER_VERSION = 170
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -548,7 +548,6 @@ function Check-Install {
     Git-CLone "$COMFYUI_REPO" "$comfyui_path"
     # ComfyUI 扩展
     Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
-    Git-CLone "https://github.com/AIGODLIKE/AIGODLIKE-COMFYUI-TRANSLATION" "$custom_node_path/AIGODLIKE-COMFYUI-TRANSLATION"
     Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
     Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
     Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"
@@ -583,7 +582,7 @@ function Check-Install {
             "Comfy.Settings.ExtensionPanel" = $true
             "DZ.Debug.enabled" = $true
             "Comfy.UseNewMenu" = "Top"
-            "AGL.Locale" = "zh-CN"
+            "Comfy.Locale" = "zh"
             "Comfy.RerouteBeta" = $true
         }
         $json_content = $json_content | ConvertTo-Json -Depth 4
