@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 146
+$SD_WEBUI_INSTALLER_VERSION = 147
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -147,8 +147,23 @@ function Set-Proxy {
         $Env:HTTPS_PROXY = $proxy_value
         Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / 命令行参数 -UseCustomProxy, 已读取代理配置文件并设置代理"
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        $Env:HTTP_PROXY = "http://$($internet_setting.ProxyServer)"
-        $Env:HTTPS_PROXY = "http://$($internet_setting.ProxyServer)"
+        $proxy_addr = $($internet_setting.ProxyServer)
+        # 提取代理地址
+        if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);") ) {
+            $proxy_value = $matches[1]
+            # 去除 http / https 前缀
+            $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
+            $proxy_value = "http://${proxy_value}"
+        } elseif ($proxy_addr -match "socks=(.*)") {
+            $proxy_value = $matches[1]
+            # 去除 socks 前缀
+            $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
+            $proxy_value = "socks://${proxy_value}"
+        } else {
+            $proxy_value = "http://${proxy_addr}"
+        }
+        $Env:HTTP_PROXY = $proxy_value
+        $Env:HTTPS_PROXY = $proxy_value
         Print-Msg "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
 }
@@ -939,8 +954,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -2241,8 +2271,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -2616,8 +2661,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -3196,8 +3256,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -3409,8 +3484,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -3771,8 +3861,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -4251,8 +4356,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -4996,8 +5116,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
@@ -6247,8 +6382,23 @@ function Set-Proxy {
         `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$Env:HTTP_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
-        `$Env:HTTPS_PROXY = `"http://`$(`$internet_setting.ProxyServer)`"
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
         Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
