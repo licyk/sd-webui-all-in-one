@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 197
+$SD_TRAINER_INSTALLER_VERSION = 198
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -143,7 +143,7 @@ function Set-Proxy {
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         $proxy_addr = $($internet_setting.ProxyServer)
         # 提取代理地址
-        if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);") ) {
+        if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);")) {
             $proxy_value = $matches[1]
             # 去除 http / https 前缀
             $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
@@ -795,7 +795,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -1437,7 +1437,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -1946,7 +1946,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -2231,7 +2231,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -2601,7 +2601,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -3042,7 +3042,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -3548,7 +3548,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -4592,7 +4592,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")

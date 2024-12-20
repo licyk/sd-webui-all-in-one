@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 183
+$INVOKEAI_INSTALLER_VERSION = 184
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -116,7 +116,7 @@ function Set-Proxy {
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         $proxy_addr = $($internet_setting.ProxyServer)
         # 提取代理地址
-        if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);") ) {
+        if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);")) {
             $proxy_value = $matches[1]
             # 去除 http / https 前缀
             $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
@@ -752,7 +752,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -1223,7 +1223,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -1401,6 +1401,23 @@ print(ver_list)
 }
 
 
+# 获取 InvokeAI 版本号
+function Get-InvokeAI-Version {
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    ver = version('invokeai')
+except:
+    ver = '5.0.2'
+
+print(f'InvokeAI=={ver}')
+`"
+    `$status = `$(python -c `"`$content`")
+    return `$status
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
@@ -1412,6 +1429,7 @@ function Main {
 
     Print-Msg `"更新 InvokeAI 内核中`"
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
+    `$invokeai_core_ver = Get-InvokeAI-Version
     if (`$USE_UV) {
         uv pip install InvokeAI --upgrade --no-deps
         if (!(`$?)) {
@@ -1457,8 +1475,28 @@ function Main {
             `$req_update_msg = `"更新成功`"
         } else {
             Print-Msg `"InvokeAI 依赖更新失败`"
+            `$core_update_msg = `"由于内核依赖更新失败, 已回退内核版本`"
             `$req_update_msg = `"更新失败`"
             `$update_fail = 1
+
+            # 依赖更新失败时回退内核版本
+            Print-Msg `"尝试回退 InvokeAI 内核版本`"
+            if (`$USE_UV) {
+                uv pip install `$invokeai_core_ver.ToString().Split() --no-deps
+                if (!(`$?)) {
+                    Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                    python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+                }
+            } else {
+                python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+            }
+
+            if (`$?) {
+                Print-Msg `"回退 InvokeAI 内核版本成功`"
+            } else {
+                Print-Msg `"回退 InvokeAI 内核版本失败`"
+                `$core_update_msg = `"由于内核依赖更新失败, 已尝试回退内核版本, 但出现回退失败`"
+            }
         }
     } else {
         Print-Msg `"InvokeAI 内核更新失败`"
@@ -1466,11 +1504,11 @@ function Main {
         `$req_update_msg = `"由于内核更新失败, 不进行依赖更新`"
         `$update_fail = 1
     }
-    Print-Msg `"==================================================================`"
+    Print-Msg `"=============================================================================`"
     Print-Msg `"InvokeAI 更新结果：`"
     Print-Msg `"InvokeAI 核心: `$core_update_msg`"
     Print-Msg `"InvokeAI 依赖: `$req_update_msg`"
-    Print-Msg `"==================================================================`"
+    Print-Msg `"=============================================================================`"
     if (`$update_fail -eq 0) {
         if (`$ver -eq `$ver_) {
             Print-Msg `"InvokeAI 更新成功, 当前版本：`$ver_`"
@@ -1775,7 +1813,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -2003,7 +2041,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -2212,7 +2250,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -2622,7 +2660,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -3516,7 +3554,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
@@ -4603,7 +4641,7 @@ function Set-Proxy {
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`") ) {
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
             `$proxy_value = `$matches[1]
             # 去除 http / https 前缀
             `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
