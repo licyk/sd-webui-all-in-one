@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 185
+$INVOKEAI_INSTALLER_VERSION = 186
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -674,7 +674,13 @@ function Pip-Mirror-Status {
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -1145,7 +1151,13 @@ function Pip-Mirror-Status {
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -1659,7 +1671,13 @@ function Fix-Git-Point-Off-Set {
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -2064,7 +2082,13 @@ function Set-Proxy {
 # 下载 InvokeAI Installer
 function Download-InvokeAI-Installer {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
@@ -2353,7 +2377,13 @@ print(ver_list)
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -2683,7 +2713,13 @@ function Set-Proxy {
 # InvokeAI Installer 更新检测
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -2817,6 +2853,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -4036,7 +4073,13 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 # 检查 InvokeAI Installer 更新
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -4379,7 +4422,13 @@ function global:Update-Aria2 {
 # InvokeAI Installer 更新检测
 function global:Check-InvokeAI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/invokeai_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/invokeai_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null

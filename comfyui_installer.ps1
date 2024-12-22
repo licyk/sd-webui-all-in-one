@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 174
+$COMFYUI_INSTALLER_VERSION = 175
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -758,7 +758,13 @@ for folder in torch_spec.submodule_search_locations:
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -2336,7 +2342,13 @@ function Fix-Git-Point-Off-Set {
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -2744,7 +2756,13 @@ function Fix-Git-Point-Off-Set {
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -3153,7 +3171,13 @@ function Set-Proxy {
 # 下载 ComfyUI Installer
 function Download-ComfyUI-Installer {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
@@ -3336,7 +3360,13 @@ function Pip-Mirror-Status {
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
@@ -4012,7 +4042,13 @@ function Set-Proxy {
 # ComfyUI Installer 更新检测
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -4146,6 +4182,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -5387,7 +5424,13 @@ function ComfyUI-Env-Check-Setting {
 # 检查 ComfyUI Installer 更新
 function Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -5743,7 +5786,13 @@ function global:Update-Aria2 {
 # ComfyUI Installer 更新检测
 function global:Check-ComfyUI-Installer-Update {
     # 可用的下载源
-    `$urls = @(`"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`", `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`", `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`")
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+    )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
@@ -5933,7 +5982,11 @@ function global:List-Node {
 
 # 安装绘世启动器
 function global:Install-Hanamizuki {
-    `$urls = @(`"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`", `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`", `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`")
+    `$urls = @(
+        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`",
+        `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`",
+        `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`"
+    )
 
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`") {
         Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
