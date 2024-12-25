@@ -110,11 +110,11 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 
 |环境配置脚本下载|
 |---|
-|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
-|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/configure_env.bat)|
-|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
-|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
-|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
+|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
+|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/configure_env.bat)|
 
 >[!NOTE]  
 >[使用自动环境配置脚本](#使用自动环境配置脚本)的方法和[手动使用命令配置](#手动使用命令配置)的方法效果一致。
@@ -178,11 +178,11 @@ $ tree -L 1
 
 |SD WebUI Installer 下载地址|
 |---|
-|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1)|
-|[下载地址 2](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1)|
-|[下载地址 3](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1)|
-|[下载地址 4](https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1)|
-|[下载地址 5](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1)|
+|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1)|
+|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1)|
 
 在 SD WebUI Installer 成功安装 Stable Diffusion WebUI 后，在`stable-diffusion-webui`文件夹中可以看到 Stable Diffusion WebUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD WebUI Installer。
 
