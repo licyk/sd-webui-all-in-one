@@ -82,6 +82,7 @@ _✨一键安装 ComfyUI_
     - [列出 ComfyUI Installer 内置命令](#列出-comfyui-installer-内置命令)
     - [检查 ComfyUI Installer 更新](#检查-comfyui-installer-更新)
     - [查看并切换 ComfyUI 的版本](#查看并切换-comfyui-的版本)
+    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
 ***
 
@@ -871,3 +872,14 @@ git -C ComfyUI log
 git -C ComfyUI reset --hard --recurse-submodules <Git Commit Hash>
 ```
 
+### 查看 Git / Python 命令实际调用的路径
+```powershell
+# 查看 Git 命令调用的路径
+(Get-Command git).Source
+
+# 查看 Python 命令调用的路径
+(Get-Command python).Source
+
+# 查看其他命令的实际调用路径也是同样的方法
+# (Get-Command <command>).Source
+```

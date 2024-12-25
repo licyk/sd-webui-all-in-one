@@ -88,6 +88,7 @@ _✨一键安装 SD-Trainer_
     - [检查 SD-Trainer Installer 更新](#检查-sd-trainer-installer-更新)
     - [查看并切换 SD-Trainer 的版本](#查看并切换-sd-trainer-的版本)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
+    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
 ***
 
@@ -880,4 +881,16 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 # --dtype fp16 指定保存的模型精度为 fp16，常用的模型精度为 fp16、bf16
 # 融合完成后在当前文件夹中就可以看到融合好的 Stable Diffusion 模型
 # 注意，融合模型需要大于或等于 64G 的内存，如果内存低于这个大小可能会大量使用虚拟内存进行补足，增大硬盘的读写消耗
+```
+
+### 查看 Git / Python 命令实际调用的路径
+```powershell
+# 查看 Git 命令调用的路径
+(Get-Command git).Source
+
+# 查看 Python 命令调用的路径
+(Get-Command python).Source
+
+# 查看其他命令的实际调用路径也是同样的方法
+# (Get-Command <command>).Source
 ```

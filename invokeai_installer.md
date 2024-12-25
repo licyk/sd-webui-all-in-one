@@ -79,6 +79,7 @@ _✨一键安装 InvokeAI_
     - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
     - [使用 Git 下载项目](#使用-git-下载项目)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
+    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
 ***
 
@@ -679,4 +680,16 @@ python -m pip index versions invokeai
 # 切换到指定的版本
 # 命令中的 <Version> 替换成要切换的版本
 python -m pip install invokeai==<Version>
+```
+
+### 查看 Git / Python 命令实际调用的路径
+```powershell
+# 查看 Git 命令调用的路径
+(Get-Command git).Source
+
+# 查看 Python 命令调用的路径
+(Get-Command python).Source
+
+# 查看其他命令的实际调用路径也是同样的方法
+# (Get-Command <command>).Source
 ```
