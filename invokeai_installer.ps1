@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 188
+$INVOKEAI_INSTALLER_VERSION = 189
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -831,7 +831,7 @@ function Get-InvokeAI-Launch-Address {
 
     # 检查端口是否被占用
     while (`$true) {
-        if (Get-NetTCPConnection -LocalPort `$port -ErrorAction SilentlyContinue | Where-Object { `$_.LocalAddress -eq `"127.0.0.1`" }) {
+        if (Get-NetTCPConnection -LocalPort `$port -ErrorAction SilentlyContinue | Where-Object { (`$_.LocalAddress -eq `"127.0.0.1`") -or (`$_.LocalAddress -eq `$ip)}) {
             `$port += 1
         } else {
             break
