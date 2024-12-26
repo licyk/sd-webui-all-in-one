@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 187
+$INVOKEAI_INSTALLER_VERSION = 188
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -611,10 +611,10 @@ function Write-Launch-Script {
 `$Env:PATH = `"`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
@@ -797,24 +797,48 @@ function Set-HuggingFace-Mirror {
 
 
 # 获取 InvokeAI 的网页端口
-function Get-InvokeAI-Launch-Port {
-    `$port = `"9090`"
-    if (!(Test-Path `"`$PSScriptRoot/invokeai/invokeai.yaml`")) {
-        return `$port
-    }
+function Get-InvokeAI-Launch-Address {
+    `$port = 9090
+    `$ip = `"127.0.0.1`"
 
-    Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
-        `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
-        foreach (`$match in `$matches) {
-            `$key = `$match.Groups[1].Value
-            `$value = `$match.Groups[2].Value
-            if ((`$key -eq `"port`") -and (!(`$match.Groups[0].Value -eq `"`"))) {
-                `$port = `$value
-                break
+    Print-Msg `"获取 InvokeAI 界面地址`"
+    if (Test-Path `"`$PSScriptRoot/invokeai/invokeai.yaml`") {
+        # 读取配置文件中的端口配置
+        Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
+            `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
+            foreach (`$match in `$matches) {
+                `$key = `$match.Groups[1].Value
+                `$value = `$match.Groups[2].Value
+                if ((`$key -eq `"port`") -and (!(`$match.Groups[0].Value -eq `"`"))) {
+                    `$port = [int]`$value
+                    break
+                }
+            }
+        }
+
+        Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
+            `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
+            foreach (`$match in `$matches) {
+                `$key = `$match.Groups[1].Value
+                `$value = `$match.Groups[2].Value
+                if ((`$key -eq `"host`") -and (!(`$match.Groups[0].Value -eq `"`"))) {
+                    `$ip = `$value
+                    break
+                }
             }
         }
     }
-    return `$port
+
+    # 检查端口是否被占用
+    while (`$true) {
+        if (Get-NetTCPConnection -LocalPort `$port -ErrorAction SilentlyContinue | Where-Object { `$_.LocalAddress -eq `"127.0.0.1`" }) {
+            `$port += 1
+        } else {
+            break
+        }
+    }
+
+    return `"http://`${ip}:`${port}`"
 }
 
 
@@ -1027,13 +1051,19 @@ function Main {
         return
     }
 
-    `$port = Get-InvokeAI-Launch-Port
-    Print-Msg `"将使用浏览器打开 http://127.0.0.1:`$port 地址, 进入 InvokeAI 的界面`"
+    `$web_addr = Get-InvokeAI-Launch-Address
+    Print-Msg `"将使用浏览器打开 `$web_addr 地址, 进入 InvokeAI 的界面`"
     Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
     Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
-    Start-Sleep -Seconds 2
-    Print-Msg `"调用浏览器打开地址中`"
-    Start-Process `"http://127.0.0.1:`$port`"
+    Print-Msg `"提示: 如果浏览器未自动打开 `$web_addr 地址, 请手动打开浏览器, 输入 `$web_addr 并打开`"
+
+    Start-Job -ScriptBlock {
+        param (`$web_addr)
+
+        Start-Sleep -Seconds 10
+        Start-Process `$web_addr
+    } -ArgumentList `$web_addr | Out-Null
+
     Print-Msg `"启动 InvokeAI 中`"
     Write-Launch-InvokeAI-Script
     python `"`$Env:CACHE_HOME/launch_invokeai.py`" --root `"`$PSScriptRoot/invokeai`"
