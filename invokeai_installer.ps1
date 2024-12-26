@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 189
+$INVOKEAI_INSTALLER_VERSION = 190
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -26,7 +26,7 @@ $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.2"
+$UV_MINIMUM_VER = "0.5.11"
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
@@ -831,7 +831,7 @@ function Get-InvokeAI-Launch-Address {
 
     # 检查端口是否被占用
     while (`$true) {
-        if (Get-NetTCPConnection -LocalPort `$port -ErrorAction SilentlyContinue | Where-Object { (`$_.LocalAddress -eq `"127.0.0.1`") -or (`$_.LocalAddress -eq `$ip)}) {
+        if (Get-NetTCPConnection -LocalPort `$port -ErrorAction SilentlyContinue | Where-Object {(`$_.LocalAddress -eq `"127.0.0.1`") -or (`$_.LocalAddress -eq `$ip)}) {
             `$port += 1
         } else {
             break
@@ -1981,7 +1981,7 @@ function Main {
     Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/invokeai/nodes`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 invokeai 文件夹, 无法更新 InvokeAI 自定义节点`"
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 invokeai/nodes 文件夹, 无法更新 InvokeAI 自定义节点`"
         return
     }
 

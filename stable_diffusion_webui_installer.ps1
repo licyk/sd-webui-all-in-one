@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 153
+$SD_WEBUI_INSTALLER_VERSION = 154
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -43,7 +43,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.2"
+$UV_MINIMUM_VER = "0.5.11"
 # Stable Diffusion WebUI 仓库地址
 $SD_WEBUI_REPO = if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
     "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
