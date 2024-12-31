@@ -237,7 +237,7 @@ $ tree -L 1
 
 
 ## 获取最新的 SD-Trainer Installer 并运行
-运行`launch_sd_trainer_installer.ps1`脚本。
+运行`launch_sd_trainer_installer.ps1`脚本，如果下载成功将会把 SD-Trainer Installer 下载到`cache`目录中并运行。
 
 
 ## 恢复被修改 / 删除的脚本

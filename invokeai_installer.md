@@ -188,7 +188,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 
 ## 获取最新的 InvokeAI Installer 并运行
-运行`launch_invokeai_installer.ps1`脚本。
+运行`launch_invokeai_installer.ps1`脚本，如果下载成功将会把 InvokeAI Installer 下载到`cache`目录中并运行。
 
 
 ## 更新 InvokeAI 管理脚本
