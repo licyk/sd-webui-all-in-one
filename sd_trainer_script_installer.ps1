@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 103
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 104
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -532,6 +532,29 @@ function Install-SD-Trainer-Script-Dependence {
 }
 
 
+# 安装 Python 软件包
+function Install-Python-Package ($pkg) {
+    Print-Msg "安装 $pkg 软件包中"
+    if ($USE_UV) {
+        uv pip install $pkg.ToString().Split()
+        if (!($?)) {
+            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+            python -m pip install $pkg.ToString().Split()
+        }
+    } else {
+        python -m pip install $pkg.ToString().Split()
+    }
+    if ($?) {
+        Print-Msg "安装 $pkg 软件包安装成功"
+    } else {
+        Print-Msg "安装 $pkg 软件包安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+        Set-Location "$current_path"
+        Read-Host | Out-Null
+        exit 1
+    }
+}
+
+
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
@@ -580,6 +603,7 @@ function Check-Install {
     Install-SD-Trainer-Script
     Install-PyTorch
     Install-SD-Trainer-Script-Dependence
+    Install-Python-Package "lycoris-lora dadaptation open-clip-torch wandb"
 
     # 清理缓存
     Print-Msg "清理下载 Python 软件包的缓存中"
