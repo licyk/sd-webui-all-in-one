@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 101
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 102
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -581,9 +581,18 @@ function Check-Install {
     Install-PyTorch
     Install-SD-Trainer-Script-Dependence
 
-    # 提供初始模板
-    if (!(Test-Path "$PSScriptRoot/train.ps1")) {
-        $content = "#################################################
+    # 清理缓存
+    Print-Msg "清理下载 Python 软件包的缓存中"
+    python -m pip cache purge
+    uv cache clean
+
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+}
+
+
+# 训练模板脚本
+function Write-Train-Script {
+    $content = "#################################################
 # 初始化基础环境变量, 以正确识别到运行环境
 & `"`$PSScriptRoot/library.ps1`"
 Set-Location `$PSScriptRoot
@@ -610,15 +619,9 @@ Set-Location `$PSScriptRoot
 #################################################
 Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 "
+    if (!(Test-Path "$PSScriptRoot/train.ps1")) {
         Set-Content -Encoding UTF8 -Path "$InstallPath/train.ps1" -Value $content
     }
-
-    # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
-
-    Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
@@ -4618,6 +4621,7 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 # 写入管理脚本和文档
 function Write-Manager-Scripts {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
+    Write-Train-Script
     Write-Library-Script
     Write-Update-Script
     Write-Switch-Branch-Script
