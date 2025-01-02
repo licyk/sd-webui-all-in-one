@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 100
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 101
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -586,6 +586,7 @@ function Check-Install {
         $content = "#################################################
 # 初始化基础环境变量, 以正确识别到运行环境
 & `"`$PSScriptRoot/library.ps1`"
+Set-Location `$PSScriptRoot
 # 此处的代码不要修改或者删除, 否则可能会出现意外情况
 # 
 # SD-Trainer-Script 环境初始化后提供以下变量便于使用
@@ -598,6 +599,7 @@ function Check-Install {
 # `$PYTHON_EXEC             Python 解释器路径
 # 
 # 下方可编写训练代码
+# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 # 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
 #################################################
 
@@ -787,7 +789,7 @@ function Check-SD-Trainer-Script-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"==================================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -1014,8 +1016,9 @@ function Main {
 
     `$Global:ROOT_PATH = `$PSScriptRoot
     `$Global:SD_SCRIPTS_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/sd-scripts`")
-    `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/dataset`")
-    `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/model`")
+    `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/datasets`")
+    `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/models`")
+    `$Global:OUTPUT_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/outputs`")
     `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git).Source)
     `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python).Source)
 
@@ -1024,6 +1027,7 @@ function Main {
     Print-Msg `"SD_SCRIPTS_PATH: `$SD_SCRIPTS_PATH`"
     Print-Msg `"DATASET_PATH: `$DATASET_PATH`"
     Print-Msg `"MODEL_PATH: `$MODEL_PATH`"
+    Print-Msg `"OUTPUT_PATH: `$OUTPUT_PATH`"
     Print-Msg `"GIT_EXEC: `$GIT_EXEC`"
     Print-Msg `"PYTHON_EXEC: `$PYTHON_EXEC`"
     Print-Msg `"初始化环境完成`"
@@ -1058,7 +1062,7 @@ function Write-Update-Script {
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
 `$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
-`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `"`$PIP_EXTRA_INDEX_ADDR_ORI `$PIP_EXTRA_INDEX_ADDR`" } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
@@ -1089,7 +1093,7 @@ function Write-Update-Script {
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
@@ -1204,44 +1208,6 @@ print(version_list)
 }
 
 
-# 为 CUDA 设置镜像源
-function Set-Pip-Extra-Index-URL-For-CUDA {
-    `$content = `"
-from importlib.metadata import version
-
-def get_cuda_ver(ver):
-    if 'cu124' in ver:
-        return 'cu124'
-    
-    if 'cu121' in ver:
-        return 'cu121'
-    
-    return 'other'
-
-
-try:
-    torch_ver = version('torch')
-except:
-    torch_ver = ''
-
-print(get_cuda_ver(torch_ver))
-`"
-
-    `$cuda_ver = `$(python -c `"`$content`")
-
-    if (`$cuda_ver -eq `"cu124`") {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-    } elseif (`$cuda_ver -eq `"cu121`") {  
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-    } else {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
-    }
-}
-
-
 # SD-Trainer-Script Installer 更新检测
 function Check-SD-Trainer-Script-Installer-Update {
     # 可用的下载源
@@ -1284,7 +1250,7 @@ function Check-SD-Trainer-Script-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"==================================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -1719,44 +1685,6 @@ print(version_list)
 }
 
 
-# 为 CUDA 设置镜像源
-function Set-Pip-Extra-Index-URL-For-CUDA {
-    `$content = `"
-from importlib.metadata import version
-
-def get_cuda_ver(ver):
-    if 'cu124' in ver:
-        return 'cu124'
-    
-    if 'cu121' in ver:
-        return 'cu121'
-    
-    return 'other'
-
-
-try:
-    torch_ver = version('torch')
-except:
-    torch_ver = ''
-
-print(get_cuda_ver(torch_ver))
-`"
-
-    `$cuda_ver = `$(python -c `"`$content`")
-
-    if (`$cuda_ver -eq `"cu124`") {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-    } elseif (`$cuda_ver -eq `"cu121`") {  
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-    } else {
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_PYTORCH
-    }
-}
-
-
 # SD-Trainer-Script Installer 更新检测
 function Check-SD-Trainer-Script-Installer-Update {
     # 可用的下载源
@@ -1799,7 +1727,7 @@ function Check-SD-Trainer-Script-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"==================================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -2104,7 +2032,7 @@ function Main {
         Print-Msg `"提示:`"
         Print-Msg `"1. 输入数字后回车, 或者输入 exit 退出 SD-Trainer-Script 分支切换脚本`"
         Print-Msg `"2. 切换分支后, 需要更新依赖, 可通过运行 update.ps1 进行依赖更新`"
-        `$arg = Read-Host `"===========================================>`"
+        `$arg = Read-Host `"==================================================>`"
 
         switch (`$arg) {
             1 {
@@ -2178,7 +2106,7 @@ function Main {
 
     Print-Msg `"是否切换 SD-Trainer-Script 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$operate = Read-Host `"===========================================>`"
+    `$operate = Read-Host `"==================================================>`"
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 SD-Trainer-Script 分支`"
@@ -2505,7 +2433,7 @@ function Check-SD-Trainer-Script-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"==================================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -2714,7 +2642,7 @@ function Main {
         Print-Msg `"提示:`"
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
-        `$arg = Read-Host `"===========================================>`"
+        `$arg = Read-Host `"==================================================>`"
 
         switch (`$arg) {
             1 {
@@ -2878,7 +2806,7 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$use_force_reinstall = Read-Host `"===========================================>`"
+    `$use_force_reinstall = Read-Host `"==================================================>`"
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
@@ -2894,7 +2822,7 @@ function Main {
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$install_torch = Read-Host `"===========================================>`"
+    `$install_torch = Read-Host `"==================================================>`"
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
@@ -3133,7 +3061,7 @@ function Check-SD-Trainer-Script-Installer-Update {
                 if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
                     Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"===========================================>`"
+                    `$arg = Read-Host `"==================================================>`"
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -3329,7 +3257,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"===========================================>`"
+    return Read-Host `"==================================================>`"
 }
 
 
@@ -3710,7 +3638,7 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"===========================================>`"
+    return Read-Host `"==================================================>`"
 }
 
 
@@ -4613,7 +4541,8 @@ models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 launch_sd_trainer_script_installer.ps1：获取最新的 SD-Trainer-Script Installer 安装脚本并运行。
 update.ps1：更新 SD-Trainer-Script 的脚本，可使用该脚本更新 SD-Trainer-Script。
-launch.ps1：启动 SD-Trainer-Script 的脚本。
+library.ps1：初始化 SD-Trainer-Script 运行环境的脚本。
+train.ps1：初始训练脚本，用于编写训练命令。
 switch_branch.ps1：切换 SD-Trainer-Script 分支。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
@@ -4622,7 +4551,7 @@ terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚�
 help.txt：帮助文档。
 
 
-要启动 SD-Trainer-Script，可在 SD-Trainer-Script 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 SD-Trainer-Script 启动完成，启动完成后将自动打开浏览器进入 SD-Trainer-Script 界面。
+SD-Trainer-Script 默认生成了一个 train.ps1 脚本用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 
 脚本为 SD-Trainer-Script 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 SD-Trainer-Script 无法从 HuggingFace 下载模型的问题。
 如果想自定义 HuggingFace 镜像源，可以在本地创建 hf_mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
