@@ -257,7 +257,7 @@ $ tree -L 2
 │   ├── launch_sd_trainer_installer.ps1   # 获取最新的 SD-Trainer-Script Installer 并运行的脚本
 │   ├── git                               # Git 目录
 │   ├── help.txt                          # 帮助文档
-│   ├── library.ps1                        # 初始化训练环境的脚本
+│   ├── init.ps1                          # 初始化训练环境的脚本
 │   ├── lora-scripts                      # SD-Trainer-Script 路径
 │   ├── models                            # download_models.ps1 下载模型脚本
 │   ├── python                            # Python 目录
@@ -451,7 +451,7 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 │   ├── get_comfyui_installer.ps1
 │   ├── git                           # Git 目录
 │   ├── help.txt
-│   ├── library.ps1
+│   ├── init.ps1
 │   ├── lora-scripts                  # SD-Trainer-Script 路径
 │   │   ├── ...
 │   │   └── gui.py
@@ -475,7 +475,7 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 │   ├── download_models.ps1
 │   ├── launch_sd_trainer_installer.ps1
 │   ├── help.txt
-│   ├── library.ps1
+│   ├── init.ps1
 │   ├── lora-scripts                  # SD-Trainer-Script 路径
 │   │   ├── git                       # Git 目录
 │   │   ├── python                    # Python 目录
@@ -882,7 +882,7 @@ SD-Trainer-Script Installer 在安装时将会生成一个`train.ps1`脚本，�
 ```powershell
 #################################################
 # 初始化基础环境变量, 以正确识别到运行环境
-& "$PSScriptRoot/library.ps1"
+& "$PSScriptRoot/init.ps1"
 Set-Location $PSScriptRoot
 # 此处的代码不要修改或者删除, 否则可能会出现意外情况
 # 
@@ -908,7 +908,7 @@ Set-Location $PSScriptRoot
 Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```
 
-该脚本在执行时将会运行`library.ps1`用于初始化环境（在`& "$PSScriptRoot/library.ps1"`部分），使训练所需的环境能够被正确识别，这是必须的步骤。在执行完`library.ps1`后将设置一些路径变量可供使用，并且将会显示出来，可以在部分路径变量指出的路径放置训练所需的文件方便使用。
+该脚本在执行时将会运行`init.ps1`用于初始化环境（在`& "$PSScriptRoot/init.ps1"`部分），使训练所需的环境能够被正确识别，这是必须的步骤。在执行完`init.ps1`后将设置一些路径变量可供使用，并且将会显示出来，可以在部分路径变量指出的路径放置训练所需的文件方便使用。
 
 `Set-Location $PSScriptRoot`将切换目录到`train.ps1`所在路径。
 
@@ -917,7 +917,7 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```powershell
 #################################################
 # 初始化基础环境变量, 以正确识别到运行环境
-& "$PSScriptRoot/library.ps1"
+& "$PSScriptRoot/init.ps1"
 Set-Location $PSScriptRoot
 # 此处的代码不要修改或者删除, 否则可能会出现意外情况
 # 

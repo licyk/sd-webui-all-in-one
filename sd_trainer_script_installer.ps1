@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 105
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 106
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -618,7 +618,7 @@ function Check-Install {
 function Write-Train-Script {
     $content = "#################################################
 # 初始化基础环境变量, 以正确识别到运行环境
-& `"`$PSScriptRoot/library.ps1`"
+& `"`$PSScriptRoot/init.ps1`"
 Set-Location `$PSScriptRoot
 # 此处的代码不要修改或者删除, 否则可能会出现意外情况
 # 
@@ -1066,12 +1066,12 @@ function Main {
 Main
 "
 
-    if (Test-Path "$InstallPath/library.ps1") {
-        Print-Msg "更新 library.ps1 中"
+    if (Test-Path "$InstallPath/init.ps1") {
+        Print-Msg "更新 init.ps1 中"
     } else {
-        Print-Msg "生成 library.ps1 中"
+        Print-Msg "生成 init.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/library.ps1" -Value $content
+    Set-Content -Encoding UTF8 -Path "$InstallPath/init.ps1" -Value $content
 }
 
 
@@ -2079,35 +2079,35 @@ function Main {
             }
             3 {
                 `$remote = `"https://github.com/bghira/SimpleTuner`"
-                `$branch = `"master`"
+                `$branch = `"main`"
                 `$branch_name = `"bghira - SimpleTuner 分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
             4 {
                 `$remote = `"https://github.com/ostris/ai-toolkit`"
-                `$branch = `"master`"
+                `$branch = `"main`"
                 `$branch_name = `"ostris - ai-toolkit 分支`"
                 `$use_submod = `$true
                 `$go_to = 1
             }
             5 {
                 `$remote = `"https://github.com/a-r-r-o-w/finetrainers`"
-                `$branch = `"master`"
+                `$branch = `"main`"
                 `$branch_name = `"a-r-r-o-w - finetrainers 分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
             6 {
                 `$remote = `"https://github.com/tdrussell/diffusion-pipe`"
-                `$branch = `"master`"
+                `$branch = `"main`"
                 `$branch_name = `"tdrussell - diffusion-pipe 分支`"
                 `$use_submod = `$true
                 `$go_to = 1
             }
             7 {
                 `$remote = `"https://github.com/kohya-ss/musubi-tuner`"
-                `$branch = `"master`"
+                `$branch = `"main`"
                 `$branch_name = `"kohya-ss - musubi-tuner 分支`"
                 `$use_submod = `$false
                 `$go_to = 1
@@ -2288,10 +2288,18 @@ function Get-Local-Setting {
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/install_sd_trainer_script.txt`") {
-        `$arg.Add(`"-InstallBranch`", `"sd_trainer_script`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_kohya_gui.txt`") {
-        `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
+    if (Test-Path `"`$PSScriptRoot/install_sd_scripts.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"sd_scripts`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_simple_tuner.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"simple_tuner`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_ai_toolkit.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"ai_toolkit`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_finetrainers.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"finetrainers`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_diffusion_pipe.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"diffusion_pipe`")
+    } elseif (Test-Path `"`$PSScriptRoot/install_musubi_tuner.txt`") {
+        `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
     }
 
     return `$arg
@@ -4569,7 +4577,7 @@ models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 launch_sd_trainer_script_installer.ps1：获取最新的 SD-Trainer-Script Installer 安装脚本并运行。
 update.ps1：更新 SD-Trainer-Script 的脚本，可使用该脚本更新 SD-Trainer-Script。
-library.ps1：初始化 SD-Trainer-Script 运行环境的脚本。
+init.ps1：初始化 SD-Trainer-Script 运行环境的脚本。
 train.ps1：初始训练脚本，用于编写训练命令。
 switch_branch.ps1：切换 SD-Trainer-Script 分支。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
