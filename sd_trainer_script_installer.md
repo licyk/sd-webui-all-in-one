@@ -1001,8 +1001,10 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 
 训练命令编写完成后，将该文件保存下来，再运行`train.ps1`即可开始训练。
 
+除了编辑`train.ps1`进行训练，也可以自行创建 PowerShell 脚本并按照要求进行编写。
+
 >[!WARNING]  
->`train.ps1`文件（PowerShell 脚本文件）需要将保存编码设置为`UTF-8 with BOM`，否则将出现乱码或者运行异常的问题。
+>`train.ps1`文件或者其他 PowerShell 脚本需要将保存编码设置为`UTF-8 BOM`，否则将出现乱码或者运行异常的问题。
 
 
 ### kohya-ss/sd-scripts 训练命令参考
