@@ -1306,6 +1306,8 @@ python -m accelerate.commands.launch `
 # 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
 
 # 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
+# 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 当 weight_decay 设置为 0.05 时, 大概在 38 Epoch 有比较好的效果
 
 python -m accelerate.commands.launch `
     --num_cpu_threads_per_process 1 `
@@ -1447,7 +1449,7 @@ python -m accelerate.commands.launch `
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
 
-!python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
@@ -1690,7 +1692,7 @@ python -m accelerate.commands.launch `
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用单卡进行训练 (Kaggle 的单 Tesla P100 性能不如双 Tesla T4, 建议使用双卡训练)
 
-!python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/animagine-xl-3.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/rafa" `
