@@ -50,9 +50,8 @@ _✨快速部署训练环境_
   - [使用命令运行 SD-Trainer-Script Installer](#使用命令运行-sd-trainer-script-installer)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
-  - [SD-Trainer-Script 提示'Torch 无法使用 GPU，您无法正常开始训练'](#sd-trainer-script-提示torch-无法使用-gpu您无法正常开始训练)
+  - [SD-Trainer-Script 提示'Torch is not able to use GPU'](#sd-trainer-script-提示torch-is-not-able-to-use-gpu)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
-  - [RuntimeError: Directory 'frontend/dist' does not exist](#runtimeerror-directory-frontenddist-does-not-exist)
   - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
   - [RuntimeError: Error(s) in loading state\_dict for UNet2DConditionModel](#runtimeerror-errors-in-loading-state_dict-for-unet2dconditionmodel)
   - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
@@ -79,7 +78,6 @@ _✨快速部署训练环境_
     - [下载文件](#下载文件)
     - [更新 uv](#更新-uv)
     - [更新 Aria2](#更新-aria2)
-    - [安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)
     - [列出 SD-Trainer-Script Installer 内置命令](#列出-sd-trainer-script-installer-内置命令)
     - [检查 SD-Trainer-Script Installer 更新](#检查-sd-trainer-script-installer-更新)
     - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
@@ -88,6 +86,7 @@ _✨快速部署训练环境_
   - [编写训练脚本](#编写训练脚本)
     - [如何编写](#如何编写)
     - [kohya-ss/sd-scripts 训练命令参考](#kohya-sssd-scripts-训练命令参考)
+    - [使用 TensorBoard 查看训练情况](#使用-tensorboard-查看训练情况)
 
 ***
 
@@ -147,7 +146,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ***
 
 # 安装
-SD-Trainer-Script Installer 默认情况下安装的是 [Akegarasu/SD-Trainer-Script](https://github.com/Akegarasu/lora-scripts) 分支，如果需要指定安装的分支，需要在 SD-Trainer-Script Installer 所在路径创建配置文件，以下为不同配置文件对应的 SD-Trainer-Script 分支。
+SD-Trainer-Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 分支，如果需要指定安装的分支，需要在 SD-Trainer-Script Installer 所在路径创建配置文件，以下为不同配置文件对应的 SD-Trainer-Script 分支。
 
 |配置文件名|对应安装的分支|
 |---|---|
@@ -195,7 +194,7 @@ $ tree -L 1
 ***
 
 # 使用
-在`SD-Trainer-Script`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在`lora-scripts`文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
+在`SD-Trainer-Script`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在`sd-scripts`文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
 
 
 ## 启动训练脚本
@@ -258,7 +257,7 @@ $ tree -L 2
 │   ├── git                               # Git 目录
 │   ├── help.txt                          # 帮助文档
 │   ├── init.ps1                          # 初始化训练环境的脚本
-│   ├── lora-scripts                      # SD-Trainer-Script 路径
+│   ├── sd-scripts                        # SD-Trainer-Script 路径
 │   ├── models                            # download_models.ps1 下载模型脚本
 │   ├── python                            # Python 目录
 │   ├── reinstall_pytorch.ps1             # 重新安装 PyTorch 的脚本
@@ -358,18 +357,18 @@ SD-Trainer-Script Installer 默认启用了 Pip 镜像源加速下载 Python 软
 
 
 ## 重装 SD-Trainer-Script
-将`SD-Trainer-Script`文件夹中的`lora-scripts`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新部署 SD-Trainer-Script。
+将`SD-Trainer-Script`文件夹中的`sd-scripts`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新部署 SD-Trainer-Script。
 
 >[!NOTE]  
->如果`lora-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`lora-scripts`文件夹。
+>如果`sd-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`sd-scripts`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`SD-Trainer-Script/python`和`SD-Trainer-Script/lora-scripts/python`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`SD-Trainer-Script/python`和`SD-Trainer-Script/sd-scripts/python`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`SD-Trainer-Script/git`和`SD-Trainer-Script/lora-scripts/git`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新下载 Git。
+将`SD-Trainer-Script/git`和`SD-Trainer-Script/sd-scripts/git`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -438,7 +437,7 @@ SD-Trainer-Script Installer 默认使用了 uv 作为 Python 包管理器，大�
 ## 使用绘世启动器
 SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世启动器进行启动，使用绘世启动器前需要调整目录结构使绘世启动器能够正确识别到环境。
 
-将`SD-Trainer-Script/python`目录移动到`SD-Trainer-Script/lora-scripts/python`，`SD-Trainer-Script/git`移动到`SD-Trainer-Script/lora-scripts/git`。
+将`SD-Trainer-Script/python`目录移动到`SD-Trainer-Script/sd-scripts/python`，`SD-Trainer-Script/git`移动到`SD-Trainer-Script/sd-scripts/git`。
 
 移动前目录的结构如下。
 
@@ -452,7 +451,7 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 │   ├── git                           # Git 目录
 │   ├── help.txt
 │   ├── init.ps1
-│   ├── lora-scripts                  # SD-Trainer-Script 路径
+│   ├── sd-scripts                    # SD-Trainer-Script 路径
 │   │   ├── ...
 │   │   └── gui.py
 │   ├── models
@@ -476,7 +475,7 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 │   ├── launch_sd_trainer_installer.ps1
 │   ├── help.txt
 │   ├── init.ps1
-│   ├── lora-scripts                  # SD-Trainer-Script 路径
+│   ├── sd-scripts                    # SD-Trainer-Script 路径
 │   │   ├── git                       # Git 目录
 │   │   ├── python                    # Python 目录
 │   │   ├── ...
@@ -490,7 +489,7 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 └── sd_trainer_installer.ps1          
 ```
 
-再下载绘世启动器放到`SD-Trainer-Script/lora-scripts`目录中，就可以通过启动器启动 SD-Trainer-Script。
+再下载绘世启动器放到`SD-Trainer-Script/sd-scripts`目录中，就可以通过启动器启动 SD-Trainer-Script。
 
 |绘世启动器下载|
 |---|
@@ -504,9 +503,9 @@ SD-Trainer-Script Installer 部署出来的 SD-Trainer-Script 可以通过绘世
 ## SD-Trainer-Script Installer 对 Python / Git 环境的识别
 SD-Trainer-Script Installer 通常情况下不会去调用系统环境中的 Python / Git，所以在安装过程会安装一个独立的 Python / Git 避免收到系统环境中的 Python / Git 影响。
 
-SD-Trainer-Script Installer 可以识别到的 Python 路径为`SD-Trainer-Script/python`和`SD-Trainer-Script/lora-scripts/python`，当两者同时存在时，优先使用后者。
+SD-Trainer-Script Installer 可以识别到的 Python 路径为`SD-Trainer-Script/python`和`SD-Trainer-Script/sd-scripts/python`，当两者同时存在时，优先使用后者。
 
-可以识别到的 Git 路径为`SD-Trainer-Script/git`和`SD-Trainer-Script/lora-scripts/git`，当两者同时存在时，优先使用后者。
+可以识别到的 Git 路径为`SD-Trainer-Script/git`和`SD-Trainer-Script/sd-scripts/git`，当两者同时存在时，优先使用后者。
 
 如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer-Script 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD-Trainer-Script Installer 重新安装 Python / Git。
 
@@ -568,7 +567,7 @@ Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 或者使用[自动环境配置脚本](#使用自动环境配置脚本)解除 Windows 系统对运行 PowerShell 脚本的限制。
 
 
-## SD-Trainer-Script 提示'Torch 无法使用 GPU，您无法正常开始训练'
+## SD-Trainer-Script 提示'Torch is not able to use GPU'
 尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用`reinstall_pytorch.ps1`重装 PyTorch。
 
 >[!NOTE]  
@@ -622,10 +621,6 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行`reinstall_pytorch.ps1`重装 PyTorch。
 
 
-## RuntimeError: Directory 'frontend/dist' does not exist
-SD-Trainer-Script 组件缺失，重新运行`update.ps1`或者`launch_sd_trainer_installer.ps1`进行修复。
-
-
 ## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
 运行 SD-Trainer-Script Installer 时出现以下类似的错误。
 
@@ -664,7 +659,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ## 训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?
-SD-Trainer-Script 默认开启 arb 桶，自动处理不同分辨率的图片，无需手动进行图片裁剪。
+请使用 SD-Trainer-Script 的 arb 桶，这将自动处理不同分辨率的图片，无需手动进行图片裁剪。
 
 
 ## AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
@@ -777,12 +772,6 @@ Update-Aria2
 ```
 
 
-### 安装绘世启动器并自动配置绘世启动器所需的环境
-```powershell
-Install-Hanamizuki
-```
-
-
 ### 列出 SD-Trainer-Script Installer 内置命令
 ```powershell
 List-CMD
@@ -794,10 +783,11 @@ List-CMD
 Check-SD-Trainer-Script-Installer-Update
 ```
 
+
 ### 查看并切换 SD-Trainer-Script 的版本
 ```powershell
 # 列出当前的所有版本
-git -C lora-scripts tag
+git -C sd-scripts tag
 # 运行该命令后将进入 Git 的交互式界面
 # 使用 u 键上翻， d 键下翻，或者使用方向键翻页，使用 q 键退出
 # 一般 git tag 命令将列出下面类似的输出
@@ -813,10 +803,10 @@ git -C lora-scripts tag
 
 # 使用 Tag 切换版本
 # 命令中的 <Git Tag> 替换成对应的 Tag
-git -C lora-scripts reset --hard --recurse-submodules <Git Tag>
+git -C sd-scripts reset --hard --recurse-submodules <Git Tag>
 
 # 使用 git log 查看某个提交信息对应的 Hash 值
-git -C lora-scripts log
+git -C sd-scripts log
 # 这将得到类似的输出信息
 # commit 9aace3e94c2c41a44e3df403329abd0518467bf5 (HEAD -> main, tag: v1.9.0)
 # Author: Akegarasu <akiba@anzu.link>
@@ -834,7 +824,7 @@ git -C lora-scripts log
 
 # 可以使用该 Hash 切换版本
 # 命令中的 <Git Commit Hash> 替换成对应的 Hash 值
-git -C lora-scripts reset --hard --recurse-submodules <Git Commit Hash>
+git -C sd-scripts reset --hard --recurse-submodules <Git Commit Hash>
 ```
 
 
@@ -842,9 +832,6 @@ git -C lora-scripts reset --hard --recurse-submodules <Git Commit Hash>
 ```powershell
 # 先下载融合 LoRA 的工具
 git clone https://github.com/KohakuBlueleaf/LyCORIS
-
-# 安装 kohya scripts 的 library 库
-python -m pip install -e lora-scripts/scripts/dev
 
 # 接下来就能进行模型融合了，比如我要融合的 LoRA 模型为 artist_all_in_one_2-000036.safetensors，Stable Diffusion 模型为 animagine-xl-3.1.safetensors，先把这 2 个模型放到当前的文件夹，接下来就可以进行模型融合
 python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-000036.safetensors licyk_style_v0.1.safetensors --is_sdxl --dtype fp16
@@ -858,6 +845,7 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 # 融合完成后在当前文件夹中就可以看到融合好的 Stable Diffusion 模型
 # 注意，融合模型需要大于或等于 64G 的内存，如果内存低于这个大小可能会大量使用虚拟内存进行补足，增大硬盘的读写消耗
 ```
+
 
 ### 查看 Git / Python 命令实际调用的路径
 ```powershell
@@ -1859,3 +1847,27 @@ python -m accelerate.commands.launch `
     --persistent_data_loader_workers `
     --full_fp16
 ```
+
+
+### 使用 TensorBoard 查看训练情况
+这里可以编写一个`tensorboard.ps1`脚本用于运行 TensorBoard。
+
+
+```powershell
+# 初始化基础环境变量, 以正确识别到运行环境
+& "$PSScriptRoot/init.ps1"
+
+# TensorBoard 日志路径
+$LOG_DIR = "${OUTPUT_PATH}/logs"
+
+
+python -m tensorboard.main `
+    --host=127.0.0.1 `
+    --port=8899 `
+    --logdir="${LOG_DIR}"
+
+
+# 运行这个脚本后将会在 http://127.0.0.1:8899 打开 TensorBoard 的网页界面
+```
+
+保存后右键运行即可启动。
