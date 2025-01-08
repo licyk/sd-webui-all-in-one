@@ -279,6 +279,7 @@ InvokeAI Installer 为了加速访问 Github 的速度，如加快下载和更�
 |https://ghgo.xyz/https://github.com|
 |https://mirror.ghproxy.com/https://github.com|
 |https://ghproxy.net/https://github.com|
+|https://gh.api.99988866.xyz/https://github.com|
 |https://gitclone.com/github.com|
 |https://gh-proxy.com/https://github.com|
 |https://ghps.cc/https://github.com|

@@ -294,6 +294,7 @@ SD-Trainer-Script Installer 为了加速访问 Github 的速度，加快下载�
 |https://ghgo.xyz/https://github.com|
 |https://mirror.ghproxy.com/https://github.com|
 |https://ghproxy.net/https://github.com|
+|https://gh.api.99988866.xyz/https://github.com|
 |https://gitclone.com/github.com|
 |https://gh-proxy.com/https://github.com|
 |https://ghps.cc/https://github.com|
@@ -523,7 +524,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`·UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
 |`-DisableUV`|禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
 |`-DisableGithubMirror`|禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源。|
-|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghgo.xyz/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghgo.xyz/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
 |`-Help`|显示 SD-Trainer-Script Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer-Script Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer-Script Installer。
