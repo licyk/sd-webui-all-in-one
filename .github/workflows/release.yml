@@ -72,8 +72,31 @@ jobs:
           gh release delete-asset archive sd_webui_config.json -y || true
           gh release upload archive sd_webui_config.json
 
+      - name: Release Jupyter Notebook
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
           gh release delete-asset archive install_embed_python.ps1 -y || true
           gh release upload archive install_embed_python.ps1
+
+          gh release delete-asset archive sd_scripts_kaggle.ipynb -y || true
+          gh release upload archive sd_scripts_kaggle.ipynb
+
+          gh release delete-asset archive sd_webui_all_in_one_colab.ipynb -y || true
+          gh release upload archive sd_webui_all_in_one_colab.ipynb
+
+          gh release delete-asset archive sd_webui_all_in_one.ipynb -y || true
+          gh release upload archive sd_webui_all_in_one.ipynb
+
+          gh release delete-asset archive sd_trainer_kaggle.ipynb -y || true
+          gh release upload archive sd_trainer_kaggle.ipynb
+
+          gh release delete-asset archive fooocus_colab.ipynb -y || true
+          gh release upload archive fooocus_colab.ipynb
+
+          gh release delete-asset archive fooocus_kaggle.ipynb -y || true
+          gh release upload archive fooocus_kaggle.ipynb
 
   # Release-To-Gitee:
   #   runs-on: ubuntu-22.04

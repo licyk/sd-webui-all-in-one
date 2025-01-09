@@ -35,12 +35,12 @@ _✨快速部署，简单易用_
 
 
 ## 可用的 Jupyter Notebook 
-- [sd_webui_all_in_one.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one.ipynb)：支持部署多种 WebUI 的 Jupyter Notebook。
-- [sd_webui_all_in_one_colab.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one_colab.ipynb)：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-- [fooocus_colab.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_colab.ipynb)：适用于 Colab 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-- [fooocus_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_kaggle.ipynb)：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
-- [sd_trainer_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_trainer_kaggle.ipynb)：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
-- [sd_scripts_kaggle.ipynb](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_scripts_kaggle.ipynb)：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
+- [sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
+- [sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+- [fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_colab.ipynb))：适用于 Colab 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+- [fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+- [sd_trainer_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_trainer_kaggle.ipynb))：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
+- [sd_scripts_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_kaggle.ipynb)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/sd_scripts_kaggle.ipynb))：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
 
 
 ## 主要功能
@@ -103,4 +103,4 @@ Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) 
 
 
 ## Python Installer
-[install_embed_python.ps1](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/install_embed_python.ps1)：Windows 平台一键安装便携式 Python，可用做测试。
+[install_embed_python.ps1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/install_embed_python.ps1)([源码](https://raw.githubusercontent.com/licyk/sd-webui-all-in-one/main/install_embed_python.ps1))：Windows 平台一键安装便携式 Python，可用做测试。
