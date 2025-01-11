@@ -11,10 +11,10 @@ _✨一键安装 SD-Trainer_
 - [目录](#目录)
 - [简介](#简介)
 - [环境配置](#环境配置)
-  - [使用自动环境配置脚本](#使用自动环境配置脚本)
-  - [手动使用命令配置](#手动使用命令配置)
-    - [解除脚本限制](#解除脚本限制)
-    - [启用 Windows 长路径支持](#启用-windows-长路径支持)
+  - [1. 使用自动环境配置脚本](#1-使用自动环境配置脚本)
+  - [2. 手动使用命令配置](#2-手动使用命令配置)
+    - [2.1 解除脚本限制](#21-解除脚本限制)
+    - [2.2 启用 Windows 长路径支持](#22-启用-windows-长路径支持)
 - [安装](#安装)
 - [使用](#使用)
   - [启动 SD-Trainer](#启动-sd-trainer)
@@ -104,7 +104,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 
 下面提供 2 种方法进行环境配置。
 
-## 使用自动环境配置脚本
+## 1. 使用自动环境配置脚本
 下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
@@ -119,9 +119,9 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 >[使用自动环境配置脚本](#使用自动环境配置脚本)的方法和[手动使用命令配置](#手动使用命令配置)的方法效果一致。
 
 
-## 手动使用命令配置
+## 2. 手动使用命令配置
 
-### 解除脚本限制
+### 2.1 解除脚本限制
 使用管理员权限打开 PowerShell，运行以下命令：
 
 ```powershell
@@ -132,7 +132,7 @@ Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 >关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 
 
-### 启用 Windows 长路径支持
+### 2.2 启用 Windows 长路径支持
 在刚刚的 PowerShell 中运行下面的命令：
 
 ```powershell
