@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 205
+$SD_TRAINER_INSTALLER_VERSION = 206
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -31,7 +31,7 @@ $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 # Github 镜像源列表
 $GITHUB_MIRROR_LIST = @(
-    "https://ghgo.xyz/https://github.com",
+    "https://ghfast.top/https://github.com",
     "https://mirror.ghproxy.com/https://github.com",
     "https://ghproxy.net/https://github.com",
     "https://gh.api.99988866.xyz/https://github.com",
@@ -1107,7 +1107,7 @@ function Write-Update-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
-    `"https://ghgo.xyz/https://github.com`",
+    `"https://ghfast.top/https://github.com`",
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
@@ -1604,7 +1604,7 @@ function Write-Switch-Branch-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
-    `"https://ghgo.xyz/https://github.com`",
+    `"https://ghfast.top/https://github.com`",
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
@@ -3833,7 +3833,7 @@ function Update-Github-Mirror-Setting {
             2 {
                 Print-Msg `"请输入 Github 镜像源地址`"
                 Print-Msg `"提示: 可用的 Github 镜像源有: `"
-                Print-Msg `"1. https://ghgo.xyz/https://github.com`"
+                Print-Msg `"1. https://ghfast.top/https://github.com`"
                 Print-Msg `"2. https://mirror.ghproxy.com/https://github.com`"
                 Print-Msg `"3. https://ghproxy.net/https://github.com`"
                 Print-Msg `"4. https://gh.api.99988866.xyz/https://github.com`"
@@ -4759,7 +4759,7 @@ https://huggingface.sukaka.top
 如果需要禁用 Github 镜像源，则创建 disable_gh_mirror.txt 文件，启动脚本时将不再设置 Github 镜像源。
 
 以下为可用的 Github 镜像源：
-https://ghgo.xyz/https://github.com
+https://ghfast.top/https://github.com
 https://mirror.ghproxy.com/https://github.com
 https://ghproxy.net/https://github.com
 https://gh.api.99988866.xyz/https://github.com
@@ -4902,7 +4902,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
         可用的 Github 镜像站地址:
-            https://ghgo.xyz/https://github.com
+            https://ghfast.top/https://github.com
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
