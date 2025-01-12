@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 197
+$INVOKEAI_INSTALLER_VERSION = 198
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -796,6 +796,82 @@ function Set-HuggingFace-Mirror {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
 # 获取 InvokeAI 的网页端口
 function Get-InvokeAI-Launch-Address {
     `$port = 9090
@@ -1035,6 +1111,67 @@ if __name__ == '__main__':
 }
 
 
+# 检查 controlnet_aux
+function Check-ControlNet-Aux {
+    `$content = `"
+try:
+    import controlnet_aux
+    success = True
+except:
+    success = False
+
+
+if not success:
+    from importlib.metadata import requires
+    try:
+        invokeai_requires = requires('invokeai')
+    except:
+        invokeai_requires = []
+
+    controlnet_aux_ver = None
+
+    for req in invokeai_requires:
+        if req.startswith('controlnet-aux=='):
+            controlnet_aux_ver = req.split(';')[0].strip()
+            break
+
+
+if success:
+    print(None)
+else:
+    if controlnet_aux_ver is None:
+        print('controlnet_aux')
+    else:
+        print(controlnet_aux_ver)
+`"
+
+    Print-Msg `"检查 controlnet_aux 模块是否已安装`"
+    `$controlnet_aux_ver = `$(python -c `"`$content`")
+
+    if (`$controlnet_aux_ver -eq `"None`") {
+        Print-Msg `"controlnet_aux 已安装`"
+    } else {
+        Print-Msg `"检测到 controlnet_aux 缺失, 尝试安装中`"
+        python -m pip uninstall controlnet_aux -y
+        if (`$USE_UV) {
+            uv pip install `$controlnet_aux_ver.ToString().Split() --no-cache-dir
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `$controlnet_aux_ver.ToString().Split() --use-pep517 --no-cache-dir
+            }
+        } else {
+            python -m pip install `$controlnet_aux_ver.ToString().Split() --use-pep517 --no-cache-dir
+        }
+
+        if (`$?) {
+            Print-Msg `"controlnet_aux 安装成功`"
+        } else {
+            Print-Msg `"controlnet_aux 安装失败, 可能会导致 InvokeAI 启动异常`"
+        }
+    }
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
@@ -1042,7 +1179,9 @@ function Main {
     Check-InvokeAI-Installer-Update
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
+    Set-uv
     Create-InvokeAI-Shortcut
+    Check-ControlNet-Aux
     Set-PyTorch-CUDA-Memory-Alloc
 
     python -m pip show invokeai --quiet 2> `$null
