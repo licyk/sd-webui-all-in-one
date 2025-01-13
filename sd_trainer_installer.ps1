@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 206
+$SD_TRAINER_INSTALLER_VERSION = 207
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3778,9 +3778,9 @@ function Update-HuggingFace-Mirror-Setting {
             2 {
                 Print-Msg `"请输入 HuggingFace 镜像源地址`"
                 Print-Msg `"提示: 可用的 HuggingFace 镜像源有:`"
-                Print-Msg `"1. https://hf-mirror.com`"
-                Print-Msg `"2. https://huggingface.sukaka.top`"
-                Print-Msg `"输入 HuggingFace 镜像源地址后回车保存`"
+                Print-Msg `" https://hf-mirror.com`"
+                Print-Msg `" https://huggingface.sukaka.top`"
+                Print-Msg `"提示: 输入 HuggingFace 镜像源地址后回车保存`"
                 `$huggingface_mirror_address = Get-User-Input
                 Remove-Item -Path `"`$PSScriptRoot/disable_hf_mirror.txt`" -Force -Recurse 2> `$null
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/hf_mirror.txt`" -Value `$huggingface_mirror_address
@@ -3833,15 +3833,15 @@ function Update-Github-Mirror-Setting {
             2 {
                 Print-Msg `"请输入 Github 镜像源地址`"
                 Print-Msg `"提示: 可用的 Github 镜像源有: `"
-                Print-Msg `"1. https://ghfast.top/https://github.com`"
-                Print-Msg `"2. https://mirror.ghproxy.com/https://github.com`"
-                Print-Msg `"3. https://ghproxy.net/https://github.com`"
-                Print-Msg `"4. https://gh.api.99988866.xyz/https://github.com`"
-                Print-Msg `"5. https://gitclone.com/github.com`"
-                Print-Msg `"6. https://gh-proxy.com/https://github.com`"
-                Print-Msg `"7. https://ghps.cc/https://github.com`"
-                Print-Msg `"8. https://gh.idayer.com/https://github.com`"
-                Print-Msg `"输入 Github 镜像源地址后回车保存`"
+                Print-Msg `" https://ghfast.top/https://github.com`"
+                Print-Msg `" https://mirror.ghproxy.com/https://github.com`"
+                Print-Msg `" https://ghproxy.net/https://github.com`"
+                Print-Msg `" https://gh.api.99988866.xyz/https://github.com`"
+                Print-Msg `" https://gitclone.com/github.com`"
+                Print-Msg `" https://gh-proxy.com/https://github.com`"
+                Print-Msg `" https://ghps.cc/https://github.com`"
+                Print-Msg `" https://gh.idayer.com/https://github.com`"
+                Print-Msg `"提示: 输入 Github 镜像源地址后回车保存`"
                 `$github_mirror_address = Get-User-Input
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/gh_mirror.txt`" -Value `$github_mirror_address
@@ -3880,6 +3880,7 @@ function Update-SD-Trainer-Installer-Auto-Check-Update-Setting {
         Print-Msg `"2. 禁用 SD-Trainer Installer 自动更新检查`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
+        Print-Msg `"警告: 当 SD-Trainer Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
 
         `$arg = Get-User-Input
 
