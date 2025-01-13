@@ -330,9 +330,9 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 >[!IMPORTANT]  
 >InvokeAI 低显存模式在 InvokeAI 5.6.0 的版本中被加入，如果当前 InvokeAI 的版本低于 5.6.0，需要运行`update.ps1`对 InvokeAI 进行更新。
 
-在运行`launch.ps1`启动一次 InvokeAI 后，在`InvokeAI/invokeai/invokeai.yaml`路径将产生一个 InvokeAI 的配置文件。
+在运行`launch.ps1`启动一次 InvokeAI 后，在`InvokeAI/invokeai`路径将产生一个`invokeai.yaml`文件，这就是 InvokeAI 的配置文件。
 
-打开该文件后，在该文件添加以下内容启用 InvokeAI 的低显存模式。
+打开`invokeai.yaml`文件后，在该文件添加以下内容启用 InvokeAI 的低显存模式。
 
 ```yaml
 enable_partial_loading: true
