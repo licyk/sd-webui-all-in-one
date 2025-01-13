@@ -35,6 +35,7 @@ _✨一键安装 InvokeAI_
   - [设置 Pip 镜像源](#设置-pip-镜像源)
   - [添加模型](#添加模型)
   - [InvokeAI 的使用方法](#invokeai-的使用方法)
+  - [启用 InvokeAI 低显存模式](#启用-invokeai-低显存模式)
   - [重装 InvokeAI](#重装-invokeai)
   - [重装 Python 环境](#重装-python-环境)
   - [重装 Git](#重装-git)
@@ -323,6 +324,26 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 除了上面的教程，也可以通过 Google 等平台搜索教程。
 
 
+## 启用 InvokeAI 低显存模式
+当显存较小，并且经常出现显存不足的问题，可尝试启用 InvokeAI 的低显存模式。
+
+>[!IMPORTANT]  
+>InvokeAI 低显存模式在 InvokeAI 5.6.0 的版本中被加入，如果当前 InvokeAI 的版本低于 5.6.0，需要运行`update.ps1`对 InvokeAI 进行更新。
+
+在运行`launch.ps1`启动一次 InvokeAI 后，在`InvokeAI/invokeai/invokeai.yaml`路径将产生一个 InvokeAI 的配置文件。
+
+打开该文件后，在该文件添加以下内容启用 InvokeAI 的低显存模式。
+
+```yaml
+enable_partial_loading: true
+```
+
+保存该文件并重新启动 InvokeAI 即可应用该设置。
+
+>[!NOTE]  
+>关于 InvokeAI 低显存模式详细说明可阅读：[Low-VRAM mode - Invoke](https://invoke-ai.github.io/InvokeAI/features/low-vram)。
+
+
 ## 重装 InvokeAI
 如果 InvokeAI 因为严重损坏导致无法正常使用，可以将`InvokeAI`文件夹中的`python`文件夹删除，然后运行`launch_invokeai_installer.ps1`重新部署 InvokeAI。
 
@@ -340,7 +361,9 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 
 ## 配置 InvokeAI
-在`InvokeAI/invokeai`路径下，可以看到`invokeai.yaml`配置文件，如果需要修改，请参考`invokeai.example.yaml`文件内的示例，或者参考 [Configuration - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/configuration) 进行设置。
+在`InvokeAI/invokeai`路径下，可以看到`invokeai.yaml`配置文件。如果未找到该配置文件，可以运行`launch.ps1`启动一次 InvokeAI，此时 InvokeAI 将自动生成该配置文件。
+
+如果需要修改，请参考`invokeai.example.yaml`文件内的示例，或者参考 [Configuration - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/configuration) 进行设置。
 
 如果因为修改`invokeai.yaml`后导致 InvokeAI 的功能异常，请将该文件删除来重置 InvokeAI 配置。
 
