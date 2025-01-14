@@ -444,7 +444,8 @@ invokeai
 ├── invokeai.yaml         # InvokeAI 的配置文件
 ├── models                # 模型文件夹
 ├── nodes                 # InvokeAI 节点存放路径
-└── outputs               # 生成的图片保存位置
+├── outputs               # 生成的图片保存位置
+└── style_presets         # 提示词预设文件
 
 7 directories, 2 files
 ```
