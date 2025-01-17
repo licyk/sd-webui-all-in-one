@@ -47,11 +47,15 @@ _✨快速部署，简单易用_
 
 
 ### SD WebUI All In One Colab Jupyter NoteBook
-[sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+[sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
 ### Fooocus Colab Jupyter NoteBook
-[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ### Fooocus kaggle Jupyter NoteBook
 [fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
@@ -63,6 +67,11 @@ _✨快速部署，简单易用_
 
 ### SD Scripts Kaggle Jupyter NoteBook
 [sd_scripts_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_scripts_kaggle.ipynb))：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
+
+>[!IMPORTANT]  
+>使用方法可阅读：  
+>[使用 HuggingFace / ModelScope 保存和下载文件 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-huggingface-or-modelscope-to-save-file/)  
+>[使用 Kaggle 进行模型训练 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-kaggle-to-training-sd-model)
 
 
 ## 主要功能
