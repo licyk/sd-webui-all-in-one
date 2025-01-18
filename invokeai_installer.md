@@ -736,6 +736,9 @@ python -m pip index versions invokeai
 # 切换到指定的版本
 # 命令中的 <Version> 替换成要切换的版本
 python -m pip install invokeai==<Version>
+
+# 如果需要更新到 InvokeAI RC 版, 需要加上 --pre -U 参数
+python -m pip install invokeai --pre -U
 ```
 
 ### 查看 Git / Python 命令实际调用的路径
