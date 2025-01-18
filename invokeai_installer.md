@@ -85,6 +85,7 @@ _✨一键安装 InvokeAI_
     - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
     - [使用 Git 下载项目](#使用-git-下载项目)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
+    - [更新到 InvokeAI RC 版](#更新到-invokeai-rc-版)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
 ***
@@ -736,10 +737,17 @@ python -m pip index versions invokeai
 # 切换到指定的版本
 # 命令中的 <Version> 替换成要切换的版本
 python -m pip install invokeai==<Version>
+```
 
-# 如果需要更新到 InvokeAI RC 版, 需要加上 --pre -U 参数
+
+### 更新到 InvokeAI RC 版
+>[!WARNING]  
+>InvokeAI RC 版属于测试版本，可能存在问题，请谨慎升级。
+
+```powershell
 python -m pip install invokeai --pre -U
 ```
+
 
 ### 查看 Git / Python 命令实际调用的路径
 ```powershell
