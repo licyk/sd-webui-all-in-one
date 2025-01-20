@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 199
+$INVOKEAI_INSTALLER_VERSION = 200
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1145,7 +1145,7 @@ else:
         print(controlnet_aux_ver)
 `"
 
-    Print-Msg `"检查 controlnet_aux 模块是否已安装`"
+    Print-Msg `"检查 controlnet_aux 模块是否已安装, 这可能需要一定时间`"
     `$controlnet_aux_ver = `$(python -c `"`$content`")
 
     if (`$controlnet_aux_ver -eq `"None`") {
@@ -1172,6 +1172,56 @@ else:
 }
 
 
+# 修复 PyTorch 的 libomp 问题
+function Fix-PyTorch {
+    `$content = `"
+import importlib.util
+import shutil
+import os
+import ctypes
+import logging
+
+
+torch_spec = importlib.util.find_spec('torch')
+for folder in torch_spec.submodule_search_locations:
+    lib_folder = os.path.join(folder, 'lib')
+    test_file = os.path.join(lib_folder, 'fbgemm.dll')
+    dest = os.path.join(lib_folder, 'libomp140.x86_64.dll')
+    if os.path.exists(dest):
+        break
+
+    with open(test_file, 'rb') as f:
+        contents = f.read()
+        if b'libomp140.x86_64.dll' not in contents:
+            break
+    try:
+        mydll = ctypes.cdll.LoadLibrary(test_file)
+    except FileNotFoundError as e:
+        logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
+        shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
+`"
+
+    Print-Msg `"检测 PyTorch 的 libomp 问题中`"
+    python -c `"`$content`"
+    Print-Msg `"PyTorch 检查完成`"
+}
+
+
+# 检查 InvokeAI 运行环境
+function Check-InvokeAI-Env {
+    if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
+        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 InvokeAI 运行环境检测, 这可能会导致 InvokeAI 运行环境中存在的问题无法被发现并解决`"
+        return
+    } else {
+        Print-Msg `"检查 InvokeAI 运行环境中`"
+    }
+
+    Fix-PyTorch
+    Check-ControlNet-Aux
+    Print-Msg `"InvokeAI 运行环境检查完成`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
@@ -1181,7 +1231,7 @@ function Main {
     Pip-Mirror-Status
     Set-uv
     Create-InvokeAI-Shortcut
-    Check-ControlNet-Aux
+    Check-InvokeAI-Env
     Set-PyTorch-CUDA-Memory-Alloc
 
     python -m pip show invokeai --quiet 2> `$null
@@ -1205,7 +1255,7 @@ function Main {
 
     Print-Msg `"启动 InvokeAI 中`"
     Write-Launch-InvokeAI-Script
-    python `"`$Env:CACHE_HOME/launch_invokeai.py`" --root `"`$PSScriptRoot/invokeai`"
+    python `"`$Env:CACHE_HOME/launch_invokeai.py`" # --root `"`$PSScriptRoot/invokeai`"
     if (`$?) {
         Print-Msg `"InvokeAI 正常退出`"
     } else {
@@ -3875,6 +3925,16 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# 获取 InvokeAI 运行环境检测配置
+function Get-InvokeAI-Env-Check-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return Read-Host `"=========================================>`"
@@ -4293,6 +4353,46 @@ function Check-InvokeAI-Installer-Update {
 }
 
 
+# InvokeAI 运行环境检测设置
+function InvokeAI-Env-Check-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 InvokeAI 运行环境检测设置: `$(Get-InvokeAI-Env-Check-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 InvokeAI 运行环境检测`"
+        Print-Msg `"2. 禁用 InvokeAI 运行环境检测`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 InvokeAI 运行环境检测成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
+                Print-Msg `"禁用 InvokeAI 运行环境检测成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查环境完整性
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
@@ -4392,6 +4492,7 @@ function Main {
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
+        Print-Msg `"InvokeAI 运行环境检测设置: `$(Get-InvokeAI-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -4402,10 +4503,11 @@ function Main {
         Print-Msg `"6. 进入 Github 镜像源设置`"
         Print-Msg `"7. 进入 Pip 镜像源设置`"
         Print-Msg `"8. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"9. 更新 InvokeAI Installer 管理脚本`"
-        Print-Msg `"10. 检查环境完整性`"
-        Print-Msg `"11. 查看 InvokeAI Installer 文档`"
-        Print-Msg `"12. 退出 InvokeAI Installer 设置`"
+        Print-Msg `"9. 进入 InvokeAI 运行环境检测设置`"
+        Print-Msg `"10. 更新 InvokeAI Installer 管理脚本`"
+        Print-Msg `"11. 检查环境完整性`"
+        Print-Msg `"12. 查看 InvokeAI Installer 文档`"
+        Print-Msg `"13. 退出 InvokeAI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -4442,18 +4544,22 @@ function Main {
                 break
             }
             9 {
-                Check-InvokeAI-Installer-Update
+                InvokeAI-Env-Check-Setting
                 break
             }
             10 {
-                Check-Env
+                Check-InvokeAI-Installer-Update
                 break
             }
             11 {
-                Get-InvokeAI-Installer-Help-Docs
+                Check-Env
                 break
             }
             12 {
+                Get-InvokeAI-Installer-Help-Docs
+                break
+            }
+            13 {
                 `$go_to = 1
                 break
             }

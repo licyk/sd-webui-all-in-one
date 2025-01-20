@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 110
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 111
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -772,7 +772,9 @@ for folder in torch_spec.submodule_search_locations:
         shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
 `"
 
+    Print-Msg `"检测 PyTorch 的 libomp 问题中`"
     python -c `"`$content`"
+    Print-Msg `"PyTorch 检查完成`"
 }
 
 
@@ -1033,6 +1035,20 @@ if __name__ == '__main__':
 }
 
 
+# 检查 SD-Trainer-Script 运行环境
+function Check-SD-Trainer-Script-Env {
+    if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
+        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 SD-Trainer-Script 运行环境检测, 这可能会导致 SD-Trainer-Script 运行环境中存在的问题无法被发现并解决`"
+        return
+    } else {
+        Print-Msg `"检查 SD-Trainer-Script 运行环境中`"
+    }
+
+    Fix-PyTorch
+    Print-Msg `"SD-Trainer-Script 运行环境检查完成`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Script-Installer-Version
@@ -1040,7 +1056,7 @@ function Main {
     Check-SD-Trainer-Script-Installer-Update
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
-    Fix-PyTorch
+    Check-SD-Trainer-Script-Env
     Set-PyTorch-CUDA-Memory-Alloc
 
     `$Global:ROOT_PATH = `$PSScriptRoot
@@ -3675,6 +3691,16 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# 获取 SD-Trainer-Script 运行环境检测配置
+function Get-SD-Trainer-Script-Env-Check-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
+        return `"启用`"
+    } else {
+        return `"禁用`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return Read-Host `"==================================================>`"
@@ -4053,6 +4079,46 @@ function Check-SD-Trainer-Script-Installer-Update {
 }
 
 
+# SD-Trainer-Script 运行环境检测设置
+function SD-Trainer-Script-Env-Check-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 SD-Trainer-Script 运行环境检测设置: `$(Get-SD-Trainer-Script-Env-Check-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 SD-Trainer-Script 运行环境检测`"
+        Print-Msg `"2. 禁用 SD-Trainer-Script 运行环境检测`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 SD-Trainer-Script 运行环境检测成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
+                Print-Msg `"禁用 SD-Trainer-Script 运行环境检测成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查环境完整性
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
@@ -4142,6 +4208,7 @@ function Main {
         Print-Msg `"SD-Trainer-Script Installer 自动检查更新: `$(Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
+        Print-Msg `"SD-Trainer-Script 运行环境检测设置: `$(Get-SD-Trainer-Script-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -4151,10 +4218,11 @@ function Main {
         Print-Msg `"5. 进入 SD-Trainer-Script Installer 自动检查更新设置`"
         Print-Msg `"6. 进入 Pip 镜像源设置`"
         Print-Msg `"7. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"8. 更新 SD-Trainer-Script Installer 管理脚本`"
-        Print-Msg `"9. 检查环境完整性`"
-        Print-Msg `"10. 查看 SD-Trainer-Script Installer 文档`"
-        Print-Msg `"11. 退出 SD-Trainer-Script Installer 设置`"
+        Print-Msg `"8. 进入 SD-Trainer 运行环境检测设置`"
+        Print-Msg `"9. 更新 SD-Trainer-Script Installer 管理脚本`"
+        Print-Msg `"10. 检查环境完整性`"
+        Print-Msg `"11. 查看 SD-Trainer-Script Installer 文档`"
+        Print-Msg `"12. 退出 SD-Trainer-Script Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -4187,18 +4255,22 @@ function Main {
                 break
             }
             8 {
-                Check-SD-Trainer-Script-Installer-Update
+                SD-Trainer-Script-Env-Check-Setting
                 break
             }
             9 {
-                Check-Env
+                Check-SD-Trainer-Script-Installer-Update
                 break
             }
             10 {
-                Get-SD-Trainer-Script-Installer-Help-Docs
+                Check-Env
                 break
             }
             11 {
+                Get-SD-Trainer-Script-Installer-Help-Docs
+                break
+            }
+            12 {
                 `$go_to = 1
                 break
             }
