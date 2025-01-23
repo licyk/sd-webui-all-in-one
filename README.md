@@ -100,6 +100,9 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 # Installer
 适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。
 
+>[!IMPORTANT]  
+>Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
+
 
 ## InvokeAI Installer
 Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
@@ -123,6 +126,7 @@ Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 
 Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
 
 详细的说明[点击此处](./stable_diffusion_webui_installer.md)阅读。
+
 
 ## SD-Trainer-Script Installer
 >[!WARNING]  
