@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 209
+$SD_TRAINER_INSTALLER_VERSION = 210
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1030,6 +1030,216 @@ if __name__ == '__main__':
 }
 
 
+# 检查 SD-Trainer 依赖完整性
+function Check-SD-Trainer-Requirements {
+    `$content = `"
+import os
+import re
+import argparse
+import importlib.metadata
+from pathlib import Path
+
+
+# 参数输入
+def get_args():
+    parser = argparse.ArgumentParser()
+    normalized_filepath = lambda filepath: str(Path(filepath).absolute().as_posix())
+
+    parser.add_argument('--requirement-path', type = normalized_filepath, default = None, help = '依赖文件路径')
+
+    return parser.parse_args()
+
+
+# 判断 2 个版本的大小, 前面大返回 1, 后面大返回 -1, 相同返回 0
+def compare_versions(version1, version2):
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1  # 版本号 1 更大
+        else:
+            return -1  # 版本号 2 更大
+
+    return 0  # 版本号相同
+
+
+# 获取包版本号
+def get_pkg_ver_from_lib(pkg_name: str) -> str:
+    try:
+        ver = importlib.metadata.version(pkg_name)
+    except:
+        ver = None
+
+    if ver is None:
+        try:
+            ver = importlib.metadata.version(pkg_name.lower())
+        except:
+            ver = None
+
+    if ver is None:
+        try:
+            ver = importlib.metadata.version(pkg_name.replace('_', '-'))
+        except:
+            ver = None
+
+    return ver
+
+
+# 判断是否有软件包未安装
+def is_installed(package: str) -> bool:
+    # 使用正则表达式删除括号和括号内的内容
+    # 如: diffusers[torch]==0.10.2 -> diffusers==0.10.2
+    package = re.sub(r'\[.*?\]', '', package)
+
+    try:
+        pkgs = [
+            p
+            for p in package.split()
+            if not p.startswith('-') and not p.startswith('=')
+        ]
+        pkgs = [
+            p.split('/')[-1] for p in pkgs
+        ]   # 如果软件包从网址获取则只截取名字
+
+        for pkg in pkgs:
+            # 去除从 Git 链接安装的软件包后面的 .git
+            pkg = pkg.split('.git')[0] if pkg.endswith('.git') else pkg
+            if '>=' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('>=')]
+            elif '==' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('==')]
+            elif '<=' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('<=')]
+            elif '!=' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('!=')]
+            elif '<' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('<')]
+            elif '>' in pkg:
+                pkg_name, pkg_version = [x.strip() for x in pkg.split('>')]
+            else:
+                pkg_name, pkg_version = pkg.strip(), None
+
+            # 获取本地 Python 软件包信息
+            version = get_pkg_ver_from_lib(pkg_name)
+
+            if version is not None:
+                # 判断版本是否符合要求
+                if pkg_version is not None:
+                    if '>=' in pkg:
+                        # ok = version >= pkg_version
+                        if compare_versions(version, pkg_version) == 1 or compare_versions(version, pkg_version) == 0:
+                            ok = True
+                        else:
+                            ok = False
+                    elif '<=' in pkg:
+                        # ok = version <= pkg_version
+                        if compare_versions(version, pkg_version) == -1 or compare_versions(version, pkg_version) == 0:
+                            ok = True
+                        else:
+                            ok = False
+                    elif '!=' in pkg:
+                        # ok = version != pkg_version
+                        if compare_versions(version, pkg_version) != 0:
+                            ok = True
+                        else:
+                            ok = False
+                    elif '>' in pkg:
+                        # ok = version > pkg_version
+                        if compare_versions(version, pkg_version) == 1:
+                            ok = True
+                        else:
+                            ok = False
+                    elif '<' in pkg:
+                        # ok = version < pkg_version
+                        if compare_versions(version, pkg_version) == -1:
+                            ok = True
+                        else:
+                            ok = False
+                    else:
+                        # ok = version == pkg_version
+                        if compare_versions(version, pkg_version) == 0:
+                            ok = True
+                        else:
+                            ok = False
+
+                    if not ok:
+                        return False
+            else:
+                return False
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
+# 验证是否存在未安装的依赖
+def validate_requirements(requirements_file: str):
+    with open(requirements_file, 'r', encoding = 'utf8') as f:
+        lines = [
+            line.strip()
+            for line in f.readlines()
+            if line.strip() != ''
+            and not line.startswith('#')
+            and not (line.startswith('-') and not line.startswith('--index-url '))
+            and line is not None
+            and '# skip_verify' not in line
+        ]
+
+        for line in lines:
+            if line.startswith('--index-url '):
+                continue
+
+            if not is_installed(line.split()[0].strip()):
+                return False
+
+    return True
+
+
+
+if __name__ == '__main__':
+    args = get_args()
+    path = args.requirement_path
+    print(validate_requirements(path))
+`"
+    Print-Msg `"检查 SD-Trainer 内核依赖完整性中`"
+    if (!(Test-Path `"`$Env:CACHE_HOME`")) {
+        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
+    }
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
+
+    `$status = `$(python `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" --requirement-path `"`$PSScriptRoot/lora-scripts/requirements.txt`")
+
+    if (`$status -eq `"False`") {
+        Print-Msg `"检测到 SD-Trainer 内核有依赖缺失, 安装 SD-Trainer 依赖中`"
+        if (`$USE_UV) {
+            uv pip install -r `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install -r `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+            }
+        } else {
+            python -m pip install -r `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+        }
+        if (`$?) {
+            Print-Msg `"SD-Trainer 依赖安装成功`"
+        } else {
+            Print-Msg `"SD-Trainer 依赖安装失败, 这将会导致 SD-Trainer 缺失依赖无法正常运行`"
+        }
+    } else {
+        Print-Msg `"SD-Trainer 无缺失依赖`"
+    }
+}
+
+
 # 检查 SD-Trainer 运行环境
 function Check-SD-Trainer-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
@@ -1039,6 +1249,7 @@ function Check-SD-Trainer-Env {
         Print-Msg `"检查 SD-Trainer 运行环境中`"
     }
 
+    Check-SD-Trainer-Requirements
     Fix-PyTorch
     Print-Msg `"SD-Trainer 运行环境检查完成`"
 }
