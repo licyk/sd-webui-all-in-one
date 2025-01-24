@@ -251,6 +251,7 @@ $ tree -L 2
 │   ├── launch.ps1                      # 启动 InvokeAI 的脚本
 │   ├── python                          # Python 目录
 │   ├── git                             # Git 目录
+│   ├── models                          # download_models.ps1 下载模型脚本下载模型的路径
 │   ├── reinstall_pytorch.ps1           # 重装 PyTorch 脚本
 │   ├── download_models.ps1             # 模型下载脚本
 │   ├── settings.ps1                    # 管理 InvokeAI Installer 设置的脚本

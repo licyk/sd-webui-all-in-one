@@ -260,7 +260,7 @@ $ tree -L 2
 │   ├── help.txt                          # 帮助文档
 │   ├── launch.ps1                        # 启动 SD-Trainer 的脚本
 │   ├── lora-scripts                      # SD-Trainer 路径
-│   ├── models                            # download_models.ps1 下载模型脚本
+│   ├── models                            # download_models.ps1 下载模型脚本下载模型的路径
 │   ├── python                            # Python 目录
 │   ├── reinstall_pytorch.ps1             # 重新安装 PyTorch 的脚本
 │   ├── switch_branch.ps1                 # 切换 SD-Trainer 分支的脚本

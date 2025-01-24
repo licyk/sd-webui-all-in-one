@@ -300,7 +300,6 @@ $ tree -L 2
 │   ├── help.txt                                      # 帮助文档
 │   ├── launch.ps1                                    # 启动 Stable Diffusion WebUI 的脚本
 │   ├── stable-diffusion-webui                        # Stable Diffusion WebUI 路径
-│   ├── models                                        # download_models.ps1 下载模型脚本
 │   ├── python                                        # Python 目录
 │   ├── reinstall_pytorch.ps1                         # 重新安装 PyTorch 的脚本
 │   ├── switch_branch.ps1                             # 切换 Stable Diffusion WebUI 分支的脚本
@@ -416,7 +415,6 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   ├── stable-diffusion-webui        # Stable Diffusion WebUI 路径
 │   │   ├── ...
 │   │   └── main.py
-│   ├── models
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1
 │   ├── switch_branch.ps1
@@ -443,7 +441,6 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 │   │   ├── python                    # Python 目录
 │   │   ├── ...
 │   │   └── main.py
-│   ├── models
 │   ├── reinstall_pytorch.ps1
 │   ├── switch_branch.ps1
 │   ├── settings.ps1
@@ -571,7 +568,7 @@ SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI �
 |参数|作用|
 |---|---|
 |`-InstallPath` <Stable Diffusion WebUI 安装路径>|指定安装 Stable Diffusion WebUI 的路径，使用绝对路径进行指定。|
-|`InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：</br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)</br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)</br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)
+|`InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：</br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)</br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)</br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)|
 |`-UseUpdateMode`|使用 SD WebUI Installer 的更新脚本模式，不进行 Stable Diffusion WebUI 的安装。|
 |`-DisablePipMirror`|禁用 SD WebUI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 SD WebUI Installer 自动设置代理服务器。|

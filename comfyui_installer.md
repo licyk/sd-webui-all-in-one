@@ -243,7 +243,6 @@ $ tree -L 2
 │   ├── help.txt                      # 帮助文档
 │   ├── launch.ps1                    # 启动 ComfyUI 的脚本
 │   ├── ComfyUI                       # ComfyUI 路径
-│   ├── models                        # download_models.ps1 下载模型脚本
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
 │   ├── settings.ps1                  # 管理 ComfyUI Installer 设置的脚本
@@ -445,7 +444,6 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 │   ├── ComfyUI                       # ComfyUI 路径
 │   │   ├── ...
 │   │   └── main.py
-│   ├── models
 │   ├── python                        # Python 目录
 │   ├── reinstall_pytorch.ps1
 │   ├── settings.ps1
@@ -471,7 +469,6 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 │   │   ├── python                    # Python 目录
 │   │   ├── ...
 │   │   └── main.py
-│   ├── models
 │   ├── reinstall_pytorch.ps1
 │   ├── settings.ps1
 │   ├── terminal.ps1

@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 102
+$FOOOCUS_INSTALLER_VERSION = 103
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2316,12 +2316,18 @@ function Main {
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
 
+    if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) {
+        `$hf_mirror_arg = `"--hf-mirror `$Env:HF_ENDPOINT`"
+    } else {
+        `$hf_mirror_arg = `"`"
+    }
+
     Create-Fooocus-Shortcut
     Check-Fooocus-Env
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 Fooocus 中`"
     Set-Location `"`$PSScriptRoot/Fooocus`"
-    python launch.py `$args.ToString().Split()
+    python launch.py `$args.ToString().Split() `$hf_mirror_arg.ToString().Split()
     `$req = `$?
     if (`$req) {
         Print-Msg `"Fooocus 正常退出`"
@@ -6433,6 +6439,10 @@ https://gh.idayer.com/https://github.com
 Fooocus Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
 
 Fooocus Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 Fooocus Installer 更新检查。
+
+Fooocus 一些使用方法：
+https://github.com/lllyasviel/Fooocus/discussions/117
+https://github.com/lllyasviel/Fooocus/discussions/830
 
 更多详细的帮助可在下面的链接查看。
 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
