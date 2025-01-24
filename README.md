@@ -24,6 +24,7 @@ _✨快速部署，简单易用_
   - [ComfyUI Installer](#comfyui-installer)
   - [SD WebUI Installer](#sd-webui-installer)
   - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
+  - [Fooocus Installer](#fooocus-installer)
   - [Python Installer](#python-installer)
 
 ***
@@ -135,6 +136,12 @@ Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC
 Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [SimpleTuner](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
 
 详细的说明[点击此处](./sd_trainer_script_installer.md)阅读。
+
+
+## Fooocus Installer
+Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) 的脚本，包含启动，管理 Fooocus 的工具。
+
+详细的说明[点击此处](./fooocus_installer.md)阅读。
 
 
 ## Python Installer
