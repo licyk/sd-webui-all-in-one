@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 101
+$FOOOCUS_INSTALLER_VERSION = 102
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6082,52 +6082,6 @@ function global:Test-Github-Mirror {
 }
 
 
-# 安装 Fooocus 扩展
-function global:Install-Fooocus-Extension (`$url) {
-    # 应用 Github 镜像源
-    if (`$global:is_test_gh_mirror -ne 1) {
-        Test-Github-Mirror
-        `$global:is_test_gh_mirror = 1
-    }
-
-    `$extension_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    `$cache_path = `"`$Env:CACHE_HOME/`${extension_name}_tmp`"
-    `$path = `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/extensions/`$extension_name`"
-    if (!(Test-Path `"`$path`")) {
-        `$status = 1
-    } else {
-        `$items = Get-ChildItem `"`$path`" -Recurse
-        if (`$items.Count -eq 0) {
-            `$status = 1
-        }
-    }
-
-    if (`$status -eq 1) {
-        Print-Msg `"安装 `$extension_name 扩展中`"
-        # 清理缓存路径
-        if (Test-Path `"`$cache_path`") {
-            Remove-Item -Path `"`$cache_path`" -Force -Recurse
-        }
-        git clone --recurse-submodules `$url `"`$cache_path`"
-        if (`$?) {
-            # 清理空文件夹
-            if (Test-Path `"`$path`") {
-                `$random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
-                Move-Item -Path `"`$path`" -Destination `"`$Env:CACHE_HOME/`$random_string`" -Force
-            }
-            # 将下载好的文件从缓存文件夹移动到指定路径
-            New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
-            Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
-            Print-Msg `"`$extension_name 扩展安装成功`"
-        } else {
-            Print-Msg `"`$extension_name 扩展安装失败`"
-        }
-    } else {
-        Print-Msg `"`$extension_name 扩展已安装`"
-    }
-}
-
-
 # Git 下载命令
 function global:Git-Clone (`$url, `$path) {
     # 应用 Github 镜像源
@@ -6162,23 +6116,6 @@ function global:Git-Clone (`$url, `$path) {
     } else {
         Print-Msg `"`$repo_name 已存在`"
     }
-}
-
-
-# 列出已安装的 Fooocus 扩展
-function global:List-Extension {
-    `$extension_list = Get-ChildItem -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/extensions`" | Select-Object -ExpandProperty FullName
-    Print-Msg `"当前 Fooocus 已安装的扩展`"
-    `$count = 0
-    ForEach (`$i in `$extension_list) {
-        if (Test-Path `"`$i`" -PathType Container) {
-            `$count += 1
-            `$name = [System.IO.Path]::GetFileNameWithoutExtension(`"`$i`")
-            Print-Msg `"- `$name`"
-        }
-    }
-    Print-Msg `"Fooocus 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/extensions`"))`"
-    Print-Msg `"Fooocus 扩展数量: `$count`"
 }
 
 
@@ -6272,10 +6209,8 @@ Github：https://github.com/licyk
     Update-Aria2
     Check-Fooocus-Installer-Update
     Test-Github-Mirror
-    Install-Fooocus-Extension
     Git-Clone
     Install-Hanamizuki
-    List-Extension
     List-CMD
 
 更多帮助信息可在 Fooocus Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
@@ -6451,11 +6386,9 @@ cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 git：Git 的存放路径。
 Fooocus：Fooocus 存放的文件夹。
-models：使用模型下载脚本下载模型时模型的存放位置。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 launch_fooocus_installer.ps1：获取最新的 Fooocus Installer 安装脚本并运行。
 update.ps1：更新 Fooocus 的脚本，可使用该脚本更新 Fooocus。
-update_extension.ps1：更新 Fooocus 扩展的脚本，可使用该脚本更新 Fooocus 扩展。
 switch_branch.ps1：切换 Fooocus 分支。
 launch.ps1：启动 Fooocus 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
