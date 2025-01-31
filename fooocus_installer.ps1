@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 106
+$FOOOCUS_INSTALLER_VERSION = 107
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2281,6 +2281,26 @@ else:
 }
 
 
+# 检测 Microsoft Visual C++ Redistributable
+function Check-MS-VCPP-Redistributable {
+    Print-Msg `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
+    if ([string]::IsNullOrEmpty(`$Env:SYSTEMROOT)) {
+        `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
+    } else {
+        `$vc_runtime_dll_path = `"`$Env:SYSTEMROOT/System32/vcruntime140_1.dll`"
+    }
+
+    if (Test-Path `"`$vc_runtime_dll_path`") {
+        Print-Msg `"Microsoft Visual C++ Redistributable 未缺失`"
+    } else {
+        Print-Msg `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
+        Print-Msg `"Microsoft Visual C++ Redistributable 下载: https://aka.ms/vs/17/release/vc_redist.x64.exe`"
+        Print-Msg `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
+        Start-Sleep -Seconds 2
+    }
+}
+
+
 # 检查 Fooocus 运行环境
 function Check-Fooocus-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
@@ -2294,6 +2314,7 @@ function Check-Fooocus-Env {
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
+    Check-MS-VCPP-Redistributable
     Print-Msg `"Fooocus 运行环境检查完成`"
 }
 

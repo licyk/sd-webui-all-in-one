@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 114
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 115
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -903,6 +903,86 @@ function Set-HuggingFace-Mirror {
 }
 
 
+# 检查 uv 是否需要更新
+function Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        `$Global:USE_UV = `$true
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/sd-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/sd-scripts/python/python.exe`"
+        }
+        Check-uv-Version
+    }
+}
+
+
 # 设置 CUDA 内存分配器
 function Set-PyTorch-CUDA-Memory-Alloc {
     if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
@@ -1245,6 +1325,67 @@ if __name__ == '__main__':
 }
 
 
+# 检查 Numpy 版本
+function Check-Numpy-Version {
+    `$content = `"
+import importlib.metadata
+from importlib.metadata import version
+
+try:
+    ver = int(version('numpy').split('.')[0])
+except importlib.metadata.PackageNotFoundError:
+    ver = -1
+
+if ver > 1:
+    print(True)
+else:
+    print(False)
+`"
+    Print-Msg `"检查 Numpy 版本中`"
+    `$status = `$(python -c `"`$content`")
+
+    if (`$status -eq `"True`") {
+        Print-Msg `"检测到 Numpy 版本大于 1, 这可能导致部分组件出现异常, 尝试重装中`"
+        if (`$USE_UV) {
+            uv pip install `"numpy==1.26.4`"
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `"numpy==1.26.4`"
+            }
+        } else {
+            python -m pip install `"numpy==1.26.4`"
+        }
+        if (`$?) {
+            Print-Msg `"Numpy 重新安装成功`"
+        } else {
+            Print-Msg `"Numpy 重新安装失败, 这可能导致部分功能异常`"
+        }
+    } else {
+        Print-Msg `"Numpy 无版本问题`"
+    }
+}
+
+
+# 检测 Microsoft Visual C++ Redistributable
+function Check-MS-VCPP-Redistributable {
+    Print-Msg `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
+    if ([string]::IsNullOrEmpty(`$Env:SYSTEMROOT)) {
+        `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
+    } else {
+        `$vc_runtime_dll_path = `"`$Env:SYSTEMROOT/System32/vcruntime140_1.dll`"
+    }
+
+    if (Test-Path `"`$vc_runtime_dll_path`") {
+        Print-Msg `"Microsoft Visual C++ Redistributable 未缺失`"
+    } else {
+        Print-Msg `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
+        Print-Msg `"Microsoft Visual C++ Redistributable 下载: https://aka.ms/vs/17/release/vc_redist.x64.exe`"
+        Print-Msg `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
+        Start-Sleep -Seconds 2
+    }
+}
+
+
 # 检查 SD-Trainer-Script 运行环境
 function Check-SD-Trainer-Script-Env {
     if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
@@ -1256,6 +1397,8 @@ function Check-SD-Trainer-Script-Env {
 
     Check-SD-Trainer-Scripts-Requirements
     Fix-PyTorch
+    Check-Numpy-Version
+    Check-MS-VCPP-Redistributable
     Print-Msg `"SD-Trainer-Script 运行环境检查完成`"
 }
 
@@ -1266,6 +1409,7 @@ function Main {
     Set-Proxy
     Check-SD-Trainer-Script-Installer-Update
     Set-HuggingFace-Mirror
+    Set-uv
     Pip-Mirror-Status
     Check-SD-Trainer-Script-Env
     Set-PyTorch-CUDA-Memory-Alloc
