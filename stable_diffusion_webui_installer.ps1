@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 165
+$SD_WEBUI_INSTALLER_VERSION = 166
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -640,13 +640,13 @@ function Check-Install {
     Git-CLone "https://github.com/Haoming02/sd-webui-resource-monitor" "$sd_webui_extension_path/sd-webui-resource-monitor"
     Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
     Git-CLone "https://github.com/licyk/advanced_euler_sampler_extension" "$sd_webui_extension_path/advanced_euler_sampler_extension"
+    Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
 
     # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
     if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
         Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$sd_webui_extension_path/sd-webui-controlnet"
         Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
         Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$sd_webui_extension_path/sd-dynamic-thresholding"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
         Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$sd_webui_extension_path/sd-webui-lora-block-weight"
     }
 
