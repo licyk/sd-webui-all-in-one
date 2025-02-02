@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 166
+$SD_WEBUI_INSTALLER_VERSION = 167
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4014,6 +4014,7 @@ function Main {
 - 28、Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1
 - 29、Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2
 - 30、Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3
+- 31、Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post2
 -----------------------------------------------------
     `"
 
@@ -4210,6 +4211,15 @@ function Main {
             30 {
                 `$torch_ver = `"torch==2.5.1+cu124 torchvision==0.20.1+cu124 torchaudio==2.5.1+cu124`"
                 `$xformers_ver = `"xformers==0.0.28.post3`"
+                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            31 {
+                `$torch_ver = `"torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124`"
+                `$xformers_ver = `"xformers==0.0.29.post2`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
