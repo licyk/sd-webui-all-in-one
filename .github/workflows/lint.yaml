@@ -1,0 +1,80 @@
+name: PSScript Lint
+
+on:
+  push:
+  delete:
+  create:
+
+jobs:
+  lint-with-PSScriptAnalyzer:
+    name: PSScript Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Set-Location -Path "${{ github.workspace }}"
+          Get-ChildItem -Path "${{ github.workspace }}"
+      - name: Install PSScriptAnalyzer module
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -ErrorAction Stop
+      - name: Generate Installer manage scripts
+        shell: pwsh
+        run: |
+          try {
+              pwsh -File "${{ github.workspace }}/fooocus_installer.ps1" -InstallPath "${{ github.workspace }}/fooocus" -UseUpdateMode
+          } catch {
+              Write-Host "fooocus_installer.ps1 执行时出现错误: $_"
+          }
+
+          try {
+              pwsh -File "${{ github.workspace }}/comfyui_installer.ps1" -InstallPath "${{ github.workspace }}/comfyui" -UseUpdateMode
+          } catch {
+              Write-Host "comfyui_installer.ps1 执行时出现错误: $_"
+          }
+
+          try {
+              pwsh -File "${{ github.workspace }}/invokeai_installer.ps1" -InstallPath "${{ github.workspace }}/invokeai" -UseUpdateMode
+          } catch {
+              Write-Host "invokeai_installer.ps1 执行时出现错误: $_"
+          }
+
+          try {
+              pwsh -File "${{ github.workspace }}/sd_trainer_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer" -UseUpdateMode
+          } catch {
+              Write-Host "sd_trainer_installer.ps1 执行时出现错误: $_"
+          }
+
+          try {
+              pwsh -File "${{ github.workspace }}/sd_trainer_script_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer_script" -UseUpdateMode
+          } catch {
+              Write-Host "sd_trainer_script_installer.ps1 执行时出现错误: $_"
+          }
+
+          try {
+              pwsh -File "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" -InstallPath "${{ github.workspace }}/sd_webui" -UseUpdateMode
+          } catch {
+              Write-Host "stable_diffusion_webui_installer.ps1 执行时出现错误: $_"
+          }
+      - name: Lint with PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $file_list = Get-ChildItem -Path "**/*.ps1" -Filter *.ps1 -Recurse
+          ForEach ($file in $file_list) {
+              Invoke-ScriptAnalyzer -Path "$file" -Recurse -OutVariable issues -Severity @("Error", "ParseError")
+              $errors = $issues.Where({$_.Severity -eq 'Error'})
+              $parse_errors = $issues.Where({$_.Severity -eq 'ParseError'})
+              $all_errors += $errors
+              $all_parse_errors += $parse_errors
+              if ($errors -or $parse_errors) {
+                  Write-Host "$($file.FullName) 出现 $($errors.Count) 个错误和 $($parse_errors.Count) 个语法错误"
+              }
+          }
+          if ($all_errors -or $all_parse_errors) {
+              Write-Error "检查完成, 出现 $($all_errors.Count) 个错误和 $($all_parse_errors.Count) 个语法错误" -ErrorAction Stop
+          } else {
+              Write-Output "检查完成"
+          }
