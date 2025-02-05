@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 167
+$SD_WEBUI_INSTALLER_VERSION = 168
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -247,7 +247,7 @@ print(is_uv_need_update())
 
 # 下载并解压 Python
 function Install-Python {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.15-amd64.zip"
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.11.11-amd64.zip"
     $cache_path = "$Env:CACHE_HOME/python_tmp"
     $path = "$InstallPath/python"
 
@@ -676,17 +676,17 @@ function Check-Install {
     if (!(Test-Path "$InstallPath/launch_args.txt")) {
         Print-Msg "设置默认 Stable Diffusion WebUI 启动参数"
         if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
-            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start"
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
-            $content = "--theme dark --autolaunch --xformers --api"
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
-            $content = "--theme dark --autolaunch --xformers --api"
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
-            $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml"
+            $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
             $content = "--autolaunch --use-cuda --use-xformers"
         } else {
-            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start"
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check"
         }
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
