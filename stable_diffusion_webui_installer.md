@@ -208,11 +208,11 @@ $ tree -L 1
 |扩展 13|[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|[licyk/sd_forge_hypertile_svd_z123](https://github.com/licyk/sd_forge_hypertile_svd_z123)|
 |扩展 14|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|[lllyasviel/sd-forge-layerdiffuse](https://github.com/lllyasviel/sd-forge-layerdiffuse)|
 |扩展 15|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
-|扩展 16|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|无|
+|扩展 16|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
 |扩展 17|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|无|
 |扩展 18|[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|[lllyasviel/sd-forge-layerdiffuse](https://github.com/lllyasviel/sd-forge-layerdiffuse)|无|
 |扩展 19|[multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|无|
-|扩展 20|[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|无|无|
+|扩展 20|[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|无|
 |扩展 21|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|无|无|
 |扩展 22|[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|无|无|
 

@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 169
+$SD_WEBUI_INSTALLER_VERSION = 170
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -641,6 +641,7 @@ function Check-Install {
     Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
     Git-CLone "https://github.com/licyk/advanced_euler_sampler_extension" "$sd_webui_extension_path/advanced_euler_sampler_extension"
     Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
+    Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
 
     # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
     if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
@@ -654,7 +655,6 @@ function Check-Install {
     if (!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) {
         Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
         Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
-        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
         Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
         Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
     }
