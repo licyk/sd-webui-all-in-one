@@ -40,7 +40,10 @@ $Env:UV_PYTHON = "$PSScriptRoot/python/python.exe"
 
 # 消息输出
 function Print-Msg ($msg) {
-    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]:: $msg"
+    Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
+    Write-Host "[Embed Python Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host ":: " -ForegroundColor Blue -NoNewline
+    Write-Host "$msg"
 }
 
 
@@ -167,7 +170,10 @@ function global:prompt {
 
 # 消息输出
 function global:Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[Embed Python Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 
@@ -229,7 +235,10 @@ Main
 function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]:: `$msg`"
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[Embed Python Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
 }
 
 Print-Msg `"执行激活环境脚本`"

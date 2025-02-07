@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 168
+$SD_WEBUI_INSTALLER_VERSION = 169
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1601,14 +1601,14 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
         `$name = `$([System.IO.Path]::GetFileName(`$extension_path))
         `$status = Check-Extension-Is-Disabled `$name
         if (`$status) {
-            Print-Msg `"[`$count/`$sum]:: `$name 扩展已禁用, 不执行该扩展的依赖安装脚本`"
+            Print-Msg `"[`$count/`$sum] `$name 扩展已禁用, 不执行该扩展的依赖安装脚本`"
         } else {
-            Print-Msg `"[`$count/`$sum]:: 执行 `$name 扩展的依赖安装脚本中`"
+            Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本中`"
             python `"`$extension_path/install.py`"
             if (`$?) {
-                Print-Msg `"[`$count/`$sum]:: 执行 `$name 扩展的依赖安装脚本成功`"
+                Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本成功`"
             } else {
-                Print-Msg `"[`$count/`$sum]:: 执行 `$name 扩展的依赖安装脚本失败, 这可能会导致 `$name 扩展部分功能无法正常使用`"
+                Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本失败, 这可能会导致 `$name 扩展部分功能无法正常使用`"
             }
         }
     }
@@ -1633,14 +1633,14 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
         `$name = `$([System.IO.Path]::GetFileName(`$extension_path))
         `$status = Check-Extension-Is-Disabled `$name
         if (`$status) {
-            Print-Msg `"[`$count/`$sum]:: `$name 内置扩展已禁用, 不执行该内置扩展的依赖安装脚本`"
+            Print-Msg `"[`$count/`$sum] `$name 内置扩展已禁用, 不执行该内置扩展的依赖安装脚本`"
         } else {
-            Print-Msg `"[`$count/`$sum]:: 执行 `$name 内置扩展的依赖安装脚本中`"
+            Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本中`"
             python `"`$extension_path/install.py`"
             if (`$?) {
-                Print-Msg `"[`$count/`$sum]:: 执行 `$name 内置扩展的依赖安装脚本成功`"
+                Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本成功`"
             } else {
-                Print-Msg `"[`$count/`$sum]:: 执行 `$name 内置扩展的依赖安装脚本失败, 这可能会导致 `$name 内置扩展部分功能无法正常使用`"
+                Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本失败, 这可能会导致 `$name 内置扩展部分功能无法正常使用`"
             }
         }
     }
@@ -3461,7 +3461,7 @@ function Main {
 
         `$count += 1
         `$extension_name = `$(`$(Get-Item `$extension).Name)
-        Print-Msg `"[`$count/`$sum]:: 更新 `$extension_name 扩展中`"
+        Print-Msg `"[`$count/`$sum] 更新 `$extension_name 扩展中`"
         Fix-Git-Point-Off-Set `"`$extension`"
         `$origin_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
         `$branch = `$(git -C `"`$extension`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
@@ -3471,14 +3471,14 @@ function Main {
             git -C `"`$extension`" reset --hard `$commit_hash --recurse-submodules
             `$latest_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
             if (`$origin_ver -eq `$latest_ver) {
-                Print-Msg `"[`$count/`$sum]:: `$extension_name 扩展已为最新版`"
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展已为最新版`"
                 `$update_status.Add(@(`$extension_name, `"已为最新版`", `$true)) | Out-Null
             } else {
-                Print-Msg `"[`$count/`$sum]:: `$extension_name 扩展更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新成功, 版本：`$origin_ver -> `$latest_ver`"
                 `$update_status.Add(@(`$extension_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
             }
         } else {
-            Print-Msg `"[`$count/`$sum]:: `$extension_name 扩展更新失败`"
+            Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新失败`"
             `$update_status.Add(@(`$extension_name, `"更新失败`", `$false)) | Out-Null
         }
     }
@@ -4916,12 +4916,12 @@ function Model-Downloader (`$download_list) {
         `$type = `$content[2]
         `$path = ([System.IO.Path]::GetFullPath(`$content[3]))
         `$model_name = Split-Path `$url -Leaf
-        Print-Msg `"[`$(`$i + 1)/`$sum]:: 下载 `$name (`$type) 模型到 `$path 中`"
+        Print-Msg `"[`$(`$i + 1)/`$sum] 下载 `$name (`$type) 模型到 `$path 中`"
         aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M `$url -d `"`$path`" -o `"`$model_name`"
         if (`$?) {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载成功`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name (`$type) 下载成功`"
         } else {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载失败`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name (`$type) 下载失败`"
         }
     }
 }

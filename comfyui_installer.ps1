@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 189
+$COMFYUI_INSTALLER_VERSION = 190
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1895,30 +1895,30 @@ if __name__ == '__main__':
         `$path = if (`$requirement_list.GetType().Name -eq `"String`") { `$requirement_list } else { `$requirement_list[`$i] }
         `$name = Split-Path `$(Split-Path `$path -Parent) -Leaf
 
-        Print-Msg `"[`$(`$i + 1)/`$sum]:: 安装 `$name 组件依赖中`"
+        Print-Msg `"[`$(`$i + 1)/`$sum] 安装 `$name 组件依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$path`"
             if (!(`$?)) {
-                Print-Msg `"[`$(`$i + 1)/`$sum]:: 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                Print-Msg `"[`$(`$i + 1)/`$sum] 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
                 python -m pip install -r `"`$path`"
             }
         } else {
             python -m pip install -r `"`$path`"
         }
         if (`$?) {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装成功`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装成功`"
         } else {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装失败, 可能会导致该组件缺失依赖出现运行异常`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装失败, 可能会导致该组件缺失依赖出现运行异常`"
         }
 
         `$install_script = `"`$(Split-Path `$path -Parent)/install.py`"
         if (Test-Path `"`$install_script`") {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: 执行 `$name 的依赖安装脚本中`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] 执行 `$name 的依赖安装脚本中`"
             python `"`$install_script`"
             if (`$?) {
-                Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装脚本执行成功`"
+                Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装脚本执行成功`"
             } else {
-                Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name 组件依赖安装脚本执行失败, 可能会导致该组件缺失依赖出现运行异常`"
+                Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装脚本执行失败, 可能会导致该组件缺失依赖出现运行异常`"
             }
         }
     }
@@ -3087,7 +3087,7 @@ function Main {
 
         `$count += 1
         `$node_name = `$(`$(Get-Item `$node).Name)
-        Print-Msg `"[`$count/`$sum]:: 更新 `$node_name 自定义节点中`"
+        Print-Msg `"[`$count/`$sum] 更新 `$node_name 自定义节点中`"
         Fix-Git-Point-Off-Set `"`$node`"
         `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
         `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
@@ -3097,14 +3097,14 @@ function Main {
             git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
             `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
             if (`$origin_ver -eq `$latest_ver) {
-                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点已为最新版`"
+                Print-Msg `"[`$count/`$sum] `$node_name 自定义节点已为最新版`"
                 `$update_status.Add(@(`$node_name, `"已为最新版`", `$true)) | Out-Null
             } else {
-                Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                Print-Msg `"[`$count/`$sum] `$node_name 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
                 `$update_status.Add(@(`$node_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
             }
         } else {
-            Print-Msg `"[`$count/`$sum]:: `$node_name 自定义节点更新失败`"
+            Print-Msg `"[`$count/`$sum] `$node_name 自定义节点更新失败`"
             `$update_status.Add(@(`$node_name, `"更新失败`", `$false)) | Out-Null
         }
     }
@@ -4581,12 +4581,12 @@ function Model-Downloader (`$download_list) {
         `$type = `$content[2]
         `$path = ([System.IO.Path]::GetFullPath(`$content[3]))
         `$model_name = Split-Path `$url -Leaf
-        Print-Msg `"[`$(`$i + 1)/`$sum]:: 下载 `$name (`$type) 模型到 `$path 中`"
+        Print-Msg `"[`$(`$i + 1)/`$sum] 下载 `$name (`$type) 模型到 `$path 中`"
         aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M `$url -d `"`$path`" -o `"`$model_name`"
         if (`$?) {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载成功`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name (`$type) 下载成功`"
         } else {
-            Print-Msg `"[`$(`$i + 1)/`$sum]:: `$name (`$type) 下载失败`"
+            Print-Msg `"[`$(`$i + 1)/`$sum] `$name (`$type) 下载失败`"
         }
     }
 }
