@@ -62,6 +62,7 @@ _✨一键安装 InvokeAI_
   - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [NotFoundError: 无法在“Node”上执行“removeChild”: 要删除的节点不是此节点的子节点](#notfounderror-无法在node上执行removechild-要删除的节点不是此节点的子节点)
+  - [AttributeError: 'LayerNorm' object has no attribute 'get\_num\_patches'](#attributeerror-layernorm-object-has-no-attribute-get_num_patches)
   - [命令的使用](#命令的使用)
     - [1. 使用自动环境激活脚本](#1-使用自动环境激活脚本)
     - [2. 手动输入命令激活](#2-手动输入命令激活)
@@ -570,6 +571,43 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 ## NotFoundError: 无法在“Node”上执行“removeChild”: 要删除的节点不是此节点的子节点
 尝试重置 UI 或者更换浏览器。
+
+
+## AttributeError: 'LayerNorm' object has no attribute 'get_num_patches'
+InvokeAI 5.6.0 和之后的版本暂时无法使用带有 Norm 块的 LyCORIS 模型，可尝试移除 LyCORIS 模型中的 Norm 块解决，下面是移除该 Norm 块的 Python 代码。
+
+```python
+import os
+from safetensors.torch import load_file, save_file
+
+# 这里修改为 LyCORIS 模型的路径
+lora_path = "D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034.safetensors"
+# 移除 Norm 块后的 LyCORIS 模型将保存在 D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034_without_norm_block.safetensors
+
+save_path = os.path.join(
+    os.path.dirname(lora_path),
+    os.path.splitext(os.path.basename(lora_path))[0] + "_without_norm_block.safetensors"
+)
+norm_block_list = []
+model_weights = load_file(lora_path)
+
+for block, _ in model_weights.items():
+    if "norm" in block:
+        norm_block_list.append(block)
+
+for block in norm_block_list:
+    del model_weights[block]
+
+save_file(model_weights, save_path)
+```
+
+将该 Python 代码保存到一个文件中，比如`remove_norm.py`，并放到`InvokeAI`文件夹中，然后运行`terminal.ps1`打开终端，运行该脚本。
+
+```powershell
+python remove_norm.py
+```
+
+得到移除 Norm 块的 LyCORIS 模型后即可导入到 InvokeAI 中使用。
 
 
 ## 命令的使用
