@@ -35,6 +35,7 @@ _✨一键安装 Stable Diffusion WebUI_
   - [下载模型](#下载模型)
   - [Stable Diffusion WebUI 使用方法](#stable-diffusion-webui-使用方法)
   - [使用绘世启动器](#使用绘世启动器)
+  - [使用 SD WebUI Installer 管理已有的 Stable Diffusion WebUI](#使用-sd-webui-installer-管理已有的-stable-diffusion-webui)
   - [重装 Stable Diffusion WebUI](#重装-stable-diffusion-webui)
   - [重装 Python 环境](#重装-python-环境)
   - [重装 Git](#重装-git)
@@ -268,15 +269,15 @@ $ tree -L 1
 ## 进入 Stable Diffusion WebUI 所在的 Python 环境
 如果需要使用 Python、Pip、Stable Diffusion WebUI 的命令时，请勿将 Stable Diffusion WebUI 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
 
-正确的方法是在 Stable Diffusion WebUI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 Stable Diffusion WebUI Env：
+正确的方法是运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 Stable Diffusion WebUI 所在的 Python。
+
+或者是在 Stable Diffusion WebUI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 Stable Diffusion WebUI Env：
 
 ```powershell
 .\activate.ps1
 ```
 
 这样就进入 Stable Diffusion WebUI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
-
-或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 Stable Diffusion WebUI 所在的 Python。
 
 
 ## 获取最新的 SD WebUI Installer 并运行
@@ -457,6 +458,62 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 |[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
 |[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 |[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+
+
+## 使用 SD WebUI Installer 管理已有的 Stable Diffusion WebUI
+使用 SD WebUI Installer 管理已有的 Stable Diffusion WebUI，需要构建 SD WebUI Installer 所需的目录结构。
+
+将 SD WebUI Installer 下载到本地后，在 SD WebUI Installer 所在目录打开 PowerShell，使用命令运行，将 SD WebUI Installer 的管理脚本安装到本地，比如在`D:/stable-diffusion-webui`，则命令如下。
+
+```powershell
+./stable_diffusion_webui_installer.ps1 -UseUpdateMode -InstallPath "D:/stable-diffusion-webui"
+```
+
+运行完成后 SD WebUI Installer 的管理脚本将安装在`D:/stable-diffusion-webui`中，目录结构如下。
+
+```
+D:/stable-diffusion-webui
+├── activate.ps1
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_stable_diffusion_webui_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── switch_branch.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_extension.ps1
+└── update_time.txt
+```
+
+接下来需要将 Stable Diffusion WebUI 移动到`D:/stable-diffusion-webui`目录中，如果 Stable Diffusion WebUI 的文件夹名称不是`stable-diffusion-webui`，比如`sd-webui-aki-v1.2`，需要将名称修改成`stable-diffusion-webui`。
+
+移动进去后此时的目录结构如下。
+
+```
+D:/stable-diffusion-webui
+├── activate.ps1
+├── stable-diffusion-webui
+│   ├── extensions
+│   ├── modules
+│   ├── models
+│   ...
+│   └── launch.py
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_stable_diffusion_webui_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── switch_branch.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_extension.ps1
+└── update_time.txt
+```
+
+再检查`D:/stable-diffusion-webui/stable-diffusion-webui`文件夹中是否包含`python`和`git`文件夹，如果未包含，需要运行`launch_comfyui_installer.ps1`重建环境，重建完成后即可运行`launch.ps1`启动 Stable Diffusion WebUI。
 
 
 ## 重装 Stable Diffusion WebUI

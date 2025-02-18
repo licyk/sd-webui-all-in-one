@@ -35,6 +35,7 @@ _✨一键安装 ComfyUI_
   - [下载模型](#下载模型)
   - [ComfyUI 使用方法](#comfyui-使用方法)
   - [使用绘世启动器](#使用绘世启动器)
+  - [使用 ComfyUI Installer 管理已有的 ComfyUI](#使用-comfyui-installer-管理已有的-comfyui)
   - [重装 ComfyUI](#重装-comfyui)
   - [重装 Python 环境](#重装-python-环境)
   - [重装 Git](#重装-git)
@@ -211,15 +212,15 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ## 进入 ComfyUI 所在的 Python 环境
 如果需要使用 Python、Pip、ComfyUI 的命令时，请勿将 ComfyUI 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
 
-正确的方法是在 ComfyUI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 ComfyUI Env：
+正确的方法是运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 ComfyUI 所在的 Python。
+
+或者是在 ComfyUI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 ComfyUI Env：
 
 ```powershell
 .\activate.ps1
 ```
 
 这样就进入 ComfyUI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
-
-或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 ComfyUI 所在的 Python。
 
 
 ## 获取最新的 ComfyUI Installer 并运行
@@ -484,6 +485,60 @@ ComfyUI Installer 部署出来的 ComfyUI 可以通过绘世启动器进行启�
 |[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
 |[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 |[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+
+
+## 使用 ComfyUI Installer 管理已有的 ComfyUI
+使用 ComfyUI Installer 管理已有的 ComfyUI，需要构建 ComfyUI Installer 所需的目录结构。
+
+将 ComfyUI Installer 下载到本地后，在 ComfyUI Installer 所在目录打开 PowerShell，使用命令运行，将 ComfyUI Installer 的管理脚本安装到本地，比如在`D:/ComfyUI`，则命令如下。
+
+```powershell
+./comfyui_installer.ps1 -UseUpdateMode -InstallPath "D:/ComfyUI"
+```
+
+运行完成后 ComfyUI Installer 的管理脚本将安装在`D:/ComfyUI`中，目录结构如下。
+
+```
+D:/ComfyUI
+├── activate.ps1
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_comfyui_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_node.ps1
+└── update_time.txt
+```
+
+接下来需要将 ComfyUI 移动到`D:/ComfyUI`目录中，如果 ComfyUI 的文件夹名称不是`ComfyUI`，比如`ComfyUI-aki-v1.2`，需要将名称修改成`ComfyUI`。
+
+移动进去后此时的目录结构如下。
+
+```
+D:/ComfyUI
+├── activate.ps1
+├── ComfyUI
+│   ├── custom_nodes
+│   ├── main.py
+│   ├── models
+│   ...
+│   └── nodes.py
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_comfyui_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_node.ps1
+└── update_time.txt
+```
+
+再检查`D:/ComfyUI/ComfyUI`文件夹中是否包含`python`和`git`文件夹，如果未包含，需要运行`launch_comfyui_installer.ps1`重建环境，重建完成后即可运行`launch.ps1`启动 ComfyUI。
 
 
 ## 重装 ComfyUI

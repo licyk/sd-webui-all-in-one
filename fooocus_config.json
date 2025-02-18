@@ -1,5 +1,5 @@
 {
-    "default_model": "Illustrious-XL-v0.1.safetensors",
+    "default_model": "noobaiXLNAIXL_vPred10Version.safetensors",
     "default_refiner": "None",
     "default_refiner_switch": 0.8,
     "default_loras": [
@@ -26,17 +26,17 @@
     ],
     "default_cfg_scale": 5.0,
     "default_sample_sharpness": 2.0,
-    "default_sampler": "dpmpp_2m_sde_gpu",
+    "default_sampler": "euler_ancestral",
     "default_scheduler": "sgm_uniform",
     "default_performance": "Speed",
     "default_prompt": "\nmasterpiece,best quality,newest,",
     "default_vae": "Default (model)",
-    "default_prompt_negative": "low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anatomy,old,early,copyright name,watermark,artist name,signature,",
+    "default_prompt_negative": "low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anatomy,old,early,copyright name,watermark,artist name,signature,blue theme,",
     "default_styles": [],
     "default_image_number": 1,
     "default_aspect_ratio": "1008*1344",
     "checkpoint_downloads": {
-        "Illustrious-XL-v0.1.safetensors": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v0.1.safetensors"
+        "noobaiXLNAIXL_vPred10Version.safetensors": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors"
     },
     "embeddings_downloads": {},
     "lora_downloads": {
@@ -65,11 +65,11 @@
         "ill-xl-01-lanubis_4.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-lanubis_4.safetensors",
         "ill-xl-01-linhai_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-linhai_1-000034.safetensors",
         "ill-xl-01-lplpsg_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-lplpsg_1-000036.safetensors",
-        "ill-xl-01-matchach_2-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-matchach_2-000036.safetensors",
+        "ill-xl-01-matchach_4-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-matchach_4-000034.safetensors",
         "ill-xl-01-momoimon_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-momoimon_1-000038.safetensors",
         "ill-xl-01-nachoneko_3-000032.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-nachoneko_3-000032.safetensors",
         "ill-xl-01-negimapurinn_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-negimapurinn_1-000038.safetensors",
-        "ill-xl-01-ningen_mame_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ningen_mame_1-000038.safetensors",
+        "ill-xl-01-ningen_mame_3-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ningen_mame_3-000036.safetensors",
         "ill-xl-01-nocopyrightgirl_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-nocopyrightgirl_1-000036.safetensors",
         "ill-xl-01-Noyu_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-Noyu_1-000036.safetensors",
         "ill-xl-01-pvc_4-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-pvc_4-000034.safetensors",
@@ -120,7 +120,9 @@
         "ill-xl-01-MaidCode1023_2-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-MaidCode1023_2-000038.safetensors",
         "ill-xl-01-BLACKmeow_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-BLACKmeow_1-000038.safetensors",
         "ill-xl-01-AkiTeaMix_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-AkiTeaMix_1-000036.safetensors",
-        "ill-xl-01-ZUU_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ZUU_1-000038.safetensors"
+        "ill-xl-01-ZUU_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ZUU_1-000038.safetensors",
+        "ill-xl-01-star_peach_1-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-star_peach_1-000030.safetensors",
+        "ill-xl-01-kasuga_haruhi_1.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-kasuga_haruhi_1.safetensors"
     },
     "vae_downloads": {
         "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"

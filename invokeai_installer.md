@@ -36,6 +36,7 @@ _✨一键安装 InvokeAI_
   - [添加模型](#添加模型)
   - [InvokeAI 的使用方法](#invokeai-的使用方法)
   - [启用 InvokeAI 低显存模式](#启用-invokeai-低显存模式)
+  - [使用 InvokeAI Installer 管理已有的 InvokeAI](#使用-invokeai-installer-管理已有的-invokeai)
   - [重装 InvokeAI](#重装-invokeai)
   - [重装 Python 环境](#重装-python-环境)
   - [重装 Git](#重装-git)
@@ -187,15 +188,15 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ## 进入 InvokeAI 所在的 Python 环境
 如果需要使用 Python、Pip、InvokeAI 的命令时，请勿将 InvokeAI 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
 
-正确的方法是在 InvokeAI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 InvokeAI Env：
+正确的方法是运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 InvokeAI 所在的 Python。
+
+或者是在 InvokeAI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 InvokeAI Env：
 
 ```powershell
 .\activate.ps1
 ```
 
 这样就进入 InvokeAI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
-
-或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 InvokeAI 所在的 Python。
 
 
 ## 获取最新的 InvokeAI Installer 并运行
@@ -312,7 +313,7 @@ InvokeAI Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，
 
 
 ## 添加模型
-如果没有下载模型，可以使用`download_models.ps1`脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / ComfyUI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
+如果没有下载模型，可以使用`download_models.ps1`脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / InvokeAI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
 
 
 ## InvokeAI 的使用方法
@@ -348,6 +349,62 @@ enable_partial_loading: true
 
 >[!NOTE]  
 >关于 InvokeAI 低显存模式详细说明可阅读：[Low-VRAM mode - Invoke](https://invoke-ai.github.io/InvokeAI/features/low-vram)。
+
+
+## 使用 InvokeAI Installer 管理已有的 InvokeAI
+使用 InvokeAI Installer 管理已有的 InvokeAI，需要构建 InvokeAI Installer 所需的目录结构。
+
+将 InvokeAI Installer 下载到本地后，在 InvokeAI Installer 所在目录打开 PowerShell，使用命令运行，将 InvokeAI Installer 的管理脚本安装到本地，比如在`D:/InvokeAI`，则命令如下。
+
+```powershell
+./invokeai_installer.ps1 -UseUpdateMode -InstallPath "D:/InvokeAI"
+```
+
+运行完成后 InvokeAI Installer 的管理脚本将安装在`D:/InvokeAI`中，目录结构如下。
+
+```
+D:/InvokeAI
+├── activate.ps1
+├── download_config.ps1
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_invokeai_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_node.ps1
+└── update_time.txt
+```
+
+接下来需要将 InvokeAI 移动到`D:/InvokeAI`目录中，如果 InvokeAI 的文件夹名称不是`InvokeAI`，比如`Invoke`，需要将名称修改成`InvokeAI`。
+
+移动进去后此时的目录结构如下。
+
+```
+D:/InvokeAI
+├── activate.ps1
+├── InvokeAI
+│   ├── configs
+│   ├── databases
+│   ├── models
+│   ...
+│   └── invokeai.yaml
+├── download_config.ps1
+├── download_models.ps1
+├── help.txt
+├── launch.ps1
+├── launch_invokeai_installer.ps1
+├── reinstall_pytorch.ps1
+├── settings.ps1
+├── terminal.ps1
+├── update.ps1
+├── update_node.ps1
+└── update_time.txt
+```
+
+再运行`launch_invokeai_installer.ps1`重建环境，重建完成后即可运行`launch.ps1`启动 InvokeAI。
 
 
 ## 重装 InvokeAI

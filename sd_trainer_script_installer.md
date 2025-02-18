@@ -226,15 +226,15 @@ $ tree -L 1
 ## 进入 SD-Trainer-Script 所在的 Python 环境
 如果需要使用 Python、Pip、SD-Trainer-Script 的命令时，请勿将 SD-Trainer-Script 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
 
-正确的方法是在 SD-Trainer-Script 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 SD-Trainer-Script Env：
+正确的方法是运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 SD-Trainer-Script 所在的 Python。
+
+或者是在 SD-Trainer-Script 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 SD-Trainer-Script Env：
 
 ```powershell
 .\activate.ps1
 ```
 
 这样就进入 SD-Trainer-Script 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
-
-或者运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 SD-Trainer-Script 所在的 Python。
 
 
 ## 获取最新的 SD-Trainer-Script Installer 并运行
