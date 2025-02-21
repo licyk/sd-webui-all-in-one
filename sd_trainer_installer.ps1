@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 220
+$SD_TRAINER_INSTALLER_VERSION = 221
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4981,6 +4981,201 @@ function global:Install-Hanamizuki {
 }
 
 
+# 检查 onnxruntime-gpu 版本问题
+function global:Check-Onnxruntime-GPU {
+    `$content = `"
+import re
+import importlib.metadata
+from pathlib import Path
+
+
+
+# 获取记录 onnxruntime 版本的文件路径
+def get_onnxruntime_version_file() -> str:
+    package = 'onnxruntime-gpu'
+    try:
+        util = [p for p in importlib.metadata.files(package) if 'onnxruntime/capi/version_info.py' in str(p)][0]
+        info_path = Path(util.locate()).as_posix()
+    except importlib.metadata.PackageNotFoundError:
+        info_path = None
+
+    return info_path
+
+
+# 获取 onnxruntime 支持的 CUDA 版本
+def get_onnxruntime_support_cuda_version() -> tuple:
+    ver_path = get_onnxruntime_version_file()
+    cuda_ver = None
+    cudnn_ver = None
+    try:
+        with open(ver_path, 'r', encoding = 'utf8') as f:
+            for line in f:
+                if 'cuda_version' in line:
+                    cuda_ver = line.strip()
+                if 'cudnn_version' in line:
+                    cudnn_ver = line.strip()
+    except:
+        pass
+
+    return cuda_ver, cudnn_ver
+
+
+# 截取版本号
+def get_version(ver: str) -> str:
+    return ''.join(re.findall(r'[\d.]+', ver.split('=').pop().strip()))
+
+
+# 判断版本
+def compare_versions(version1: str, version2: str) -> int:
+    nums1 = re.sub(r'[a-zA-Z]+', '', version1).split('.')  # 将版本号 1 拆分成数字列表
+    nums2 = re.sub(r'[a-zA-Z]+', '', version2).split('.')  # 将版本号 2 拆分成数字列表
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1  # 版本号 1 更大
+        else:
+            return -1  # 版本号 2 更大
+
+    return 0  # 版本号相同
+
+
+# 获取 Torch 的 CUDA, CUDNN 版本
+def get_torch_cuda_ver() -> tuple:
+    try:
+        import torch
+        return torch.__version__, int(str(torch.backends.cudnn.version())[0]) if torch.backends.cudnn.version() is not None else None
+    except:
+        return None, None
+
+
+# 判断需要安装的 onnxruntime 版本
+def need_install_ort_ver():
+    # 检测是否安装了 Torch
+    torch_ver, cuddn_ver = get_torch_cuda_ver()
+    # 缺少 Torch 版本或者 CUDNN 版本时取消判断
+    if torch_ver is None or cuddn_ver is None:
+        return None
+
+    # 检测是否安装了 onnxruntime-gpu
+    ort_support_cuda_ver, ort_support_cudnn_ver = get_onnxruntime_support_cuda_version()
+    # 通常 onnxruntime 的 CUDA 版本和 CUDNN 版本会同时存在, 所以只需要判断 CUDA 版本是否存在即可
+    if ort_support_cuda_ver is None:
+        return None
+
+    ort_support_cuda_ver = get_version(ort_support_cuda_ver)
+    ort_support_cudnn_ver = int(get_version(ort_support_cudnn_ver))
+
+    # 判断 Torch 中的 CUDA 版本是否为 CUDA 12.1
+    if 'cu12' in torch_ver: # CUDA 12.1
+        # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
+        if compare_versions(ort_support_cuda_ver, '12.0') == 1:
+            # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
+
+            # 判断 torch 和 ort 的 CUDNN 是否匹配
+            if ort_support_cudnn_ver > cuddn_ver: # ort CUDNN 版本 > torch CUDNN 版本
+                return 'cu121cudnn8'
+            elif ort_support_cudnn_ver < cuddn_ver: # ort CUDNN 版本 < torch CUDNN 版本
+                return 'cu121cudnn9'
+            else:
+                return None
+        else:
+            # CUDA 版本非 12.x
+            if cuddn_ver > 8:
+                return 'cu121cudnn9'
+            else:
+                return 'cu121cudnn8'
+    else: # CUDA <= 11.8
+        if compare_versions(ort_support_cuda_ver, '12.0') == -1:
+            return None
+        else:
+            return 'cu118'
+
+
+
+if __name__ == '__main__':
+    print(need_install_ort_ver())
+`"
+    Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
+    `$status = `$(python -c `"`$content`")
+
+    `$need_reinstall_ort = `$false
+    `$need_switch_mirror = `$false
+    switch (`$status) {
+        cu118 {
+            `$need_reinstall_ort = `$true
+            `$ort_version = `"onnxruntime-gpu==1.18.1`"
+        }
+        cu121cudnn9 {
+            `$need_reinstall_ort = `$true
+            `$ort_version = `"onnxruntime-gpu>=1.19.0`"
+        }
+        cu121cudnn8 {
+            `$need_reinstall_ort = `$true
+            `$ort_version = `"onnxruntime-gpu==1.17.1`"
+            `$need_switch_mirror = `$true
+        }
+        Default {
+            `$need_reinstall_ort = `$false
+        }
+    }
+
+    if (`$need_reinstall_ort) {
+        Print-Msg `"检测到 onnxruntime-gpu 所支持的 CUDA 版本 和 PyTorch 所支持的 CUDA 版本不匹配, 将执行重装操作`"
+        if (`$need_switch_mirror) {
+            `$tmp_pip_index_url = `$Env:PIP_INDEX_URL
+            `$tmp_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+            `$tmp_uv_index_url = `$Env:UV_INDEX_URL
+            `$tmp_UV_extra_index_url = `$Env:UV_EXTRA_INDEX_URL
+            `$Env:PIP_INDEX_URL = `"https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple`"
+            `$Env:UV_INDEX_URL = `"https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/`"
+            `$Env:UV_EXTRA_INDEX_URL = `"https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple`"
+        }
+
+        Print-Msg `"卸载原有的 onnxruntime-gpu 中`"
+        python -m pip uninstall onnxruntime-gpu -y
+
+        Print-Msg `"重新安装 onnxruntime-gpu 中`"
+        if (`$USE_UV) {
+            uv pip install `$ort_version
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `$ort_version
+            }
+        } else {
+            python -m pip install `$ort_version
+        }
+        if (`$?) {
+            Print-Msg `"onnxruntime-gpu 重新安装成功`"
+            if (Test-Path `"`$PSScriptRoot/lora-scripts/.git`") {
+                `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+                `$array = `$git_remote -split `"/`"
+                `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+                if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
+                    Print-Msg `"检测到使用的是 Akegarasu/lora-scripts 分支, 需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查功能, 可运行 settings.ps1 后进行启动参数设置进行添加`"
+                }
+            }
+        } else {
+            Print-Msg `"onnxruntime-gpu 重新安装失败, 这可能导致部分功能无法正常使用, 如使用反推模型无法正常调用 GPU 导致推理降速`"
+        }
+
+        if (`$need_switch_mirror) {
+            `$Env:PIP_INDEX_URL = `$tmp_pip_index_url
+            `$Env:PIP_EXTRA_INDEX_URL = `$tmp_pip_extra_index_url
+            `$Env:UV_INDEX_URL = `$tmp_uv_index_url
+            `$Env:UV_EXTRA_INDEX_URL = `$tmp_UV_extra_index_url
+        }
+    } else {
+        Print-Msg `"onnxruntime-gpu 无版本问题`"
+    }
+}
+
+
 # 设置 Python 命令别名
 function global:pip {
     python -m pip @args
@@ -5007,6 +5202,7 @@ Github：https://github.com/licyk
     Update-Aria2
     Check-SD-Trainer-Installer-Update
     Install-Hanamizuki
+    Check-Onnxruntime-GPU
     List-CMD
 
 更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
@@ -5114,6 +5310,24 @@ function Set-Github-Mirror {
 }
 
 
+# 设置 uv 的使用状态
+function Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+        }
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
@@ -5121,6 +5335,7 @@ function Main {
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     Pip-Mirror-Status
+    Set-uv
     if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`") {
         `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`"
     }

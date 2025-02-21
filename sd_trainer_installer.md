@@ -91,6 +91,7 @@ _✨一键安装 SD-Trainer_
     - [查看并切换 SD-Trainer 的版本](#查看并切换-sd-trainer-的版本)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
+    - [修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPu 的问题](#修复使用-wd-标签器出现-onnxruntime-无法正常调用-gpu-的问题)
 
 ***
 
@@ -969,4 +970,11 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 
 # 查看其他命令的实际调用路径也是同样的方法
 # (Get-Command <command>).Source
+```
+
+### 修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPu 的问题
+```powershell
+Check-Onnxruntime-GPU
+
+# 修复后需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查
 ```
