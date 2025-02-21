@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 219
+$SD_TRAINER_INSTALLER_VERSION = 220
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2630,7 +2630,16 @@ function Get-Local-Setting {
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/install_sd_trainer.txt`") {
+    if ((Get-Command git) -and (Test-Path `"`$PSScriptRoot/lora-scripts/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
+        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_trainer.txt`") {
         `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
     } elseif (Test-Path `"`$PSScriptRoot/install_kohya_gui.txt`") {
         `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
@@ -5267,6 +5276,38 @@ function Write-Manager-Scripts {
 }
 
 
+# 将安装器配置文件复制到管理脚本路径
+function Copy-SD-Trainer-Installer-Config {
+    Print-Msg "为 SD-Trainer Installer 管理脚本复制 SD-Trainer Installer 配置文件中"
+
+    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    }
+
+    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
+    } elseif ((!($DisableProxy)) -and ($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
+    }
+
+    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
+    }
+
+    if ((!($DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_gh_mirror.txt -> $InstallPath/disable_gh_mirror.txt"
+    } elseif ((!($DisableGithubMirror)) -and (!($UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
+    }
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
@@ -5286,6 +5327,7 @@ function Use-Install-Mode {
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
+    Copy-SD-Trainer-Installer-Config
     Print-Msg "SD-Trainer 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"

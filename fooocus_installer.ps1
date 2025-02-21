@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 113
+$FOOOCUS_INSTALLER_VERSION = 114
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -549,7 +549,7 @@ function Pre-Donwload-Model ($download_task) {
 # 更新 Fooocus 预设文件
 function Update-Fooocus-Preset {
     $fooocus_preset_json_content = @{
-        "default_model" = "Illustrious-XL-v0.1.safetensors"
+        "default_model" = "Illustrious-XL-v1.0.safetensors"
         "default_refiner" = "None"
         "default_refiner_switch" = 0.8
         "default_loras" = @(
@@ -570,7 +570,7 @@ function Update-Fooocus-Preset {
         "default_image_number" = 1
         "default_aspect_ratio" = "1344*1008"
         "checkpoint_downloads" = @{
-            "Illustrious-XL-v0.1.safetensors" = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors"
+            "Illustrious-XL-v1.0.safetensors" = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors"
         }
         "embeddings_downloads" = @{}
         "lora_downloads" = @{}
@@ -1288,7 +1288,7 @@ function Check-Install {
     Update-Fooocus-Preset
 
     $model_list = @(
-        @("https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors", "$InstallPath/Fooocus/models/checkpoints", "Illustrious-XL-v0.1.safetensors"),
+        @("https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors", "$InstallPath/Fooocus/models/checkpoints", "Illustrious-XL-v1.0.safetensors"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/vaeapp_sd15.pth", "$InstallPath/Fooocus/models/vae_approx", "vaeapp_sd15.pth"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xlvaeapp.pth", "$InstallPath/Fooocus/models/vae_approx", "xlvaeapp.pth"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/Fooocus/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors"),
@@ -3440,7 +3440,18 @@ function Get-Local-Setting {
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/install_fooocus.txt`") {
+    if ((Get-Command git) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"fooocus`")
+        } elseif ((`$branch -eq `"MoonRide303/Fooocus-MRE`") -or (`$branch -eq `"MoonRide303/Fooocus-MRE.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"fooocus_mre`")
+        } elseif ((`$branch -eq `"runew0lf/RuinedFooocus`") -or (`$branch -eq `"runew0lf/RuinedFooocus.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"ruined_fooocus`")
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/install_fooocus.txt`") {
         `$arg.Add(`"-InstallBranch`", `"fooocus`")
     } elseif (Test-Path `"`$PSScriptRoot/install_fooocus_mre.txt`") {
         `$arg.Add(`"-InstallBranch`", `"fooocus_mre`")
@@ -6509,6 +6520,38 @@ function Write-Manager-Scripts {
 }
 
 
+# 将安装器配置文件复制到管理脚本路径
+function Copy-Fooocus-Installer-Config {
+    Print-Msg "为 Fooocus Installer 管理脚本复制 Fooocus Installer 配置文件中"
+
+    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    }
+
+    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
+    } elseif ((!($DisableProxy)) -and ($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
+    }
+
+    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
+    }
+
+    if ((!($DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_gh_mirror.txt -> $InstallPath/disable_gh_mirror.txt"
+    } elseif ((!($DisableGithubMirror)) -and (!($UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
+    }
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
@@ -6530,6 +6573,7 @@ function Use-Install-Mode {
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
+    Copy-Fooocus-Installer-Config
     Print-Msg "Fooocus 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 Fooocus 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Fooocus Installer 使用文档"
     Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"

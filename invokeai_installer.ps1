@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 208
+$INVOKEAI_INSTALLER_VERSION = 209
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -330,14 +330,78 @@ function Install-InvokeAI {
 }
 
 
-# 安装 InvokeAI 依赖
-function Install-InvokeAI-Requirements {
+# 获取 PyTorch 版本并设置镜像源
+function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
     $content = "
 import re
-from importlib.metadata import version
+from importlib.metadata import requires
 
 
-def compare_versions(version1, version2):
+
+def version_increment(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] += 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == 10:
+            ver_parts[i] = 0
+            ver_parts[i - 1] += 1
+
+    return '.'.join(map(str, ver_parts))
+
+
+def version_decrement(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] -= 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == -1:
+            ver_parts[i] = 9
+            ver_parts[i - 1] -= 1
+
+    while len(ver_parts) > 1 and ver_parts[0] == 0:
+        ver_parts.pop(0)
+
+    return '.'.join(map(str, ver_parts))
+
+
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+
+
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+
+
+def get_package_version(package: str) -> str:
+    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+
+
+def get_invokeai_require_torch_version() -> str:
+    try:
+        invokeai_requires = requires('invokeai')
+    except:
+        return '2.2.2'
+
+    torch_version = 'torch==2.2.2'
+
+    for require in invokeai_requires:
+        if get_package_name(require) == 'torch' and has_version(require):
+            torch_version = require
+
+    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+        return version_increment(get_package_version(torch_version))
+    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+        return version_decrement(get_package_version(torch_version))
+    elif torch_version.startswith('torch!='):
+        return version_increment(get_package_version(torch_version))
+    else:
+        return get_package_version(torch_version)
+
+
+def compare_versions(version1: str, version2: str) -> int:
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -358,14 +422,33 @@ def compare_versions(version1, version2):
     return 0
 
 
-if compare_versions(version('invokeai'), '5.0.2') == 1:
-    print(True)
-else:
-    print(False)
-"
+def get_pytorch_mirror_type() -> str:
+    torch_ver = get_invokeai_require_torch_version()
 
-    $status = $(python -c "$content") # 检查 InvokeAI 是否大于 5.0.2
-    if ($status -eq "True") {
+    if compare_versions(torch_ver, '2.3.1') == -1: # torch < 2.3.1
+        return 'cu118'
+    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+        return 'cu121'
+    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+        return 'cu124'
+
+
+if __name__ == '__main__':
+    print(get_pytorch_mirror_type())
+"
+    # 获取镜像类型
+    $mirror_type = $(python -c "$content")
+
+    # 设置 PyTorch 镜像源
+    if ($mirror_type -eq "cu118") {
+        $cuda_ver = "+cu118"
+    } elseif ($mirror_type -eq "cu121") {
+        $cuda_ver = "+cu121"
+        $Env:PIP_FIND_LINKS = " "
+        $Env:UV_FIND_LINKS = ""
+        $Env:PIP_EXTRA_INDEX_URL = "$Env:PIP_EXTRA_INDEX_URL $PIP_EXTRA_INDEX_MIRROR_CU121"
+        $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU121
+    } elseif ($mirror_type -eq "cu124") {
         $cuda_ver = "+cu124"
         $Env:PIP_FIND_LINKS = " "
         $Env:UV_FIND_LINKS = ""
@@ -391,29 +474,43 @@ if cuda_ver == '+cu118':
     xf_cuda_ver = cuda_ver
 
 
-for i in invokeai_requires:
-    if i.startswith('torch=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchvision=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchaudio=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
 
 
-for i in pytorch_ver:
-    ver_list = f'{ver_list} {i}'
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
 
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list}'
+
+for require in invokeai_requires:
+    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
+        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+
+
+for ver in pytorch_ver:
+    ver_list = f'{ver_list} {ver}'
+
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
 
 print(ver_list)
 "
 
-    $pytorch_ver = $(python -c "$content") # 获取 PyTorch 版本
+    return $(python -c "$content") # 获取 PyTorch 版本
+}
+
+
+# 安装 InvokeAI 依赖
+function Install-InvokeAI-Requirements {
+    $pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI # 获取 PyTorch 版本
     Print-Msg "安装 InvokeAI 依赖中"
     if ($USE_UV) {
         uv pip install $pytorch_ver.ToString().Split()
@@ -1571,14 +1668,78 @@ function Set-uv {
 }
 
 
-# 检查 InvokeAI 版本是否大于 5.0.2
-function Check-InvokeAI-Version {
+# 获取 PyTorch 版本并设置镜像源
+function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
     `$content = `"
 import re
-from importlib.metadata import version
+from importlib.metadata import requires
 
 
-def compare_versions(version1, version2):
+
+def version_increment(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] += 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == 10:
+            ver_parts[i] = 0
+            ver_parts[i - 1] += 1
+
+    return '.'.join(map(str, ver_parts))
+
+
+def version_decrement(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] -= 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == -1:
+            ver_parts[i] = 9
+            ver_parts[i - 1] -= 1
+
+    while len(ver_parts) > 1 and ver_parts[0] == 0:
+        ver_parts.pop(0)
+
+    return '.'.join(map(str, ver_parts))
+
+
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+
+
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+
+
+def get_package_version(package: str) -> str:
+    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+
+
+def get_invokeai_require_torch_version() -> str:
+    try:
+        invokeai_requires = requires('invokeai')
+    except:
+        return '2.2.2'
+
+    torch_version = 'torch==2.2.2'
+
+    for require in invokeai_requires:
+        if get_package_name(require) == 'torch' and has_version(require):
+            torch_version = require
+
+    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+        return version_increment(get_package_version(torch_version))
+    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+        return version_decrement(get_package_version(torch_version))
+    elif torch_version.startswith('torch!='):
+        return version_increment(get_package_version(torch_version))
+    else:
+        return get_package_version(torch_version)
+
+
+def compare_versions(version1: str, version2: str) -> int:
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -1599,18 +1760,42 @@ def compare_versions(version1, version2):
     return 0
 
 
-if compare_versions(version('invokeai'), '5.0.2') == 1:
-    print(True)
-else:
-    print(False)
+def get_pytorch_mirror_type() -> str:
+    torch_ver = get_invokeai_require_torch_version()
+
+    if compare_versions(torch_ver, '2.3.1') == -1: # torch < 2.3.1
+        return 'cu118'
+    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+        return 'cu121'
+    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+        return 'cu124'
+
+
+if __name__ == '__main__':
+    print(get_pytorch_mirror_type())
 `"
+    # 获取镜像类型
+    `$mirror_type = `$(python -c `"`$content`")
 
-    return `$(python -c `"`$content`")
-}
+    # 设置 PyTorch 镜像源
+    if (`$mirror_type -eq `"cu118`") {
+        `$cuda_ver = `"+cu118`"
+    } elseif (`$mirror_type -eq `"cu121`") {
+        `$cuda_ver = `"+cu121`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    } elseif (`$mirror_type -eq `"cu124`") {
+        `$cuda_ver = `"+cu124`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } else {
+        `$cuda_ver = `"+cu118`"
+    }
 
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version (`$cuda_ver) {
     `$content = `"
 from importlib.metadata import requires, version
 
@@ -1627,29 +1812,37 @@ if cuda_ver == '+cu118':
     xf_cuda_ver = cuda_ver
 
 
-for i in invokeai_requires:
-    if i.startswith('torch=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchvision=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchaudio=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
 
 
-for i in pytorch_ver:
-    ver_list = f'{ver_list} {i}'
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
 
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list}'
+
+for require in invokeai_requires:
+    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
+        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+
+
+for ver in pytorch_ver:
+    ver_list = f'{ver_list} {ver}'
+
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
 
 print(ver_list)
 `"
 
-    return `$(python -c `"`$content`")
+    return `$(python -c `"`$content`") # 获取 PyTorch 版本
 }
 
 
@@ -1696,21 +1889,8 @@ function Main {
         Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
         `$core_update_msg = `"更新成功`"
 
-        # 检查 InvokeAI 版本是否大于 5.0.2
-        `$status = Check-InvokeAI-Version
-
-        if (`$status -eq `"True`") {
-            `$cuda_ver = `"+cu124`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-        } else {
-            `$cuda_ver = `"+cu118`"
-        }
-
         # 获取 PyTorch 版本
-        `$pytorch_ver = Get-PyTorch-Version `$cuda_ver
+        `$pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI
 
         `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
         if (`$USE_UV) {
@@ -2535,14 +2715,78 @@ function Set-Proxy {
 }
 
 
-# 检查 InvokeAI 版本是否大于 5.0.2
-function Check-InvokeAI-Version {
+# 获取 PyTorch 版本并设置镜像源
+function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
     `$content = `"
 import re
-from importlib.metadata import version
+from importlib.metadata import requires
 
 
-def compare_versions(version1, version2):
+
+def version_increment(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] += 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == 10:
+            ver_parts[i] = 0
+            ver_parts[i - 1] += 1
+
+    return '.'.join(map(str, ver_parts))
+
+
+def version_decrement(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] -= 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == -1:
+            ver_parts[i] = 9
+            ver_parts[i - 1] -= 1
+
+    while len(ver_parts) > 1 and ver_parts[0] == 0:
+        ver_parts.pop(0)
+
+    return '.'.join(map(str, ver_parts))
+
+
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+
+
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+
+
+def get_package_version(package: str) -> str:
+    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+
+
+def get_invokeai_require_torch_version() -> str:
+    try:
+        invokeai_requires = requires('invokeai')
+    except:
+        return '2.2.2'
+
+    torch_version = 'torch==2.2.2'
+
+    for require in invokeai_requires:
+        if get_package_name(require) == 'torch' and has_version(require):
+            torch_version = require
+
+    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+        return version_increment(get_package_version(torch_version))
+    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+        return version_decrement(get_package_version(torch_version))
+    elif torch_version.startswith('torch!='):
+        return version_increment(get_package_version(torch_version))
+    else:
+        return get_package_version(torch_version)
+
+
+def compare_versions(version1: str, version2: str) -> int:
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -2563,20 +2807,44 @@ def compare_versions(version1, version2):
     return 0
 
 
-if compare_versions(version('invokeai'), '5.0.2') == 1:
-    print(True)
-else:
-    print(False)
+def get_pytorch_mirror_type() -> str:
+    torch_ver = get_invokeai_require_torch_version()
+
+    if compare_versions(torch_ver, '2.3.1') == -1: # torch < 2.3.1
+        return 'cu118'
+    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+        return 'cu121'
+    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+        return 'cu124'
+
+
+if __name__ == '__main__':
+    print(get_pytorch_mirror_type())
 `"
+    # 获取镜像类型
+    `$mirror_type = `$(python -c `"`$content`")
 
-    return `$(python -c `"`$content`")
-}
+    # 设置 PyTorch 镜像源
+    if (`$mirror_type -eq `"cu118`") {
+        `$cuda_ver = `"+cu118`"
+    } elseif (`$mirror_type -eq `"cu121`") {
+        `$cuda_ver = `"+cu121`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
+    } elseif (`$mirror_type -eq `"cu124`") {
+        `$cuda_ver = `"+cu124`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } else {
+        `$cuda_ver = `"+cu118`"
+    }
 
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version (`$cuda_ver) {
     `$content = `"
-from importlib.metadata import requires
+from importlib.metadata import requires, version
 
 
 pytorch_ver = []
@@ -2585,33 +2853,43 @@ xf_cuda_ver = ''
 ver_list = ''
 
 invokeai_requires = requires('invokeai')
+invokeai_version = version('invokeai')
 
 if cuda_ver == '+cu118':
     xf_cuda_ver = cuda_ver
 
 
-for i in invokeai_requires:
-    if i.startswith('torch=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchvision=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('torchaudio=='):
-        pytorch_ver.append(i.split(';')[0].strip() + cuda_ver)
-
-    if i.startswith('xformers=='):
-        pytorch_ver.append(i.split(';')[0].strip() + xf_cuda_ver)
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
 
 
-for i in pytorch_ver:
-    ver_list = f'{ver_list} {i}'
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
 
+
+for require in invokeai_requires:
+    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
+        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+
+    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
+        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+
+
+for ver in pytorch_ver:
+    ver_list = f'{ver_list} {ver}'
+
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
 
 print(ver_list)
 `"
 
-    return `$(python -c `"`$content`")
+    return `$(python -c `"`$content`") # 获取 PyTorch 版本
 }
 
 
@@ -2774,22 +3052,33 @@ function Main {
     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
         Print-Msg `"卸载原有的 PyTorch`"
         python -m pip uninstall torch torchvision xformers -y
-        Print-Msg `"重新安装 PyTorch`"
-        # 检查 InvokeAI 版本是否大于 5.0.2
-        `$status = Check-InvokeAI-Version
 
-        if (`$status -eq `"True`") {
-            `$cuda_ver = `"+cu124`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-            `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
-        } else {
-            `$cuda_ver = `"+cu118`"
+        python -m pip show invokeai --quiet 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到 InvokeAI 未安装, 尝试安装中`"
         }
 
+        `$invokeai_ver = `"InvokeAI==5.0.2`"
+
+        if (`$USE_UV) {
+            uv pip install `$invokeai_ver --no-deps
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `$invokeai_ver --no-deps --use-pep517
+            }
+        } else {
+            python -m pip install `$invokeai_ver --no-deps --use-pep517
+        }
+        if (`$?) { # 检测是否下载成功
+            Print-Msg `"InvokeAI 安装成功`"
+        } else {
+            Print-Msg `"InvokeAI 安装失败, 无法进行 PyTorch 重装`"
+            return
+        }
+
+        Print-Msg `"重新安装 PyTorch`"
         # 获取 PyTorch 版本
-        `$pytorch_ver = Get-PyTorch-Version `$cuda_ver
+        `$pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI
         if (`$USE_UV) {
             uv pip install `$pytorch_ver.ToString().Split()
             if (!(`$?)) {
@@ -5178,6 +5467,30 @@ function Write-Manager-Scripts {
 }
 
 
+# 将安装器配置文件复制到管理脚本路径
+function Copy-InvokeAI-Installer-Config {
+    Print-Msg "为 InvokeAI Installer 管理脚本复制 InvokeAI Installer 配置文件中"
+
+    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    }
+
+    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
+    } elseif ((!($DisableProxy)) -and ($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
+    }
+
+    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
+    }
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
@@ -5190,6 +5503,7 @@ function Use-Install-Mode {
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
+    Copy-InvokeAI-Installer-Config
     Print-Msg "InvokeAI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"

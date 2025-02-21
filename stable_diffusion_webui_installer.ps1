@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 173
+$SD_WEBUI_INSTALLER_VERSION = 174
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3631,7 +3631,22 @@ function Get-Local-Setting {
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/install_sd_webui.txt`") {
+    if ((Get-Command git) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui`")
+        } elseif ((`$branch -eq `"lllyasviel/stable-diffusion-webui-forge`") -or (`$branch -eq `"lllyasviel/stable-diffusion-webui-forge.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
+        } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+        } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sdnext`")
+        }
+    } elseif (Test-Path `"`$PSScriptRoot/install_sd_webui.txt`") {
         `$arg.Add(`"-InstallBranch`", `"sd_webui`")
     } elseif (Test-Path `"`$PSScriptRoot/install_sd_webui_forge.txt`") {
         `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
@@ -6720,6 +6735,74 @@ function Write-Manager-Scripts {
 }
 
 
+# 将安装器配置文件复制到管理脚本路径
+function Copy-ComfyUI-Installer-Config {
+    Print-Msg "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
+
+    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    }
+
+    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
+            Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
+            Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
+    } else {
+        if (($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
+            Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
+            Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
+        }
+    }
+
+    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
+    }
+
+    if ((!($DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_gh_mirror.txt -> $InstallPath/disable_gh_mirror.txt"
+    } else {
+        if ((!($UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
+            Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
+            Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
+        }
+    }
+}
+
+
+# 将安装器配置文件复制到管理脚本路径
+function Copy-Stable-Diffusion-WebUI-Installer-Config {
+    Print-Msg "为 SD WebUI Installer 管理脚本复制 SD WebUI Installer 配置文件中"
+
+    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    }
+
+    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
+    } elseif ((!($DisableProxy)) -and ($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
+    }
+
+    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
+    }
+
+    if ((!($DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/disable_gh_mirror.txt -> $InstallPath/disable_gh_mirror.txt"
+    } elseif ((!($DisableGithubMirror)) -and (!($UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
+        Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
+    }
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
@@ -6745,6 +6828,7 @@ function Use-Install-Mode {
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
+    Copy-Stable-Diffusion-WebUI-Installer-Config
     Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
