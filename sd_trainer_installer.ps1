@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 221
+$SD_TRAINER_INSTALLER_VERSION = 222
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4981,6 +4981,86 @@ function global:Install-Hanamizuki {
 }
 
 
+# 检查 uv 是否需要更新
+function global:Check-uv-Version {
+    `$content = `"
+import re
+from importlib.metadata import version
+
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+
+def is_uv_need_update() -> bool:
+    try:
+        uv_ver = version('uv')
+    except:
+        return True
+    
+    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+        return True
+    else:
+        return False
+
+
+
+uv_minimum_ver = '`$UV_MINIMUM_VER'
+print(is_uv_need_update())
+`"
+    Print-Msg `"检测 uv 是否需要更新`"
+    `$status = `$(python -c `"`$content`")
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 uv 中`"
+        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
+        if (`$?) {
+            Print-Msg `"uv 更新成功`"
+        } else {
+            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
+        }
+    } else {
+        Print-Msg `"uv 无需更新`"
+    }
+}
+
+
+# 设置 uv 的使用状态
+function global:Set-uv {
+    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+        `$Global:USE_UV = `$false
+    } else {
+        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
+        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
+        # 切换 uv 指定的 Python
+        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+        }
+        `$Global:USE_UV = `$true
+        Check-uv-Version
+    }
+}
+
+
 # 检查 onnxruntime-gpu 版本问题
 function global:Check-Onnxruntime-GPU {
     `$content = `"
@@ -5126,6 +5206,7 @@ if __name__ == '__main__':
 
     if (`$need_reinstall_ort) {
         Print-Msg `"检测到 onnxruntime-gpu 所支持的 CUDA 版本 和 PyTorch 所支持的 CUDA 版本不匹配, 将执行重装操作`"
+        Set-uv
         if (`$need_switch_mirror) {
             `$tmp_pip_index_url = `$Env:PIP_INDEX_URL
             `$tmp_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
@@ -5152,14 +5233,6 @@ if __name__ == '__main__':
         }
         if (`$?) {
             Print-Msg `"onnxruntime-gpu 重新安装成功`"
-            if (Test-Path `"`$PSScriptRoot/lora-scripts/.git`") {
-                `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
-                `$array = `$git_remote -split `"/`"
-                `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-                if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
-                    Print-Msg `"检测到使用的是 Akegarasu/lora-scripts 分支, 需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查功能, 可运行 settings.ps1 后进行启动参数设置进行添加`"
-                }
-            }
         } else {
             Print-Msg `"onnxruntime-gpu 重新安装失败, 这可能导致部分功能无法正常使用, 如使用反推模型无法正常调用 GPU 导致推理降速`"
         }
@@ -5172,6 +5245,15 @@ if __name__ == '__main__':
         }
     } else {
         Print-Msg `"onnxruntime-gpu 无版本问题`"
+    }
+
+    if (Test-Path `"`$PSScriptRoot/lora-scripts/.git`") {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) -and ((!(Test-Path `"`$PSScriptRoot/launch_args.txt`")) -or ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -and (!(Select-String -Path `"`$PSScriptRoot/launch_args.txt`" -Pattern `"--skip-prepare-onnxruntime`"))))) {
+            Print-Msg `"检测到使用的是 Akegarasu/lora-scripts 分支, 需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查功能, 可运行 settings.ps1 后进行启动参数设置进行添加`"
+        }
     }
 }
 
@@ -5202,6 +5284,8 @@ Github：https://github.com/licyk
     Update-Aria2
     Check-SD-Trainer-Installer-Update
     Install-Hanamizuki
+    Set-uv
+    Check-uv-Version
     Check-Onnxruntime-GPU
     List-CMD
 
@@ -5310,24 +5394,6 @@ function Set-Github-Mirror {
 }
 
 
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
-    }
-}
-
-
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
@@ -5335,7 +5401,6 @@ function Main {
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     Pip-Mirror-Status
-    Set-uv
     if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`") {
         `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`"
     }
