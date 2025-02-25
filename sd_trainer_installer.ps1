@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 222
+$SD_TRAINER_INSTALLER_VERSION = 223
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -44,7 +44,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.22"
+$UV_MINIMUM_VER = "0.6.3"
 # SD-Trainer 仓库地址
 $SD_TRAINER_REPO = if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
     "https://github.com/Akegarasu/lora-scripts"
@@ -5638,8 +5638,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         指定 SD-Trainer Installer 安装 SD-Trainer 的路径, 使用绝对路径表示
         例如: .\sd_trainer_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
 
-    -InstallBranch (sd_trainer, kohya_gui)
-        指定 SD-Trainer Installer 安装的 SD-Trainer 分支
+    -InstallBranch <安装的 SD-Trainer 分支>
+        指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
         支持指定安装的分支如下:
             sd_trainer:     Akegarasu/SD-Trainer
             kohya_gui:      bmaltais/Kohya GUI

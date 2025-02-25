@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 194
+$COMFYUI_INSTALLER_VERSION = 195
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -43,7 +43,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.22"
+$UV_MINIMUM_VER = "0.6.3"
 # ComfyUI 仓库地址
 $COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
 # PATH
@@ -6450,7 +6450,7 @@ function Use-Update-Mode {
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 -InstallPath <安装 ComfyUI 的绝对路径> -UseUpdateMode -Help
+    .\comfyui_installer.ps1 -Help -InstallPath <安装 ComfyUI 的绝对路径> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
 
 参数:
     -Help
@@ -6463,7 +6463,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
     -UseUpdateMode
         指定 ComfyUI Installer 使用更新模式, 只对 ComfyUI Installer 的管理脚本进行更新
 
-        -DisablePipMirror
+    -DisablePipMirror
         禁用 ComfyUI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableProxy

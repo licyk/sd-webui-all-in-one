@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 114
+$FOOOCUS_INSTALLER_VERSION = 115
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -44,7 +44,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.5.22"
+$UV_MINIMUM_VER = "0.6.3"
 # Fooocus 仓库地址
 $FOOOCUS_REPO = if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
     "https://github.com/lllyasviel/Fooocus"
@@ -6594,7 +6594,7 @@ function Use-Update-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 -Help -InstallPath <安装 Fooocus 的绝对路径> -InstallBranch <安装的 Fooocus 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
+    .\fooocus_installer.ps1 -Help -InstallPath <安装 ComfyUI 的绝对路径> -InstallBranch <安装的 Fooocus 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
 
 参数:
     -Help
@@ -6604,8 +6604,8 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         指定 Fooocus Installer 安装 Fooocus 的路径, 使用绝对路径表示
         例如: .\fooocus_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 Fooocus Installer 安装 Fooocus 到 D:\Donwload 这个路径
 
-    -InstallBranch (fooocus, fooocus_mre, ruined_fooocus)
-        指定 Fooocus Installer 安装的 Fooocus 分支
+    -InstallBranch <安装的 Fooocus 分支>
+        指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
         支持指定安装的分支如下:
             fooocus:        lllyasviel/Fooocus
             fooocus_mre:    MoonRide303/Fooocus-MRE
