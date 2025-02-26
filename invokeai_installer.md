@@ -347,6 +347,12 @@ enable_partial_loading: true
 
 保存该文件并重新启动 InvokeAI 即可应用该设置。
 
+如果在 VAE 解码阶段出现爆显存，还可以启用 Tiled VAE，在配置文件中添加一下参数进行启用。
+
+```yaml
+force_tiled_decode: true
+```
+
 >[!NOTE]  
 >关于 InvokeAI 低显存模式详细说明可阅读：[Low-VRAM mode - Invoke](https://invoke-ai.github.io/InvokeAI/features/low-vram)。
 
