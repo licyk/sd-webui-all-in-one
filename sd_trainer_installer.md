@@ -68,6 +68,7 @@ _✨一键安装 SD-Trainer_
   - [以一种访问权限不允许的方式做了一个访问套接字的尝试](#以一种访问权限不允许的方式做了一个访问套接字的尝试)
   - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
   - [Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。](#torch-版本低于-230将无法正常训练-flux-模型请考虑升级到更新的版本)
+    - [修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPU 的问题](#修复使用-wd-标签器出现-onnxruntime-无法正常调用-gpu-的问题)
   - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [命令的使用](#命令的使用)
@@ -91,7 +92,6 @@ _✨一键安装 SD-Trainer_
     - [查看并切换 SD-Trainer 的版本](#查看并切换-sd-trainer-的版本)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
-    - [修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPu 的问题](#修复使用-wd-标签器出现-onnxruntime-无法正常调用-gpu-的问题)
 
 ***
 
@@ -765,6 +765,16 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 运行`reinstall_pytorch.ps1`脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD-Trainer Installer 的管理脚本进行更新，方法参看：[SD-Trainer Installer ### 更新 SD-Trainer 管理脚本](#更新-sd-trainer-管理脚本)
 
 
+### 修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPU 的问题
+运行`settings.ps1`，进入 SD-Trainer 启动参数设置，填入以下启动参数，或者在和`launch.ps1`脚本同级的目录创建一个`launch_args.txt`文件，填入以下启动参数，禁用 SD-Trainer 的 Onnxruntime 检查。
+
+```
+--skip-prepare-onnxruntime
+```
+
+再使用`reinstall_pytorch.ps1`更新 PyTorch 版本，更新完成后再运行`launch.ps1`启动 SD-Trainer，此时 SD-Trainer Installer 的 Onnxruntime 检查功能将检查 Onnxruntime-GPU 并修复。
+
+
 ## NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
 训练使用的模型可能有问题，尝试更换模型。
 
@@ -970,11 +980,4 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 
 # 查看其他命令的实际调用路径也是同样的方法
 # (Get-Command <command>).Source
-```
-
-### 修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPu 的问题
-```powershell
-Check-Onnxruntime-GPU
-
-# 修复后需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查
 ```
