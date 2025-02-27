@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 115
+$FOOOCUS_INSTALLER_VERSION = 116
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2068,7 +2068,7 @@ def get_onnxruntime_version_file() -> str:
     try:
         util = [p for p in importlib.metadata.files(package) if 'onnxruntime/capi/version_info.py' in str(p)][0]
         info_path = Path(util.locate()).as_posix()
-    except importlib.metadata.PackageNotFoundError:
+    except:
         info_path = None
 
     return info_path
@@ -2248,7 +2248,7 @@ from importlib.metadata import version
 
 try:
     ver = int(version('numpy').split('.')[0])
-except importlib.metadata.PackageNotFoundError:
+except:
     ver = -1
 
 if ver > 1:
@@ -6187,7 +6187,20 @@ function global:Install-Hanamizuki {
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki.exe`"
             if (`$?) {
                 Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki.exe`" `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`" -Force
+                `$content = `"
+                    @echo off
+                    echo Launch Hanamizuki...
+                    cd /d ```"%~dp0```"\Fooocus
+                    if exist .\hanamizuki.exe (
+                        .\hanamizuki.exe
+                    ) else (
+                        echo Hanamizuki not found
+                        pause
+                    )
+                `"
+                Set-Content -Encoding Default -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
                 Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`"))`"
+                Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             } else {
                 `$i += 1
