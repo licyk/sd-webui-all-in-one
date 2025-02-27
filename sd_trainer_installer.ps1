@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 225
+$SD_TRAINER_INSTALLER_VERSION = 226
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -574,10 +574,16 @@ function Check-Install {
     Install-PyTorch
     Install-SD-Trainer-Dependence
 
-    # 设置 Kohya GUI 的启动参数
-    if ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
-        Print-Msg "设置默认 Kohya GUI 启动参数"
-        $content = "--inbrowser --language zh-CN"
+    # 设置默认启动参数
+    if (!(Test-Path "$InstallPath/launch_args.txt")) {
+        Print-Msg "设置默认 SD-Trainer 启动参数"
+        if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
+            $content = "--skip-prepare-onnxruntime"
+        } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
+            $content = "--inbrowser --language zh-CN"
+        } else {
+            $content = "--skip-prepare-onnxruntime"
+        }
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
@@ -1485,7 +1491,6 @@ if __name__ == '__main__':
 
     if (`$need_reinstall_ort) {
         Print-Msg `"检测到 onnxruntime-gpu 所支持的 CUDA 版本 和 PyTorch 所支持的 CUDA 版本不匹配, 将执行重装操作`"
-        Set-uv
         if (`$need_switch_mirror) {
             `$tmp_pip_index_url = `$Env:PIP_INDEX_URL
             `$tmp_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
