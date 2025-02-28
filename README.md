@@ -141,7 +141,7 @@ Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) 
 
 
 ## Fooocus Installer
-Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) 的脚本，包含启动，管理 Fooocus 的工具。
+Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
 
 详细的说明[点击此处](./fooocus_installer.md)阅读。
 
