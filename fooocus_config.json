@@ -51,7 +51,7 @@
         "ill-xl-01-Blue_Archive_Official_8-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-Blue_Archive_Official_8-000038.safetensors",
         "ill-xl-01-deieaf_3-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-deieaf_3-000034.safetensors",
         "ill-xl-01-deyui_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-deyui_1-000034.safetensors",
-        "ill-xl-01-ekureea_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ekureea_1-000038.safetensors",
+        "ill-xl-01-ekureea_3-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ekureea_3-000036.safetensors",
         "ill-xl-01-fruitsrabbit_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-fruitsrabbit_1-000036.safetensors",
         "ill-xl-01-fuzichoco_4-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-fuzichoco_4-000034.safetensors",
         "ill-xl-01-gomalio_y_1-000032.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-gomalio_y_1-000032.safetensors",
@@ -85,11 +85,11 @@
         "ill-xl-01-suzume_3-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-suzume_3-000036.safetensors",
         "ill-xl-01-torino_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-torino_1-000036.safetensors",
         "ill-xl-01-tyomimas_3-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-tyomimas_3-000036.safetensors",
-        "ill-xl-01-viclim-monou_2-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-viclim-monou_2-000034.safetensors",
+        "ill-xl-10-viclim-monou_4-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-10-viclim-monou_4-000038.safetensors",
         "ill-xl-01-void_0_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-void_0_1-000036.safetensors",
         "ill-xl-01-wanke_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-wanke_1-000036.safetensors",
         "ill-xl-01-yeurei_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yeurei_1-000034.safetensors",
-        "ill-xl-01-yume335_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yume335_1-000036.safetensors",
+        "ill-xl-01-yume335_3-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yume335_3-000038.safetensors",
         "ill-xl-01-Yunouou10_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-Yunouou10_1-000034.safetensors",
         "ill-xl-01-wlop_2-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-wlop_2-000036.safetensors",
         "ill-xl-01-guo_jiang_mullay_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-guo_jiang_mullay_1-000034.safetensors",
@@ -97,7 +97,7 @@
         "ill-xl-01-DaylightAllure_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-DaylightAllure_1-000036.safetensors",
         "ill-xl-01-kagawayusaku_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-kagawayusaku_1-000034.safetensors",
         "ill-xl-01-ogipote_3-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ogipote_3-000038.safetensors",
-        "ill-xl-01-shiratama_shiratamaco_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-shiratama_shiratamaco_1-000036.safetensors",
+        "ill-xl-10-shiratama_shiratamaco_3-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-10-shiratama_shiratamaco_3-000038.safetensors",
         "ill-xl-01-yoneyama_mai_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yoneyama_mai_1-000036.safetensors",
         "ill-xl-01-genshin_cg_flat_color_style_2-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-genshin_cg_flat_color_style_2-000030.safetensors",
         "ill-xl-01-Batory_ken_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-Batory_ken_1-000036.safetensors",
@@ -121,8 +121,7 @@
         "ill-xl-01-BLACKmeow_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-BLACKmeow_1-000038.safetensors",
         "ill-xl-01-AkiTeaMix_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-AkiTeaMix_1-000036.safetensors",
         "ill-xl-01-ZUU_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ZUU_1-000038.safetensors",
-        "ill-xl-01-star_peach_1-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-star_peach_1-000030.safetensors",
-        "ill-xl-01-kasuga_haruhi_1.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-kasuga_haruhi_1.safetensors"
+        "ill-xl-01-star_peach_1-000030.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-star_peach_1-000030.safetensors"
     },
     "vae_downloads": {
         "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
