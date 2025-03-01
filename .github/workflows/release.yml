@@ -117,6 +117,9 @@ jobs:
           gh release upload archive fooocus_kaggle.ipynb
 
   Release-To-Gitee:
+    # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
+    # fork: https://github.com/licyk/action-gitee-release
+    # Gitee release id: https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
