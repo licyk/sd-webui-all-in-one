@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release delete-asset comfyui_installer comfyui_installer.ps1  -y || true
-          gh release upload comfyui_installer comfyui_installer.ps1 
+          gh release upload comfyui_installer comfyui_installer.ps1
 
       - name: Release SD WebUI Installer
         shell: bash
@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release delete-asset stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1  -y || true
-          gh release upload stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1 
+          gh release upload stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1
 
       - name: Release Fooocus Installer
         shell: bash
@@ -62,7 +62,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release delete-asset sd_trainer_script_installer sd_trainer_script_installer.ps1  -y || true
-          gh release upload sd_trainer_script_installer sd_trainer_script_installer.ps1 
+          gh release upload sd_trainer_script_installer sd_trainer_script_installer.ps1
 
       - name: Release config
         shell: bash
@@ -90,14 +90,14 @@ jobs:
           gh release delete-asset archive sd_webui_config.json -y || true
           gh release upload archive sd_webui_config.json
 
+          gh release delete-asset archive install_embed_python.ps1  -y || true
+          gh release upload archive install_embed_python.ps1
+
       - name: Release Jupyter Notebook
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset archive install_embed_python.ps1 -y || true
-          gh release upload archive install_embed_python.ps1
-
           gh release delete-asset archive sd_scripts_kaggle.ipynb -y || true
           gh release upload archive sd_scripts_kaggle.ipynb
 
@@ -149,6 +149,25 @@ jobs:
             fooocus_zh_cn.json
             libtcmalloc_minimal.so.4
             sd_webui_config.json
+            install_embed_python.ps1
+        run: |
+          python "${{ github.workspace }}/.github/gitee_release.py"
+
+      - name: Release Jupyter Notebook to Gitee
+        shell: bash
+        env:
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_release_id: 435278
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            sd_scripts_kaggle.ipynb
+            sd_webui_all_in_one_colab.ipynb
+            sd_webui_all_in_one.ipynb
+            sd_trainer_kaggle.ipynb
+            fooocus_colab.ipynb
+            fooocus_kaggle.ipynb
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
