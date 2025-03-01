@@ -141,7 +141,7 @@ jobs:
           gitee_token: ${{ secrets.gitee_token }}
           gitee_release_id: 408873
           gitee_upload_retry_times: 3
-          gitee_file_path: ${{ github.workspace }}
+          gitee_file_path: "${{ github.workspace }}/sd_trainer_installer.ps1"
           gitee_file_name: sd_trainer_installer.ps1
           # gitee_files: |
           #     sd_trainer_installer.ps1
