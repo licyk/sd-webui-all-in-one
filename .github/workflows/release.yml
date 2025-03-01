@@ -54,7 +54,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release delete-asset fooocus_installer fooocus_installer.ps1  -y || true
-          gh release upload fooocus_installer fooocus_installer.ps1 
+          gh release upload fooocus_installer fooocus_installer.ps1
+
+      - name: Release SD-Trainer-Script Installer
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset sd_trainer_script_installer sd_trainer_script_installer.ps1  -y || true
+          gh release upload sd_trainer_script_installer sd_trainer_script_installer.ps1 
 
       - name: Release config
         shell: bash
@@ -116,11 +124,13 @@ jobs:
         run: |
           cd "${{ github.workspace }}"
           ls "${{ github.workspace }}"
+
       - name: Config release Gitee script requirements
         shell: bash
         run: |
           pip install requests requests-toolbelt --break-system-package
-      - name: Release config script to Gitee
+
+      - name: Release config to Gitee
         shell: bash
         env:
           gitee_owner: licyk
@@ -129,7 +139,13 @@ jobs:
           gitee_release_id: 435278
           gitee_upload_retry_times: 3
           gitee_files: |
-              configure_env.bat
+            configure_env.bat
+            fooocus_config.json
+            fooocus_path_config_colab.json
+            fooocus_path_config_kaggle.json
+            fooocus_zh_cn.json
+            libtcmalloc_minimal.so.4
+            sd_webui_config.json
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -141,10 +157,10 @@ jobs:
           gitee_token: ${{ secrets.gitee_token }}
           gitee_release_id: 408873
           gitee_upload_retry_times: 3
-          gitee_file_path: "${{ github.workspace }}/sd_trainer_installer.ps1"
-          gitee_file_name: sd_trainer_installer.ps1
-          # gitee_files: |
-          #     sd_trainer_installer.ps1
+          # gitee_file_path: "${{ github.workspace }}/sd_trainer_installer.ps1"
+          # gitee_file_name: sd_trainer_installer.ps1
+          gitee_files: |
+            sd_trainer_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -156,9 +172,59 @@ jobs:
           gitee_token: ${{ secrets.gitee_token }}
           gitee_release_id: 402883
           gitee_upload_retry_times: 3
-          gitee_file_path: ${{ github.workspace }}
-          gitee_file_name: invokeai_installer.ps1
-          # gitee_files: |
-          #     invokeai_installer.ps1
+          gitee_files: |
+            invokeai_installer.ps1
+        run: |
+          python "${{ github.workspace }}/.github/gitee_release.py"
+
+      - name: Release ComfyUI Installer to Gitee
+        shell: bash
+        env:
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_release_id: 447269
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            comfyui_installer.ps1
+        run: |
+          python "${{ github.workspace }}/.github/gitee_release.py"
+
+      - name: Release SD WebUI Installer to Gitee
+        shell: bash
+        env:
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_release_id: 452051
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            stable_diffusion_webui_installer.ps1
+        run: |
+          python "${{ github.workspace }}/.github/gitee_release.py"
+
+      - name: Release Fooocus Installer to Gitee
+        shell: bash
+        env:
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_release_id: 467150
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            fooocus_installer.ps1
+        run: |
+          python "${{ github.workspace }}/.github/gitee_release.py"
+
+      - name: Release SD-Trainer-Script Installer to Gitee
+        shell: bash
+        env:
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_release_id: 461216
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            sd_trainer_script_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
