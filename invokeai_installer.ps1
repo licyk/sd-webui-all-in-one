@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 210
+$INVOKEAI_INSTALLER_VERSION = 211
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5223,9 +5223,9 @@ function global:pip {
 }
 
 Set-Alias pip3 pip
-Set-Alias pip3.10 pip
+Set-Alias pip3.11 pip
 Set-Alias python3 python
-Set-Alias python3.10 python
+Set-Alias python3.11 python
 
 
 # 列出 InvokeAI Installer 内置命令

@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 197
+$COMFYUI_INSTALLER_VERSION = 198
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -604,11 +604,11 @@ function Check-Install {
         $json_content = $json_content | ConvertTo-Json -Depth 4
         New-Item -ItemType Directory -Path "$InstallPath/ComfyUI/user/default" -Force > $null
         # 创建一个不带 BOM 的 UTF-8 编码器
-        $utf8Encoding = New-Object System.Text.UTF8Encoding($false)
+        $utf8_encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $streamWriter = [System.IO.StreamWriter]::new("$InstallPath/ComfyUI/user/default/comfy.settings.json", $false, $utf8Encoding)
-        $streamWriter.Write($json_content)
-        $streamWriter.Close()
+        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/ComfyUI/user/default/comfy.settings.json", $false, $utf8_encoding)
+        $stream_writer.Write($json_content)
+        $stream_writer.Close()
     }
 
     # 清理缓存
@@ -6040,24 +6040,13 @@ function global:Install-Hanamizuki {
 
     if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`") {
         Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
+        Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki.exe`"
             if (`$?) {
                 Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki.exe`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`" -Force
-                `$content = `"
-                    @echo off
-                    cd /d ```"%~dp0```"\ComfyUI
-                    if exist .\hanamizuki.exe (
-                        echo Launch Hanamizuki
-                        .\hanamizuki.exe
-                    ) else (
-                        echo Hanamizuki not found
-                        pause
-                    )
-                `"
-                Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
                 Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
@@ -6067,10 +6056,24 @@ function global:Install-Hanamizuki {
                     Print-Msg `"重试下载绘世启动器中`"
                 } else {
                     Print-Msg `"下载绘世启动器失败`"
+                    return
                 }
             }
         }
     }
+
+    `$content = `"
+        @echo off
+        cd /d ```"%~dp0```"\ComfyUI
+        if exist .\hanamizuki.exe (
+            echo Launch Hanamizuki
+            .\hanamizuki.exe
+        ) else (
+            echo Hanamizuki not found
+            pause
+        )
+    `"
+    Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
     if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/python/python.exe`")) {
@@ -6113,9 +6116,9 @@ function global:pip {
 }
 
 Set-Alias pip3 pip
-Set-Alias pip3.10 pip
+Set-Alias pip3.11 pip
 Set-Alias python3 python
-Set-Alias python3.10 python
+Set-Alias python3.11 python
 
 
 # 列出 ComfyUI Installer 内置命令
