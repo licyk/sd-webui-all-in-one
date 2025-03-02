@@ -161,9 +161,9 @@ $ tree -L 1
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_sd_webui.txt                  # 这是配置文件
+├── install_fooocus_mre.txt   # 这是配置文件
 ├── QQDownloads
-├── fooocus_installer.ps1  # 这是 Fooocus Installer
+├── fooocus_installer.ps1     # 这是 Fooocus Installer
 ├── z-noob_artist.csv
 └── 得意黑_横屏.prtextstyle
 

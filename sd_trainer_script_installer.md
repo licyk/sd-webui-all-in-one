@@ -91,7 +91,16 @@ _✨快速部署训练环境_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [SimpleTuner](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows 系统上部署 SD-Trainer-Script 的 PowerShell 脚本，并提供不同的管理工具。
+
+支持部署的 SD-Trainer-Script 分支如下。
+
+- [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)
+- [bghira/SimpleTuner](https://github.com/bghira/SimpleTuner)
+- [ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)
+- [a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)
+- [tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
+- [kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
 
 >[!WARNING]  
 >此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](./sd_trainer_installer.md) 部署训练工具并使用。
@@ -166,7 +175,7 @@ $ tree -L 1
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_sd_trainer.txt    # 这是配置文件
+├── install_simple_tuner.txt  # 这是配置文件
 ├── QQDownloads
 ├── sd_trainer_installer.ps1  # 这是 SD-Trainer-Script Installer
 ├── z-noob_artist.csv

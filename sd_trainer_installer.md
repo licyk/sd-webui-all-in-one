@@ -96,7 +96,12 @@ _✨一键安装 SD-Trainer_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows 系统上部署 SD-Trainer 的 PowerShell 脚本，并提供不同的管理工具。
+
+支持部署的 SD-Trainer 分支如下。
+
+- [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 
 ***
 
