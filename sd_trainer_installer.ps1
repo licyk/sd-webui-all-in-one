@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 228
+$SD_TRAINER_INSTALLER_VERSION = 229
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5489,6 +5489,7 @@ SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新�
 更多详细的帮助可在下面的链接查看。
 SD-Trainer Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
+Kohya GUI 项目地址：https://github.com/bmaltais/kohya_ss
 
 推荐的哔哩哔哩 UP 主：
 青龙圣者：https://space.bilibili.com/219296
@@ -5604,7 +5605,7 @@ function Use-Update-Mode {
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_installer.ps1 -Help -InstallPath <安装 SD-Trainer 的绝对路径> -InstallBranch <安装的 SD-Trainer 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
+    .\sd_trainer_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer 的绝对路径>] [-InstallBranch <安装的 SD-Trainer 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
 
 参数:
     -Help
@@ -5616,6 +5617,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 SD-Trainer 分支>
         指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
+        例如: .\sd_trainer_installer.ps1 -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
+        未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
         支持指定安装的分支如下:
             sd_trainer:     Akegarasu/SD-Trainer
             kohya_gui:      bmaltais/Kohya GUI
@@ -5630,7 +5633,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
         禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包

@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 212
+$INVOKEAI_INSTALLER_VERSION = 213
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5540,7 +5540,7 @@ function Use-Update-Mode {
 function Get-InvokeAI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\invokeai_installer.ps1 -Help -InstallPath <安装 InvokeAI 的绝对路径> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV
+    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV]
 
 参数:
     -Help
@@ -5560,7 +5560,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包

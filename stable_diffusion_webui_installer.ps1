@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 179
+$SD_WEBUI_INSTALLER_VERSION = 180
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6751,6 +6751,10 @@ https://sdnote.netlify.app/help/sd_webui
 更多详细的帮助可在下面的链接查看。
 SD WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 Stable Diffusion WebUI 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
+Stable Diffusion WebUI Forge 项目地址：https://github.com/lllyasviel/stable-diffusion-webui-forge
+Stable Diffusion WebUI reForge 项目地址：https://github.com/Panchovix/stable-diffusion-webui-reForge
+Stable Diffusion WebUI AMDGPU 项目地址：https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu
+SD Next 项目地址：https://github.com/vladmandic/automatic
 "
 
     if (Test-Path "$InstallPath/help.txt") {
@@ -6776,42 +6780,6 @@ function Write-Manager-Scripts {
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
-}
-
-
-# 将安装器配置文件复制到管理脚本路径
-function Copy-ComfyUI-Installer-Config {
-    Print-Msg "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
-
-    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
-        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
-    }
-
-    if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
-            Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$InstallPath" -Force
-            Print-Msg "$PSScriptRoot/disable_proxy.txt -> $InstallPath/disable_proxy.txt" -Force
-    } else {
-        if (($UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
-            Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$InstallPath" -Force
-            Print-Msg "$PSScriptRoot/proxy.txt -> $InstallPath/proxy.txt"
-        }
-    }
-
-    if ((!($DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$InstallPath" -Force
-        Print-Msg "$PSScriptRoot/disable_uv.txt -> $InstallPath/disable_uv.txt" -Force
-    }
-
-    if ((!($DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$InstallPath" -Force
-        Print-Msg "$PSScriptRoot/disable_gh_mirror.txt -> $InstallPath/disable_gh_mirror.txt"
-    } else {
-        if ((!($UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
-            Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
-            Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
-        }
-    }
 }
 
 
@@ -6893,7 +6861,7 @@ function Use-Update-Mode {
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 -Help -InstallPath <安装 Stable Diffusion WebUI 的绝对路径> -InstallBranch <安装的 Stable Diffusion WebUI 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
 
 参数:
     -Help
@@ -6905,6 +6873,8 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 Stable Diffusion WebUI 分支>
         指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_amdgpu, sdnext)
+        例如: .\stable_diffusion_webui_installer.ps1 -InstallBranch `"sd_webui_forge`", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
+        未指定该参数时, 默认安装 AUTOMATIC1111/Stable-Diffusion-WebUI 分支
         支持指定安装的分支如下:
             sd_webui:           AUTOMATIC1111/Stable-Diffusion-WebUI
             sd_webui_forge:     lllyasviel/Stable-Diffusion-WebUI-Forge
@@ -6922,7 +6892,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
         禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包

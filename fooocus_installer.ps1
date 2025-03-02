@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 119
+$FOOOCUS_INSTALLER_VERSION = 120
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6534,7 +6534,9 @@ https://github.com/lllyasviel/Fooocus/discussions/830
 
 更多详细的帮助可在下面的链接查看。
 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
-Fooocus 项目地址：https://github.com/AUTOMATIC1111/Fooocus
+Fooocus 项目地址：https://github.com/lllyasviel/Fooocus
+Fooocus-MRE 项目地址：https://github.com/MoonRide303/Fooocus-MRE
+RuinedFooocus 项目地址：https://github.com/runew0lf/RuinedFooocus
 "
 
     if (Test-Path "$InstallPath/help.txt") {
@@ -6636,7 +6638,7 @@ function Use-Update-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 -Help -InstallPath <安装 ComfyUI 的绝对路径> -InstallBranch <安装的 Fooocus 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
 
 参数:
     -Help
@@ -6648,6 +6650,8 @@ function Get-Fooocus-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 Fooocus 分支>
         指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
+        例如: .\fooocus_installer.ps1 -InstallBranch `"fooocus_mre`", 这将指定 Fooocus Installer 安装 MoonRide303/Fooocus-MRE 分支
+        未指定该参数时, 默认安装 lllyasviel/Fooocus 分支
         支持指定安装的分支如下:
             fooocus:        lllyasviel/Fooocus
             fooocus_mre:    MoonRide303/Fooocus-MRE
@@ -6663,7 +6667,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
         禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包

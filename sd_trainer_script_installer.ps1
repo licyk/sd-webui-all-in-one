@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 126
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 127
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5112,7 +5112,12 @@ SD-Trainer-Script Installer 的管理脚本在启动时会检查管理脚本的�
 
 更多详细的帮助可在下面的链接查看。
 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
-SD-Trainer-Script 项目地址：https://github.com/Akegarasu/sd-scripts
+sd-scripts 项目地址：https://github.com/kohya-ss/sd-scripts
+SimpleTuner 项目地址：https://github.com/bghira/SimpleTuner
+ai-toolkit 项目地址：https://github.com/ostris/ai-toolkit
+finetrainers 项目地址：https://github.com/a-r-r-o-w/finetrainers
+diffusion-pipe 项目地址：https://github.com/tdrussell/diffusion-pipe
+musubi-tuner 项目地址：https://github.com/kohya-ss/musubi-tuner
 
 推荐的哔哩哔哩 UP 主：
 青龙圣者：https://space.bilibili.com/219296
@@ -5237,7 +5242,7 @@ function Use-Update-Mode {
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_script_installer.ps1 -Help -InstallPath <安装 SD-Trainer-Script 的绝对路径> -InstallBranch <安装的 SD-Trainer-Script 分支> -UseUpdateMode -DisablePipMirror -DisableProxy -UseCustomProxy <代理服务器地址> -DisableUV -DisableGithubMirror -UseCustomGithubMirror <Github 镜像站地址>
+    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
 
 参数:
     -Help
@@ -5249,6 +5254,8 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 SD-Trainer-Script 分支>
         指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts, simple_tuner, ai_toolkit, finetrainers, diffusion_pipe, musubi_tuner)
+        例如: .\sd_trainer_script_installer.ps1 -InstallBranch `"simple_tuner`", 这将指定 SD-Trainer-Script Installer 安装 bghira/SimpleTuner 分支
+        未指定该参数时, 默认安装 kohya-ss/sd-scripts 分支
         支持指定安装的分支如下:
             sd_scripts:     kohya-ss/sd-scripts
             simple_tuner:   bghira/SimpleTuner
@@ -5267,7 +5274,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 --UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
         禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
