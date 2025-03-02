@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 214
+$INVOKEAI_INSTALLER_VERSION = 215
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -393,9 +393,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>'):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<'):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
@@ -431,8 +431,10 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
         return 'cu124'
+    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+        return 'cu126'
 
 
 if __name__ == '__main__':
@@ -456,6 +458,12 @@ if __name__ == '__main__':
         $Env:UV_FIND_LINKS = ""
         $Env:PIP_EXTRA_INDEX_URL = "$Env:PIP_EXTRA_INDEX_URL $PIP_EXTRA_INDEX_MIRROR_CU124"
         $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif ($mirror_type -eq "cu126") {
+        $cuda_ver = "+cu126"
+        $Env:PIP_FIND_LINKS = " "
+        $Env:UV_FIND_LINKS = ""
+        $Env:PIP_EXTRA_INDEX_URL = "$Env:PIP_EXTRA_INDEX_URL $PIP_EXTRA_INDEX_MIRROR_CU126"
+        $Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR_CU126
     } else {
         $cuda_ver = "+cu118"
     }
@@ -1735,9 +1743,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>'):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<'):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
@@ -1773,8 +1781,10 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
         return 'cu124'
+    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+        return 'cu126'
 
 
 if __name__ == '__main__':
@@ -1798,6 +1808,12 @@ if __name__ == '__main__':
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
         `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif (`$mirror_type -eq `"cu126`") {
+        `$cuda_ver = `"+cu126`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU126
     } else {
         `$cuda_ver = `"+cu118`"
     }
@@ -2786,9 +2802,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>=') or torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>'):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<=') or torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<'):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
@@ -2824,8 +2840,10 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1: # torch > 2.4.0
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
         return 'cu124'
+    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+        return 'cu126'
 
 
 if __name__ == '__main__':
@@ -2849,6 +2867,12 @@ if __name__ == '__main__':
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU124`"
         `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU124
+    } elseif (`$mirror_type -eq `"cu126`") {
+        `$cuda_ver = `"+cu126`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$Env:PIP_EXTRA_INDEX_URL `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+        `$Env:UV_EXTRA_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU126
     } else {
         `$cuda_ver = `"+cu118`"
     }
