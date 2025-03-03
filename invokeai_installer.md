@@ -148,6 +148,14 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 # 安装
 将 InvokeAI Installer 下载至本地，右键`invokeai_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
 
+>[!NOTE]  
+>InvokeAI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
+>- [设置 Pip 镜像源](#设置-pip-镜像源)
+>- [设置 uv 包管理器](#设置-uv-包管理器)
+>- [配置代理](#配置代理)
+>
+>通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
+
 |InvokeAI Installer 下载地址|
 |---|
 |[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/invokeai_installer/invokeai_installer.ps1)|
