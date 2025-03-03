@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 216
+$INVOKEAI_INSTALLER_VERSION = 217
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -393,9 +393,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<') and not torch_version.startswith('torch<='):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
@@ -1743,9 +1743,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<') and not torch_version.startswith('torch<='):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
@@ -2802,9 +2802,9 @@ def get_invokeai_require_torch_version() -> str:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
 
-    if torch_version.startswith('torch>'):
+    if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith('torch<'):
+    elif torch_version.startswith('torch<') and not torch_version.startswith('torch<='):
         return version_decrement(get_package_version(torch_version))
     elif torch_version.startswith('torch!='):
         return version_increment(get_package_version(torch_version))
