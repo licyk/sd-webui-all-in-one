@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 217
+$INVOKEAI_INSTALLER_VERSION = 218
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -221,14 +221,14 @@ function Install-Python {
 
     # 下载 Python
     Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-3.10.15-amd64.zip"
+    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-amd64.zip"
     if ($?) { # 检测是否下载成功并解压
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
         # 解压 Python
         Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -DestinationPath "$cache_path" -Force
+        Expand-Archive -Path "$Env:CACHE_HOME/python-amd64.zip" -DestinationPath "$cache_path" -Force
         # 清理空文件夹
         if (Test-Path "$path") {
             $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
@@ -236,7 +236,7 @@ function Install-Python {
         }
         New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
         Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$Env:CACHE_HOME/python-3.10.15-amd64.zip" -Force -Recurse
+        Remove-Item -Path "$Env:CACHE_HOME/python-amd64.zip" -Force -Recurse
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
