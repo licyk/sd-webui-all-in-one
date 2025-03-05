@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 218
+$INVOKEAI_INSTALLER_VERSION = 219
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3072,6 +3072,35 @@ function Set-uv {
 }
 
 
+# 显示 PyTorch 和 xFormers 版本
+function Get-PyTorch-And-xFormers-Version {
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print(version('torch'))
+except:
+    print('无')
+`"
+
+    `$torch_ver = `$(python -c `"`$content`")
+
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print(version('xformers'))
+except:
+    print('无')
+`"
+
+    `$xformers_ver = `$(python -c `"`$content`")
+
+    Print-Msg `"当前 PyTorch 版本: `$torch_ver`"
+    Print-Msg `"当前 xFormers 版本: `$xformers_ver`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
@@ -3080,6 +3109,7 @@ function Main {
     Set-uv
     Pip-Mirror-Status
 
+    Get-PyTorch-And-xFormers-Version
     Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
     `$arg = Read-Host `"=========================================>`"

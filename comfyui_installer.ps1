@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 204
+$COMFYUI_INSTALLER_VERSION = 205
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3608,6 +3608,35 @@ function Get-Drive-Support-CUDA-Version {
 }
 
 
+# 显示 PyTorch 和 xFormers 版本
+function Get-PyTorch-And-xFormers-Version {
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print(version('torch'))
+except:
+    print('无')
+`"
+
+    `$torch_ver = `$(python -c `"`$content`")
+
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print(version('xformers'))
+except:
+    print('无')
+`"
+
+    `$xformers_ver = `$(python -c `"`$content`")
+
+    Print-Msg `"当前 PyTorch 版本: `$torch_ver`"
+    Print-Msg `"当前 xFormers 版本: `$xformers_ver`"
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
@@ -3661,6 +3690,7 @@ function Main {
         Print-Msg `"PyTorch 版本列表`"
         `$go_to = 0
         Write-Host `$content
+        Get-PyTorch-And-xFormers-Version
         Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$cuda_support_ver`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
