@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 202
+$COMFYUI_INSTALLER_VERSION = 203
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3596,6 +3596,17 @@ print(ver)
 }
 
 
+# 获取驱动支持的最高 CUDA 版本
+function Get-Drive-Support-CUDA-Version {
+    if (Get-Command nvidia-smi) {
+        `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
+    } else {
+        `$cuda_ver = `"未知`"
+    }
+    return `$cuda_ver
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
@@ -3648,10 +3659,12 @@ function Main {
         Print-Msg `"PyTorch 版本列表`"
         `$go_to = 0
         Write-Host `$content
+        Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$(Get-Drive-Support-CUDA-Version)`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
-        Print-Msg `"2. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
+        Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若低于, 可尝试更新显卡驱动`"
+        Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         `$arg = Read-Host `"========================================>`"
 
         switch (`$arg) {

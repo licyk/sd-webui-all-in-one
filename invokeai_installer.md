@@ -392,14 +392,14 @@ D:/InvokeAI
 └── update_time.txt
 ```
 
-接下来需要将 InvokeAI 移动到`D:/InvokeAI`目录中，如果 InvokeAI 的文件夹名称不是`InvokeAI`，比如`Invoke`，需要将名称修改成`InvokeAI`。
+接下来需要将 InvokeAI 移动到`D:/InvokeAI`目录中，如果 InvokeAI 的文件夹名称不是`invokeai`，比如`Invoke`，需要将名称修改成`invokeai`。
 
 移动进去后此时的目录结构如下。
 
 ```
 D:/InvokeAI
 ├── activate.ps1
-├── InvokeAI
+├── invokeai
 │   ├── configs
 │   ├── databases
 │   ├── models
