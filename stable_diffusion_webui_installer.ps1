@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 183
+$SD_WEBUI_INSTALLER_VERSION = 184
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3641,7 +3641,7 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
+    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
@@ -4002,7 +4002,8 @@ print(ver)
 
 # 获取驱动支持的最高 CUDA 版本
 function Get-Drive-Support-CUDA-Version {
-    if (Get-Command nvidia-smi) {
+    Print-Msg `"获取显卡驱动支持的最高 CUDA 版本`"
+    if (Get-Command nvidia-smi 2> `$null) {
         `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
     } else {
         `$cuda_ver = `"未知`"
@@ -4058,16 +4059,17 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {
         Print-Msg `"PyTorch 版本列表`"
         `$go_to = 0
         Write-Host `$content
-        Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$(Get-Drive-Support-CUDA-Version)`"
+        Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$cuda_support_ver`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
-        Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若低于, 可尝试更新显卡驱动`"
+        Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         `$arg = Read-Host `"=========================================>`"
 
@@ -6430,6 +6432,14 @@ function global:Install-Hanamizuki {
         `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`",
         `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`"
     )
+    `$i = 0
+
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
+
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`") {
         Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`"))`"
@@ -6437,9 +6447,9 @@ function global:Install-Hanamizuki {
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki.exe`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
             if (`$?) {
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`" -Force
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`" -Force
                 Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
@@ -6457,13 +6467,20 @@ function global:Install-Hanamizuki {
 
     `$content = `"
         @echo off
-        cd /d ```"%~dp0```"\stable-diffusion-webui
+        if exist ```"%~dp0```"\stable-diffusion-webui (
+            cd /d ```"%~dp0```"\stable-diffusion-webui
+        ) else (
+            echo Stable Diffusion WebUI not found
+            pause
+            exit 1
+        )
         if exist .\hanamizuki.exe (
             echo Launch Hanamizuki
             .\hanamizuki.exe
         ) else (
             echo Hanamizuki not found
             pause
+            exit 1
         )
     `"
     Set-Content -Encoding Default -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content

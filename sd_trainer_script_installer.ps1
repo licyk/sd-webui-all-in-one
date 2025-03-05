@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 130
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 131
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1423,8 +1423,8 @@ function Main {
     `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/datasets`")
     `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/models`")
     `$Global:OUTPUT_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/outputs`")
-    `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git).Source)
-    `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python).Source)
+    `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git 2> `$null).Source)
+    `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python 2> `$null).Source)
 
     Print-Msg `"可用的预设变量`"
     Print-Msg `"ROOT_PATH: `$ROOT_PATH`"
@@ -2668,7 +2668,7 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git) -and (Test-Path `"`$PSScriptRoot/sd-scripts/.git`")) {
+    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/sd-scripts/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
@@ -3032,7 +3032,8 @@ print(ver)
 
 # 获取驱动支持的最高 CUDA 版本
 function Get-Drive-Support-CUDA-Version {
-    if (Get-Command nvidia-smi) {
+    Print-Msg `"获取显卡驱动支持的最高 CUDA 版本`"
+    if (Get-Command nvidia-smi 2> `$null) {
         `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
     } else {
         `$cuda_ver = `"未知`"
@@ -3081,16 +3082,17 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {
         Print-Msg `"PyTorch 版本列表`"
         `$go_to = 0
         Write-Host `$content
-        Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$(Get-Drive-Support-CUDA-Version)`"
+        Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$cuda_support_ver`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
-        Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若低于, 可尝试更新显卡驱动`"
+        Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         `$arg = Read-Host `"==================================================>`"
 
