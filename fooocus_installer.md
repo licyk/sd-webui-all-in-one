@@ -591,11 +591,11 @@ Fooocus Installer 支持使用命令参数设置安装 Fooocus 的参数，支�
 |参数|作用|
 |---|---|
 |`-InstallPath` <Fooocus 安装路径>|指定安装 Fooocus 的路径，使用绝对路径进行指定。|
-|`InstallBranch` <Fooocus 分支名>|指定 Fooocus Installer 安装的 Fooocus 的分支，Fooocus 分支名对应的分支如下：</br>`fooocus`: [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)</br>`fooocus_mre`: [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)</br>`ruined_fooocus`: [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
+|`-InstallBranch` <Fooocus 分支名>|指定 Fooocus Installer 安装的 Fooocus 的分支，Fooocus 分支名对应的分支如下：</br>`fooocus`: [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)</br>`fooocus_mre`: [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)</br>`ruined_fooocus`: [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
 |`-UseUpdateMode`|使用 Fooocus Installer 的更新脚本模式，不进行 Fooocus 的安装。|
 |`-DisablePipMirror`|禁用 Fooocus Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 Fooocus Installer 自动设置代理服务器。|
-|`·UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
+|`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
 |`-DisableUV`|禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
 |`-DisableGithubMirror`|禁用 Fooocus Installer 自动设置 Github 镜像源。|
 |`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
