@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 234
+$SD_TRAINER_INSTALLER_VERSION = 235
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -947,7 +947,22 @@ function Get-SD-Trainer-Launch-Args {
 
 # 设置 SD-Trainer 的快捷启动方式
 function Create-SD-Trainer-Shortcut {
-    `$filename = `"SD-Trainer`"
+    # 设置快捷方式名称
+    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/lora-scripts/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
+            `$filename = `"SD-Trainer`"
+        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
+            `$filename = `"Kohya-GUI`"
+        } else {
+            `$filename = `"SD-Trainer`"
+        }
+    } else {
+        `$filename = `"SD-Trainer`"
+    }
+
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/sd_trainer_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/sd_trainer_icon.ico`"
 
@@ -972,7 +987,7 @@ function Create-SD-Trainer-Shortcut {
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
     `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
     `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
-    `$shortcut.Arguments = `"-File ```"`$launch_script_path```"`"
+    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
 
     # 保存到桌面

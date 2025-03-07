@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 185
+$SD_WEBUI_INSTALLER_VERSION = 186
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1166,7 +1166,28 @@ function Get-Stable-Diffusion-WebUI-Launch-Args {
 
 # 设置 Stable Diffusion WebUI 的快捷启动方式
 function Create-Stable-Diffusion-WebUI-Shortcut {
-    `$filename = `"SD-WebUI`"
+    # 设置快捷方式名称
+    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
+            `$filename = `"SD-WebUI`"
+        } elseif ((`$branch -eq `"lllyasviel/stable-diffusion-webui-forge`") -or (`$branch -eq `"lllyasviel/stable-diffusion-webui-forge.git`")) {
+            `$filename = `"SD-WebUI-Forge`"
+        } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
+            `$filename = `"SD-WebUI-reForge`"
+        } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
+            `$filename = `"SD-WebUI-AMDGPU`"
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
+            `$filename = `"SD-Next`"
+        } else {
+            `$filename = `"SD-WebUI`"
+        }
+    } else {
+        `$filename = `"SD-WebUI`"
+    }
+
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
@@ -1191,7 +1212,7 @@ function Create-Stable-Diffusion-WebUI-Shortcut {
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
     `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
     `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
-    `$shortcut.Arguments = `"-File ```"`$launch_script_path```"`"
+    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
 
     # 保存到桌面

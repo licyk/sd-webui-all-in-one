@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 125
+$FOOOCUS_INSTALLER_VERSION = 126
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1668,7 +1668,24 @@ function Get-Fooocus-Launch-Args {
 
 # 设置 Fooocus 的快捷启动方式
 function Create-Fooocus-Shortcut {
-    `$filename = `"Fooocus`"
+    # 设置快捷方式名称
+    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
+            `$filename = `"Fooocus`"
+        } elseif ((`$branch -eq `"MoonRide303/Fooocus-MRE`") -or (`$branch -eq `"MoonRide303/Fooocus-MRE.git`")) {
+            `$filename = `"Fooocus-MRE`"
+        } elseif ((`$branch -eq `"runew0lf/RuinedFooocus`") -or (`$branch -eq `"runew0lf/RuinedFooocus.git`")) {
+            `$filename = `"RuinedFooocus`"
+        } else {
+            `$filename = `"Fooocus`"
+        }
+    } else {
+        `$filename = `"Fooocus`"
+    }
+
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
@@ -1693,7 +1710,7 @@ function Create-Fooocus-Shortcut {
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
     `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
     `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
-    `$shortcut.Arguments = `"-File ```"`$launch_script_path```"`"
+    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
 
     # 保存到桌面
