@@ -456,8 +456,13 @@ D:/SD-Trainer
 
 如果有 SD-Trainer 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
 ```powershell
+# 安装的是 Akegarasu/SD-Trainer 分支时
 Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Trainer.lnk" -Force
 Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer.lnk" -Force
+
+# 安装的是 bmaltais/Kohya GUI 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\Kohya-GUI.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\Kohya-GUI.lnk" -Force
 ```
 
 

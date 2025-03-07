@@ -549,8 +549,25 @@ D:/stable-diffusion-webui
 
 如果有 Stable Diffusion WebUI 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
 ```powershell
+# 安装的是 AUTOMATIC1111/Stable-Diffusion-WebUI 分支时
 Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-WebUI.lnk" -Force
 Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-WebUI.lnk" -Force
+
+# 安装的是 lllyasviel/Stable-Diffusion-WebUI-Forge 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-WebUI-Forge.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-WebUI-Forge.lnk" -Force
+
+# 安装的是 Panchovix/Stable-Diffusion-WebUI-reForge 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-WebUI-reForge.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-WebUI-reForge.lnk" -Force
+
+# 安装的是 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU 时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-WebUI-AMDGPU.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-WebUI-AMDGPU.lnk" -Force
+
+# 安装的是 vladmandic/SD.Next 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Next.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Next.lnk" -Force
 ```
 
 

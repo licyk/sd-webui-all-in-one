@@ -497,8 +497,17 @@ D:/Fooocus
 
 如果有 Fooocus 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
 ```powershell
+# 安装的是 lllyasviel/Fooocus 分支时
 Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\Fooocus.lnk" -Force
 Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\Fooocus.lnk" -Force
+
+# 安装的是 MoonRide303/Fooocus-MRE 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\Fooocus-MRE.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\Fooocus-MRE.lnk" -Force
+
+# 安装的是 runew0lf/RuinedFooocus 分支时
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\RuinedFooocus.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\RuinedFooocus.lnk" -Force
 ```
 
 
