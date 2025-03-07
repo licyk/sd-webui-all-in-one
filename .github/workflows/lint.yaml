@@ -11,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: List files in the repository
+      - name: Enter Workspace
         shell: pwsh
         run: |
           Set-Location -Path "${{ github.workspace }}"
-          Get-ChildItem -Path "${{ github.workspace }}"
       - name: Install PSScriptAnalyzer module
         shell: pwsh
         run: |
@@ -59,6 +58,10 @@ jobs:
           } catch {
               Write-Host "stable_diffusion_webui_installer.ps1 执行时出现错误: $_"
           }
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
       - name: Lint with PSScriptAnalyzer
         shell: pwsh
         run: |
