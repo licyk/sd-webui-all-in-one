@@ -645,37 +645,18 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 
 ## AttributeError: 'LayerNorm' object has no attribute 'get_num_patches'
-InvokeAI 5.6.0 和之后的版本暂时无法使用带有 Norm 块的 LyCORIS 模型，可尝试移除 LyCORIS 模型中的 Norm 块解决，下面是移除该 Norm 块的 Python 代码。
+InvokeAI 5.6.0 和之后的版本暂时无法使用带有 Norm 块的 LyCORIS 模型，可尝试使用 [remove_lycoris_norm_block.py](https://github.com/licyk/hub-action/blob/main/tools/remove_lycoris_norm_block.py) 脚本移除 LyCORIS 模型中的 Norm 块解决。
 
-```python
-import os
-from safetensors.torch import load_file, save_file
-
-# 这里修改为 LyCORIS 模型的路径
-lora_path = "D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034.safetensors"
-# 移除 Norm 块后的 LyCORIS 模型将保存在 D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034_without_norm_block.safetensors
-
-save_path = os.path.join(
-    os.path.dirname(lora_path),
-    os.path.splitext(os.path.basename(lora_path))[0] + "_without_norm_block.safetensors"
-)
-norm_block_list = []
-model_weights = load_file(lora_path)
-
-for block, _ in model_weights.items():
-    if "norm" in block:
-        norm_block_list.append(block)
-
-for block in norm_block_list:
-    del model_weights[block]
-
-save_file(model_weights, save_path)
-```
-
-将该 Python 代码保存到一个文件中，比如`remove_norm.py`，并放到`InvokeAI`文件夹中，然后运行`terminal.ps1`打开终端，运行该脚本。
+运行`terminal.ps1`打开终端，输入下面的命令下载 [remove_lycoris_norm_block.py](https://github.com/licyk/hub-action/blob/main/tools/remove_lycoris_norm_block.py)。
 
 ```powershell
-python remove_norm.py
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/licyk/hub-action/refs/heads/main/tools/remove_lycoris_norm_block.py -OutFile remove_lycoris_norm_block.py
+```
+
+下载该脚本成功后，找到 LyCORIS 模型的路径，比如`D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034.safetensors`，然后运行该脚本并传入该模型路径。
+
+```powershell
+python remove_lycoris_norm_block.py "D:/Downloads/BaiduNetdiskDownload/ill-xl-01-rurudo_3-000034.safetensors"
 ```
 
 得到移除 Norm 块的 LyCORIS 模型后即可导入到 InvokeAI 中使用。
