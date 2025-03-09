@@ -11,7 +11,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 206
+$COMFYUI_INSTALLER_VERSION = 207
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -803,7 +803,7 @@ function Check-ComfyUI-Installer-Update {
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"========================================>`"
+                    `$arg = (Read-Host `"========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -1879,7 +1879,7 @@ if __name__ == '__main__':
         Print-Msg `"提示:`"
         Print-Msg `"如果不选择按顺序安装冲突依赖, 则跳过安装冲突依赖直接运行 ComfyUI`"
         Print-Msg `"输入 yes 或 no 后回车`"
-        `$option = Read-Host `"========================================>`"
+        `$option = (Read-Host `"========================================>`").Trim()
         if (`$option -eq `"yes`" -or `$option -eq `"y`" -or `$option -eq `"YES`" -or `$option -eq `"Y`") {
             Print-Msg `"按顺序安装冲突组件依赖中`"
         } else {
@@ -2411,7 +2411,7 @@ function Check-ComfyUI-Installer-Update {
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"========================================>`"
+                    `$arg = (Read-Host `"========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -2828,7 +2828,7 @@ function Check-ComfyUI-Installer-Update {
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"========================================>`"
+                    `$arg = (Read-Host `"========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -3434,7 +3434,7 @@ function Check-ComfyUI-Installer-Update {
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"========================================>`"
+                    `$arg = (Read-Host `"========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -3697,7 +3697,7 @@ function Main {
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
-        `$arg = Read-Host `"========================================>`"
+        `$arg = (Read-Host `"========================================>`").Trim()
 
         switch (`$arg) {
             1 {
@@ -3926,7 +3926,7 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$use_force_reinstall = Read-Host `"========================================>`"
+    `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
@@ -3942,7 +3942,7 @@ function Main {
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$install_torch = Read-Host `"========================================>`"
+    `$install_torch = (Read-Host `"========================================>`").Trim()
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
@@ -4183,7 +4183,7 @@ function Check-ComfyUI-Installer-Update {
                 if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"========================================>`"
+                    `$arg = (Read-Host `"========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 ComfyUI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -4665,7 +4665,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"========================================>`"
+    return (Read-Host `"========================================>`").Trim()
 }
 
 
@@ -5083,7 +5083,7 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"========================================>`"
+    return (Read-Host `"========================================>`").Trim()
 }
 
 

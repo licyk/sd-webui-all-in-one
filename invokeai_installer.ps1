@@ -9,7 +9,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 220
+$INVOKEAI_INSTALLER_VERSION = 221
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -822,7 +822,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"=========================================>`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -1541,7 +1541,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"=========================================>`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -2155,7 +2155,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"=========================================>`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -2969,7 +2969,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"=========================================>`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -3112,7 +3112,7 @@ function Main {
     Get-PyTorch-And-xFormers-Version
     Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$arg = Read-Host `"=========================================>`"
+    `$arg = (Read-Host `"=========================================>`").Trim()
     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
         Print-Msg `"卸载原有的 PyTorch`"
         python -m pip uninstall torch torchvision xformers -y
@@ -3348,7 +3348,7 @@ function Check-InvokeAI-Installer-Update {
                 if (`$latest_version -gt `$INVOKEAI_INSTALLER_VERSION) {
                     Print-Msg `"检测到 InvokeAI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
                     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = Read-Host `"=========================================>`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
                     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
                         Print-Msg `"调用 InvokeAI Installer 进行更新中`"
                         . `"`$Env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
@@ -3827,7 +3827,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"=========================================>`"
+    return (Read-Host `"=========================================>`").Trim()
 }
 
 
@@ -4320,7 +4320,7 @@ function Get-InvokeAI-Env-Check-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return Read-Host `"=========================================>`"
+    return (Read-Host `"=========================================>`").Trim()
 }
 
 
