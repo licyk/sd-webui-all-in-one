@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 128
+$FOOOCUS_INSTALLER_VERSION = 129
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2701,6 +2701,7 @@ function Main {
         }
     } else {
         Print-Msg `"拉取 Fooocus 更新内容失败`"
+        Print-Msg `"更新 Fooocus 失败, 请检查控制台日志。可尝试重新运行 Fooocus Installer 更新脚本进行重试`"
     }
 
     Print-Msg `"退出 Fooocus 更新脚本`"
