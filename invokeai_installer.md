@@ -64,6 +64,7 @@ _✨一键安装 InvokeAI_
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [NotFoundError: 无法在“Node”上执行“removeChild”: 要删除的节点不是此节点的子节点](#notfounderror-无法在node上执行removechild-要删除的节点不是此节点的子节点)
   - [AttributeError: 'LayerNorm' object has no attribute 'get\_num\_patches'](#attributeerror-layernorm-object-has-no-attribute-get_num_patches)
+  - [InvokeAI 模型管理器中部分模型无法下载](#invokeai-模型管理器中部分模型无法下载)
   - [命令的使用](#命令的使用)
     - [1. 使用自动环境激活脚本](#1-使用自动环境激活脚本)
     - [2. 手动输入命令激活](#2-手动输入命令激活)
@@ -660,6 +661,10 @@ python remove_lycoris_norm_block.py "D:/Downloads/BaiduNetdiskDownload/ill-xl-01
 ```
 
 得到移除 Norm 块的 LyCORIS 模型后即可导入到 InvokeAI 中使用。
+
+
+## InvokeAI 模型管理器中部分模型无法下载
+在 InvokeAI 的模型管理器中，部分模型在 HuggingFace 上被设置的权限，下载时需要 HuggingFace 令牌才能下载。可在 InvokeAI 模型管理器 -> 添加模型 -> HuggingFace 令牌选项获取并添加 HuggingFace 令牌。
 
 
 ## 命令的使用
