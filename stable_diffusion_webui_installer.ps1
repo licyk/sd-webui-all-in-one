@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 187
+$SD_WEBUI_INSTALLER_VERSION = 188
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1135,6 +1135,11 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
+    }
+
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
@@ -1142,10 +1147,6 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
-        }
         Check-uv-Version
     }
 }
@@ -2151,16 +2152,6 @@ function Get-Stable-Diffusion-WebUI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # 修复 Git 分支游离
 function Fix-Git-Point-Off-Set {
     param(
@@ -2245,86 +2236,6 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
                 }
             }
         }
-    }
-}
-
-
-# 检查 uv 是否需要更新
-function Check-uv-Version {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-
-def compare_versions(version1, version2) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-
-    return 0
-
-
-
-def is_uv_need_update() -> bool:
-    try:
-        uv_ver = version('uv')
-    except:
-        return True
-    
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
-        return True
-    else:
-        return False
-
-
-
-uv_minimum_ver = '`$UV_MINIMUM_VER'
-print(is_uv_need_update())
-`"
-    Print-Msg `"检测 uv 是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Print-Msg `"更新 uv 中`"
-        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
-        if (`$?) {
-            Print-Msg `"uv 更新成功`"
-        } else {
-            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
-        }
-    } else {
-        Print-Msg `"uv 无需更新`"
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
     }
 }
 
@@ -2427,9 +2338,7 @@ function Main {
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Check-Stable-Diffusion-WebUI-Installer-Update
-    Set-uv
     Set-Github-Mirror
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
@@ -2454,6 +2363,7 @@ function Main {
         }
     } else {
         Print-Msg `"拉取 Stable Diffusion WebUI 更新内容失败`"
+        Print-Msg `"更新 Stable Diffusion WebUI 失败, 请检查控制台日志。可尝试重新运行 SD WebUI Installer 更新脚本进行重试`"
     }
 
     Print-Msg `"退出 Stable Diffusion WebUI 更新脚本`"
@@ -2569,16 +2479,6 @@ function Get-Stable-Diffusion-WebUI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # SD WebUI Installer 更新检测
 function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
@@ -2644,86 +2544,6 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
                 }
             }
         }
-    }
-}
-
-
-# 检查 uv 是否需要更新
-function Check-uv-Version {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-
-def compare_versions(version1, version2) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-
-    return 0
-
-
-
-def is_uv_need_update() -> bool:
-    try:
-        uv_ver = version('uv')
-    except:
-        return True
-    
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
-        return True
-    else:
-        return False
-
-
-
-uv_minimum_ver = '`$UV_MINIMUM_VER'
-print(is_uv_need_update())
-`"
-    Print-Msg `"检测 uv 是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Print-Msg `"更新 uv 中`"
-        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
-        if (`$?) {
-            Print-Msg `"uv 更新成功`"
-        } else {
-            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
-        }
-    } else {
-        Print-Msg `"uv 无需更新`"
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
     }
 }
 
@@ -2916,8 +2736,6 @@ function Main {
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Check-Stable-Diffusion-WebUI-Installer-Update
-    Set-uv
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
@@ -3154,16 +2972,6 @@ function Get-Stable-Diffusion-WebUI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # 修复 Git 分支游离
 function Fix-Git-Point-Off-Set {
     param(
@@ -3248,86 +3056,6 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
                 }
             }
         }
-    }
-}
-
-
-# 检查 uv 是否需要更新
-function Check-uv-Version {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-
-def compare_versions(version1, version2) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-
-    return 0
-
-
-
-def is_uv_need_update() -> bool:
-    try:
-        uv_ver = version('uv')
-    except:
-        return True
-    
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
-        return True
-    else:
-        return False
-
-
-
-uv_minimum_ver = '`$UV_MINIMUM_VER'
-print(is_uv_need_update())
-`"
-    Print-Msg `"检测 uv 是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Print-Msg `"更新 uv 中`"
-        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
-        if (`$?) {
-            Print-Msg `"uv 更新成功`"
-        } else {
-            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
-        }
-    } else {
-        Print-Msg `"uv 无需更新`"
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
     }
 }
 
@@ -3465,9 +3193,7 @@ function Main {
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Check-Stable-Diffusion-WebUI-Installer-Update
-    Set-uv
     Set-Github-Mirror
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
@@ -3950,16 +3676,17 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
+    }
+
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
-        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -4518,16 +4245,6 @@ function Get-Stable-Diffusion-WebUI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
@@ -5079,7 +4796,6 @@ function Main {
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
     Check-Stable-Diffusion-WebUI-Installer-Update
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
@@ -5297,16 +5013,6 @@ function Get-Stable-Diffusion-WebUI-Installer-Version {
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
     Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
 }
 
 
@@ -6041,7 +5747,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Pip-Mirror-Status
+
     while (`$true) {
         `$go_to = 0
         Print-Msg `"-----------------------------------------------------`"

@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 236
+$SD_TRAINER_INSTALLER_VERSION = 237
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -916,6 +916,11 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+    }
+
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
@@ -923,10 +928,6 @@ function Set-uv {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
         `$Global:USE_UV = `$true
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
-        }
         Check-uv-Version
     }
 }
@@ -1783,16 +1784,6 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # 修复 Git 分支游离
 function Fix-Git-Point-Off-Set {
     param(
@@ -1809,46 +1800,6 @@ function Fix-Git-Point-Off-Set {
             git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
         }
     }
-}
-
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version {
-    `$content = `"
-from importlib.metadata import version
-
-pytorch_version = []
-
-try:
-    pytorch_version.append('torch==' + version('torch'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchvision==' + version('torchvision'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchaudio==' + version('torchaudio'))
-except:
-    pass
-
-try:
-    pytorch_version.append('xformers==' + version('xformers'))
-except:
-    pass
-
-version_list = ''
-
-for i in pytorch_version:
-    version_list = f'{version_list} {i}'
-
-print(version_list)
-`"
-
-    `$pytorch_ver = `$(python -c `"`$content`")
-    return `$pytorch_ver
 }
 
 
@@ -1917,86 +1868,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    }
-}
-
-
-# 检查 uv 是否需要更新
-function Check-uv-Version {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-
-def compare_versions(version1, version2) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-
-    return 0
-
-
-
-def is_uv_need_update() -> bool:
-    try:
-        uv_ver = version('uv')
-    except:
-        return True
-    
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
-        return True
-    else:
-        return False
-
-
-
-uv_minimum_ver = '`$UV_MINIMUM_VER'
-print(is_uv_need_update())
-`"
-    Print-Msg `"检测 uv 是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Print-Msg `"更新 uv 中`"
-        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
-        if (`$?) {
-            Print-Msg `"uv 更新成功`"
-        } else {
-            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
-        }
-    } else {
-        Print-Msg `"uv 无需更新`"
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
     }
 }
 
@@ -2098,19 +1969,13 @@ function Main {
     Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
-    Set-uv
     Set-Github-Mirror
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         return
     }
 
-    # 记录上次的路径
-    `$current_path = `$(Get-Location).ToString()
-
-    `$update_fail = 0
     Print-Msg `"拉取 SD-Trainer 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/lora-scripts`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
@@ -2121,7 +1986,7 @@ function Main {
         `$commit_hash = `$(git -C `"`$PSScriptRoot/lora-scripts`" log origin/`$branch --max-count 1 --format=`"%h`")
         git -C `"`$PSScriptRoot/lora-scripts`" reset --hard `$commit_hash --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        
+
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"SD-Trainer 已为最新版`"
             `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
@@ -2129,44 +1994,9 @@ function Main {
             Print-Msg `"SD-Trainer 更新成功`"
             `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         }
-
-        Print-Msg `"更新 SD-Trainer 依赖中`"
-        Set-Location `"`$PSScriptRoot/lora-scripts`"
-        if (`$USE_UV) {
-            uv pip install -r requirements.txt `$(Get-PyTorch-Version).ToString().Split() --upgrade
-            if (!(`$?)) {
-                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r requirements.txt --upgrade
-            }
-        } else {
-            python -m pip install -r requirements.txt --upgrade
-        }
-        if (`$?) {
-            Print-Msg `"SD-Trainer 依赖更新成功`"
-            `$req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"SD-Trainer 依赖更新失败`"
-            `$req_update_msg = `"更新失败`"
-            `$update_fail = 1
-        }
-
-        Set-Location `"`$current_path`"
     } else {
         Print-Msg `"拉取 SD-Trainer 更新内容失败`"
-        `$core_update_msg = `"拉取 SD-Trainer 更新内容失败, 无法进行更新`"
-        `$req_update_msg = `"因 SD-Trainer 组件更新失败, 不进行更新`"
-        `$update_fail = 1
-    }
-
-    Print-Msg `"==================================================================`"
-    Print-Msg `"SD-Trainer 更新结果：`"
-    Print-Msg `"SD-Trainer 组件: `$core_update_msg`"
-    Print-Msg `"SD-Trainer 依赖: `$req_update_msg`"
-    Print-Msg `"==================================================================`"
-    if (`$update_fail -eq 0) {
-        Print-Msg `"SD-Trainer 更新成功`"
-    } else {
-        Print-Msg `"SD-Trainer 更新失败, 请检查控制台日志。可尝试重新运行 SD-Trainer 更新脚本进行重试`"
+        Print-Msg `"更新 SD-Trainer 失败, 请检查控制台日志。可尝试重新运行 SD-Traine Installer 更新脚本进行重试`"
     }
 
     Print-Msg `"退出 SD-Trainer 更新脚本`"
@@ -2282,56 +2112,6 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
-# 获取 PyTorch 版本
-function Get-PyTorch-Version {
-    `$content = `"
-from importlib.metadata import version
-
-pytorch_version = []
-
-try:
-    pytorch_version.append('torch==' + version('torch'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchvision==' + version('torchvision'))
-except:
-    pass
-
-try:
-    pytorch_version.append('torchaudio==' + version('torchaudio'))
-except:
-    pass
-
-try:
-    pytorch_version.append('xformers==' + version('xformers'))
-except:
-    pass
-
-version_list = ''
-
-for i in pytorch_version:
-    version_list = f'{version_list} {i}'
-
-print(version_list)
-`"
-
-    `$pytorch_ver = `$(python -c `"`$content`")
-    return `$pytorch_ver
-}
-
-
 # SD-Trainer Installer 更新检测
 function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
@@ -2397,86 +2177,6 @@ function Check-SD-Trainer-Installer-Update {
                 }
             }
         }
-    }
-}
-
-
-# 检查 uv 是否需要更新
-function Check-uv-Version {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-
-def compare_versions(version1, version2) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-
-    return 0
-
-
-
-def is_uv_need_update() -> bool:
-    try:
-        uv_ver = version('uv')
-    except:
-        return True
-    
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
-        return True
-    else:
-        return False
-
-
-
-uv_minimum_ver = '`$UV_MINIMUM_VER'
-print(is_uv_need_update())
-`"
-    Print-Msg `"检测 uv 是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Print-Msg `"更新 uv 中`"
-        python -m pip install -U `"uv>=`$UV_MINIMUM_VER`"
-        if (`$?) {
-            Print-Msg `"uv 更新成功`"
-        } else {
-            Print-Msg `"uv 更新失败, 可能会造成 uv 部分功能异常`"
-        }
-    } else {
-        Print-Msg `"uv 无需更新`"
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$Global:USE_UV = `$false
-    } else {
-        Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
-        }
-        `$Global:USE_UV = `$true
-        Check-uv-Version
     }
 }
 
@@ -2648,8 +2348,6 @@ function Main {
     Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
-    Set-uv
-    Pip-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
@@ -3142,16 +2840,17 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+    }
+
     if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
         Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
         Print-Msg `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
-        # 切换 uv 指定的 Python
-        if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-            `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
-        }
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
@@ -3656,16 +3355,6 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
-}
-
-
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
@@ -3988,7 +3677,6 @@ function Main {
     Get-SD-Trainer-Installer-Version
     Set-Proxy
     Check-SD-Trainer-Installer-Update
-    Pip-Mirror-Status
 
     `$to_exit = 0
     `$go_to = 0
@@ -4201,16 +3889,6 @@ function Get-SD-Trainer-Installer-Version {
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
     Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
-# Pip 镜像源状态
-function Pip-Mirror-Status {
-    if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
-    } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
-    }
 }
 
 
@@ -4948,7 +4626,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
     Set-Proxy
-    Pip-Mirror-Status
+
     while (`$true) {
         `$go_to = 0
         Print-Msg `"-----------------------------------------------------`"
