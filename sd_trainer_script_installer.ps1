@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 134
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 135
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -46,7 +46,7 @@ $GITHUB_MIRROR_LIST = @(
 $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.6.3"
+$UV_MINIMUM_VER = "0.6.5"
 # SD-Trainer-Script 仓库地址
 $SD_TRAINER_SCRIPT_REPO = if ((Test-Path "$PSScriptRoot/install_sd_scripts.txt") -or ($InstallBranch -eq "sd_scripts")) {
     "https://github.com/kohya-ss/sd-scripts"
@@ -75,12 +75,13 @@ $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
 $Env:PIP_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
 $Env:PIP_FIND_LINKS = $PIP_FIND_MIRROR
-$Env:UV_INDEX_URL = $PIP_INDEX_MIRROR
-$Env:UV_EXTRA_INDEX_URL = $PIP_EXTRA_INDEX_MIRROR
+$Env:UV_DEFAULT_INDEX = $PIP_INDEX_MIRROR
+$Env:UV_INDEX = $PIP_EXTRA_INDEX_MIRROR
 $Env:UV_FIND_LINKS = $PIP_FIND_MIRROR
 $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:UV_CONCURRENT_DOWNLOADS = 50
+$Env:UV_INDEX_STRATEGY = "unsafe-best-match"
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
@@ -686,12 +687,13 @@ function Write-Library-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -1491,12 +1493,13 @@ function Write-Update-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -1819,12 +1822,13 @@ function Write-Switch-Branch-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -2458,12 +2462,13 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -2896,14 +2901,14 @@ function Main {
                 `$torch_ver = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
                 `$xformers_ver = `"xformers==0.0.27+cu118`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$go_to = 1
             }
             18 {
                 `$torch_ver = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
                 `$xformers_ver = `"xformers==0.0.27`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2912,14 +2917,14 @@ function Main {
                 `$torch_ver = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
                 `$xformers_ver = `"xformers==0.0.27.post2+cu118`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
                 `$go_to = 1
             }
             20 {
                 `$torch_ver = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
                 `$xformers_ver = `"xformers==0.0.27.post2`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2928,7 +2933,7 @@ function Main {
                 `$torch_ver = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
                 `$xformers_ver = `"xformers===0.0.28.post1`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2937,7 +2942,7 @@ function Main {
                 `$torch_ver = `"torch==2.5.0+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.0+cu124`"
                 `$xformers_ver = `"xformers==0.0.28.post2`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2946,7 +2951,7 @@ function Main {
                 `$torch_ver = `"torch==2.5.1+cu124 torchvision==0.20.1+cu124 torchaudio==2.5.1+cu124`"
                 `$xformers_ver = `"xformers==0.0.28.post3`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2955,7 +2960,7 @@ function Main {
                 `$torch_ver = `"torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124`"
                 `$xformers_ver = `"xformers==0.0.29.post3`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU124`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -2964,7 +2969,7 @@ function Main {
                 `$torch_ver = `"torch==2.6.0+cu126 torchvision==0.21.0+cu126 torchaudio==2.6.0+cu126`"
                 `$xformers_ver = `"xformers==0.0.29.post3`"
                 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
-                `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU126`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
@@ -3111,12 +3116,13 @@ function Write-Download-Model-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -3648,12 +3654,13 @@ function Write-SD-Trainer-Script-Installer-Settings-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-# `$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -4456,12 +4463,13 @@ function Write-Env-Activate-Script {
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`" } else { `$PIP_EXTRA_INDEX_MIRROR }
 `$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
 `$Env:UV_LINK_MODE = `"copy`"
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
