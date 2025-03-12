@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 130
+$FOOOCUS_INSTALLER_VERSION = 131
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -25,7 +25,7 @@ $USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) -and
 $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
 $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
-# $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
+$PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
@@ -47,6 +47,8 @@ $PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+c
 $XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.6.5"
+# Aria2 最低版本
+$ARIA2_MINIMUM_VER = "1.37.0"
 # Fooocus 仓库地址
 $FOOOCUS_REPO = if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
     "https://github.com/lllyasviel/Fooocus"
@@ -76,6 +78,8 @@ $Env:UV_LINK_MODE = "copy"
 $Env:UV_HTTP_TIMEOUT = 30
 $Env:UV_CONCURRENT_DOWNLOADS = 50
 $Env:UV_INDEX_STRATEGY = "unsafe-best-match"
+$Env:UV_CONFIG_FILE = "nul"
+$Env:PIP_CONFIG_FILE = "nul"
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
@@ -1327,7 +1331,7 @@ function Write-Launch-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -1346,6 +1350,8 @@ function Write-Launch-Script {
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -1365,6 +1371,8 @@ function Write-Launch-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -2414,7 +2422,7 @@ function Write-Update-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -2433,6 +2441,8 @@ function Write-Update-Script {
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -2452,6 +2462,8 @@ function Write-Update-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -2742,7 +2754,7 @@ function Write-Switch-Branch-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -2761,6 +2773,8 @@ function Write-Switch-Branch-Script {
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -2780,6 +2794,8 @@ function Write-Switch-Branch-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -3357,7 +3373,7 @@ function Write-PyTorch-ReInstall-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -3365,6 +3381,8 @@ function Write-PyTorch-ReInstall-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -3384,6 +3402,8 @@ function Write-PyTorch-ReInstall-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -4070,7 +4090,7 @@ function Write-Download-Model-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -4078,6 +4098,8 @@ function Write-Download-Model-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -4097,6 +4119,8 @@ function Write-Download-Model-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -4241,6 +4265,90 @@ function Check-Fooocus-Installer-Update {
                 }
             }
         }
+    }
+}
+
+
+# 检查 Aria2 版本并更新
+function Check-Aria2-Version {
+    `$content = `"
+import re
+import subprocess
+
+
+
+def get_aria2_ver() -> str:
+    try:
+        aria2_output = subprocess.check_output(['aria2c', '--version'], text=True).splitlines()
+    except:
+        return None
+
+    for text in aria2_output:
+        version_match = re.search(r'aria2 version (\d+\.\d+\.\d+)', text)
+        if version_match:
+            return version_match.group(1)
+
+    return None
+
+
+def compare_versions(version1, version2) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+def aria2_need_update(aria2_min_ver: str) -> bool:
+    aria2_ver = get_aria2_ver()
+
+    if aria2_ver:
+        if compare_versions(aria2_ver, aria2_min_ver) == -1:
+            return True
+        else:
+            return False
+    else:
+        return True
+
+
+print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
+`"
+    Print-Msg `"检查 Aria2 是否需要更新`"
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
+    `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
+    `$status = `$(python -c `"`$content`")
+
+    if (`$status -eq `"True`") {
+        Print-Msg `"更新 Aria2 中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+        if (`$?) {
+            if ((Test-Path `"`$PSScriptRoot/Fooocus/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/Fooocus/git/bin/git.exe`")) {
+                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/Fooocus/git/bin/aria2c.exe`" -Force
+            } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
+                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+            } else {
+                New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
+                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+            }
+            Print-Msg `"Aria2 更新完成`"
+        } else {
+            Print-Msg `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`"
+        }
+    } else {
+        Print-Msg `"Aria2 无需更新`"
     }
 }
 
@@ -4741,6 +4849,7 @@ function Main {
     Get-Fooocus-Installer-Version
     Set-Proxy
     Check-Fooocus-Installer-Update
+    Check-Aria2-Version
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
@@ -4894,7 +5003,7 @@ function Write-Fooocus-Installer-Settings-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -4902,6 +5011,8 @@ function Write-Fooocus-Installer-Settings-Script {
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -4921,6 +5032,8 @@ function Write-Fooocus-Installer-Settings-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -5828,7 +5941,7 @@ function Write-Env-Activate-Script {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
@@ -5847,6 +5960,8 @@ function Write-Env-Activate-Script {
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
 `$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
@@ -5866,6 +5981,8 @@ function Write-Env-Activate-Script {
 `$Env:UV_HTTP_TIMEOUT = 30
 `$Env:UV_CONCURRENT_DOWNLOADS = 50
 `$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
 `$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
@@ -6522,7 +6639,7 @@ function Use-Update-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
 
 参数:
     -Help
