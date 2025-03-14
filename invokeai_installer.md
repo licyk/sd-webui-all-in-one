@@ -42,7 +42,6 @@ _✨一键安装 InvokeAI_
   - [重装 Git](#重装-git)
   - [重置 InvokeAI 数据库](#重置-invokeai-数据库)
   - [配置 InvokeAI](#配置-invokeai)
-  - [下载 InvokeAI 模型配置文件](#下载-invokeai-模型配置文件)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
   - [重装 PyTorch / xFormers](#重装-pytorch--xformers)
@@ -255,7 +254,6 @@ $ tree -L 2
 ├── InvokeAI                            # 这是 InvokeAI 文件夹
 │   ├── activate.ps1                    # 进入 InvokeAI Env 的脚本
 │   ├── cache                           # 缓存文件夹
-│   ├── download_config.ps1             # 下载模型配置文件脚本
 │   ├── launch_invokeai_installer.ps1   # 获取最新的 InvokeAI Installer 并运行的脚本
 │   ├── help.txt                        # 帮助文档
 │   ├── invokeai                        # InvokeAI 生成的图片 / 模型 / 工作流 / 配置文件路径
@@ -380,7 +378,6 @@ force_tiled_decode: true
 ```
 D:/InvokeAI
 ├── activate.ps1
-├── download_config.ps1
 ├── download_models.ps1
 ├── help.txt
 ├── launch.ps1
@@ -406,7 +403,6 @@ D:/InvokeAI
 │   ├── models
 │   ...
 │   └── invokeai.yaml
-├── download_config.ps1
 ├── download_models.ps1
 ├── help.txt
 ├── launch.ps1
@@ -447,10 +443,6 @@ D:/InvokeAI
 
 >[!NOTE]  
 >在大多数情况下并不需要修改该配置文件，因为 InvokeAI 会自动选择最佳的配置。
-
-
-## 下载 InvokeAI 模型配置文件
-运行`download_config.ps1`脚本。
 
 
 ## 设置 uv 包管理器
