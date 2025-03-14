@@ -163,7 +163,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 在 ComfyUI Installer 成功安装 ComfyUI 后，在`ComfyUI`文件夹中可以看到 ComfyUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 ComfyUI Installer。
 
 <details>
-<summary><strong>查看 ComfyUI Installer 为 ComfyUI 预装的扩展</strong></summary>
+<summary><strong><h3>查看 ComfyUI Installer 为 ComfyUI 预装的扩展</h3></strong></summary>
 
 |ComfyUI 扩展|
 |---|

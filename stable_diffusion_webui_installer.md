@@ -199,7 +199,7 @@ $ tree -L 1
 在 SD WebUI Installer 成功安装 Stable Diffusion WebUI 后，在`stable-diffusion-webui`文件夹中可以看到 Stable Diffusion WebUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD WebUI Installer。
 
 <details>
-<summary><strong>查看 SD WebUI Installer 为 Stable Diffusion WebUI 预装的扩展</strong></summary>
+<summary><strong><h3>查看 SD WebUI Installer 为 Stable Diffusion WebUI 预装的扩展</h3></strong></summary>
 
 |Stable Diffusion WebUI 分支|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
 |---|---|---|---|
@@ -220,9 +220,9 @@ $ tree -L 1
 |扩展 15|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
 |扩展 16|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
 |扩展 17|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|无|
-|扩展 18|[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|[lllyasviel/sd-forge-layerdiffuse](https://github.com/lllyasviel/sd-forge-layerdiffuse)|无|
+|扩展 18|[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|无|
 |扩展 19|[multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|无|
-|扩展 20|[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|无|
+|扩展 20|[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|无|无|
 |扩展 21|[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|无|无|
 |扩展 22|[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|无|无|
 
