@@ -42,6 +42,9 @@ _✨快速部署，简单易用_
 
 
 ## 可用的 Jupyter Notebook 
+>[!NOTE]  
+>点击蓝色名称可下载对应的 Jupyter NoteBook。
+
 
 ### SD WebUI All In One Jupyter NoteBook
 [sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
