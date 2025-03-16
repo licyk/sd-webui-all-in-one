@@ -12,7 +12,7 @@
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 240
+$SD_TRAINER_INSTALLER_VERSION = 241
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -945,14 +945,16 @@ function Set-uv {
 
 # SD-Trainer 启动参数
 function Get-SD-Trainer-Launch-Args {
+    `$arguments = `"`"
     if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
-        `$args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+        `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+        `$arguments = [regex]::Matches(`$launch_args, '(`"[^`"]*`"|''[^'']*''|\S+)') | ForEach-Object {
+            `$_.Value -replace '^[`"'']|[`"'']`$', ''
+        }
         Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件, 已读取该启动参数配置文件并应用启动参数`"
-        Print-Msg `"使用的启动参数: `$args`"
-    } else {
-        `$args = `"`"
+        Print-Msg `"使用的启动参数: `$arguments`"
     }
-    return `$args
+    return `$arguments
 }
 
 
@@ -1656,7 +1658,7 @@ function Main {
         return
     }
 
-    `$args = Get-SD-Trainer-Launch-Args
+    `$launch_args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
 
@@ -1674,7 +1676,7 @@ function Main {
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 SD-Trainer 中`"
     Set-Location `"`$PSScriptRoot/lora-scripts`"
-    python `$launch_script.ToString() `$args.ToString().Split()
+    python `$launch_script.ToString() `$launch_args
     `$req = `$?
     if (`$req) {
         Print-Msg `"SD-Trainer 正常退出`"
