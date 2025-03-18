@@ -15,7 +15,8 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [int]$BuildWitchBranch
+    [int]$BuildWitchBranch,
+    [switch]$NoPreDownloadModel
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
@@ -1325,8 +1326,12 @@ function Check-Install {
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/prompt_expansion/fooocus_expansion/pytorch_model.bin", "$InstallPath/Fooocus/models/prompt_expansion/fooocus_expansion", "pytorch_model.bin")
     )
 
-    Print-Msg "预下载模型中"
-    Pre-Donwload-Model $model_list
+    if ($NoPreDownloadModel) {
+        Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
+    } else {
+        Print-Msg "预下载模型中"
+        Pre-Donwload-Model $model_list
+    }
 
     # 清理缓存
     Print-Msg "清理下载 Python 软件包的缓存中"
@@ -6789,7 +6794,7 @@ function Use-Update-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>]
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel]
 
 参数:
     -Help
@@ -6867,6 +6872,9 @@ function Get-Fooocus-Installer-Cmdlet-Help {
     -BuildWitchBranch <Fooocus 分支编号>
         (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
         Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -NoPreDownloadModel
+        安装 Fooocus 时跳过预下载模型
 
 
 更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md

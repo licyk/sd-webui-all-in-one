@@ -14,7 +14,8 @@
     [switch]$BuildWithLaunch,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
-    [string]$BuildWitchModel
+    [string]$BuildWitchModel,
+    [switch]$NoPreDownloadNode
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
@@ -592,26 +593,31 @@ function Check-Install {
     $comfyui_path = "$InstallPath/ComfyUI"
     $custom_node_path = "$comfyui_path/custom_nodes"
     Git-CLone "$COMFYUI_REPO" "$comfyui_path"
-    # ComfyUI 扩展
-    Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
-    Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
-    Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
-    Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"
-    Git-CLone "https://github.com/kijai/ComfyUI-Marigold" "$custom_node_path/ComfyUI-Marigold"
-    Git-CLone "https://github.com/pythongosssss/ComfyUI-WD14-Tagger" "$custom_node_path/ComfyUI-WD14-Tagger"
-    Git-CLone "https://github.com/BlenderNeko/ComfyUI_TiledKSampler" "$custom_node_path/ComfyUI_TiledKSampler"
-    Git-CLone "https://github.com/pythongosssss/ComfyUI-Custom-Scripts" "$custom_node_path/ComfyUI-Custom-Scripts"
-    Git-CLone "https://github.com/LEv145/images-grid-comfy-plugin" "$custom_node_path/images-grid-comfy-plugin"
-    Git-CLone "https://github.com/ssitu/ComfyUI_UltimateSDUpscale" "$custom_node_path/ComfyUI_UltimateSDUpscale"
-    Git-CLone "https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet" "$custom_node_path/ComfyUI_Custom_Nodes_AlekPet"
-    Git-CLone "https://github.com/talesofai/comfyui-browser" "$custom_node_path/comfyui-browser"
-    Git-CLone "https://github.com/ltdrdata/ComfyUI-Inspire-Pack" "$custom_node_path/ComfyUI-Inspire-Pack"
-    Git-CLone "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes" "$custom_node_path/ComfyUI_Comfyroll_CustomNodes"
-    Git-CLone "https://github.com/crystian/ComfyUI-Crystools" "$custom_node_path/ComfyUI-Crystools"
-    Git-CLone "https://github.com/shiimizu/ComfyUI-TiledDiffusion" "$custom_node_path/ComfyUI-TiledDiffusion"
-    Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
-    Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
-    Git-CLone "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one" "$custom_node_path/WeiLin-ComfyUI-prompt-all-in-one"
+
+    if ($NoPreDownloadNode) {
+        Print-Msg "检测到 -NoPreDownloadNode 命令行参数, 跳过安装 ComfyUI 扩展"
+    } else {
+        # ComfyUI 扩展
+        Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
+        Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
+        Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
+        Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"
+        Git-CLone "https://github.com/kijai/ComfyUI-Marigold" "$custom_node_path/ComfyUI-Marigold"
+        Git-CLone "https://github.com/pythongosssss/ComfyUI-WD14-Tagger" "$custom_node_path/ComfyUI-WD14-Tagger"
+        Git-CLone "https://github.com/BlenderNeko/ComfyUI_TiledKSampler" "$custom_node_path/ComfyUI_TiledKSampler"
+        Git-CLone "https://github.com/pythongosssss/ComfyUI-Custom-Scripts" "$custom_node_path/ComfyUI-Custom-Scripts"
+        Git-CLone "https://github.com/LEv145/images-grid-comfy-plugin" "$custom_node_path/images-grid-comfy-plugin"
+        Git-CLone "https://github.com/ssitu/ComfyUI_UltimateSDUpscale" "$custom_node_path/ComfyUI_UltimateSDUpscale"
+        Git-CLone "https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet" "$custom_node_path/ComfyUI_Custom_Nodes_AlekPet"
+        Git-CLone "https://github.com/talesofai/comfyui-browser" "$custom_node_path/comfyui-browser"
+        Git-CLone "https://github.com/ltdrdata/ComfyUI-Inspire-Pack" "$custom_node_path/ComfyUI-Inspire-Pack"
+        Git-CLone "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes" "$custom_node_path/ComfyUI_Comfyroll_CustomNodes"
+        Git-CLone "https://github.com/crystian/ComfyUI-Crystools" "$custom_node_path/ComfyUI-Crystools"
+        Git-CLone "https://github.com/shiimizu/ComfyUI-TiledDiffusion" "$custom_node_path/ComfyUI-TiledDiffusion"
+        Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
+        Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
+        Git-CLone "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one" "$custom_node_path/WeiLin-ComfyUI-prompt-all-in-one"
+    }
 
     Install-PyTorch
     Install-ComfyUI-Dependence
@@ -6622,7 +6628,7 @@ function Use-Update-Mode {
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>]
+    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode]
 
 参数:
     -Help
@@ -6690,6 +6696,10 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
+
+    -NoPreDownloadNode
+        安装 ComfyUI 时跳过安装 ComfyUI 扩展
+
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 "

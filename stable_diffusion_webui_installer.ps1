@@ -16,7 +16,9 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [int]$BuildWitchBranch
+    [int]$BuildWitchBranch,
+    [switch]$NoPreDownloadExtension,
+    [switch]$NoPreDownloadModel
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
@@ -660,42 +662,46 @@ function Check-Install {
         Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$sd_webui_repositories_path/google_blockly_prototypes"
     }
 
-    # SD WebUI 扩展
-    Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
-    Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
-    Git-CLone "https://github.com/Bing-su/adetailer" "$sd_webui_extension_path/adetailer"
-    Git-CLone "https://github.com/zanllp/sd-webui-infinite-image-browsing" "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
-    Git-CLone "https://github.com/huchenlei/sd-webui-openpose-editor" "$sd_webui_extension_path/sd-webui-openpose-editor"
-    Git-CLone "https://github.com/Physton/sd-webui-prompt-all-in-one" "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
-    Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$sd_webui_extension_path/sd-webui-wd14-tagger"
-    Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
-    Git-CLone "https://github.com/Haoming02/sd-webui-mosaic-outpaint" "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
-    Git-CLone "https://github.com/Haoming02/sd-webui-resource-monitor" "$sd_webui_extension_path/sd-webui-resource-monitor"
-    Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
-    Git-CLone "https://github.com/licyk/advanced_euler_sampler_extension" "$sd_webui_extension_path/advanced_euler_sampler_extension"
-    Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
-    Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
+    if ($NoPreDownloadExtension) {
+        Print-Msg "检测到 -NoPreDownloadExtension 命令行参数, 跳过安装 Stable Diffusion WebUI 扩展"
+    } else {
+        # SD WebUI 扩展
+        Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
+        Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
+        Git-CLone "https://github.com/Bing-su/adetailer" "$sd_webui_extension_path/adetailer"
+        Git-CLone "https://github.com/zanllp/sd-webui-infinite-image-browsing" "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
+        Git-CLone "https://github.com/huchenlei/sd-webui-openpose-editor" "$sd_webui_extension_path/sd-webui-openpose-editor"
+        Git-CLone "https://github.com/Physton/sd-webui-prompt-all-in-one" "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
+        Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$sd_webui_extension_path/sd-webui-wd14-tagger"
+        Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
+        Git-CLone "https://github.com/Haoming02/sd-webui-mosaic-outpaint" "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
+        Git-CLone "https://github.com/Haoming02/sd-webui-resource-monitor" "$sd_webui_extension_path/sd-webui-resource-monitor"
+        Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
+        Git-CLone "https://github.com/licyk/advanced_euler_sampler_extension" "$sd_webui_extension_path/advanced_euler_sampler_extension"
+        Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
+        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
 
-    # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
-    if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
-        Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$sd_webui_extension_path/sd-webui-controlnet"
-        Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
-        Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$sd_webui_extension_path/sd-dynamic-thresholding"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$sd_webui_extension_path/sd-webui-lora-block-weight"
-    }
+        # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
+        if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
+            Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$sd_webui_extension_path/sd-webui-controlnet"
+            Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
+            Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$sd_webui_extension_path/sd-dynamic-thresholding"
+            Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$sd_webui_extension_path/sd-webui-lora-block-weight"
+        }
 
-    # 非 SD WebUI Forge 时安装的扩展
-    if (!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) {
-        Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
-        Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
-        Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
-    }
+        # 非 SD WebUI Forge 时安装的扩展
+        if (!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) {
+            Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
+            Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
+            Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
+            Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
+        }
 
-    # SD WebUI Forge 安装的扩展
-    if ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
-        Git-CLone "https://github.com/licyk/sd_forge_hypertile_svd_z123" "$sd_webui_extension_path/sd_forge_hypertile_svd_z123"
-        Git-CLone "https://github.com/lllyasviel/sd-forge-layerdiffuse" "$sd_webui_extension_path/sd-forge-layerdiffuse"
+        # SD WebUI Forge 安装的扩展
+        if ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+            Git-CLone "https://github.com/licyk/sd_forge_hypertile_svd_z123" "$sd_webui_extension_path/sd_forge_hypertile_svd_z123"
+            Git-CLone "https://github.com/lllyasviel/sd-forge-layerdiffuse" "$sd_webui_extension_path/sd-forge-layerdiffuse"
+        }
     }
 
     Install-PyTorch
@@ -759,15 +765,19 @@ function Check-Install {
         $stream_writer.Close()
     }
 
-    $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
-    if (!(Get-ChildItem -Path $checkpoint_path -Filter "*.safetensors")) {
-        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors"
-        Print-Msg "预下载模型中"
-        aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "nai1-artist_all_in_one_merge.safetensors"
-        if ($?) {
-            Print-Msg "下载模型成功"
-        } else {
-            Print-Msg "下载模型失败"
+    if ($NoPreDownloadModel) {
+        Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
+    } else {
+        $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
+        if (!(Get-ChildItem -Path $checkpoint_path -Filter "*.safetensors")) {
+            $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors"
+            Print-Msg "预下载模型中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "nai1-artist_all_in_one_merge.safetensors"
+            if ($?) {
+                Print-Msg "下载模型成功"
+            } else {
+                Print-Msg "下载模型失败"
+            }
         }
     }
 
@@ -6946,7 +6956,7 @@ function Use-Update-Mode {
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel]
 
 参数:
     -Help
@@ -7030,6 +7040,12 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     -BuildWitchBranch <SD WebUI 分支编号>
         (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 SD WebUI 分支编号切换到对应的 SD WebUI 分支
         SD WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -NoPreDownloadExtension
+        安装 Stable Diffusion WebUI 时跳过下载 Stable Diffusion WebUI 扩展
+
+    -NoPreDownloadModel
+        安装 Stable Diffusion WebUI 时跳过预下载模型
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
