@@ -5,7 +5,13 @@
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
-    [switch]$Help
+    [switch]$Help,
+    [switch]$BuildMode,
+    [switch]$BuildWithUpdate,
+    [switch]$BuildWithUpdateNode,
+    [switch]$BuildWithLaunch,
+    [switch]$BuildWithTorchReinstall,
+    [string]$BuildWitchModel
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
@@ -111,8 +117,8 @@ function Set-Proxy {
     }
 
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy -ne "")) { # 本地存在代理配置
-        if ($UseCustomProxy -ne "") {
+    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy)) { # 本地存在代理配置
+        if ($UseCustomProxy) {
             $proxy_value = $UseCustomProxy
         } else {
             $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
@@ -245,7 +251,9 @@ function Install-Python {
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -277,7 +285,9 @@ function Install-Git {
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -293,7 +303,9 @@ function Install-Aria2 {
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -307,7 +319,9 @@ function Install-uv {
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -331,7 +345,9 @@ function Install-InvokeAI {
         Print-Msg "InvokeAI 安装成功"
     } else {
         Print-Msg "InvokeAI 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -540,7 +556,9 @@ function Install-InvokeAI-Requirements {
         Print-Msg "InvokeAI 依赖安装成功"
     } else {
         Print-Msg "InvokeAI 依赖安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -650,6 +668,9 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -1319,7 +1340,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
     Set-Proxy
-    Check-InvokeAI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
+    } else {
+        Check-InvokeAI-Installer-Update
+    }
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
     Set-uv
@@ -1346,20 +1371,24 @@ function Main {
         Start-Process `$web_addr
     } -ArgumentList `$web_addr | Out-Null
 
-    Print-Msg `"启动 InvokeAI 中`"
-    Write-Launch-InvokeAI-Script
-    python `"`$Env:CACHE_HOME/launch_invokeai.py`" # --root `"`$PSScriptRoot/invokeai`"
-    if (`$?) {
-        Print-Msg `"InvokeAI 正常退出`"
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过启动 InvokeAI`"
     } else {
-        Print-Msg `"InvokeAI 出现异常, 已退出`"
+        Print-Msg `"启动 InvokeAI 中`"
+        Write-Launch-InvokeAI-Script
+        python `"`$Env:CACHE_HOME/launch_invokeai.py`" # --root `"`$PSScriptRoot/invokeai`"
+        if (`$?) {
+            Print-Msg `"InvokeAI 正常退出`"
+        } else {
+            Print-Msg `"InvokeAI 出现异常, 已退出`"
+        }
+        Read-Host | Out-Null
     }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/launch.ps1") {
@@ -1374,6 +1403,9 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -1857,7 +1889,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
     Set-Proxy
-    Check-InvokeAI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
+    } else {
+        Check-InvokeAI-Installer-Update
+    }
     Set-uv
     Pip-Mirror-Status
     `$update_fail = 0
@@ -1943,12 +1979,14 @@ function Main {
     }
 
     Print-Msg `"退出 InvokeAI 更新脚本`"
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/update.ps1") {
@@ -1963,6 +2001,9 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Node-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2277,7 +2318,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
     Set-Proxy
-    Check-InvokeAI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
+    } else {
+        Check-InvokeAI-Installer-Update
+    }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/invokeai/nodes`")) {
@@ -2328,12 +2373,14 @@ function Main {
     List-Update-Status `$update_status
 
     Print-Msg `"退出 InvokeAI 自定义节点更新脚本`"
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/update_node.ps1") {
@@ -2500,6 +2547,9 @@ Main
 # PyTorch 重装脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2995,14 +3045,22 @@ function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
     Set-Proxy
-    Check-InvokeAI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
+    } else {
+        Check-InvokeAI-Installer-Update
+    }
     Set-uv
     Pip-Mirror-Status
 
     Get-PyTorch-And-xFormers-Version
     Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$arg = (Read-Host `"=========================================>`").Trim()
+    if (`$BuildMode) {
+        `$arg = `"yes`"
+    } else {
+        `$arg = (Read-Host `"=========================================>`").Trim()
+    }
     if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
         Print-Msg `"卸载原有的 PyTorch`"
         python -m pip uninstall torch torchvision xformers -y
@@ -3050,12 +3108,15 @@ function Main {
     } else {
         Print-Msg `"取消重装 PyTorch`"
     }
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
@@ -3070,6 +3131,10 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Download-Model-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [string]`$BuildWitchModel
+)
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4001,7 +4066,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
     Set-Proxy
-    Check-InvokeAI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
+    } else {
+        Check-InvokeAI-Installer-Update
+    }
     Check-Aria2-Version
 
     `$to_exit = 0
@@ -4032,7 +4101,12 @@ function Main {
         Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
         Print-Msg `"3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型`"
         Print-Msg `"4. 输入 exit 退出模型下载脚本`"
-        `$arg = Get-User-Input
+        if (`$BuildMode) {
+            `$arg = `$BuildWitchModel
+            `$go_to = 1
+        } else {
+            `$arg = Get-User-Input
+        }
 
         switch (`$arg) {
             exit {
@@ -4111,18 +4185,25 @@ function Main {
     List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_operate = Get-User-Input
+    if (`$BuildMode) {
+        `$download_operate = `"yes`"
+    } else {
+        `$download_operate = Get-User-Input
+    }
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
         Import-Model-To-InvokeAI `$model_path_list
     }
-    Print-Msg `"退出模型下载脚本`"
+    Print-Msg `"退出模型下载脚本`"\
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/download_models.ps1") {
@@ -5510,7 +5591,7 @@ update_node.ps1：更新 InvokeAI 自定义节点的脚本，可使用该脚本�
 launch.ps1：启动 InvokeAI 的脚本。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
 settings.ps1：管理 InvokeAI Installer 的设置。
-download_model.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
+download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
 help.txt：帮助文档。
 
@@ -5617,8 +5698,41 @@ function Use-Install-Mode {
     Print-Msg "InvokeAI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
-    Print-Msg "退出 InvokeAI Installer"
-    Read-Host | Out-Null
+
+    if ($BuildMode) {
+        Print-Msg "执行其他环境构建脚本中"
+
+        if ($BuildWithTorchReinstall) {
+            Print-Msg "执行重装 PyTorch 脚本中"
+            . "$InstallPath/reinstall_pytorch.ps1" -BuildMode
+        }
+
+        if ($BuildWitchModel) {
+            Print-Msg "执行模型安装脚本中"
+            . "$InstallPath/download_models.ps1" -BuildMode -BuildWitchModel "$BuildWitchModel"
+        }
+
+        if ($BuildWitchBranch) {
+            Print-Msg "执行 InvokeAI 分支切换脚本中"
+            . "$InstallPath/switch_branch.ps1" -BuildMode -BuildWitchBranch "$BuildWitchBranch"
+        }
+
+        if ($BuildWithUpdate) {
+            Print-Msg "执行 InvokeAI 更新脚本中"
+            . "$InstallPath/update.ps1" -BuildMode
+        }
+
+        if ($BuildWithLaunch) {
+            Print-Msg "执行 InvokeAI 启动脚本中"
+            . "$InstallPath/launch.ps1" -BuildMode
+        }
+
+        Print-Msg "InvokeAI 环境构建完成, 路径: $InstallPath"
+        Print-Msg "退出 InvokeAI Installer"
+    } else {
+        Print-Msg "退出 InvokeAI Installer"
+        Read-Host | Out-Null
+    }
 }
 
 
@@ -5634,7 +5748,7 @@ function Use-Update-Mode {
 function Get-InvokeAI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV]
+    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>]
 
 参数:
     -Help
@@ -5659,6 +5773,31 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
+    -BuildMode
+        启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
+        当指定调用多个 InvokeAI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+            - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
+            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - update.ps1                (对应 -BuildWithUpdate 参数)
+            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
+            - launch.ps1                (对应 -BuildWithLaunch 参数)
+
+    -BuildWithUpdate
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update.ps1 脚本, 更新 InvokeAI 内核
+
+    -BuildWithUpdateNode
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update_node.ps1 脚本, 更新 InvokeAI 自定义节点
+
+    -BuildWithLaunch
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本, 执行启动 InvokeAI 前的环境检查流程, 但跳过启动 InvokeAI
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 卸载并重新安装 PyTorch
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 "
@@ -5680,6 +5819,9 @@ function Main {
         Use-Update-Mode
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
+        if ($BuildMode) {
+            Print-Msg "InvokeAI Installer 构建模式已启用"
+        }
         Print-Msg "使用安装模式"
         Use-Install-Mode
     }

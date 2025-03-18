@@ -8,7 +8,14 @@
     [switch]$DisableUV,
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
-    [switch]$Help
+    [switch]$Help,
+    [switch]$BuildMode,
+    [switch]$BuildWithUpdate,
+    [switch]$BuildWithLaunch,
+    [int]$BuildWithTorch,
+    [switch]$BuildWithTorchReinstall,
+    [string]$BuildWitchModel,
+    [int]$BuildWitchBranch
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # Fooocus Installer 版本和检查更新间隔
@@ -141,8 +148,8 @@ function Set-Proxy {
     }
 
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy -ne "")) { # 本地存在代理配置
-        if ($UseCustomProxy -ne "") {
+    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy)) { # 本地存在代理配置
+        if ($UseCustomProxy) {
             $proxy_value = $UseCustomProxy
         } else {
             $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
@@ -275,7 +282,9 @@ function Install-Python {
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -307,7 +316,9 @@ function Install-Git {
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -323,7 +334,9 @@ function Install-Aria2 {
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -337,7 +350,9 @@ function Install-uv {
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -360,8 +375,8 @@ function Test-Github-Mirror {
     }
 
     # 使用自定义 Github 镜像源
-    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($UseCustomGithubMirror -ne "")) {
-        if ($UseCustomGithubMirror -ne "") {
+    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($UseCustomGithubMirror)) {
+        if ($UseCustomGithubMirror) {
             $github_mirror = $UseCustomGithubMirror
         } else {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
@@ -442,7 +457,9 @@ function Git-CLone {
             Print-Msg "$name 安装成功"
         } else {
             Print-Msg "$name 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -470,7 +487,9 @@ function Install-PyTorch {
             Print-Msg "PyTorch 安装成功"
         } else {
             Print-Msg "PyTorch 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -494,7 +513,9 @@ function Install-PyTorch {
             Print-Msg "xFormers 安装成功"
         } else {
             Print-Msg "xFormers 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -525,7 +546,9 @@ function Install-Fooocus-Dependence {
     } else {
         Print-Msg "Fooocus 依赖安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
         Set-Location "$current_path"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
     Set-Location "$current_path"
@@ -1317,6 +1340,9 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2357,7 +2383,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Set-Proxy
-    Check-Fooocus-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
+    } else {
+        Check-Fooocus-Installer-Update
+    }
     Set-HuggingFace-Mirror
     Set-uv
     Pip-Mirror-Status
@@ -2382,12 +2412,17 @@ function Main {
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 Fooocus 中`"
     Set-Location `"`$PSScriptRoot/Fooocus`"
-    python launch.py `$launch_args `$hf_mirror_arg.ToString().Split()
-    `$req = `$?
-    if (`$req) {
-        Print-Msg `"Fooocus 正常退出`"
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过启动 Fooocus`"
     } else {
-        Print-Msg `"Fooocus 出现异常, 已退出`"
+        python launch.py `$launch_args `$hf_mirror_arg.ToString().Split()
+        `$req = `$?
+        if (`$req) {
+            Print-Msg `"Fooocus 正常退出`"
+        } else {
+            Print-Msg `"Fooocus 出现异常, 已退出`"
+        }
+        Read-Host | Out-Null
     }
     Set-Location `"`$current_path`"
 }
@@ -2395,7 +2430,6 @@ function Main {
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/launch.ps1") {
@@ -2410,6 +2444,9 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2692,7 +2729,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Set-Proxy
-    Check-Fooocus-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
+    } else {
+        Check-Fooocus-Installer-Update
+    }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
@@ -2722,12 +2763,14 @@ function Main {
     }
 
     Print-Msg `"退出 Fooocus 更新脚本`"
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/update.ps1") {
@@ -2742,6 +2785,10 @@ Read-Host | Out-Null
 # 分支切换脚本
 function Write-Switch-Branch-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [int]`$BuildWitchBranch
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -3076,7 +3123,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Set-Proxy
-    Check-Fooocus-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
+    } else {
+        Check-Fooocus-Installer-Update
+    }
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
@@ -3100,7 +3151,12 @@ function Main {
         Print-Msg `"当前 Fooocus 分支: `$(Get-Fooocus-Branch)`"
         Print-Msg `"请选择 Fooocus 分支`"
         Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 Fooocus 分支切换脚本`"
-        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$BuildMode) {
+            `$go_to = 1
+            `$arg = `$BuildWitchBranch
+        } else {
+            `$arg = (Read-Host `"========================================>`").Trim()
+        }
 
         switch (`$arg) {
             1 {
@@ -3146,7 +3202,11 @@ function Main {
 
     Print-Msg `"是否切换 Fooocus 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$operate = (Read-Host `"========================================>`").Trim()
+    if (`$BuildMode) {
+        `$operate = `"yes`"
+    } else {
+        `$operate = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 Fooocus 分支`"
@@ -3160,12 +3220,15 @@ function Main {
         Print-Msg `"取消切换 Fooocus 分支`"
     }
     Print-Msg `"退出 Fooocus 分支切换脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/switch_branch.ps1") {
@@ -3361,6 +3424,11 @@ Main
 # 重装 PyTorch 脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [int]`$BuildWithTorch,
+    [switch]`$BuildWithTorchReinstall
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -3707,7 +3775,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Set-Proxy
-    Check-Fooocus-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
+    } else {
+        Check-Fooocus-Installer-Update
+    }
     Set-uv
     Pip-Mirror-Status
 
@@ -3763,7 +3835,12 @@ function Main {
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
-        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$BuildMode) {
+            `$arg = `$BuildWithTorch
+            `$go_to = 1
+        } else {
+            `$arg = (Read-Host `"========================================>`").Trim()
+        }
 
         switch (`$arg) {
             1 {
@@ -3992,7 +4069,11 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+    if (`$BuildMode) {
+        `$use_force_reinstall = `"yes`"
+    } else {
+        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
@@ -4008,7 +4089,11 @@ function Main {
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$install_torch = (Read-Host `"========================================>`").Trim()
+    if (`$BuildMode) {
+        `$install_torch = `"yes`"
+    } else {
+        `$install_torch = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
@@ -4025,7 +4110,9 @@ function Main {
             Print-Msg `"安装 PyTorch 成功`"
         } else {
             Print-Msg `"安装 PyTorch 失败, 终止 PyTorch 重装进程`"
-            Read-Host | Out-Null
+            if (!(`$BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
 
@@ -4049,7 +4136,9 @@ function Main {
                 Print-Msg `"安装 xFormers 成功`"
             } else {
                 Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
-                Read-Host | Out-Null
+                if (!(`$BuildMode)) {
+                    Read-Host | Out-Null
+                }
                 exit 1
             }
         }
@@ -4058,12 +4147,14 @@ function Main {
     }
 
     Print-Msg `"退出 PyTorch 重装脚本`"
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
@@ -4078,6 +4169,10 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Download-Model-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [string]`$BuildWitchModel
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4850,7 +4945,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Set-Proxy
-    Check-Fooocus-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
+    } else {
+        Check-Fooocus-Installer-Update
+    }
     Check-Aria2-Version
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
@@ -4886,7 +4985,12 @@ function Main {
         Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
         Print-Msg `"3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型`"
         Print-Msg `"4. 输入 exit 退出模型下载脚本`"
-        `$arg = Get-User-Input
+        if (`$BuildMode) {
+            `$arg = `$BuildWitchModel
+            `$go_to = 1
+        } else {
+            `$arg = Get-User-Input
+        }
 
         switch (`$arg) {
             exit {
@@ -4965,18 +5069,25 @@ function Main {
     List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_operate = Get-User-Input
+    if (`$BuildMode) {
+        `$download_operate = `"yes`"
+    } else {
+        `$download_operate = Get-User-Input
+    }
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }
 
     Print-Msg `"退出模型下载脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/download_models.ps1") {
@@ -6489,7 +6600,7 @@ update.ps1：更新 Fooocus 的脚本，可使用该脚本更新 Fooocus。
 switch_branch.ps1：切换 Fooocus 分支。
 launch.ps1：启动 Fooocus 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-download_model.ps1：下载模型的脚本，下载的模型将存放在 Fooocus 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
+download_models.ps1：下载模型的脚本，下载的模型将存放在 Fooocus 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 settings.ps1：管理 Fooocus Installer 的设置。
 terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 help.txt：帮助文档。
@@ -6624,8 +6735,45 @@ function Use-Install-Mode {
     Print-Msg "Fooocus 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 Fooocus 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Fooocus Installer 使用文档"
     Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
-    Print-Msg "退出 Fooocus Installer"
-    Read-Host | Out-Null
+
+    if ($BuildMode) {
+        Print-Msg "执行其他环境构建脚本中"
+
+        if ($BuildWithTorch) {
+            Print-Msg "执行重装 PyTorch 脚本中"
+            if ($BuildWithTorchReinstall) {
+                . "$InstallPath/reinstall_pytorch.ps1" -BuildMode -BuildWithTorch "$BuildWithTorch" -BuildWithTorchReinstall
+            } else {
+                . "$InstallPath/reinstall_pytorch.ps1" -BuildMode -BuildWithTorch "$BuildWithTorch"
+            }
+        }
+
+        if ($BuildWitchModel) {
+            Print-Msg "执行模型安装脚本中"
+            . "$InstallPath/download_models.ps1" -BuildMode -BuildWitchModel "$BuildWitchModel"
+        }
+
+        if ($BuildWitchBranch) {
+            Print-Msg "执行 Fooocus 分支切换脚本中"
+            . "$InstallPath/switch_branch.ps1" -BuildMode -BuildWitchBranch "$BuildWitchBranch"
+        }
+
+        if ($BuildWithUpdate) {
+            Print-Msg "执行 Fooocus 更新脚本中"
+            . "$InstallPath/update.ps1" -BuildMode
+        }
+
+        if ($BuildWithLaunch) {
+            Print-Msg "执行 Fooocus 启动脚本中"
+            . "$InstallPath/launch.ps1" -BuildMode
+        }
+
+        Print-Msg "Fooocus 环境构建完成, 路径: $InstallPath"
+        Print-Msg "退出 Fooocus Installer"
+    } else {
+        Print-Msg "退出 Fooocus Installer"
+        Read-Host | Out-Null
+    }
 }
 
 
@@ -6641,7 +6789,7 @@ function Use-Update-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>]
 
 参数:
     -Help
@@ -6690,6 +6838,36 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
 
+    -BuildMode
+        启用 Fooocus Installer 构建模式, 在基础安装流程结束后将调用 Fooocus Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 Fooocus Installer 的执行, 而是直接退出
+        当指定调用多个 Fooocus Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+            - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
+            - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
+            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - update.ps1                (对应 -BuildWithUpdate 参数)
+            - launch.ps1                (对应 -BuildWithLaunch 参数)
+
+    -BuildWithUpdate
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 update.ps1 脚本, 更新 Fooocus 内核
+
+    -BuildWithLaunch
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 launch.ps1 脚本, 执行启动 Fooocus 前的环境检查流程, 但跳过启动 Fooocus
+
+    -BuildWithTorch <PyTorch 版本编号>
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式, 并且添加 -BuildWithTorch) 在 Fooocus Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
+    -BuildWitchBranch <Fooocus 分支编号>
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
+        Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
+
 
 更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 "
@@ -6711,6 +6889,9 @@ function Main {
         Use-Update-Mode
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
+        if ($BuildMode) {
+            Print-Msg "Fooocus Installer 构建模式已启用"
+        }
         Print-Msg "使用安装模式"
         Use-Install-Mode
     }

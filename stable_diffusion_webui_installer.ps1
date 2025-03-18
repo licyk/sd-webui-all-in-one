@@ -8,7 +8,15 @@
     [switch]$DisableUV,
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
-    [switch]$Help
+    [switch]$Help,
+    [switch]$BuildMode,
+    [switch]$BuildWithUpdate,
+    [switch]$BuildWithUpdateExtension,
+    [switch]$BuildWithLaunch,
+    [int]$BuildWithTorch,
+    [switch]$BuildWithTorchReinstall,
+    [string]$BuildWitchModel,
+    [int]$BuildWitchBranch
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD WebUI Installer 版本和检查更新间隔
@@ -145,8 +153,8 @@ function Set-Proxy {
     }
 
     $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy -ne "")) { # 本地存在代理配置
-        if ($UseCustomProxy -ne "") {
+    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($UseCustomProxy)) { # 本地存在代理配置
+        if ($UseCustomProxy) {
             $proxy_value = $UseCustomProxy
         } else {
             $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
@@ -279,7 +287,9 @@ function Install-Python {
         Print-Msg "Python 安装成功"
     } else {
         Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -311,7 +321,9 @@ function Install-Git {
         Print-Msg "Git 安装成功"
     } else {
         Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -327,7 +339,9 @@ function Install-Aria2 {
         Print-Msg "Aria2 下载成功"
     } else {
         Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -341,7 +355,9 @@ function Install-uv {
         Print-Msg "uv 下载成功"
     } else {
         Print-Msg "uv 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -364,8 +380,8 @@ function Test-Github-Mirror {
     }
 
     # 使用自定义 Github 镜像源
-    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($UseCustomGithubMirror -ne "")) {
-        if ($UseCustomGithubMirror -ne "") {
+    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($UseCustomGithubMirror)) {
+        if ($UseCustomGithubMirror) {
             $github_mirror = $UseCustomGithubMirror
         } else {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
@@ -446,7 +462,9 @@ function Git-CLone {
             Print-Msg "$name 安装成功"
         } else {
             Print-Msg "$name 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -474,7 +492,9 @@ function Install-PyTorch {
             Print-Msg "PyTorch 安装成功"
         } else {
             Print-Msg "PyTorch 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -498,7 +518,9 @@ function Install-PyTorch {
             Print-Msg "xFormers 安装成功"
         } else {
             Print-Msg "xFormers 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-            Read-Host | Out-Null
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
     } else {
@@ -533,7 +555,9 @@ function Install-CLIP {
         Print-Msg "CLIP 软件包安装成功"
     } else {
         Print-Msg "CLIP 软件包安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
 }
@@ -564,7 +588,9 @@ function Install-Stable-Diffusion-WebUI-Dependence {
     } else {
         Print-Msg "Stable Diffusion WebUI 依赖安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Set-Location "$current_path"
-        Read-Host | Out-Null
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
         exit 1
     }
     Set-Location "$current_path"
@@ -757,6 +783,9 @@ function Check-Install {
 # 启动脚本
 function Write-Launch-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2019,7 +2048,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
     Set-Github-Mirror
     Set-HuggingFace-Mirror
     Set-uv
@@ -2039,14 +2072,19 @@ function Main {
     Create-Stable-Diffusion-WebUI-Shortcut
     Check-Stable-Diffusion-WebUI-Env
     Set-PyTorch-CUDA-Memory-Alloc
-    Print-Msg `"启动 Stable Diffusion WebUI 中`"
-    Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
-    python launch.py `$launch_args
-    `$req = `$?
-    if (`$req) {
-        Print-Msg `"Stable Diffusion WebUI 正常退出`"
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过启动 Stable Diffusion WebUI`"
     } else {
-        Print-Msg `"Stable Diffusion WebUI 出现异常, 已退出`"
+        Print-Msg `"启动 Stable Diffusion WebUI 中`"
+        Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
+        python launch.py `$launch_args
+        `$req = `$?
+        if (`$req) {
+            Print-Msg `"Stable Diffusion WebUI 正常退出`"
+        } else {
+            Print-Msg `"Stable Diffusion WebUI 出现异常, 已退出`"
+        }
+        Read-Host | Out-Null
     }
     Set-Location `"`$current_path`"
 }
@@ -2054,7 +2092,6 @@ function Main {
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/launch.ps1") {
@@ -2069,6 +2106,9 @@ Read-Host | Out-Null
 # 更新脚本
 function Write-Update-Script {
     $content = "
+param (
+    [switch]`$BuildMode
+)
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2351,7 +2391,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
@@ -2381,12 +2425,15 @@ function Main {
     }
 
     Print-Msg `"退出 Stable Diffusion WebUI 更新脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/update.ps1") {
@@ -2398,9 +2445,411 @@ Read-Host | Out-Null
 }
 
 
+# 更新插件脚本
+function Write-Update-Extension-Script {
+    $content = "
+param (
+    [switch]`$BuildMode
+)
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# Pip 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+`$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
+`$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghfast.top/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gh.api.99988866.xyz/https://github.com`",
+    `"https://gitclone.com/github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`"
+)
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# 修复 Git 分支游离
+function Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
+    # 可用的下载源
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`"
+    )
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+
+    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        ForEach (`$url in `$urls) {
+            Print-Msg `"检查 SD WebUI Installer 更新中`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
+            if (`$?) {
+                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
+                if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+                    Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+                    `$arg = (Read-Host `"=========================================>`").Trim()
+                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+                        Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+                        Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
+                        Read-Host | Out-Null
+                        exit 0
+                    } else {
+                        Print-Msg `"跳过 SD WebUI Installer 更新`"
+                    }
+                } else {
+                    Print-Msg `"SD WebUI Installer 已是最新版本`"
+                }
+                break
+            } else {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试检查 SD WebUI Installer 更新中`"
+                } else {
+                    Print-Msg `"检查 SD WebUI Installer 更新失败`"
+                }
+            }
+        }
+    }
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    # 检测是否禁用自动设置镜像源
+    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
+        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+}
+
+
+# Github 镜像源
+function Set-Github-Mirror {
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    }
+
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+        return
+    }
+
+    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
+        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+        }
+        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+    }
+
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+    }
+}
+
+
+# 列出更新结果
+function List-Update-Status (`$update_status) {
+    `$success = 0
+    `$failed = 0
+    `$sum = 0
+    Print-Msg `"当前 Stable Diffusion WebUI 扩展更新结果`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"扩展名称`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"更新结果`" -ForegroundColor Cyan
+    Write-Host
+    for (`$i = 0; `$i -lt `$update_status.Count; `$i++) {
+        `$content = `$update_status[`$i]
+        `$name = `$content[0]
+        `$ver = `$content[1]
+        `$status = `$content[2]
+        `$sum += 1
+        if (`$status) {
+            `$success += 1
+        } else {
+            `$failed += 1
+        }
+        Write-Host `"- `" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`${name}: `" -ForegroundColor White -NoNewline
+        if (`$status) {
+            Write-Host `"`$ver `" -ForegroundColor Cyan
+        } else {
+            Write-Host `"`$ver `" -ForegroundColor Red
+        }
+    }
+    Write-Host
+    Write-Host `"[●: `$sum | ✓: `$success | ×: `$failed]`" -ForegroundColor White
+    Write-Host `"-----------------------------------------------------`"
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Set-Proxy
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
+    Set-Github-Mirror
+
+    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        return
+    }
+
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$sum = 0
+    `$count = 0
+    ForEach (`$extension in `$extension_list) {
+        if (Test-Path `"`$extension/.git`") {
+            `$sum += 1
+        }
+    }
+
+    Print-Msg `"更新 Stable Diffusion WebUI 扩展中`"
+    `$update_status = New-Object System.Collections.ArrayList
+    ForEach (`$extension in `$extension_list) {
+        if (!(Test-Path `"`$extension/.git`")) {
+            continue
+        }
+
+        `$count += 1
+        `$extension_name = `$(`$(Get-Item `$extension).Name)
+        Print-Msg `"[`$count/`$sum] 更新 `$extension_name 扩展中`"
+        Fix-Git-Point-Off-Set `"`$extension`"
+        `$origin_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$extension`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        git -C `"`$extension`" fetch --recurse-submodules
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$extension`" log origin/`$branch --max-count 1 --format=`"%h`")
+            git -C `"`$extension`" reset --hard `$commit_hash --recurse-submodules
+            `$latest_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            if (`$origin_ver -eq `$latest_ver) {
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展已为最新版`"
+                `$update_status.Add(@(`$extension_name, `"已为最新版`", `$true)) | Out-Null
+            } else {
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                `$update_status.Add(@(`$extension_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
+            }
+        } else {
+            Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新失败`"
+            `$update_status.Add(@(`$extension_name, `"更新失败`", `$false)) | Out-Null
+        }
+    }
+
+    List-Update-Status `$update_status
+
+    Print-Msg `"退出 Stable Diffusion WebUI 扩展更新脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
+}
+
+###################
+
+Main
+"
+
+    if (Test-Path "$InstallPath/update_extension.ps1") {
+        Print-Msg "更新 update_extension.ps1 中"
+    } else {
+        Print-Msg "生成 update_extension.ps1 中"
+    }
+    Set-Content -Encoding UTF8 -Path "$InstallPath/update_extension.ps1" -Value $content
+}
+
+
 # 分支切换脚本
 function Write-Switch-Branch-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [int]`$BuildWitchBranch
+)
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -2754,7 +3203,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
@@ -2783,7 +3236,12 @@ function Main {
         Print-Msg `"当前 Stable Diffusion WebUI 分支: `$(Get-Stable-Diffusion-WebUI-Branch)`"
         Print-Msg `"请选择 Stable Diffusion WebUI 分支`"
         Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 Stable Diffusion WebUI 分支切换脚本`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
+        if (`$BuildMode) {
+            `$go_to = 1
+            `$arg = `$BuildWitchBranch
+        } else {
+            `$arg = (Read-Host `"========================================>`").Trim()
+        }
 
         switch (`$arg) {
             1 {
@@ -2864,7 +3322,11 @@ function Main {
 
     Print-Msg `"是否切换 Stable Diffusion WebUI 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$operate = (Read-Host `"=========================================>`").Trim()
+    if (`$BuildMode) {
+        `$operate = `"yes`"
+    } else {
+        `$operate = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
         Print-Msg `"开始切换 Stable Diffusion WebUI 分支`"
@@ -2879,12 +3341,15 @@ function Main {
         Print-Msg `"取消切换 Stable Diffusion WebUI 分支`"
     }
     Print-Msg `"退出 Stable Diffusion WebUI 分支切换脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/switch_branch.ps1") {
@@ -2893,394 +3358,6 @@ Read-Host | Out-Null
         Print-Msg "生成 switch_branch.ps1 中"
     }
     Set-Content -Encoding UTF8 -Path "$InstallPath/switch_branch.ps1" -Value $content
-}
-
-
-# 更新脚本
-function Write-Update-Extension-Script {
-    $content = "
-# SD WebUI Installer 版本和检查更新间隔
-`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
-`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
-`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
-`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
-`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
-`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
-`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
-`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
-`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
-`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
-`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
-`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
-`$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
-`$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
-# Github 镜像源
-`$GITHUB_MIRROR_LIST = @(
-    `"https://ghfast.top/https://github.com`",
-    `"https://mirror.ghproxy.com/https://github.com`",
-    `"https://ghproxy.net/https://github.com`",
-    `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gitclone.com/github.com`",
-    `"https://gh-proxy.com/https://github.com`",
-    `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
-)
-# uv 最低版本
-`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
-# Aria2 最低版本
-`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
-`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
-`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR`"
-`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 50
-`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
-`$Env:UV_CONFIG_FILE = `"nul`"
-`$Env:PIP_CONFIG_FILE = `"nul`"
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-
-
-
-# 消息输出
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
-    Write-Host `":: `" -ForegroundColor Blue -NoNewline
-    Write-Host `"`$msg`"
-}
-
-
-# 显示 SD WebUI Installer 版本
-function Get-Stable-Diffusion-WebUI-Installer-Version {
-    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
-    `$major = (`$ver[0..(`$ver.Length - 3)])
-    `$minor = `$ver[-2]
-    `$micro = `$ver[-1]
-    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
-# 修复 Git 分支游离
-function Fix-Git-Point-Off-Set {
-    param(
-        `$path
-    )
-    if (Test-Path `"`$path/.git`") {
-        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
-        if (!(`$?)) {
-            Print-Msg `"检测到出现分支游离, 进行修复中`"
-            git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化git子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
-            git -C `"`$path`" checkout `$branch # 切换到主分支
-            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-        }
-    }
-}
-
-
-# SD WebUI Installer 更新检测
-function Check-Stable-Diffusion-WebUI-Installer-Update {
-    # 可用的下载源
-    `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/stable_diffusion_webui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/stable_diffusion_webui_installer.ps1`"
-    )
-    `$i = 0
-
-    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD WebUI Installer 的自动检查更新功能`"
-        return
-    }
-
-    # 获取更新时间间隔
-    try {
-        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
-        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    catch {
-        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    finally {
-        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
-        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
-    }
-
-    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
-        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 SD WebUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" | Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"=========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-                        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 SD WebUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"SD WebUI Installer 已是最新版本`"
-                }
-                break
-            } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 SD WebUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 SD WebUI Installer 更新失败`"
-                }
-            }
-        }
-    }
-}
-
-
-# 代理配置
-function Set-Proxy {
-    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
-        return
-    }
-
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$proxy_addr = `$(`$internet_setting.ProxyServer)
-        # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
-            `$proxy_value = `$matches[1]
-            # 去除 http / https 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"http://`${proxy_value}`"
-        } elseif (`$proxy_addr -match `"socks=(.*)`") {
-            `$proxy_value = `$matches[1]
-            # 去除 socks 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"socks://`${proxy_value}`"
-        } else {
-            `$proxy_value = `"http://`${proxy_addr}`"
-        }
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-}
-
-
-# Github 镜像源
-function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
-    }
-
-    # 默认 Git 配置
-    git config --global --add safe.directory `"*`"
-    git config --global core.longpaths true
-
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        return
-    }
-
-    # 自动检测可用镜像源并使用
-    `$status = 0
-    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-        Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-        }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
-        if (`$?) {
-            Print-Msg `"该 Github 镜像源可用`"
-            `$github_mirror = `$i
-            `$status = 1
-            break
-        } else {
-            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-        }
-    }
-
-    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-    }
-
-    if (`$status -eq 0) {
-        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-    } else {
-        Print-Msg `"设置 Github 镜像源`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-    }
-}
-
-
-# 列出更新结果
-function List-Update-Status (`$update_status) {
-    `$success = 0
-    `$failed = 0
-    `$sum = 0
-    Print-Msg `"当前 Stable Diffusion WebUI 扩展更新结果`"
-    Write-Host `"-----------------------------------------------------`"
-    Write-Host `"扩展名称`" -ForegroundColor White -NoNewline
-    Write-Host `" | `" -NoNewline
-    Write-Host `"更新结果`" -ForegroundColor Cyan
-    Write-Host
-    for (`$i = 0; `$i -lt `$update_status.Count; `$i++) {
-        `$content = `$update_status[`$i]
-        `$name = `$content[0]
-        `$ver = `$content[1]
-        `$status = `$content[2]
-        `$sum += 1
-        if (`$status) {
-            `$success += 1
-        } else {
-            `$failed += 1
-        }
-        Write-Host `"- `" -ForegroundColor Yellow -NoNewline
-        Write-Host `"`${name}: `" -ForegroundColor White -NoNewline
-        if (`$status) {
-            Write-Host `"`$ver `" -ForegroundColor Cyan
-        } else {
-            Write-Host `"`$ver `" -ForegroundColor Red
-        }
-    }
-    Write-Host
-    Write-Host `"[●: `$sum | ✓: `$success | ×: `$failed]`" -ForegroundColor White
-    Write-Host `"-----------------------------------------------------`"
-}
-
-
-function Main {
-    Print-Msg `"初始化中`"
-    Get-Stable-Diffusion-WebUI-Installer-Version
-    Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
-    Set-Github-Mirror
-
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
-        return
-    }
-
-    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
-    `$sum = 0
-    `$count = 0
-    ForEach (`$extension in `$extension_list) {
-        if (Test-Path `"`$extension/.git`") {
-            `$sum += 1
-        }
-    }
-
-    Print-Msg `"更新 Stable Diffusion WebUI 扩展中`"
-    `$update_status = New-Object System.Collections.ArrayList
-    ForEach (`$extension in `$extension_list) {
-        if (!(Test-Path `"`$extension/.git`")) {
-            continue
-        }
-
-        `$count += 1
-        `$extension_name = `$(`$(Get-Item `$extension).Name)
-        Print-Msg `"[`$count/`$sum] 更新 `$extension_name 扩展中`"
-        Fix-Git-Point-Off-Set `"`$extension`"
-        `$origin_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        `$branch = `$(git -C `"`$extension`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-        git -C `"`$extension`" fetch --recurse-submodules
-        if (`$?) {
-            `$commit_hash = `$(git -C `"`$extension`" log origin/`$branch --max-count 1 --format=`"%h`")
-            git -C `"`$extension`" reset --hard `$commit_hash --recurse-submodules
-            `$latest_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-            if (`$origin_ver -eq `$latest_ver) {
-                Print-Msg `"[`$count/`$sum] `$extension_name 扩展已为最新版`"
-                `$update_status.Add(@(`$extension_name, `"已为最新版`", `$true)) | Out-Null
-            } else {
-                Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新成功, 版本：`$origin_ver -> `$latest_ver`"
-                `$update_status.Add(@(`$extension_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
-            }
-        } else {
-            Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新失败`"
-            `$update_status.Add(@(`$extension_name, `"更新失败`", `$false)) | Out-Null
-        }
-    }
-
-    List-Update-Status `$update_status
-
-    Print-Msg `"退出 Stable Diffusion WebUI 扩展更新脚本`"
-}
-
-###################
-
-Main
-Read-Host | Out-Null
-"
-
-    if (Test-Path "$InstallPath/update_extension.ps1") {
-        Print-Msg "更新 update_extension.ps1 中"
-    } else {
-        Print-Msg "生成 update_extension.ps1 中"
-    }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/update_extension.ps1" -Value $content
 }
 
 
@@ -3476,6 +3553,11 @@ Main
 # 重装 PyTorch 脚本
 function Write-PyTorch-ReInstall-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [int]`$BuildWithTorch,
+    [switch]`$BuildWithTorchReinstall
+)
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -3822,7 +3904,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
     Set-uv
     Pip-Mirror-Status
 
@@ -3878,7 +3964,12 @@ function Main {
         Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
+        if (`$BuildMode) {
+            `$arg = `$BuildWithTorch
+            `$go_to = 1
+        } else {
+            `$arg = (Read-Host `"========================================>`").Trim()
+        }
 
         switch (`$arg) {
             1 {
@@ -4107,7 +4198,11 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$use_force_reinstall = (Read-Host `"=========================================>`").Trim()
+    if (`$BuildMode) {
+        `$use_force_reinstall = `"yes`"
+    } else {
+        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
@@ -4123,7 +4218,11 @@ function Main {
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$install_torch = (Read-Host `"=========================================>`").Trim()
+    if (`$BuildMode) {
+        `$install_torch = `"yes`"
+    } else {
+        `$install_torch = (Read-Host `"========================================>`").Trim()
+    }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
@@ -4140,7 +4239,9 @@ function Main {
             Print-Msg `"安装 PyTorch 成功`"
         } else {
             Print-Msg `"安装 PyTorch 失败, 终止 PyTorch 重装进程`"
-            Read-Host | Out-Null
+            if (!(`$BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
 
@@ -4164,7 +4265,9 @@ function Main {
                 Print-Msg `"安装 xFormers 成功`"
             } else {
                 Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
-                Read-Host | Out-Null
+                if (!(`$BuildMode)) {
+                    Read-Host | Out-Null
+                }
                 exit 1
             }
         }
@@ -4173,12 +4276,15 @@ function Main {
     }
 
     Print-Msg `"退出 PyTorch 重装脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
@@ -4193,6 +4299,10 @@ Read-Host | Out-Null
 # 模型下载脚本
 function Write-Download-Model-Script {
     $content = "
+param (
+    [switch]`$BuildMode,
+    [string]`$BuildWitchModel
+)
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4913,7 +5023,11 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
-    Check-Stable-Diffusion-WebUI-Installer-Update
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
     Check-Aria2-Version
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
@@ -4949,7 +5063,12 @@ function Main {
         Print-Msg `"2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开`"
         Print-Msg `"3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型`"
         Print-Msg `"4. 输入 exit 退出模型下载脚本`"
-        `$arg = Get-User-Input
+        if (`$BuildMode) {
+            `$arg = `$BuildWitchModel
+            `$go_to = 1
+        } else {
+            `$arg = Get-User-Input
+        }
 
         switch (`$arg) {
             exit {
@@ -5028,18 +5147,25 @@ function Main {
     List-Download-Task `$download_list
     Print-Msg `"是否确认下载模型?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    `$download_operate = Get-User-Input
+    if (`$BuildMode) {
+        `$download_operate = `"yes`"
+    } else {
+        `$download_operate = Get-User-Input
+    }
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }
 
     Print-Msg `"退出模型下载脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 "
 
     if (Test-Path "$InstallPath/download_models.ps1") {
@@ -6619,7 +6745,7 @@ update_extension.ps1：更新 Stable Diffusion WebUI 扩展的脚本，可使用
 switch_branch.ps1：切换 Stable Diffusion WebUI 分支。
 launch.ps1：启动 Stable Diffusion WebUI 的脚本。
 reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-download_model.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
+download_models.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 settings.ps1：管理 SD WebUI Installer 的设置。
 terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 help.txt：帮助文档。
@@ -6761,8 +6887,50 @@ function Use-Install-Mode {
     Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $InstallPath"
     Print-Msg "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
-    Print-Msg "退出 SD WebUI Installer"
-    Read-Host | Out-Null
+
+    if ($BuildMode) {
+        Print-Msg "执行其他环境构建脚本中"
+
+        if ($BuildWithTorch) {
+            Print-Msg "执行重装 PyTorch 脚本中"
+            if ($BuildWithTorchReinstall) {
+                . "$InstallPath/reinstall_pytorch.ps1" -BuildMode -BuildWithTorch "$BuildWithTorch" -BuildWithTorchReinstall
+            } else {
+                . "$InstallPath/reinstall_pytorch.ps1" -BuildMode -BuildWithTorch "$BuildWithTorch"
+            }
+        }
+
+        if ($BuildWitchModel) {
+            Print-Msg "执行模型安装脚本中"
+            . "$InstallPath/download_models.ps1" -BuildMode -BuildWitchModel "$BuildWitchModel"
+        }
+
+        if ($BuildWitchBranch) {
+            Print-Msg "执行 SD WebUI 分支切换脚本中"
+            . "$InstallPath/switch_branch.ps1" -BuildMode -BuildWitchBranch "$BuildWitchBranch"
+        }
+
+        if ($BuildWithUpdate) {
+            Print-Msg "执行 SD WebUI 更新脚本中"
+            . "$InstallPath/update.ps1" -BuildMode
+        }
+
+        if ($BuildWithUpdateExtension) {
+            Print-Msg "执行 SD WebUI 插件更新脚本中"
+            . "$InstallPath/update_extension.ps1" -BuildMode
+        }
+
+        if ($BuildWithLaunch) {
+            Print-Msg "执行 SD WebUI 启动脚本中"
+            . "$InstallPath/launch.ps1" -BuildMode
+        }
+
+        Print-Msg "SD WebUI 环境构建完成, 路径: $InstallPath"
+        Print-Msg "退出 SD WebUI Installer"
+    } else {
+        Print-Msg "退出 SD WebUI Installer"
+        Read-Host | Out-Null
+    }
 }
 
 
@@ -6778,7 +6946,7 @@ function Use-Update-Mode {
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>]
 
 参数:
     -Help
@@ -6829,6 +6997,40 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
 
+    -BuildMode
+        启用 SD WebUI Installer 构建模式, 在基础安装流程结束后将调用 SD WebUI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD WebUI Installer 的执行, 而是直接退出
+        当指定调用多个 SD WebUI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+            - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
+            - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
+            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - update.ps1                (对应 -BuildWithUpdate 参数)
+            - update_extension.ps1      (对应 -BuildWithUpdateExtension 参数)
+            - launch.ps1                (对应 -BuildWithLaunch 参数)
+
+    -BuildWithUpdate
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update.ps1 脚本, 更新 SD WebUI 内核
+
+    -BuildWithUpdateExtension
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update_extension.ps1 脚本, 更新 SD WebUI 自定义节点
+
+    -BuildWithLaunch
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 launch.ps1 脚本, 执行启动 SD WebUI 前的环境检查流程, 但跳过启动 SD WebUI
+
+    -BuildWithTorch <PyTorch 版本编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD WebUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
+    -BuildWitchBranch <SD WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 SD WebUI 分支编号切换到对应的 SD WebUI 分支
+        SD WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
+
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 "
@@ -6850,6 +7052,9 @@ function Main {
         Use-Update-Mode
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
+        if ($BuildMode) {
+            Print-Msg "SD WebUI Installer 构建模式已启用"
+        }
         Print-Msg "使用安装模式"
         Use-Install-Mode
     }
