@@ -5200,6 +5200,11 @@ function Use-Install-Mode {
             . "$InstallPath/launch.ps1" -BuildMode
         }
 
+        # 清理缓存
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+
         Print-Msg "SD-Trainer-Script 环境构建完成, 路径: $InstallPath"
         Print-Msg "退出 SD-Trainer-Script Installer"
     } else {
