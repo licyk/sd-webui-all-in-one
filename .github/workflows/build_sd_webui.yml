@@ -27,7 +27,7 @@ jobs:
           New-Item -ItemType File -Path "${{ github.workspace }}/disable_gh_mirror.txt" -Force > $null
           New-Item -ItemType File -Path "${{ github.workspace }}/disable_hf_mirror.txt" -Force > $null
           New-Item -ItemType File -Path "${{ github.workspace }}/disable_pip_mirror.txt" -Force > $null
-          & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" -InstallPath "${{ github.workspace }}/sd_webui_forge" -BuildMode -BuildWithUpdate -BuildWithUpdateNode -BuildWithLaunch -BuildWithTorch 0 -BuildWitchBranch 3 -InstallBranch "sd_webui_forge" -NoPreDownloadModel -BuildWithTorch 32
+          & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" -InstallPath "${{ github.workspace }}/sd_webui_forge" -BuildMode -BuildWithUpdate -BuildWithUpdateExtension -BuildWithLaunch -BuildWithTorch 32 -BuildWitchBranch 3 -InstallBranch "sd_webui_forge" -NoPreDownloadModel
 
       - name: Archive
         shell: pwsh
