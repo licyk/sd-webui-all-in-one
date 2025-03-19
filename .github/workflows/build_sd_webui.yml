@@ -1,8 +1,8 @@
 name: Build SD WebUI
 
 on:
-  push:
-  delete:
+  # push:
+  # delete:
   create:
 
 jobs:

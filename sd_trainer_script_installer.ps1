@@ -139,7 +139,7 @@ function Pip-Mirror-Status {
     if ($USE_PIP_MIRROR) {
         Print-Msg "使用 Pip 镜像源"
     } else {
-        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / 命令行参数 -DisablePipMirror, 已将 Pip 源切换至官方源"
+        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源"
     }
 }
 
@@ -365,7 +365,7 @@ function Install-uv {
 
 
 # Github 镜像测试
-function Test-Github-Mirror {
+function Set-Github-Mirror {
     $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
     if (Test-Path "$InstallPath/.gitconfig") {
         Remove-Item -Path "$InstallPath/.gitconfig" -Force -Recurse
@@ -629,7 +629,7 @@ function Check-Install {
     }
     Check-uv-Version
 
-    Test-Github-Mirror
+    Set-Github-Mirror
     Install-SD-Trainer-Script
     Install-PyTorch
     Install-SD-Trainer-Script-Dependence
@@ -685,7 +685,16 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 function Write-Library-Script {
     $content = "
 param (
-    [switch]`$BuildMode
+    [switch]`$BuildMode,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$DisableUV,
+    [switch]`$DisableCUDAMalloc,
+    [switch]`$DisableEnvCheck
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -697,7 +706,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -778,7 +787,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -832,8 +841,8 @@ function Check-SD-Trainer-Script-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
         return
     }
 
@@ -891,17 +900,21 @@ function Check-SD-Trainer-Script-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -927,15 +940,19 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+        if (`$UseCustomHuggingFaceMirror) {
+            `$hf_mirror_value = `$UseCustomHuggingFaceMirror
+        } else {
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+        }
         `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
         `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
@@ -1007,8 +1024,8 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
+        Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
@@ -1021,10 +1038,10 @@ function Set-uv {
 
 # 设置 CUDA 内存分配器
 function Set-PyTorch-CUDA-Memory-Alloc {
-    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
+    if ((!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) -and (!(`$DisableCUDAMalloc))) {
         Print-Msg `"检测是否可设置 CUDA 内存分配器`"
     } else {
-        Print-Msg `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件, 已禁用自动设置 CUDA 内存分配器`"
+        Print-Msg `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件 / -DisableCUDAMalloc 命令行参数, 已禁用自动设置 CUDA 内存分配器`"
         return
     }
 
@@ -1424,8 +1441,8 @@ function Check-MS-VCPP-Redistributable {
 
 # 检查 SD-Trainer-Script 运行环境
 function Check-SD-Trainer-Script-Env {
-    if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 SD-Trainer-Script 运行环境检测, 这可能会导致 SD-Trainer-Script 运行环境中存在的问题无法被发现并解决`"
+    if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
+        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD-Trainer-Script 运行环境检测, 这可能会导致 SD-Trainer-Script 运行环境中存在的问题无法被发现并解决`"
         return
     } else {
         Print-Msg `"检查 SD-Trainer-Script 运行环境中`"
@@ -1491,7 +1508,13 @@ Main
 function Write-Update-Script {
     $content = "
 param (
-    [switch]`$BuildMode
+    [switch]`$BuildMode,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -1503,7 +1526,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `"`$PIP_EXTRA_INDEX_ADDR_ORI `$PIP_EXTRA_INDEX_ADDR`" } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -1623,8 +1646,8 @@ function Check-SD-Trainer-Script-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
         return
     }
 
@@ -1682,17 +1705,21 @@ function Check-SD-Trainer-Script-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -1718,24 +1745,29 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$InstallPath/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$InstallPath/.gitconfig`") {
+        Remove-Item -Path `"`$InstallPath/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
     }
 
@@ -1746,7 +1778,7 @@ function Set-Github-Mirror {
         if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
             Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -1835,7 +1867,13 @@ function Write-Switch-Branch-Script {
     $content = "
 param (
     [switch]`$BuildMode,
-    [int]`$BuildWitchBranch
+    [int]`$BuildWitchBranch,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -1847,7 +1885,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -1948,8 +1986,8 @@ function Check-SD-Trainer-Script-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
         return
     }
 
@@ -2007,17 +2045,21 @@ function Check-SD-Trainer-Script-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -2043,24 +2085,29 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$InstallPath/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$InstallPath/.gitconfig`") {
+        Remove-Item -Path `"`$InstallPath/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
     }
 
@@ -2071,7 +2118,7 @@ function Set-Github-Mirror {
         if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
             Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2316,6 +2363,15 @@ Main
 # 获取安装脚本
 function Write-Launch-SD-Trainer-Script-Install-Script {
     $content = "
+param (
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUV,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [string]`$InstallBranch
+)
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 
 
@@ -2343,17 +2399,21 @@ function Get-SD-Trainer-Script-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -2415,28 +2475,36 @@ function Download-SD-Trainer-Script-Installer {
 # 获取本地配置文件参数
 function Get-Local-Setting {
     `$arg = @{}
-    if (Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") -or (`$DisablePipMirror)) {
         `$arg.Add(`"-DisablePipMirror`", `$true)
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
         `$arg.Add(`"-DisableProxy`", `$true)
     } else {
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) {
+            if (`$UseCustomProxy) {
+                `$proxy_value = `$UseCustomProxy
+            } else {
+                `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            }
             `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
         `$arg.Add(`"-DisableUV`", `$true)
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) {
         `$arg.Add(`"-DisableGithubMirror`", `$true)
     } else {
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") {
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+            if (`$UseCustomGithubMirror) {
+                `$github_mirror = `$UseCustomGithubMirror
+            } else {
+                `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            }
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
     }
@@ -2458,17 +2526,17 @@ function Get-Local-Setting {
         } elseif ((`$branch -eq `"kohya-ss/musubi-tuner`") -or (`$branch -eq `"kohya-ss/musubi-tuner.git`")) {
             `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
         }
-    } elseif (Test-Path `"`$PSScriptRoot/install_sd_scripts.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_scripts.txt`") -or (`$InstallBranch -eq `"sd_scripts`")) {
         `$arg.Add(`"-InstallBranch`", `"sd_scripts`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_simple_tuner.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_simple_tuner.txt`") -or (`$InstallBranch -eq `"simple_tuner`")) {
         `$arg.Add(`"-InstallBranch`", `"simple_tuner`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_ai_toolkit.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_ai_toolkit.txt`") -or (`$InstallBranch -eq `"ai_toolkit`")) {
         `$arg.Add(`"-InstallBranch`", `"ai_toolkit`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_finetrainers.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_finetrainers.txt`") -or (`$InstallBranch -eq `"finetrainers`")) {
         `$arg.Add(`"-InstallBranch`", `"finetrainers`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_diffusion_pipe.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_diffusion_pipe.txt`") -or (`$InstallBranch -eq `"diffusion_pipe`")) {
         `$arg.Add(`"-InstallBranch`", `"diffusion_pipe`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_musubi_tuner.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_musubi_tuner.txt`") -or (`$InstallBranch -eq `"musubi_tuner`")) {
         `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
     }
 
@@ -2511,7 +2579,12 @@ function Write-PyTorch-ReInstall-Script {
 param (
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
-    [switch]`$BuildWithTorchReinstall
+    [switch]`$BuildWithTorchReinstall,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableUV,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -2523,7 +2596,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2604,7 +2677,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -2623,8 +2696,8 @@ function Check-SD-Trainer-Script-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
         return
     }
 
@@ -2742,8 +2815,8 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
+        Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
@@ -2758,17 +2831,21 @@ function Set-uv {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -3193,7 +3270,11 @@ function Write-Download-Model-Script {
     $content = "
 param (
     [switch]`$BuildMode,
-    [string]`$BuildWitchModel
+    [string]`$BuildWitchModel,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -3205,7 +3286,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3285,17 +3366,21 @@ function Get-SD-Trainer-Script-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -3333,8 +3418,8 @@ function Check-SD-Trainer-Script-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
         return
     }
 
@@ -3839,6 +3924,11 @@ Main
 # SD-Trainer-Script Installer 设置脚本
 function Write-SD-Trainer-Script-Installer-Settings-Script {
     $content = "
+param (
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy
+)
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -3849,7 +3939,7 @@ function Write-SD-Trainer-Script-Installer-Settings-Script {
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3929,17 +4019,21 @@ function Get-SD-Trainer-Script-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -4652,6 +4746,15 @@ Read-Host | Out-Null
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
+param (
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
+)
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$Env:SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4662,7 +4765,7 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -4853,7 +4956,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -4862,17 +4965,21 @@ function Pip-Mirror-Status {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -4898,15 +5005,19 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+        if (`$UseCustomHuggingFaceMirror) {
+            `$hf_mirror_value = `$UseCustomHuggingFaceMirror
+        } else {
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+        }
         `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
         `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
@@ -4925,15 +5036,20 @@ function Set-Github-Mirror {
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     }
 }
 
@@ -5196,8 +5312,8 @@ function Use-Install-Mode {
         }
 
         if ($BuildWithLaunch) {
-            Print-Msg "执行 SD-Trainer-Script 启动脚本中"
-            . "$InstallPath/launch.ps1" -BuildMode
+            Print-Msg "执行 SD-Trainer-Script 初始化脚本中"
+            . "$InstallPath/init.ps1" -BuildMode
         }
 
         # 清理缓存
@@ -5285,13 +5401,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - launch.ps1                (对应 -BuildWithLaunch 参数)
+            - init.ps1                  (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 update.ps1 脚本, 更新 SD-Trainer-Script 内核
 
     -BuildWithLaunch
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 launch.ps1 脚本, 执行启动 SD-Trainer-Script 前的环境检查流程, 但跳过启动 SD-Trainer-Script
+        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 init.ps1 脚本, 执行启动 SD-Trainer-Script 前的环境检查流程, 但跳过启动 SD-Trainer-Script
 
     -BuildWithTorch <PyTorch 版本编号>
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本

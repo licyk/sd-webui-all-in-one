@@ -798,7 +798,7 @@ Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
 
 ### 测试并启用 Github 镜像源
 ```powershell
-Test-Github-Mirror
+Set-Github-Mirror
 # 可用于加速从 Github 下载项目
 ```
 

@@ -870,7 +870,7 @@ Update-Aria2
 
 ### 测试可用的 Github 镜像源并应用
 ```powershell
-Test-Github-Mirror
+Set-Github-Mirror
 ```
 
 

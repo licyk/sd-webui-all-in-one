@@ -134,7 +134,7 @@ function Pip-Mirror-Status {
     if ($USE_PIP_MIRROR) {
         Print-Msg "使用 Pip 镜像源"
     } else {
-        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / 命令行参数 -DisablePipMirror, 已将 Pip 源切换至官方源"
+        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源"
     }
 }
 
@@ -144,7 +144,7 @@ function Set-Proxy {
     $Env:NO_PROXY = "localhost,127.0.0.1,::1"
     # 检测是否禁用自动设置镜像源
     if ((Test-Path "$PSScriptRoot/disable_proxy.txt") -or ($DisableProxy)) {
-        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件 / 命令行参数 -DisableProxy, 禁用自动设置代理"
+        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理"
         return
     }
 
@@ -157,7 +157,7 @@ function Set-Proxy {
         }
         $Env:HTTP_PROXY = $proxy_value
         $Env:HTTPS_PROXY = $proxy_value
-        Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / 命令行参数 -UseCustomProxy, 已读取代理配置文件并设置代理"
+        Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理"
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         $proxy_addr = $($internet_setting.ProxyServer)
         # 提取代理地址
@@ -184,7 +184,7 @@ function Set-Proxy {
 # 设置 uv 的使用状态
 function Set-uv {
     if ((Test-Path "$PSScriptRoot/disable_uv.txt") -or ($DisableUV)) {
-        Print-Msg "检测到 disable_uv.txt 配置文件 / 命令行参数 -DisableUV, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
+        Print-Msg "检测到 disable_uv.txt 配置文件 / -DisableUV, 命令行参数 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
@@ -360,7 +360,7 @@ function Install-uv {
 
 
 # Github 镜像测试
-function Test-Github-Mirror {
+function Set-Github-Mirror {
     $Env:GIT_CONFIG_GLOBAL = "$InstallPath/.gitconfig" # 设置 Git 配置文件路径
     if (Test-Path "$InstallPath/.gitconfig") {
         Remove-Item -Path "$InstallPath/.gitconfig" -Force -Recurse
@@ -371,7 +371,7 @@ function Test-Github-Mirror {
     git config --global core.longpaths true
 
     if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($DisableGithubMirror)) { # 禁用 Github 镜像源
-        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -DisableGithubMirror, 禁用 Github 镜像源"
+        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         return
     }
 
@@ -383,7 +383,7 @@ function Test-Github-Mirror {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
         }
         git config --global url."$github_mirror".insteadOf "https://github.com"
-        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -UseCustomGithubMirror, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         return
     }
 
@@ -1302,7 +1302,7 @@ function Check-Install {
     }
     Check-uv-Version
 
-    Test-Github-Mirror
+    Set-Github-Mirror
 
     # Fooocus 核心
     Git-CLone "$FOOOCUS_REPO" "$InstallPath/Fooocus"
@@ -1346,7 +1346,18 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 param (
-    [switch]`$BuildMode
+    [switch]`$BuildMode,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$DisableUV,
+    [string]`$LaunchArg,
+    [switch]`$EnableShortcut,
+    [switch]`$DisableCUDAMalloc,
+    [switch]`$DisableEnvCheck
 )
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -1358,7 +1369,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -1450,7 +1461,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -1503,8 +1514,8 @@ function Check-Fooocus-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 Fooocus Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -1562,17 +1573,21 @@ function Check-Fooocus-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -1598,15 +1613,19 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+        if (`$UseCustomHuggingFaceMirror) {
+            `$hf_mirror_value = `$UseCustomHuggingFaceMirror
+        } else {
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+        }
         `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
         `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
@@ -1683,8 +1702,8 @@ function Set-uv {
         `$Env:UV_PYTHON = `"`$PSScriptRoot/Fooocus/python/python.exe`"
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
+        Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
@@ -1698,12 +1717,12 @@ function Set-uv {
 # Fooocus 启动参数
 function Get-Fooocus-Launch-Args {
     `$arguments = `"`"
-    if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
         `$arguments = [regex]::Matches(`$launch_args, '(`"[^`"]*`"|''[^'']*''|\S+)') | ForEach-Object {
             `$_.Value -replace '^[`"'']|[`"'']`$', ''
         }
-        Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件, 已读取该启动参数配置文件并应用启动参数`"
+        Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
         Print-Msg `"使用的启动参数: `$arguments`"
     }
     return `$arguments
@@ -1733,11 +1752,11 @@ function Create-Fooocus-Shortcut {
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
-    if (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) {
+    if ((!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) -and (!(`$EnableShortcut))) {
         return
     }
 
-    Print-Msg `"检查 Fooocus 快捷启动方式中`"
+    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 Fooocus 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
         Print-Msg `"获取 Fooocus 图标中`"
         Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
@@ -1772,10 +1791,10 @@ function Create-Fooocus-Shortcut {
 
 # 设置 CUDA 内存分配器
 function Set-PyTorch-CUDA-Memory-Alloc {
-    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
+    if ((!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) -and (!(`$DisableCUDAMalloc))) {
         Print-Msg `"检测是否可设置 CUDA 内存分配器`"
     } else {
-        Print-Msg `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件, 已禁用自动设置 CUDA 内存分配器`"
+        Print-Msg `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件 / -DisableCUDAMalloc 命令行参数, 已禁用自动设置 CUDA 内存分配器`"
         return
     }
 
@@ -2368,8 +2387,8 @@ function Check-MS-VCPP-Redistributable {
 
 # 检查 Fooocus 运行环境
 function Check-Fooocus-Env {
-    if (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件, 已禁用 Fooocus 运行环境检测, 这可能会导致 Fooocus 运行环境中存在的问题无法被发现并解决`"
+    if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
+        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Fooocus 运行环境检测, 这可能会导致 Fooocus 运行环境中存在的问题无法被发现并解决`"
         return
     } else {
         Print-Msg `"检查 Fooocus 运行环境中`"
@@ -2406,7 +2425,7 @@ function Main {
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
 
-    if (!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) {
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
         `$hf_mirror_arg = `"--hf-mirror `$Env:HF_ENDPOINT`"
     } else {
         `$hf_mirror_arg = `"`"
@@ -2450,7 +2469,13 @@ Main
 function Write-Update-Script {
     $content = "
 param (
-    [switch]`$BuildMode
+    [switch]`$BuildMode,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
 )
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -2462,7 +2487,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2582,8 +2607,8 @@ function Check-Fooocus-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 Fooocus Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -2641,17 +2666,21 @@ function Check-Fooocus-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -2677,25 +2706,29 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$InstallPath/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$InstallPath/.gitconfig`") {
+        Remove-Item -Path `"`$InstallPath/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
-    
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
     }
 
@@ -2706,7 +2739,7 @@ function Set-Github-Mirror {
         if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
             Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -2792,7 +2825,13 @@ function Write-Switch-Branch-Script {
     $content = "
 param (
     [switch]`$BuildMode,
-    [int]`$BuildWitchBranch
+    [int]`$BuildWitchBranch,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
 )
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -2804,7 +2843,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2905,8 +2944,8 @@ function Check-Fooocus-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 Fooocus Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -2964,17 +3003,21 @@ function Check-Fooocus-Installer-Update {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -3000,24 +3043,29 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$InstallPath/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$InstallPath/.gitconfig`") {
+        Remove-Item -Path `"`$InstallPath/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         return
     }
 
@@ -3028,7 +3076,7 @@ function Set-Github-Mirror {
         if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
             Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
         }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
         if (`$?) {
             Print-Msg `"该 Github 镜像源可用`"
             `$github_mirror = `$i
@@ -3248,6 +3296,17 @@ Main
 # 获取安装脚本
 function Write-Launch-Fooocus-Install-Script {
     $content = "
+param (
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableUV,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [string]`$InstallBranch
+)
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 
 
@@ -3275,17 +3334,21 @@ function Get-Fooocus-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -3347,28 +3410,36 @@ function Download-Fooocus-Installer {
 # 获取本地配置文件参数
 function Get-Local-Setting {
     `$arg = @{}
-    if (Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") -or (`$DisablePipMirror)) {
         `$arg.Add(`"-DisablePipMirror`", `$true)
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
         `$arg.Add(`"-DisableProxy`", `$true)
     } else {
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) {
+            if (`$UseCustomProxy) {
+                `$proxy_value = `$UseCustomProxy
+            } else {
+                `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            }
             `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
         }
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
         `$arg.Add(`"-DisableUV`", `$true)
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") {
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) {
         `$arg.Add(`"-DisableGithubMirror`", `$true)
     } else {
-        if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") {
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+            if (`$UseCustomGithubMirror) {
+                `$github_mirror = `$UseCustomGithubMirror
+            } else {
+                `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            }
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
     }
@@ -3384,11 +3455,11 @@ function Get-Local-Setting {
         } elseif ((`$branch -eq `"runew0lf/RuinedFooocus`") -or (`$branch -eq `"runew0lf/RuinedFooocus.git`")) {
             `$arg.Add(`"-InstallBranch`", `"ruined_fooocus`")
         }
-    } elseif (Test-Path `"`$PSScriptRoot/install_fooocus.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_fooocus.txt`") -or (`$InstallBranch -eq `"fooocus`")) {
         `$arg.Add(`"-InstallBranch`", `"fooocus`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_fooocus_mre.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_fooocus_mre.txt`") -or (`$InstallBranch -eq `"fooocus_mre`")) {
         `$arg.Add(`"-InstallBranch`", `"fooocus_mre`")
-    } elseif (Test-Path `"`$PSScriptRoot/install_ruined_fooocus.txt`") {
+    } elseif ((Test-Path `"`$PSScriptRoot/install_ruined_fooocus.txt`") -or (`$InstallBranch -eq `"ruined_fooocus`")) {
         `$arg.Add(`"-InstallBranch`", `"ruined_fooocus`")
     }
 
@@ -3432,7 +3503,12 @@ function Write-PyTorch-ReInstall-Script {
 param (
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
-    [switch]`$BuildWithTorchReinstall
+    [switch]`$BuildWithTorchReinstall,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableUV,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy
 )
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -3444,7 +3520,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3525,7 +3601,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -3544,8 +3620,8 @@ function Check-Fooocus-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 Fooocus Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -3668,8 +3744,8 @@ function Set-uv {
         `$Env:UV_PYTHON = `"`$PSScriptRoot/Fooocus/python/python.exe`"
     }
 
-    if (Test-Path `"`$PSScriptRoot/disable_uv.txt`") {
-        Print-Msg `"检测到 disable_uv.txt 配置文件, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
+    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
+        Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
     } else {
         Print-Msg `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
@@ -3684,17 +3760,21 @@ function Set-uv {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -4176,7 +4256,11 @@ function Write-Download-Model-Script {
     $content = "
 param (
     [switch]`$BuildMode,
-    [string]`$BuildWitchModel
+    [string]`$BuildWitchModel,
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableUpdate
 )
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -4188,7 +4272,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -4268,17 +4352,21 @@ function Get-Fooocus-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -4316,8 +4404,8 @@ function Check-Fooocus-Installer-Update {
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件, 已禁用 Fooocus Installer 的自动检查更新功能`"
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -5107,6 +5195,11 @@ Main
 # Fooocus Installer 设置脚本
 function Write-Fooocus-Installer-Settings-Script {
     $content = "
+param (
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy
+)
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -5117,7 +5210,7 @@ function Write-Fooocus-Installer-Settings-Script {
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -5197,17 +5290,21 @@ function Get-Fooocus-Installer-Version {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -6045,6 +6142,17 @@ Read-Host | Out-Null
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
+param (
+    [switch]`$DisablePipMirror,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
+)
 # Fooocus Installer 版本和检查更新间隔
 `$Env:FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -6055,7 +6163,7 @@ function Write-Env-Activate-Script {
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -6210,97 +6318,6 @@ function global:Check-Fooocus-Installer-Update {
 }
 
 
-# 启用 Github 镜像源
-function global:Test-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$Env:FOOOCUS_INSTALLER_ROOT/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/.gitconfig`") {
-        Remove-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/.gitconfig`" -Force -Recurse
-    }
-
-    # 默认 Git 配置
-    git config --global --add safe.directory `"*`"
-    git config --global core.longpaths true
-
-    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
-        return
-    }
-
-    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$Env:FOOOCUS_INSTALLER_ROOT/gh_mirror.txt`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        return
-    }
-
-    # 自动检测可用镜像源并使用
-    `$status = 0
-    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-        Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-        }
-        git clone `$i/licyk/empty `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
-        if (`$?) {
-            Print-Msg `"该 Github 镜像源可用`"
-            `$github_mirror = `$i
-            `$status = 1
-            break
-        } else {
-            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-        }
-    }
-
-    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-    }
-
-    if (`$status -eq 0) {
-        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-    } else {
-        Print-Msg `"设置 Github 镜像源`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-    }
-}
-
-
-# Git 下载命令
-function global:Git-Clone (`$url, `$path) {
-    # 应用 Github 镜像源
-    if (`$global:is_test_gh_mirror -ne 1) {
-        Test-Github-Mirror
-        `$global:is_test_gh_mirror = 1
-    }
-
-    `$repo_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    if (`$path.Length -ne 0) {
-        `$repo_path = `$path
-    } else {
-        `$repo_path = `"`$(`$(Get-Location).ToString())/`$repo_name`"
-    }
-    if (!(Test-Path `"`$repo_path`")) {
-        `$status = 1
-    } else {
-        `$items = Get-ChildItem `"`$repo_path`" -Recurse
-        if (`$items.Count -eq 0) {
-            `$status = 1
-        }
-    }
-
-    if (`$status -eq 1) {
-        Print-Msg `"下载 `$repo_name 中`"
-        git clone --recurse-submodules `$url `"`$path`"
-        if (`$?) {
-            Print-Msg `"`$repo_name 下载成功`"
-        } else {
-            Print-Msg `"`$repo_name 下载失败`"
-        }
-    } else {
-        Print-Msg `"`$repo_name 已存在`"
-    }
-}
-
-
 # 安装绘世启动器
 function global:Install-Hanamizuki {
     `$urls = @(
@@ -6421,8 +6438,6 @@ Github：https://github.com/licyk
     Update-uv
     Update-Aria2
     Check-Fooocus-Installer-Update
-    Test-Github-Mirror
-    Git-Clone
     Install-Hanamizuki
     List-CMD
 
@@ -6446,7 +6461,7 @@ function Pip-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 Pip 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
     }
 }
 
@@ -6455,17 +6470,21 @@ function Pip-Mirror-Status {
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-        `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
         `$Env:HTTP_PROXY = `$proxy_value
         `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
     } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         `$proxy_addr = `$(`$internet_setting.ProxyServer)
         # 提取代理地址
@@ -6491,15 +6510,19 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if (Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+        Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/hf_mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-        `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+        if (`$UseCustomHuggingFaceMirror) {
+            `$hf_mirror_value = `$UseCustomHuggingFaceMirror
+        } else {
+            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+        }
         `$Env:HF_ENDPOINT = `$hf_mirror_value
-        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+        Print-Msg `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
     } else { # 使用默认设置
         `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Print-Msg `"使用默认 HuggingFace 镜像源`"
@@ -6518,15 +6541,20 @@ function Set-Github-Mirror {
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if (Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件, 禁用 Github 镜像源`"
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if (Test-Path `"`$PSScriptRoot/gh_mirror.txt`") { # 使用自定义 Github 镜像源
-        `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
     }
 }
 
@@ -6725,11 +6753,11 @@ function Use-Install-Mode {
     Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
     if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
-        Print-Msg "检测到 install_fooocus.txt 配置文件 / 命令行参数 -InstallBranch fooocus, 选择安装 lllyasviel/Fooocus"
+        Print-Msg "检测到 install_fooocus.txt 配置文件 / -InstallBranch fooocus 命令行参数, 选择安装 lllyasviel/Fooocus"
     } elseif ((Test-Path "$PSScriptRoot/install_fooocus_mre.txt") -or ($InstallBranch -eq "fooocus_mre")) {
-        Print-Msg "检测到 install_fooocus_mre.txt 配置文件 / 命令行参数 -InstallBranch fooocus_mre, 选择安装 MoonRide303/Fooocus-MRE"
+        Print-Msg "检测到 install_fooocus_mre.txt 配置文件 / -InstallBranch fooocus_mre 命令行参数, 选择安装 MoonRide303/Fooocus-MRE"
     } elseif ((Test-Path "$PSScriptRoot/install_ruined_fooocus.txt") -or ($InstallBranch -eq "ruined_fooocus")) {
-        Print-Msg "检测到 install_ruined_fooocus.txt 配置文件 / 命令行参数 -InstallBranch ruined_fooocus, 选择安装 runew0lf/RuinedFooocus"
+        Print-Msg "检测到 install_ruined_fooocus.txt 配置文件 / -InstallBranch ruined_fooocus 命令行参数, 选择安装 runew0lf/RuinedFooocus"
     } else {
         Print-Msg "未指定安装的 Fooocus 分支, 默认选择安装 lllyasviel/Fooocus"
     }
