@@ -3452,7 +3452,6 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
-    [switch]`$DisableProxy,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
@@ -6257,7 +6256,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$Env:SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION

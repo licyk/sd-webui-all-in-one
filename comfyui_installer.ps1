@@ -5934,8 +5934,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$DisableGithubMirror
+    [string]`$UseCustomHuggingFaceMirror
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
