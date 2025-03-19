@@ -3453,7 +3453,6 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
@@ -6443,7 +6442,7 @@ function global:Test-Github-Mirror {
 
     if ((Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) { # 使用自定义 Github 镜像源
         if (`$UseCustomGithubMirror) {
-            `$github_mirror = `$`$github_mirror
+            `$github_mirror = `$UseCustomGithubMirror
         } else {
             `$github_mirror = Get-Content `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`"
         }

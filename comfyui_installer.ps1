@@ -5935,8 +5935,7 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [switch]`$DisableGithubMirror
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -6121,7 +6120,7 @@ function global:Test-Github-Mirror {
 
     if ((Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) { # 使用自定义 Github 镜像源
         if (`$UseCustomGithubMirror) {
-            `$github_mirror = `$`$github_mirror
+            `$github_mirror = `$UseCustomGithubMirror
         } else {
             `$github_mirror = Get-Content `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`"
         }

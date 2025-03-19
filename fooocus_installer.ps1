@@ -3300,7 +3300,6 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
-    [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
@@ -6150,8 +6149,7 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [switch]`$DisableGithubMirror
 )
 # Fooocus Installer 版本和检查更新间隔
 `$Env:FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
