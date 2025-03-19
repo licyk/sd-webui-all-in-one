@@ -3598,7 +3598,7 @@ print(ver)
 # 获取驱动支持的最高 CUDA 版本
 function Get-Drive-Support-CUDA-Version {
     Print-Msg `"获取显卡驱动支持的最高 CUDA 版本`"
-    if (Get-Command nvidia-smi 2> `$null) {
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
         `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
     } else {
         `$cuda_ver = `"未知`"

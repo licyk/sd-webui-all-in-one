@@ -1476,8 +1476,8 @@ function Main {
     `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/datasets`")
     `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/models`")
     `$Global:OUTPUT_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/outputs`")
-    `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git 2> `$null).Source)
-    `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python 2> `$null).Source)
+    `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git -ErrorAction SilentlyContinue).Source)
+    `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python -ErrorAction SilentlyContinue).Source)
 
     Print-Msg `"可用的预设变量`"
     Print-Msg `"ROOT_PATH: `$ROOT_PATH`"
@@ -2509,7 +2509,7 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/sd-scripts/.git`")) {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/sd-scripts/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
@@ -2889,7 +2889,7 @@ print(ver)
 # 获取驱动支持的最高 CUDA 版本
 function Get-Drive-Support-CUDA-Version {
     Print-Msg `"获取显卡驱动支持的最高 CUDA 版本`"
-    if (Get-Command nvidia-smi 2> `$null) {
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
         `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
     } else {
         `$cuda_ver = `"未知`"

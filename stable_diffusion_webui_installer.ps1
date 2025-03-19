@@ -1241,7 +1241,7 @@ function Get-Stable-Diffusion-WebUI-Launch-Args {
 # 设置 Stable Diffusion WebUI 的快捷启动方式
 function Create-Stable-Diffusion-WebUI-Shortcut {
     # 设置快捷方式名称
-    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
@@ -3594,7 +3594,7 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git 2> `$null) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
@@ -3976,7 +3976,7 @@ print(ver)
 # 获取驱动支持的最高 CUDA 版本
 function Get-Drive-Support-CUDA-Version {
     Print-Msg `"获取显卡驱动支持的最高 CUDA 版本`"
-    if (Get-Command nvidia-smi 2> `$null) {
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
         `$cuda_ver = `$(nvidia-smi -q | Select-String -Pattern 'CUDA Version\s*:\s*([\d.]+)').Matches.Groups[1].Value
     } else {
         `$cuda_ver = `"未知`"
