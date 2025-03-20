@@ -3151,7 +3151,10 @@ function Main {
             Print-Msg `"InvokeAI 安装成功`"
         } else {
             Print-Msg `"InvokeAI 安装失败, 无法进行 PyTorch 重装`"
-            return
+            if (!(`$BuildMode)) {
+                Read-Host | Out-Null
+            }
+            exit 1
         }
 
         Print-Msg `"重新安装 PyTorch`"

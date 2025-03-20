@@ -1225,9 +1225,13 @@ function Set-uv {
 
 # Stable Diffusion WebUI 启动参数
 function Get-Stable-Diffusion-WebUI-Launch-Args {
-    `$arguments = `"`"
+    `$arguments = @{}
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
-        `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+        if (`$LaunchArg) {
+            `$launch_args = `$LaunchArg
+        } else {
+            `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+        }
         `$arguments = [regex]::Matches(`$launch_args, '(`"[^`"]*`"|''[^'']*''|\S+)') | ForEach-Object {
             `$_.Value -replace '^[`"'']|[`"'']`$', ''
         }
@@ -2117,7 +2121,7 @@ function Main {
     } else {
         Print-Msg `"启动 Stable Diffusion WebUI 中`"
         Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
-        python launch.py `$launch_args
+        python launch.py @launch_args
         `$req = `$?
         if (`$req) {
             Print-Msg `"Stable Diffusion WebUI 正常退出`"
@@ -3214,7 +3218,7 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
     if (`$use_submod) {
         `$use_submodules = `"--recurse-submodules`"
     } else {
-        `$use_submodules = `"`"
+        `$use_submodules = @{}
     }
 
     Print-Msg `"Stable Diffusion WebUI 远程源替换: `$preview_url -> `$remote`"
@@ -3245,7 +3249,7 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
             git -C `"`$sd_webui_path`" submodule deinit --all -f
             git -C `"`$sd_webui_path`" submodule update --init --recursive
         }
-        git -C `"`$sd_webui_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        git -C `"`$sd_webui_path`" reset @use_submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
         Print-Msg `"切换 Stable Diffusion WebUI 分支完成`"
         `$global:status = `$true
     } else {
@@ -4312,7 +4316,7 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildMode) {
+    if (`$BuildWithTorchReinstall) {
         `$use_force_reinstall = `"yes`"
     } else {
         `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
@@ -4322,7 +4326,7 @@ function Main {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = `"`"
+        `$force_reinstall_arg = @{}
         `$force_reinstall_status = `"禁用`"
     }
 
@@ -4341,13 +4345,13 @@ function Main {
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
         if (`$USE_UV) {
-            uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
+            uv pip install `$torch_ver.ToString().Split() @force_reinstall_arg
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
+                python -m pip install `$torch_ver.ToString().Split() @force_reinstall_arg
             }
         } else {
-            python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
+            python -m pip install `$torch_ver.ToString().Split() @force_reinstall_arg
         }
         if (`$?) {
             Print-Msg `"安装 PyTorch 成功`"

@@ -1091,7 +1091,7 @@ function Set-uv {
 
 # ComfyUI 启动参数
 function Get-ComfyUI-Launch-Args {
-    `$arguments = `"`"
+    `$arguments = @{}
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
             `$launch_args = `$LaunchArg
@@ -2303,7 +2303,7 @@ function Main {
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过启动 ComfyUI`"
     } else {
-        python main.py `$launch_args
+        python main.py @launch_args
         `$req = `$?
         if (`$req) {
             Print-Msg `"ComfyUI 正常退出`"
@@ -3708,7 +3708,7 @@ function Main {
                 `$force_reinstall_arg = `"--force-reinstall`"
                 `$force_reinstall_status = `"启用`"
             } else {
-                `$force_reinstall_arg = `"`"
+                `$force_reinstall_arg = @{}
                 `$force_reinstall_status = `"禁用`"
             }
         } else {
@@ -3940,18 +3940,20 @@ function Main {
         exit 0
     }
 
-    if (!(`$BuildMode)) {
-        Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
-        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
+    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    if (`$BuildWithTorchReinstall) {
+        `$use_force_reinstall = `"yes`"
+    } else {
         `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+    }
 
-        if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
-            `$force_reinstall_arg = `"--force-reinstall`"
-            `$force_reinstall_status = `"启用`"
-        } else {
-            `$force_reinstall_arg = `"`"
-            `$force_reinstall_status = `"禁用`"
-        }
+    if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
+        `$force_reinstall_arg = `"--force-reinstall`"
+        `$force_reinstall_status = `"启用`"
+    } else {
+        `$force_reinstall_arg = @{}
+        `$force_reinstall_status = `"禁用`"
     }
 
     Print-Msg `"当前的选择`"

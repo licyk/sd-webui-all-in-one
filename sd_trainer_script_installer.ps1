@@ -2164,7 +2164,7 @@ function Switch-SD-Trainer-Script-Branch (`$remote, `$branch, `$use_submod) {
     if (`$use_submod) {
         `$use_submodules = `"--recurse-submodules`"
     } else {
-        `$use_submodules = `"`"
+        `$use_submodules = @{}
     }
 
     Print-Msg `"SD-Trainer-Script 远程源替换: `$preview_url -> `$remote`"
@@ -2195,7 +2195,7 @@ function Switch-SD-Trainer-Script-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
             git -C `"`$sd_trainer_script_path`" submodule update --init --recursive
         }
-        git -C `"`$sd_trainer_script_path`" reset `$use_submodules.ToString() --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        git -C `"`$sd_trainer_script_path`" reset @use_submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
         Print-Msg `"切换 SD-Trainer-Script 分支成功`"
     } else {
         Print-Msg `"拉取 SD-Trainer-Script 远程源更新失败, 取消分支切换`"
@@ -3181,7 +3181,7 @@ function Main {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = `"`"
+        `$force_reinstall_arg = @{}
         `$force_reinstall_status = `"禁用`"
     }
 
@@ -3192,7 +3192,7 @@ function Main {
     Print-Msg `"是否确认安装?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
     if (`$BuildMode) {
-        `$install_torch = `"`"
+        `$install_torch = `"yes`"
     } else {
         `$install_torch = (Read-Host `"===========================================>`").Trim()
     }
