@@ -11,7 +11,17 @@
     [switch]$BuildWithUpdateNode,
     [switch]$BuildWithLaunch,
     [switch]$BuildWithTorchReinstall,
-    [string]$BuildWitchModel
+    [string]$BuildWitchModel,
+
+    # 仅在管理脚本中生效
+    [switch]$DisableUpdate,
+    [switch]$DisableHuggingFaceMirror,
+    [string]$UseCustomHuggingFaceMirror,
+    [switch]$EnableShortcut,
+    [switch]$DisableCUDAMalloc,
+    [switch]$DisableEnvCheck,
+    [switch]$DisableGithubMirror,
+    [string]$UseCustomGithubMirror
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # InvokeAI Installer 版本和检查更新间隔
@@ -679,7 +689,8 @@ param (
     [switch]`$DisableUV,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [switch]`$DisableEnvCheck,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -743,6 +754,56 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -BuildMode
+        启用 InvokeAI Installer 构建模式
+
+    -DisableUpdate
+        禁用 InvokeAI Installer 更新检查
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableUV
+        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -EnableShortcut
+        创建 Fooocus 启动快捷方式
+
+    -DisableCUDAMalloc
+        禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        禁用 InvokeAI Installer 检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -1357,6 +1418,7 @@ function Check-InvokeAI-Env {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
@@ -1427,7 +1489,8 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUV
+    [switch]`$DisableUV,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -1491,6 +1554,44 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -BuildMode
+        启用 InvokeAI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 InvokeAI Installer 更新检查
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableUV
+        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -1915,6 +2016,7 @@ print(f'InvokeAI=={ver}')
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
@@ -2035,7 +2137,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -2110,6 +2213,56 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -BuildMode
+        启用 InvokeAI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 InvokeAI Installer 更新检查
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 InvokeAI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2359,6 +2512,7 @@ function List-Update-Status (`$update_status) {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
@@ -2440,12 +2594,45 @@ function Write-Launch-InvokeAI-Install-Script {
 param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
+    [switch]`$DisablePipMirror,
     [switch]`$DisableUV,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [switch]`$Help
 )
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+
+    使用:
+    .\launch_invokeai_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePipMirror] [-DisableUV]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUV
+        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2547,20 +2734,20 @@ function Download-InvokeAI-Installer {
 # 获取本地配置文件参数
 function Get-Local-Setting {
     `$arg = @{}
-    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
-        `$arg.Add(`"-DisableUV`", `$true)
+    if ((Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") -or (`$DisablePipMirror)) {
+        `$arg.Add(`"-DisablePipMirror`", `$true)
     }
 
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) {
-        `$arg.Add(`"-DisableGithubMirror`", `$true)
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        `$arg.Add(`"-DisableProxy`", `$true)
     } else {
-        if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
-            if (`$UseCustomGithubMirror) {
-                `$github_mirror = `$UseCustomGithubMirror
+        if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) {
+            if (`$UseCustomProxy) {
+                `$proxy_value = `$UseCustomProxy
             } else {
-                `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+                `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
             }
-            `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
+            `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
         }
     }
 
@@ -2575,6 +2762,7 @@ function Get-Local-Setting {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
 
     `$status = Download-InvokeAI-Installer
@@ -2610,7 +2798,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate,
-    [switch]`$DisableUV
+    [switch]`$DisableUV,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -2674,6 +2863,44 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableUV]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -BuildMode
+        启用 InvokeAI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableUpdate
+        禁用 InvokeAI Installer 更新检查
+
+    -DisableUV
+        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3110,6 +3337,7 @@ except:
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
@@ -3206,7 +3434,8 @@ param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [switch]`$DisableUpdate,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -3270,6 +3499,45 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -BuildMode
+        启用 InvokeAI Installer 构建模式
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableUpdate
+        禁用 InvokeAI Installer 更新检查
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -4142,6 +4410,7 @@ function Import-Model-To-InvokeAI (`$model_list) {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过 InvokeAI Installer 更新检查`"
@@ -4298,7 +4567,8 @@ function Write-InvokeAI-Installer-Settings-Script {
 param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -4362,6 +4632,35 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\settings.ps1 [-Help] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -5064,6 +5363,7 @@ function Get-InvokeAI-Installer-Help-Docs {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
 
     while (`$true) {
@@ -5187,7 +5487,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$Help
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$Env:INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -5263,6 +5564,56 @@ param (
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 `$Env:INVOKEAI_INSTALLER_ROOT = `$PSScriptRoot
 
+
+
+# 帮助信息
+function Get-InvokeAI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\activate.ps1 [-Help] [-DisablePipMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+
+参数:
+    -Help
+        获取 InvokeAI Installer 的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableGithubMirror
+        禁用 InvokeAI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+    -DisableProxy
+        禁用 InvokeAI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 提示信息
@@ -5632,6 +5983,7 @@ function Set-HuggingFace-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
+    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     Set-HuggingFace-Mirror
     Pip-Mirror-Status
@@ -5913,8 +6265,10 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 "
-    Write-Host $content
-    exit 0
+    if ($Help) {
+        Write-Host $content
+        exit 0
+    }
 }
 
 
@@ -5922,9 +6276,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 function Main {
     Print-Msg "初始化中"
     Get-InvokeAI-Installer-Version
-    if ($Help) {
-        Get-InvokeAI-Installer-Cmdlet-Help
-    }
+    Get-InvokeAI-Installer-Cmdlet-Help
 
     if ($UseUpdateMode) {
         Print-Msg "使用更新模式"

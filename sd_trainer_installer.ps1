@@ -15,7 +15,16 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [int]$BuildWitchBranch
+    [int]$BuildWitchBranch,
+
+    # 仅在管理脚本中生效
+    [switch]$DisableUpdate,
+    [switch]$DisableHuggingFaceMirror,
+    [string]$UseCustomHuggingFaceMirror,
+    [string]$LaunchArg,
+    [switch]$EnableShortcut,
+    [switch]$DisableCUDAMalloc,
+    [switch]$DisableEnvCheck
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # SD-Trainer Installer 版本和检查更新间隔
@@ -643,7 +652,8 @@ param (
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [switch]`$DisableEnvCheck,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -710,6 +720,59 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -BuildMode
+        启用 SD-Trainer Installer构建模式
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer更新检查
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableUV
+        禁用 SD-Trainer Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -LaunchArg <Fooocus 启动参数>
+        设置 Fooocus 自定义启动参数, 如启用 --disable-offload-from-vram 和 --disable-analytics, 则使用 -LaunchArg ```"--disable-offload-from-vram --disable-analytics```" 进行启用
+
+    -EnableShortcut
+        创建 Fooocus 启动快捷方式
+
+    -DisableCUDAMalloc
+        禁用 SD-Trainer Installer通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        禁用 SD-Trainer Installer检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -1698,6 +1761,7 @@ function Check-SD-Trainer-Env {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
@@ -1770,7 +1834,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -1848,6 +1913,56 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -BuildMode
+        启用 SD-Trainer Installer构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer更新检查
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2061,6 +2176,7 @@ function Set-Github-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
@@ -2129,7 +2245,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -2207,6 +2324,60 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -BuildMode
+        启用 SD-Trainer Installer构建模式
+
+    -BuildWitchBranch <Fooocus 分支编号>
+        (需添加 -BuildMode 启用 SD-Trainer Installer构建模式) SD-Trainer Installer执行完基础安装流程后调用 SD-Trainer Installer的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
+        Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer更新检查
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2471,6 +2642,7 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
@@ -2587,10 +2759,66 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [string]`$InstallBranch
+    [string]`$InstallBranch,
+    [switch]`$Help
 )
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\launch_sd_trainer_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePipMirror] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-InstallBranch <Fooocus 分支名称>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUV
+        禁用 SD-Trainer Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -DisableGithubMirror
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+    -InstallBranch <安装的 SD-Trainer 分支>
+        指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
+        例如: .\launch_sd_trainer_installer.ps1 -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
+        未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
+        支持指定安装的分支如下:
+            sd_trainer:     Akegarasu/SD-Trainer
+            kohya_gui:      bmaltais/Kohya GUI
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2748,6 +2976,7 @@ function Get-Local-Setting {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
 
     `$status = Download-SD-Trainer-Installer
@@ -2785,7 +3014,8 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -2852,6 +3082,51 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePipMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -BuildMode
+        启用 SD-Trainer Installer构建模式
+
+    -BuildWithTorch <PyTorch 版本编号>
+        (需添加 -BuildMode 启用 SD-Trainer Installer构建模式) SD-Trainer Installer执行完基础安装流程后调用 SD-Trainer Installer的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 SD-Trainer Installer构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer更新检查
+
+    -DisableUV
+        禁用 SD-Trainer Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3136,6 +3411,7 @@ except:
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
@@ -3480,7 +3756,8 @@ param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [switch]`$DisableUpdate,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -3547,6 +3824,45 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -BuildMode
+        启用 SD-Trainer Installer构建模式
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 SD-Trainer Installer构建模式) SD-Trainer Installer执行完基础安装流程后调用 SD-Trainer Installer的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer更新检查
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3976,6 +4292,7 @@ function Search-Model-List (`$model_list, `$key) {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
@@ -4133,7 +4450,8 @@ function Write-SD-Trainer-Installer-Settings-Script {
 param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -4200,6 +4518,35 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\settings.ps1 [-Help] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -4958,6 +5305,7 @@ function Get-SD-Trainer-Installer-Help-Docs {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
 
     while (`$true) {
@@ -5086,7 +5434,8 @@ param (
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
@@ -5154,6 +5503,56 @@ param (
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 `$Env:SD_TRAINER_INSTALLER_ROOT = `$PSScriptRoot
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\activate.ps1 [-Help] [-DisablePipMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 SD-Trainer Installer自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableGithubMirror
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 提示符信息
@@ -5486,6 +5885,7 @@ function Set-Github-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -5841,8 +6241,10 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 "
-    Write-Host $content
-    exit 0
+    if ($Help) {
+        Write-Host $content
+        exit 0
+    }
 }
 
 
@@ -5850,9 +6252,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 function Main {
     Print-Msg "初始化中"
     Get-SD-Trainer-Installer-Version
-    if ($Help) {
-        Get-SD-Trainer-Installer-Cmdlet-Help
-    }
+    Get-SD-Trainer-Installer-Cmdlet-Help
 
     if ($UseUpdateMode) {
         Print-Msg "使用更新模式"

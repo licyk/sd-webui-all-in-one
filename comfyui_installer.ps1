@@ -15,7 +15,16 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [switch]$NoPreDownloadNode
+    [switch]$NoPreDownloadNode,
+
+    # 仅在管理脚本中生效
+    [switch]$DisableUpdate,
+    [switch]$DisableHuggingFaceMirror,
+    [switch]$UseCustomHuggingFaceMirror,
+    [string]$LaunchArg,
+    [switch]$EnableShortcut,
+    [switch]$DisableCUDAMalloc,
+    [switch]$DisableEnvCheck
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # ComfyUI Installer 版本和检查更新间隔
@@ -673,7 +682,8 @@ param (
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [switch]`$DisableEnvCheck,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -751,6 +761,74 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableUV] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -BuildMode
+        启用 ComfyUI Installer 构建模式
+
+    -DisableUpdate
+        禁用 ComfyUI Installer 更新检查
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+    -DisableUV
+        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -LaunchArg <ComfyUI 启动参数>
+        设置 ComfyUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+
+    -EnableShortcut
+        创建 ComfyUI 启动快捷方式
+
+    -DisableCUDAMalloc
+        禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题, 禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2275,6 +2353,7 @@ function Check-ComfyUI-Env {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -2339,7 +2418,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -2417,6 +2497,53 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\update.ps1 [-Help] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -BuildMode
+        启用 ComfyUI Installer 构建模式
+
+    -DisableUpdate
+        禁用 ComfyUI Installer 更新检查
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -2630,6 +2757,7 @@ function Set-Github-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -2694,7 +2822,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -2772,6 +2901,53 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\update_node.ps1 [-Help] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -BuildMode
+        启用 ComfyUI Installer 构建模式
+
+    -DisableUpdate
+        禁用 ComfyUI Installer 更新检查
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3021,6 +3197,7 @@ function List-Update-Status (`$update_status) {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -3105,10 +3282,59 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUV,
-    [switch]`$DisableGithubMirror
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [switch]`$Help
 )
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\launch_comfyui_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePipMirror] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUV
+        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3251,6 +3477,7 @@ function Get-Local-Setting {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
 
     `$status = Download-ComfyUI-Installer
@@ -3288,7 +3515,8 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -3355,6 +3583,51 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePipMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -BuildMode
+        启用 ComfyUI Installer 构建模式
+
+    -BuildWithTorch <PyTorch 版本编号>
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 ComfyUI Installer 更新检查
+
+    -DisableUV
+        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -3639,6 +3912,7 @@ except:
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -4048,7 +4322,8 @@ param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [switch]`$DisableUpdate,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -4115,6 +4390,45 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -BuildMode
+        启用 ComfyUI Installer 构建模式
+
+    -BuildWitchModel <模型编号列表>
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableUpdate
+        禁用 ComfyUI Installer 更新检查
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -4825,6 +5139,7 @@ function Search-Model-List (`$model_list, `$key) {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -4986,7 +5301,8 @@ function Write-ComfyUI-Installer-Settings-Script {
 param (
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [switch]`$UseCustomProxy
+    [switch]`$UseCustomProxy,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -5053,6 +5369,35 @@ param (
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\settings.ps1 [-Help] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
@@ -5808,6 +6153,7 @@ function Get-ComfyUI-Installer-Help-Docs {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
 
     while (`$true) {
@@ -5936,7 +6282,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror
+    [string]`$UseCustomHuggingFaceMirror,
+    [switch]`$Help
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -6015,6 +6362,56 @@ param (
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 `$Env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
 
+
+
+# 帮助信息
+function Get-ComfyUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\activate.ps1 [-Help] [-DisablePipMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+
+参数:
+    -Help
+        获取 ComfyUI Installer 的帮助信息
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+
+    -DisableGithubMirror
+        禁用 ComfyUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
+    -DisableProxy
+        禁用 ComfyUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+
+更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+`"
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 提示符信息
@@ -6509,6 +6906,7 @@ function Set-Github-Mirror {
 function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
+    Get-ComfyUI-Installer-Cmdlet-Help
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -6843,8 +7241,10 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 "
-    Write-Host $content
-    exit 0
+    if ($Help) {
+        Write-Host $content
+        exit 0
+    }
 }
 
 
@@ -6852,9 +7252,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 function Main {
     Print-Msg "初始化中"
     Get-ComfyUI-Installer-Version
-    if ($Help) {
-        Get-ComfyUI-Installer-Cmdlet-Help
-    }
+    Get-ComfyUI-Installer-Cmdlet-Help
 
     if ($UseUpdateMode) {
         Print-Msg "使用更新模式"
