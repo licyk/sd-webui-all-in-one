@@ -2580,7 +2580,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 SD-Trainer-Script 分支>
         指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts, simple_tuner, ai_toolkit, finetrainers, diffusion_pipe, musubi_tuner)
-        例如: .\launch_sd_trainer_script_installer.ps1 -InstallBranch `"simple_tuner`", 这将指定 SD-Trainer-Script Installer 安装 bghira/SimpleTuner 分支
+        例如: .\launch_sd_trainer_script_installer.ps1 -InstallBranch ```"simple_tuner```", 这将指定 SD-Trainer-Script Installer 安装 bghira/SimpleTuner 分支
         未指定该参数时, 默认安装 kohya-ss/sd-scripts 分支
         支持指定安装的分支如下:
             sd_scripts:     kohya-ss/sd-scripts

@@ -3723,7 +3723,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 Stable Diffusion WebUI 分支>
         指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_amdgpu, sdnext)
-        例如: .\launch_stable_diffusion_webui_installer.ps1 -InstallBranch `"sd_webui_forge`", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
+        例如: .\launch_stable_diffusion_webui_installer.ps1 -InstallBranch ```"sd_webui_forge```", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
         未指定该参数时, 默认安装 AUTOMATIC1111/Stable-Diffusion-WebUI 分支
         支持指定安装的分支如下:
             sd_webui:           AUTOMATIC1111/Stable-Diffusion-WebUI

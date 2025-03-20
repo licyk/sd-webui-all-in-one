@@ -2805,7 +2805,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 SD-Trainer 分支>
         指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
-        例如: .\launch_sd_trainer_installer.ps1 -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
+        例如: .\launch_sd_trainer_installer.ps1 -InstallBranch ```"kohya_gui```", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
         未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
         支持指定安装的分支如下:
             sd_trainer:     Akegarasu/SD-Trainer

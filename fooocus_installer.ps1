@@ -3530,7 +3530,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
 
     -InstallBranch <安装的 Fooocus 分支>
         指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
-        例如: .\fooocus_installer.ps1 -InstallBranch `"fooocus_mre`", 这将指定 Fooocus Installer 安装 MoonRide303/Fooocus-MRE 分支
+        例如: .\fooocus_installer.ps1 -InstallBranch ```"fooocus_mre```", 这将指定 Fooocus Installer 安装 MoonRide303/Fooocus-MRE 分支
         未指定该参数时, 默认安装 lllyasviel/Fooocus 分支
         支持指定安装的分支如下:
             fooocus:        lllyasviel/Fooocus
