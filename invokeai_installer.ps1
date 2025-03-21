@@ -547,7 +547,7 @@ for require in invokeai_requires:
 for ver in pytorch_ver:
     ver_list = f'{ver_list} {ver}'
 
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
 
 print(ver_list)
 "
@@ -1994,7 +1994,7 @@ for require in invokeai_requires:
 for ver in pytorch_ver:
     ver_list = f'{ver_list} {ver}'
 
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
 
 print(ver_list)
 `"
@@ -3158,7 +3158,7 @@ for require in invokeai_requires:
 for ver in pytorch_ver:
     ver_list = f'{ver_list} {ver}'
 
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'
+ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
 
 print(ver_list)
 `"
