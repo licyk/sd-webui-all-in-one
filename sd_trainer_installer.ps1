@@ -1055,7 +1055,7 @@ function Set-uv {
 
 # SD-Trainer 启动参数
 function Get-SD-Trainer-Launch-Args {
-    `$arguments = @{}
+    `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
             `$launch_args = `$LaunchArg
@@ -2588,12 +2588,6 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
 
     Set-Github-Mirror # 设置 Github 镜像源
 
-    if (`$use_submod) {
-        `$use_submodules = `"--recurse-submodules`"
-    } else {
-        `$use_submodules = @{}
-    }
-
     Print-Msg `"SD-Trainer 远程源替换: `$preview_url -> `$remote`"
     git -C `"`$sd_trainer_path`" remote set-url origin `"`$remote`" # 替换远程源
 
@@ -2622,7 +2616,11 @@ function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$sd_trainer_path`" submodule deinit --all -f
             git -C `"`$sd_trainer_path`" submodule update --init --recursive
         }
-        git -C `"`$sd_trainer_path`" reset @use_submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        if (`$use_submod) {
+            git -C `"`$sd_trainer_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
         Print-Msg `"切换 SD-Trainer 分支成功`"
     } else {
         Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
@@ -3467,10 +3465,11 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         if (`$BuildMode) {
-            `$arg = `"yes`"
+            Print-Msg `"SD-Trainer Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
+            `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"===========================================>`").Trim()
+            `$arg = (Read-Host `"========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -3653,17 +3652,21 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildWithTorchReinstall) {
-        `$use_force_reinstall = `"yes`"
+    if (`$BuildMode) {
+        if (`$BuildWithTorchReinstall) {
+            `$use_force_reinstall = `"yes`"
+        } else {
+            `$use_force_reinstall = `"no`"
+        }
     } else {
-        `$use_force_reinstall = (Read-Host `"===========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = @{}
+        `$force_reinstall_arg = New-Object System.Collections.ArrayList
         `$force_reinstall_status = `"禁用`"
     }
 

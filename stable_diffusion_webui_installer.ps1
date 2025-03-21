@@ -1291,7 +1291,7 @@ function Set-uv {
 
 # Stable Diffusion WebUI 启动参数
 function Get-Stable-Diffusion-WebUI-Launch-Args {
-    `$arguments = @{}
+    `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
             `$launch_args = `$LaunchArg
@@ -3441,12 +3441,6 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
 
     Set-Github-Mirror # 设置 Github 镜像源
 
-    if (`$use_submod) {
-        `$use_submodules = `"--recurse-submodules`"
-    } else {
-        `$use_submodules = @{}
-    }
-
     Print-Msg `"Stable Diffusion WebUI 远程源替换: `$preview_url -> `$remote`"
     git -C `"`$sd_webui_path`" remote set-url origin `"`$remote`" # 替换远程源
 
@@ -3475,7 +3469,11 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
             git -C `"`$sd_webui_path`" submodule deinit --all -f
             git -C `"`$sd_webui_path`" submodule update --init --recursive
         }
-        git -C `"`$sd_webui_path`" reset @use_submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        if (`$use_submod) {
+            git -C `"`$sd_webui_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$sd_webui_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
         Print-Msg `"切换 Stable Diffusion WebUI 分支完成`"
         `$global:status = `$true
     } else {
@@ -4417,6 +4415,7 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         if (`$BuildMode) {
+            Print-Msg `"SD WebUI Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
@@ -4650,8 +4649,12 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildWithTorchReinstall) {
-        `$use_force_reinstall = `"yes`"
+    if (`$BuildMode) {
+        if (`$BuildWithTorchReinstall) {
+            `$use_force_reinstall = `"yes`"
+        } else {
+            `$use_force_reinstall = `"no`"
+        }
     } else {
         `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
     }
@@ -4660,7 +4663,7 @@ function Main {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = @{}
+        `$force_reinstall_arg = New-Object System.Collections.ArrayList
         `$force_reinstall_status = `"禁用`"
     }
 

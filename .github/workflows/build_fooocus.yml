@@ -1,4 +1,4 @@
-name: Build ComfyUI
+name: Build Fooocus
 
 on:
   # push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-ComfyUI:
-    name: Build ComfyUI
+  Build-Fooocus:
+    name: Build Fooocus
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +21,18 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Launch ComfyUI Installer
+      - name: Launch Fooocus Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/comfyui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/comfyui" `
+          & "${{ github.workspace }}/fooocus_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/fooocus" `
             -BuildMode `
             -BuildWithUpdate `
-            -BuildWithUpdateNode `
+            -BuildWithUpdateExtension `
             -BuildWithLaunch `
             -BuildWithTorch 32 `
             -BuildWitchBranch 3 `
-            -InstallBranch "sd_webui_forge" `
+            -InstallBranch "fooocus" `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

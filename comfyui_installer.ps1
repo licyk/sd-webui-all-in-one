@@ -1169,7 +1169,7 @@ function Set-uv {
 
 # ComfyUI 启动参数
 function Get-ComfyUI-Launch-Args {
-    `$arguments = @{}
+    `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
             `$launch_args = `$LaunchArg
@@ -3978,13 +3978,6 @@ function Main {
             Print-Msg `"ComfyUI Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
-            if (`$BuildWithTorchReinstall) {
-                `$force_reinstall_arg = `"--force-reinstall`"
-                `$force_reinstall_status = `"启用`"
-            } else {
-                `$force_reinstall_arg = @{}
-                `$force_reinstall_status = `"禁用`"
-            }
         } else {
             `$arg = (Read-Host `"========================================>`").Trim()
         }
@@ -4216,8 +4209,12 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildWithTorchReinstall) {
-        `$use_force_reinstall = `"yes`"
+    if (`$BuildMode) {
+        if (`$BuildWithTorchReinstall) {
+            `$use_force_reinstall = `"yes`"
+        } else {
+            `$use_force_reinstall = `"no`"
+        }
     } else {
         `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
     }
@@ -4226,7 +4223,7 @@ function Main {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = @{}
+        `$force_reinstall_arg = New-Object System.Collections.ArrayList
         `$force_reinstall_status = `"禁用`"
     }
 

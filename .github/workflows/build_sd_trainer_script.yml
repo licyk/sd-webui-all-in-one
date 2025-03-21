@@ -1,4 +1,4 @@
-name: Build ComfyUI
+name: Build SD-Trainer-Script
 
 on:
   # push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-ComfyUI:
-    name: Build ComfyUI
+  Build-SD-Trainer-Script:
+    name: Build SD-Trainer-Script
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +21,17 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Launch ComfyUI Installer
+      - name: Launch SD-Trainer-Script Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/comfyui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/comfyui" `
+          & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/sd_trainer_script" `
             -BuildMode `
             -BuildWithUpdate `
-            -BuildWithUpdateNode `
             -BuildWithLaunch `
             -BuildWithTorch 32 `
             -BuildWitchBranch 3 `
-            -InstallBranch "sd_webui_forge" `
+            -InstallBranch "sd_scripts" `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

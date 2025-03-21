@@ -1,4 +1,4 @@
-name: Build ComfyUI
+name: Build InvokeAI
 
 on:
   # push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-ComfyUI:
-    name: Build ComfyUI
+  Build-InvokeAI:
+    name: Build InvokeAI
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +21,17 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Launch ComfyUI Installer
+      - name: Launch InvokeAI Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/comfyui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/comfyui" `
+          & "${{ github.workspace }}/invokeai_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/invokeai" `
             -BuildMode `
             -BuildWithUpdate `
             -BuildWithUpdateNode `
             -BuildWithLaunch `
-            -BuildWithTorch 32 `
+            -BuildWithTorchReinstall `
             -BuildWitchBranch 3 `
-            -InstallBranch "sd_webui_forge" `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

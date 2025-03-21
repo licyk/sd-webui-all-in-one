@@ -1782,7 +1782,7 @@ function Set-uv {
 
 # Fooocus 启动参数
 function Get-Fooocus-Launch-Args {
-    `$arguments = @{}
+    `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
             `$launch_args = `$LaunchArg
@@ -2499,9 +2499,8 @@ function Main {
     if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
         `$hf_mirror_arg = @{}
         `$hf_mirror_arg.Add(`"--hf-mirror`", `"`$Env:HF_ENDPOINT`")
-        `$hf_mirror_arg = `"--hf-mirror `$Env:HF_ENDPOINT`"
     } else {
-        `$hf_mirror_arg = @{}
+        `$hf_mirror_arg = New-Object System.Collections.ArrayList
     }
 
     Create-Fooocus-Shortcut
@@ -3299,12 +3298,6 @@ function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
 
     Set-Github-Mirror # 设置 Github 镜像源
 
-    if (`$use_submod) {
-        `$use_submodules = `"--recurse-submodules`"
-    } else {
-        `$use_submodules = @{}
-    }
-
     Print-Msg `"Fooocus 远程源替换: `$preview_url -> `$remote`"
     git -C `"`$fooocus_path`" remote set-url origin `"`$remote`" # 替换远程源
 
@@ -3325,7 +3318,11 @@ function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$fooocus_path`" submodule deinit --all -f
         }
         Print-Msg `"切换 Fooocus 分支至 `$branch`"
-        git -C `"`$fooocus_path`" checkout `"`${branch}`" --force # 切换分支
+        if (`$use_submod) {
+            git -C `"`$fooocus_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$fooocus_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
         Print-Msg `"应用 Fooocus 远程源的更新`"
         if (`$use_submod) {
             Print-Msg `"更新 Fooocus 的 Git 子模块信息`"
@@ -4205,6 +4202,7 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
         if (`$BuildMode) {
+            Print-Msg `"Fooocus Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
@@ -4438,8 +4436,12 @@ function Main {
 
     Print-Msg `"是否选择仅强制重装 ? (通常情况下不需要)`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildWithTorchReinstall) {
-        `$use_force_reinstall = `"yes`"
+    if (`$BuildMode) {
+        if (`$BuildWithTorchReinstall) {
+            `$use_force_reinstall = `"yes`"
+        } else {
+            `$use_force_reinstall = `"no`"
+        }
     } else {
         `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
     }
@@ -4448,7 +4450,7 @@ function Main {
         `$force_reinstall_arg = `"--force-reinstall`"
         `$force_reinstall_status = `"启用`"
     } else {
-        `$force_reinstall_arg = @{}
+        `$force_reinstall_arg = New-Object System.Collections.ArrayList
         `$force_reinstall_status = `"禁用`"
     }
 
