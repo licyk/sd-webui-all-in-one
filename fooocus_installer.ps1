@@ -1328,7 +1328,6 @@ function Check-Install {
     Update-Fooocus-Preset
 
     $model_list = @(
-        @("https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors", "$InstallPath/Fooocus/models/checkpoints", "Illustrious-XL-v1.0.safetensors"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/vaeapp_sd15.pth", "$InstallPath/Fooocus/models/vae_approx", "vaeapp_sd15.pth"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xlvaeapp.pth", "$InstallPath/Fooocus/models/vae_approx", "xlvaeapp.pth"),
         @("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/Fooocus/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors"),
@@ -1340,6 +1339,19 @@ function Check-Install {
     } else {
         Print-Msg "预下载模型中"
         Pre-Donwload-Model $model_list
+
+        $checkpoint_path = "$InstallPath/Fooocus/models/checkpoints"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
+        $name = Split-Path -Path $url -Leaf
+        if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
+            Print-Msg "预下载模型中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "$name"
+            if ($?) {
+                Print-Msg "下载 $name 模型成功"
+            } else {
+                Print-Msg "下载 $name 模型失败"
+            }
+        }
     }
 
     # 清理缓存
@@ -4188,6 +4200,8 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$torch_ver = `"`"
+    `$xformers_ver = `"`"
     `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {

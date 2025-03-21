@@ -16,6 +16,7 @@
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
     [switch]$NoPreDownloadNode,
+    [switch]$NoPreDownloadModel,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -654,6 +655,23 @@ function Check-Install {
         $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/ComfyUI/user/default/comfy.settings.json", $false, $utf8_encoding)
         $stream_writer.Write($json_content)
         $stream_writer.Close()
+    }
+
+    if ($NoPreDownloadModel) {
+        Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
+    } else {
+        $checkpoint_path = "$InstallPath/Fooocus/models/checkpoints"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
+        $name = Split-Path -Path $url -Leaf
+        if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
+            Print-Msg "预下载模型中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "$name"
+            if ($?) {
+                Print-Msg "下载 $name 模型成功"
+            } else {
+                Print-Msg "下载 $name 模型失败"
+            }
+        }
     }
 
     # 清理缓存
@@ -2012,8 +2030,8 @@ if __name__ == '__main__':
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_env.py`" -Value `$content
-    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" -Force -Recurse 2> `$null
-    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" -Force -Recurse 2> `$null
+    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
+    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
 
     python `"`$Env:CACHE_HOME/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/ComfyUI`" --conflict-depend-notice-path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" `
 
@@ -3961,6 +3979,8 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$torch_ver = `"`"
+    `$xformers_ver = `"`"
     `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {
@@ -7209,7 +7229,7 @@ function Use-Build-Mode {
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -7280,6 +7300,9 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -NoPreDownloadNode
         安装 ComfyUI 时跳过安装 ComfyUI 扩展
+
+    -NoPreDownloadModel
+        安装 ComfyUI 时跳过预下载模型
 
     -DisableUpdate
         (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查

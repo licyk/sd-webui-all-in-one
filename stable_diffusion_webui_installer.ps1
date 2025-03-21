@@ -720,17 +720,17 @@ function Check-Install {
     if (!(Test-Path "$InstallPath/launch_args.txt")) {
         Print-Msg "设置默认 Stable Diffusion WebUI 启动参数"
         if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
-            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check"
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
-            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check"
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
-            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check"
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
-            $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check"
+            $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
             $content = "--autolaunch --use-cuda --use-xformers"
         } else {
-            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check"
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
         }
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
@@ -778,14 +778,15 @@ function Check-Install {
         Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
     } else {
         $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
-        if (!(Get-ChildItem -Path $checkpoint_path -Filter "*.safetensors")) {
-            $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
+        $name = Split-Path -Path $url -Leaf
+        if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
             Print-Msg "预下载模型中"
-            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "nai1-artist_all_in_one_merge.safetensors"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "$name"
             if ($?) {
-                Print-Msg "下载模型成功"
+                Print-Msg "下载 $name 模型成功"
             } else {
-                Print-Msg "下载模型失败"
+                Print-Msg "下载 $name 模型失败"
             }
         }
     }
@@ -4401,6 +4402,8 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$torch_ver = `"`"
+    `$xformers_ver = `"`"
     `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {

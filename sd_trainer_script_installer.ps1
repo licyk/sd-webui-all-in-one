@@ -3244,6 +3244,8 @@ function Main {
     `"
 
     `$to_exit = 0
+    `$torch_ver = `"`"
+    `$xformers_ver = `"`"
     `$cuda_support_ver = Get-Drive-Support-CUDA-Version
 
     while (`$True) {
