@@ -1,4 +1,4 @@
-name: Build SD WebUI
+name: Build ComfyUI
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-SD-WebUI:
-    name: Build SD WebUI
+  Build-ComfyUI:
+    name: Build ComfyUI
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +21,11 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Launch SD WebUI Installer
+      - name: Launch ComfyUI Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/sd_webui_forge" `
+          & "${{ github.workspace }}/comfyui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/comfyui" `
             -BuildMode `
             -BuildWithUpdate `
             -BuildWithUpdateExtension `
@@ -33,7 +33,6 @@ jobs:
             -BuildWithTorch 32 `
             -BuildWitchBranch 3 `
             -InstallBranch "sd_webui_forge" `
-            -NoPreDownloadModel `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
