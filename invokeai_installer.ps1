@@ -5,6 +5,7 @@
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
+    [switch]$InstallLatest,
     [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
@@ -340,7 +341,13 @@ function Install-uv {
 # 安装 InvokeAI
 function Install-InvokeAI {
     # 下载 InvokeAI
-    $invokeai_ver = "InvokeAI==5.0.2"
+    if ($InstallLatest) {
+        Print-Msg "检测到 -InstallLatest 参数, 默认安装最新版 InvokeAI"
+        $invokeai_ver = "InvokeAI"
+    } else {
+        $invokeai_ver = "InvokeAI==5.0.2"
+    }
+
     Print-Msg "正在下载 InvokeAI"
     if ($USE_UV) {
         uv pip install $invokeai_ver --no-deps
@@ -6280,6 +6287,9 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -InstallLatest
+        默认安装最新版 InvokeAI, 如果未使用该参数, 则默认安装 InvokeAI 5.0.2, 保证在安装 PyTorch 时能够使用国内 PyTorch 镜像源 (如果启用了代理则无需使用国内 PyTorch 镜像源)
 
     -BuildMode
         启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出

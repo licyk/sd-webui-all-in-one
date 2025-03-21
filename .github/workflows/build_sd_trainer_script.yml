@@ -1,7 +1,7 @@
 name: Build SD-Trainer-Script
 
 on:
-  push:
+  # push:
   # delete:
   create:
 
