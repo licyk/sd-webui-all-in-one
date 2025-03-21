@@ -34,7 +34,8 @@ jobs:
             -BuildWitchBranch 3 `
             -DisablePipMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
 
       # - name: Archive
       #   shell: pwsh
