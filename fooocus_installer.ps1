@@ -7280,7 +7280,7 @@ function Use-Build-Mode {
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel]
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -7361,6 +7361,27 @@ function Get-Fooocus-Installer-Cmdlet-Help {
 
     -NoPreDownloadModel
         安装 Fooocus 时跳过预下载模型
+
+    -DisableUpdate
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 更新检查
+
+    -DisableHuggingFaceMirror
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -LaunchArg <Fooocus 启动参数>
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 设置 Fooocus 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+
+    -EnableShortcut
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 创建 Fooocus 启动快捷方式
+
+    -DisableCUDAMalloc
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
 
 
 更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md

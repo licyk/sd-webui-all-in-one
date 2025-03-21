@@ -6306,6 +6306,39 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
+    -DisableUpdate
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查
+
+    -DisableHuggingFaceMirror
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -EnableShortcut
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式
+
+    -DisableCUDAMalloc
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题, 禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复
+
+    -DisableGithubMirror
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 Fooocus Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 "

@@ -5783,7 +5783,7 @@ function Use-Build-Mode {
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>]
+    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -5864,6 +5864,21 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     -BuildWitchBranch <SD-Trainer-Script 分支编号>
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer-Script 分支编号切换到对应的 SD-Trainer-Script 分支
         SD-Trainer-Script 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -DisableUpdate
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 更新检查
+
+    -DisableHuggingFaceMirror
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableCUDAMalloc
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md

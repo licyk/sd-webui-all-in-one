@@ -7624,7 +7624,7 @@ function Use-Build-Mode {
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -7714,6 +7714,27 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -NoPreDownloadModel
         安装 Stable Diffusion WebUI 时跳过预下载模型
+
+    -DisableUpdate
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 更新检查
+
+    -DisableHuggingFaceMirror
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -LaunchArg <Stable Diffusion WebUI 启动参数>
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+
+    -EnableShortcut
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI 启动快捷方式
+
+    -DisableCUDAMalloc
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+
+    -DisableEnvCheck
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
