@@ -1524,7 +1524,10 @@ function Main {
     Set-HuggingFace-Mirror
     Set-uv
     Pip-Mirror-Status
+    `$current_path = `$(Get-Location).ToString()
+    Set-Location `"`$PSScriptRoot/sd-scripts`"
     Check-SD-Trainer-Script-Env
+    Set-Location `"`$current_path`"
     Set-PyTorch-CUDA-Memory-Alloc
 
     `$Global:ROOT_PATH = `$PSScriptRoot

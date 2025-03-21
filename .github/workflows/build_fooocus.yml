@@ -1,7 +1,7 @@
 name: Build Fooocus
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
@@ -28,7 +28,6 @@ jobs:
             -InstallPath "${{ github.workspace }}/fooocus" `
             -BuildMode `
             -BuildWithUpdate `
-            -BuildWithUpdateExtension `
             -BuildWithLaunch `
             -BuildWithTorch 32 `
             -BuildWitchBranch 3 `

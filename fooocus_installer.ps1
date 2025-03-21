@@ -2495,19 +2495,19 @@ function Main {
     `$launch_args = Get-Fooocus-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
+    Set-Location `"`$PSScriptRoot/Fooocus`"
 
+    `$hf_mirror_arg = New-Object System.Collections.ArrayList
     if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
-        `$hf_mirror_arg = @{}
-        `$hf_mirror_arg.Add(`"--hf-mirror`", `"`$Env:HF_ENDPOINT`")
-    } else {
         `$hf_mirror_arg = New-Object System.Collections.ArrayList
+        `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
+        `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
     }
 
     Create-Fooocus-Shortcut
     Check-Fooocus-Env
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 Fooocus 中`"
-    Set-Location `"`$PSScriptRoot/Fooocus`"
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过启动 Fooocus`"
     } else {

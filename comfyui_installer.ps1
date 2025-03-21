@@ -2373,12 +2373,12 @@ function Main {
     `$launch_args = Get-ComfyUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
+    Set-Location `"`$PSScriptRoot/ComfyUI`"
 
     Create-ComfyUI-Shortcut
     Check-ComfyUI-Env
     Set-PyTorch-CUDA-Memory-Alloc
     Print-Msg `"启动 ComfyUI 中`"
-    Set-Location `"`$PSScriptRoot/ComfyUI`"
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过启动 ComfyUI`"
     } else {

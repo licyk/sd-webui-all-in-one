@@ -1780,6 +1780,7 @@ function Main {
     `$launch_args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
+    Set-Location `"`$PSScriptRoot/lora-scripts`"
 
     # 检测使用的启动脚本
     if (Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") {
@@ -1797,7 +1798,6 @@ function Main {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过启动 SD-Trainer`"
     } else {
         Print-Msg `"启动 SD-Trainer 中`"
-        Set-Location `"`$PSScriptRoot/lora-scripts`"
         python `$launch_script.ToString() @launch_args
         `$req = `$?
         if (`$req) {

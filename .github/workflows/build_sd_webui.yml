@@ -1,7 +1,7 @@
 name: Build SD WebUI
 
 on:
-  push:
+  # push:
   # delete:
   create:
 

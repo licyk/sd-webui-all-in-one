@@ -2179,6 +2179,7 @@ function Main {
     `$launch_args = Get-Stable-Diffusion-WebUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
+    Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
 
     Create-Stable-Diffusion-WebUI-Shortcut
     Check-Stable-Diffusion-WebUI-Env
@@ -2187,7 +2188,6 @@ function Main {
         Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过启动 Stable Diffusion WebUI`"
     } else {
         Print-Msg `"启动 Stable Diffusion WebUI 中`"
-        Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
         python launch.py @launch_args
         `$req = `$?
         if (`$req) {

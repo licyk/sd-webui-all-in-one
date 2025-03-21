@@ -1,7 +1,7 @@
 name: Build ComfyUI
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
@@ -32,7 +32,6 @@ jobs:
             -BuildWithLaunch `
             -BuildWithTorch 32 `
             -BuildWitchBranch 3 `
-            -InstallBranch "sd_webui_forge" `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
