@@ -40,6 +40,9 @@ jobs:
 
       - name: Install Insightface
         shell: pwsh
+        env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
           & "${{ github.workspace }}/sd_webui/python/python.exe" -m pip install insightface
 
@@ -86,7 +89,7 @@ jobs:
           )
           Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/sd_webui/说明.txt" -Value $content
 
-      - name: Make configure.env script
+      - name: Make configure env script
         shell: pwsh
         run: |
           Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/sd_webui/configure_env.bat" -Force
@@ -109,8 +112,10 @@ jobs:
 
       - name: Install HuggingFace library
         shell: pwsh
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          pip install hugginface_hub
+          pip install huggingface_hub
 
       - name: Upload to HuggingFacee repo
         shell: python
