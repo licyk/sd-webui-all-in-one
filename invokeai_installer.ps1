@@ -6154,47 +6154,19 @@ function Use-Install-Mode {
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
     Copy-InvokeAI-Installer-Config
-    Print-Msg "InvokeAI 安装结束, 安装路径为: $InstallPath"
-    Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
-    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
 
     if ($BuildMode) {
-        Print-Msg "执行其他环境构建脚本中"
-
-        if ($BuildWithTorchReinstall) {
-            Print-Msg "执行重装 PyTorch 脚本中"
-            . "$InstallPath/reinstall_pytorch.ps1" -BuildMode
-        }
-
-        if ($BuildWitchModel) {
-            Print-Msg "执行模型安装脚本中"
-            . "$InstallPath/download_models.ps1" -BuildMode -BuildWitchModel "$BuildWitchModel"
-        }
-
-        if ($BuildWitchBranch) {
-            Print-Msg "执行 InvokeAI 分支切换脚本中"
-            . "$InstallPath/switch_branch.ps1" -BuildMode -BuildWitchBranch "$BuildWitchBranch"
-        }
-
-        if ($BuildWithUpdate) {
-            Print-Msg "执行 InvokeAI 更新脚本中"
-            . "$InstallPath/update.ps1" -BuildMode
-        }
-
-        if ($BuildWithLaunch) {
-            Print-Msg "执行 InvokeAI 启动脚本中"
-            . "$InstallPath/launch.ps1" -BuildMode
-        }
-
-        # 清理缓存
-        Print-Msg "清理下载 Python 软件包的缓存中"
-        python -m pip cache purge
-        uv cache clean
-
+        Use-Build-Mode
         Print-Msg "InvokeAI 环境构建完成, 路径: $InstallPath"
-        Print-Msg "退出 InvokeAI Installer"
     } else {
-        Print-Msg "退出 InvokeAI Installer"
+        Print-Msg "InvokeAI 安装结束, 安装路径为: $InstallPath"
+    }
+
+    Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "退出 InvokeAI Installer"
+
+    if (!($BuildMode)) {
         Read-Host | Out-Null
     }
 }
@@ -6205,6 +6177,78 @@ function Use-Update-Mode {
     Print-Msg "更新管理脚本和文档中"
     Write-Manager-Scripts
     Print-Msg "更新管理脚本和文档完成"
+}
+
+
+# 执行管理脚本完成其他环境构建
+function Use-Build-Mode {
+    Print-Msg "执行其他环境构建脚本中"
+
+    if ($BuildWithTorchReinstall) {
+        $launch_args = @{}
+        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        Print-Msg "执行重装 PyTorch 脚本中"
+        . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
+    }
+
+    if ($BuildWitchModel) {
+        $launch_args = @{}
+        $launch_args.Add("-BuildWitchModel", $BuildWitchModel)
+        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        Print-Msg "执行模型安装脚本中"
+        . "$InstallPath/download_models.ps1" -BuildMode @launch_args
+    }
+
+    if ($BuildWithUpdate) {
+        $launch_args = @{}
+        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        Print-Msg "执行 InvokeAI 更新脚本中"
+        . "$InstallPath/update.ps1" -BuildMode @launch_args
+    }
+
+    if ($BuildWithUpdateNode) {
+        $launch_args = @{}
+        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
+        if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        Print-Msg "执行 InvokeAI 自定义节点更新脚本中"
+        . "$InstallPath/update_node.ps1" -BuildMode @launch_args
+    }
+
+    if ($BuildWithLaunch) {
+        $launch_args = @{}
+        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableHuggingFaceMirror) { $launch_args.Add("-DisableHuggingFaceMirror", $true) }
+        if ($UseCustomHuggingFaceMirror) { $launch_args.Add("-UseCustomHuggingFaceMirror", $UseCustomHuggingFaceMirror) }
+        if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        if ($EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
+        if ($DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
+        if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
+        Print-Msg "执行 InvokeAI 启动脚本中"
+        . "$InstallPath/launch.ps1" -BuildMode @launch_args
+    }
+
+    # 清理缓存
+    Print-Msg "清理下载 Python 软件包的缓存中"
+    python -m pip cache purge
+    uv cache clean
 }
 
 
