@@ -3369,27 +3369,26 @@ function Main {
         python -m pip show invokeai --quiet 2> `$null
         if (!(`$?)) {
             Print-Msg `"检测到 InvokeAI 未安装, 尝试安装中`"
-        }
+            `$invokeai_ver = `"InvokeAI==5.0.2`"
 
-        `$invokeai_ver = `"InvokeAI==5.0.2`"
-
-        if (`$USE_UV) {
-            uv pip install `$invokeai_ver --no-deps
-            if (!(`$?)) {
-                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            if (`$USE_UV) {
+                uv pip install `$invokeai_ver --no-deps
+                if (!(`$?)) {
+                    Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                    python -m pip install `$invokeai_ver --no-deps --use-pep517
+                }
+            } else {
                 python -m pip install `$invokeai_ver --no-deps --use-pep517
             }
-        } else {
-            python -m pip install `$invokeai_ver --no-deps --use-pep517
-        }
-        if (`$?) { # 检测是否下载成功
-            Print-Msg `"InvokeAI 安装成功`"
-        } else {
-            Print-Msg `"InvokeAI 安装失败, 无法进行 PyTorch 重装`"
-            if (!(`$BuildMode)) {
-                Read-Host | Out-Null
+            if (`$?) { # 检测是否下载成功
+                Print-Msg `"InvokeAI 安装成功`"
+            } else {
+                Print-Msg `"InvokeAI 安装失败, 无法进行 PyTorch 重装`"
+                if (!(`$BuildMode)) {
+                    Read-Host | Out-Null
+                }
+                exit 1
             }
-            exit 1
         }
 
         Print-Msg `"重新安装 PyTorch`"
