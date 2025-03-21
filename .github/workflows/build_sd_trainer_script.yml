@@ -30,7 +30,7 @@ jobs:
             -BuildWithUpdate `
             -BuildWithLaunch `
             -BuildWithTorch 25 `
-            -BuildWitchBranch 3 `
+            -BuildWitchBranch 2 `
             -InstallBranch "sd_scripts" `
             -DisablePipMirror `
             -DisableGithubMirror `
