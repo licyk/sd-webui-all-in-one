@@ -130,5 +130,5 @@ jobs:
           upload_large_folder(
             repo_id="licyk/sdnote",
             repo_type="model",
-            folder_path=os.path.join("${{ github.workspace }}", "sdnote")
+            folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
           )
