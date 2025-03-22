@@ -12,14 +12,25 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def has_utf8_bom(file_path: Union[str, Path]) -> bool:
+    with open(file_path, "rb") as file:
+        bom = file.read(3)
+        return bom == b"\xef\xbb\xbf"
+
+
 def save_as_utf8_with_bom(input_file: Union[str, Path]) -> None:
-    with open(input_file, "r", encoding="utf8") as file:
+    if has_utf8_bom(input_file):
+        read_encode = "utf-8-sig"
+    else:
+        read_encode = "utf-8"
+
+    with open(input_file, "r", encoding=read_encode) as file:
         content = file.read()
 
     content = content.replace("\r\n", "\n")
 
-    with open(input_file, "w", encoding="utf8", newline="\n") as file:
-        file.write('\ufeff' + content)
+    with open(input_file, "w", encoding="utf-8-sig", newline="\n") as file:
+        file.write(content)
 
 
 if __name__ == "__main__":
