@@ -25,11 +25,11 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/sd_scripts_script" `
+            -InstallPath "${{ github.workspace }}/sd_scripts" `
             -BuildMode `
             -BuildWithUpdate `
             -BuildWithLaunch `
-            -BuildWithTorch 25 `
+            -BuildWithTorch 20 `
             -BuildWitchBranch 2 `
             -InstallBranch "sd_scripts" `
             -DisablePipMirror `
