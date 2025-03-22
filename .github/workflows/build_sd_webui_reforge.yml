@@ -1,4 +1,4 @@
-name: Build SD WebUI Forge
+name: Build SD WebUI reForge
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-SD-WebUI-Forge:
-    name: Build SD WebUI Forge
+  Build-SD-WebUI-reForge:
+    name: Build SD WebUI reForge
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
