@@ -1926,6 +1926,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/sd-scripts`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 sd-scripts 文件夹, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -2389,6 +2390,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/sd-scripts`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 sd-scripts 文件夹, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 

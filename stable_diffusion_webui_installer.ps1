@@ -2174,6 +2174,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -2578,6 +2579,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -3022,6 +3024,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -3525,6 +3528,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -5539,6 +5543,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 

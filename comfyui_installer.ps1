@@ -2386,6 +2386,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -2787,6 +2788,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -3227,6 +3229,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -5168,6 +5171,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 

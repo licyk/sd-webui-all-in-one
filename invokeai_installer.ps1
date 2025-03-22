@@ -2530,6 +2530,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/invokeai/nodes`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 invokeai/nodes 文件夹, 无法更新 InvokeAI 自定义节点`"
+        Read-Host | Out-Null
         return
     }
 

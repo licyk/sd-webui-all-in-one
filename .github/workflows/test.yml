@@ -21,6 +21,11 @@ jobs:
         run: |
           Set-Location -Path "${{ github.workspace }}"
 
+      - name: Set powershell save encode to UTF8-BOM
+        shell: pwsh
+        run: |
+          python "${{ github.workspace }}/.github/save_as_utf8_bom.py" "${{ github.workspace }}"
+
       - name: List files in the repository
         shell: pwsh
         run: |
@@ -48,11 +53,6 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/comfyui/configure_env.bat" -Force
-
-      - name: Set powershell save encode to UTF8-BOM
-        shell: pwsh
-        run: |
-          python "${{ github.workspace }}/.github/save_as_utf8_bom.py" "${{ github.workspace }}/comfyui"
 
       - name: Archive
         shell: pwsh

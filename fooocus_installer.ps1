@@ -2501,6 +2501,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -2912,6 +2913,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -3374,6 +3376,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
@@ -5388,6 +5391,7 @@ function Main {
 
     if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
+        Read-Host | Out-Null
         return
     }
 
