@@ -627,6 +627,7 @@ function Check-Install {
         Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
         Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
         Git-CLone "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one" "$custom_node_path/WeiLin-ComfyUI-prompt-all-in-one"
+        Git-CLone "https://github.com/licyk/ComfyUI-HakuImg" "$custom_node_path/ComfyUI-HakuImg"
     }
 
     Install-PyTorch

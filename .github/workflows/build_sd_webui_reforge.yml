@@ -1,7 +1,7 @@
 name: Build SD WebUI reForge
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
@@ -30,7 +30,7 @@ jobs:
             -BuildWithUpdate `
             -BuildWithUpdateExtension `
             -BuildWithLaunch `
-            -BuildWithTorch 21 `
+            -BuildWithTorch 31 `
             -BuildWitchBranch 4 `
             -InstallBranch "sd_webui_reforge" `
             -NoPreDownloadModel `
@@ -83,7 +83,7 @@ jobs:
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          pip install huggingface_hub
+          pip install huggingface_hub modelscope
 
       - name: Upload to HuggingFacee repo
         shell: python
@@ -98,4 +98,22 @@ jobs:
             repo_id="licyk/sdnote",
             repo_type="model",
             folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
+          )
+
+      - name: Upload to ModelScope repo
+        shell: python
+        env:
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          import os
+          from modelscope.hub.api import HubApi
+
+          api = HubApi()
+          api.login(os.environ.get("MODELSCOPE_API_TOKEN"))
+
+          api.upload_folder(
+              repo_id="licyks/sdnote",
+              repo_type="model",
+              folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
           )

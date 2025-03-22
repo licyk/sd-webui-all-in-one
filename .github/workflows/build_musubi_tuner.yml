@@ -1,4 +1,4 @@
-name: Build ComfyUI
+name: Build Musubi Tuner
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   create:
 
 jobs:
-  Build-ComfyUI:
-    name: Build ComfyUI
+  Build-Musubi-Tuner:
+    name: Build Musubi Tuner
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,54 +21,48 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Launch ComfyUI Installer
+      - name: Launch SD-Trainer-Script Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/comfyui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/comfyui" `
+          & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/musubi_tuner" `
             -BuildMode `
             -BuildWithUpdate `
-            -BuildWithUpdateNode `
             -BuildWithLaunch `
-            -BuildWithTorch 31 `
+            -BuildWithTorch 24 `
+            -BuildWitchBranch 7 `
+            -InstallBranch "musubi_tuner" `
             -DisablePipMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror `
-            -NoPreDownloadModel
-
-      - name: Install Hanamizuki
-        shell: pwsh
-        run: |
-          . "${{ github.workspace }}/comfyui/activate.ps1"
-          Install-Hanamizuki
+            -DisableHuggingFaceMirror
 
       - name: Make docs
         shell: pwsh
         run: |
-          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/comfyui"
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/musubi_tuner"
 
       - name: Make configure env script
         shell: pwsh
         run: |
-          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/comfyui/configure_env.bat" -Force
+          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/musubi_tuner/configure_env.bat" -Force
 
       - name: Archive
         shell: pwsh
         run: |
           $build_time = (Get-Date).ToString("yyyyMMdd")
-          $package_name = "comfyui_licyk_${build_time}"
+          $package_name = "musubi_tuner_licyk_${build_time}"
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/comfyui" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/comfyui/${protable_name}" "${{ github.workspace }}/${package_name}"
+          Move-Item -Path "${{ github.workspace }}/musubi_tuner" -Destination "${{ github.workspace }}/${package_name}" -Force
+          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/musubi_tuner/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: comfyui_nightly
+          name: musubi_tuner_nightly
           path: ${{ github.workspace }}/sdnote/portable/nightly/
 
-      - name: Install HuggingFace library
+      - name: Install HuggingFace / ModelScope library
         shell: pwsh
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: 1

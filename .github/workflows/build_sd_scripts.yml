@@ -1,7 +1,7 @@
 name: Build SD Scripts
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
