@@ -49,29 +49,8 @@ jobs:
       - name: Install Hanamizuki
         shell: pwsh
         run: |
-          $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe"
-          Invoke-WebRequest -Uri $url -OutFile "${{ github.workspace }}/sd_webui/stable-diffusion-webui"
-          Move-Item -Path "${{ github.workspace }}/sd_webui/python" "${{ github.workspace }}/sd_webui/stable-diffusion-webui/python" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui/git" "${{ github.workspace }}/sd_webui/stable-diffusion-webui/git" -Force
-          $content = "
-              @echo off
-              if exist `"%~dp0`"\stable-diffusion-webui (
-                  cd /d `"%~dp0`"\stable-diffusion-webui
-              ) else (
-                  echo Stable Diffusion WebUI not found
-                  pause
-                  exit 1
-              )
-              if exist .\hanamizuki.exe (
-                  echo Launch Hanamizuki
-                  .\hanamizuki.exe
-              ) else (
-                  echo Hanamizuki not found
-                  pause
-                  exit 1
-              )
-          "
-          Set-Content -Encoding Default -Path "${{ github.workspace }}/sd_webui/hanamizuki.bat" -Value $content
+          . "${{ github.workspace }}/sd_webui/activate.ps1"
+          Install-Hanamizuki
 
       - name: Make docs
         shell: pwsh
