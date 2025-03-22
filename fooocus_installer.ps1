@@ -1691,7 +1691,7 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
         Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
@@ -2510,7 +2510,7 @@ function Main {
     Set-Location `"`$PSScriptRoot/Fooocus`"
 
     `$hf_mirror_arg = New-Object System.Collections.ArrayList
-    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
+    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$DisableHuggingFaceMirror)) {
         `$hf_mirror_arg = New-Object System.Collections.ArrayList
         `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
         `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
@@ -6931,7 +6931,7 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
-    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
         Print-Msg `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
