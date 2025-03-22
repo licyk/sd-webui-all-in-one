@@ -31,7 +31,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
-            UseUpdateMode
+            -UseUpdateMode
 
       - name: Install Hanamizuki
         shell: pwsh
