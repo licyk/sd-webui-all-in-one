@@ -27,6 +27,8 @@
     [switch]$DisableEnvCheck
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
+# 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
+$PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
 $SD_TRAINER_INSTALLER_VERSION = 241
 $UPDATE_TIME_SPAN = 3600
@@ -1821,7 +1823,7 @@ Main
     } else {
         Print-Msg "生成 launch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/launch.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch.ps1" -Value $content
 }
 
 
@@ -2232,7 +2234,7 @@ Main
     } else {
         Print-Msg "生成 update.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/update.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/update.ps1" -Value $content
 }
 
 
@@ -2746,7 +2748,7 @@ Main
     } else {
         Print-Msg "生成 switch_branch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/switch_branch.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/switch_branch.ps1" -Value $content
 }
 
 
@@ -3000,7 +3002,7 @@ Main
     } else {
         Print-Msg "生成 launch_sd_trainer_installer.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/launch_sd_trainer_installer.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_sd_trainer_installer.ps1" -Value $content
 }
 
 
@@ -3751,7 +3753,7 @@ Main
     } else {
         Print-Msg "生成 reinstall_pytorch.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/reinstall_pytorch.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/reinstall_pytorch.ps1" -Value $content
 }
 
 
@@ -4448,7 +4450,7 @@ Main
     } else {
         Print-Msg "生成 download_models.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/download_models.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/download_models.ps1" -Value $content
 }
 
 
@@ -5429,7 +5431,7 @@ Read-Host | Out-Null
     } else {
         Print-Msg "生成 settings.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/settings.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/settings.ps1" -Value $content
 }
 
 # 虚拟环境激活脚本
@@ -5915,7 +5917,7 @@ Main
     } else {
         Print-Msg "生成 activate.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/activate.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/activate.ps1" -Value $content
 }
 
 
@@ -5938,7 +5940,7 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
     } else {
         Print-Msg "生成 terminal.ps1 中"
     }
-    Set-Content -Encoding UTF8 -Path "$InstallPath/terminal.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/terminal.ps1" -Value $content
 }
 
 
