@@ -1,13 +1,13 @@
-name: Build SD WebUI
+name: Build SD WebUI Forge
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
 jobs:
-  Build-SD-WebUI:
-    name: Build SD WebUI
+  Build-SD-WebUI-Forge:
+    name: Build SD WebUI Forge
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,14 +25,14 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/sd_webui" `
+            -InstallPath "${{ github.workspace }}/sd_webui_reforge" `
             -BuildMode `
             -BuildWithUpdate `
             -BuildWithUpdateExtension `
             -BuildWithLaunch `
             -BuildWithTorch 21 `
-            -BuildWitchBranch 2 `
-            -InstallBranch "sd_webui" `
+            -BuildWitchBranch 4 `
+            -InstallBranch "sd_webui_reforge" `
             -NoPreDownloadModel `
             -DisablePipMirror `
             -DisableGithubMirror `
@@ -44,15 +44,15 @@ jobs:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          & "${{ github.workspace }}/sd_webui/python/python.exe" -m pip install insightface
+          & "${{ github.workspace }}/sd_webui_reforge/python/python.exe" -m pip install insightface
 
       - name: Install Hanamizuki
         shell: pwsh
         run: |
           $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe"
-          Invoke-WebRequest -Uri $url -OutFile "${{ github.workspace }}/sd_webui/stable-diffusion-webui"
-          Move-Item -Path "${{ github.workspace }}/sd_webui/python" "${{ github.workspace }}/sd_webui/stable-diffusion-webui/python" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui/git" "${{ github.workspace }}/sd_webui/stable-diffusion-webui/git" -Force
+          Invoke-WebRequest -Uri $url -OutFile "${{ github.workspace }}/sd_webui_reforge/stable-diffusion-webui"
+          Move-Item -Path "${{ github.workspace }}/sd_webui_reforge/python" "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/python" -Force
+          Move-Item -Path "${{ github.workspace }}/sd_webui_reforge/git" "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/git" -Force
           $content = "
               @echo off
               if exist `"%~dp0`"\stable-diffusion-webui (
@@ -71,7 +71,7 @@ jobs:
                   exit 1
               )
           "
-          Set-Content -Encoding Default -Path "${{ github.workspace }}/sd_webui/hanamizuki.bat" -Value $content
+          Set-Content -Encoding Default -Path "${{ github.workspace }}/sd_webui_reforge/hanamizuki.bat" -Value $content
 
       - name: Make docs
         shell: pwsh
@@ -79,7 +79,7 @@ jobs:
           $content = @(
             "https://space.bilibili.com/46497516"
           )
-          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/sd_webui/bilibili@licyk_.txt" -Value $content
+          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/sd_webui_reforge/bilibili@licyk_.txt" -Value $content
 
           $content = @(
             "首次使用需要双击运行 configure_env.bat 配置环境",
@@ -87,18 +87,18 @@ jobs:
             "简单使用说明可打开 help.txt 进行阅读",
             "更多说明请阅读: https://github.com/licyk/sd-webui-all-in-one/discussions/1"
           )
-          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/sd_webui/说明.txt" -Value $content
+          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/sd_webui_reforge/说明.txt" -Value $content
 
       - name: Make configure env script
         shell: pwsh
         run: |
-          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/sd_webui/configure_env.bat" -Force
+          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/sd_webui_reforge/configure_env.bat" -Force
 
       - name: Archive
         shell: pwsh
         run: |
           $build_time = (Get-Date).ToString("yyyyMMdd")
-          $package_name = "sd_webui_licyk_${build_time}"
+          $package_name = "sd_webui_reforge_licyk_${build_time}"
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/sd_webui" "${{ github.workspace }}/${package_name}" -Force
