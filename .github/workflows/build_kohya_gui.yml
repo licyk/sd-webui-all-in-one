@@ -1,0 +1,91 @@
+name: Build Kohya GUI
+
+on:
+  push:
+  # delete:
+  create:
+
+jobs:
+  Build-Kohya-GUI:
+    name: Build Kohya GUI
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enter Workspace
+        shell: pwsh
+        run: |
+          Set-Location -Path "${{ github.workspace }}"
+
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
+
+      - name: Launch SD-Trainer Installer
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/sd_trainer_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/kohya_gui" `
+            -BuildMode `
+            -BuildWithUpdate `
+            -BuildWithLaunch `
+            -BuildWithTorch 25 `
+            -BuildWitchBranch 2 `
+            -InstallBranch "kohya_gui" `
+            -DisablePipMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
+      - name: Install Hanamizuki
+        shell: pwsh
+        run: |
+          . "${{ github.workspace }}/kohya_gui/activate.ps1"
+          Install-Hanamizuki
+
+      - name: Make docs
+        shell: pwsh
+        run: |
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/kohya_gui"
+
+      - name: Make configure env script
+        shell: pwsh
+        run: |
+          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/kohya_gui/configure_env.bat" -Force
+
+      - name: Archive
+        shell: pwsh
+        run: |
+          $build_time = (Get-Date).ToString("yyyyMMdd")
+          $package_name = "kohya_gui_licyk_${build_time}"
+          $protable_name = "${package_name}_nightly.7z"
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
+          Move-Item -Path "${{ github.workspace }}/kohya_gui" -Destination "${{ github.workspace }}/${package_name}" -Force
+          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/kohya_gui/${protable_name}" "${{ github.workspace }}/${package_name}"
+
+      - name: Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kohya_gui_nightly
+          path: ${{ github.workspace }}/sdnote/portable/nightly/
+
+      - name: Install HuggingFace library
+        shell: pwsh
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          pip install huggingface_hub
+
+      - name: Upload to HuggingFacee repo
+        shell: python
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          import os
+          from huggingface_hub import upload_large_folder
+
+          upload_large_folder(
+            repo_id="licyk/sdnote",
+            repo_type="model",
+            folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
+          )
