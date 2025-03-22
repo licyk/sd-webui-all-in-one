@@ -1,9 +1,14 @@
 name: Build SD Scripts
 
 on:
-  push:
+  # push:
   # delete:
-  create:
+  # create:
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+  # UTC 17:00 -> CST (China) 1:00, see https://datetime360.com/cn/utc-cst-china-time/
+  # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
+  - cron: '15 17 * * 0'
 
 jobs:
   Build-SD-Scripts:
