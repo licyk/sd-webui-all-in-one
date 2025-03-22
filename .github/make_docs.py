@@ -9,7 +9,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     normalized_filepath = lambda filepath: str(Path(filepath).absolute().as_posix())
 
-    parser.add_argument('docs-path', type=normalized_filepath, default=os.environ.get("docs_path", os.getcwd()), help="文档保存路径")
+    parser.add_argument('docs_path', type=normalized_filepath, default=os.environ.get("docs_path", os.getcwd()), help="文档保存路径")
 
     return parser.parse_args()
 
