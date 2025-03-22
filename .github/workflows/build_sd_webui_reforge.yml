@@ -51,29 +51,6 @@ jobs:
         run: |
           . "${{ github.workspace }}/sd_webui_reforge/activate.ps1"
           Install-Hanamizuki
-          # $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe"
-          # Invoke-WebRequest -Uri $url -OutFile "${{ github.workspace }}/sd_webui_reforge/stable-diffusion-webui"
-          # Move-Item -Path "${{ github.workspace }}/sd_webui_reforge/python" "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/python" -Force
-          # Move-Item -Path "${{ github.workspace }}/sd_webui_reforge/git" "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/git" -Force
-          # $content = "
-          #     @echo off
-          #     if exist `"%~dp0`"\stable-diffusion-webui (
-          #         cd /d `"%~dp0`"\stable-diffusion-webui
-          #     ) else (
-          #         echo Stable Diffusion WebUI not found
-          #         pause
-          #         exit 1
-          #     )
-          #     if exist .\hanamizuki.exe (
-          #         echo Launch Hanamizuki
-          #         .\hanamizuki.exe
-          #     ) else (
-          #         echo Hanamizuki not found
-          #         pause
-          #         exit 1
-          #     )
-          # "
-          #.Set-Content -Encoding Default -Path "${{ github.workspace }}/sd_webui_reforge/hanamizuki.bat" -Value $content
 
       - name: Make docs
         shell: pwsh
@@ -103,7 +80,7 @@ jobs:
           $package_name = "sd_webui_reforge_licyk_${build_time}"
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui" "${{ github.workspace }}/${package_name}" -Force
+          Move-Item -Path "${{ github.workspace }}/sd_webui_forge" "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Artifact
