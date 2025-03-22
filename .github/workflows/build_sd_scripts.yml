@@ -24,7 +24,7 @@ jobs:
       - name: Launch SD-Trainer-Script Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/sd_scripts_script_installer.ps1" `
+          & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_scripts_script" `
             -BuildMode `
             -BuildWithUpdate `
