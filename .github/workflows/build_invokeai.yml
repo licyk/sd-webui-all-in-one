@@ -1,7 +1,7 @@
 name: Build InvokeAI
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
@@ -37,13 +37,61 @@ jobs:
             -DisableHuggingFaceMirror `
             -InstallLatest
 
-      # - name: Archive
-      #   shell: pwsh
-      #   run: |
-      #     7z a -t7z "${{ github.workspace }}/artifact/sd_webui_forge_nightly_cu126.7z" "${{ github.workspace }}/sd_webui_forge"
+      - name: Make docs
+        shell: pwsh
+        run: |
+          $content = @(
+            "https://space.bilibili.com/46497516"
+          )
+          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/invokeai/bilibili@licyk_.txt" -Value $content
 
-      # - name: Artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: sd_webui_forge_nightly
-      #     path: ${{ github.workspace }}/artifact/
+          $content = @(
+            "首次使用需要双击运行 configure_env.bat 配置环境",
+            "运行后即可正常运行 PowerShell 脚本, PowerShell 脚本需要右键后选择 `"使用 PowerShell 运行`" 才可以运行",
+            "简单使用说明可打开 help.txt 进行阅读",
+            "更多说明请阅读: https://github.com/licyk/sd-webui-all-in-one/discussions/1"
+          )
+          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/invokeai/说明.txt" -Value $content
+
+      - name: Make configure env script
+        shell: pwsh
+        run: |
+          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/invokeai/configure_env.bat" -Force
+
+      - name: Archive
+        shell: pwsh
+        run: |
+          $build_time = (Get-Date).ToString("yyyyMMdd")
+          $package_name = "invokeai_licyk_${build_time}"
+          $protable_name = "${package_name}_nightly.7z"
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
+          Move-Item -Path "${{ github.workspace }}/invokeai" -Destination "${{ github.workspace }}/${package_name}" -Force
+          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/${protable_name}" "${{ github.workspace }}/${package_name}"
+
+      - name: Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: invokeai_nightly
+          path: ${{ github.workspace }}/sdnote/portable/nightly/
+
+      - name: Install HuggingFace library
+        shell: pwsh
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          pip install huggingface_hub
+
+      - name: Upload to HuggingFacee repo
+        shell: python
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          import os
+          from huggingface_hub import upload_large_folder
+
+          upload_large_folder(
+            repo_id="licyk/sdnote",
+            repo_type="model",
+            folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
+          )

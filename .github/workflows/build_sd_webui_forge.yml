@@ -1,7 +1,7 @@
 name: Build SD WebUI Forge
 
 on:
-  push:
+  # push:
   # delete:
   create:
 
@@ -86,7 +86,7 @@ jobs:
       - name: Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sd_webui_nightly
+          name: sd_webui_forge_nightly
           path: ${{ github.workspace }}/sdnote/portable/nightly/
 
       - name: Install HuggingFace library

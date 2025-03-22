@@ -1,7 +1,7 @@
 name: Build SD WebUI reForge
 
 on:
-  push:
+  # push:
   # delete:
   create:
 
@@ -80,14 +80,13 @@ jobs:
           $package_name = "sd_webui_reforge_licyk_${build_time}"
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Get-ChildItem -Path "${{ github.workspace }}"
           Move-Item -Path "${{ github.workspace }}/sd_webui_reforge" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sd_webui_nightly
+          name: sd_webui_reforge_nightly
           path: ${{ github.workspace }}/sdnote/portable/nightly/
 
       - name: Install HuggingFace library
