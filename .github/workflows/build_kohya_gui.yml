@@ -36,12 +36,6 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
-      - name: Install Hanamizuki
-        shell: pwsh
-        run: |
-          . "${{ github.workspace }}/kohya_gui/activate.ps1"
-          Install-Hanamizuki
-
       - name: Make docs
         shell: pwsh
         run: |
