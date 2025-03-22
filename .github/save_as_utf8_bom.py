@@ -32,5 +32,5 @@ if __name__ == "__main__":
     ]
 
     for file in file_list:
-        print("转换 {} 为 UTF-8 BOM 编码".format(file))
+        print("transfer {} to UTF-8 BOM encode".format(file))
         save_as_utf8_with_bom(file)
