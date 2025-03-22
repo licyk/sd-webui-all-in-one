@@ -1,7 +1,7 @@
 name: Build SD Scripts
 
 on:
-  # push:
+  push:
   # delete:
   create:
 
@@ -39,7 +39,7 @@ jobs:
       - name: Make docs
         shell: pwsh
         run: |
-          python "${{ github.workspace }}/.github/make_docs.py"
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_scripts"
 
       - name: Make configure env script
         shell: pwsh

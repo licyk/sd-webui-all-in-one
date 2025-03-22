@@ -46,7 +46,7 @@ jobs:
       - name: Make docs
         shell: pwsh
         run: |
-          python "${{ github.workspace }}/.github/make_docs.py"
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/fooocus"
 
       - name: Make configure env script
         shell: pwsh
@@ -61,7 +61,7 @@ jobs:
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/fooocus" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/${protable_name}" "${{ github.workspace }}/${package_name}"
+          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/fooocus/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Artifact
         uses: actions/upload-artifact@v4
