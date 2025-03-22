@@ -1,7 +1,7 @@
 name: Build ComfyUI
 
 on:
-  push:
+  # push:
   # delete:
   create:
 
@@ -46,18 +46,7 @@ jobs:
       - name: Make docs
         shell: pwsh
         run: |
-          $content = @(
-            "https://space.bilibili.com/46497516"
-          )
-          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/comfyui/bilibili@licyk_.txt" -Value $content
-
-          $content = @(
-            "首次使用需要双击运行 configure_env.bat 配置环境",
-            "运行后即可正常运行 PowerShell 脚本, PowerShell 脚本需要右键后选择 `"使用 PowerShell 运行`" 才可以运行",
-            "简单使用说明可打开 help.txt 进行阅读",
-            "更多说明请阅读: https://github.com/licyk/sd-webui-all-in-one/discussions/1"
-          )
-          Set-Content -Encoding UTF8 -Path "${{ github.workspace }}/comfyui/说明.txt" -Value $content
+          python "${{ github.workspace }}/.github/make_docs.py"
 
       - name: Make configure env script
         shell: pwsh
