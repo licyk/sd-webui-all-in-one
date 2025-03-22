@@ -30,7 +30,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 241
+$SD_TRAINER_INSTALLER_VERSION = 242
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1801,7 +1801,7 @@ function Main {
         Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过启动 SD-Trainer`"
     } else {
         Print-Msg `"启动 SD-Trainer 中`"
-        python `$launch_script.ToString() @launch_args
+        python `$launch_script.ToString() `$launch_args
         `$req = `$?
         if (`$req) {
             Print-Msg `"SD-Trainer 正常退出`"

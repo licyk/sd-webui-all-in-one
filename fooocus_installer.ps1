@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 133
+$FOOOCUS_INSTALLER_VERSION = 134
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2513,7 +2513,7 @@ function Main {
     Set-Location `"`$PSScriptRoot/Fooocus`"
 
     `$hf_mirror_arg = New-Object System.Collections.ArrayList
-    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$DisableHuggingFaceMirror)) {
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
         `$hf_mirror_arg = New-Object System.Collections.ArrayList
         `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
         `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
@@ -2526,7 +2526,7 @@ function Main {
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过启动 Fooocus`"
     } else {
-        python launch.py @launch_args @hf_mirror_arg
+        python launch.py `$launch_args `$hf_mirror_arg
         `$req = `$?
         if (`$req) {
             Print-Msg `"Fooocus 正常退出`"
@@ -4254,8 +4254,8 @@ function Main {
                 `$xformers_ver = `"`"
                 `$Env:PIP_EXTRA_INDEX_URL = `" `"
                 `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
+                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
+                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
                 `$go_to = 1
             }
             6 {
@@ -4273,8 +4273,8 @@ function Main {
                 `$xformers_ver = `"`"
                 `$Env:PIP_EXTRA_INDEX_URL = `" `"
                 `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
+                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
+                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
                 `$go_to = 1
             }
             9 {
@@ -4282,8 +4282,8 @@ function Main {
                 `$xformers_ver = `"`"
                 `$Env:PIP_EXTRA_INDEX_URL = `" `"
                 `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index_ms_mirror.html`"
+                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
+                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
                 `$go_to = 1
             }
             10 {
