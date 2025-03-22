@@ -80,7 +80,7 @@ jobs:
           $package_name = "sd_webui_licyk_${build_time}"
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui" "${{ github.workspace }}/${package_name}" -Force
+          Move-Item -Path "${{ github.workspace }}/sd_webui" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Artifact
