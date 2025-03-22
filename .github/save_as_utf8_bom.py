@@ -31,6 +31,6 @@ if __name__ == "__main__":
         if os.path.isfile(os.path.join(args.root_path, file)) and os.path.splitext(file)[1] == '.ps1'
     ]
 
-    for f in file_list:
-        print(f"转换 {f} 为 UTF-8 BOM 编码")
-        save_as_utf8_with_bom(f)
+    for file in file_list:
+        print("转换 {} 为 UTF-8 BOM 编码".format(file))
+        save_as_utf8_with_bom(file)
