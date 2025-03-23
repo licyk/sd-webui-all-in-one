@@ -1,7 +1,7 @@
 name: Build InvokeAI
 
 on:
-  # push:
+  push:
   # delete:
   # create:
   schedule:
@@ -61,8 +61,8 @@ jobs:
         run: |
           pip install huggingface_hub modelscope
 
-      - name: Upload to HuggingFacee repo
-        shell: python
+      - name: Upload to HuggingFace repo
+        shell: pwsh
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           WORKSPACE: ${{ github.workspace }}
@@ -70,7 +70,7 @@ jobs:
           python "${{ github.workspace }}/.github/huggingface_release.py"
 
       - name: Upload to ModelScope repo
-        shell: python
+        shell: pwsh
         env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
           WORKSPACE: ${{ github.workspace }}
