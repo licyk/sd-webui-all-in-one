@@ -3,6 +3,14 @@
 # SD WebUI All In One
 
 _✨快速部署，简单易用_
+  <p align="center">
+    <img src="https://img.shields.io/github/stars/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
+    <a href="https://github.com/licyk/sd-webui-all-in-one/issues"><img src="https://img.shields.io/github/issues/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues"></a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml"><img src="https://flat.badgen.net/github/last-commit/licyk/sd-webui-all-in-one/main?icon=github&color=green&label=last%20dev%20commit&cache=900" alt="Commit"></a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml/badge.svg" alt="Sync"></a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml/badge.svg" alt="Lint"></a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+  </p>
 
 </div>
 
@@ -26,6 +34,7 @@ _✨快速部署，简单易用_
   - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
   - [Fooocus Installer](#fooocus-installer)
   - [Python Installer](#python-installer)
+  - [Installer 自动化构建状态](#installer-自动化构建状态)
 
 ***
 
@@ -105,7 +114,8 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。
 
 >[!IMPORTANT]  
->Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
+>1. Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
+>2. 基于 Installer 的构建模式，可实现整合包制作全自动化，由 Installer 自动构建的整合包可在此列表查看：[AI 绘画 / 训练整合包列表](https://licyk.github.io/t/sd_portable)
 
 [configure_env.bat](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/configure_env.bat))：配置 Installer 运行环境的一键配置脚本，首次使用 Installer 时需要运行一次该脚本。
 
@@ -151,3 +161,18 @@ Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [F
 
 ## Python Installer
 [install_embed_python.ps1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/install_embed_python.ps1)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/install_embed_python.ps1))：Windows 平台一键安装便携式 Python，可用做测试。
+
+
+## Installer 自动化构建状态
+|Github Action|Status|
+|---|---|
+|Build [SD WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui.yml)|
+|Build [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) Portable|[![Build SD WebUI Forge](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge.yml)|
+|Build [SD WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) Portable|[![Build SD WebUI reForge](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml)|
+|Build [ComfyUI](https://github.com/comfyanonymous/ComfyUI) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml)|
+|Build [Fooocus](https://github.com/lllyasviel/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
+|Build [InvokeAI](https://github.com/invoke-ai/InvokeAI) Portable|[![Build InvokeAI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml)|
+|Build [SD-Trainer](https://github.com/Akegarasu/lora-scripts) Portable|[![Build SD-Trainer](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml)|
+|Build [Kohya GUI](https://github.com/bmaltais/kohya_ss) Portable|[![Build Kohya GUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml)|
+|Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
+|Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|

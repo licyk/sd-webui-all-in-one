@@ -53,6 +53,7 @@ _✨一键安装 ComfyUI_
   - [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)
   - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
   - [使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)
+  - [ComfyUI Installer 构建模式和普通安装模式](#comfyui-installer-构建模式和普通安装模式)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
   - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
@@ -696,6 +697,21 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 ```powershell
 .\comfyui_installer.ps1 -InstallPath "D:/Download"
 ```
+
+
+## ComfyUI Installer 构建模式和普通安装模式
+ComfyUI Installer 主要由两部分构成：安装脚本和环境管理脚本。
+
+在 ComfyUI Installer 默认的普通安装模式下，只执行最基础的安装流程，而像其他的流程，如 PyTorch 版本更换，模型安装，运行环境检查和修复等并不会执行，这些步骤是在 ComfyUI Installer 管理脚本中进行，如执行`launch.ps1`，`reinstall_pytorch.ps1`脚本等。
+
+而 ComfyUI Installer 构建模式允许在执行基础安装流程后，调用 ComfyUI Installer 管理脚本完成这些步骤。基于这个特性，启用构建模式的 ComfyUI Installer 可用于整合包制作，搭配自动化平台可实现全自动制作整合包。
+
+构建模式需要使用命令行参数进行启用，具体可阅读[使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)中的参数说明。
+
+>[!IMPORTANT]  
+>通常安装 ComfyUI 并不需要使用 ComfyUI Installer 构建模式进行安装，使用默认的普通安装模式即可。构建模式多用于自动化制作整合包。
+
+使用 Github Action 提供的容器可用于运行 ComfyUI Installer 并启用构建模式，实现自动化制作整合包，Github Action 工作流代码可参考：[build_comfyui.yml · licyk/sd-webui-all-in-one](https://github.com/licyk/sd-webui-all-in-one/blob/main/.github/workflows/build_comfyui.yml)
 
 
 ## 运行脚本时出现中文乱码
