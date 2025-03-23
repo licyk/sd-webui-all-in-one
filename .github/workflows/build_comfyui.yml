@@ -1,7 +1,7 @@
 name: Build ComfyUI
 
 on:
-  push:
+  # push:
   # delete:
   # create:
   schedule:
