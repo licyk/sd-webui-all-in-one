@@ -52,11 +52,6 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/fooocus"
 
-      - name: Make configure env script
-        shell: pwsh
-        run: |
-          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/fooocus/configure_env.bat" -Force
-
       - name: Archive
         shell: pwsh
         run: |

@@ -46,11 +46,6 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/kohya_gui"
 
-      - name: Make configure env script
-        shell: pwsh
-        run: |
-          Copy-Item -Path "${{ github.workspace }}/configure_env.bat" -Destination "${{ github.workspace }}/kohya_gui/configure_env.bat" -Force
-
       - name: Archive
         shell: pwsh
         run: |
