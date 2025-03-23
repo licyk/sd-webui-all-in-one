@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 215
+$COMFYUI_INSTALLER_VERSION = 216
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -7229,10 +7229,63 @@ function Use-Build-Mode {
         . "$InstallPath/launch.ps1" -BuildMode @launch_args
     }
 
+    Print-Msg "添加环境配置脚本中"
+    Write-Configure-Env-Script
+
     # 清理缓存
     Print-Msg "清理下载 Python 软件包的缓存中"
     python -m pip cache purge
     uv cache clean
+}
+
+
+# 环境配置脚本
+function Write-Configure-Env-Script {
+    $content = "
+@echo off
+
+echo =================================================================
+echo :: More information: https://github.com/licyk/sd-webui-all-in-one
+echo =================================================================
+>nul 2>&1 `"%SYSTEMROOT%\system32\icacls.exe`" `"%SYSTEMROOT%\system32\config\system`"
+if '%errorlevel%' NEQ '0' (
+    echo :: Requesting administrative privileges
+    goto UACPrompt
+) else ( goto gotAdmin )
+
+:UACPrompt
+    echo :: Write vbs script to request administrative privileges
+    echo Set UAC = CreateObject^(`"Shell.Application`"^) > `"%temp%\getadmin.vbs`"
+    echo :: Executing vbs script
+    echo UAC.ShellExecute `"%~s0`", `"`", `"`", `"runas`", 1 >> `"%temp%\getadmin.vbs`"
+    `"%temp%\getadmin.vbs`"
+    exit /B
+
+:gotAdmin
+    echo :: Launch CMD with administrative privileges
+    if exist `"%temp%\getadmin.vbs`" ( del `"%temp%\getadmin.vbs`" )
+    pushd `"%CD%`" 
+    CD /D `"%~dp0`"
+    goto configureEnv
+
+:configureEnv
+    title Configure environment
+    echo :: Set PowerShell execution policies
+    echo :: Executing command: `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
+    powershell `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
+    echo :: Enable long paths supported
+    echo :: Executing command: `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
+    powershell `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
+    echo :: Configure completed
+    echo :: Exit environment configuration script 
+    pause
+"
+    if (Test-Path "$InstallPath/configure_env.bat") {
+        Print-Msg "更新 configure_env.bat 中"
+    } else {
+        Print-Msg "生成 configure_env.bat 中"
+    }
+    Set-Content -Encoding Default -Path "$InstallPath/configure_env.bat" -Value $content
 }
 
 
