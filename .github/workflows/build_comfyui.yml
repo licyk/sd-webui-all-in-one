@@ -1,7 +1,7 @@
 name: Build ComfyUI
 
 on:
-  # push:
+  push:
   # delete:
   # create:
   schedule:
@@ -52,6 +52,12 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/comfyui"
 
+      - name: Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: comfyui_nightly
+          path: ${{ github.workspace }}/comfyui/
+
       - name: Archive
         shell: pwsh
         run: |
@@ -61,12 +67,6 @@ jobs:
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/comfyui" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/comfyui/${protable_name}" "${{ github.workspace }}/${package_name}"
-
-      - name: Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: comfyui_nightly
-          path: ${{ github.workspace }}/sdnote/portable/nightly/
 
       - name: Install HuggingFace library
         shell: pwsh

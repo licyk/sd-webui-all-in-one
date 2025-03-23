@@ -1,7 +1,7 @@
 name: Build SD WebUI
 
 on:
-  # push:
+  push:
   # delete:
   # create:
   schedule:
@@ -62,6 +62,12 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui"
 
+      - name: Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sd_webui_nightly
+          path: ${{ github.workspace }}/sd_webui/
+
       - name: Archive
         shell: pwsh
         run: |
@@ -71,12 +77,6 @@ jobs:
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/sd_webui" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/sd_webui/${protable_name}" "${{ github.workspace }}/${package_name}"
-
-      - name: Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sd_webui_nightly
-          path: ${{ github.workspace }}/sdnote/portable/nightly/
 
       - name: Install HuggingFace library
         shell: pwsh
