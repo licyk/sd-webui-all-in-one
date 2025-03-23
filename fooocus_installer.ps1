@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 136
+$FOOOCUS_INSTALLER_VERSION = 137
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -603,7 +603,7 @@ function Update-Fooocus-Preset {
         )
         "default_cfg_scale" = 5.0
         "default_sample_sharpness" = 2.0
-        "default_sampler" = "dpmpp_2m_sde_gpu"
+        "default_sampler" = "euler_ancestral"
         "default_scheduler" = "sgm_uniform"
         "default_performance" = "Speed"
         "default_prompt" = "`nmasterpiece,best quality,newest,"
@@ -629,6 +629,10 @@ function Update-Fooocus-Preset {
         "default_clip_skip" = 2
         "default_black_out_nsfw" = $false
         "metadata_created_by" = "Fooocus"
+        "default_developer_debug_mode_checkbox" = $true
+        "default_describe_content_type" = @(
+            "Art/Anime"
+        )
     }
 
     $fooocus_language_zh_json_content = @{
