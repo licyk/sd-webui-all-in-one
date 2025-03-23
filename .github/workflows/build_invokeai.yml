@@ -44,12 +44,6 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/invokeai"
 
-      - name: Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: invokeai_nightly
-          path: ${{ github.workspace }}/invokeai/
-
       - name: Archive
         shell: pwsh
         run: |

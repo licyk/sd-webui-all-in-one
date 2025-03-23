@@ -52,12 +52,6 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_trainer"
 
-      - name: Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sd_trainer_nightly
-          path: ${{ github.workspace }}/sd_trainer/
-
       - name: Archive
         shell: pwsh
         run: |
