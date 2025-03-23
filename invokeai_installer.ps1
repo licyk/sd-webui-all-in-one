@@ -28,7 +28,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 230
+$INVOKEAI_INSTALLER_VERSION = 231
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2425,9 +2425,9 @@ function Set-Proxy {
 
 # Github 镜像源
 function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$InstallPath/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$InstallPath/.gitconfig`") {
-        Remove-Item -Path `"`$InstallPath/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
