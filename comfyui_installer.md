@@ -187,6 +187,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 |[huchenlei/ComfyUI-openpose-editor](https://github.com/huchenlei/ComfyUI-openpose-editor)|
 |[licyk/ComfyUI-Restart-Sampler](https://github.com/licyk/ComfyUI-Restart-Sampler)|
 |[weilin9999/WeiLin-ComfyUI-prompt-all-in-one](https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one)|
+|[licyk/ComfyUI-HakuImg](https://github.com/licyk/ComfyUI-HakuImg)|
 
 </details>
 
