@@ -116,6 +116,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 >[!IMPORTANT]  
 >1. Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
 >2. 基于 Installer 的构建模式，可实现整合包制作全自动化，由 Installer 自动构建的整合包可在此列表查看：[AI 绘画 / 训练整合包列表](https://licyk.github.io/t/sd_portable)
+>3. 由 Installer 制作的整合包说明可阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)
 
 [configure_env.bat](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/configure_env.bat))：配置 Installer 运行环境的一键配置脚本，首次使用 Installer 时需要运行一次该脚本。
 
