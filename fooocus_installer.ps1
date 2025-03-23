@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 135
+$FOOOCUS_INSTALLER_VERSION = 136
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2491,6 +2491,28 @@ function Check-Fooocus-Env {
 }
 
 
+# 设置 Fooocus 的 HuggingFace 镜像
+function Get-Fooocus-HuggingFace-Mirror-Arg {
+    `$hf_mirror_arg = New-Object System.Collections.ArrayList
+
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (!((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`"))) {
+            return `$hf_mirror_arg
+        }
+    }
+
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
+        `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
+        `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
+    }
+
+    return `$hf_mirror_arg
+}
+
+
 function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
@@ -2512,16 +2534,10 @@ function Main {
     }
 
     `$launch_args = Get-Fooocus-Launch-Args
+    `$hf_mirror_arg = Get-Fooocus-HuggingFace-Mirror-Arg
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
     Set-Location `"`$PSScriptRoot/Fooocus`"
-
-    `$hf_mirror_arg = New-Object System.Collections.ArrayList
-    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
-        `$hf_mirror_arg = New-Object System.Collections.ArrayList
-        `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
-        `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
-    }
 
     Create-Fooocus-Shortcut
     Check-Fooocus-Env
