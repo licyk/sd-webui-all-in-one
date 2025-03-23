@@ -1,7 +1,7 @@
 name: Build Kohya GUI
 
 on:
-  push:
+  # push:
   # delete:
   # create:
   schedule:
