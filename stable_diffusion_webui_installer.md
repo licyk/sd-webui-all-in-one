@@ -201,7 +201,7 @@ $ tree -L 1
 <details>
 <summary><strong><h3>查看 SD WebUI Installer 为 Stable Diffusion WebUI 预装的扩展</h3></strong></summary>
 
-|Stable Diffusion WebUI 分支|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
+|Stable Diffusion WebUI 分支|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)<br>[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)<br>[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
 |---|---|---|---|
 |扩展 1|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
 |扩展 2|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
@@ -657,14 +657,31 @@ SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI �
 |参数|作用|
 |---|---|
 |`-InstallPath` <Stable Diffusion WebUI 安装路径>|指定安装 Stable Diffusion WebUI 的路径，使用绝对路径进行指定。|
-|`-InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：</br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)</br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)</br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)</br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)</br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)|
+|`-InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：<br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)<br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)<br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)<br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)<br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)|
 |`-UseUpdateMode`|使用 SD WebUI Installer 的更新脚本模式，不进行 Stable Diffusion WebUI 的安装。|
-|`-DisablePipMirror`|禁用 SD WebUI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
+|`-DisablePipMirror`|禁用 SD WebUI Installer 使用 Pip 镜像源，使用 Pip 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 SD WebUI Installer 自动设置代理服务器。|
 |`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
-|`-DisableUV`|禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
+|`-DisableUV`|禁用 SD WebUI Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
 |`-DisableGithubMirror`|禁用 SD WebUI Installer 自动设置 Github 镜像源。|
-|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。<br>可用的 Github 镜像站地址:<br>`https://ghfast.top/https://github.com`<br>`https://mirror.ghproxy.com/https://github.com`<br>`https://ghproxy.net/https://github.com`<br>`https://gh.api.99988866.xyz/https://github.com`<br>`https://gitclone.com/github.com`<br>`https://gh-proxy.com/https://github.com`<br>`https://ghps.cc/https://github.com`<br>`https://gh.idayer.com/https://github.com`|
+|`-BuildMode`|启用 SD WebUI Installer 构建模式，在基础安装流程结束后将调用 SD WebUI Installer 管理脚本执行剩余的安装任务，并且出现错误时不再暂停 SD WebUI Installer 的执行，而是直接退出。<br>当指定调用多个 SD WebUI Installer 脚本时，将按照优先顺序执行 (按从上到下的顺序)：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`，`-BuildWithTorchReinstall` 参数<br><li>`switch_branch.ps1`：对应 `-BuildWitchBranch` 参数<br><li>`download_models.ps1`：对应`-BuildWitchModel`参数<br><li>`update.ps1`：对应`-BuildWithUpdate`参数<br><li>`update_extension.ps1`：对应`-BuildWithUpdateExtension`参数<br><li>`launch.ps1`：对应`BuildWithLaunch`数|
+|`-BuildWithUpdate`|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update.ps1 脚本，更新 Stable Diffusion WebUI 内核。|
+|`-BuildWithUpdateExtension`|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update_extension.ps1 脚本，更新 Stable Diffusion WebUI 自定义节点。|
+|`-BuildWithLaunch`|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 launch.ps1 脚本，执行启动 Stable Diffusion WebUI 前的环境检查流程，但跳过启动 Stable Diffusion WebUI。|
+|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 reinstall_pytorch.ps1 脚本，根据 PyTorch 版本编号安装指定的 PyTorch 版本。PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看。|
+|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式，并且添加`-BuildWithTorch`) 在 SD WebUI Installer 构建模式下，执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装。|
+|`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本，根据模型编号列表下载指定的模型。模型编号可运行 download_models.ps1 脚本进行查看。|
+|`-BuildWitchBranch` <Stable Diffusion WebUI 分支编号>|(需添加`-BuildMode`启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本，根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支。Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看。|
+|`-NoPreDownloadExtension`|安装 Stable Diffusion WebUI 时跳过下载 Stable Diffusion WebUI 扩展。|
+|`-NoPreDownloadModel`|安装 Stable Diffusion WebUI 时跳过预下载模型。|
+|`-DisableUpdate`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 更新检查。|
+|`-DisableHuggingFaceMirror`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
+|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
+|`-LaunchArg` <Stable Diffusion WebUI 启动参数>|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI  自定义启动参数，如启用 --autolaunch 和 --xformers，则使用`-LaunchArg "--autolaunch --xformers"`进行启用。|
+|`-EnableShortcut`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI  启动快捷方式。|
+|`-DisableCUDAMalloc`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
+|`-DisableEnvCheck`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题，禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复。|
 |`-Help`|显示 SD WebUI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)，则在 SD WebUI Installer 所在路径打开 PowerShell，使用参数运行 SD WebUI Installer。
@@ -862,7 +879,7 @@ Update-Aria2
 
 ### 测试可用的 Github 镜像源并应用
 ```powershell
-Set-Github-Mirror
+Test-Github-Mirror
 ```
 
 

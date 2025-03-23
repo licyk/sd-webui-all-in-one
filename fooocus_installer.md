@@ -599,12 +599,27 @@ Fooocus Installer 支持使用命令参数设置安装 Fooocus 的参数，支�
 |`-InstallPath` <Fooocus 安装路径>|指定安装 Fooocus 的路径，使用绝对路径进行指定。|
 |`-InstallBranch` <Fooocus 分支名>|指定 Fooocus Installer 安装的 Fooocus 的分支，Fooocus 分支名对应的分支如下：</br>`fooocus`: [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)</br>`fooocus_mre`: [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)</br>`ruined_fooocus`: [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
 |`-UseUpdateMode`|使用 Fooocus Installer 的更新脚本模式，不进行 Fooocus 的安装。|
-|`-DisablePipMirror`|禁用 Fooocus Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
+|`-DisablePipMirror`|禁用 Fooocus Installer 使用 Pip 镜像源，使用 Pip 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 Fooocus Installer 自动设置代理服务器。|
 |`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
-|`-DisableUV`|禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
+|`-DisableUV`|禁用 Fooocus Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
 |`-DisableGithubMirror`|禁用 Fooocus Installer 自动设置 Github 镜像源。|
 |`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
+|`-BuildMode`|启用 Fooocus Installer 构建模式，在基础安装流程结束后将调用 Fooocus Installer 管理脚本执行剩余的安装任务，并且出现错误时不再暂停 Fooocus Installer 的执行，而是直接退出。<br>当指定调用多个 Fooocus Installer 脚本时，将按照优先顺序执行 (按从上到下的顺序)：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`，`-BuildWithTorchReinstall`参数<br><li>`switch_branch.ps1`：对应`-BuildWitchBranch`参数<br><li>`download_models.ps1`：对应`-BuildWitchModel`参数<br><li>`update.ps1`：对应`-BuildWithUpdate`参数<br><li>`launch.ps1`：对应`-BuildWithLaunch`参数|
+|`-BuildWithUpdate`|(需添加`-BuildMode`启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 update.ps1 脚本，更新 Fooocus 内核。|
+|`-BuildWithLaunch`|(需添加`-BuildMode`启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 launch.ps1 脚本，执行启动 Fooocus 前的环境检查流程，但跳过启动 Fooocus。|
+|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 reinstall_pytorch.ps1 脚本，根据 PyTorch 版本编号安 装指定的 PyTorch 版本。<br>PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看。|
+|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 Fooocus Installer 构建模式，并且添加 -BuildWithTorch) 在 Fooocus Installer 构建模式下，执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安 装时使用强制重新安装。|
+|`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 download_models.ps1 脚本，根据模型编号列表下载指定的模型。<br>模型编号可运行 download_models.ps1 脚本进行查看。|
+|`-BuildWitchBranch` <Fooocus 分支编号>|(需添加`-BuildMode`启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 switch_branch.ps1 脚本，根据 Fooocus 分支编号切换到 对应的 Fooocus 分支。<br>Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看。|
+|`-NoPreDownloadModel`|安装 Fooocus 时跳过预下载模型。|
+|`-DisableUpdate`|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 更新检查。|
+|`-DisableHuggingFaceMirror`|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
+|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>。|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
+|`-LaunchArg` <Fooocus 启动参数>|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 设置 Fooocus 自定义启动参数，如启用 --in-browser 和 --async-cuda-allocation，则使用`-LaunchArg "--in-browser --async-cuda-allocation"`进行启用。|
+|`-EnableShortcut`|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 创建 Fooocus 启动快捷方式。|
+|`-DisableCUDAMalloc`|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 通过`PYTORCH_CUDA_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
+|`-DisableEnvCheck`|(仅在 Fooocus Installer 构建模式下生效，并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 检查 Fooocus 运行环境中存在的问题，禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复。|
 |`-Help`|显示 Fooocus Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)，则在 Fooocus Installer 所在路径打开 PowerShell，使用参数运行 Fooocus Installer。
@@ -802,7 +817,7 @@ Update-Aria2
 
 ### 测试可用的 Github 镜像源并应用
 ```powershell
-Set-Github-Mirror
+Test-Github-Mirror
 ```
 
 

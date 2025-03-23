@@ -564,10 +564,24 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |---|---|
 |`-InstallPath` <InvokeAI 安装路径>|指定安装 InvokeAI 的路径，使用绝对路径进行指定。|
 |`-UseUpdateMode`|使用 InvokeAI Installer 的更新脚本模式，不进行 InvokeAI 的安装。|
-|`-DisablePipMirror`|禁用 InvokeAI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包。|
+|`-DisablePipMirror`|禁用 InvokeAI Installer 使用 Pip 镜像源，使用 Pip 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 InvokeAI Installer 自动设置代理服务器。|
 |`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
-|`-DisableUV`|禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包。|
+|`-DisableUV`|禁用 InvokeAI Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
+|`-BuildMode`|启用 InvokeAI Installer 构建模式，在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务，并且出现错误时不再暂停 InvokeAI Installer 的执行，而是直接退出。<br>当指定调用多个 InvokeAI Installer 脚本时，将按照优先顺序执行 (按从上到下的顺序)：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorchReinstall`参数<br><li>`download_models.ps1`：对应`-BuildWitchModel`参数<br><li>`update.ps1`：对应`-BuildWithUpdate`参数<br><li>`update_node.ps1`：对应`-BuildWithUpdateNode`参数<br><li>`launch.ps1`：对应`-BuildWithLaunch`参数|
+|`-BuildWithUpdate`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update.ps1 脚本，更新 InvokeAI 内核。|
+|`-BuildWithUpdateNode`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update_node.ps1 脚本，更新 InvokeAI 自定义节点。|
+|`-BuildWithLaunch`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本，执行启动 InvokeAI 前的环境检查流程，但跳过启动 InvokeAI|
+|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本，卸载并重新安装 PyTorch。|
+|`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本，根据模型编号列表下载指 定的模型。<br>模型编号可运行 download_models.ps1 脚本进行查看。|
+|`-DisableUpdate`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查。|
+|`-DisableHuggingFaceMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
+|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
+|`-EnableShortcut`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式。|
+|`-DisableCUDAMalloc`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器。|
+|`-DisableEnvCheck`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题，禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复。|
+|`-DisableGithubMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 Fooocus Installer 自动设置 Github 镜像源。|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义的 Github 镜像站地址。<br>可用的 Github 镜像站地址:<br>`https://ghfast.top/https://github.com`<br>`https://mirror.ghproxy.com/https://github.com`<br>`https://ghproxy.net/https://github.com`<br>`https://gh.api.99988866.xyz/https://github.com`<br>`https://gitclone.com/github.com`<br>`https://gh-proxy.com/https://github.com`<br>`https://ghps.cc/https://github.com`<br>`https://gh.idayer.com/https://github.com`|
 |`-Help`|显示 InvokeAI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 InvokeAI，则在 InvokeAI Installer 所在路径打开 PowerShell，使用参数运行 InvokeAI Installer。
@@ -798,7 +812,7 @@ Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
 
 ### 测试并启用 Github 镜像源
 ```powershell
-Set-Github-Mirror
+Test-Github-Mirror
 # 可用于加速从 Github 下载项目
 ```
 

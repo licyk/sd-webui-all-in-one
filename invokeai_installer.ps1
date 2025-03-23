@@ -28,7 +28,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 228
+$INVOKEAI_INSTALLER_VERSION = 229
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6296,7 +6296,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildMode
         启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
         当指定调用多个 InvokeAI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
-            - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
+            - reinstall_pytorch.ps1     (对应 -BuildWithTorchReinstall 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
             - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
@@ -6325,7 +6325,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
     -EnableShortcut
         (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式

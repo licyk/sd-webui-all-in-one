@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 195
+$SD_WEBUI_INSTALLER_VERSION = 196
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -935,7 +935,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -LaunchArg <Stable Diffusion WebUI 启动参数>
-        设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --disable-offload-from-vram 和 --disable-analytics, 则使用 -LaunchArg ```"--disable-offload-from-vram --disable-analytics```" 进行启用
+        设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --autolaunch 和 --xformers, 则使用 -LaunchArg ```"--autolaunch --xformers```" 进行启用
 
     -EnableShortcut
         创建 Stable Diffusion WebUI 启动快捷方式
@@ -7641,7 +7641,7 @@ function Use-Build-Mode {
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -7703,13 +7703,13 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
-        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update.ps1 脚本, 更新 SD WebUI 内核
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update.ps1 脚本, 更新 Stable Diffusion WebUI 内核
 
     -BuildWithUpdateExtension
-        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update_extension.ps1 脚本, 更新 SD WebUI 自定义节点
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update_extension.ps1 脚本, 更新 Stable Diffusion WebUI 扩展
 
     -BuildWithLaunch
-        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 launch.ps1 脚本, 执行启动 SD WebUI 前的环境检查流程, 但跳过启动 SD WebUI
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 launch.ps1 脚本, 执行启动 Stable Diffusion WebUI 前的环境检查流程, 但跳过启动 Stable Diffusion WebUI
 
     -BuildWithTorch <PyTorch 版本编号>
         (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
@@ -7722,9 +7722,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -BuildWitchBranch <SD WebUI 分支编号>
-        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 SD WebUI 分支编号切换到对应的 SD WebUI 分支
-        SD WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
+    -BuildWitchBranch <Stable Diffusion WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支
+        Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -NoPreDownloadExtension
         安装 Stable Diffusion WebUI 时跳过下载 Stable Diffusion WebUI 扩展
@@ -7739,10 +7739,10 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
     -LaunchArg <Stable Diffusion WebUI 启动参数>
-        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --autolaunch 和 --xformers, 则使用 -LaunchArg `"--autolaunch --xformers`" 进行启用
 
     -EnableShortcut
         (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI 启动快捷方式

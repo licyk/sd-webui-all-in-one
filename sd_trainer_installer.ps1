@@ -30,7 +30,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 243
+$SD_TRAINER_INSTALLER_VERSION = 244
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6306,10 +6306,10 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
     -LaunchArg <SD-Trainer 启动参数>
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 设置 SD-Trainer 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 设置 SD-Trainer 自定义启动参数, 如启用 --skip-prepare-environment 和 --dev, 则使用 -LaunchArg `"--skip-prepare-environment --dev`" 进行启用
 
     -EnableShortcut
         (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 创建 SD-Trainer 启动快捷方式
