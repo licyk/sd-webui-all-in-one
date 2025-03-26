@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 199
+$SD_WEBUI_INSTALLER_VERSION = 200
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3564,7 +3564,7 @@ function Main {
             `$go_to = 1
             `$arg = `$BuildWitchBranch
         } else {
-            `$arg = (Read-Host `"========================================>`").Trim()
+            `$arg = (Read-Host `"=========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -3649,7 +3649,7 @@ function Main {
     if (`$BuildMode) {
         `$operate = `"yes`"
     } else {
-        `$operate = (Read-Host `"========================================>`").Trim()
+        `$operate = (Read-Host `"=========================================>`").Trim()
     }
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
@@ -4432,7 +4432,7 @@ function Main {
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"========================================>`").Trim()
+            `$arg = (Read-Host `"=========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -4669,7 +4669,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"=========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
@@ -4689,7 +4689,7 @@ function Main {
     if (`$BuildMode) {
         `$install_torch = `"yes`"
     } else {
-        `$install_torch = (Read-Host `"========================================>`").Trim()
+        `$install_torch = (Read-Host `"=========================================>`").Trim()
     }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
