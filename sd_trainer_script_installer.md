@@ -920,23 +920,25 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=12 `
     --gradient_checkpointing `
     --network_train_unet_only `
-    --learning_rate=0.00012 `
-    --unet_lr=0.00012 `
+    --learning_rate=0.0001 `
+    --unet_lr=0.0001 `
     --text_encoder_lr=0.00001 `
     --lr_scheduler="constant_with_warmup" `
     --lr_warmup_steps=100 `
@@ -951,9 +953,9 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
         dropout=0 `
         factor=8 `
         train_norm=True `
-        preset="attn-mlp" `
+        preset="full" `
     --optimizer_args `
-        weight_decay=0.1 `
+        weight_decay=0.05 `
         betas="0.9,0.95" `
     --log_with="tensorboard" `
     --logging_dir="${OUTPUT_PATH}/logs" `
@@ -967,6 +969,8 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --debiased_estimation_loss `
+    --vae_batch_size=4 `
     --full_fp16
 
 
