@@ -867,12 +867,12 @@ Set-Location $PSScriptRoot
 # 
 # SD-Trainer-Script 环境初始化后提供以下变量便于使用
 # 
-# $ROOT_PATH               当前目录
-# $SD_SCRIPTS_PATH         训练脚本所在目录
-# $DATASET_PATH            数据集目录
-# $MODEL_PATH              模型下载器下载的模型路径
-# $GIT_EXEC                Git 路径
-# $PYTHON_EXEC             Python 解释器路径
+# ${ROOT_PATH}               当前目录
+# ${SD_SCRIPTS_PATH}         训练脚本所在目录
+# ${DATASET_PATH}            数据集目录
+# ${MODEL_PATH}              模型下载器下载的模型路径
+# ${GIT_EXEC}                Git 路径
+# ${PYTHON_EXEC}             Python 解释器路径
 # 
 # 下方可编写训练代码
 # 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
@@ -902,13 +902,13 @@ Set-Location $PSScriptRoot
 # 
 # SD-Trainer-Script 环境初始化后提供以下变量便于使用
 # 
-# $ROOT_PATH               当前目录
-# $SD_SCRIPTS_PATH         训练脚本所在目录
-# $DATASET_PATH            数据集目录
-# $MODEL_PATH              模型下载器下载的模型路径
-# $OUTPUT_PATH             保存训练模型的路径
-# $GIT_EXEC                Git 路径
-# $PYTHON_EXEC             Python 解释器路径
+# ${ROOT_PATH}               当前目录
+# ${SD_SCRIPTS_PATH}         训练脚本所在目录
+# ${DATASET_PATH}            数据集目录
+# ${MODEL_PATH}              模型下载器下载的模型路径
+# ${OUTPUT_PATH}             保存训练模型的路径
+# ${GIT_EXEC}                Git 路径
+# ${PYTHON_EXEC}             Python 解释器路径
 # 
 # 下方可编写训练代码
 # 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
@@ -992,32 +992,34 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```powershell
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数在 animagine-xl-3.1.safetensors 测试, 大概在 30 ~ 40 Epoch 有比较好的效果 (在 36 Epoch 出好效果的概率比较高)
-
+#
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/animagine-xl-3.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=50 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1051,39 +1053,41 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
-
+#
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1117,43 +1121,45 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
 # 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
 # 拟合速度会更快
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1186,48 +1192,50 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
 # 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
 # 拟合速度会更快
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
-
+# 
 # 在 --network_args 设置了 preset，可以调整训练网络的大小
 # 该值默认为 full，而使用 attn-mlp 可以得到更小的 LoRA 但几乎不影响 LoRA 效果
 # 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
 # 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1261,52 +1269,55 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
 # 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
 # 拟合速度会更快
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
-
+# 
 # 在 --network_args 设置了 preset，可以调整训练网络的大小
 # 该值默认为 full，而使用 attn-mlp 可以得到更小的 LoRA 但几乎不影响 LoRA 效果
 # 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
 # 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
-
+# 
 # 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
 # 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 较小的训练集适合使用较小的值, 如 0.05, 较大的训练集适合用 0.1
 # 当 weight_decay 设置为 0.05 时, 大概在 38 Epoch 有比较好的效果
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1343,37 +1354,306 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
 
 
-
-# 使用 lokr 算法训练 XL 人物 LoRA, 使用多卡进行训练
-# 适合极少图或者单图训练集进行人物 LoRA 训练
-# 训练集使用打标器进行打标后, 要保留的人物的哪些特征, 就把对应的 Tag 删去, 触发词可加可不加
-
-# 该参数使用 scale_weight_norms 降低过拟合程度, 进行训练时, 可在控制台输出看到 Average key norm 这个值
-# 通常测试 LoRA 时就测试 Average key norm 值在 0.5 ~ 0.9 之间的保存的 LoRA 模型
-# max_train_epochs 设置为 200, save_every_n_epochs 设置为 1 以为了更好的挑选最好的结果
-
-# 可使用该方法训练一个人物 LoRA 模型用于生成人物的图片, 并将这些图片重新制作成训练集
-# 再使用不带 scale_weight_norms 的训练参数进行训练, 通过这种方式, 可以在图片极少的情况下得到比较好的 LoRA 模型
-
+# (自己在用的)
+# 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
+# 该参数也可以用于人物 LoRA 训练
+# 
+# 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
+# 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
+# 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
+# 
+# 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
+# 拟合速度会更快
+# constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
+# 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
+# 
+# 在 --network_args 设置了 preset, 可以调整训练网络的大小
+# 该值默认为 full, 如果使用 attn-mlp 可以得到更小的 LoRA, 但对于难学的概念使用 full 效果会更好
+# 
+# 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
+# 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
+# 
+# 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
+# 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 较小的训练集适合使用较小的值, 如 0.05, 较大的训练集适合用 0.1
+# 大概 34 Epoch 会有比较好的效果吧, 不过不好说, 看训练集
+# 自己测的时候大概在 26~40 Epoch 之间会出现好结果, 测试了很多炉基本都在这个区间里, 但也不排除意外情况 (训练参数这东西好麻烦啊, 苦い)
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
+    --save_model_as="safetensors" `
+    --save_precision="fp16" `
+    --save_every_n_epochs=1 `
+    --max_train_epochs=40 `
+    --train_batch_size=6 `
+    --gradient_checkpointing `
+    --network_train_unet_only `
+    --learning_rate=0.0001 `
+    --unet_lr=0.0001 `
+    --text_encoder_lr=0.00001 `
+    --lr_scheduler="constant_with_warmup" `
+    --lr_warmup_steps=100 `
+    --optimizer_type="Lion8bit" `
+    --network_module="lycoris.kohya" `
+    --network_dim=100000 `
+    --network_alpha=100000 `
+    --network_args `
+        conv_dim=100000 `
+        conv_alpha=100000 `
+        algo=lokr `
+        dropout=0 `
+        factor=8 `
+        train_norm=True `
+        preset="full" `
+    --optimizer_args `
+        weight_decay=0.05 `
+        betas="0.9,0.95" `
+    --log_with="tensorboard" `
+    --logging_dir="${OUTPUT_PATH}/logs" `
+    --caption_extension=".txt" `
+    --shuffle_caption `
+    --keep_tokens=0 `
+    --max_token_length=225 `
+    --seed=1337 `
+    --mixed_precision="fp16" `
+    --xformers `
+    --cache_latents `
+    --cache_latents_to_disk `
+    --persistent_data_loader_workers `
+    --vae_batch_size=4 `
+    --full_fp16
+
+
+# (自己在用的)
+# 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
+# 该参数也可以用于人物 LoRA 训练
+# 
+# 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
+# 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
+# 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
+# 
+# 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
+# 拟合速度会更快
+# constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
+# 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
+# 
+# 在 --network_args 设置了 preset, 可以调整训练网络的大小
+# 该值默认为 full, 如果使用 attn-mlp 可以得到更小的 LoRA, 但对于难学的概念使用 full 效果会更好 (最好还是 full 吧, 其他的预设效果不是很好)
+# 
+# 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
+# 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
+# 
+# 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
+# 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 较小的训练集适合使用较小的值, 如 0.05, 较大的训练集适合用 0.1
+# 大概 34 Epoch 会有比较好的效果吧, 不过不好说, 看训练集
+# 自己测的时候大概在 26~40 Epoch 之间会出现好结果, 测试了很多炉基本都在这个区间里, 但也不排除意外情况 (训练参数这东西好麻烦啊, 苦い)
+# 
+# 测试的时候发现 --debiased_estimation_loss 对于训练效果的有些改善
+# 这里有个对比: https://licyk.netlify.app/2025/02/10/debiased_estimation_loss_in_stable_diffusion_model_training
+# 启用后能提高拟合速度和颜色表现吧, 画风的学习能学得更好
+# 但, 肢体崩坏率可能会有点提高, 不过有另一套参数去优化了一下这个问题, 貌似会好一点
+# debiased estimation loss 有个相关的论文可以看看: https://arxiv.org/abs/2310.08442
+# 
+python -m accelerate.commands.launch `
+    --num_cpu_threads_per_process=1 `
+    --multi_gpu `
+    --num_processes=2 `
+    "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+    --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
+    --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
+    --train_data_dir="${DATASET_PATH}/Nachoneko" `
     --output_name="Nachoneko_2" `
     --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
+    --prior_loss_weight=1 `
+    --resolution="1024,1024" `
+    --enable_bucket `
+    --min_bucket_reso=256 `
+    --max_bucket_reso=4096 `
+    --bucket_reso_steps=64 `
+    --save_model_as="safetensors" `
+    --save_precision="fp16" `
+    --save_every_n_epochs=1 `
+    --max_train_epochs=40 `
+    --train_batch_size=6 `
+    --gradient_checkpointing `
+    --network_train_unet_only `
+    --learning_rate=0.0001 `
+    --unet_lr=0.0001 `
+    --text_encoder_lr=0.00001 `
+    --lr_scheduler="constant_with_warmup" `
+    --lr_warmup_steps=100 `
+    --optimizer_type="Lion8bit" `
+    --network_module="lycoris.kohya" `
+    --network_dim=100000 `
+    --network_alpha=100000 `
+    --network_args `
+        conv_dim=100000 `
+        conv_alpha=100000 `
+        algo=lokr `
+        dropout=0 `
+        factor=8 `
+        train_norm=True `
+        preset="full" `
+    --optimizer_args `
+        weight_decay=0.05 `
+        betas="0.9,0.95" `
+    --log_with="tensorboard" `
+    --logging_dir="${OUTPUT_PATH}/logs" `
+    --caption_extension=".txt" `
+    --shuffle_caption `
+    --keep_tokens=0 `
+    --max_token_length=225 `
+    --seed=1337 `
+    --mixed_precision="fp16" `
+    --xformers `
+    --cache_latents `
+    --cache_latents_to_disk `
+    --persistent_data_loader_workers `
+    --debiased_estimation_loss `
+    --vae_batch_size=4 `
+    --full_fp16
+
+
+# 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
+# 该参数也可以用于人物 LoRA 训练
+# 
+# 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
+# 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
+# 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
+# 
+# 在 --network_args 设置了 preset, 可以调整训练网络的大小
+# 该值默认为 full, 如果使用 attn-mlp 可以得到更小的 LoRA, 但对于难学的概念使用 full 效果会更好 (最好还是 full 吧, 其他的预设效果不是很好)
+# 
+# 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
+# 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
+# 
+# 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
+# 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 较小的训练集适合使用较小的值, 如 0.05, 较大的训练集适合用 0.1
+# 大概 34 Epoch 会有比较好的效果吧, 不过不好说, 看训练集
+# 自己测的时候大概在 26~40 Epoch 之间会出现好结果, 测试了很多炉基本都在这个区间里, 但也不排除意外情况 (训练参数这东西好麻烦啊, 苦い)
+# 
+# 测试的时候发现 --debiased_estimation_loss 对于训练效果的有些改善
+# 这里有个对比: https://licyk.netlify.app/2025/02/10/debiased_estimation_loss_in_stable_diffusion_model_training
+# 启用后能提高拟合速度和颜色表现吧, 画风的学习能学得更好
+# 把学习率调度器 constant_with_warmup 换成了cosine, 稍微缓解了一下拟合速度过快导致肢体崩坏率增大的问题
+# 如果学的效果不够好, 拟合度不够高, 可以适当增加 --max_train_epochs 的值或者提高训练集的重复次数
+# debiased estimation loss 有个相关的论文可以看看: https://arxiv.org/abs/2310.08442
+# 
+python -m accelerate.commands.launch `
+    --num_cpu_threads_per_process=1 `
+    --multi_gpu `
+    --num_processes=2 `
+    "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+    --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
+    --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
+    --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
+    --prior_loss_weight=1 `
+    --resolution="1024,1024" `
+    --enable_bucket `
+    --min_bucket_reso=256 `
+    --max_bucket_reso=4096 `
+    --bucket_reso_steps=64 `
+    --save_model_as="safetensors" `
+    --save_precision="fp16" `
+    --save_every_n_epochs=1 `
+    --max_train_epochs=40 `
+    --train_batch_size=6 `
+    --gradient_checkpointing `
+    --network_train_unet_only `
+    --learning_rate=0.0001 `
+    --unet_lr=0.0001 `
+    --text_encoder_lr=0.00001 `
+    --lr_scheduler="cosine" `
+    --lr_warmup_steps=0 `
+    --optimizer_type="Lion8bit" `
+    --network_module="lycoris.kohya" `
+    --network_dim=100000 `
+    --network_alpha=100000 `
+    --network_args `
+        conv_dim=100000 `
+        conv_alpha=100000 `
+        algo=lokr `
+        dropout=0 `
+        factor=8 `
+        train_norm=True `
+        preset="full" `
+    --optimizer_args `
+        weight_decay=0.05 `
+        betas="0.9,0.95" `
+    --log_with="tensorboard" `
+    --logging_dir="${OUTPUT_PATH}/logs" `
+    --caption_extension=".txt" `
+    --shuffle_caption `
+    --keep_tokens=0 `
+    --max_token_length=225 `
+    --seed=1337 `
+    --mixed_precision="fp16" `
+    --xformers `
+    --cache_latents `
+    --cache_latents_to_disk `
+    --persistent_data_loader_workers `
+    --debiased_estimation_loss `
+    --vae_batch_size=4 `
+    --full_fp16
+
+
+# 使用 lokr 算法训练 XL 人物 LoRA, 使用多卡进行训练
+# 适合极少图或者单图训练集进行人物 LoRA 训练
+# 训练集使用打标器进行打标后, 要保留的人物的哪些特征, 就把对应的 Tag 删去, 触发词可加可不加
+# 
+# 该参数使用 scale_weight_norms 降低过拟合程度, 进行训练时, 可在控制台输出看到 Average key norm 这个值
+# 通常测试 LoRA 时就测试 Average key norm 值在 0.5 ~ 0.9 之间的保存的 LoRA 模型
+# max_train_epochs 设置为 200, save_every_n_epochs 设置为 1 以为了更好的挑选最好的结果
+# 
+# 可使用该方法训练一个人物 LoRA 模型用于生成人物的图片, 并将这些图片重新制作成训练集
+# 再使用不带 scale_weight_norms 的训练参数进行训练, 通过这种方式, 可以在图片极少的情况下得到比较好的 LoRA 模型
+# 
+python -m accelerate.commands.launch `
+    --num_cpu_threads_per_process=1 `
+    --multi_gpu `
+    --num_processes=2 `
+    "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+    --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
+    --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
+    --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
+    --prior_loss_weight=1 `
+    --resolution="1024,1024" `
+    --enable_bucket `
+    --min_bucket_reso=256 `
+    --max_bucket_reso=4096 `
+    --bucket_reso_steps=64 `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
     --save_every_n_epochs=1 `
@@ -1410,39 +1690,41 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用 rtx 4060 8g laptop 进行训练, 通过 fp8 降低显存占用
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
 # 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
 # 拟合速度会更快
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
-
+# 
 python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=3 `
     --gradient_checkpointing `
@@ -1475,46 +1757,48 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --fp8_base
-
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
-
+# 
 # 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
 # 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
 # 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
-
+#
 # 这个参数是在 Illustrious-XL-v0.1.safetensors 模型上测出来的, 大概在 32 Epoch 左右有比较好的效果
 # 用 animagine-xl-3.1.safetensors 那套参数也有不错的效果, 只是学习率比这套低了点, 学得慢一点
 # 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
 # 拟合速度会更快
 # constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
 # 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
-
+# 
 # 参数加上了 noise_offset, 可以提高暗处和亮处的表现, 一般使用设置成 0.05 ~ 0.1
 # 但 noise_offset 可能会导致画面泛白, 光影效果变差
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/Illustrious-XL-v0.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="Nachoneko_2" `
-    --output_dir="${OUTPUT_PATH}/Nachoneko" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1548,34 +1832,36 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 XL 人物 LoRA, 使用多卡进行训练
 # 参数中使用了 --scale_weight_norms, 用于提高泛化性, 但可能会造成拟合度降低
 # 如果当训练人物 LoRA 的图片较多时, 可考虑删去该参数
 # 当训练人物 LoRA 的图片较少, 为了避免过拟合, 就可以考虑使用 --scale_weight_norms 降低过拟合概率
-
+#
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/animagine-xl-3.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/robin" `
+    --output_name="robin_1" `
+    --output_dir="${OUTPUT_PATH}/robin_1" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="robin_1" `
-    --output_dir="${OUTPUT_PATH}/robin_1" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=50 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1609,31 +1895,32 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
 
 
-
 # 使用 lokr 算法训练 XL 人物 LoRA, 使用多卡进行训练
-
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/animagine-xl-3.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/murasame_(senren)_3" `
+    --output_name="murasame_(senren)_10" `
+    --output_dir="${OUTPUT_PATH}/murasame_(senren)_10" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="murasame_(senren)_10" `
-    --output_dir="${OUTPUT_PATH}/murasame_(senren)_10" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=50 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1666,26 +1953,28 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
 
 
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用单卡进行训练 (Kaggle 的单 Tesla P100 性能不如双 Tesla T4, 建议使用双卡训练)
-
 python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --pretrained_model_name_or_path="${MODEL_PATH}/animagine-xl-3.1.safetensors" `
     --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
     --train_data_dir="${DATASET_PATH}/rafa" `
+    --output_name="rafa_1" `
+    --output_dir="${OUTPUT_PATH}/rafa" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="1024,1024" `
     --enable_bucket `
     --min_bucket_reso=256 `
-    --max_bucket_reso=2048 `
+    --max_bucket_reso=4096 `
     --bucket_reso_steps=64 `
-    --output_name="rafa_1" `
-    --output_dir="${OUTPUT_PATH}/rafa" `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=50 `
     --train_batch_size=6 `
     --gradient_checkpointing `
@@ -1719,15 +2008,15 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 SD1.5 画风 LoRA, 使用双卡进行训练
 # 使用 NovelAI 1 模型进行训练
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/train_network.py" `
@@ -1736,6 +2025,8 @@ python -m accelerate.commands.launch `
     --train_data_dir="${DATASET_PATH}/sunfish" `
     --output_name="nai1-sunfish_5" `
     --output_dir="${OUTPUT_PATH}/nai1-sunfish_5" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="768,768" `
     --enable_bucket `
@@ -1744,7 +2035,7 @@ python -m accelerate.commands.launch `
     --bucket_reso_steps=64 `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=12 `
     --gradient_checkpointing `
@@ -1777,17 +2068,17 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
-
 
 
 # 使用 lokr 算法训练 SD1.5 多画风(多概念) LoRA, 使用双卡进行训练
 # 使用 NovelAI 1 模型进行训练
-
+# 
 # 在 SD1.5 中训练 Text Encoder 可以帮助模型更好的区分不同的画风(概念)
-
+# 
 python -m accelerate.commands.launch `
-    --num_cpu_threads_per_process 1 `
+    --num_cpu_threads_per_process=1 `
     --multi_gpu `
     --num_processes=2 `
     "${SD_SCRIPTS_PATH}/train_network.py" `
@@ -1796,6 +2087,8 @@ python -m accelerate.commands.launch `
     --train_data_dir="${DATASET_PATH}/sunfish" `
     --output_name="nai1-sunfish_5" `
     --output_dir="${OUTPUT_PATH}/nai1-sunfish_5" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
     --prior_loss_weight=1 `
     --resolution="768,768" `
     --enable_bucket `
@@ -1804,7 +2097,7 @@ python -m accelerate.commands.launch `
     --bucket_reso_steps=64 `
     --save_model_as="safetensors" `
     --save_precision="fp16" `
-    --save_every_n_epochs=2 `
+    --save_every_n_epochs=1 `
     --max_train_epochs=40 `
     --train_batch_size=12 `
     --gradient_checkpointing `
@@ -1836,6 +2129,7 @@ python -m accelerate.commands.launch `
     --cache_latents `
     --cache_latents_to_disk `
     --persistent_data_loader_workers `
+    --vae_batch_size=4 `
     --full_fp16
 ```
 
