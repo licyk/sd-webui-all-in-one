@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 141
+$FOOOCUS_INSTALLER_VERSION = 142
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2947,11 +2947,24 @@ function Main {
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/Fooocus`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/Fooocus`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     `$branch = `$(git -C `"`$PSScriptRoot/Fooocus`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-    git -C `"`$PSScriptRoot/Fooocus`" fetch --recurse-submodules
+
+    git -C `"`$PSScriptRoot/Fooocus`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/Fooocus`" branch --show-current)`"
+    if (`$?) {
+        `$remote_branch = `"origin/`$branch`"
+    } else {
+        `$author=`$(git -C `"`$PSScriptRoot/Fooocus`" config --get `"branch.`${branch}.remote`")
+        if (`$author) {
+            `$remote_branch = `"`$author/`$branch`"
+        } else {
+            `$remote_branch = `$branch
+        }
+    }
+
+    git -C `"`$PSScriptRoot/Fooocus`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 Fooocus 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/Fooocus`" log origin/`$branch --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/Fooocus`" reset --hard `$commit_hash --recurse-submodules
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/Fooocus`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/Fooocus`" reset --hard `"`$remote_branch`" --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/Fooocus`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {

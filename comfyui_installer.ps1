@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 218
+$COMFYUI_INSTALLER_VERSION = 219
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2802,11 +2802,24 @@ function Main {
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/ComfyUI`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     `$branch = `$(git -C `"`$PSScriptRoot/ComfyUI`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-    git -C `"`$PSScriptRoot/ComfyUI`" fetch --recurse-submodules
+
+    git -C `"`$PSScriptRoot/ComfyUI`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/ComfyUI`" branch --show-current)`"
+    if (`$?) {
+        `$remote_branch = `"origin/`$branch`"
+    } else {
+        `$author=`$(git -C `"`$PSScriptRoot/ComfyUI`" config --get `"branch.`${branch}.remote`")
+        if (`$author) {
+            `$remote_branch = `"`$author/`$branch`"
+        } else {
+            `$remote_branch = `$branch
+        }
+    }
+
+    git -C `"`$PSScriptRoot/ComfyUI`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 ComfyUI 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/ComfyUI`" log origin/`$branch --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/ComfyUI`" reset --hard `$commit_hash --recurse-submodules
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/ComfyUI`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/ComfyUI`" reset --hard `"`$remote_branch`" --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
@@ -3261,10 +3274,23 @@ function Main {
         Fix-Git-Point-Off-Set `"`$node`"
         `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
         `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-        git -C `"`$node`" fetch --recurse-submodules
+
+        git -C `"`$node`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$node`" branch --show-current)`"
         if (`$?) {
-            `$commit_hash = `$(git -C `"`$node`" log origin/`$branch --max-count 1 --format=`"%h`")
-            git -C `"`$node`" reset --hard `$commit_hash --recurse-submodules
+            `$remote_branch = `"origin/`$branch`"
+        } else {
+            `$author=`$(git -C `"`$node`" config --get `"branch.`${branch}.remote`")
+            if (`$author) {
+                `$remote_branch = `"`$author/`$branch`"
+            } else {
+                `$remote_branch = `$branch
+            }
+        }
+
+        git -C `"`$node`" fetch --recurse-submodules --all
+        if (`$?) {
+            `$commit_hash = `$(git -C `"`$node`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+            git -C `"`$node`" reset --hard `"`$remote_branch`" --recurse-submodules
             `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
             if (`$origin_ver -eq `$latest_ver) {
                 Print-Msg `"[`$count/`$sum] `$node_name 自定义节点已为最新版`"
