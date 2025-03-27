@@ -884,6 +884,7 @@ Set-Location $PSScriptRoot
 
 
 #################################################
+Write-Host "训练结束, 退出训练脚本"
 Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```
 
@@ -975,6 +976,7 @@ python "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
 
 
 #################################################
+Write-Host "训练结束, 退出训练脚本"
 Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```
 
