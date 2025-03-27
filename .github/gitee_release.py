@@ -92,11 +92,11 @@ class Gitee:
         }
         file_id_list = self.get_exist_file_id(repo, release_id, file_name)
         for attach_file_id in file_id_list:
-            print(f"delete exist file: {file_name}, id: {attach_file_id}")
+            print(f"delete exists file: {file_name}, id: {attach_file_id}")
             url = f'https://gitee.com/api/v5/repos/{self.owner}/{repo}/releases/{release_id}/attach_files/{attach_file_id}'
             response = requests.delete(url, data=data)
             if response.status_code < 200 or response.status_code > 300:
-                print("delete release exist file failed: {}".format(f"Response status_code is {response.status_code}"))
+                print("delete release exists file failed: {}".format(f"Response status_code is {response.status_code}"))
 
     @Retry(retry_times)
     def upload_asset(self, repo, release_id, files = None, file_name = None, file_path = None):
