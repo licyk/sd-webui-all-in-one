@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - main
-        paths:
-          - ".github/workflows/build_sd_webui.yml"
+    paths:
+      - ".github/workflows/build_sd_webui.yml"
   # delete:
   # create:
   schedule:
