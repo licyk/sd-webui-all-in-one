@@ -2,8 +2,14 @@ name: PSScript Lint
 
 on:
   push:
+    paths:
+      - '**.ps1'
   delete:
+    paths:
+      - '**.ps1'
   create:
+    paths:
+      - '**.ps1'
 
 jobs:
   lint-with-PSScriptAnalyzer:
