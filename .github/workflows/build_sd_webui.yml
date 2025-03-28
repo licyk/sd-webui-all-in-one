@@ -2,8 +2,10 @@ name: Build SD WebUI
 
 on:
   push:
-    paths:
-      - ".github/workflows/build_sd_webui.yml"
+    branches:
+      - main
+        paths:
+          - ".github/workflows/build_sd_webui.yml"
   # delete:
   # create:
   schedule:
