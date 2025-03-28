@@ -28,7 +28,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 235
+$INVOKEAI_INSTALLER_VERSION = 236
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1447,22 +1447,22 @@ function Main {
         return
     }
 
-    `$web_addr = Get-InvokeAI-Launch-Address
-    Print-Msg `"将使用浏览器打开 `$web_addr 地址, 进入 InvokeAI 的界面`"
-    Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
-    Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
-    Print-Msg `"提示: 如果浏览器未自动打开 `$web_addr 地址, 请手动打开浏览器, 输入 `$web_addr 并打开`"
-
-    Start-Job -ScriptBlock {
-        param (`$web_addr)
-
-        Start-Sleep -Seconds 10
-        Start-Process `$web_addr
-    } -ArgumentList `$web_addr | Out-Null
-
     if (`$BuildMode) {
         Print-Msg `"InvokeAI Installer 构建模式已启用, 跳过启动 InvokeAI`"
     } else {
+        `$web_addr = Get-InvokeAI-Launch-Address
+        Print-Msg `"将使用浏览器打开 `$web_addr 地址, 进入 InvokeAI 的界面`"
+        Print-Msg `"提示: 打开浏览器后, 浏览器可能会显示连接失败, 这是因为 InvokeAI 未完成启动, 可以在弹出的 PowerShell 中查看 InvokeAI 的启动过程, 等待 InvokeAI 启动完成后刷新浏览器网页即可`"
+        Print-Msg `"提示：如果 PowerShell 界面长时间不动, 并且 InvokeAI 未启动, 可以尝试按下几次回车键`"
+        Print-Msg `"提示: 如果浏览器未自动打开 `$web_addr 地址, 请手动打开浏览器, 输入 `$web_addr 并打开`"
+
+        Start-Job -ScriptBlock {
+            param (`$web_addr)
+
+            Start-Sleep -Seconds 10
+            Start-Process `$web_addr
+        } -ArgumentList `$web_addr | Out-Null
+
         Print-Msg `"启动 InvokeAI 中`"
         Write-Launch-InvokeAI-Script
         python `"`$Env:CACHE_HOME/launch_invokeai.py`" # --root `"`$PSScriptRoot/invokeai`"
