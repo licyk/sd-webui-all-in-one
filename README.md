@@ -149,7 +149,7 @@ Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC
 >[!WARNING]  
 >此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](./sd_trainer_installer.md) 部署训练工具并使用。
 
-Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [SimpleTuner](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
+Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [~~SimpleTuner~~](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
 
 详细的说明[点击此处](./sd_trainer_script_installer.md)阅读。
 
