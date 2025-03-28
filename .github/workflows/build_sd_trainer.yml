@@ -1,7 +1,11 @@
 name: Build SD-Trainer
 
 on:
-  # push:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build_sd_trainer.yml"
   # delete:
   # create:
   schedule:
@@ -60,7 +64,7 @@ jobs:
           $protable_name = "${package_name}_nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/sd_trainer" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z "${{ github.workspace }}/sdnote/portable/nightly/sd_trainer/${protable_name}" "${{ github.workspace }}/${package_name}"
+          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_trainer/${protable_name}" "${{ github.workspace }}/${package_name}"
 
       - name: Install HuggingFace library
         shell: pwsh

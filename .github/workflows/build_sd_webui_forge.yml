@@ -2,6 +2,8 @@ name: Build SD WebUI Forge
 
 on:
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/build_sd_webui_forge.yml"
   # delete:
