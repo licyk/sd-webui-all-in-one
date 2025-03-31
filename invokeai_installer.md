@@ -172,9 +172,10 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 >2. InvokeAI Installer 支持使用在命令行中通过参数配置 InvokeAI 的安装参数，具体说明可阅读[使用命令运行 InvokeAI Installer](#使用命令运行-invokeai-installer)。
 
 >[!IMPORTANT]  
->从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。  
->但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。  
->如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入`InvokeAI`文件夹运行`update.ps1`进行更新（需要使用代理）。
+>~~从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。~~  
+>~~但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。~~  
+>~~如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入`InvokeAI`文件夹运行`update.ps1`进行更新（需要使用代理）。~~  
+>目前使用 [NTU PyTorch 镜像源](https://mirror.nju.edu.cn/pytorch) 代替 [SJTU PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels)，解决 PyTorch 镜像源缺失的问题，所以 InvokeAI Installer 不再默认安装 InvokeAI 5.0.2，而是安装 InvokeAI 最新版。
 
 ***
 
