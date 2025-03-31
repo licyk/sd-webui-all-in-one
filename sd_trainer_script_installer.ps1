@@ -28,7 +28,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 147
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 148
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2379,6 +2379,13 @@ function Switch-SD-Trainer-Script-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
         }
         Print-Msg `"切换 SD-Trainer-Script 分支至 `$branch`"
+
+        # 本地分支不存在时创建一个分支
+        git -C `"`$sd_trainer_script_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
+        if (!(`$?)) {
+            git -C `"`$sd_trainer_script_path`" branch `"`${branch}`"
+        }
+
         git -C `"`$sd_trainer_script_path`" checkout `"`${branch}`" --force # 切换分支
         Print-Msg `"应用 SD-Trainer-Script 远程源的更新`"
         if (`$use_submod) {

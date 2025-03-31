@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 224
+$COMFYUI_INSTALLER_VERSION = 225
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4152,7 +4152,7 @@ function Main {
                 `$go_to = 1
             }
             17 {
-                `$torch_ver = `"torch==2.2.1 torchvision==0.17.1  torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
+                `$torch_ver = `"torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
                 `$xformers_ver = `"`"
                 `$go_to = 1
             }

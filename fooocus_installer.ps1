@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 146
+$FOOOCUS_INSTALLER_VERSION = 147
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3387,11 +3387,14 @@ function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$fooocus_path`" submodule deinit --all -f
         }
         Print-Msg `"切换 Fooocus 分支至 `$branch`"
-        if (`$use_submod) {
-            git -C `"`$fooocus_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
-        } else {
-            git -C `"`$fooocus_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+
+        # 本地分支不存在时创建一个分支
+        git -C `"`$fooocus_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
+        if (!(`$?)) {
+            git -C `"`$fooocus_path`" branch `"`${branch}`"
         }
+
+        git -C `"`$fooocus_path`" checkout `"`${branch}`" --force # 切换分支
         Print-Msg `"应用 Fooocus 远程源的更新`"
         if (`$use_submod) {
             Print-Msg `"更新 Fooocus 的 Git 子模块信息`"
@@ -3399,7 +3402,11 @@ function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
             git -C `"`$fooocus_path`" submodule deinit --all -f
             git -C `"`$fooocus_path`" submodule update --init --recursive
         }
-        git -C `"`$fooocus_path`" reset @use_submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        if (`$use_submod) {
+            git -C `"`$fooocus_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$fooocus_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
         Print-Msg `"切换 Fooocus 分支完成`"
         `$global:status = `$true
     } else {
@@ -4379,7 +4386,7 @@ function Main {
                 `$go_to = 1
             }
             17 {
-                `$torch_ver = `"torch==2.2.1 torchvision==0.17.1  torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
+                `$torch_ver = `"torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
                 `$xformers_ver = `"`"
                 `$go_to = 1
             }
@@ -4601,13 +4608,13 @@ function Main {
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
         if (`$USE_UV) {
-            uv pip install `$torch_ver.ToString().Split() @force_reinstall_arg
+            uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `$torch_ver.ToString().Split() @force_reinstall_arg
+                python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
             }
         } else {
-            python -m pip install `$torch_ver.ToString().Split() @force_reinstall_arg
+            python -m pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
         }
         if (`$?) {
             Print-Msg `"安装 PyTorch 成功`"
