@@ -5,7 +5,6 @@
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
-    [switch]$InstallLatest,
     [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
@@ -28,7 +27,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 237
+$INVOKEAI_INSTALLER_VERSION = 238
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -46,6 +45,7 @@ $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126 = "https://download.pytorch.org/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128 = "https://download.pytorch.org/whl/cu128"
+$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu118"
 $PIP_EXTRA_INDEX_MIRROR_CU124_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
@@ -345,23 +345,15 @@ function Install-uv {
 
 # 安装 InvokeAI
 function Install-InvokeAI {
-    # 下载 InvokeAI
-    if ($InstallLatest) {
-        Print-Msg "检测到 -InstallLatest 参数, 默认安装最新版 InvokeAI"
-        $invokeai_ver = "InvokeAI"
-    } else {
-        $invokeai_ver = "InvokeAI==5.0.2"
-    }
-
     Print-Msg "正在下载 InvokeAI"
     if ($USE_UV) {
-        uv pip install $invokeai_ver --no-deps
+        uv pip install InvokeAI --no-deps
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install $invokeai_ver --no-deps --use-pep517
+            python -m pip install InvokeAI --no-deps --use-pep517
         }
     } else {
-        python -m pip install $invokeai_ver --no-deps --use-pep517
+        python -m pip install InvokeAI --no-deps --use-pep517
     }
     if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
@@ -493,35 +485,35 @@ if __name__ == '__main__':
         $cuda_ver = "+cu121"
         $Env:PIP_FIND_LINKS = " "
         $Env:UV_FIND_LINKS = ""
-        $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121"
-        $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU121"
+        $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
+        $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
     } elseif ($mirror_type -eq "cu124") {
         $cuda_ver = "+cu124"
         $Env:PIP_FIND_LINKS = " "
         $Env:UV_FIND_LINKS = ""
         $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU124_NJU"
+            "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
         } else {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU124"
+            "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
         }
         $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU124_NJU"
+            "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
         } else {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU124"
+            "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
         }
     } elseif ($mirror_type -eq "cu126") {
         $cuda_ver = "+cu126"
         $Env:PIP_FIND_LINKS = " "
         $Env:UV_FIND_LINKS = ""
         $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU126_NJU"
+            "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
         } else {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU126"
+            "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
         }
         $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU126_NJU"
+            "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
         } else {
-            "$PIP_EXTRA_INDEX_MIRROR $PIP_EXTRA_INDEX_MIRROR_CU126"
+            "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
         }
     } else {
         $cuda_ver = "+cu118"
@@ -739,6 +731,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -1542,6 +1535,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -1962,35 +1956,35 @@ if __name__ == '__main__':
         `$cuda_ver = `"+cu121`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
     } elseif (`$mirror_type -eq `"cu124`") {
         `$cuda_ver = `"+cu124`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
         }
         `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } elseif (`$mirror_type -eq `"cu126`") {
         `$cuda_ver = `"+cu126`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
         }
         `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } else {
         `$cuda_ver = `"+cu118`"
@@ -2209,6 +2203,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -2887,6 +2882,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -3162,35 +3158,35 @@ if __name__ == '__main__':
         `$cuda_ver = `"+cu121`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
-        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU121`"
+        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
     } elseif (`$mirror_type -eq `"cu124`") {
         `$cuda_ver = `"+cu124`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
         }
         `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU124`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } elseif (`$mirror_type -eq `"cu126`") {
         `$cuda_ver = `"+cu126`"
         `$Env:PIP_FIND_LINKS = `" `"
         `$Env:UV_FIND_LINKS = `"`"
         `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
         }
         `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_CU126`"
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } else {
         `$cuda_ver = `"+cu118`"
@@ -3448,16 +3444,15 @@ function Main {
         python -m pip show invokeai --quiet 2> `$null
         if (!(`$?)) {
             Print-Msg `"检测到 InvokeAI 未安装, 尝试安装中`"
-            `$invokeai_ver = `"InvokeAI==5.0.2`"
 
             if (`$USE_UV) {
-                uv pip install `$invokeai_ver --no-deps
+                uv pip install InvokeAI --no-deps
                 if (!(`$?)) {
                     Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                    python -m pip install `$invokeai_ver --no-deps --use-pep517
+                    python -m pip install InvokeAI --no-deps --use-pep517
                 }
             } else {
-                python -m pip install `$invokeai_ver --no-deps --use-pep517
+                python -m pip install InvokeAI --no-deps --use-pep517
             }
             if (`$?) { # 检测是否下载成功
                 Print-Msg `"InvokeAI 安装成功`"
@@ -3541,6 +3536,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -4680,6 +4676,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -5603,6 +5600,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -6430,9 +6428,6 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-    -InstallLatest
-        默认安装最新版 InvokeAI, 如果未使用该参数, 则默认安装 InvokeAI 5.0.2, 保证在安装 PyTorch 时能够使用国内 PyTorch 镜像源 (如果启用了代理则无需使用国内 PyTorch 镜像源)
 
     -BuildMode
         启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
