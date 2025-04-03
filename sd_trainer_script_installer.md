@@ -1543,6 +1543,106 @@ python -m accelerate.commands.launch `
     --full_fp16
 
 
+# (自己在用的)
+# 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
+# 该参数也可以用于人物 LoRA 训练
+# 
+# 在训练多画风 LoRA 或者人物 LoRA 时, 通常会打上触发词
+# 当使用了 --network_train_unet_only 后, Text Encoder 虽然不会训练, 但并不影响将触发词训练进 LoRA 模型中
+# 并且不训练 Text Encoder 避免 Text Encoder 被炼烂(Text Encoder 比较容易被炼烂)
+# 
+# 学习率调度器从 cosine_with_restarts 换成 constant_with_warmup, 此时学习率靠优化器(Lion8bit)进行调度
+# 拟合速度会更快
+# constant_with_warmup 用在大规模的训练上比较好, 但用在小规模训练也有不错的效果
+# 如果训练集的图比较少, 重复的图较多, 重复次数较高, 可能容易造成过拟合
+# 
+# 在 --network_args 设置了 preset, 可以调整训练网络的大小
+# 该值默认为 full, 如果使用 attn-mlp 可以得到更小的 LoRA, 但对于难学的概念使用 full 效果会更好 (最好还是 full 吧, 其他的预设效果不是很好)
+# 
+# 可用的预设可阅读文档: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Preset.md
+# 该预设也可以自行编写并指定, 编写例子可查看: https://github.com/KohakuBlueleaf/LyCORIS/blob/main/example_configs/preset_configs/example.toml
+# 
+# 使用 --optimizer_args 设置 weight_decay 和 betas, 更高的 weight_decay 可以降低拟合程度, 减少过拟合
+# 如果拟合程度不够高, 可以提高 --max_train_epochs 的值, 或者适当降低 weight_decay 的值, 可自行测试
+# 较小的训练集适合使用较小的值, 如 0.05, 较大的训练集适合用 0.1
+# 大概 34 Epoch 会有比较好的效果吧, 不过不好说, 看训练集
+# 自己测的时候大概在 26~40 Epoch 之间会出现好结果, 测试了很多炉基本都在这个区间里, 但也不排除意外情况 (训练参数这东西好麻烦啊, 苦い)
+# 
+# 测试的时候发现 --debiased_estimation_loss 对于训练效果的有些改善
+# 这里有个对比: https://licyk.netlify.app/2025/02/10/debiased_estimation_loss_in_stable_diffusion_model_training
+# 启用后能提高拟合速度和颜色表现吧, 画风的学习能学得更好
+# 但, 肢体崩坏率可能会有点提高, 不过有另一套参数去优化了一下这个问题, 貌似会好一点
+# 可能画风会弱化, 所以不是很确定哪个比较好用, 只能自己试了
+# debiased estimation loss 有个相关的论文可以看看: https://arxiv.org/abs/2310.08442
+# 
+# 加上 v 预测参数进行训练, 提高模型对暗处和亮处的表现效果, 并且能让模型能够直出纯黑色背景, 画面也更干净
+# 相关的论文可以看看: https://arxiv.org/abs/2305.08891
+# 
+python -m accelerate.commands.launch `
+    --num_cpu_threads_per_process=1 `
+    --multi_gpu `
+    --num_processes=2 `
+    "${SD_SCRIPTS_PATH}/sdxl_train_network.py" `
+    --pretrained_model_name_or_path="${MODEL_PATH}/noobaiXLNAIXL_vPred10Version.safetensors" `
+    --vae="${MODEL_PATH}/sdxl_fp16_fix_vae.safetensors" `
+    --train_data_dir="${DATASET_PATH}/Nachoneko" `
+    --output_name="Nachoneko_2" `
+    --output_dir="${OUTPUT_PATH}/Nachoneko" `
+    --wandb_run_name="Nachoneko" `
+    --log_tracker_name="lora-Nachoneko" `
+    --prior_loss_weight=1 `
+    --resolution="1024,1024" `
+    --enable_bucket `
+    --min_bucket_reso=256 `
+    --max_bucket_reso=4096 `
+    --bucket_reso_steps=64 `
+    --save_model_as="safetensors" `
+    --save_precision="fp16" `
+    --save_every_n_epochs=1 `
+    --max_train_epochs=40 `
+    --train_batch_size=6 `
+    --gradient_checkpointing `
+    --network_train_unet_only `
+    --learning_rate=0.0001 `
+    --unet_lr=0.0001 `
+    --text_encoder_lr=0.00001 `
+    --lr_scheduler="constant_with_warmup" `
+    --lr_warmup_steps=100 `
+    --optimizer_type="Lion8bit" `
+    --network_module="lycoris.kohya" `
+    --network_dim=100000 `
+    --network_alpha=100000 `
+    --network_args `
+        conv_dim=100000 `
+        conv_alpha=100000 `
+        algo=lokr `
+        dropout=0 `
+        factor=8 `
+        train_norm=True `
+        preset="full" `
+    --optimizer_args `
+        weight_decay=0.05 `
+        betas="0.9,0.95" `
+    --log_with="tensorboard" `
+    --logging_dir="${OUTPUT_PATH}/logs" `
+    --caption_extension=".txt" `
+    --shuffle_caption `
+    --keep_tokens=0 `
+    --max_token_length=225 `
+    --seed=1337 `
+    --mixed_precision="fp16" `
+    --xformers `
+    --cache_latents `
+    --cache_latents_to_disk `
+    --persistent_data_loader_workers `
+    --debiased_estimation_loss `
+    --vae_batch_size=4 `
+    --zero_terminal_snr `
+    --v_parameterization `
+    --scale_v_pred_loss_like_noise_pred `
+    --full_fp16
+
+
 # 使用 lokr 算法训练 XL 画风 LoRA, 使用多卡进行训练
 # 该参数也可以用于人物 LoRA 训练
 # 
