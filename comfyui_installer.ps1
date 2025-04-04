@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 226
+$COMFYUI_INSTALLER_VERSION = 227
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -614,7 +614,7 @@ function Check-Install {
         Print-Msg "检测到 -NoPreDownloadNode 命令行参数, 跳过安装 ComfyUI 扩展"
     } else {
         # ComfyUI 扩展
-        Git-CLone "https://github.com/ltdrdata/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
+        Git-CLone "https://github.com/Comfy-Org/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
         Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
         Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
         Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"

@@ -270,7 +270,6 @@ $ tree -L 2
 │   ├── switch_branch.ps1             # 切换 Fooocus 分支的脚本
 │   ├── settings.ps1                  # 管理 Fooocus Installer 设置的脚本
 │   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 Fooocus Installer 的虚拟环境脚本
-│   ├── update_extension.ps1          # 更新 Fooocus 扩展
 │   └── update.ps1                    # 更新 Fooocus 的脚本
 ├── fooocus_installer.ps1             # Fooocus Installer 一般放在 Fooocus 文件夹外面，和 Fooocus 文件夹同级
 └── QQ Files

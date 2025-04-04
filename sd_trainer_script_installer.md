@@ -176,16 +176,16 @@ $ tree -L 1
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_simple_tuner.txt  # 这是配置文件
+├── install_simple_tuner.txt            # 这是配置文件
 ├── QQDownloads
-├── sd_trainer_installer.ps1  # 这是 SD-Trainer-Script Installer
+├── sd_trainer_script_installer.ps1     # 这是 SD-Trainer-Script Installer
 ├── z-noob_artist.csv
 └── 得意黑_横屏.prtextstyle
 
 4 directories, 6 files
 ```
 
-右键`sd_trainer_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer-Script Installer 将安装 SD-Trainer-Script 至本地。
+右键`sd_trainer_script_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer-Script Installer 将安装 SD-Trainer-Script 至本地。
 
 >[!NOTE]  
 >SD-Trainer-Script Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
@@ -198,11 +198,11 @@ $ tree -L 1
 
 |SD-Trainer-Script Installer 下载地址|
 |---|
-|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
-|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1)|
-|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)|
-|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1)|
-|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1)|
+|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
+|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1)|
 
 在 SD-Trainer-Script Installer 成功安装 SD-Trainer-Script 后，在`SD-Trainer-Script`文件夹中可以看到 SD-Trainer-Script 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer-Script Installer。
 
@@ -257,34 +257,34 @@ $ tree -L 1
 
 
 ## 获取最新的 SD-Trainer-Script Installer 并运行
-运行`launch_sd_trainer_installer.ps1`脚本，如果下载成功将会把 SD-Trainer-Script Installer 下载到`cache`目录中并运行。
+运行`launch_sd_trainer_script_installer.ps1`脚本，如果下载成功将会把 SD-Trainer-Script Installer 下载到`cache`目录中并运行。
 
 
 ## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_sd_trainer_installer.ps1`重新生成这些脚本。
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_sd_trainer_script_installer.ps1`重新生成这些脚本。
 
 ```
 $ tree -L 2
 .
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
-├── SD-Trainer-Script                            # 这是 SD-Trainer-Script 文件夹
-│   ├── activate.ps1                      # 进入 SD-Trainer-Script Env 的脚本
-│   ├── cache                             # 缓存文件夹
-│   ├── download_models.ps1               # 下载模型的脚本
-│   ├── launch_sd_trainer_installer.ps1   # 获取最新的 SD-Trainer-Script Installer 并运行的脚本
-│   ├── git                               # Git 目录
-│   ├── help.txt                          # 帮助文档
-│   ├── init.ps1                          # 初始化训练环境的脚本
-│   ├── sd-scripts                        # SD-Trainer-Script 路径
-│   ├── models                            # download_models.ps1 下载模型脚本下载模型的路径
-│   ├── python                            # Python 目录
-│   ├── reinstall_pytorch.ps1             # 重新安装 PyTorch 的脚本
-│   ├── switch_branch.ps1                 # 切换 SD-Trainer-Script 分支的脚本
-│   ├── settings.ps1                      # 管理 SD-Trainer-Script Installer 设置的脚本
-│   ├── terminal.ps1                      # 自动打开 PowerShell 并激活 SD-Trainer-Script Installer 的虚拟环境脚本
-│   └── update.ps1                        # 更新 SD-Trainer-Script 的脚本
-├── sd_trainer_installer.ps1              # SD-Trainer-Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
+├── SD-Trainer-Script                           # 这是 SD-Trainer-Script 文件夹
+│   ├── activate.ps1                            # 进入 SD-Trainer-Script Env 的脚本
+│   ├── cache                                   # 缓存文件夹
+│   ├── download_models.ps1                     # 下载模型的脚本
+│   ├── launch_sd_trainer_script_installer.ps1  # 获取最新的 SD-Trainer-Script Installer 并运行的脚本
+│   ├── git                                     # Git 目录
+│   ├── help.txt                                # 帮助文档
+│   ├── init.ps1                                # 初始化训练环境的脚本
+│   ├── sd-scripts                              # SD-Trainer-Script 路径
+│   ├── models                                  # download_models.ps1 下载模型脚本下载模型的路径
+│   ├── python                                  # Python 目录
+│   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本
+│   ├── switch_branch.ps1                       # 切换 SD-Trainer-Script 分支的脚本
+│   ├── settings.ps1                            # 管理 SD-Trainer-Script Installer 设置的脚本
+│   ├── terminal.ps1                            # 自动打开 PowerShell 并激活 SD-Trainer-Script Installer 的虚拟环境脚本
+│   └── update.ps1                              # 更新 SD-Trainer-Script 的脚本
+├── sd_trainer_script_installer.ps1             # SD-Trainer-Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
 └── QQ Files
 
 8 directories, 9 files
@@ -381,18 +381,18 @@ SD-Trainer-Script Installer 默认启用了 Pip 镜像源加速下载 Python 软
 
 
 ## 重装 SD-Trainer-Script
-将`SD-Trainer-Script`文件夹中的`sd-scripts`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新部署 SD-Trainer-Script。
+将`SD-Trainer-Script`文件夹中的`sd-scripts`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新部署 SD-Trainer-Script。
 
 >[!NOTE]  
 >如果`sd-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`sd-scripts`文件夹。
 
 
 ## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`SD-Trainer-Script/python`和`SD-Trainer-Script/sd-scripts/python`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以将`SD-Trainer-Script/python`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新构建 Python 环境。
 
 
 ## 重装 Git
-将`SD-Trainer-Script/git`和`SD-Trainer-Script/sd-scripts/git`文件夹删除，然后运行`launch_sd_trainer_installer.ps1`重新下载 Git。
+将`SD-Trainer-Script/git`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新下载 Git。
 
 
 ## 重装 PyTorch
@@ -428,7 +428,7 @@ SD-Trainer-Script Installer 的管理脚本在启动时会检查管理脚本的�
 
 
 ### 3. 运行 SD-Trainer-Script Installer 进行更新
-运行`launch_sd_trainer_installer.ps1`获取最新的 SD-Trainer-Script Installer 后，脚本会自动运行新版 SD-Trainer-Script Installer 进行更新。
+运行`launch_sd_trainer_script_installer.ps1`获取最新的 SD-Trainer-Script Installer 后，脚本会自动运行新版 SD-Trainer-Script Installer 进行更新。
 
 
 ### 4. 使用命令更新
@@ -502,7 +502,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer-Script Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer-Script Installer。
 
 ```powershell
-.\sd_trainer_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
+.\sd_trainer_script_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
 ```
 
 
@@ -534,11 +534,11 @@ SD-Trainer-Script Installer 主要由两部分构成：安装脚本和环境管�
 运行 PowerShell 脚本时出现以下错误。
 
 ```
-.\sd_trainer_installer.ps1 : 无法加载文件 D:\SD-Trainer-Script\sd_trainer_installer.ps1。
-未对文件 D:\SD-Trainer-Script\sd_trainer_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
+.\sd_trainer_script_installer.ps1 : 无法加载文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1。
+未对文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
 有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
 所在位置 行:1 字符: 1
-+ .\sd_trainer_installer.ps1
++ .\sd_trainer_script_installer.ps1
 + ~~~~~~~~~~~~~~~~~~~~~~~~
    + CategoryInfo          : SecurityError: (:) []，PSSecurityException
    + FullyQualifiedErrorId : UnauthorizedAccess
