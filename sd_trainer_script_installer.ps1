@@ -1,4 +1,5 @@
 ﻿param (
+    [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer-Script"),
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
@@ -8,7 +9,6 @@
     [switch]$DisableUV,
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
-    [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithLaunch,
@@ -28,7 +28,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 149
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 150
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -698,6 +698,7 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 function Write-Library-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
@@ -707,8 +708,7 @@ param (
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableUV,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck,
-    [switch]`$Help
+    [switch]`$DisableEnvCheck
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -789,16 +789,19 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -BuildMode
-        启用 SD-Trainer-Script Installer构建模式
+        启用 SD-Trainer-Script Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer更新检查
+        禁用 SD-Trainer-Script Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -1577,14 +1580,14 @@ Main
 function Write-Update-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -1676,25 +1679,25 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -BuildMode
-        启用 SD-Trainer-Script Installer构建模式
+        启用 SD-Trainer-Script Installer 构建模式
 
     -DisablePipMirror
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer更新检查
+        禁用 SD-Trainer-Script Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer自动设置 Github 镜像源
+        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -2005,6 +2008,7 @@ Main
 function Write-Switch-Branch-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWitchBranch,
     [switch]`$DisablePipMirror,
@@ -2012,8 +2016,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -2105,10 +2108,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -BuildMode
-        启用 SD-Trainer-Script Installer构建模式
+        启用 SD-Trainer-Script Installer 构建模式
 
     -BuildWitchBranch <Fooocus 分支编号>
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
@@ -2118,16 +2121,16 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer更新检查
+        禁用 SD-Trainer-Script Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer自动设置 Github 镜像源
+        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -2569,14 +2572,14 @@ Main
 function Write-Launch-SD-Trainer-Script-Install-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [string]`$InstallBranch,
-    [switch]`$Help
+    [string]`$InstallBranch
 )
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 
@@ -2590,10 +2593,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -2602,10 +2605,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUV
-        禁用 SD-Trainer-Script Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer自动设置 Github 镜像源
+        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -2843,6 +2846,7 @@ Main
 function Write-PyTorch-ReInstall-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
     [switch]`$BuildWithTorchReinstall,
@@ -2850,8 +2854,7 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -2932,10 +2935,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -BuildMode
-        启用 SD-Trainer-Script Installer构建模式
+        启用 SD-Trainer-Script Installer 构建模式
 
     -BuildWithTorch <PyTorch 版本编号>
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
@@ -2948,13 +2951,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer更新检查
+        禁用 SD-Trainer-Script Installer 更新检查
 
     -DisableUV
-        禁用 SD-Trainer-Script Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -3652,13 +3655,13 @@ Main
 function Write-Download-Model-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate,
-    [switch]`$Help
+    [switch]`$DisableUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -3739,10 +3742,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -BuildMode
-        启用 SD-Trainer-Script Installer构建模式
+        启用 SD-Trainer-Script Installer 构建模式
 
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
@@ -3752,13 +3755,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer更新检查
+        禁用 SD-Trainer-Script Installer 更新检查
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -4354,10 +4357,10 @@ Main
 function Write-SD-Trainer-Script-Installer-Settings-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -4438,13 +4441,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -DisablePipMirror
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -5211,14 +5214,14 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$Env:SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -5300,13 +5303,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer的帮助信息
+        获取 SD-Trainer-Script Installer 的帮助信息
 
     -DisablePipMirror
         禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer自动设置代理服务器
+        禁用 SD-Trainer-Script Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -5318,7 +5321,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer自动设置 Github 镜像源
+        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址

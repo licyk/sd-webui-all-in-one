@@ -1,4 +1,5 @@
 ﻿param (
+    [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "stable-diffusion-webui"),
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
@@ -8,7 +9,6 @@
     [switch]$DisableUV,
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
-    [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithUpdateExtension,
@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 208
+$SD_WEBUI_INSTALLER_VERSION = 209
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -810,6 +810,7 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
@@ -823,8 +824,7 @@ param (
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck,
-    [switch]`$Help
+    [switch]`$DisableEnvCheck
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -2249,14 +2249,14 @@ Main
 function Write-Update-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -2675,14 +2675,14 @@ Main
 function Write-Update-Extension-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -3158,6 +3158,7 @@ Main
 function Write-Switch-Branch-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWitchBranch,
     [switch]`$DisablePipMirror,
@@ -3165,8 +3166,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -3757,14 +3757,14 @@ Main
 function Write-Launch-Stable-Diffusion-WebUI-Install-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [string]`$InstallBranch,
-    [switch]`$Help
+    [string]`$InstallBranch
 )
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 
@@ -4027,6 +4027,7 @@ Main
 function Write-PyTorch-ReInstall-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
     [switch]`$BuildWithTorchReinstall,
@@ -4034,8 +4035,7 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -4899,13 +4899,13 @@ Main
 function Write-Download-Model-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate,
-    [switch]`$Help
+    [switch]`$DisableUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -5837,10 +5837,10 @@ Main
 function Write-Stable-Diffusion-WebUI-Installer-Settings-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxys,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -6819,14 +6819,14 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$Help
+    [string]`$UseCustomHuggingFaceMirror
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$Env:SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION

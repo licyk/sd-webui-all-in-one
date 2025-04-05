@@ -1,11 +1,11 @@
 ﻿param (
+    [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "InvokeAI"),
     [switch]$UseUpdateMode,
     [switch]$DisablePipMirror,
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
-    [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithUpdateNode,
@@ -27,7 +27,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 240
+$INVOKEAI_INSTALLER_VERSION = 241
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -701,6 +701,7 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
@@ -711,8 +712,7 @@ param (
     [switch]`$DisableUV,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck,
-    [switch]`$Help
+    [switch]`$DisableEnvCheck
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -794,6 +794,9 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -BuildMode
         启用 InvokeAI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 InvokeAI Installer 更新检查
@@ -1510,13 +1513,13 @@ Main
 function Write-Update-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUV,
-    [switch]`$Help
+    [switch]`$DisableUV
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -2179,14 +2182,14 @@ Main
 function Write-Update-Node-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -2658,11 +2661,11 @@ Main
 function Write-Launch-InvokeAI-Install-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
-    [switch]`$DisableUV,
-    [switch]`$Help
+    [switch]`$DisableUV
 )
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 
@@ -2859,13 +2862,13 @@ Main
 function Write-PyTorch-ReInstall-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate,
-    [switch]`$DisableUV,
-    [switch]`$Help
+    [switch]`$DisableUV
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -3518,13 +3521,13 @@ Main
 function Write-Download-Model-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate,
-    [switch]`$Help
+    [switch]`$DisableUpdate
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -4661,10 +4664,10 @@ Main
 function Write-InvokeAI-Installer-Settings-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -5581,14 +5584,14 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$Help
+    [string]`$UseCustomHuggingFaceMirror
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$Env:INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION

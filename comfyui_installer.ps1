@@ -1,4 +1,5 @@
 ﻿param (
+    [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "ComfyUI"),
     [switch]$UseUpdateMode,
     [switch]$DisablePipMirror,
@@ -7,7 +8,6 @@
     [switch]$DisableUV,
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
-    [switch]$Help,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithUpdateNode,
@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 227
+$COMFYUI_INSTALLER_VERSION = 229
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -694,6 +694,7 @@ function Check-Install {
 function Write-Launch-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
@@ -707,8 +708,7 @@ param (
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck,
-    [switch]`$Help
+    [switch]`$DisableEnvCheck
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -804,6 +804,9 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 ComfyUI Installer 更新检查
@@ -2446,14 +2449,14 @@ Main
 function Write-Update-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -2549,6 +2552,9 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 ComfyUI Installer 更新检查
@@ -2868,14 +2874,14 @@ Main
 function Write-Update-Node-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -2971,6 +2977,9 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
+
+    -DisablePipMirror
+        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 ComfyUI Installer 更新检查
@@ -3348,13 +3357,13 @@ Main
 function Write-Launch-ComfyUI-Install-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePipMirror,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$Help
+    [string]`$UseCustomGithubMirror
 )
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
 
@@ -3578,6 +3587,7 @@ Main
 function Write-PyTorch-ReInstall-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
     [switch]`$BuildWithTorchReinstall,
@@ -3585,8 +3595,7 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$Help
+    [string]`$UseCustomProxy
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -4449,13 +4458,13 @@ Main
 function Write-Download-Model-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate,
-    [switch]`$Help
+    [switch]`$DisableUpdate
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -5439,10 +5448,10 @@ Main
 function Write-ComfyUI-Installer-Settings-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableProxy,
-    [switch]`$UseCustomProxy,
-    [switch]`$Help
+    [switch]`$UseCustomProxy
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -6420,14 +6429,14 @@ Read-Host | Out-Null
 function Write-Env-Activate-Script {
     $content = "
 param (
+    [switch]`$Help,
     [switch]`$DisablePipMirror,
     [switch]`$DisableGithubMirror,
     [switch]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$Help
+    [string]`$UseCustomHuggingFaceMirror
 )
 # ComfyUI Installer 版本和检查更新间隔
 `$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
