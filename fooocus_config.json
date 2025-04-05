@@ -140,7 +140,8 @@
         "ill-xl-01-MELT0209_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-MELT0209_1-000038.safetensors",
         "ill-xl-01-rasra25_1-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-rasra25_1-000038.safetensors",
         "ill-xl-01-flowingcrescent_1-000035.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-flowingcrescent_1-000035.safetensors",
-        "ill-xl-01-wacca005_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-wacca005_1-000034.safetensors"
+        "ill-xl-01-wacca005_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-wacca005_1-000034.safetensors",
+        "noob-xl-vpre-10-KonYa666_1-000035.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/noob-xl-vpre-10-KonYa666_1-000035.safetensors"
     },
     "embeddings_downloads": {},
     "vae_downloads": {
