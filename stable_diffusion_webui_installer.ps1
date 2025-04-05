@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 207
+$SD_WEBUI_INSTALLER_VERSION = 208
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -912,7 +912,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-DisableUV] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -938,6 +938,21 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+    -DisableGithubMirror
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gitclone.com/github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
 
     -DisableUV
         禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包

@@ -55,6 +55,15 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_webui_forge/python/python.exe" -m pip install insightface
 
+      - name: Launch to complete dependencies
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/sd_webui/launch.ps1" `
+            -BuildMode `
+            -DisablePipMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
       - name: Install Hanamizuki
         shell: pwsh
         run: |
