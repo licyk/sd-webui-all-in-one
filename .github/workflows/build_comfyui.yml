@@ -47,6 +47,8 @@ jobs:
 
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
           Set-Location -Path "${{ github.workspace }}/comfyui"
           & "${{ github.workspace }}/comfyui/python/python.exe" "${{ github.workspace }}/comfyui/ComfyUI/main.py" --quick-test-for-ci --cpu
