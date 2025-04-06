@@ -45,6 +45,21 @@ jobs:
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel
 
+      - name: Launch ComfyUI to init custom nodes
+        shell: pwsh
+        run: |
+          Set-Location -Path "${{ github.workspace }}/comfyui"
+          & "${{ github.workspace }}/comfyui/python/python.exe" "${{ github.workspace }}/comfyui/main.py" --quick-test-for-ci --cpu
+
+      - name: Launch to complete dependencies
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/comfyui/launch.ps1" `
+            -BuildMode `
+            -DisablePipMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
       - name: Install Hanamizuki
         shell: pwsh
         run: |
