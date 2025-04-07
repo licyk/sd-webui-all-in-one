@@ -17,6 +17,8 @@
     [string]$BuildWitchModel,
     [switch]$NoPreDownloadNode,
     [switch]$NoPreDownloadModel,
+    [string]$PyTorchPackage = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118",
+    [string]$xFormersPackage = "xformers===0.0.26.post1+cu118",
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -31,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 229
+$COMFYUI_INSTALLER_VERSION = 230
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -65,9 +67,6 @@ $GITHUB_MIRROR_LIST = @(
     "https://ghps.cc/https://github.com",
     "https://gh.idayer.com/https://github.com"
 )
-# PyTorch 版本
-$PYTORCH_VER = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
-$XFORMERS_VER = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.6.11"
 # Aria2 最低版本
@@ -476,20 +475,197 @@ function Git-CLone {
 }
 
 
+# 设置 PyTorch 镜像源
+function Set-PyTorch-Mirror {
+    # 获取 PyTorch 的版本
+    $torch_part = @($PyTorchPackage -split ' ' | Where-Object { $_ -like "torch==*" })[0]
+
+    if ($torch_part) {
+        # 获取 PyTorch 镜像源类型
+        if ($torch_part.split("+") -eq $torch_part) {
+            $content = "
+import re
+from importlib.metadata import requires
+
+
+
+def version_increment(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] += 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == 10:
+            ver_parts[i] = 0
+            ver_parts[i - 1] += 1
+
+    return '.'.join(map(str, ver_parts))
+
+
+def version_decrement(version: str) -> str:
+    version = ''.join(re.findall(r'\d|\.', version))
+    ver_parts = list(map(int, version.split('.')))
+    ver_parts[-1] -= 1
+
+    for i in range(len(ver_parts) - 1, 0, -1):
+        if ver_parts[i] == -1:
+            ver_parts[i] = 9
+            ver_parts[i - 1] -= 1
+
+    while len(ver_parts) > 1 and ver_parts[0] == 0:
+        ver_parts.pop(0)
+
+    return '.'.join(map(str, ver_parts))
+
+
+def has_version(version: str) -> bool:
+    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+
+
+def get_package_name(package: str) -> str:
+    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+
+
+def get_package_version(package: str) -> str:
+    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+
+
+def compare_versions(version1: str, version2: str) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+def get_pytorch_mirror_type(torch_version: str) -> str:
+    torch_ver = get_package_version(torch_version)
+
+    if compare_versions(torch_ver, '2.0.0') == -1: # torch < 2.0.0
+        return 'cu11x'
+    elif compare_versions(torch_ver, '1.9.9') == 1 and compare_versions(torch_ver, '2.3.1') == -1: # 1.9.9 < torch < 2.3.1
+        return 'cu118'
+    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+        return 'cu121'
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
+        return 'cu124'
+    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
+        return 'cu126'
+    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+        return 'cu128'
+
+
+if __name__ == '__main__':
+    print(get_pytorch_mirror_type('$torch_part'))
+"
+            $mirror_type = $(python -c "$content")
+        } else {
+            $mirror_type = $torch_part.Split("+")[-1]
+        }
+
+        Print-Msg "PyTorch 镜像源类型: $mirror_type"
+
+        # 设置对应的镜像源
+        switch ($mirror_type) {
+            cu11x {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
+            }
+            cu118 {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu128"
+            }
+            cu121 {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu124"
+                $Env:PIP_FIND_LINKS = " "
+                $Env:UV_FIND_LINKS = ""
+                $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
+                $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
+            }
+            cu124 {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu124"
+                $Env:PIP_FIND_LINKS = " "
+                $Env:UV_FIND_LINKS = ""
+                $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+                }
+                $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+                }
+            }
+            cu126 {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu126"
+                $Env:PIP_FIND_LINKS = " "
+                $Env:UV_FIND_LINKS = ""
+                $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+                }
+                $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+                }
+            }
+            cu128 {
+                Print-Msg "设置 PyTorch 镜像源类型为 cu128"
+                $Env:PIP_FIND_LINKS = " "
+                $Env:UV_FIND_LINKS = ""
+                $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
+                }
+                $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
+                }
+            }
+            Default {
+                Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
+            }
+        }
+    } else {
+        Print-Msg "未获取到 PyTorch 版本, 无法确定镜像源类型, 可能导致 PyTorch 安装失败"
+    }
+}
+
+
 # 安装 PyTorch
 function Install-PyTorch {
+    Set-PyTorch-Mirror
+
+    Print-Msg "将要安装的 PyTorch: $PyTorchPackage"
+    Print-Msg "将要安装的 xFormers: $xFormersPackage"
     Print-Msg "检测是否需要安装 PyTorch"
     python -m pip show torch --quiet 2> $null
     if (!($?)) {
         Print-Msg "安装 PyTorch 中"
         if ($USE_UV) {
-            uv pip install $PYTORCH_VER.ToString().Split()
+            uv pip install $PyTorchPackage.ToString().Split()
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-                python -m pip install $PYTORCH_VER.ToString().Split()
+                python -m pip install $PyTorchPackage.ToString().Split()
             }
         } else {
-            python -m pip install $PYTORCH_VER.ToString().Split()
+            python -m pip install $PyTorchPackage.ToString().Split()
         }
         if ($?) {
             Print-Msg "PyTorch 安装成功"
@@ -509,13 +685,13 @@ function Install-PyTorch {
     if (!($?)) {
         Print-Msg "安装 xFormers 中"
         if ($USE_UV) {
-            uv pip install $XFORMERS_VER --no-deps
+            uv pip install $xFormersPackage.ToString().Split() --no-deps
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-                python -m pip install $XFORMERS_VER --no-deps
+                python -m pip install $xFormersPackage.ToString().Split() --no-deps
             }
         } else {
-            python -m pip install $XFORMERS_VER --no-deps
+            python -m pip install $xFormersPackage.ToString().Split() --no-deps
         }
         if ($?) {
             Print-Msg "xFormers 安装成功"
@@ -7422,7 +7598,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -7496,6 +7672,12 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -NoPreDownloadModel
         安装 ComfyUI 时跳过预下载模型
+
+    -PyTorchPackage <PyTorch 软件包>
+        (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
+
+    -xFormersPackage <xFormers 软件包>
+        (需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
 
     -DisableUpdate
         (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查

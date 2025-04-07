@@ -27,7 +27,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 241
+$INVOKEAI_INSTALLER_VERSION = 242
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -468,10 +468,12 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
         return 'cu126'
+    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+        return 'cu128'
 
 
 if __name__ == '__main__':
@@ -517,6 +519,20 @@ if __name__ == '__main__':
         } else {
             "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
         }
+    } elseif ($mirror_type -eq "cu128") {
+            $cuda_ver = "+cu128"
+            $Env:PIP_FIND_LINKS = " "
+            $Env:UV_FIND_LINKS = ""
+            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
+            }
+            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
+            }
     } else {
         $cuda_ver = ""
     }
@@ -1944,10 +1960,12 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
         return 'cu126'
+    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+        return 'cu128'
 
 
 if __name__ == '__main__':
@@ -1992,6 +2010,20 @@ if __name__ == '__main__':
             `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
             `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+    } elseif (`$mirror_type -eq `"cu128`") {
+        `$cuda_ver = `"+cu128`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } else {
         `$cuda_ver = `"`"
@@ -3148,10 +3180,12 @@ def get_pytorch_mirror_type() -> str:
         return 'cu118'
     elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.1') == -1: # 2.4.0 < torch < 2.6.1
+    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.6.0') == 1: # torch > 2.6.0
+    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
         return 'cu126'
+    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+        return 'cu128'
 
 
 if __name__ == '__main__':
@@ -3196,6 +3230,20 @@ if __name__ == '__main__':
             `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
         } else {
             `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+    } elseif (`$mirror_type -eq `"cu128`") {
+        `$cuda_ver = `"+cu128`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
         }
     } else {
         `$cuda_ver = `"`"

@@ -684,6 +684,8 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本，根据模型编号列表下载指定的模型。<br>模型编号可运行 download_models.ps1 脚本进行查看。|
 |`-NoPreDownloadNode`|安装 ComfyUI 时跳过安装 ComfyUI 扩展。|
 |`-NoPreDownloadModel`|安装 ComfyUI 时跳过预下载模型。|
+|`-PyTorchPackage` <PyTorch 软件包>|(需要同时搭配`-xFormersPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本，如`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`|
+|`-xFormersPackage` <xFormers 软件包>|(需要同时搭配`-PyTorchPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本，如`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
 |`-DisableUpdate`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查。|
 |`-DisableHuggingFaceMirror`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
