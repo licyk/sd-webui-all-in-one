@@ -49,6 +49,7 @@ jobs:
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh
         env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
           Set-Location -Path "${{ github.workspace }}/comfyui"
