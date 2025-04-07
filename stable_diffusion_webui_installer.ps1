@@ -19,6 +19,8 @@
     [int]$BuildWitchBranch,
     [switch]$NoPreDownloadExtension,
     [switch]$NoPreDownloadModel,
+    [string]$PyTorchPackage = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118",
+    [string]$xFormersPackage = "xformers===0.0.26.post1+cu118",
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -33,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 210
+$SD_WEBUI_INSTALLER_VERSION = 211
 $UPDATE_TIME_SPAN = 3600
 # Pip 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -67,9 +69,6 @@ $GITHUB_MIRROR_LIST = @(
     "https://ghps.cc/https://github.com",
     "https://gh.idayer.com/https://github.com"
 )
-# PyTorch 版本
-$PyTorchPackage = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
-$xFormersPackage = "xformers===0.0.26.post1+cu118"
 # uv 最低版本
 $UV_MINIMUM_VER = "0.6.11"
 # Aria2 最低版本
@@ -791,6 +790,30 @@ function Install-Stable-Diffusion-WebUI-Dependence {
 }
 
 
+# 模型下载器
+function Model-Downloader ($download_list) {
+    $sum = $download_list.Count
+    for ($i = 0; $i -lt $download_list.Count; $i++) {
+        $content = $download_list[$i]
+        $url = $content[0]
+        $path = $content[1]
+        $file = $content[2]
+        $model_full_path = Join-Path -Path $path -ChildPath $file
+        if (Test-Path $model_full_path) {
+            Print-Msg "[$($i + 1)/$sum] $file 模型已存在于 $path 中"
+        } else {
+            Print-Msg "[$($i + 1)/$sum] 下载 $file 模型到 $path 中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$path" -o "$file"
+            if ($?) {
+                Print-Msg "[$($i + 1)/$sum] $file 下载成功"
+            } else {
+                Print-Msg "[$($i + 1)/$sum] $file 下载失败"
+            }
+        }
+    }
+}
+
+
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
@@ -960,18 +983,22 @@ function Check-Install {
     if ($NoPreDownloadModel) {
         Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
     } else {
+        Print-Msg "预下载模型中"
+        $model_list = New-Object System.Collections.ArrayList
         $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
+        $vae_approx_path = "$InstallPath/stable-diffusion-webui/models/VAE-approx"
+
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt", "$vae_approx_path", "model.pt")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt", "$vae_approx_path", "vaeapprox-sdxl.pt")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt", "$vae_approx_path", "vaeapprox-sd3.pt")) | Out-Null
+
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
         $name = Split-Path -Path $url -Leaf
         if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
-            Print-Msg "预下载模型中"
-            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "$name"
-            if ($?) {
-                Print-Msg "下载 $name 模型成功"
-            } else {
-                Print-Msg "下载 $name 模型失败"
-            }
+            $model_list.Add(@("$url", "$checkpoint_path", "$name")) | Out-Null
         }
+
+        Model-Downloader $model_list
     }
 
     # 清理缓存
