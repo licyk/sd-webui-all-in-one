@@ -79,7 +79,7 @@ jobs:
               "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sd3.pt",
               "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sdxl.pt"
           )
-          $vae_approx_path = "${{ github.workspace }}/sd_webui/stable-diffusion-webui/models/VAE-approx"
+          $vae_approx_path = "${{ github.workspace }}/sd_webui_reforge/stable-diffusion-webui/models/VAE-approx"
 
           ForEach ($url in $model_list) {
               $filename = Split-Path $url -Leaf
