@@ -39,11 +39,12 @@ jobs:
             -BuildWithUpdate `
             -BuildWithUpdateNode `
             -BuildWithLaunch `
-            -BuildWithTorch 31 `
             -DisablePipMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
-            -NoPreDownloadModel
+            -NoPreDownloadModel `
+            -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
+            -xFormersPackage "xformers==0.0.29.post3"
 
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh

@@ -39,13 +39,14 @@ jobs:
             -BuildWithUpdate `
             -BuildWithUpdateExtension `
             -BuildWithLaunch `
-            -BuildWithTorch 31 `
             -BuildWitchBranch 2 `
             -InstallBranch "sd_webui" `
             -NoPreDownloadModel `
             -DisablePipMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
+            -xFormersPackage "xformers==0.0.29.post3"
 
       - name: Install Insightface
         shell: pwsh
