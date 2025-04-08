@@ -48,6 +48,7 @@ $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { 
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
 $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
+$PIP_EXTRA_INDEX_MIRROR_CU118 = "https://download.pytorch.org/whl/cu118"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126 = "https://download.pytorch.org/whl/cu126"
@@ -485,7 +486,6 @@ function Set-PyTorch-Mirror {
         if ($torch_part.split("+") -eq $torch_part) {
             $content = "
 import re
-from importlib.metadata import requires
 
 
 
@@ -519,16 +519,15 @@ def version_decrement(version: str) -> str:
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 def get_package_version(package: str) -> str:
-    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
-
+    return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
 def compare_versions(version1: str, version2: str) -> int:
     try:
@@ -554,18 +553,25 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type(torch_version: str) -> str:
     torch_ver = get_package_version(torch_version)
 
-    if compare_versions(torch_ver, '2.0.0') == -1: # torch < 2.0.0
+    if compare_versions(torch_ver, '2.0.0') == -1:
+        # torch < 2.0.0
         return 'cu11x'
-    elif compare_versions(torch_ver, '1.9.9') == 1 and compare_versions(torch_ver, '2.3.1') == -1: # 1.9.9 < torch < 2.3.1
+    elif (compare_versions(torch_ver, '2.0.0') == 1 or compare_versions(torch_ver, '2.0.0') == 0) and compare_versions(torch_ver, '2.3.1') == -1:
+        # 2.0.0 <= torch < 2.3.1
         return 'cu118'
-    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+    elif (compare_versions(torch_ver, '2.3.0') == 1 or compare_versions(torch_ver, '2.3.0') == 0) and compare_versions(torch_ver, '2.4.1') == -1:
+        # 2.3.0 <= torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
+    elif (compare_versions(torch_ver, '2.4.0') == 1 or compare_versions(torch_ver, '2.4.0') == 0) and compare_versions(torch_ver, '2.6.0') == -1:
+        # 2.4.0 <= torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
+    elif (compare_versions(torch_ver, '2.6.0') == 1 or compare_versions(torch_ver, '2.6.0') == 0) and compare_versions(torch_ver, '2.7.0') == -1:
+        # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+    elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
+        # torch >= 2.7.0
         return 'cu128'
+
 
 
 if __name__ == '__main__':
@@ -584,10 +590,22 @@ if __name__ == '__main__':
                 Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
             }
             cu118 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu128"
+                Print-Msg "设置 PyTorch 镜像源类型为 cu118"
+                $Env:PIP_FIND_LINKS = " "
+                $Env:UV_FIND_LINKS = ""
+                $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+                }
+                $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+                } else {
+                    "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+                }
             }
             cu121 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu124"
+                Print-Msg "设置 PyTorch 镜像源类型为 cu121"
                 $Env:PIP_FIND_LINKS = " "
                 $Env:UV_FIND_LINKS = ""
                 $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
@@ -902,6 +920,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -2650,6 +2669,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -3075,6 +3095,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -3789,6 +3810,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -4307,6 +4329,16 @@ function Main {
             10 {
                 `$torch_ver = `"torch==2.1.1+cu118 torchvision==0.16.1+cu118 torchaudio==2.1.1+cu118`"
                 `$xformers_ver = `"xformers==0.0.23+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             11 {
@@ -4317,6 +4349,16 @@ function Main {
             12 {
                 `$torch_ver = `"torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118`"
                 `$xformers_ver = `"xformers==0.0.23.post1+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             13 {
@@ -4327,6 +4369,16 @@ function Main {
             14 {
                 `$torch_ver = `"torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118`"
                 `$xformers_ver = `"xformers==0.0.24+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             15 {
@@ -4337,6 +4389,16 @@ function Main {
             16 {
                 `$torch_ver = `"torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1+cu118`"
                 `$xformers_ver = `"xformers==0.0.25+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             17 {
@@ -4352,6 +4414,16 @@ function Main {
             19 {
                 `$torch_ver = `"torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118`"
                 `$xformers_ver = `"xformers==0.0.25.post1+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             20 {
@@ -4362,6 +4434,16 @@ function Main {
             21 {
                 `$torch_ver = `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
                 `$xformers_ver = `"xformers==0.0.26.post1+cu118`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
                 `$go_to = 1
             }
             22 {
@@ -4380,12 +4462,12 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
                 } else {
-                    `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH `$PIP_EXTRA_INDEX_MIRROR`"
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
                 }
                 `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
                 } else {
-                    `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH `$PIP_EXTRA_INDEX_MIRROR`"
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
                 }
                 `$go_to = 1
             }
@@ -4404,12 +4486,12 @@ function Main {
                 `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
                 } else {
-                    `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH `$PIP_EXTRA_INDEX_MIRROR`"
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
                 }
                 `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
                 } else {
-                    `"`$PIP_EXTRA_INDEX_MIRROR_PYTORCH `$PIP_EXTRA_INDEX_MIRROR`"
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
                 }
                 `$go_to = 1
             }
@@ -4658,6 +4740,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -5645,6 +5728,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -6630,6 +6714,7 @@ param (
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"

@@ -41,6 +41,7 @@ $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_A
 $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
+$PIP_EXTRA_INDEX_MIRROR_CU118 = "https://download.pytorch.org/whl/cu118"
 $PIP_EXTRA_INDEX_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126 = "https://download.pytorch.org/whl/cu126"
@@ -405,15 +406,15 @@ def version_decrement(version: str) -> str:
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 def get_package_version(package: str) -> str:
-    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+    return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
 
 def get_invokeai_require_torch_version() -> str:
@@ -462,18 +463,25 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type() -> str:
     torch_ver = get_invokeai_require_torch_version()
 
-    if compare_versions(torch_ver, '2.0.0') == -1: # torch < 2.0.0
+    if compare_versions(torch_ver, '2.0.0') == -1:
+        # torch < 2.0.0
         return 'cu11x'
-    elif compare_versions(torch_ver, '1.9.9') == 1 and compare_versions(torch_ver, '2.3.1') == -1: # 1.9.9 < torch < 2.3.1
+    elif (compare_versions(torch_ver, '2.0.0') == 1 or compare_versions(torch_ver, '2.0.0') == 0) and compare_versions(torch_ver, '2.3.1') == -1:
+        # 2.0.0 <= torch < 2.3.1
         return 'cu118'
-    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+    elif (compare_versions(torch_ver, '2.3.0') == 1 or compare_versions(torch_ver, '2.3.0') == 0) and compare_versions(torch_ver, '2.4.1') == -1:
+        # 2.3.0 <= torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
+    elif (compare_versions(torch_ver, '2.4.0') == 1 or compare_versions(torch_ver, '2.4.0') == 0) and compare_versions(torch_ver, '2.6.0') == -1:
+        # 2.4.0 <= torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
+    elif (compare_versions(torch_ver, '2.6.0') == 1 or compare_versions(torch_ver, '2.6.0') == 0) and compare_versions(torch_ver, '2.7.0') == -1:
+        # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+    elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
+        # torch >= 2.7.0
         return 'cu128'
+
 
 
 if __name__ == '__main__':
@@ -485,6 +493,18 @@ if __name__ == '__main__':
     # 设置 PyTorch 镜像源
     if ($mirror_type -eq "cu118") {
         $cuda_ver = "+cu118"
+        $Env:PIP_FIND_LINKS = " "
+        $Env:UV_FIND_LINKS = ""
+        $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+            "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+        } else {
+            "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+        }
+        $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+            "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+        } else {
+            "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+        }
     } elseif ($mirror_type -eq "cu121") {
         $cuda_ver = "+cu121"
         $Env:PIP_FIND_LINKS = " "
@@ -745,6 +765,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -1552,6 +1573,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -1897,15 +1919,15 @@ def version_decrement(version: str) -> str:
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 def get_package_version(package: str) -> str:
-    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+    return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
 
 def get_invokeai_require_torch_version() -> str:
@@ -1954,18 +1976,25 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type() -> str:
     torch_ver = get_invokeai_require_torch_version()
 
-    if compare_versions(torch_ver, '2.0.0') == -1: # torch < 2.0.0
+    if compare_versions(torch_ver, '2.0.0') == -1:
+        # torch < 2.0.0
         return 'cu11x'
-    elif compare_versions(torch_ver, '1.9.9') == 1 and compare_versions(torch_ver, '2.3.1') == -1: # 1.9.9 < torch < 2.3.1
+    elif (compare_versions(torch_ver, '2.0.0') == 1 or compare_versions(torch_ver, '2.0.0') == 0) and compare_versions(torch_ver, '2.3.1') == -1:
+        # 2.0.0 <= torch < 2.3.1
         return 'cu118'
-    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+    elif (compare_versions(torch_ver, '2.3.0') == 1 or compare_versions(torch_ver, '2.3.0') == 0) and compare_versions(torch_ver, '2.4.1') == -1:
+        # 2.3.0 <= torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
+    elif (compare_versions(torch_ver, '2.4.0') == 1 or compare_versions(torch_ver, '2.4.0') == 0) and compare_versions(torch_ver, '2.6.0') == -1:
+        # 2.4.0 <= torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
+    elif (compare_versions(torch_ver, '2.6.0') == 1 or compare_versions(torch_ver, '2.6.0') == 0) and compare_versions(torch_ver, '2.7.0') == -1:
+        # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+    elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
+        # torch >= 2.7.0
         return 'cu128'
+
 
 
 if __name__ == '__main__':
@@ -1977,6 +2006,18 @@ if __name__ == '__main__':
     # 设置 PyTorch 镜像源
     if (`$mirror_type -eq `"cu118`") {
         `$cuda_ver = `"+cu118`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
     } elseif (`$mirror_type -eq `"cu121`") {
         `$cuda_ver = `"+cu121`"
         `$Env:PIP_FIND_LINKS = `" `"
@@ -2238,6 +2279,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -2917,6 +2959,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -3117,15 +3160,15 @@ def version_decrement(version: str) -> str:
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 def get_package_version(package: str) -> str:
-    return package.split('~=').pop().split('==').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('===').pop()
+    return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
 
 def get_invokeai_require_torch_version() -> str:
@@ -3174,18 +3217,25 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type() -> str:
     torch_ver = get_invokeai_require_torch_version()
 
-    if compare_versions(torch_ver, '2.0.0') == -1: # torch < 2.0.0
+    if compare_versions(torch_ver, '2.0.0') == -1:
+        # torch < 2.0.0
         return 'cu11x'
-    elif compare_versions(torch_ver, '1.9.9') == 1 and compare_versions(torch_ver, '2.3.1') == -1: # 1.9.9 < torch < 2.3.1
+    elif (compare_versions(torch_ver, '2.0.0') == 1 or compare_versions(torch_ver, '2.0.0') == 0) and compare_versions(torch_ver, '2.3.1') == -1:
+        # 2.0.0 <= torch < 2.3.1
         return 'cu118'
-    elif compare_versions(torch_ver, '2.3.0') == 1 and compare_versions(torch_ver, '2.4.1') == -1: # 2.3.0 < torch < 2.4.1
+    elif (compare_versions(torch_ver, '2.3.0') == 1 or compare_versions(torch_ver, '2.3.0') == 0) and compare_versions(torch_ver, '2.4.1') == -1:
+        # 2.3.0 <= torch < 2.4.1
         return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') == 1 and compare_versions(torch_ver, '2.6.0') == -1: # 2.4.0 < torch < 2.6.0
+    elif (compare_versions(torch_ver, '2.4.0') == 1 or compare_versions(torch_ver, '2.4.0') == 0) and compare_versions(torch_ver, '2.6.0') == -1:
+        # 2.4.0 <= torch < 2.6.0
         return 'cu124'
-    elif compare_versions(torch_ver, '2.5.9') == 1 and compare_versions(torch_ver, '2.7.0') == -1: # 2.5.9 < torch < 2.7.0
+    elif (compare_versions(torch_ver, '2.6.0') == 1 or compare_versions(torch_ver, '2.6.0') == 0) and compare_versions(torch_ver, '2.7.0') == -1:
+        # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif compare_versions(torch_ver, '2.6.9') == 1: # torch > 2.6.9
+    elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
+        # torch >= 2.7.0
         return 'cu128'
+
 
 
 if __name__ == '__main__':
@@ -3197,6 +3247,18 @@ if __name__ == '__main__':
     # 设置 PyTorch 镜像源
     if (`$mirror_type -eq `"cu118`") {
         `$cuda_ver = `"+cu118`"
+        `$Env:PIP_FIND_LINKS = `" `"
+        `$Env:UV_FIND_LINKS = `"`"
+        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
+        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+        } else {
+            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        }
     } elseif (`$mirror_type -eq `"cu121`") {
         `$cuda_ver = `"+cu121`"
         `$Env:PIP_FIND_LINKS = `" `"
@@ -3592,6 +3654,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -4732,6 +4795,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
@@ -5656,6 +5720,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
 `$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
