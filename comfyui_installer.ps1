@@ -247,6 +247,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '$UV_MINIMUM_VER'
 print(is_uv_need_update())
 ".Trim()
+
     Print-Msg "检测 uv 是否需要更新"
     $status = $(python -c "$content")
     if ($status -eq "True") {
@@ -577,6 +578,7 @@ def get_pytorch_mirror_type(torch_version: str) -> str:
 if __name__ == '__main__':
     print(get_pytorch_mirror_type('$torch_part'))
 ".Trim()
+
             $mirror_type = $(python -c "$content")
         } else {
             $mirror_type = $torch_part.Split("+")[-1]
@@ -1051,6 +1053,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1115,6 +1118,7 @@ for folder in torch_spec.submodule_search_locations:
         logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
         shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
 `".Trim()
+
     Print-Msg `"检测 PyTorch 的 libomp 问题中`"
     python -c `"`$content`"
     Print-Msg `"PyTorch 检查完成`"
@@ -1359,6 +1363,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
 `".Trim()
+
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -1772,6 +1777,7 @@ if __name__ == '__main__':
     path = args.requirement_path
     print(validate_requirements(path))
 `".Trim()
+
     Print-Msg `"检查 ComfyUI 内核依赖完整性中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
@@ -2238,6 +2244,7 @@ if __name__ == '__main__':
     write_content_to_file(notice, term_sd_notice_path)
     write_content_to_file(path_list, term_sd_need_install_requirement_path)
 `".Trim()
+
     Print-Msg `"检查 ComfyUI 运行环境组件依赖中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
@@ -2433,6 +2440,7 @@ def need_install_ort_ver():
 if __name__ == '__main__':
     print(need_install_ort_ver())
 `".Trim()
+
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
     `$status = `$(python -c `"`$content`")
 
@@ -2517,6 +2525,7 @@ if ver > 1:
 else:
     print(False)
 `".Trim()
+
     Print-Msg `"检查 Numpy 版本中`"
     `$status = `$(python -c `"`$content`")
 
@@ -2779,6 +2788,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3205,6 +3215,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3606,6 +3617,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3904,6 +3916,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -4055,6 +4068,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
 `".Trim()
+
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -4144,6 +4158,7 @@ except:
 
 print(ver)
 `".Trim()
+
     `$status = `$(python -c `"`$content`")
     return `$status
 }
@@ -4828,6 +4843,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -5022,6 +5038,7 @@ def aria2_need_update(aria2_min_ver: str) -> bool:
 
 print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
 `".Trim()
+
     Print-Msg `"检查 Aria2 是否需要更新`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
@@ -5806,6 +5823,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -6825,6 +6843,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -7134,6 +7153,7 @@ function global:Install-Hanamizuki {
             exit 1
         )
     `".Trim()
+
     Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
@@ -7375,7 +7395,8 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 
 # 帮助文档
 function Write-ReadMe {
-    $content = "==================================
+    $content = "
+==================================
 ComfyUI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
@@ -7789,6 +7810,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 ".Trim()
+
     if ($Help) {
         Write-Host $content
         exit 0

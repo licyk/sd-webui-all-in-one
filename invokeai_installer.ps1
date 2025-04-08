@@ -225,6 +225,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '$UV_MINIMUM_VER'
 print(is_uv_need_update())
 ".Trim()
+
     Print-Msg "检测 uv 是否需要更新"
     $status = $(python -c "$content")
     if ($status -eq "True") {
@@ -487,6 +488,7 @@ def get_pytorch_mirror_type() -> str:
 if __name__ == '__main__':
     print(get_pytorch_mirror_type())
 ".Trim()
+
     # 获取镜像类型
     $mirror_type = $(python -c "$content")
 
@@ -865,6 +867,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1080,6 +1083,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
 `".Trim()
+
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -1658,6 +1662,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1851,6 +1856,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
 `".Trim()
+
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -2000,6 +2006,7 @@ def get_pytorch_mirror_type() -> str:
 if __name__ == '__main__':
     print(get_pytorch_mirror_type())
 `".Trim()
+
     # 获取镜像类型
     `$mirror_type = `$(python -c `"`$content`")
 
@@ -2132,6 +2139,7 @@ except:
 
 print(f'InvokeAI=={ver}')
 `".Trim()
+
     `$status = `$(python -c `"`$content`")
     return `$status
 }
@@ -2387,6 +2395,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -2771,6 +2780,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3044,6 +3054,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3241,6 +3252,7 @@ def get_pytorch_mirror_type() -> str:
 if __name__ == '__main__':
     print(get_pytorch_mirror_type())
 `".Trim()
+
     # 获取镜像类型
     `$mirror_type = `$(python -c `"`$content`")
 
@@ -3476,6 +3488,7 @@ def is_uv_need_update() -> bool:
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
 `".Trim()
+
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -3740,6 +3753,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3934,6 +3948,7 @@ def aria2_need_update(aria2_min_ver: str) -> bool:
 
 print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
 `".Trim()
+
     Print-Msg `"检查 Aria2 是否需要更新`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
@@ -4587,6 +4602,7 @@ def main() -> None:
 if __name__ == '__main__':
     main()
 `".Trim()
+
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/import_model.py`" -Value `$content
 }
 
@@ -4871,6 +4887,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -5829,6 +5846,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 `".Trim()
+
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -6250,7 +6268,8 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 
 # 帮助文档
 function Write-ReadMe {
-    $content = "==================================
+    $content = "
+==================================
 InvokeAI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
@@ -6616,6 +6635,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 ".Trim()
+
     if ($Help) {
         Write-Host $content
         exit 0
