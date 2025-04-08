@@ -251,7 +251,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '$UV_MINIMUM_VER'
 print(is_uv_need_update())
-"
+".Trim()
     Print-Msg "检测 uv 是否需要更新"
     $status = $(python -c "$content")
     if ($status -eq "True") {
@@ -587,7 +587,7 @@ def get_pytorch_mirror_type(torch_version: str) -> str:
 
 if __name__ == '__main__':
     print(get_pytorch_mirror_type('$torch_part'))
-"
+".Trim()
             $mirror_type = $(python -c "$content")
         } else {
             $mirror_type = $torch_part.Split("+")[-1]
@@ -2026,7 +2026,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/launch.ps1") {
         Print-Msg "更新 launch.ps1 中"
@@ -2455,7 +2455,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/update.ps1") {
         Print-Msg "更新 update.ps1 中"
@@ -2981,7 +2981,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/switch_branch.ps1") {
         Print-Msg "更新 switch_branch.ps1 中"
@@ -3235,7 +3235,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/launch_sd_trainer_installer.ps1") {
         Print-Msg "更新 launch_sd_trainer_installer.ps1 中"
@@ -4164,7 +4164,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/reinstall_pytorch.ps1") {
         Print-Msg "更新 reinstall_pytorch.ps1 中"
@@ -4867,7 +4867,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/download_models.ps1") {
         Print-Msg "更新 download_models.ps1 中"
@@ -5853,7 +5853,7 @@ function Main {
 
 Main
 Read-Host | Out-Null
-"
+".Trim()
 
     if (Test-Path "$InstallPath/settings.ps1") {
         Print-Msg "更新 settings.ps1 中"
@@ -6344,7 +6344,7 @@ function Main {
 ###################
 
 Main
-"
+".Trim()
 
     if (Test-Path "$InstallPath/activate.ps1") {
         Print-Msg "更新 activate.ps1 中"
@@ -6367,7 +6367,7 @@ function Print-Msg (`$msg) {
 
 Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
-"
+".Trim()
 
     if (Test-Path "$InstallPath/terminal.ps1") {
         Print-Msg "更新 terminal.ps1 中"
@@ -6463,7 +6463,7 @@ https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
 https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
 https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
-"
+".Trim()
 
     if (Test-Path "$InstallPath/help.txt") {
         Print-Msg "更新 help.txt 中"
@@ -6690,7 +6690,7 @@ if '%errorlevel%' NEQ '0' (
     echo :: Configure completed
     echo :: Exit environment configuration script 
     pause
-"
+".Trim()
     if (Test-Path "$InstallPath/configure_env.bat") {
         Print-Msg "更新 configure_env.bat 中"
     } else {
@@ -6811,7 +6811,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
-"
+".Trim()
     if ($Help) {
         Write-Host $content
         exit 0
