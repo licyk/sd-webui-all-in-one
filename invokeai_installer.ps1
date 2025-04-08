@@ -6269,66 +6269,66 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 # 帮助文档
 function Write-ReadMe {
     $content = "
-==================================
+====================================================================
 InvokeAI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
-==================================
+====================================================================
+########## 使用帮助 ##########
 
 这是关于 InvokeAI 的简单使用文档。
 
 使用 InvokeAI Installer 进行安装并安装成功后，将在当前目录生成 InvokeAI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
-python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
-invokeai：InvokeAI 存放模型、图片等的文件夹。
-activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
-launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本并运行。
+launch.ps1：启动 InvokeAI 的脚本。
 update.ps1：更新 InvokeAI 的脚本，可使用该脚本更新 InvokeAI。
 update_node.ps1：更新 InvokeAI 自定义节点的脚本，可使用该脚本更新 InvokeAI 自定义节点。
-launch.ps1：启动 InvokeAI 的脚本。
+download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
 settings.ps1：管理 InvokeAI Installer 的设置。
-download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
+activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
+launch_invokeai_installer.ps1：获取最新的 InvokeAI Installer 安装脚本并运行。
 help.txt：帮助文档。
+cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
+python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
+git：Git 的存放路径。
+invokeai：InvokeAI 存放模型、图片等的文件夹。
+models：使用模型下载脚本下载模型时模型的存放位置。
 
+详细的 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
 
-要启动 InvokeAI，在 InvokeAI 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 InvokeAI 启动完成，启动完成后将在控制台显示访问地址，地址为 http://127.0.0.1:9090，将该地址输入浏览器地址栏并回车后进入 InvokeAI 界面。
-
-InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 Language 选项选择简体中文即可将界面语言设置为中文。
-
-使用 InvokeAI 时，建议阅读下列教程，以更快的了解并掌握使用 InvokeAI 的方法。
-InvokeAI - SDNote：https://sdnote.netlify.app/guide/invokeai
-给所有想学习AI辅助绘画的人的入门课 By Yuno779（基于 InvokeAI 3.7.0）：https://docs.qq.com/doc/p/9a03673f4a0493b4cd76babc901a49f0e6d52140
-InvokeAI 官方入门教程（基于 InvokeAI 5.x）：https://www.youtube.com/playlist?list=PLvWK1Kc8iXGrQy8r9TYg6QdUuJ5MMx-ZO
-一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）：https://www.youtube.com/watch?v=Tl-69JvwJ2s
-如何使用 InvokeAI 5.0 的新统一画布和工作流系统：https://www.youtube.com/watch?v=y80W3PjR0Gc
-
-脚本为 InvokeAI 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 InvokeAI 的模型管理无法从 HuggingFace 下载模型的问题。
-如果想自定义 HuggingFace 镜像源，可以在本地创建 hf_mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
-如果需要禁用 HuggingFace 镜像源，则创建 disable_hf_mirror.txt 文件，启动脚本时将不再设置 HuggingFace 镜像源。
-
-以下为可用的 HuggingFace 镜像源地址：
-https://hf-mirror.com
-https://huggingface.sukaka.top
-
-若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
-如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
-
-脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
-如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
-
-InvokeAI Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
-
-InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 InvokeAI Installer 更新检查。
-
-更多详细的帮助可在下面的链接查看。
-InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+InvokeAI 的使用教程：
+SDNote：https://sdnote.netlify.app/guide/invokeai/
 InvokeAI 官方文档 1：https://invoke-ai.github.io/InvokeAI
 InvokeAI 官方文档 2：https://support.invoke.ai/support/solutions
 InvokeAI 官方视频教程：https://www.youtube.com/@invokeai
 Reddit 社区：https://www.reddit.com/r/invokeai
+
+
+====================================================================
+########## Github 项目 ##########
+
+sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
+InvokeAI 项目地址：https://github.com/invoke-ai/InvokeAI
+
+
+====================================================================
+########## 用户协议 ##########
+
+使用该软件代表您已阅读并同意以下用户协议：
+您不得实施包括但不限于以下行为，也不得为任何违反法律法规的行为提供便利：
+    反对宪法所规定的基本原则的。
+    危害国家安全，泄露国家秘密，颠覆国家政权，破坏国家统一的。
+    损害国家荣誉和利益的。
+    煽动民族仇恨、民族歧视，破坏民族团结的。
+    破坏国家宗教政策，宣扬邪教和封建迷信的。
+    散布谣言，扰乱社会秩序，破坏社会稳定的。
+    散布淫秽、色情、赌博、暴力、凶杀、恐怖或教唆犯罪的。
+    侮辱或诽谤他人，侵害他人合法权益的。
+    实施任何违背`“七条底线`”的行为。
+    含有法律、行政法规禁止的其他内容的。
+因您的数据的产生、收集、处理、使用等任何相关事项存在违反法律法规等情况而造成的全部结果及责任均由您自行承担。
 ".Trim()
 
     if (Test-Path "$InstallPath/help.txt") {

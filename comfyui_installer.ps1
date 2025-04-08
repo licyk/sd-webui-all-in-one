@@ -7396,68 +7396,33 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 # 帮助文档
 function Write-ReadMe {
     $content = "
-==================================
+====================================================================
 ComfyUI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
-==================================
+====================================================================
+########## 使用帮助 ##########
 
 这是关于 ComfyUI 的简单使用文档。
 
 使用 ComfyUI Installer 进行安装并安装成功后，将在当前目录生成 ComfyUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
+launch.ps1：启动 ComfyUI 的脚本。
+update.ps1：更新 ComfyUI 的脚本，可使用该脚本更新 ComfyUI。
+update_node.ps1：更新 ComfyUI 自定义节点的脚本，可使用该脚本更新 ComfyUI 自定义节点。
+download_models.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
+reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
+settings.ps1：管理 ComfyUI Installer 的设置。
+terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令
+activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
+launch_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本并运行。
+help.txt：帮助文档。
 cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 git：Git 的存放路径。
 ComfyUI：ComfyUI 存放的文件夹。
-models：使用模型下载脚本下载模型时模型的存放位置。
-activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-launch_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本并运行。
-update.ps1：更新 ComfyUI 的脚本，可使用该脚本更新 ComfyUI。
-update_node.ps1：更新 ComfyUI 自定义节点的脚本，可使用该脚本更新 ComfyUI 自定义节点。
-launch.ps1：启动 ComfyUI 的脚本。
-reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-download_models.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
-settings.ps1：管理 ComfyUI Installer 的设置。
-terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-help.txt：帮助文档。
 
-
-要启动 ComfyUI，可在 ComfyUI 文件夹中找到 launch.ps1 脚本，右键这个脚本，选择使用 PowerShell 运行，等待 ComfyUI 启动完成，启动完成后将自动打开浏览器进入 ComfyUI 界面。
-
-脚本为 ComfyUI 设置了 HuggingFace 镜像源，解决国内无法直接访问 HuggingFace，导致 ComfyUI 无法从 HuggingFace 下载模型的问题。
-如果想自定义 HuggingFace 镜像源，可以在本地创建 hf_mirror.txt 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将自动读取配置。
-如果需要禁用 HuggingFace 镜像源，则创建 disable_hf_mirror.txt 文件，启动脚本时将不再设置 HuggingFace 镜像源。
-
-以下为可用的 HuggingFace 镜像源地址：
-https://hf-mirror.com
-https://huggingface.sukaka.top
-
-为了解决访问 Github 速度慢的问题，脚本默认启用 Github 镜像源，在运行 ComfyUI Installer 或者 ComfyUI 更新脚本时将自动测试可用的 Github 镜像源并设置。
-如果想自定义 Github 镜像源，可以在本地创建 gh_mirror.txt 文件，在文本中填写 Github 镜像源的地址后保存，再次启动脚本时将自动读取配置。
-如果需要禁用 Github 镜像源，则创建 disable_gh_mirror.txt 文件，启动脚本时将不再设置 Github 镜像源。
-
-以下为可用的 Github 镜像源：
-https://ghfast.top/https://github.com
-https://mirror.ghproxy.com/https://github.com
-https://ghproxy.net/https://github.com
-https://gh.api.99988866.xyz/https://github.com
-https://gitclone.com/github.com
-https://gh-proxy.com/https://github.com
-https://ghps.cc/https://github.com
-https://gh.idayer.com/https://github.com
-
-若要为脚本设置代理，则在代理软件中打开系统代理模式即可，或者在本地创建 proxy.txt 文件，在文件中填写代理地址后保存，再次启动脚本是将自动读取配置。
-如果要禁用自动设置代理，可以在本地创建 disable_proxy.txt 文件，启动脚本时将不再自动设置代理。
-
-脚本默认调用 uv 作为 Python 包管理器，相比于 Pip，安装 Python 软件包的速度更快。
-如需禁用，可在脚本目录下创建 disable_uv.txt 文件，这将禁用 uv 并使用 Pip 作为 Python 包管理器。
-
-设置 ComfyUI 的启动参数，可以在和 launch.ps1 脚本同级的目录创建一个 launch_args.txt 文件，在文件内写上启动参数，运行 ComfyUI 启动脚本时将自动读取该文件内的启动参数并应用。
-
-ComfyUI Installer 提供了配置管理器, 运行 settings.ps1 即可管理各个配置。
-
-ComfyUI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有更新将会提示并显示具体的更新方法，如果要禁用更新，可以在脚本同级的目录创建 disable_update.txt 文件，这将禁用 ComfyUI Installer 更新检查。
+详细的 ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 
 ComfyUI 的使用教程：
 https://sdnote.netlify.app/guide/comfyui
@@ -7468,9 +7433,30 @@ https://comfyanonymous.github.io/ComfyUI_examples
 https://blenderneko.github.io/ComfyUI-docs
 https://comfyui-wiki.com/zh
 
-更多详细的帮助可在下面的链接查看。
-ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+
+====================================================================
+########## Github 项目 ##########
+
+sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
 ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
+
+
+====================================================================
+########## 用户协议 ##########
+
+使用该软件代表您已阅读并同意以下用户协议：
+您不得实施包括但不限于以下行为，也不得为任何违反法律法规的行为提供便利：
+    反对宪法所规定的基本原则的。
+    危害国家安全，泄露国家秘密，颠覆国家政权，破坏国家统一的。
+    损害国家荣誉和利益的。
+    煽动民族仇恨、民族歧视，破坏民族团结的。
+    破坏国家宗教政策，宣扬邪教和封建迷信的。
+    散布谣言，扰乱社会秩序，破坏社会稳定的。
+    散布淫秽、色情、赌博、暴力、凶杀、恐怖或教唆犯罪的。
+    侮辱或诽谤他人，侵害他人合法权益的。
+    实施任何违背`“七条底线`”的行为。
+    含有法律、行政法规禁止的其他内容的。
+因您的数据的产生、收集、处理、使用等任何相关事项存在违反法律法规等情况而造成的全部结果及责任均由您自行承担。
 ".Trim()
 
     if (Test-Path "$InstallPath/help.txt") {
