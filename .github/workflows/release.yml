@@ -12,10 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: List files in the repository
         run: |
-          cd "${{ github.workspace }}"
           ls "${{ github.workspace }}"
+
       - name: Release SD-Trainer Installer
         shell: bash
         env:
@@ -125,7 +126,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: List files in the repository
         run: |
-          cd "${{ github.workspace }}"
           ls "${{ github.workspace }}"
 
       - name: Config release Gitee script requirements
