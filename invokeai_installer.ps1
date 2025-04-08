@@ -864,7 +864,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1079,7 +1079,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
-`"
+`".Trim()
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -1165,7 +1165,7 @@ from invokeai.app.run_app import run_app
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
     sys.exit(run_app())
-`"
+`".Trim()
 
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
@@ -1330,7 +1330,7 @@ if __name__ == '__main__':
             print(None)
     except:
         print(None)
-`"
+`".Trim()
 
     `$status = `$(python -c `"`$content`")
     switch (`$status) {
@@ -1381,7 +1381,7 @@ else:
         print('controlnet_aux')
     else:
         print(controlnet_aux_ver)
-`"
+`".Trim()
 
     Print-Msg `"检查 controlnet_aux 模块是否已安装, 这可能需要一定时间`"
     `$controlnet_aux_ver = `$(python -c `"`$content`")
@@ -1437,7 +1437,7 @@ for folder in torch_spec.submodule_search_locations:
     except FileNotFoundError as e:
         logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
         shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
-`"
+`".Trim()
 
     Print-Msg `"检测 PyTorch 的 libomp 问题中`"
     python -c `"`$content`"
@@ -1657,7 +1657,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1850,7 +1850,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
-`"
+`".Trim()
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -1999,7 +1999,7 @@ def get_pytorch_mirror_type() -> str:
 
 if __name__ == '__main__':
     print(get_pytorch_mirror_type())
-`"
+`".Trim()
     # 获取镜像类型
     `$mirror_type = `$(python -c `"`$content`")
 
@@ -2114,7 +2114,7 @@ for ver in pytorch_ver:
 ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
 
 print(ver_list)
-`"
+`".Trim()
 
     return `$(python -c `"`$content`") # 获取 PyTorch 版本
 }
@@ -2131,7 +2131,7 @@ except:
     ver = '5.0.2'
 
 print(f'InvokeAI=={ver}')
-`"
+`".Trim()
     `$status = `$(python -c `"`$content`")
     return `$status
 }
@@ -2386,7 +2386,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -2770,7 +2770,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3043,7 +3043,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3240,7 +3240,7 @@ def get_pytorch_mirror_type() -> str:
 
 if __name__ == '__main__':
     print(get_pytorch_mirror_type())
-`"
+`".Trim()
     # 获取镜像类型
     `$mirror_type = `$(python -c `"`$content`")
 
@@ -3355,7 +3355,7 @@ for ver in pytorch_ver:
 ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
 
 print(ver_list)
-`"
+`".Trim()
 
     return `$(python -c `"`$content`") # 获取 PyTorch 版本
 }
@@ -3475,7 +3475,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
-`"
+`".Trim()
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -3515,7 +3515,7 @@ try:
     print(version('torch'))
 except:
     print(None)
-`"
+`".Trim()
 
     `$torch_ver = `$(python -c `"`$content`")
 
@@ -3526,7 +3526,7 @@ try:
     print(version('xformers'))
 except:
     print(None)
-`"
+`".Trim()
 
     `$xformers_ver = `$(python -c `"`$content`")
 
@@ -3739,7 +3739,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3933,7 +3933,7 @@ def aria2_need_update(aria2_min_ver: str) -> bool:
 
 
 print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
-`"
+`".Trim()
     Print-Msg `"检查 Aria2 是否需要更新`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
@@ -4586,7 +4586,7 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-`"
+`".Trim()
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/cache/import_model.py`" -Value `$content
 }
 
@@ -4870,7 +4870,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -5828,7 +5828,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0

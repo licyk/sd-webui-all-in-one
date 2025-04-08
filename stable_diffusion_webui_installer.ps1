@@ -1194,7 +1194,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -1258,7 +1258,7 @@ for folder in torch_spec.submodule_search_locations:
     except FileNotFoundError as e:
         logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
         shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
-`"
+`".Trim()
     Print-Msg `"检测 PyTorch 的 libomp 问题中`"
     python -c `"`$content`"
     Print-Msg `"PyTorch 检查完成`"
@@ -1502,7 +1502,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
-`"
+`".Trim()
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -1738,7 +1738,7 @@ if __name__ == '__main__':
             print(None)
     except:
         print(None)
-`"
+`".Trim()
 
     `$status = `$(python -c `"`$content`")
     switch (`$status) {
@@ -1936,7 +1936,7 @@ if __name__ == '__main__':
     args = get_args()
     path = args.requirement_path
     print(validate_requirements(path))
-`"
+`".Trim()
     Print-Msg `"检查 Stable Diffusion WebUI 内核依赖完整性中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
@@ -2189,7 +2189,7 @@ def need_install_ort_ver():
 
 if __name__ == '__main__':
     print(need_install_ort_ver())
-`"
+`".Trim()
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
     `$status = `$(python -c `"`$content`")
 
@@ -2273,7 +2273,7 @@ if ver > 1:
     print(True)
 else:
     print(False)
-`"
+`".Trim()
     Print-Msg `"检查 Numpy 版本中`"
     `$status = `$(python -c `"`$content`")
 
@@ -2606,7 +2606,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3033,7 +3033,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3522,7 +3522,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -3843,7 +3843,7 @@ function Main {
 - 7、vladmandic - SD.NEXT 主分支
 - 8、vladmandic - SD.NEXT 测试分支
 -----------------------------------------------------
-`"
+`".Trim()
 
     `$to_exit = 0
 
@@ -4046,7 +4046,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -4372,7 +4372,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -4523,7 +4523,7 @@ def is_uv_need_update() -> bool:
 
 uv_minimum_ver = '`$UV_MINIMUM_VER'
 print(is_uv_need_update())
-`"
+`".Trim()
     Print-Msg `"检测 uv 是否需要更新`"
     `$status = `$(python -c `"`$content`")
     if (`$status -eq `"True`") {
@@ -4612,7 +4612,7 @@ except:
     ver = None
 
 print(ver)
-`"
+`".Trim()
     `$status = `$(python -c `"`$content`")
     return `$status
 }
@@ -4639,7 +4639,7 @@ try:
     print(version('torch'))
 except:
     print(None)
-`"
+`".Trim()
 
     `$torch_ver = `$(python -c `"`$content`")
 
@@ -4650,7 +4650,7 @@ try:
     print(version('xformers'))
 except:
     print(None)
-`"
+`".Trim()
 
     `$xformers_ver = `$(python -c `"`$content`")
 
@@ -4711,7 +4711,7 @@ function Main {
 - 31、Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3
 - 32、Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3
 -----------------------------------------------------
-    `"
+    `".Trim()
 
     `$to_exit = 0
     `$torch_ver = `"`"
@@ -5297,7 +5297,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -5491,7 +5491,7 @@ def aria2_need_update(aria2_min_ver: str) -> bool:
 
 
 print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
-`"
+`".Trim()
     Print-Msg `"检查 Aria2 是否需要更新`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
     `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
@@ -6223,7 +6223,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -7243,7 +7243,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
-`"
+`".Trim()
     if (`$Help) {
         Write-Host `$content
         exit 0
@@ -7552,7 +7552,7 @@ function global:Install-Hanamizuki {
             pause
             exit 1
         )
-    `"
+    `".Trim()
     Set-Content -Encoding Default -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
