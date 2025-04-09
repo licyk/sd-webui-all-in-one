@@ -2,7 +2,7 @@
     [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "InvokeAI"),
     [switch]$UseUpdateMode,
-    [switch]$DisablePipMirror,
+    [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
@@ -29,14 +29,14 @@ $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else
 # InvokeAI Installer 版本和检查更新间隔
 $INVOKEAI_INSTALLER_VERSION = 243
 $UPDATE_TIME_SPAN = 3600
-# Pip 镜像源
+# PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_INDEX_ADDR_ORI = "https://pypi.python.org/simple"
 $PIP_EXTRA_INDEX_ADDR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 $PIP_EXTRA_INDEX_ADDR_ORI = "https://download.pytorch.org/whl"
 $PIP_FIND_ADDR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 $PIP_FIND_ADDR_ORI = "https://download.pytorch.org/whl/torch_stable.html"
-$USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) -and (!($DisablePipMirror))) { $true } else { $false }
+$USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($DisablePyPIMirror))) { $true } else { $false }
 $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
 $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
@@ -114,12 +114,12 @@ function Get-InvokeAI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if ($USE_PIP_MIRROR) {
-        Print-Msg "使用 Pip 镜像源"
+        Print-Msg "使用 PyPI 镜像源"
     } else {
-        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源"
+        Print-Msg "检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源"
     }
 }
 
@@ -741,7 +741,7 @@ function Write-Launch-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -755,14 +755,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -825,7 +825,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -834,8 +834,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 InvokeAI Installer 更新检查
@@ -894,12 +894,12 @@ function Get-InvokeAI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -1496,7 +1496,7 @@ function Main {
         Check-InvokeAI-Installer-Update
     }
     Set-HuggingFace-Mirror
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     Set-uv
     Create-InvokeAI-Shortcut
     Check-InvokeAI-Env
@@ -1556,7 +1556,7 @@ function Write-Update-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -1565,14 +1565,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -1635,7 +1635,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV]
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV]
 
 参数:
     -Help
@@ -1644,8 +1644,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 InvokeAI Installer 更新检查
@@ -1689,12 +1689,12 @@ function Get-InvokeAI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -2156,7 +2156,7 @@ function Main {
         Check-InvokeAI-Installer-Update
     }
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     `$update_fail = 0
 
     Print-Msg `"更新 InvokeAI 内核中`"
@@ -2265,7 +2265,7 @@ function Write-Update-Node-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2275,14 +2275,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2356,7 +2356,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -2365,8 +2365,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 InvokeAI Installer 更新检查
@@ -2747,7 +2747,7 @@ param (
     [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUV
 )
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -2759,7 +2759,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 
     使用:
-    .\launch_invokeai_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePipMirror] [-DisableUV]
+    .\launch_invokeai_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePyPIMirror] [-DisableUV]
 
 参数:
     -Help
@@ -2771,8 +2771,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
@@ -2887,8 +2887,8 @@ function Download-InvokeAI-Installer {
 # 获取本地配置文件参数
 function Get-Local-Setting {
     `$arg = @{}
-    if ((Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") -or (`$DisablePipMirror)) {
-        `$arg.Add(`"-DisablePipMirror`", `$true)
+    if ((Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") -or (`$DisablePyPIMirror)) {
+        `$arg.Add(`"-DisablePyPIMirror`", `$true)
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
@@ -2948,7 +2948,7 @@ function Write-PyTorch-ReInstall-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate,
@@ -2957,14 +2957,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3027,7 +3027,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableUV]
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableUV]
 
 参数:
     -Help
@@ -3036,8 +3036,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 InvokeAI Installer 自动设置代理服务器
@@ -3081,12 +3081,12 @@ function Get-InvokeAI-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -3562,7 +3562,7 @@ function Main {
         Check-InvokeAI-Installer-Update
     }
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
 
     Get-PyTorch-And-xFormers-Version
     Print-Msg `"是否重新安装 PyTorch (yes/no)?`"
@@ -3647,7 +3647,7 @@ param (
     [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -3655,14 +3655,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3725,7 +3725,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -3738,8 +3738,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 InvokeAI Installer 自动设置代理服务器
@@ -4792,21 +4792,21 @@ function Write-InvokeAI-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -4869,14 +4869,14 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\settings.ps1 [-Help] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\settings.ps1 [-Help] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
         获取 InvokeAI Installer 的帮助信息
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 InvokeAI Installer 自动设置代理服务器
@@ -5022,9 +5022,9 @@ function Get-Github-Mirror-Setting {
 }
 
 
-# Pip 镜像源配置
-function Get-Pip-Mirror-Setting {
-    if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) {
+# PyPI 镜像源配置
+function Get-PyPI-Mirror-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) {
         return `"启用`"
     } else {
         return `"禁用`"
@@ -5347,14 +5347,14 @@ function Update-Github-Mirror-Setting {
 }
 
 
-# Pip 镜像源设置
-function Pip-Mirror-Setting {
+# PyPI 镜像源设置
+function PyPI-Mirror-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"当前 PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 Pip 镜像源`"
-        Print-Msg `"2. 禁用 Pip 镜像源`"
+        Print-Msg `"1. 启用 PyPI 镜像源`"
+        Print-Msg `"2. 禁用 PyPI 镜像源`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -5362,13 +5362,13 @@ function Pip-Mirror-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 Pip 镜像源成功`"
+                Remove-Item -Path `"`$PSScriptRoot/disable_pypi_mirror.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 PyPI 镜像源成功`"
                 break
             }
             2 {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force > `$null
-                Print-Msg `"禁用 Pip 镜像源成功`"
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pypi_mirror.txt`" -Force > `$null
+                Print-Msg `"禁用 PyPI 镜像源成功`"
                 break
             }
             3 {
@@ -5608,7 +5608,7 @@ function Main {
         Print-Msg `"InvokeAI Installer 自动检查更新: `$(Get-InvokeAI-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"自动创建 InvokeAI 快捷启动方式: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
-        Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"InvokeAI 运行环境检测设置: `$(Get-InvokeAI-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
@@ -5619,7 +5619,7 @@ function Main {
         Print-Msg `"4. 进入 InvokeAI Installer 自动检查更新设置`"
         Print-Msg `"5. 进入自动创建 InvokeAI 快捷启动方式设置`"
         Print-Msg `"6. 进入 Github 镜像源设置`"
-        Print-Msg `"7. 进入 Pip 镜像源设置`"
+        Print-Msg `"7. 进入 PyPI 镜像源设置`"
         Print-Msg `"8. 进入自动设置 CUDA 内存分配器设置`"
         Print-Msg `"9. 进入 InvokeAI 运行环境检测设置`"
         Print-Msg `"10. 更新 InvokeAI Installer 管理脚本`"
@@ -5654,7 +5654,7 @@ function Main {
                 break
             }
             7 {
-                Pip-Mirror-Setting
+                PyPI-Mirror-Setting
                 break
             }
             8 {
@@ -5714,7 +5714,7 @@ function Write-Env-Activate-Script {
     $content = "
 param (
     [switch]`$Help,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
@@ -5725,14 +5725,14 @@ param (
 # InvokeAI Installer 版本和检查更新间隔
 `$Env:INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -5807,14 +5807,14 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\activate.ps1 [-Help] [-DisablePipMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\activate.ps1 [-Help] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
         获取 InvokeAI Installer 的帮助信息
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableGithubMirror
         禁用 InvokeAI Installer 自动设置 Github 镜像源
@@ -6134,12 +6134,12 @@ Github：https://github.com/licyk
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -6224,7 +6224,7 @@ function Main {
     Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
     Set-HuggingFace-Mirror
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     Print-Msg `"激活 InvokeAI Env`"
     Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
 }
@@ -6360,9 +6360,9 @@ function Write-Manager-Scripts {
 function Copy-InvokeAI-Installer-Config {
     Print-Msg "为 InvokeAI Installer 管理脚本复制 InvokeAI Installer 配置文件中"
 
-    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
-        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    if ((!($DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pypi_mirror.txt -> $InstallPath/disable_pypi_mirror.txt" -Force
     }
 
     if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
@@ -6384,7 +6384,7 @@ function Copy-InvokeAI-Installer-Config {
 function Use-Install-Mode {
     Set-Proxy
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     Print-Msg "启动 InvokeAI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
@@ -6425,7 +6425,7 @@ function Use-Build-Mode {
 
     if ($BuildWithTorchReinstall) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
@@ -6437,7 +6437,7 @@ function Use-Build-Mode {
     if ($BuildWitchModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildWitchModel", $BuildWitchModel)
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
@@ -6447,7 +6447,7 @@ function Use-Build-Mode {
 
     if ($BuildWithUpdate) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6458,7 +6458,7 @@ function Use-Build-Mode {
 
     if ($BuildWithUpdateNode) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6470,7 +6470,7 @@ function Use-Build-Mode {
 
     if ($BuildWithLaunch) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6549,7 +6549,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>]
+    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>]
 
 参数:
     -Help
@@ -6562,8 +6562,8 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -UseUpdateMode
         指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新
 
-    -DisablePipMirror
-        禁用 InvokeAI Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 InvokeAI Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 InvokeAI Installer 自动设置代理服务器

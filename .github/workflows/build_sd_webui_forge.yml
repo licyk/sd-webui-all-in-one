@@ -38,7 +38,7 @@ jobs:
             -BuildWitchBranch 3 `
             -InstallBranch "sd_webui_forge" `
             -NoPreDownloadModel `
-            -DisablePipMirror `
+            -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
             -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
@@ -57,7 +57,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_webui_forge/launch.ps1" `
             -BuildMode `
-            -DisablePipMirror `
+            -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 

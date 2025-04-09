@@ -25,7 +25,7 @@ _✨快速部署训练环境_
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
-  - [设置 Pip 镜像源](#设置-pip-镜像源)
+  - [设置 PyPI 镜像源](#设置-pip-镜像源)
   - [配置代理](#配置代理)
     - [1. 使用系统代理](#1-使用系统代理)
     - [2. 使用配置文件](#2-使用配置文件)
@@ -69,7 +69,7 @@ _✨快速部署训练环境_
     - [2. 手动输入命令激活](#2-手动输入命令激活)
   - [常用命令](#常用命令)
     - [清理安装时产生的 Pip 缓存](#清理安装时产生的-pip-缓存)
-    - [安装某个 Pip 软件包](#安装某个-pip-软件包)
+    - [安装某个 Python 软件包](#安装某个-pip-软件包)
     - [更新某个软件包](#更新某个软件包)
     - [重装某个软件包](#重装某个软件包)
     - [卸载某个软件包](#卸载某个软件包)
@@ -190,7 +190,7 @@ $ tree -L 1
 >[!NOTE]  
 >SD-Trainer-Script Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
 >- [设置 Github 镜像源](#设置-github-镜像源)
->- [设置 Pip 镜像源](#设置-pip-镜像源)
+>- [设置 PyPI 镜像源](#设置-pip-镜像源)
 >- [设置 uv 包管理器](#设置-uv-包管理器)
 >- [配置代理](#配置代理)
 >
@@ -325,11 +325,11 @@ SD-Trainer-Script Installer 为了加速访问 Github 的速度，加快下载�
 如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
 
 
-## 设置 Pip 镜像源
+## 设置 PyPI 镜像源
 >[!NOTE]  
 >该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
-SD-Trainer-Script Installer 默认启用了 Pip 镜像源加速下载 Python 软件包，如果需要禁用 Pip 镜像源，可以在脚本同级目录创建`disable_pip_mirror.txt`文件，再次运行脚本时将 Pip 源切换至官方源。
+SD-Trainer-Script Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包，如果需要禁用 PyPI 镜像源，可以在脚本同级目录创建`disable_pypi_mirror.txt`文件，再次运行脚本时将 PyPI 源切换至官方源。
 
 
 ## 配置代理
@@ -479,7 +479,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-InstallPath` <SD-Trainer-Script 安装路径>|指定安装 SD-Trainer-Script 的路径，使用绝对路径进行指定。|
 |`-InstallBranch` <SD-Trainer-Script 分支名>|指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 的分支，SD-Trainer-Script 分支名对应的分支如下：</br>`sd_scripts`：[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)</br>~~`Simple_tuner`：[bghira/SimpleTuner](https://github.com/bghira/SimpleTuner)~~</br>`ai_toolkit`：[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)</br>`finetrainers`：[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)</br>`diffusion_pipe`：[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)</br>`musubi_tuner`：[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
 |`-UseUpdateMode`|使用 SD-Trainer-Script Installer 的更新脚本模式，不进行 SD-Trainer-Script 的安装。|
-|`-DisablePipMirror`|禁用 SD-Trainer-Script Installer 使用 Pip 镜像源，使用 Pip 官方源下载 Python 软件包。|
+|`-DisablePyPIMirror`|禁用 SD-Trainer-Script Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 SD-Trainer-Script Installer 自动设置代理服务器。|
 |`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
 |`-DisableUV`|禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
@@ -691,7 +691,7 @@ python -m pip cache purge
 ```
 
 
-### 安装某个 Pip 软件包
+### 安装某个 Python 软件包
 ```powershell
 # 命令中的 <package_name> 替换成具体的 Python 软件包名 
 python -m pip install <package_name>

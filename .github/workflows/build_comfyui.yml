@@ -35,7 +35,7 @@ jobs:
             -BuildWithUpdate `
             -BuildWithUpdateNode `
             -BuildWithLaunch `
-            -DisablePipMirror `
+            -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel `
@@ -56,7 +56,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/comfyui/launch.ps1" `
             -BuildMode `
-            -DisablePipMirror `
+            -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 

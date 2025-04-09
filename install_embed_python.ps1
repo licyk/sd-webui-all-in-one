@@ -1,4 +1,4 @@
-﻿# Pip 镜像源
+﻿# PyPI 镜像源
 $PIP_INDEX_MIRROR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_EXTRA_INDEX_MIRROR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 $PIP_FIND_MIRROR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
@@ -123,7 +123,7 @@ function Install-uv {
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_MIRROR = `"$PIP_INDEX_MIRROR`"
 `$PIP_EXTRA_INDEX_MIRROR = `"$PIP_EXTRA_INDEX_MIRROR`"
 `$PIP_FIND_MIRROR = `"$PIP_FIND_MIRROR`"

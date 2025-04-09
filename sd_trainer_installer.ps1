@@ -3,7 +3,7 @@
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer"),
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
-    [switch]$DisablePipMirror,
+    [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
     [string]$UseCustomProxy,
     [switch]$DisableUV,
@@ -34,14 +34,14 @@ $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else
 # SD-Trainer Installer 版本和检查更新间隔
 $SD_TRAINER_INSTALLER_VERSION = 258
 $UPDATE_TIME_SPAN = 3600
-# Pip 镜像源
+# PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
 $PIP_INDEX_ADDR_ORI = "https://pypi.python.org/simple"
 $PIP_EXTRA_INDEX_ADDR = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 $PIP_EXTRA_INDEX_ADDR_ORI = "https://download.pytorch.org/whl"
 $PIP_FIND_ADDR = "https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html"
 $PIP_FIND_ADDR_ORI = "https://download.pytorch.org/whl/torch_stable.html"
-$USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) -and (!($DisablePipMirror))) { $true } else { $false }
+$USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($DisablePyPIMirror))) { $true } else { $false }
 $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
 $PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
@@ -141,12 +141,12 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if ($USE_PIP_MIRROR) {
-        Print-Msg "使用 Pip 镜像源"
+        Print-Msg "使用 PyPI 镜像源"
     } else {
-        Print-Msg "检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源"
+        Print-Msg "检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源"
     }
 }
 
@@ -845,7 +845,7 @@ function Write-Launch-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -860,14 +860,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -933,7 +933,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -942,8 +942,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -BuildMode
         启用 SD-Trainer Installer构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 SD-Trainer Installer更新检查
@@ -1005,12 +1005,12 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -1989,7 +1989,7 @@ function Main {
     }
     Set-HuggingFace-Mirror
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
@@ -2050,7 +2050,7 @@ function Write-Update-Script {
 param (
     [switch]`$Help,
     [switch]`$BuildMode,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2060,14 +2060,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2144,7 +2144,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -2153,8 +2153,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -BuildMode
         启用 SD-Trainer Installer构建模式
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 SD-Trainer Installer更新检查
@@ -2481,7 +2481,7 @@ param (
     [switch]`$Help,
     [switch]`$BuildMode,
     [int]`$BuildWitchBranch,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2491,14 +2491,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2575,7 +2575,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePipMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -2588,8 +2588,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         (需添加 -BuildMode 启用 SD-Trainer Installer构建模式) SD-Trainer Installer执行完基础安装流程后调用 SD-Trainer Installer的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
         Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 SD-Trainer Installer更新检查
@@ -3008,7 +3008,7 @@ param (
     [switch]`$Help,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
@@ -3022,7 +3022,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch_sd_trainer_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePipMirror] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-InstallBranch <Fooocus 分支名称>]
+    .\launch_sd_trainer_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePyPIMirror] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-InstallBranch <Fooocus 分支名称>]
 
 参数:
     -Help
@@ -3034,8 +3034,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUV
         禁用 SD-Trainer Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
@@ -3173,8 +3173,8 @@ function Download-SD-Trainer-Installer {
 # 获取本地配置文件参数
 function Get-Local-Setting {
     `$arg = @{}
-    if ((Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`") -or (`$DisablePipMirror)) {
-        `$arg.Add(`"-DisablePipMirror`", `$true)
+    if ((Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") -or (`$DisablePyPIMirror)) {
+        `$arg.Add(`"-DisablePyPIMirror`", `$true)
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
@@ -3264,7 +3264,7 @@ param (
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
     [switch]`$BuildWithTorchReinstall,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
@@ -3273,14 +3273,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -3346,7 +3346,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePipMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
@@ -3362,8 +3362,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -BuildWithTorchReinstall
         (需添加 -BuildMode 启用 SD-Trainer Installer构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 SD-Trainer Installer更新检查
@@ -3407,12 +3407,12 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -3683,7 +3683,7 @@ function Main {
         Check-SD-Trainer-Installer-Update
     }
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
 
     # PyTorch 版本列表
     `$content = `"
@@ -4195,7 +4195,7 @@ param (
     [switch]`$Help,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -4203,14 +4203,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -4276,7 +4276,7 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -4289,8 +4289,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         (需添加 -BuildMode 启用 SD-Trainer Installer构建模式) SD-Trainer Installer执行完基础安装流程后调用 SD-Trainer Installer的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 SD-Trainer Installer自动设置代理服务器
@@ -4898,21 +4898,21 @@ function Write-SD-Trainer-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy
 )
 # SD-Trainer Installer 版本和检查更新间隔
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -4978,14 +4978,14 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\settings.ps1 [-Help] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\settings.ps1 [-Help] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
         获取 SD-Trainer Installer的帮助信息
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 SD-Trainer Installer自动设置代理服务器
@@ -5141,9 +5141,9 @@ function Get-Auto-Set-Launch-Shortcut-Setting {
 }
 
 
-# 获取 Pip 镜像源配置
-function Get-Pip-Mirror-Setting {
-    if (!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) {
+# 获取 PyPI 镜像源配置
+function Get-PyPI-Mirror-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) {
         return `"启用`"
     } else {
         return `"禁用`"
@@ -5513,14 +5513,14 @@ function Auto-Set-Launch-Shortcut-Setting {
 }
 
 
-# Pip 镜像源设置
-function Pip-Mirror-Setting {
+# PyPI 镜像源设置
+function PyPI-Mirror-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"当前 PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 Pip 镜像源`"
-        Print-Msg `"2. 禁用 Pip 镜像源`"
+        Print-Msg `"1. 启用 PyPI 镜像源`"
+        Print-Msg `"2. 禁用 PyPI 镜像源`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -5528,13 +5528,13 @@ function Pip-Mirror-Setting {
 
         switch (`$arg) {
             1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 Pip 镜像源成功`"
+                Remove-Item -Path `"`$PSScriptRoot/disable_pypi_mirror.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 PyPI 镜像源成功`"
                 break
             }
             2 {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pip_mirror.txt`" -Force > `$null
-                Print-Msg `"禁用 Pip 镜像源成功`"
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_pypi_mirror.txt`" -Force > `$null
+                Print-Msg `"禁用 PyPI 镜像源成功`"
                 break
             }
             3 {
@@ -5774,7 +5774,7 @@ function Main {
         Print-Msg `"SD-Trainer Installer 自动检查更新: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
-        Print-Msg `"Pip 镜像源设置: `$(Get-Pip-Mirror-Setting)`"
+        Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"SD-Trainer 运行环境检测设置: `$(Get-SD-Trainer-Env-Check-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
@@ -5786,7 +5786,7 @@ function Main {
         Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
         Print-Msg `"6. 进入 SD-Trainer 启动参数设置`"
         Print-Msg `"7. 进入自动创建 SD-Trainer 快捷启动方式设置`"
-        Print-Msg `"8. 进入 Pip 镜像源设置`"
+        Print-Msg `"8. 进入 PyPI 镜像源设置`"
         Print-Msg `"9. 进入自动设置 CUDA 内存分配器设置`"
         Print-Msg `"10. 进入 SD-Trainer 运行环境检测设置`"
         Print-Msg `"11. 更新 SD-Trainer Installer 管理脚本`"
@@ -5825,7 +5825,7 @@ function Main {
                 break
             }
             8 {
-                Pip-Mirror-Setting
+                PyPI-Mirror-Setting
                 break
             }
             9 {
@@ -5884,7 +5884,7 @@ function Write-Env-Activate-Script {
     $content = "
 param (
     [switch]`$Help,
-    [switch]`$DisablePipMirror,
+    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
@@ -5895,14 +5895,14 @@ param (
 # SD-Trainer Installer 版本和检查更新间隔
 `$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# Pip 镜像源
+# PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
 `$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
 `$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
 `$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
 `$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pip_mirror.txt`")) -and (!(`$DisablePipMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -5969,14 +5969,14 @@ param (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\activate.ps1 [-Help] [-DisablePipMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\activate.ps1 [-Help] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
         获取 SD-Trainer Installer的帮助信息
 
-    -DisablePipMirror
-        禁用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 SD-Trainer Installer自动设置代理服务器
@@ -6241,12 +6241,12 @@ function Get-SD-Trainer-Installer-Version {
 }
 
 
-# Pip 镜像源状态
-function Pip-Mirror-Status {
+# PyPI 镜像源状态
+function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
-        Print-Msg `"使用 Pip 镜像源`"
+        Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pip_mirror.txt 配置文件 / -DisablePipMirror 命令行参数, 已将 Pip 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -6351,7 +6351,7 @@ function Main {
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`") {
         `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`"
     }
@@ -6501,9 +6501,9 @@ function Write-Manager-Scripts {
 function Copy-SD-Trainer-Installer-Config {
     Print-Msg "为 SD-Trainer Installer 管理脚本复制 SD-Trainer Installer 配置文件中"
 
-    if ((!($DisablePipMirror)) -and (Test-Path "$PSScriptRoot/disable_pip_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_pip_mirror.txt" -Destination "$InstallPath"
-        Print-Msg "$PSScriptRoot/disable_pip_mirror.txt -> $InstallPath/disable_pip_mirror.txt" -Force
+    if ((!($DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
+        Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$InstallPath"
+        Print-Msg "$PSScriptRoot/disable_pypi_mirror.txt -> $InstallPath/disable_pypi_mirror.txt" -Force
     }
 
     if ((!($DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
@@ -6533,7 +6533,7 @@ function Copy-SD-Trainer-Installer-Config {
 function Use-Install-Mode {
     Set-Proxy
     Set-uv
-    Pip-Mirror-Status
+    PyPI-Mirror-Status
     Print-Msg "启动 SD-Trainer 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
     Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
@@ -6583,7 +6583,7 @@ function Use-Build-Mode {
         $launch_args = @{}
         $launch_args.Add("-BuildWithTorch", $BuildWithTorch)
         if ($BuildWithTorchReinstall) { $launch_args.Add("-BuildWithTorchReinstall", $true) }
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -6595,7 +6595,7 @@ function Use-Build-Mode {
     if ($BuildWitchModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildWitchModel", $BuildWitchModel)
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
@@ -6606,7 +6606,7 @@ function Use-Build-Mode {
     if ($BuildWitchBranch) {
         $launch_args = @{}
         $launch_args.Add("-BuildWitchBranch", $BuildWitchBranch)
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6618,7 +6618,7 @@ function Use-Build-Mode {
 
     if ($BuildWithUpdate) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6630,7 +6630,7 @@ function Use-Build-Mode {
 
     if ($BuildWithLaunch) {
         $launch_args = @{}
-        if ($DisablePipMirror) { $launch_args.Add("-DisablePipMirror", $true) }
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
@@ -6712,7 +6712,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-SD-Trainer-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer 的绝对路径>] [-InstallBranch <安装的 SD-Trainer 分支>] [-UseUpdateMode] [-DisablePipMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\sd_trainer_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer 的绝对路径>] [-InstallBranch <安装的 SD-Trainer 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -6733,8 +6733,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -UseUpdateMode
         指定 SD-Trainer Installer 使用更新模式, 只对 SD-Trainer Installer 的管理脚本进行更新
 
-    -DisablePipMirror
-        禁用 SD-Trainer Installer 使用 Pip 镜像源, 使用 Pip 官方源下载 Python 软件包
+    -DisablePyPIMirror
+        禁用 SD-Trainer Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 SD-Trainer Installer 自动设置代理服务器

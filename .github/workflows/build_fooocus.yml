@@ -35,7 +35,7 @@ jobs:
             -BuildWithUpdate `
             -BuildWithLaunch `
             -InstallBranch "fooocus" `
-            -DisablePipMirror `
+            -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel `
