@@ -27,7 +27,7 @@ _✨一键安装 Stable Diffusion WebUI_
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
-  - [设置 PyPI 镜像源](#设置-pip-镜像源)
+  - [设置 PyPI 镜像源](#设置-pypi-镜像源)
   - [配置代理](#配置代理)
     - [1. 使用系统代理](#1-使用系统代理)
     - [2. 使用配置文件](#2-使用配置文件)
@@ -67,7 +67,7 @@ _✨一键安装 Stable Diffusion WebUI_
     - [2. 手动输入命令激活](#2-手动输入命令激活)
   - [常用命令](#常用命令)
     - [清理安装时产生的 Pip 缓存](#清理安装时产生的-pip-缓存)
-    - [安装某个 Python 软件包](#安装某个-pip-软件包)
+    - [安装某个 Python 软件包](#安装某个-python-软件包)
     - [更新某个软件包](#更新某个软件包)
     - [重装某个软件包](#重装某个软件包)
     - [卸载某个软件包](#卸载某个软件包)
@@ -303,6 +303,7 @@ $ tree -L 2
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
 ├── stable-diffusion-webui                            # 这是 Stable Diffusion WebUI 文件夹
+│   ├── configure_env.bat                             # 配置环境的脚本
 │   ├── activate.ps1                                  # 进入 Stable Diffusion WebUI Env 的脚本
 │   ├── cache                                         # 缓存文件夹
 │   ├── download_models.ps1                           # 下载模型的脚本

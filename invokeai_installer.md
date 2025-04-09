@@ -32,7 +32,7 @@ _✨一键安装 InvokeAI_
   - [设置 InvokeAI 中文](#设置-invokeai-中文)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
   - [设置 Github 镜像源](#设置-github-镜像源)
-  - [设置 PyPI 镜像源](#设置-pip-镜像源)
+  - [设置 PyPI 镜像源](#设置-pypi-镜像源)
   - [添加模型](#添加模型)
   - [InvokeAI 的使用方法](#invokeai-的使用方法)
   - [启用 InvokeAI 低显存模式](#启用-invokeai-低显存模式)
@@ -74,7 +74,7 @@ _✨一键安装 InvokeAI_
     - [修复 InvokeAI 数据库](#修复-invokeai-数据库)
     - [从旧版 InvokeAI 导入图片到新版的 InvokeAI](#从旧版-invokeai-导入图片到新版的-invokeai)
     - [清理安装时产生的 Pip 缓存](#清理安装时产生的-pip-缓存)
-    - [安装某个 Python 软件包](#安装某个-pip-软件包)
+    - [安装某个 Python 软件包](#安装某个-python-软件包)
     - [更新某个软件包](#更新某个软件包)
     - [重装某个软件包](#重装某个软件包)
     - [卸载某个软件包](#卸载某个软件包)
@@ -254,6 +254,7 @@ $ tree -L 2
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
 ├── InvokeAI                            # 这是 InvokeAI 文件夹
+│   ├── configure_env.bat               # 配置环境的脚本
 │   ├── activate.ps1                    # 进入 InvokeAI Env 的脚本
 │   ├── cache                           # 缓存文件夹
 │   ├── launch_invokeai_installer.ps1   # 获取最新的 InvokeAI Installer 并运行的脚本

@@ -247,6 +247,7 @@ $ tree -L 2
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
 ├── ComfyUI                           # 这是 ComfyUI 文件夹
+│   ├── configure_env.bat             # 配置环境的脚本
 │   ├── activate.ps1                  # 进入 ComfyUI Env 的脚本
 │   ├── cache                         # 缓存文件夹
 │   ├── download_models.ps1           # 下载模型的脚本

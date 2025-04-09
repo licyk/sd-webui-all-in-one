@@ -7476,6 +7476,7 @@ settings.ps1：管理 Fooocus Installer 的设置。
 terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 launch_fooocus_installer.ps1：获取最新的 Fooocus Installer 安装脚本并运行。
+configure_env.bat：配置环境脚本，解决 PowerShell 运行闪退和启用 Windows 长路径支持。
 help.txt：帮助文档。
 cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
