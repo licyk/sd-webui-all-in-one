@@ -7538,6 +7538,7 @@ function Write-Manager-Scripts {
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
+    Write-Configure-Env-Script
 }
 
 
@@ -7692,9 +7693,6 @@ function Use-Build-Mode {
         Print-Msg "执行 Fooocus 启动脚本中"
         . "$InstallPath/launch.ps1" -BuildMode @launch_args
     }
-
-    Print-Msg "添加环境配置脚本中"
-    Write-Configure-Env-Script
 
     # 清理缓存
     Print-Msg "清理下载 Python 软件包的缓存中"
