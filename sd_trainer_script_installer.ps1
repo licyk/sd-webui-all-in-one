@@ -16,8 +16,8 @@
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
     [int]$BuildWitchBranch,
-    [string]$PyTorchPackage = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118",
-    [string]$xFormersPackage = "xformers===0.0.26.post1+cu118",
+    [string]$PyTorchPackage,
+    [string]$xFormersPackage,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -30,7 +30,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 154
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 155
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -495,9 +495,9 @@ function Install-SD-Trainer-Script {
 
 
 # 设置 PyTorch 镜像源
-function Set-PyTorch-Mirror {
+function Set-PyTorch-Mirror ($pytorch_package) {
     # 获取 PyTorch 的版本
-    $torch_part = @($PyTorchPackage -split ' ' | Where-Object { $_ -like "torch==*" })[0]
+    $torch_part = @($pytorch_package -split ' ' | Where-Object { $_ -like "torch==*" })[0]
 
     if ($torch_part) {
         # 获取 PyTorch 镜像源类型
@@ -685,24 +685,78 @@ if __name__ == '__main__':
 }
 
 
+function Get-CUDA-Compute-CAP {
+    $content = "
+import subprocess
+
+
+def get_cuda_comp_cap():
+    # Returns float of CUDA Compute Capability using nvidia-smi
+    # Returns 0.0 on error
+    # CUDA Compute Capability
+    # ref https://developer.nvidia.com/cuda-gpus
+    # ref https://en.wikipedia.org/wiki/CUDA
+    # Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+    try:
+        return max(map(float, subprocess.check_output(['nvidia-smi', '--query-gpu=compute_cap', '--format=noheader,csv'], text=True).splitlines()))
+    except Exception as _:
+        return 0.0
+
+
+print(get_cuda_comp_cap())
+".Trim()
+
+    return [float]$(python -c "$content")
+}
+
+
+function Get-PyTorch-And-xFormers-Version {
+    Print-Msg "设置 PyTorch 和 xFormers 版本"
+
+    if ($PyTorchPackage -and $xFormersPackage) {
+        # 使用自定义的 PyTorch / xFormers 版本
+        return $PyTorchPackage, $xFormersPackage
+    }
+
+    if ((!$PyTorchPackage -and $xFormersPackage) -or ($PyTorchPackage -and !$xFormersPackage)) {
+        Print-Msg "不允许单独设置 -PyTorchPackage / -xFormersPackage 命令行参数, 将重新设置合适的 PyTorch 和 xFormers 版本"
+    }
+
+    # 为 RTX 50xx 配置 PyTorch / xFormers 版本
+    $cuda_compute_cap = Get-CUDA-Compute-CAP
+    if ($cuda_compute_cap -ge 10.0) {
+        # TODO: 重新配置合适的 PyTorch 版本
+        $pytorch_package = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
+        $xformers_package = "xformers===0.0.26.post1+cu118"
+        return $pytorch_package, $xformers_package
+    }
+
+    # 默认的 PyTorch / xFormers 版本
+    $pytorch_package = "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
+    $xformers_package = "xformers===0.0.26.post1+cu118"
+    return $pytorch_package, $xformers_package
+}
+
+
 # 安装 PyTorch
 function Install-PyTorch {
-    Set-PyTorch-Mirror
+    $pytorch_package, $xformers_package = Get-PyTorch-And-xFormers-Version
+    Set-PyTorch-Mirror $pytorch_package
 
-    Print-Msg "将要安装的 PyTorch: $PyTorchPackage"
-    Print-Msg "将要安装的 xFormers: $xFormersPackage"
+    Print-Msg "将要安装的 PyTorch: $pytorch_package"
+    Print-Msg "将要安装的 xFormers: $xformers_package"
     Print-Msg "检测是否需要安装 PyTorch"
     python -m pip show torch --quiet 2> $null
     if (!($?)) {
         Print-Msg "安装 PyTorch 中"
         if ($USE_UV) {
-            uv pip install $PyTorchPackage.ToString().Split()
+            uv pip install $pytorch_package.ToString().Split()
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-                python -m pip install $PyTorchPackage.ToString().Split()
+                python -m pip install $pytorch_package.ToString().Split()
             }
         } else {
-            python -m pip install $PyTorchPackage.ToString().Split()
+            python -m pip install $pytorch_package.ToString().Split()
         }
         if ($?) {
             Print-Msg "PyTorch 安装成功"
@@ -722,13 +776,13 @@ function Install-PyTorch {
     if (!($?)) {
         Print-Msg "安装 xFormers 中"
         if ($USE_UV) {
-            uv pip install $xFormersPackage.ToString().Split() --no-deps
+            uv pip install $xformers_package.ToString().Split() --no-deps
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-                python -m pip install $xFormersPackage.ToString().Split() --no-deps
+                python -m pip install $xformers_package.ToString().Split() --no-deps
             }
         } else {
-            python -m pip install $xFormersPackage.ToString().Split() --no-deps
+            python -m pip install $xformers_package.ToString().Split() --no-deps
         }
         if ($?) {
             Print-Msg "xFormers 安装成功"
