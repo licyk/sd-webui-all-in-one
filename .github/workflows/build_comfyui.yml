@@ -28,6 +28,8 @@ jobs:
 
       - name: Launch ComfyUI Installer
         shell: pwsh
+        env:
+          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
@@ -53,6 +55,8 @@ jobs:
 
       - name: Launch to complete dependencies
         shell: pwsh
+        env:
+          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/comfyui/launch.ps1" `
             -BuildMode `

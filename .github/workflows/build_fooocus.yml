@@ -28,6 +28,8 @@ jobs:
 
       - name: Launch Fooocus Installer
         shell: pwsh
+        env:
+          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/fooocus_installer.ps1" `
             -InstallPath "${{ github.workspace }}/fooocus" `
