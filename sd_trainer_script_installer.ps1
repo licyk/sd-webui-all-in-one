@@ -2813,7 +2813,7 @@ function Main {
             `$arg = `$BuildWitchBranch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"===========================================>`").Trim()
+            `$arg = (Read-Host `"==================================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -2891,7 +2891,7 @@ function Main {
     if (`$BuildMode) {
         `$operate = `"yes`"
     } else {
-        `$operate = (Read-Host `"===========================================>`").Trim()
+        `$operate = (Read-Host `"==================================================>`").Trim()
     }
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
@@ -3681,7 +3681,7 @@ function Main {
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"========================================>`").Trim()
+            `$arg = (Read-Host `"==================================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -4043,7 +4043,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"==================================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
@@ -4063,7 +4063,7 @@ function Main {
     if (`$BuildMode) {
         `$install_torch = `"yes`"
     } else {
-        `$install_torch = (Read-Host `"===========================================>`").Trim()
+        `$install_torch = (Read-Host `"==================================================>`").Trim()
     }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {

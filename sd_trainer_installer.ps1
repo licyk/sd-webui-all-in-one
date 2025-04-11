@@ -3893,7 +3893,7 @@ function Main {
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"========================================>`").Trim()
+            `$arg = (Read-Host `"===========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -4255,7 +4255,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"===========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
