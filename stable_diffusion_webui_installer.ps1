@@ -127,6 +127,8 @@ $Env:U2NET_HOME = "$InstallPath/cache/u2net"
 $Env:XDG_CACHE_HOME = "$InstallPath/cache"
 $Env:PIP_CACHE_DIR = "$InstallPath/cache/pip"
 $Env:PYTHONPYCACHEPREFIX = "$InstallPath/cache/pycache"
+$Env:TORCHINDUCTOR_CACHE_DIR = "$InstallPath/cache/torchinductor"
+$Env:TRITON_CACHE_DIR = "$InstallPath/cache/triton"
 $Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
 $Env:UV_PYTHON = "$InstallPath/python/python.exe"
 
@@ -1273,6 +1275,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -2713,6 +2717,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -3142,6 +3148,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -3629,6 +3637,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -4491,6 +4501,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -5436,6 +5448,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -6375,6 +6389,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -7375,6 +7391,8 @@ param (
 `$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 `$Env:SD_WEBUI_INSTALLER_ROOT = `$PSScriptRoot
