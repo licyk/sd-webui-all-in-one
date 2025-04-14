@@ -203,7 +203,7 @@ $ tree -L 1
 <summary><strong><h3>查看 SD WebUI Installer 为 Stable Diffusion WebUI 预装的扩展</h3></strong></summary>
 
 |Stable Diffusion WebUI 分支|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)<br>[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)<br>[vladmandic/SD.Next](https://github.com/vladmandic/automatic)|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
-|---|---|---|---|
+|---|---|---|---|---|---|
 |扩展 1|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
 |扩展 2|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
 |扩展 3|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
