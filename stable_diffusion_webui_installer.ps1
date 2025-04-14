@@ -35,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 218
+$SD_WEBUI_INSTALLER_VERSION = 219
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1040,7 +1040,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111", "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
         "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete", "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
     )) | Out-Null
     $sd_webui_extension.Add(@(
@@ -1060,7 +1060,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/Physton/sd-webui-prompt-all-in-one", "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu"),
         "https://github.com/Akegarasu/sd-webui-wd14-tagger", "$sd_webui_extension_path/sd-webui-wd14-tagger"
     )) | Out-Null
     $sd_webui_extension.Add(@(
@@ -1084,7 +1084,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/licyk/advanced_euler_sampler_extension", "$sd_webui_extension_path/advanced_euler_sampler_extension"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu"),
         "https://github.com/hako-mikan/sd-webui-regional-prompter", "$sd_webui_extension_path/sd-webui-regional-prompter"
     )) | Out-Null
     $sd_webui_extension.Add(@(
@@ -1108,7 +1108,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/hako-mikan/sd-webui-lora-block-weight", "$sd_webui_extension_path/sd-webui-lora-block-weight"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
         "https://github.com/arenasys/stable-diffusion-webui-model-toolkit", "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
     )) | Out-Null
     $sd_webui_extension.Add(@(
@@ -1116,7 +1116,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img", "$sd_webui_extension_path/a1111-sd-webui-haku-img"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        @("sd_webui", "sd_webui_reforge", "sd_webui_amdgpu"),
         "https://github.com/hako-mikan/sd-webui-supermerger", "$sd_webui_extension_path/sd-webui-supermerger"
     )) | Out-Null
     $sd_webui_extension.Add(@(
