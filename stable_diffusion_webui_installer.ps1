@@ -83,6 +83,8 @@ $SD_WEBUI_REPO = if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($Inst
     "https://github.com/lllyasviel/stable-diffusion-webui-forge"
 } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
     "https://github.com/Panchovix/stable-diffusion-webui-reForge"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+    "https://github.com/Haoming02/sd-webui-forge-classic"
 } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
     "https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu"
 } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
@@ -1098,6 +1100,8 @@ function Check-Install {
             $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
             $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
             $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check --skip-version-check --no-download-sd-model"
         } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
@@ -1729,6 +1733,8 @@ function Create-Stable-Diffusion-WebUI-Shortcut {
             `$filename = `"SD-WebUI-Forge`"
         } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
             `$filename = `"SD-WebUI-reForge`"
+        } elseif ((`$branch -eq `"Haoming02/sd-webui-forge-classic`") -or (`$branch -eq `"Haoming02/sd-webui-forge-classic.git`")) {
+            `$filename = `"SD-WebUI-Forge-Classic`"
         } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
             `$filename = `"SD-WebUI-AMDGPU`"
         } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
@@ -4009,9 +4015,10 @@ function Main {
 - 3、lllyasviel - Stable-Diffusion-WebUI-Forge 分支
 - 4、Panchovix - Stable-Diffusion-WebUI-reForge 主分支
 - 5、Panchovix - Stable-Diffusion-WebUI-reForge 测试分支
-- 6、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
-- 7、vladmandic - SD.NEXT 主分支
-- 8、vladmandic - SD.NEXT 测试分支
+- 6、Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支
+- 7、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
+- 8、vladmandic - SD.NEXT 主分支
+- 9、vladmandic - SD.NEXT 测试分支
 -----------------------------------------------------
 `".Trim()
 
@@ -4068,20 +4075,27 @@ function Main {
                 `$go_to = 1
             }
             6 {
+                `$remote = `"https://github.com/Haoming02/sd-webui-forge-classic`"
+                `$branch = `"classic`"
+                `$branch_name = `"Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            7 {
                 `$remote = `"https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu`"
                 `$branch = `"master`"
                 `$branch_name = `"lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
-            7 {
+            8 {
                 `$remote = `"https://github.com/vladmandic/automatic`"
                 `$branch = `"master`"
                 `$branch_name = `"vladmandic - SD.NEXT 主分支`"
                 `$use_submod = `$true
                 `$go_to = 1
             }
-            8 {
+            9 {
                 `$remote = `"https://github.com/vladmandic/automatic`"
                 `$branch = `"dev`"
                 `$branch_name = `"vladmandic - SD.NEXT 测试分支`"
@@ -4204,15 +4218,16 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             https://gh.idayer.com/https://github.com
 
     -InstallBranch <安装的 Stable Diffusion WebUI 分支>
-        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_amdgpu, sdnext)
+        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_forge_classic, sd_webui_amdgpu, sdnext)
         例如: .\launch_stable_diffusion_webui_installer.ps1 -InstallBranch ```"sd_webui_forge```", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
         未指定该参数时, 默认安装 AUTOMATIC1111/Stable-Diffusion-WebUI 分支
         支持指定安装的分支如下:
-            sd_webui:           AUTOMATIC1111/Stable-Diffusion-WebUI
-            sd_webui_forge:     lllyasviel/Stable-Diffusion-WebUI-Forge
-            sd_webui_reforge:   Panchovix/Stable-Diffusion-WebUI-reForge
-            sd_webui_amdgpu:    lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
-            sdnext:             vladmandic/SD.NEXT
+            sd_webui:               AUTOMATIC1111/Stable-Diffusion-WebUI
+            sd_webui_forge:         lllyasviel/Stable-Diffusion-WebUI-Forge
+            sd_webui_reforge:       Panchovix/Stable-Diffusion-WebUI-reForge
+            sd_webui_forge_classic: Haoming02/Stable-Diffusion-WebUI-Forge-Classic
+            sd_webui_amdgpu:        lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
+            sdnext:                 vladmandic/SD.NEXT
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -4368,6 +4383,8 @@ function Get-Local-Setting {
             `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
         } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
             `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+        } elseif ((`$branch -eq `"Haoming02/sd-webui-forge-classic`") -or (`$branch -eq `"Haoming02/sd-webui-forge-classic.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_forge_classic`")
         } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
             `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
         } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
@@ -4379,6 +4396,8 @@ function Get-Local-Setting {
         `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
     } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_reforge.txt`") -or (`$InstallBranch -eq `"sd_webui_reforge`")) {
         `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_forge_classic.txt`") -or (`$InstallBranch -eq `"sd_webui_forge_classic`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_forge_classic`")
     } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_amdgpu.txt`") -or (`$InstallBranch -eq `"sd_webui_amdgpu`")) {
         `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
     } elseif ((Test-Path `"`$PSScriptRoot/install_sd_next.txt`") -or (`$InstallBranch -eq `"sdnext`")) {
@@ -8039,6 +8058,7 @@ sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
 Stable Diffusion WebUI 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
 Stable Diffusion WebUI Forge 项目地址：https://github.com/lllyasviel/stable-diffusion-webui-forge
 Stable Diffusion WebUI reForge 项目地址：https://github.com/Panchovix/stable-diffusion-webui-reForge
+Stable Diffusion WebUI Forge Classic 项目地址：https://github.com/Haoming02/sd-webui-forge-classic
 Stable Diffusion WebUI AMDGPU 项目地址：https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu
 SD Next 项目地址：https://github.com/vladmandic/automatic
 
@@ -8135,6 +8155,8 @@ function Use-Install-Mode {
         Print-Msg "检测到 install_sd_webui_forge.txt 配置文件 / -InstallBranch sd_webui_forge 命令行参数, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
     } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
         Print-Msg "检测到 install_sd_webui_reforge.txt 配置文件 / -InstallBranch sd_webui_reforge 命令行参数, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+        Print-Msg "检测到 install_sd_webui_forge_classic.txt 配置文件 / -InstallBranch sd_webui_forge_classic 命令行参数, 选择安装 Haoming02/Stable-Diffusion-WebUI-Forge-Classic"
     } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
         Print-Msg "检测到 install_sd_webui_amdgpu.txt 配置文件 / -InstallBranch sd_webui_amdgp 命令行参数u, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
     } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
@@ -8329,15 +8351,16 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         例如: .\stable_diffusion_webui_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD WebUI Installer 安装 Stable Diffusion WebUI 到 D:\Donwload 这个路径
 
     -InstallBranch <安装的 Stable Diffusion WebUI 分支>
-        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_amdgpu, sdnext)
+        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_forge_classic, sd_webui_amdgpu, sdnext)
         例如: .\stable_diffusion_webui_installer.ps1 -InstallBranch `"sd_webui_forge`", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
         未指定该参数时, 默认安装 AUTOMATIC1111/Stable-Diffusion-WebUI 分支
         支持指定安装的分支如下:
-            sd_webui:           AUTOMATIC1111/Stable-Diffusion-WebUI
-            sd_webui_forge:     lllyasviel/Stable-Diffusion-WebUI-Forge
-            sd_webui_reforge:   Panchovix/Stable-Diffusion-WebUI-reForge
-            sd_webui_amdgpu:    lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
-            sdnext:             vladmandic/SD.NEXT
+            sd_webui:               AUTOMATIC1111/Stable-Diffusion-WebUI
+            sd_webui_forge:         lllyasviel/Stable-Diffusion-WebUI-Forge
+            sd_webui_reforge:       Panchovix/Stable-Diffusion-WebUI-reForge
+            sd_webui_forge_classic: Haoming02/Stable-Diffusion-WebUI-Forge-Classic
+            sd_webui_amdgpu:        lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
+            sdnext:                 vladmandic/SD.NEXT
 
     -UseUpdateMode
         指定 SD WebUI Installer 使用更新模式, 只对 SD WebUI Installer 的管理脚本进行更新
