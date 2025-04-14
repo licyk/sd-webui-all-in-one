@@ -1,0 +1,131 @@
+name: Build SD WebUI Forge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build_sd_webui_forge.yml"
+  # delete:
+  # create:
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+  # UTC 17:00 -> CST (China) 1:00, see https://datetime360.com/cn/utc-cst-china-time/
+  # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
+  - cron: '45 17 * * 0'
+
+jobs:
+  Build-SD-WebUI-Forge:
+    name: Build SD WebUI Forge
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
+
+      - name: Launch SD WebUI Installer
+        shell: pwsh
+        env:
+          UV_NO_PROGRESS: 1
+        run: |
+          & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/sd_webui_forge" `
+            -BuildMode `
+            -BuildWithUpdate `
+            -BuildWithUpdateExtension `
+            -BuildWithLaunch `
+            -BuildWitchBranch 3 `
+            -InstallBranch "sd_webui_forge" `
+            -NoPreDownloadModel `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror `
+            -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
+            -xFormersPackage "xformers==0.0.29.post3"
+
+      - name: Install Insightface
+        shell: pwsh
+        env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          & "${{ github.workspace }}/sd_webui_forge/python/python.exe" -m pip install insightface
+
+      - name: Launch to complete dependencies
+        shell: pwsh
+        env:
+          UV_NO_PROGRESS: 1
+        run: |
+          & "${{ github.workspace }}/sd_webui_forge/launch.ps1" `
+            -BuildMode `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
+      - name: Install Hanamizuki
+        shell: pwsh
+        run: |
+          . "${{ github.workspace }}/sd_webui_forge/activate.ps1"
+          Install-Hanamizuki
+
+      - name: Download VAE approx model
+        shell: pwsh
+        run: |
+          $model_list = @(
+              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/model.pt",
+              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sd3.pt",
+              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sdxl.pt"
+          )
+          $vae_approx_path = "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/models/VAE-approx"
+
+          ForEach ($url in $model_list) {
+              $filename = Split-Path $url -Leaf
+              $model_path = Join-Path -Path $vae_approx_path -ChildPath $filename
+              if (Test-Path $model_path) {
+                  Write-Host "$filename 已存在于 $vae_approx_path"
+              } else {
+                  Write-Host "下载 $filename 到 $vae_approx_path 中"
+                  Invoke-WebRequest -Uri $url -OutFile $model_path
+              }
+          }
+
+      - name: Make docs
+        shell: pwsh
+        run: |
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui_forge"
+
+      - name: Archive
+        shell: pwsh
+        run: |
+          $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
+          $package_name = "sd_webui_forge_licyk_${build_time}"
+          $protable_name = "${package_name}_nightly.7z"
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
+          Move-Item -Path "${{ github.workspace }}/sd_webui_forge" -Destination "${{ github.workspace }}/${package_name}" -Force
+          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_webui_forge/${protable_name}" "${{ github.workspace }}/${package_name}"
+
+      - name: Install HuggingFace library
+        shell: pwsh
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          pip install huggingface_hub modelscope
+
+      - name: Upload to HuggingFace repo
+        shell: pwsh
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          python "${{ github.workspace }}/.github/huggingface_release.py"
+
+      - name: Upload to ModelScope repo
+        shell: pwsh
+        env:
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          python "${{ github.workspace }}/.github/modelscope_release.py"
