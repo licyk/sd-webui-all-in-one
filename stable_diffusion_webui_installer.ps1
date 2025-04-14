@@ -35,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 219
+$SD_WEBUI_INSTALLER_VERSION = 220
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2289,14 +2289,12 @@ function Check-Extension-Is-Disabled (`$name) {
         if (`$json_content.disable_all_extensions -ne `"none`") {
             return `$true
         } else {
-            return `$false
+            if (`$json_content.disabled_extensions -contains `$name) {
+                return `$true
+            } else {
+                return `$false
+            }
         }
-    }
-
-    if (`$json_content.disabled_extensions -contains `$name) {
-        return `$true
-    } else {
-        return `$false
     }
 }
 
