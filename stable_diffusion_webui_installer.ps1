@@ -447,7 +447,7 @@ function Set-Github-Mirror {
 
 
 # Git 仓库下载
-function Git-CLone {
+function Git-Clone {
     param (
         [String]$url,
         [String]$path
@@ -983,6 +983,166 @@ function Model-Downloader ($download_list) {
 }
 
 
+# 配置安装的核心组件列表
+function Get-Stable-Diffusion-WebUI-Component-List ($branch) {
+    $sd_webui_repositories = New-Object System.Collections.ArrayList
+    $repositories_list = New-Object System.Collections.ArrayList
+    $sd_webui_repositories_path = "$InstallPath/stable-diffusion-webui/repositories"
+
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/salesforce/BLIP", "$sd_webui_repositories_path/BLIP"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Stability-AI/stablediffusion", "$sd_webui_repositories_path/stable-diffusion-stability-ai"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Stability-AI/generative-models", "$sd_webui_repositories_path/generative-models"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/crowsonkb/k-diffusion", "$sd_webui_repositories_path/k-diffusion"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets", "$sd_webui_repositories_path/stable-diffusion-webui-assets"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/huggingface_guess", "$sd_webui_repositories_path/huggingface_guess"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/google_blockly_prototypes", "$sd_webui_repositories_path/google_blockly_prototypes"
+    )) | Out-Null
+
+    for ($i = 0; $i -lt $sd_webui_repositories.Count; $i++) {
+        $branch_type, $repo_url, $path = $sd_webui_repositories[$i]
+        if ($branch -in $branch_type) {
+            $repositories_list.Add(@($repo_url, $path)) | Out-Null
+        }
+    }
+
+    return $repositories_list
+}
+
+
+# 配置安装的扩展列表
+function Get-Stable-Diffusion-WebUI-Extension ($branch) {
+    $sd_webui_extension = New-Object System.Collections.ArrayList
+    $extension_list = New-Object System.Collections.ArrayList
+    $sd_webui_extension_path = "$InstallPath/stable-diffusion-webui/extensions"
+
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111", "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete", "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Bing-su/adetailer", "$sd_webui_extension_path/adetailer"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/zanllp/sd-webui-infinite-image-browsing", "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/huchenlei/sd-webui-openpose-editor", "$sd_webui_extension_path/sd-webui-openpose-editor"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Physton/sd-webui-prompt-all-in-one", "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/Akegarasu/sd-webui-wd14-tagger", "$sd_webui_extension_path/sd-webui-wd14-tagger"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans", "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Haoming02/sd-webui-mosaic-outpaint", "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Haoming02/sd-webui-resource-monitor", "$sd_webui_extension_path/sd-webui-resource-monitor"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/sd-webui-tcd-sampler", "$sd_webui_extension_path/sd-webui-tcd-sampler"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/licyk/advanced_euler_sampler_extension", "$sd_webui_extension_path/advanced_euler_sampler_extension"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/hako-mikan/sd-webui-regional-prompter", "$sd_webui_extension_path/sd-webui-regional-prompter"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Akegarasu/sd-webui-model-converter", "$sd_webui_extension_path/sd-webui-model-converter"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Mikubill/sd-webui-controlnet", "$sd_webui_extension_path/sd-webui-controlnet"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111", "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding", "$sd_webui_extension_path/sd-dynamic-thresholding"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/hako-mikan/sd-webui-lora-block-weight", "$sd_webui_extension_path/sd-webui-lora-block-weight"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/arenasys/stable-diffusion-webui-model-toolkit", "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img", "$sd_webui_extension_path/a1111-sd-webui-haku-img"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/hako-mikan/sd-webui-supermerger", "$sd_webui_extension_path/sd-webui-supermerger"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/continue-revolution/sd-webui-segment-anything", "$sd_webui_extension_path/sd-webui-segment-anything"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/licyk/sd_forge_hypertile_svd_z123", "$sd_webui_extension_path/sd_forge_hypertile_svd_z123"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/sd-forge-layerdiffuse", "$sd_webui_extension_path/sd-forge-layerdiffuse"
+    )) | Out-Null
+
+    for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
+        $branch_type, $repo_url, $path = $sd_webui_extension[$i]
+        if ($branch -in $branch_type) {
+            $extension_list.Add(@($repo_url, $path)) | Out-Null
+        }
+    }
+
+    return $extension_list
+}
+
+
 # 安装
 function Check-Install {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
@@ -1028,63 +1188,42 @@ function Check-Install {
     Check-uv-Version
 
     Set-Github-Mirror
-    $sd_webui_path = "$InstallPath/stable-diffusion-webui"
-    $sd_webui_repositories_path = "$sd_webui_path/repositories"
-    $sd_webui_extension_path = "$sd_webui_path/extensions"
 
-    # SD WebUi 核心
-    Git-CLone "$SD_WEBUI_REPO" "$sd_webui_path"
-
-    # SD WebUI 组件
-    Git-CLone "https://github.com/salesforce/BLIP" "$sd_webui_repositories_path/BLIP"
-    Git-CLone "https://github.com/Stability-AI/stablediffusion" "$sd_webui_repositories_path/stable-diffusion-stability-ai"
-    Git-CLone "https://github.com/Stability-AI/generative-models" "$sd_webui_repositories_path/generative-models"
-    Git-CLone "https://github.com/crowsonkb/k-diffusion" "$sd_webui_repositories_path/k-diffusion"
-    Git-CLone "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets" "$sd_webui_repositories_path/stable-diffusion-webui-assets"
-    if ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
-        Git-CLone "https://github.com/lllyasviel/huggingface_guess" "$sd_webui_repositories_path/huggingface_guess"
-        Git-CLone "https://github.com/lllyasviel/google_blockly_prototypes" "$sd_webui_repositories_path/google_blockly_prototypes"
+    if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+        $branch_type = "sd_webui"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+        $branch_type = "sd_webui_forge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+        $branch_type = "sd_webui_reforge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+        $branch_type = "sd_webui_forge_classic"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+        $branch_type = "sd_webui_amdgpu"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+        $branch_type = "sdnext"
+    } else {
+        $branch_type = "sd_webui"
     }
 
+    $sd_webui_component = Get-Stable-Diffusion-WebUI-Component-List $branch_type
+    $sd_webui_extension = Get-Stable-Diffusion-WebUI-Extension $branch_type
+
+    # SD WebUI 核心
+    Git-Clone "$SD_WEBUI_REPO" "$InstallPath/stable-diffusion-webui"
+
+    # SD WebUI 组件
+    for ($i = 0; $i -lt $sd_webui_component.Count; $i++) {
+        $repo_url, $path = $sd_webui_component[$i]
+        Git-Clone "$repo_url" "$path"
+    }
+
+    # SD WebUI 扩展
     if ($NoPreDownloadExtension) {
         Print-Msg "检测到 -NoPreDownloadExtension 命令行参数, 跳过安装 Stable Diffusion WebUI 扩展"
     } else {
-        # SD WebUI 扩展
-        Git-CLone "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111" "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
-        Git-CLone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
-        Git-CLone "https://github.com/Bing-su/adetailer" "$sd_webui_extension_path/adetailer"
-        Git-CLone "https://github.com/zanllp/sd-webui-infinite-image-browsing" "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
-        Git-CLone "https://github.com/huchenlei/sd-webui-openpose-editor" "$sd_webui_extension_path/sd-webui-openpose-editor"
-        Git-CLone "https://github.com/Physton/sd-webui-prompt-all-in-one" "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
-        Git-CLone "https://github.com/Akegarasu/sd-webui-wd14-tagger" "$sd_webui_extension_path/sd-webui-wd14-tagger"
-        Git-CLone "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans" "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
-        Git-CLone "https://github.com/Haoming02/sd-webui-mosaic-outpaint" "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
-        Git-CLone "https://github.com/Haoming02/sd-webui-resource-monitor" "$sd_webui_extension_path/sd-webui-resource-monitor"
-        Git-CLone "https://github.com/licyk/sd-webui-tcd-sampler" "$sd_webui_extension_path/sd-webui-tcd-sampler"
-        Git-CLone "https://github.com/licyk/advanced_euler_sampler_extension" "$sd_webui_extension_path/advanced_euler_sampler_extension"
-        Git-CLone "https://github.com/hako-mikan/sd-webui-regional-prompter" "$sd_webui_extension_path/sd-webui-regional-prompter"
-        Git-CLone "https://github.com/Akegarasu/sd-webui-model-converter" "$sd_webui_extension_path/sd-webui-model-converter"
-
-        # 非 SD WebUI Forge / SD WebUI Forge 时安装的扩展
-        if ((!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) -and (!((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")))) {
-            Git-CLone "https://github.com/Mikubill/sd-webui-controlnet" "$sd_webui_extension_path/sd-webui-controlnet"
-            Git-CLone "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111" "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
-            Git-CLone "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding" "$sd_webui_extension_path/sd-dynamic-thresholding"
-            Git-CLone "https://github.com/hako-mikan/sd-webui-lora-block-weight" "$sd_webui_extension_path/sd-webui-lora-block-weight"
-        }
-
-        # 非 SD WebUI Forge 时安装的扩展
-        if (!((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge"))) {
-            Git-CLone "https://github.com/arenasys/stable-diffusion-webui-model-toolkit" "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
-            Git-CLone "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img" "$sd_webui_extension_path/a1111-sd-webui-haku-img"
-            Git-CLone "https://github.com/hako-mikan/sd-webui-supermerger" "$sd_webui_extension_path/sd-webui-supermerger"
-            Git-CLone "https://github.com/continue-revolution/sd-webui-segment-anything" "$sd_webui_extension_path/sd-webui-segment-anything"
-        }
-
-        # SD WebUI Forge 安装的扩展
-        if ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
-            Git-CLone "https://github.com/licyk/sd_forge_hypertile_svd_z123" "$sd_webui_extension_path/sd_forge_hypertile_svd_z123"
-            Git-CLone "https://github.com/lllyasviel/sd-forge-layerdiffuse" "$sd_webui_extension_path/sd-forge-layerdiffuse"
+        for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
+            $repo_url, $path = $sd_webui_extension[$i]
+            Git-Clone "$repo_url" "$path"
         }
     }
 
