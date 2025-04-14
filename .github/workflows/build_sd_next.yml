@@ -37,7 +37,7 @@ jobs:
             -BuildWithUpdate `
             -BuildWithUpdateExtension `
             -BuildWithLaunch `
-            -BuildWitchBranch 8 `
+            -BuildWitchBranch 9 `
             -InstallBranch "sdnext" `
             -NoPreDownloadModel `
             -DisablePyPIMirror `

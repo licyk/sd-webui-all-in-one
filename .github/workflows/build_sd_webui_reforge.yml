@@ -1,6 +1,6 @@
 name: Build SD WebUI reForge
 
-on:
+# on:
   # push:
   #   branches:
   #     - main
