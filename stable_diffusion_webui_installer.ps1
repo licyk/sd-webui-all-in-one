@@ -1052,7 +1052,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/zanllp/sd-webui-infinite-image-browsing", "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
         "https://github.com/huchenlei/sd-webui-openpose-editor", "$sd_webui_extension_path/sd-webui-openpose-editor"
     )) | Out-Null
     $sd_webui_extension.Add(@(
