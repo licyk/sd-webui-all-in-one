@@ -140,7 +140,7 @@ Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 
 
 
 ## SD WebUI Installer
-Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
+Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
 
 详细的说明[点击此处](./stable_diffusion_webui_installer.md)阅读。
 
@@ -170,6 +170,7 @@ Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [F
 |Build [SD WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui.yml)|
 |Build [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) Portable|[![Build SD WebUI Forge](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge.yml)|
 |(Stopped) Build [SD WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) Portable|[![Build SD WebUI reForge](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml)|
+|Build [SD WebUI Forge Classic](https://github.com/Haoming02/sd-webui-forge-classic) Portable|[![SD WebUI Forge Classic](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_classic.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_classic.yml)|
 |Build [SD Next](https://github.com/AUTOMATIC1111/stable-diffusion-webui) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml)|
 |Build [ComfyUI](https://github.com/comfyanonymous/ComfyUI) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml)|
 |Build [Fooocus](https://github.com/lllyasviel/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
