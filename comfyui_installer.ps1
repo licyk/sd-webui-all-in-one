@@ -1309,37 +1309,47 @@ function Check-ComfyUI-Installer-Update {
 
     if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 ComfyUI Installer 更新中`"
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        try {
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 ComfyUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"ComfyUI Installer 已是最新版本`"
-                }
-                break
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
-                }
+                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+            Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+            . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+            Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+            Read-Host | Out-Null
+            exit 0
+        } else {
+            Print-Msg `"跳过 ComfyUI Installer 更新`"
+        }
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -3021,37 +3031,47 @@ function Check-ComfyUI-Installer-Update {
 
     if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 ComfyUI Installer 更新中`"
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        try {
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 ComfyUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"ComfyUI Installer 已是最新版本`"
-                }
-                break
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
-                }
+                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+            Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+            . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+            Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+            Read-Host | Out-Null
+            exit 0
+        } else {
+            Print-Msg `"跳过 ComfyUI Installer 更新`"
+        }
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -3451,37 +3471,47 @@ function Check-ComfyUI-Installer-Update {
 
     if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 ComfyUI Installer 更新中`"
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        try {
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 ComfyUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"ComfyUI Installer 已是最新版本`"
-                }
-                break
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
-                }
+                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+            Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+            . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+            Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+            Read-Host | Out-Null
+            exit 0
+        } else {
+            Print-Msg `"跳过 ComfyUI Installer 更新`"
+        }
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -4124,7 +4154,7 @@ function Check-ComfyUI-Installer-Update {
     )
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
         Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
@@ -4146,37 +4176,47 @@ function Check-ComfyUI-Installer-Update {
 
     if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 ComfyUI Installer 更新中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$PSScriptRoot/cache/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$PSScriptRoot/cache/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 ComfyUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"ComfyUI Installer 已是最新版本`"
-                }
-                break
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
-                }
+                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+            Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+            . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+            Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+            Read-Host | Out-Null
+            exit 0
+        } else {
+            Print-Msg `"跳过 ComfyUI Installer 更新`"
+        }
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -5118,37 +5158,47 @@ function Check-ComfyUI-Installer-Update {
 
     if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
         Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-        ForEach (`$url in `$urls) {
-            Print-Msg `"检查 ComfyUI Installer 更新中`"
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        try {
             Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-            if (`$?) {
-                `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-                if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                    Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-                    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-                    `$arg = (Read-Host `"========================================>`").Trim()
-                    if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-                        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                        Read-Host | Out-Null
-                        exit 0
-                    } else {
-                        Print-Msg `"跳过 ComfyUI Installer 更新`"
-                    }
-                } else {
-                    Print-Msg `"ComfyUI Installer 已是最新版本`"
-                }
-                break
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
-                `$i += 1
-                if (`$i -lt `$urls.Length) {
-                    Print-Msg `"重试检查 ComfyUI Installer 更新中`"
-                } else {
-                    Print-Msg `"检查 ComfyUI Installer 更新失败`"
-                }
+                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
+            Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+            . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+            Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+            Read-Host | Out-Null
+            exit 0
+        } else {
+            Print-Msg `"跳过 ComfyUI Installer 更新`"
+        }
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -6645,32 +6695,39 @@ function Check-ComfyUI-Installer-Update {
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 ComfyUI Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-        if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-                Print-Msg `"ComfyUI Installer 有新版本可用`"
-                Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-                Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                Read-Host | Out-Null
-                exit 0
-            } else {
-                Print-Msg `"ComfyUI Installer 已是最新版本`"
-            }
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
             break
-        } else {
+        }
+        catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
                 Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
                 Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"ComfyUI Installer 有新版本可用`"
+        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+        Read-Host | Out-Null
+        exit 0
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -7085,32 +7142,39 @@ function global:Check-ComfyUI-Installer-Update {
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-
     Set-Content -Encoding UTF8 -Path `"`$Env:COMFYUI_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 ComfyUI Installer 更新中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
-        if (`$?) {
-            `$latest_version = [int]`$(Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" | Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" | ForEach-Object { `$_.ToString() })[0].Split(`"=`")[1].Trim()
-            if (`$latest_version -gt `$Env:COMFYUI_INSTALLER_VERSION) {
-                Print-Msg `"ComfyUI Installer 有新版本可用`"
-                Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-                . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$Env:COMFYUI_INSTALLER_ROOT`" -UseUpdateMode
-                Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
-                Read-Host | Out-Null
-                exit 0
-            } else {
-                Print-Msg `"ComfyUI Installer 已是最新版本`"
-            }
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
+                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
             break
-        } else {
+        }
+        catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
                 Print-Msg `"重试检查 ComfyUI Installer 更新中`"
             } else {
                 Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                return
             }
         }
+    }
+
+    if (`$latest_version -gt `$Env:COMFYUI_INSTALLER_VERSION) {
+        Print-Msg `"ComfyUI Installer 有新版本可用`"
+        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$Env:COMFYUI_INSTALLER_ROOT`" -UseUpdateMode
+        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+        Read-Host | Out-Null
+        exit 0
+    } else {
+        Print-Msg `"ComfyUI Installer 已是最新版本`"
     }
 }
 
@@ -7314,22 +7378,22 @@ function global:Install-Hanamizuki {
     }
 
     `$content = `"
-        @echo off
-        if exist ```"%~dp0```"\ComfyUI (
-            cd /d ```"%~dp0```"\ComfyUI
-        ) else (
-            echo ComfyUI not found
-            pause
-            exit 1
-        )
-        if exist .\hanamizuki.exe (
-            echo Launch Hanamizuki
-            .\hanamizuki.exe
-        ) else (
-            echo Hanamizuki not found
-            pause
-            exit 1
-        )
+@echo off
+if exist ```"%~dp0```"\ComfyUI (
+    cd /d ```"%~dp0```"\ComfyUI
+) else (
+    echo ComfyUI not found
+    pause
+    exit 1
+)
+if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
+    .\hanamizuki.exe
+) else (
+    echo Hanamizuki not found
+    pause
+    exit 1
+)
     `".Trim()
 
     Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
