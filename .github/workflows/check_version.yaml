@@ -1,0 +1,66 @@
+name: Check Installer Version
+
+on:
+  push:
+    paths:
+      - '**.ps1'
+  delete:
+    paths:
+      - '**.ps1'
+  create:
+    paths:
+      - '**.ps1'
+
+jobs:
+  Check-Installer-Version:
+    name: Check Installer Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
+
+      - name: Check Installer Version
+        shell: pwsh
+        run: |
+          function Get-Installer-Version ($path, $flag) {
+                try {
+                    $version = [int]$(
+                        Get-Content "$path" |
+                        Select-String -Pattern "$flag" |
+                        ForEach-Object { $_.ToString() }
+                    )[0].Split("=")[1].Trim()
+                }
+                catch {
+                    $version = $null
+                    Write-Host "获取 ${path} 的版本号 ${flag} 出现错误: $_"
+                }
+                return $version
+            }
+
+            $has_error = $false
+            $repo_path = "${{ github.workspace }}"
+            $installer_list = @(
+                @("${repo_path}/comfyui_installer.ps1", "COMFYUI_INSTALLER_VERSION"),
+                @("${repo_path}/fooocus_installer.ps1", "FOOOCUS_INSTALLER_VERSION"),
+                @("${repo_path}/invokeai_installer.ps1", "INVOKEAI_INSTALLER_VERSION"),
+                @("${repo_path}/sd_trainer_installer.ps1", "SD_TRAINER_INSTALLER_VERSION"),
+                @("${repo_path}/sd_trainer_script_installer.ps1", "SD_TRAINER_SCRIPT_INSTALLER_VERSION"),
+                @("${repo_path}/stable_diffusion_webui_installer.ps1", "SD_WEBUI_INSTALLER_VERSION")
+            )
+
+            ForEach ($i in $installer_list) {
+                $ver = Get-Installer-Version $i[0] $i[1]
+                if (!$ver) { $has_error = $true }
+                $name = [System.IO.Path]::GetFileName($i[0])
+                Write-Host "${name} version: $ver"
+            }
+
+            if ($has_error) {
+                Write-Error "出现 Installer 获取版本失败" -ErrorAction Stop
+            } else {
+                Write-Host "版本号检查完成"
+            }
