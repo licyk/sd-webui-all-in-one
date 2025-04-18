@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 236
+$COMFYUI_INSTALLER_VERSION = 237
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -101,8 +101,23 @@ $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $Env:PIP_TIMEOUT = 30
 $Env:PIP_RETRIES = 5
+$Env:PIP_PREFER_BINARY = 1
+$Env:PIP_YES = 1
 $Env:PYTHONUTF8 = 1
-$Env:PYTHONIOENCODING = "utf8"
+$Env:PYTHONIOENCODING = "utf-8"
+$Env:PYTHONUNBUFFERED = 1
+$Env:PYTHONNOUSERSITE = 1
+$Env:PYTHONFAULTHANDLER = 1
+$Env:GRADIO_ANALYTICS_ENABLED = "False"
+$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+$Env:BITSANDBYTES_NOWELCOME = 1
+$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+$Env:CUDA_MODULE_LOADING = "LAZY"
+$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+$Env:USE_LIBUV = 0
+$Env:SYCL_CACHE_PERSISTENT = 1
+$Env:TF_CPP_MIN_LOG_LEVEL = 3
+$Env:SAFETENSORS_FAST_GPU = 1
 $Env:CACHE_HOME = "$InstallPath/cache"
 $Env:HF_HOME = "$InstallPath/cache/huggingface"
 $Env:MATPLOTLIBRC = "$InstallPath/cache"
@@ -118,6 +133,7 @@ $Env:TORCHINDUCTOR_CACHE_DIR = "$InstallPath/cache/torchinductor"
 $Env:TRITON_CACHE_DIR = "$InstallPath/cache/triton"
 $Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
 $Env:UV_PYTHON = "$InstallPath/python/python.exe"
+$Env:COMFYUI_PATH = "$InstallPath/ComfyUI"
 
 
 
@@ -1119,8 +1135,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -1136,6 +1167,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -2888,8 +2920,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -2905,6 +2952,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -3328,8 +3376,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -3345,6 +3408,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -4047,8 +4111,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -4064,6 +4143,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -5003,8 +5083,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -5020,6 +5115,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -6006,8 +6102,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -6023,6 +6134,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 
 
 
@@ -7014,8 +7126,23 @@ param (
 `$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$Env:PIP_TIMEOUT = 30
 `$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
 `$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf8`"
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
 `$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
 `$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
 `$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
@@ -7031,6 +7158,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
 `$Env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
 
 
