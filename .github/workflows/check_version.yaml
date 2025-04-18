@@ -41,6 +41,14 @@ jobs:
                 return $version
             }
 
+            function Get-Installer-Version-Format ($version) {
+                $ver = $([string]$version).ToCharArray()
+                $major = ($ver[0..($ver.Length - 3)])
+                $minor = $ver[-2]
+                $micro = $ver[-1]
+                return "v${major}.${minor}.${micro}"
+            }
+
             $has_error = $false
             $repo_path = "${{ github.workspace }}"
             $installer_list = @(
