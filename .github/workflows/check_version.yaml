@@ -51,12 +51,39 @@ jobs:
                 @("${repo_path}/sd_trainer_script_installer.ps1", "SD_TRAINER_SCRIPT_INSTALLER_VERSION"),
                 @("${repo_path}/stable_diffusion_webui_installer.ps1", "SD_WEBUI_INSTALLER_VERSION")
             )
+            $data = @()
 
             ForEach ($i in $installer_list) {
                 $ver = Get-Installer-Version $i[0] $i[1]
-                if (!$ver) { $has_error = $true }
+                if (!$ver) {
+                    $has_error = $true
+                    $ver_format = $null
+                } else {
+                    $ver_format = Get-Installer-Version-Format $ver
+                }
                 $name = [System.IO.Path]::GetFileName($i[0])
-                Write-Host "${name} version: $ver"
+                Write-Host "${name} 版本号: $ver"
+                $data += @(
+                    [PSCustomObject]@{
+                        name = $name;
+                        ver = $ver;
+                        ver_format = $ver_format
+                    }
+                )
+            }
+
+            $data | Format-Table -AutoSize -Property @{
+                Name = "Installer";
+                Expression = {$_.name};
+                Alignment = "Left"
+            },@{
+                Name = "版本号";
+                Expression = {$_.ver_format};
+                Alignment = "Right"
+            },@{
+                Name = "版本代号";
+                Expression = {$_.ver};
+                Alignment = "Center"
             }
 
             if ($has_error) {
