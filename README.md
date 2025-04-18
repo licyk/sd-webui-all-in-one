@@ -9,6 +9,7 @@ _✨快速部署，简单易用_
     <a href="https://github.com/licyk/sd-webui-all-in-one/commits/dev"><img src="https://flat.badgen.net/github/last-commit/licyk/sd-webui-all-in-one/dev?icon=github&color=green&label=last%20dev%20commit" alt="Commit"></a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml/badge.svg" alt="Sync"></a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml/badge.svg" alt="Lint"></a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml/badge.svg" alt="Check Installer Version"></a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml/badge.svg" alt="Release"></a>
   </p>
 

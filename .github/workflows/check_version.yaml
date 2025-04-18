@@ -70,7 +70,6 @@ jobs:
                     $ver_format = Get-Installer-Version-Format $ver
                 }
                 $name = [System.IO.Path]::GetFileName($i[0])
-                Write-Host "${name} 版本号: $ver"
                 $data += @(
                     [PSCustomObject]@{
                         name = $name;
