@@ -35,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 224
+$SD_WEBUI_INSTALLER_VERSION = 225
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1317,7 +1317,7 @@ function Check-Install {
         $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt", "$vae_approx_path", "vaeapprox-sdxl.pt")) | Out-Null
         $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt", "$vae_approx_path", "vaeapprox-sd3.pt")) | Out-Null
 
-        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors"
         $name = Split-Path -Path $url -Leaf
         if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
             $model_list.Add(@("$url", "$checkpoint_path", "$name")) | Out-Null
@@ -6098,6 +6098,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/miaomiaoHarem_v15a.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null

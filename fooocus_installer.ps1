@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 159
+$FOOOCUS_INSTALLER_VERSION = 160
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -956,7 +956,7 @@ function Model-Downloader ($download_list) {
 # 更新 Fooocus 预设文件
 function Update-Fooocus-Preset {
     $fooocus_preset_json_content = @{
-        "default_model" = "Illustrious-XL-v1.0.safetensors"
+        "default_model" = "Illustrious-XL-v2.0-stable.safetensors"
         "default_refiner" = "None"
         "default_refiner_switch" = 0.8
         "default_loras" = @(
@@ -977,7 +977,7 @@ function Update-Fooocus-Preset {
         "default_image_number" = 1
         "default_aspect_ratio" = "1344*1008"
         "checkpoint_downloads" = @{
-            "Illustrious-XL-v1.0.safetensors" = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors"
+            "Illustrious-XL-v2.0-stable.safetensors" = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors"
         }
         "embeddings_downloads" = @{}
         "lora_downloads" = @{}
@@ -1709,7 +1709,7 @@ function Check-Install {
         $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/Fooocus/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors")) | Out-Null
         $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/prompt_expansion/fooocus_expansion/pytorch_model.bin", "$InstallPath/Fooocus/models/prompt_expansion/fooocus_expansion", "pytorch_model.bin")) | Out-Null
 
-        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors"
         $name = Split-Path -Path $url -Leaf
         if (!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) {
             $model_list.Add(@("$url", "$InstallPath/Fooocus/models/checkpoints", "$name")) | Out-Null
@@ -5664,6 +5664,7 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/miaomiaoHarem_v15a.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
