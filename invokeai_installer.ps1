@@ -28,7 +28,6 @@
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
 $INVOKEAI_INSTALLER_VERSION = 250
-
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
