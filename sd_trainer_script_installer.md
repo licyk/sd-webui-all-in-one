@@ -369,6 +369,7 @@ SD-Trainer-Script Installer 默认启用了 PyPI 镜像源加速下载 Python �
 观看这些 UP 主的视频可获得一些训练模型的教程。
 
 其他的一些训练模型的教程：
+- https://sd-moadel-doc.maozi.io
 - https://rentry.org/59xed3
 - https://civitai.com/articles/2056
 - https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using

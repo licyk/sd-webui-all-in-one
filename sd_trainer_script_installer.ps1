@@ -30,7 +30,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 161
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 162
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6355,6 +6355,7 @@ models：使用模型下载脚本下载模型时模型的存放位置。
 详细的 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
 
 其他的一些训练模型的教程：
+https://sd-moadel-doc.maozi.io
 https://rentry.org/59xed3
 https://civitai.com/articles/2056
 https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
