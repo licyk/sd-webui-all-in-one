@@ -305,12 +305,20 @@ InvokeAI Installer 为了加速访问 Github 的速度，如加快下载和更�
 |---|
 |https://ghfast.top/https://github.com|
 |https://mirror.ghproxy.com/https://github.com|
-|https://ghproxy.net/https://github.com|
 |https://gh.api.99988866.xyz/https://github.com|
 |https://gitclone.com/github.com|
 |https://gh-proxy.com/https://github.com|
 |https://ghps.cc/https://github.com|
 |https://gh.idayer.com/https://github.com|
+|https://ghproxy.1888866.xyz/github.com|
+|https://slink.ltd/https://github.com|
+|https://github.boki.moe/github.com|
+|https://github.moeyy.xyz/https://github.com|
+|https://gh-proxy.net/https://github.com|
+|https://gh-proxy.ygxz.in/https://github.com|
+|https://wget.la/https://github.com|
+|https://kkgithub.com|
+|https://ghproxy.net/https://github.com|
 
 如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
 

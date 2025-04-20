@@ -316,12 +316,20 @@ SD-Trainer-Script Installer 为了加速访问 Github 的速度，加快下载�
 |---|
 |https://ghfast.top/https://github.com|
 |https://mirror.ghproxy.com/https://github.com|
-|https://ghproxy.net/https://github.com|
 |https://gh.api.99988866.xyz/https://github.com|
 |https://gitclone.com/github.com|
 |https://gh-proxy.com/https://github.com|
 |https://ghps.cc/https://github.com|
 |https://gh.idayer.com/https://github.com|
+|https://ghproxy.1888866.xyz/github.com|
+|https://slink.ltd/https://github.com|
+|https://github.boki.moe/github.com|
+|https://github.moeyy.xyz/https://github.com|
+|https://gh-proxy.net/https://github.com|
+|https://gh-proxy.ygxz.in/https://github.com|
+|https://wget.la/https://github.com|
+|https://kkgithub.com|
+|https://ghproxy.net/https://github.com|
 
 如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
 
@@ -486,7 +494,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
 |`-DisableUV`|禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
 |`-DisableGithubMirror`|禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源。|
-|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gitclone.com/github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`</br>`https://ghproxy.1888866.xyz/github.com`</br>`https://slink.ltd/https://github.com`</br>`https://github.boki.moe/github.com`</br>`https://github.moeyy.xyz/https://github.com`</br>`https://gh-proxy.net/https://github.com`</br>`https://gh-proxy.ygxz.in/https://github.com`</br>`https://wget.la/https://github.com`</br>`https://kkgithub.com`</br>`https://gitclone.com/github.com`|
 |`-BuildMode`|启用 SD-Trainer-Script Installer 构建模式，在基础安装流程结束后将调用 SD-Trainer-Script Installer 管理脚本执行剩余的安装任务，并且出现错误时不再暂停 SD-Trainer-Script Installer 的执行，而是直接退出。<br>当指定调用多个 SD-Trainer-Script Installer 脚本时，将按照优先顺序执行 (按从上到下的顺序)：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`，`-BuildWithTorchReinstall`参数<br><li>`switch_branch.ps1`：对应`-BuildWitchBranch`参数<br><li>`download_models.ps1`：对应`-BuildWitchModel`参数<br><li>`update.ps1`：对应`-BuildWithUpdate`参数<br><li>`init.ps1`：对应`-BuildWithLaunch`参数|
 |`-BuildWithUpdate`|(需添加`-BuildMode`启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 update.ps1 脚本，更新 SD-Trainer-Script 内核。|
 |`-BuildWithLaunch`|(需添加`-BuildMode`启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 init.ps1 脚本，执行启 动 SD-Trainer-Script 前的环境检查流程，但跳过启动 SD-Trainer-Script。|

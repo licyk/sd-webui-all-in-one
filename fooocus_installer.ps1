@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 160
+$FOOOCUS_INSTALLER_VERSION = 161
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -65,10 +65,18 @@ $GITHUB_MIRROR_LIST = @(
     "https://mirror.ghproxy.com/https://github.com",
     "https://ghproxy.net/https://github.com",
     "https://gh.api.99988866.xyz/https://github.com",
-    "https://gitclone.com/github.com",
     "https://gh-proxy.com/https://github.com",
     "https://ghps.cc/https://github.com",
-    "https://gh.idayer.com/https://github.com"
+    "https://gh.idayer.com/https://github.com",
+    "https://ghproxy.1888866.xyz/github.com",
+    "https://slink.ltd/https://github.com",
+    "https://github.boki.moe/github.com",
+    "https://github.moeyy.xyz/https://github.com",
+    "https://gh-proxy.net/https://github.com",
+    "https://gh-proxy.ygxz.in/https://github.com",
+    "https://wget.la/https://github.com",
+    "https://kkgithub.com",
+    "https://gitclone.com/github.com"
 )
 # uv 最低版本
 $UV_MINIMUM_VER = "0.6.14"
@@ -1777,10 +1785,18 @@ param (
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gitclone.com/github.com`",
     `"https://gh-proxy.com/https://github.com`",
     `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
@@ -3018,10 +3034,18 @@ param (
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gitclone.com/github.com`",
     `"https://gh-proxy.com/https://github.com`",
     `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
@@ -3122,10 +3146,18 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
-            https://gitclone.com/github.com
             https://gh-proxy.com/https://github.com
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
 
 
 更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
@@ -3474,10 +3506,18 @@ param (
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gitclone.com/github.com`",
     `"https://gh-proxy.com/https://github.com`",
     `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
@@ -3582,10 +3622,18 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
-            https://gitclone.com/github.com
             https://gh-proxy.com/https://github.com
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
 
 
 更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
@@ -4046,10 +4094,18 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
-            https://gitclone.com/github.com
             https://gh-proxy.com/https://github.com
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
 
     -InstallBranch <安装的 Fooocus 分支>
         指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
@@ -6730,10 +6786,18 @@ function Update-Github-Mirror-Setting {
                 Print-Msg `" https://mirror.ghproxy.com/https://github.com`"
                 Print-Msg `" https://ghproxy.net/https://github.com`"
                 Print-Msg `" https://gh.api.99988866.xyz/https://github.com`"
-                Print-Msg `" https://gitclone.com/github.com`"
+                Print-Msg `" https://ghproxy.1888866.xyz/github.com`"
+                Print-Msg `" https://slink.ltd/https://github.com`"
+                Print-Msg `" https://github.boki.moe/github.com`"
+                Print-Msg `" https://github.moeyy.xyz/https://github.com`"
+                Print-Msg `" https://gh-proxy.net/https://github.com`"
+                Print-Msg `" https://gh-proxy.ygxz.in/https://github.com`"
+                Print-Msg `" https://wget.la/https://github.com`"
+                Print-Msg `" https://kkgithub.com`"
                 Print-Msg `" https://gh-proxy.com/https://github.com`"
                 Print-Msg `" https://ghps.cc/https://github.com`"
                 Print-Msg `" https://gh.idayer.com/https://github.com`"
+                Print-Msg `" https://gitclone.com/github.com`"
                 Print-Msg `"提示: 输入 Github 镜像源地址后回车保存`"
                 `$github_mirror_address = Get-User-Input
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
@@ -7307,10 +7371,18 @@ param (
     `"https://mirror.ghproxy.com/https://github.com`",
     `"https://ghproxy.net/https://github.com`",
     `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gitclone.com/github.com`",
     `"https://gh-proxy.com/https://github.com`",
     `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`"
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
 )
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
@@ -7400,10 +7472,18 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
-            https://gitclone.com/github.com
             https://gh-proxy.com/https://github.com
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
 
     -DisableProxy
         禁用 Fooocus Installer 自动设置代理服务器
@@ -8164,10 +8244,18 @@ function Get-Fooocus-Installer-Cmdlet-Help {
             https://mirror.ghproxy.com/https://github.com
             https://ghproxy.net/https://github.com
             https://gh.api.99988866.xyz/https://github.com
-            https://gitclone.com/github.com
             https://gh-proxy.com/https://github.com
             https://ghps.cc/https://github.com
             https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
 
     -BuildMode
         启用 Fooocus Installer 构建模式, 在基础安装流程结束后将调用 Fooocus Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 Fooocus Installer 的执行, 而是直接退出
