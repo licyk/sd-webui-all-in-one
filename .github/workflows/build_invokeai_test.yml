@@ -1,11 +1,11 @@
-name: Build InvokeAI
+name: Build InvokeAI Test
 
 on:
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/build_invokeai.yml"
+      - ".github/workflows/build_invokeai_test.yml"
   # delete:
   # create:
   schedule:
@@ -15,8 +15,8 @@ on:
   - cron: '30 16 * * 0'
 
 jobs:
-  Build-InvokeAI:
-    name: Build InvokeAI
+  Build-InvokeAI-Test:
+    name: Build InvokeAI Test
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
