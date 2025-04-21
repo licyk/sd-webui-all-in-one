@@ -27,7 +27,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 251
+$INVOKEAI_INSTALLER_VERSION = 252
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -512,55 +512,69 @@ if __name__ == '__main__':
     $mirror_type = $(python -c "$content")
 
     # 设置 PyTorch 镜像源
-    if ($mirror_type -eq "cu118") {
-        $cuda_ver = "+cu118"
-        $Env:PIP_FIND_LINKS = " "
-        $Env:UV_FIND_LINKS = ""
-        $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+    switch ($mirror_type) {
+        cu11x {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
+            $cuda_ver = ""
         }
-        $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+        cu118 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu118"
+            $cuda_ver = "+cu118"
+            $Env:PIP_FIND_LINKS = " "
+            $Env:UV_FIND_LINKS = ""
+            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+            }
+            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+            }
         }
-    } elseif ($mirror_type -eq "cu121") {
-        $cuda_ver = "+cu121"
-        $Env:PIP_FIND_LINKS = " "
-        $Env:UV_FIND_LINKS = ""
-        $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
-        $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
-    } elseif ($mirror_type -eq "cu124") {
-        $cuda_ver = "+cu124"
-        $Env:PIP_FIND_LINKS = " "
-        $Env:UV_FIND_LINKS = ""
-        $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+        cu121 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu121"
+            $cuda_ver = "+cu121"
+            $Env:PIP_FIND_LINKS = " "
+            $Env:UV_FIND_LINKS = ""
+            $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
+            $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
         }
-        $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+        cu124 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu124"
+            $cuda_ver = "+cu124"
+            $Env:PIP_FIND_LINKS = " "
+            $Env:UV_FIND_LINKS = ""
+            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+            }
+            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+            }
         }
-    } elseif ($mirror_type -eq "cu126") {
-        $cuda_ver = "+cu126"
-        $Env:PIP_FIND_LINKS = " "
-        $Env:UV_FIND_LINKS = ""
-        $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+        cu126 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu126"
+            $cuda_ver = "+cu126"
+            $Env:PIP_FIND_LINKS = " "
+            $Env:UV_FIND_LINKS = ""
+            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+            }
+            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
+                "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
+            } else {
+                "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+            }
         }
-        $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-            "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
-        } else {
-            "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
-        }
-    } elseif ($mirror_type -eq "cu128") {
+        cu128 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu128"
             $cuda_ver = "+cu128"
             $Env:PIP_FIND_LINKS = " "
             $Env:UV_FIND_LINKS = ""
@@ -574,8 +588,11 @@ if __name__ == '__main__':
             } else {
                 "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
             }
-    } else {
-        $cuda_ver = ""
+        }
+        Default {
+            Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
+            $cuda_ver = "+cu118"
+        }
     }
 
     $content = "
@@ -595,11 +612,11 @@ if cuda_ver == '+cu118':
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 for require in invokeai_requires:
@@ -2086,70 +2103,87 @@ if __name__ == '__main__':
     `$mirror_type = `$(python -c `"`$content`")
 
     # 设置 PyTorch 镜像源
-    if (`$mirror_type -eq `"cu118`") {
-        `$cuda_ver = `"+cu118`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+    switch (`$mirror_type) {
+        cu11x {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu11x`"
+            `$cuda_ver = `"`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu118 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu118`"
+            `$cuda_ver = `"+cu118`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu121`") {
-        `$cuda_ver = `"+cu121`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-    } elseif (`$mirror_type -eq `"cu124`") {
-        `$cuda_ver = `"+cu124`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu121 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu121`"
+            `$cuda_ver = `"+cu121`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+            `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu124 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu124`"
+            `$cuda_ver = `"+cu124`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu126`") {
-        `$cuda_ver = `"+cu126`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu126 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu126`"
+            `$cuda_ver = `"+cu126`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu128 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu128`"
+            `$cuda_ver = `"+cu128`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu128`") {
-        `$cuda_ver = `"+cu128`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+        Default {
+            Print-Msg `"未知的 PyTorch 镜像源类型: `$mirror_type, 使用默认 PyTorch 镜像源`"
+            `$cuda_ver = `"+cu118`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
-        }
-    } else {
-        `$cuda_ver = `"`"
     }
 
     `$content = `"
@@ -2169,11 +2203,11 @@ if cuda_ver == '+cu118':
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 for require in invokeai_requires:
@@ -3394,70 +3428,87 @@ if __name__ == '__main__':
     `$mirror_type = `$(python -c `"`$content`")
 
     # 设置 PyTorch 镜像源
-    if (`$mirror_type -eq `"cu118`") {
-        `$cuda_ver = `"+cu118`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+    switch (`$mirror_type) {
+        cu11x {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu11x`"
+            `$cuda_ver = `"`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu118 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu118`"
+            `$cuda_ver = `"+cu118`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu121`") {
-        `$cuda_ver = `"+cu121`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-        `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-    } elseif (`$mirror_type -eq `"cu124`") {
-        `$cuda_ver = `"+cu124`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu121 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu121`"
+            `$cuda_ver = `"+cu121`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+            `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu124 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu124`"
+            `$cuda_ver = `"+cu124`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu126`") {
-        `$cuda_ver = `"+cu126`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu126 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu126`"
+            `$cuda_ver = `"+cu126`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+        cu128 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu128`"
+            `$cuda_ver = `"+cu128`"
+            `$Env:PIP_FIND_LINKS = `" `"
+            `$Env:UV_FIND_LINKS = `"`"
+            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
+            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            } else {
+                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+            }
         }
-    } elseif (`$mirror_type -eq `"cu128`") {
-        `$cuda_ver = `"+cu128`"
-        `$Env:PIP_FIND_LINKS = `" `"
-        `$Env:UV_FIND_LINKS = `"`"
-        `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+        Default {
+            Print-Msg `"未知的 PyTorch 镜像源类型: `$mirror_type, 使用默认 PyTorch 镜像源`"
+            `$cuda_ver = `"+cu118`"
         }
-        `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-        } else {
-            `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
-        }
-    } else {
-        `$cuda_ver = `"`"
     }
 
     `$content = `"
@@ -3477,11 +3528,11 @@ if cuda_ver == '+cu118':
 
 
 def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('==', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('===', '')
+    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
 
 
 def get_package_name(package: str) -> str:
-    return package.split('~=')[0].split('==')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('===')[0]
+    return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
 for require in invokeai_requires:
