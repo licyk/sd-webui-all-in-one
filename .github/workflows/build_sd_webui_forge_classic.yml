@@ -108,7 +108,7 @@ jobs:
           Move-Item -Path "${{ github.workspace }}/sd_webui_forge_classic" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_webui_forge_classic/${protable_name}" "${{ github.workspace }}/${package_name}"
 
-      - name: Install HuggingFace library
+      - name: Install HuggingFace and ModelScope library
         shell: pwsh
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
