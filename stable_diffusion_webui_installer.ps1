@@ -35,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 227
+$SD_WEBUI_INSTALLER_VERSION = 228
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -310,88 +310,129 @@ print(is_uv_need_update())
 
 # 下载并解压 Python
 function Install-Python {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.11.11-amd64.zip"
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.11.11-amd64.zip",
+        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/python-3.11.11-amd64.zip"
+    )
     $cache_path = "$Env:CACHE_HOME/python_tmp"
     $path = "$InstallPath/python"
+    $i = 0
 
     # 下载 Python
-    Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-amd64.zip"
-    if ($?) { # 检测是否下载成功并解压
-        if (Test-Path "$cache_path") {
-            Remove-Item -Path "$cache_path" -Force -Recurse
+    ForEach ($url in $urls) {
+        Print-Msg "正在下载 Python"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-amd64.zip"
         }
-        # 解压 Python
-        Print-Msg "正在解压 Python"
-        Expand-Archive -Path "$Env:CACHE_HOME/python-amd64.zip" -DestinationPath "$cache_path" -Force
-        # 清理空文件夹
-        if (Test-Path "$path") {
-            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
-            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        catch {
+            $i += 1
+            if ($i -lt $urls.Length) {
+                Print-Msg "重试下载 Python 中"
+            } else {
+                Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+                if (!($BuildMode)) {
+                    Read-Host | Out-Null
+                }
+                exit 1
+            }
         }
-        New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
-        Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$Env:CACHE_HOME/python-amd64.zip" -Force -Recurse
-        Print-Msg "Python 安装成功"
-    } else {
-        Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        if (!($BuildMode)) {
-            Read-Host | Out-Null
-        }
-        exit 1
     }
+
+    if (Test-Path "$cache_path") {
+        Remove-Item -Path "$cache_path" -Force -Recurse
+    }
+    # 解压 Python
+    Print-Msg "正在解压 Python"
+    Expand-Archive -Path "$Env:CACHE_HOME/python-amd64.zip" -DestinationPath "$cache_path" -Force
+    # 清理空文件夹
+    if (Test-Path "$path") {
+        $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+        Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+    }
+    New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
+    Move-Item -Path "$cache_path" -Destination "$path" -Force
+    Remove-Item -Path "$Env:CACHE_HOME/python-amd64.zip" -Force -Recurse
+    Print-Msg "Python 安装成功"
 }
 
 
 # 下载并解压 Git
 function Install-Git {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip"
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip",
+        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/PortableGit.zip"
+    )
     $cache_path = "$Env:CACHE_HOME/git_tmp"
     $path = "$InstallPath/git"
+    $i = 0
 
-    Print-Msg "正在下载 Git"
-    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
-    if ($?) { # 检测是否下载成功并解压
-        if (Test-Path "$cache_path") {
-            Remove-Item -Path "$cache_path" -Force -Recurse
+    # 下载 Git
+    ForEach ($url in $urls) {
+        Print-Msg "正在下载 Git"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
         }
-        # 解压 Git
-        Print-Msg "正在解压 Git"
-        Expand-Archive -Path "$Env:CACHE_HOME/PortableGit.zip" -DestinationPath "$cache_path" -Force
-        # 清理空文件夹
-        if (Test-Path "$path") {
-            $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
-            Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+        catch {
+            $i += 1
+            if ($i -lt $urls.Length) {
+                Print-Msg "重试下载 Git 中"
+            } else {
+                Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+                if (!($BuildMode)) {
+                    Read-Host | Out-Null
+                }
+                exit 1
+            }
         }
-        New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
-        Move-Item -Path "$cache_path" -Destination "$path" -Force
-        Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
-        Print-Msg "Git 安装成功"
-    } else {
-        Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        if (!($BuildMode)) {
-            Read-Host | Out-Null
-        }
-        exit 1
     }
+
+    if (Test-Path "$cache_path") {
+        Remove-Item -Path "$cache_path" -Force -Recurse
+    }
+    # 解压 Git
+    Print-Msg "正在解压 Git"
+    Expand-Archive -Path "$Env:CACHE_HOME/PortableGit.zip" -DestinationPath "$cache_path" -Force
+    # 清理空文件夹
+    if (Test-Path "$path") {
+        $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
+        Move-Item -Path "$path" -Destination "$Env:CACHE_HOME/$random_string" -Force
+    }
+    New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
+    Move-Item -Path "$cache_path" -Destination "$path" -Force
+    Remove-Item -Path "$Env:CACHE_HOME/PortableGit.zip" -Force -Recurse
+    Print-Msg "Git 安装成功"
 }
 
 
 # 下载 Aria2
 function Install-Aria2 {
-    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe"
-    Print-Msg "正在下载 Aria2"
-    Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
-    if ($?) {
-        Move-Item -Path "$Env:CACHE_HOME/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
-        Print-Msg "Aria2 下载成功"
-    } else {
-        Print-Msg "Aria2 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
-        if (!($BuildMode)) {
-            Read-Host | Out-Null
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe",
+        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe"
+    )
+    $i = 0
+
+    ForEach ($url in $urls) {
+        Print-Msg "正在下载 Aria2"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
         }
-        exit 1
+        catch {
+            $i += 1
+            if ($i -lt $urls.Length) {
+                Print-Msg "重试下载 Aria2 中"
+            } else {
+                Print-Msg "Aria2 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+                if (!($BuildMode)) {
+                    Read-Host | Out-Null
+                }
+                exit 1
+            }
+        }
     }
+
+    Move-Item -Path "$Env:CACHE_HOME/aria2c.exe" -Destination "$InstallPath/git/bin/aria2c.exe" -Force
+    Print-Msg "Aria2 下载成功"
 }
 
 
@@ -2722,11 +2763,12 @@ function Set-Stable-Diffusion-WebUI-Extension-List-Mirror {
         Print-Msg `"测试 `$github_mirror 是否可用`"
         `$github_mirror = `$github_mirror -creplace `"github.com`", `"raw.githubusercontent.com`"
         `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
-        Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
-        if (`$?) {
+        try {
+            Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
             Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
             `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
-        } else {
+        }
+        catch {
             Print-Msg `"该镜像源不可用, 取消设置 Stable Diffusion WebUI 扩展列表镜像源`"
         }
         return
@@ -2737,13 +2779,14 @@ function Set-Stable-Diffusion-WebUI-Extension-List-Mirror {
         Print-Msg `"测试 Github 镜像源: `$i`"
         `$github_mirror = `$i -creplace `"github.com`", `"raw.githubusercontent.com`"
         `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
-        Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
-        if (`$?) {
+        try {
+            Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
             Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
             `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
             `$status = 1
             break
-        } else {
+        }
+        catch {
             Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
         }
     }
@@ -6087,29 +6130,47 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
 `".Trim()
 
     Print-Msg `"检查 Aria2 是否需要更新`"
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
+    `$urls = @(
+        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`",
+        `"https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe`"
+    )
     `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
     `$status = `$(python -c `"`$content`")
+    `$i = 0
 
     if (`$status -eq `"True`") {
         Print-Msg `"更新 Aria2 中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
-        if (`$?) {
-            if ((Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/git.exe`")) {
-                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`" -Force
-            } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
-                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
-            } else {
-                New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
-                Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
-            }
-            Print-Msg `"Aria2 更新完成`"
-        } else {
-            Print-Msg `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`"
-        }
+        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
     } else {
         Print-Msg `"Aria2 无需更新`"
+        return
     }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"下载 Aria2 中`"
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试下载 Aria2 中`"
+            } else {
+                Print-Msg `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`"
+                return
+            }
+        }
+    }
+
+    if ((Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`" -Force
+    } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+    } else {
+        New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+    }
+    Print-Msg `"Aria2 更新完成`"
 }
 
 
@@ -7944,17 +8005,32 @@ function global:Update-uv {
 
 # 更新 Aria2
 function global:Update-Aria2 {
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`"
+    `$urls = @(
+        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`",
+        `"https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe`"
+    )
+    `$aria2_tmp_path = `"`$Env:CACHE_HOME/aria2c.exe`"
+    `$i = 0
     Print-Msg `"下载 Aria2 中`"
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-    Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/aria2c.exe`"
-    if (`$?) {
-        Print-Msg `"更新 Aria2 中`"
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_WEBUI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
-        Print-Msg `"更新 Aria2 完成`"
-    } else {
-        Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
+    ForEach (`$url in `$urls) {
+        Print-Msg `"下载 Aria2 中`"
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试下载 Aria2 中`"
+            } else {
+                Print-Msg `"下载 Aria2 失败, 无法进行更新, 可尝试重新运行更新命令`"
+                return
+            }
+        }
     }
+
+    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_WEBUI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
+    Print-Msg `"更新 Aria2 完成`"
 }
 
 
@@ -8188,13 +8264,14 @@ function global:Install-Hanamizuki {
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-            if (`$?) {
+            try {
+                Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
                 Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`" -Force
                 Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
-            } else {
+            }
+            catch {
                 `$i += 1
                 if (`$i -lt `$urls.Length) {
                     Print-Msg `"重试下载绘世启动器中`"
