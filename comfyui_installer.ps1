@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 244
+$COMFYUI_INSTALLER_VERSION = 245
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4645,6 +4645,10 @@ function Main {
 - 31、Torch 2.6.0 (Inter Arc)
 - 32、Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3
 - 33、Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3
+- 34、Torch 2.7.0 (Inter Arc)
+- 35、Torch 2.7.0 (CUDA 11.8)
+- 36、Torch 2.7.0 (CUDA 12.6)
+- 37、Torch 2.7.0 (CUDA 12.8)
 -----------------------------------------------------
     `".Trim()
 
@@ -4997,6 +5001,66 @@ function Main {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
                 } else {
                     `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            34 {
+                `$torch_ver = `"torch==2.7.0+xpu torchvision==0.22.0+xpu torchaudio==2.7.0+xpu`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_XPU `$PIP_EXTRA_INDEX_MIRROR`"
+                `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_XPU `$PIP_EXTRA_INDEX_MIRROR`"
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            35 {
+                `$torch_ver = `"torch==2.7.0+cu118 torchvision==0.22.0+cu118 torchaudio==2.7.0+cu118`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$go_to = 1
+            }
+            36 {
+                `$torch_ver = `"torch==2.7.0+cu126 torchvision==0.22.0+cu126 torchaudio==2.7.0+cu126`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:PIP_FIND_LINKS = `" `"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            37 {
+                `$torch_ver = `"torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    # `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`" # TODO: 重新配置镜像源
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+                }
+                `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
+                    # `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+                } else {
+                    `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
                 }
                 `$Env:PIP_FIND_LINKS = `" `"
                 `$Env:UV_FIND_LINKS = `"`"
