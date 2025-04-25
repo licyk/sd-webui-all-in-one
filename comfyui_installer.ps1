@@ -4642,10 +4642,10 @@ function Main {
 - 28、Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1
 - 29、Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2
 - 30、Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3
-- 31、Torch 2.6.0 (Inter Arc)
+- 31、Torch 2.6.0 (Intel Arc)
 - 32、Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3
 - 33、Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3
-- 34、Torch 2.7.0 (Inter Arc)
+- 34、Torch 2.7.0 (Intel Arc)
 - 35、Torch 2.7.0 (CUDA 11.8)
 - 36、Torch 2.7.0 (CUDA 12.6)
 - 37、Torch 2.7.0 (CUDA 12.8)
