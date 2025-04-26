@@ -6,7 +6,7 @@ on:
   #     - main
   #   paths:
   #     - ".github/workflows/build_sd_webui_reforge.yml"
-  delete:
+  # delete:
   # create:
   # schedule:
   # * is a special character in YAML so you have to quote this string
@@ -14,6 +14,18 @@ on:
   # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   # - cron: '0 18 * * 0'
   # reForge 已停止开发, 参考: https://github.com/Panchovix/stable-diffusion-webui-reForge/discussions/354
+  workflow_dispatch:
+    inputs:
+      pytorch_package:
+        description: PyTorch Package
+        required: true
+        type: string
+        default: torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124
+      xformers_package:
+        description: xFormers Package
+        required: true
+        type: string
+        default: xformers==0.0.29.post3
 
 
 jobs:
@@ -33,6 +45,14 @@ jobs:
         env:
           UV_NO_PROGRESS: 1
         run: |
+          $pytorch_package_input = "${{ inputs.pytorch_package }}"
+          $xformers_package_input = "${{ inputs.xformers_package }}"
+          if (!$pytorch_package_input) {
+              $pytorch_package_input = "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124"
+          }
+          if (!$xformers_package_input) {
+              $xformers_package_input = "xformers==0.0.29.post3"
+          }
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_reforge" `
             -BuildMode `
@@ -45,8 +65,8 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
-            -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
-            -xFormersPackage "xformers==0.0.29.post3"
+            -PyTorchPackage "$pytorch_package_input" `
+            -xFormersPackage "$xformers_package_input"
 
       - name: Install Insightface
         shell: pwsh

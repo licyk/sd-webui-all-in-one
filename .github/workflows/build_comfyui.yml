@@ -13,6 +13,18 @@ on:
   # UTC 17:00 -> CST (China) 1:00, see https://datetime360.com/cn/utc-cst-china-time/
   # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   - cron: '0 16 * * 0'
+  workflow_dispatch:
+    inputs:
+      pytorch_package:
+        description: PyTorch Package
+        required: true
+        type: string
+        default: torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124
+      xformers_package:
+        description: xFormers Package
+        required: true
+        type: string
+        default: xformers==0.0.29.post3
 
 jobs:
   Build-ComfyUI:
@@ -31,6 +43,14 @@ jobs:
         env:
           UV_NO_PROGRESS: 1
         run: |
+          $pytorch_package_input = "${{ inputs.pytorch_package }}"
+          $xformers_package_input = "${{ inputs.xformers_package }}"
+          if (!$pytorch_package_input) {
+              $pytorch_package_input = "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124"
+          }
+          if (!$xformers_package_input) {
+              $xformers_package_input = "xformers==0.0.29.post3"
+          }
           & "${{ github.workspace }}/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
             -BuildMode `
@@ -41,8 +61,8 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel `
-            -PyTorchPackage "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124" `
-            -xFormersPackage "xformers==0.0.29.post3"
+            -PyTorchPackage "$pytorch_package_input" `
+            -xFormersPackage "$xformers_package_input"
 
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh
