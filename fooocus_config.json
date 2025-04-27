@@ -66,7 +66,7 @@
         "ill-xl-01-deieaf_3-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-deieaf_3-000034.safetensors",
         "ill-xl-01-deyui_3-000035.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-deyui_3-000035.safetensors",
         "ill-xl-01-ekureea_3-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ekureea_3-000036.safetensors",
-        "ill-xl-01-fruitsrabbit_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-fruitsrabbit_1-000036.safetensors",
+        "ill-xl-01-fruitsrabbit_3-000038.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-fruitsrabbit_3-000038.safetensors",
         "ill-xl-01-fuzichoco_4-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-fuzichoco_4-000034.safetensors",
         "ill-xl-01-gomalio_y_1-000032.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-gomalio_y_1-000032.safetensors",
         "ill-xl-01-hk3_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-hk3_1-000036.safetensors",
@@ -145,7 +145,8 @@
         "ill-xl-01-yuzusoft_official_style_chibi_1-000034.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yuzusoft_official_style_chibi_1-000034.safetensors",
         "ill-xl-01-yuzusoft_official_style_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yuzusoft_official_style_1-000036.safetensors",
         "ill-xl-01-shuna_1-000035.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-shuna_1-000035.safetensors",
-        "ill-xl-01-heripiro_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-heripiro_1-000036.safetensors"
+        "ill-xl-01-heripiro_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-heripiro_1-000036.safetensors",
+        "ill-xl-01-chon_(chon33v)_1-000037.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-chon_(chon33v)_1-000037.safetensors"
     },
     "embeddings_downloads": {},
     "vae_downloads": {
