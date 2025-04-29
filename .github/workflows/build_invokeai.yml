@@ -32,14 +32,6 @@ jobs:
         env:
           UV_NO_PROGRESS: 1
         run: |
-          $pytorch_package_input = "${{ inputs.pytorch_package }}"
-          $xformers_package_input = "${{ inputs.xformers_package }}"
-          if (!$pytorch_package_input) {
-              $pytorch_package_input = "torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124"
-          }
-          if (!$xformers_package_input) {
-              $xformers_package_input = "xformers==0.0.29.post3"
-          }
           & "${{ github.workspace }}/invokeai_installer.ps1" `
             -InstallPath "${{ github.workspace }}/invokeai" `
             -BuildMode `
