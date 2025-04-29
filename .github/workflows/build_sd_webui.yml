@@ -14,17 +14,6 @@ on:
   # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   - cron: '15 18 * * 0'
   workflow_dispatch:
-    inputs:
-      pytorch_package:
-        description: PyTorch Package
-        required: true
-        type: string
-        default: torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128
-      xformers_package:
-        description: xFormers Package
-        required: true
-        type: string
-        default: xformers==0.0.30
 
 jobs:
   Build-SD-WebUI:
@@ -63,7 +52,7 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
-            -PyTorchPackage "$pytorch_package_input" `
+            -PyTorchPackage "torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128" `
             -xFormersPackage "$xformers_package_input"
 
       - name: Install Insightface
