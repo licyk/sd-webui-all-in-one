@@ -14,17 +14,6 @@ on:
   # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   - cron: '45 17 * * 0'
   workflow_dispatch:
-    inputs:
-      pytorch_package:
-        description: PyTorch Package
-        required: true
-        type: string
-        default: torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128
-      xformers_package:
-        description: xFormers Package
-        required: true
-        type: string
-        default: xformers==0.0.30
 
 jobs:
   Build-SD-WebUI-Forge-Classic:
@@ -43,14 +32,6 @@ jobs:
         env:
           UV_NO_PROGRESS: 1
         run: |
-          $pytorch_package_input = "${{ inputs.pytorch_package }}"
-          $xformers_package_input = "${{ inputs.xformers_package }}"
-          if (!$pytorch_package_input) {
-              $pytorch_package_input = "torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128"
-          }
-          if (!$xformers_package_input) {
-              $xformers_package_input = "xformers==0.0.30"
-          }
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge_classic" `
             -BuildMode `
@@ -63,8 +44,8 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
-            -PyTorchPackage "$pytorch_package_input" `
-            -xFormersPackage "$xformers_package_input"
+            -PyTorchPackage "torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128" `
+            -xFormersPackage "xformers==0.0.30"
 
       - name: Install Insightface
         shell: pwsh
