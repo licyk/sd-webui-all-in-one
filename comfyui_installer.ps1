@@ -1916,7 +1916,7 @@ def get_logger(
     '''获取 Loging 对象
 
     参数:
-        name (`str`):
+        name (str):
             Logging 名称
 
 
@@ -1940,7 +1940,7 @@ def get_logger(
 
 
 logger = get_logger(
-    'ComfyUI Env Checker',
+    'Env Checker',
     logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO
 )
 
@@ -2010,14 +2010,14 @@ def parse_version(version_str: str) -> VersionComponent:
     '''解释 Python 软件包版本号
 
     参数:
-        version_str (`str`):
+        version_str (str):
             Python 软件包版本号
 
     返回值:
-        `VersionComponent`: 版本组件的命名元组
+        VersionComponent: 版本组件的命名元组
 
     异常:
-        `ValueError`: 如果 Python 版本号不符合 PEP440 规范
+        ValueError: 如果 Python 版本号不符合 PEP440 规范
     '''
     # 检测并剥离通配符
     wildcard = version_str.endswith('.*') or version_str.endswith('*')
@@ -2055,13 +2055,13 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     '''比较两个版本字符串 Python 软件包版本号
 
     参数:
-        v1 (`VersionComponent`):
+        v1 (VersionComponent):
             第 1 个 Python 版本号标识符组件
-        v2 (`VersionComponent`):
+        v2 (VersionComponent):
             第 2 个 Python 版本号标识符组件
 
     返回值:
-        `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
     '''
 
     # 比较 epoch
@@ -2154,13 +2154,13 @@ def compare_versions(version1: str, version2: str) -> int:
     '''比较两个版本字符串 Python 软件包版本号
 
     参数:
-        version1 (`str`):
+        version1 (str):
             版本号 1
-        version2 (`str`):
+        version2 (str):
             版本号 2
 
     返回值:
-        `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
     '''
     v1 = parse_version(version1)
     v2 = parse_version(version2)
@@ -2171,7 +2171,7 @@ def compatible_version_matcher(spec_version: str):
     '''PEP 440 兼容性版本匹配 (~= 操作符)
 
     返回值:
-        `_is_compatible(version_str: str) -> bool`: 一个接受 version_str (`str`) 参数的判断函数
+        _is_compatible(version_str: str) -> bool: 一个接受 version_str (str) 参数的判断函数
     '''
     # 解析规范版本
     spec = parse_version(spec_version)
@@ -2215,11 +2215,11 @@ def version_match(spec: str, version: str) -> bool:
     '''PEP 440 版本前缀匹配
 
     参数:
-        spec (`str`): 版本匹配表达式 (e.g. '1.1.*')
-        version (`str`): 需要检测的实际版本号 (e.g. '1.1a1')
+        spec (str): 版本匹配表达式 (e.g. '1.1.*')
+        version (str): 需要检测的实际版本号 (e.g. '1.1a1')
 
     返回值:
-        `bool`: 是否匹配
+        bool: 是否匹配
     '''
     # 分离通配符和本地版本
     spec_parts = spec.split('+', 1)
@@ -2256,14 +2256,14 @@ def is_v1_ge_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于或等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号大于或等于 v2 版本号则返回True
         e.g.:
             1.1, 1.0 -> True
             1.0, 1.0 -> True
@@ -2276,14 +2276,14 @@ def is_v1_gt_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号大于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号大于 v2 版本号则返回True
         e.g.:
             1.1, 1.0 -> True
             1.0, 1.0 -> False
@@ -2295,14 +2295,14 @@ def is_v1_eq_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号等于 v2 版本号则返回True
         e.g.:
             1.0, 1.0 -> True
             0.9, 1.0 -> False
@@ -2315,14 +2315,14 @@ def is_v1_lt_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否小于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号小于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号小于 v2 版本号则返回True
         e.g.:
             0.9, 1.0 -> True
             1.0, 1.0 -> False
@@ -2334,14 +2334,14 @@ def is_v1_le_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否小于或等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号小于或等于 v2 版本号则返回True
         e.g.:
             0.9, 1.0 -> True
             1.0, 1.0 -> True
@@ -2354,14 +2354,14 @@ def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号等于 v2 版本号则返回True
         e.g.:
             1.0*, 1.0a1 -> True
             0.9*, 1.0 -> False
@@ -2374,11 +2374,11 @@ def version_string_is_canonical(version: str) -> bool:
     '''判断版本号标识符是否符合标准
 
     参数:
-        version (`str`):
+        version (str):
             版本号字符串
 
     返回值:
-        `bool`: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
+        bool: 如果版本号标识符符合 PEP 440 标准, 则返回True
 
     '''
     return re.match(
@@ -2391,11 +2391,11 @@ def is_package_has_version(package: str) -> bool:
     '''检查 Python 软件包是否指定版本号
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `bool`: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
+        bool: 如果 Python 软件包存在版本声明, 如torch==2.3.0, 则返回True
     '''
     return package != (
         package.replace('===', '')
@@ -2413,11 +2413,11 @@ def get_package_name(package: str) -> str:
     '''获取 Python 软件包的包名, 去除末尾的版本声明
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `str`: 返回去除版本声明后的 Python 软件包名
+        str: 返回去除版本声明后的 Python 软件包名
     '''
     return (
         package.split('===')[0]
@@ -2435,11 +2435,11 @@ def get_package_version(package: str) -> str:
     '''获取 Python 软件包的包版本号
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `str`: 返回 Python 软件包的包版本号
+        str: 返回 Python 软件包的包版本号
     '''
     return (
         package.split('===').pop()
@@ -2475,14 +2475,14 @@ def parse_wheel_filename(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 distribution 名称
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: distribution 名称, 例如 pydantic
+        str: distribution 名称, 例如 pydantic
 
     异常:
-        `ValueError`: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP491 规范
     '''
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -2495,14 +2495,14 @@ def parse_wheel_version(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 version 名称
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: version 名称, 例如 1.10.15
+        str: version 名称, 例如 1.10.15
 
     异常:
-        `ValueError`: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP491 规范
     '''
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -2515,11 +2515,11 @@ def parse_wheel_to_package_name(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 <distribution>==<version>
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: <distribution>==<version> 名称, 例如 pydantic==1.10.15
+        str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
     '''
     distribution = parse_wheel_filename(filename)
     version = parse_wheel_version(filename)
@@ -2530,11 +2530,11 @@ def remove_optional_dependence_from_package(filename: str) -> str:
     '''移除 Python 软件包声明中可选依赖
 
     参数:
-        filename (`str`):
+        filename (str):
             Python 软件包名
 
     返回值:
-        `str`: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
+        str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
     '''
     return re.sub(r'\[.*?\]', '', filename)
 
@@ -2543,10 +2543,10 @@ def parse_requirement_list(requirements: list) -> list:
     '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
 
     参数:
-        requirements (`list`):
+        requirements (list):
             Python 软件包名声明列表
             e.g:
-            ```python
+            python
             requirements = [
                 'torch==2.3.0',
                 'diffusers[torch]==0.10.2',
@@ -2561,12 +2561,12 @@ def parse_requirement_list(requirements: list) -> list:
                 'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
                 'protobuf<5,>=4.25.3',
             ]
-            ```
+            
 
     返回值:
-        `list`: 将 Python 软件包名声明列表解析成标准声明列表
+        list: 将 Python 软件包名声明列表解析成标准声明列表
         e.g. 上述例子中的软件包名声明列表将解析成:
-        ```python
+        python
             requirements = [
                 'torch==2.3.0',
                 'diffusers==0.10.2',
@@ -2578,7 +2578,7 @@ def parse_requirement_list(requirements: list) -> list:
                 'protobuf<5',
                 'protobuf>=4.25.3',
             ]
-            ```
+            
     '''
     package_list = []
     requirement: str
@@ -2643,14 +2643,14 @@ def parse_requirement_list(requirements: list) -> list:
 
 
 def remove_duplicate_object_from_list(origin: list) -> list:
-    '''对`list`进行去重
+    '''对list进行去重
 
     参数:
-        origin (`list`):
-            原始的`list`
+        origin (list):
+            原始的list
 
     返回值:
-        `list`: 去重后的`list`, e.g. [1, 2, 3, 2] -> [1, 2, 3]
+        list: 去重后的list, e.g. [1, 2, 3, 2] -> [1, 2, 3]
     '''
     return list(set(origin))
 
@@ -2659,11 +2659,11 @@ def read_packages_from_requirements_file(file_path: Union[str, Path]) -> list:
     '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
     参数:
-        file_path (`str`, `Path`):
+        file_path (str, Path):
             requirements.txt 文件路径
 
     返回值:
-        `list`: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+        list: 从 requirements.txt 文件中读取的 Python 软件包声明列表
     '''
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -2677,10 +2677,10 @@ def get_package_version_from_library(package_name: str) -> Union[str, None]:
     '''获取已安装的 Python 软件包版本号
 
     参数:
-        package_name (`str`):
+        package_name (str):
 
     返回值:
-        (`str` | `None`): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
+        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回None
     '''
     try:
         ver = importlib.metadata.version(package_name)
@@ -2706,11 +2706,11 @@ def is_package_installed(package: str) -> bool:
     '''判断 Python 软件包是否已安装在环境中
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `bool`: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
+        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回False
     '''
     # 分割 Python 软件包名和版本号
     if '===' in package:
@@ -2801,11 +2801,11 @@ def validate_requirements(requirement_path: Union[str, Path]) -> bool:
     '''检测环境依赖是否完整
 
     参数:
-        requirement_path (`str`, `Path`):
+        requirement_path (str, Path):
             依赖文件路径
 
     返回值:
-        `bool`: 如果有缺失依赖则返回`False`
+        bool: 如果有缺失依赖则返回False
     '''
     origin_requires = read_packages_from_requirements_file(requirement_path)
     requires = parse_requirement_list(origin_requires)
@@ -2866,7 +2866,6 @@ if __name__ == '__main__':
 function Check-ComfyUI-Env-Requirements {
     `$content = `"
 '''ComfyUI 运行环境检查'''
-'''ComfyUI 运行环境检查'''
 import re
 import os
 import sys
@@ -2926,7 +2925,7 @@ def get_logger(
     '''获取 Loging 对象
 
     参数:
-        name (`str`):
+        name (str):
             Logging 名称
 
 
@@ -3020,14 +3019,14 @@ def parse_version(version_str: str) -> VersionComponent:
     '''解释 Python 软件包版本号
 
     参数:
-        version_str (`str`):
+        version_str (str):
             Python 软件包版本号
 
     返回值:
-        `VersionComponent`: 版本组件的命名元组
+        VersionComponent: 版本组件的命名元组
 
     异常:
-        `ValueError`: 如果 Python 版本号不符合 PEP440 规范
+        ValueError: 如果 Python 版本号不符合 PEP440 规范
     '''
     # 检测并剥离通配符
     wildcard = version_str.endswith('.*') or version_str.endswith('*')
@@ -3065,13 +3064,13 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     '''比较两个版本字符串 Python 软件包版本号
 
     参数:
-        v1 (`VersionComponent`):
+        v1 (VersionComponent):
             第 1 个 Python 版本号标识符组件
-        v2 (`VersionComponent`):
+        v2 (VersionComponent):
             第 2 个 Python 版本号标识符组件
 
     返回值:
-        `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
     '''
 
     # 比较 epoch
@@ -3164,13 +3163,13 @@ def compare_versions(version1: str, version2: str) -> int:
     '''比较两个版本字符串 Python 软件包版本号
 
     参数:
-        version1 (`str`):
+        version1 (str):
             版本号 1
-        version2 (`str`):
+        version2 (str):
             版本号 2
 
     返回值:
-        `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
     '''
     v1 = parse_version(version1)
     v2 = parse_version(version2)
@@ -3181,7 +3180,7 @@ def compatible_version_matcher(spec_version: str):
     '''PEP 440 兼容性版本匹配 (~= 操作符)
 
     返回值:
-        `_is_compatible(version_str: str) -> bool`: 一个接受 version_str (`str`) 参数的判断函数
+        _is_compatible(version_str: str) -> bool: 一个接受 version_str (str) 参数的判断函数
     '''
     # 解析规范版本
     spec = parse_version(spec_version)
@@ -3225,11 +3224,11 @@ def version_match(spec: str, version: str) -> bool:
     '''PEP 440 版本前缀匹配
 
     参数:
-        spec (`str`): 版本匹配表达式 (e.g. '1.1.*')
-        version (`str`): 需要检测的实际版本号 (e.g. '1.1a1')
+        spec (str): 版本匹配表达式 (e.g. '1.1.*')
+        version (str): 需要检测的实际版本号 (e.g. '1.1a1')
 
     返回值:
-        `bool`: 是否匹配
+        bool: 是否匹配
     '''
     # 分离通配符和本地版本
     spec_parts = spec.split('+', 1)
@@ -3266,14 +3265,14 @@ def is_v1_ge_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于或等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号大于或等于 v2 版本号则返回True
         e.g.:
             1.1, 1.0 -> True
             1.0, 1.0 -> True
@@ -3286,14 +3285,14 @@ def is_v1_gt_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号大于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号大于 v2 版本号则返回True
         e.g.:
             1.1, 1.0 -> True
             1.0, 1.0 -> False
@@ -3305,14 +3304,14 @@ def is_v1_eq_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号等于 v2 版本号则返回True
         e.g.:
             1.0, 1.0 -> True
             0.9, 1.0 -> False
@@ -3325,14 +3324,14 @@ def is_v1_lt_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否小于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号小于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号小于 v2 版本号则返回True
         e.g.:
             0.9, 1.0 -> True
             1.0, 1.0 -> False
@@ -3344,14 +3343,14 @@ def is_v1_le_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否小于或等于 v2
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号小于或等于 v2 版本号则返回True
         e.g.:
             0.9, 1.0 -> True
             1.0, 1.0 -> True
@@ -3364,14 +3363,14 @@ def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
     '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
 
     参数:
-        v1 (`str`):
+        v1 (str):
             第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
 
-        v2 (`str`):
+        v2 (str):
             第 2 个 Python 软件包版本号
 
     返回值:
-        `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+        bool: 如果 v1 版本号等于 v2 版本号则返回True
         e.g.:
             1.0*, 1.0a1 -> True
             0.9*, 1.0 -> False
@@ -3384,11 +3383,11 @@ def version_string_is_canonical(version: str) -> bool:
     '''判断版本号标识符是否符合标准
 
     参数:
-        version (`str`):
+        version (str):
             版本号字符串
 
     返回值:
-        `bool`: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
+        bool: 如果版本号标识符符合 PEP 440 标准, 则返回True
 
     '''
     return re.match(
@@ -3401,11 +3400,11 @@ def is_package_has_version(package: str) -> bool:
     '''检查 Python 软件包是否指定版本号
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `bool`: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
+        bool: 如果 Python 软件包存在版本声明, 如torch==2.3.0, 则返回True
     '''
     return package != (
         package.replace('===', '')
@@ -3423,11 +3422,11 @@ def get_package_name(package: str) -> str:
     '''获取 Python 软件包的包名, 去除末尾的版本声明
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `str`: 返回去除版本声明后的 Python 软件包名
+        str: 返回去除版本声明后的 Python 软件包名
     '''
     return (
         package.split('===')[0]
@@ -3445,11 +3444,11 @@ def get_package_version(package: str) -> str:
     '''获取 Python 软件包的包版本号
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `str`: 返回 Python 软件包的包版本号
+        str: 返回 Python 软件包的包版本号
     '''
     return (
         package.split('===').pop()
@@ -3485,14 +3484,14 @@ def parse_wheel_filename(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 distribution 名称
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: distribution 名称, 例如 pydantic
+        str: distribution 名称, 例如 pydantic
 
     异常:
-        `ValueError`: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP491 规范
     '''
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -3505,14 +3504,14 @@ def parse_wheel_version(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 version 名称
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: version 名称, 例如 1.10.15
+        str: version 名称, 例如 1.10.15
 
     异常:
-        `ValueError`: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP491 规范
     '''
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -3525,11 +3524,11 @@ def parse_wheel_to_package_name(filename: str) -> str:
     '''解析 Python wheel 文件名并返回 <distribution>==<version>
 
     参数:
-        filename (`str`):
+        filename (str):
             wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
     返回值:
-        `str`: <distribution>==<version> 名称, 例如 pydantic==1.10.15
+        str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
     '''
     distribution = parse_wheel_filename(filename)
     version = parse_wheel_version(filename)
@@ -3540,11 +3539,11 @@ def remove_optional_dependence_from_package(filename: str) -> str:
     '''移除 Python 软件包声明中可选依赖
 
     参数:
-        filename (`str`):
+        filename (str):
             Python 软件包名
 
     返回值:
-        `str`: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
+        str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
     '''
     return re.sub(r'\[.*?\]', '', filename)
 
@@ -3553,10 +3552,10 @@ def parse_requirement_list(requirements: list) -> list:
     '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
 
     参数:
-        requirements (`list`):
+        requirements (list):
             Python 软件包名声明列表
             e.g:
-            ```python
+            python
             requirements = [
                 'torch==2.3.0',
                 'diffusers[torch]==0.10.2',
@@ -3571,12 +3570,12 @@ def parse_requirement_list(requirements: list) -> list:
                 'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
                 'protobuf<5,>=4.25.3',
             ]
-            ```
+            
 
     返回值:
-        `list`: 将 Python 软件包名声明列表解析成标准声明列表
+        list: 将 Python 软件包名声明列表解析成标准声明列表
         e.g. 上述例子中的软件包名声明列表将解析成:
-        ```python
+        python
             requirements = [
                 'torch==2.3.0',
                 'diffusers==0.10.2',
@@ -3588,7 +3587,7 @@ def parse_requirement_list(requirements: list) -> list:
                 'protobuf<5',
                 'protobuf>=4.25.3',
             ]
-            ```
+            
     '''
     package_list = []
     requirement: str
@@ -3653,14 +3652,14 @@ def parse_requirement_list(requirements: list) -> list:
 
 
 def remove_duplicate_object_from_list(origin: list) -> list:
-    '''对`list`进行去重
+    '''对list进行去重
 
     参数:
-        origin (`list`):
-            原始的`list`
+        origin (list):
+            原始的list
 
     返回值:
-        `list`: 去重后的`list`, e.g. [1, 2, 3, 2] -> [1, 2, 3]
+        list: 去重后的list, e.g. [1, 2, 3, 2] -> [1, 2, 3]
     '''
     return list(set(origin))
 
@@ -3669,11 +3668,11 @@ def read_packages_from_requirements_file(file_path: Union[str, Path]) -> list:
     '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
     参数:
-        file_path (`str`, `Path`):
+        file_path (str, Path):
             requirements.txt 文件路径
 
     返回值:
-        `list`: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+        list: 从 requirements.txt 文件中读取的 Python 软件包声明列表
     '''
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -3687,10 +3686,10 @@ def get_package_version_from_library(package_name: str) -> Union[str, None]:
     '''获取已安装的 Python 软件包版本号
 
     参数:
-        package_name (`str`):
+        package_name (str):
 
     返回值:
-        (`str` | `None`): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
+        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回None
     '''
     try:
         ver = importlib.metadata.version(package_name)
@@ -3734,11 +3733,11 @@ def create_comfyui_environment_dict(
     '''创建 ComfyUI 环境组件表字典
 
     参数:
-        comfyui_path (`str`, `Path`):
+        comfyui_path (str, Path):
             ComfyUI 根路径
 
     返回值:
-        `ComfyUIEnvironmentComponent`: ComfyUI 环境组件表字典
+        ComfyUIEnvironmentComponent: ComfyUI 环境组件表字典
     '''
     comfyui_env_data: ComfyUIEnvironmentComponent = {
         'ComfyUI': {
@@ -3792,31 +3791,31 @@ def update_comfyui_environment_dict(
     '''更新 ComfyUI 环境组件表字典
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
 
-        component_name (`str`):
+        component_name (str):
             ComfyUI 组件名称
 
-        requirement_path (`str`, `None`):
+        requirement_path (str, None):
             ComfyUI 组件依赖文件路径
 
-        is_disabled (`bool`, `None`):
+        is_disabled (bool, None):
             ComfyUI 组件是否被禁用
 
-        requires (`list[str]`, `None`):
+        requires (list[str], None):
             ComfyUI 组件需要的依赖列表
 
-        has_missing_requires (`bool`, `None`):
+        has_missing_requires (bool, None):
             ComfyUI 组件是否存在缺失依赖
 
-        missing_requires (`list[str]`, `None`):
+        missing_requires (list[str], None):
             ComfyUI 组件缺失依赖列表
 
-        has_conflict_requires (`bool`, `None`):
+        has_conflict_requires (bool, None):
             ComfyUI 组件是否存在冲突依赖
 
-        conflict_requires (`list[str]`, `None`):
+        conflict_requires (list[str], None):
             ComfyUI 组件冲突依赖列表
     '''
     env_data[component_name] = {
@@ -3864,7 +3863,7 @@ def update_comfyui_component_requires_list(
     '''更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
     '''
     for component_name, details in env_data.items():
@@ -3892,7 +3891,7 @@ def update_comfyui_component_missing_requires_list(
     '''更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
     '''
     for component_name, details in env_data.items():
@@ -3923,10 +3922,10 @@ def update_comfyui_component_conflict_requires_list(
     '''更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
 
-        conflict_package_list (`list`):
+        conflict_package_list (list):
             冲突的 Python 软件包列表
     '''
     for component_name, details in env_data.items():
@@ -3962,11 +3961,11 @@ def get_comfyui_component_requires_list(
     '''从 ComfyUI 环境组件表字典读取所有组件的 requires
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
 
     返回值:
-        `list`: ComfyUI 环境组件的 Python 软件包列表
+        list: ComfyUI 环境组件的 Python 软件包列表
     '''
     package_list = []
     for _, details in env_data.items():
@@ -3984,11 +3983,11 @@ def statistical_need_install_require_component(
     '''根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
 
     返回值:
-        `list`: ComfyUI 环境组件的依赖文件路径列表
+        list: ComfyUI 环境组件的依赖文件路径列表
     '''
     requirement_list = []
     for _, details in env_data.items():
@@ -4009,11 +4008,11 @@ def statistical_has_conflict_component(
     '''根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
 
     返回值:
-        `list`: ComfyUI 环境组件的依赖文件路径列表
+        list: ComfyUI 环境组件的依赖文件路径列表
     '''
     content = []
     for conflict_package in conflict_package_list:
@@ -4032,11 +4031,11 @@ def is_package_installed(package: str) -> bool:
     '''判断 Python 软件包是否已安装在环境中
 
     参数:
-        package (`str`):
+        package (str):
             Python 软件包名
 
     返回值:
-        `bool`: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
+        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回False
     '''
     # 分割 Python 软件包名和版本号
     if '===' in package:
@@ -4127,11 +4126,11 @@ def fitter_has_version_package(package_list: list) -> list:
     '''过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
 
     参数:
-        package_list (`list`):
+        package_list (list):
             Python 软件包列表
 
     返回值:
-        `list`: 仅包含版本号的 Python 软件包列表
+        list: 仅包含版本号的 Python 软件包列表
     '''
     return [
         p for p in package_list
@@ -4143,14 +4142,14 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
     '''检测 Python 软件包版本号声明是否存在冲突
 
     参数:
-        pkg1 (`str`):
+        pkg1 (str):
             第 1 个 Python 软件包名称
 
-        pkg2 (`str`):
+        pkg2 (str):
             第 2 个 Python 软件包名称
 
     返回值:
-        `bool`: 如果 Python 软件包版本声明出现冲突则返回`True`
+        bool: 如果 Python 软件包版本声明出现冲突则返回True
     '''
     # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
     for i in range(2):
@@ -4308,11 +4307,11 @@ def detect_conflict_package_from_list(package_list: list) -> list:
     '''检测 Python 软件包版本声明列表中存在冲突的软件包
 
     参数:
-        package_list (`list`):
+        package_list (list):
             Python 软件包版本声明列表
 
     返回值:
-        `list`: 冲突的 Python 软件包列表
+        list: 冲突的 Python 软件包列表
     '''
     conflict_package = []
     for i in package_list:
@@ -4334,7 +4333,7 @@ def display_comfyui_environment_dict(
     '''列出 ComfyUI 环境组件字典内容
 
     参数:
-        env_data (`ComfyUIEnvironmentComponent`):
+        env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
     '''
     logger.debug('ComfyUI 环境组件表')
@@ -4359,10 +4358,10 @@ def write_content_to_file(
     '''将内容列表写入到文件中
 
     参数:
-        content (`list`):
+        content (list):
             内容列表
 
-        path (`str`, `Path`):
+        path (str, Path):
             保存内容的路径
     '''
     if len(content) == 0:
