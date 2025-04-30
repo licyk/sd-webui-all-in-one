@@ -32,7 +32,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 277
+$SD_TRAINER_INSTALLER_VERSION = 278
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1931,13 +1931,24 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     if v1.epoch != v2.epoch:
         return v1.epoch - v2.epoch
 
+    # 对其 release 长度, 缺失部分补 0
+    if len(v1.release) != len(v2.release):
+        for _ in range(abs(len(v1.release) - len(v2.release))):
+            if len(v1.release) < len(v2.release):
+                v1.release.append(0)
+            else:
+                v2.release.append(0)
+
     # 比较 release
     for n1, n2 in zip(v1.release, v2.release):
         if n1 != n2:
             return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小
-    if len(v1.release) != len(v2.release):
-        return len(v1.release) - len(v2.release)
+    # 如果 release 长度不同，较短的版本号视为较小 ?
+    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+    # 但 0.15.0 和 0.15 实际上是一样的版本
+    # if len(v1.release) != len(v2.release):
+    #     return len(v1.release) - len(v2.release)
 
     # 比较 pre-release
     if v1.pre_l and not v2.pre_l:
@@ -2003,6 +2014,13 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     elif v1.local and v2.local:
         local1 = v1.local.split('.')
         local2 = v2.local.split('.')
+        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+        if len(local1) != len(local2):
+            for _ in range(abs(len(local1) - len(local2))):
+                if len(local1) < len(local2):
+                    local1.append(0)
+                else:
+                    local2.append(0)
         for l1, l2 in zip(local1, local2):
             if l1.isdigit() and l2.isdigit():
                 l1, l2 = int(l1), int(l2)
@@ -2039,7 +2057,7 @@ def compatible_version_matcher(spec_version: str):
     # 解析规范版本
     spec = parse_version(spec_version)
 
-    # 获取有效 release 段 (去除末尾的零)
+    # 获取有效release段（去除末尾的零）
     clean_release = []
     for num in spec.release:
         if num != 0 or (clean_release and clean_release[-1] != 0):
@@ -2050,10 +2068,10 @@ def compatible_version_matcher(spec_version: str):
         logger.error('解析到错误的兼容性发行版本号')
         raise ValueError('Invalid version for compatible release clause')
 
-    # 生成前缀匹配模板 (忽略后缀)
+    # 生成前缀匹配模板（忽略后缀）
     prefix_length = len(clean_release) - 1
     if prefix_length == 0:
-        # 处理类似 ~= 2 的情况 (实际 PEP 禁止，但这里做容错)
+        # 处理类似 ~= 2 的情况（实际 PEP 禁止，但这里做容错）
         prefix_pattern = [spec.release[0]]
         min_version = parse_version(f'{spec.release[0]}')
     else:
@@ -2415,7 +2433,7 @@ def parse_requirement_list(requirements: list) -> list:
             requirements = [
                 'torch==2.3.0',
                 'diffusers[torch]==0.10.2',
-                'numpy',
+                'NUMPY',
                 '-e .',
                 '--index-url https://pypi.python.org/simple',
                 '--extra-index-url https://download.pytorch.org/whl/cu124',
@@ -2503,8 +2521,12 @@ def parse_requirement_list(requirements: list) -> list:
                 cleaned_requirements[0].strip())
             package_list.append(format_package_name)
 
+    # 处理包名大小写并统一成小写
     for p in package_list:
+        p: str = p.lower().strip()
+        logger.debug('预处理后的 Python 软件包名: %s', p)
         if not is_package_has_version(p):
+            logger.debug('%s 无版本声明', p)
             canonical_package_list.append(p)
             continue
 

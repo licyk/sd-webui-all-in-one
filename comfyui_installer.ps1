@@ -33,7 +33,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 250
+$COMFYUI_INSTALLER_VERSION = 251
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2068,13 +2068,24 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     if v1.epoch != v2.epoch:
         return v1.epoch - v2.epoch
 
+    # 对其 release 长度, 缺失部分补 0
+    if len(v1.release) != len(v2.release):
+        for _ in range(abs(len(v1.release) - len(v2.release))):
+            if len(v1.release) < len(v2.release):
+                v1.release.append(0)
+            else:
+                v2.release.append(0)
+
     # 比较 release
     for n1, n2 in zip(v1.release, v2.release):
         if n1 != n2:
             return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小
-    if len(v1.release) != len(v2.release):
-        return len(v1.release) - len(v2.release)
+    # 如果 release 长度不同，较短的版本号视为较小 ?
+    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+    # 但 0.15.0 和 0.15 实际上是一样的版本
+    # if len(v1.release) != len(v2.release):
+    #     return len(v1.release) - len(v2.release)
 
     # 比较 pre-release
     if v1.pre_l and not v2.pre_l:
@@ -2140,6 +2151,13 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     elif v1.local and v2.local:
         local1 = v1.local.split('.')
         local2 = v2.local.split('.')
+        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+        if len(local1) != len(local2):
+            for _ in range(abs(len(local1) - len(local2))):
+                if len(local1) < len(local2):
+                    local1.append(0)
+                else:
+                    local2.append(0)
         for l1, l2 in zip(local1, local2):
             if l1.isdigit() and l2.isdigit():
                 l1, l2 = int(l1), int(l2)
@@ -2552,7 +2570,7 @@ def parse_requirement_list(requirements: list) -> list:
             requirements = [
                 'torch==2.3.0',
                 'diffusers[torch]==0.10.2',
-                'numpy',
+                'NUMPY',
                 '-e .',
                 '--index-url https://pypi.python.org/simple',
                 '--extra-index-url https://download.pytorch.org/whl/cu124',
@@ -2640,8 +2658,12 @@ def parse_requirement_list(requirements: list) -> list:
                 cleaned_requirements[0].strip())
             package_list.append(format_package_name)
 
+    # 处理包名大小写并统一成小写
     for p in package_list:
+        p: str = p.lower().strip()
+        logger.debug('预处理后的 Python 软件包名: %s', p)
         if not is_package_has_version(p):
+            logger.debug('%s 无版本声明', p)
             canonical_package_list.append(p)
             continue
 
@@ -3088,13 +3110,24 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     if v1.epoch != v2.epoch:
         return v1.epoch - v2.epoch
 
+    # 对其 release 长度, 缺失部分补 0
+    if len(v1.release) != len(v2.release):
+        for _ in range(abs(len(v1.release) - len(v2.release))):
+            if len(v1.release) < len(v2.release):
+                v1.release.append(0)
+            else:
+                v2.release.append(0)
+
     # 比较 release
     for n1, n2 in zip(v1.release, v2.release):
         if n1 != n2:
             return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小
-    if len(v1.release) != len(v2.release):
-        return len(v1.release) - len(v2.release)
+    # 如果 release 长度不同，较短的版本号视为较小 ?
+    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+    # 但 0.15.0 和 0.15 实际上是一样的版本
+    # if len(v1.release) != len(v2.release):
+    #     return len(v1.release) - len(v2.release)
 
     # 比较 pre-release
     if v1.pre_l and not v2.pre_l:
@@ -3160,6 +3193,13 @@ def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
     elif v1.local and v2.local:
         local1 = v1.local.split('.')
         local2 = v2.local.split('.')
+        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+        if len(local1) != len(local2):
+            for _ in range(abs(len(local1) - len(local2))):
+                if len(local1) < len(local2):
+                    local1.append(0)
+                else:
+                    local2.append(0)
         for l1, l2 in zip(local1, local2):
             if l1.isdigit() and l2.isdigit():
                 l1, l2 = int(l1), int(l2)
@@ -3572,7 +3612,7 @@ def parse_requirement_list(requirements: list) -> list:
             requirements = [
                 'torch==2.3.0',
                 'diffusers[torch]==0.10.2',
-                'numpy',
+                'NUMPY',
                 '-e .',
                 '--index-url https://pypi.python.org/simple',
                 '--extra-index-url https://download.pytorch.org/whl/cu124',
@@ -3660,8 +3700,12 @@ def parse_requirement_list(requirements: list) -> list:
                 cleaned_requirements[0].strip())
             package_list.append(format_package_name)
 
+    # 处理包名大小写并统一成小写, 并去除前后空格
     for p in package_list:
+        p: str = p.lower().strip()
+        logger.debug('预处理后的 Python 软件包名: %s', p)
         if not is_package_has_version(p):
+            logger.debug('%s 无版本声明', p)
             canonical_package_list.append(p)
             continue
 
@@ -3964,8 +4008,8 @@ def update_comfyui_component_conflict_requires_list(
                     is_package_has_version(package)
                     and
                     get_package_name(
-                        conflict_package.lower()
-                    ) == get_package_name(package.lower())
+                        conflict_package
+                    ) == get_package_name(package)
                 ):
                     has_conflict_requires = True
                     conflict_requires.append(package)
@@ -4039,11 +4083,10 @@ def statistical_has_conflict_component(
     '''
     content = []
     for conflict_package in conflict_package_list:
-        conflict_package: str = conflict_package.lower()
         content.append(get_package_name(f'{conflict_package}:'))
         for component_name, details in env_data.items():
             for conflict_component_package in details.get('conflict_requires'):
-                if get_package_name(conflict_component_package.lower()) == conflict_package:
+                if get_package_name(conflict_component_package) == conflict_package:
                     content.append(
                         f' - {component_name}: {conflict_component_package}')
 
@@ -4087,6 +4130,7 @@ def is_package_installed(package: str) -> bool:
     )
 
     if env_pkg_version is None:
+        logger.debug('%s 未安装到环境中', package)
         return False
 
     if pkg_version is not None:
@@ -4139,7 +4183,7 @@ def is_package_installed(package: str) -> bool:
                 logger.debug('%s > %s', env_pkg_version, pkg_version)
                 return True
 
-        logger.debug('%s 需要安装', package)
+        logger.debug('%s 需要安装正确版本', package)
         return False
 
     return True
@@ -4177,7 +4221,10 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
     # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
     for i in range(2):
         if i == 1:
-            pkg1, pkg2 = pkg2, pkg1
+            if pkg1 == pkg2:
+                break
+            else:
+                pkg1, pkg2 = pkg2, pkg1
 
         ver1 = get_package_version(pkg1)
         ver2 = get_package_version(pkg2)
@@ -4339,8 +4386,6 @@ def detect_conflict_package_from_list(package_list: list) -> list:
     conflict_package = []
     for i in package_list:
         for j in package_list:
-            i = i.lower()
-            j = j.lower()
             if (
                 get_package_name(i) == get_package_name(j)
                 and detect_conflict_package(i, j)
@@ -4361,16 +4406,58 @@ def display_comfyui_environment_dict(
     '''
     logger.debug('ComfyUI 环境组件表')
     for component_name, details in env_data.items():
-        print('Component: {}'.format(component_name))
-        print('  requirement_path: {}'.format(details['requirement_path']))
-        print('  is_disabled: {}'.format(details['is_disabled']))
-        print('  requires: {}'.format(details['requires']))
-        print('  has_missing_requires: {}'.format(
-            details['has_missing_requires']))
-        print('  missing_requires: {}'.format(details['missing_requires']))
-        print('  has_conflict_requires: {}'.format(
-            details['has_conflict_requires']))
-        print('  conflict_requires: {}'.format(details['conflict_requires']))
+        logger.debug(
+            'Component: %s', component_name
+        )
+        logger.debug(
+            ' - requirement_path: %s', details['requirement_path']
+        )
+        logger.debug(
+            ' - is_disabled: %s', details['is_disabled']
+        )
+        logger.debug(
+            ' - requires: %s', details['requires']
+        )
+        logger.debug(
+            ' - has_missing_requires: %s', details['has_missing_requires']
+        )
+        logger.debug(
+            ' - missing_requires: %s', details['missing_requires']
+        )
+        logger.debug(
+            ' - has_conflict_requires: %s', details['has_conflict_requires']
+        )
+        logger.debug(
+            ' - conflict_requires: %s', details['conflict_requires']
+        )
+        print()
+
+
+def display_check_result(
+    requirement_list: list,
+    conflict_result: list
+) -> None:
+    '''显示 ComfyUI 运行环境检查结果
+
+    参数:
+        requirement_list (list):
+            ComfyUI 组件依赖文件路径列表
+
+        conflict_result (list):
+            冲突组件统计信息
+    '''
+    if len(requirement_list) > 0:
+        logger.debug('需要安装 ComfyUI 组件列表')
+        for requirement in requirement_list:
+            component_name = requirement.split('/')[-2]
+            logger.debug('%s:', component_name)
+            logger.debug(' - %s', requirement)
+        print()
+
+    if len(conflict_result) > 0:
+        logger.debug('ComfyUI 冲突组件')
+        for text in conflict_result:
+            logger.debug(text)
         print()
 
 
@@ -4436,6 +4523,7 @@ def main() -> None:
     write_content_to_file(req_list, comfyui_requirement_path)
     if debug_mode:
         display_comfyui_environment_dict(env_data)
+        display_check_result(req_list, conflict_info)
     logger.debug('ComfyUI 环境检查完成')
 
 
