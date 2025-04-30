@@ -27,7 +27,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 258
+$INVOKEAI_INSTALLER_VERSION = 259
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -715,34 +715,76 @@ function Install-InvokeAI-Requirements {
 }
 
 
+# 安装 LibPatchMatch
+function Install-LibPatchMatch {
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll",
+        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/libpatchmatch_windows_amd64.dll"
+    )
+    $i = 0
+
+    ForEach ($url in $urls) {
+        Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll"
+            break
+        }
+        catch {
+            $i += 1
+            if ($i -lt $urls.Length) {
+                Print-Msg "重试下载 libpatchmatch_windows_amd64.dll 中"
+            } else {
+                Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败, 可能导致 InvokeAI 启动异常"
+                return
+            }
+        }
+    }
+
+    Move-Item -Path "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll" -Force
+    Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
+}
+
+
+# 安装 OpenCV World
+function Install-OpenCVWorld {
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll",
+        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/opencv_world460.dll"
+    )
+    $i = 0
+
+    ForEach ($url in $urls) {
+        Print-Msg "下载 opencv_world460.dll 中"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/opencv_world460.dll"
+            break
+        }
+        catch {
+            $i += 1
+            if ($i -lt $urls.Length) {
+                Print-Msg "重试下载 opencv_world460.dll 中"
+            } else {
+                Print-Msg "下载 opencv_world460.dll 失败, 可能导致 InvokeAI 启动异常"
+                return
+            }
+        }
+    }
+
+    Move-Item -Path "$Env:CACHE_HOME/opencv_world460.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/opencv_world460.dll" -Force
+    Print-Msg "下载 opencv_world460.dll 成功"
+}
+
+
 # 下载 PyPatchMatch
 function Install-PyPatchMatch {
-    # PyPatchMatch
-    $url_1 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll"
-    $url_2 = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll"
-
     if (!(Test-Path "$InstallPath/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll")) {
-        Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
-        Invoke-WebRequest -Uri $url_1 -OutFile "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll"
-        if ($?) {
-            Move-Item -Path "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/libpatchmatch_windows_amd64.dll" -Force
-            Print-Msg "下载 libpatchmatch_windows_amd64.dll 成功"
-        } else {
-            Print-Msg "下载 libpatchmatch_windows_amd64.dll 失败"
-        }
+        Install-LibPatchMatch
     } else {
         Print-Msg "无需下载 libpatchmatch_windows_amd64.dll"
     }
 
     if (!(Test-Path "$InstallPath/python/Lib/site-packages/patchmatch/opencv_world460.dll")) {
-        Print-Msg "下载 opencv_world460.dll 中"
-        Invoke-WebRequest -Uri $url_2 -OutFile "$Env:CACHE_HOME/opencv_world460.dll"
-        if ($?) {
-            Move-Item -Path "$Env:CACHE_HOME/opencv_world460.dll" -Destination "$InstallPath/python/Lib/site-packages/patchmatch/opencv_world460.dll" -Force
-            Print-Msg "下载 opencv_world460.dll 成功"
-        } else {
-            Print-Msg "下载 opencv_world460.dll 失败"
-        }
+        Install-OpenCVWorld
     } else {
         Print-Msg "无需下载 opencv_world460.dll"
     }
