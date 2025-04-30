@@ -39,8 +39,7 @@ jobs:
             -BuildWithLaunch `
             -DisablePyPIMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror `
-            -DisableUV
+            -DisableHuggingFaceMirror
 
       - name: Make docs
         shell: pwsh
