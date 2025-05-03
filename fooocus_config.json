@@ -146,7 +146,9 @@
         "ill-xl-01-yuzusoft_official_style_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yuzusoft_official_style_1-000036.safetensors",
         "ill-xl-01-shuna_1-000035.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-shuna_1-000035.safetensors",
         "ill-xl-01-heripiro_1-000036.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-heripiro_1-000036.safetensors",
-        "ill-xl-01-chon_(chon33v)_1-000037.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-chon_(chon33v)_1-000037.safetensors"
+        "ill-xl-01-chon_(chon33v)_1-000037.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-chon_(chon33v)_1-000037.safetensors",
+        "ill-xl-01-yetuantuan_1-000033.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-yetuantuan_1-000033.safetensors",
+        "ill-xl-01-ku9625_1-000031.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/ill-xl-01-ku9625_1-000031.safetensors"
     },
     "embeddings_downloads": {},
     "vae_downloads": {
