@@ -268,7 +268,7 @@
     "default_enhance_inpaint_mask_model": "sam",
     "default_inpaint_mask_cloth_category": "full",
     "default_inpaint_mask_sam_model": "vit_b",
-    "default_describe_apply_prompts_checkbox": true,
+    "default_describe_apply_prompts_checkbox": false,
     "default_describe_content_type": [
         "Art/Anime"
     ]
