@@ -4,6 +4,27 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "sd_trainer_installer.ps1"
+      - "invokeai_installer.ps1"
+      - "comfyui_installer.ps1"
+      - "stable_diffusion_webui_installer.ps1"
+      - "fooocus_installer.ps1"
+      - "sd_trainer_script_installer.ps1"
+      - "configure_env.bat"
+      - "fooocus_config.json"
+      - "fooocus_path_config_colab.json"
+      - "fooocus_path_config_kaggle.json"
+      - "fooocus_zh_cn.json"
+      - "libtcmalloc_minimal.so.4"
+      - "sd_webui_config.json"
+      - "install_embed_python.ps1"
+      - "sd_scripts_kaggle.ipynb"
+      - "sd_webui_all_in_one_colab.ipynb"
+      - "sd_webui_all_in_one.ipynb"
+      - "sd_trainer_kaggle.ipynb"
+      - "fooocus_colab.ipynb"
+      - "fooocus_kaggle.ipynb"
   delete:
   create:
 
