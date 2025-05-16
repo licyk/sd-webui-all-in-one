@@ -52,7 +52,17 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
           Set-Location -Path "${{ github.workspace }}/comfyui"
-          & "${{ github.workspace }}/comfyui/python/python.exe" "${{ github.workspace }}/comfyui/ComfyUI/main.py" --quick-test-for-ci --cpu
+          & "${{ github.workspace }}/comyui/python/python.exe" "${{ github.workspace }}/comfyui/ComfyUI/main.py" --quick-test-for-ci --cpu
+
+      - name: Close go.exe process (ComfyUI_Custom_Nodes_AlekPet Node)
+        shell: pwsh
+        run: |
+          try {
+              taskkill /f /im go.exe /t
+          }
+          catch {
+              Write-Host "关闭 go.exe 进程时出现错误: $_"
+          }
 
       - name: Launch to complete dependencies
         shell: pwsh
