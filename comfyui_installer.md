@@ -147,7 +147,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 >[!NOTE]  
 >ComfyUI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
 >- [设置 Github 镜像源](#设置-github-镜像源)
->- [设置 PyPI 镜像源](#设置-pip-镜像源)
+>- [设置 PyPI 镜像源](#设置-pypi-镜像源)
 >- [设置 uv 包管理器](#设置-uv-包管理器)
 >- [配置代理](#配置代理)
 >
