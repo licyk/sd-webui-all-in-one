@@ -438,8 +438,8 @@ function Install-InvokeAI {
 }
 
 
-# 获取 PyTorch 版本并设置镜像源
-function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
+# 获取 PyTorch 镜像源
+function Get-PyTorch-Mirror {
     $content = "
 import re
 from importlib.metadata import requires
@@ -570,100 +570,92 @@ if __name__ == '__main__':
     switch ($mirror_type) {
         cu11x {
             Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
-            $cuda_ver = ""
+            $mirror_pip_index_url = $Env:PIP_INDEX_URL
+            $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
+            $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+            $mirror_uv_index = $Env:UV_INDEX
+            $mirror_pip_find_links = $Env:PIP_FIND_LINKS
+            $mirror_uv_find_links = $Env:UV_FIND_LINKS
         }
         cu118 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu118"
-            $cuda_ver = "+cu118"
-            $Env:PIP_FIND_LINKS = " "
-            $Env:UV_FIND_LINKS = ""
-            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU118_NJU
             } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
+                $PIP_EXTRA_INDEX_MIRROR_CU118
             }
-            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU118_NJU $PIP_EXTRA_INDEX_MIRROR"
-            } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU118 $PIP_EXTRA_INDEX_MIRROR"
-            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
         }
         cu121 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu121"
-            $cuda_ver = "+cu121"
-            $Env:PIP_FIND_LINKS = " "
-            $Env:UV_FIND_LINKS = ""
-            $Env:PIP_EXTRA_INDEX_URL = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
-            $Env:UV_INDEX = "$PIP_EXTRA_INDEX_MIRROR_CU121 $PIP_EXTRA_INDEX_MIRROR"
+            $mirror_pip_index_url = "$PIP_EXTRA_INDEX_MIRROR_CU121"
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
         }
         cu124 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu124"
-            $cuda_ver = "+cu124"
-            $Env:PIP_FIND_LINKS = " "
-            $Env:UV_FIND_LINKS = ""
-            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU124_NJU
             } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
+                $PIP_EXTRA_INDEX_MIRROR_CU124
             }
-            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU124_NJU $PIP_EXTRA_INDEX_MIRROR"
-            } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU124 $PIP_EXTRA_INDEX_MIRROR"
-            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
         }
         cu126 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu126"
-            $cuda_ver = "+cu126"
-            $Env:PIP_FIND_LINKS = " "
-            $Env:UV_FIND_LINKS = ""
-            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU126_NJU
             } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
+                $PIP_EXTRA_INDEX_MIRROR_CU126
             }
-            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU126_NJU $PIP_EXTRA_INDEX_MIRROR"
-            } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU126 $PIP_EXTRA_INDEX_MIRROR"
-            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
         }
         cu128 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu128"
-            $cuda_ver = "+cu128"
-            $Env:PIP_FIND_LINKS = " "
-            $Env:UV_FIND_LINKS = ""
-            $Env:PIP_EXTRA_INDEX_URL = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
+                $PIP_EXTRA_INDEX_MIRROR_CU128
             }
-            $Env:UV_INDEX = if ($USE_PIP_MIRROR) {
-                "$PIP_EXTRA_INDEX_MIRROR_CU128_NJU $PIP_EXTRA_INDEX_MIRROR"
-            } else {
-                "$PIP_EXTRA_INDEX_MIRROR_CU128 $PIP_EXTRA_INDEX_MIRROR"
-            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
         }
         Default {
             Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
-            $cuda_ver = "+cu118"
+            $mirror_pip_index_url = $Env:PIP_INDEX_URL
+            $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
+            $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+            $mirror_uv_index = $Env:UV_INDEX
+            $mirror_pip_find_links = $Env:PIP_FIND_LINKS
+            $mirror_uv_find_links = $Env:UV_FIND_LINKS
         }
     }
+    return $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links
+}
 
+
+# 获取 PyTorch 版本
+function Get-PyTorch-Package-Name {
     $content = "
-from importlib.metadata import requires, version
-
-
-pytorch_ver = []
-cuda_ver = '$cuda_ver'
-xf_cuda_ver = ''
-ver_list = ''
-
-invokeai_requires = requires('invokeai')
-invokeai_version = version('invokeai')
-
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
+from importlib.metadata import requires
 
 
 def has_version(version: str) -> bool:
@@ -674,44 +666,118 @@ def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
+pytorch_ver = []
+invokeai_requires = requires('invokeai')
+
 for require in invokeai_requires:
-    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    require = require.split(';')[0].strip()
+    if get_package_name(require) == 'torch' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchvision' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchaudio' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
-        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+    if get_package_name(require) == 'xformers' and has_version(require):
+        pytorch_ver.append(require)
 
 
-for ver in pytorch_ver:
-    ver_list = f'{ver_list} {ver}'
-
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
+ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
 
 print(ver_list)
 ".Trim()
 
-    return $(python -c "$content") # 获取 PyTorch 版本
+    return $(python -c "$content")
+}
+
+
+# 安装 PyTorch
+function Install-PyTorch {
+    $pytorch_package = Get-PyTorch-Package-Name
+    $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links = Get-PyTorch-Mirror $pytorch_package
+
+    # 备份镜像源配置
+    $tmp_pip_index_url = $Env:PIP_INDEX_URL
+    $tmp_uv_default_index = $Env:UV_DEFAULT_INDEX
+    $tmp_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+    $tmp_uv_index = $Env:UV_INDEX
+    $tmp_pip_find_links = $Env:PIP_FIND_LINKS
+    $tmp_uv_find_links = $Env:UV_FIND_LINKS
+
+    # 设置新的镜像源
+    $Env:PIP_INDEX_URL = $mirror_pip_index_url
+    $Env:UV_DEFAULT_INDEX = $mirror_uv_default_index
+    $Env:PIP_EXTRA_INDEX_URL = $mirror_pip_extra_index_url
+    $Env:UV_INDEX = $mirror_uv_index
+    $Env:PIP_FIND_LINKS = $mirror_pip_find_links
+    $Env:UV_FIND_LINKS = $mirror_uv_find_links
+
+    Print-Msg "检测是否需要安装 PyTorch / xFormers"
+    $has_pytorch = $false
+    $has_xformers = $false
+
+    python -m pip show torch --quiet 2> $null
+    if ($?) { $has_pytorch = $true }
+    python -m pip show xformers --quiet 2> $null
+    if ($?) { $has_xformers = $true }
+
+    if (!$has_pytorch -or !$has_xformers) {
+        Print-Msg "安装 PyTorch / xFormers 中"
+        if ($USE_UV) {
+            uv pip install $pytorch_package.ToString().Split()
+            if (!($?)) {
+                Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+                python -m pip install $pytorch_package.ToString().Split() --use-pep517 --no-warn-conflicts
+            }
+        } else {
+            python -m pip install $pytorch_package.ToString().Split() --use-pep517 --no-warn-conflicts
+        }
+        if ($?) {
+            Print-Msg "PyTorch / xFormers 安装成功"
+        } else {
+            Print-Msg "PyTorch / xFormers 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装"
+            if (!($BuildMode)) {
+                Read-Host | Out-Null
+            }
+            exit 1
+        }
+    } else {
+        Print-Msg "PyTorch / xFormers 已安装"
+    }
+
+    # 还原镜像源配置
+    $Env:PIP_INDEX_URL = $tmp_pip_index_url
+    $Env:UV_DEFAULT_INDEX = $tmp_uv_default_index
+    $Env:PIP_EXTRA_INDEX_URL = $tmp_pip_extra_index_url
+    $Env:UV_INDEX = $tmp_uv_index
+    $Env:PIP_FIND_LINKS = $tmp_pip_find_links
+    $Env:UV_FIND_LINKS = $tmp_uv_find_links
 }
 
 
 # 安装 InvokeAI 依赖
 function Install-InvokeAI-Requirements {
-    $pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI # 获取 PyTorch 版本
+    $content = "
+from importlib.metadata import version
+
+try:
+    print('invokeai==' + version('invokeai'))
+except:
+    print('invokeai')
+".Trim()
+    $invokeai_package = $(python -c "$content")
+
     Print-Msg "安装 InvokeAI 依赖中"
     if ($USE_UV) {
-        uv pip install $pytorch_ver.ToString().Split()
+        uv pip install $invokeai_package.ToString().Split()
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install $pytorch_ver.ToString().Split() --use-pep517
+            python -m pip install $invokeai_package.ToString().Split() --use-pep517
         }
     } else {
-        python -m pip install $pytorch_ver.ToString().Split() --use-pep517
+        python -m pip install $invokeai_package.ToString().Split() --use-pep517
     }
     if ($?) {
         Print-Msg "InvokeAI 依赖安装成功"
@@ -854,6 +920,7 @@ function Check-Install {
         Install-InvokeAI
     }
 
+    Install-PyTorch
     Install-InvokeAI-Requirements
 
     Print-Msg "检测是否需要安装 PyPatchMatch"
@@ -2085,8 +2152,8 @@ function Set-uv {
 }
 
 
-# 获取 PyTorch 版本并设置镜像源
-function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
+# 获取 PyTorch 镜像源
+function Get-PyTorch-Mirror {
     `$content = `"
 import re
 from importlib.metadata import requires
@@ -2217,100 +2284,92 @@ if __name__ == '__main__':
     switch (`$mirror_type) {
         cu11x {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu11x`"
-            `$cuda_ver = `"`"
+            `$mirror_pip_index_url = `$Env:PIP_INDEX_URL
+            `$mirror_uv_default_index = `$Env:UV_DEFAULT_INDEX
+            `$mirror_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+            `$mirror_uv_index = `$Env:UV_INDEX
+            `$mirror_pip_find_links = `$Env:PIP_FIND_LINKS
+            `$mirror_uv_find_links = `$Env:UV_FIND_LINKS
         }
         cu118 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu118`"
-            `$cuda_ver = `"+cu118`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU118
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu121 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu121`"
-            `$cuda_ver = `"+cu121`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-            `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu124 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu124`"
-            `$cuda_ver = `"+cu124`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU124
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu126 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu126`"
-            `$cuda_ver = `"+cu126`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU126
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu128 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu128`"
-            `$cuda_ver = `"+cu128`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU128
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         Default {
             Print-Msg `"未知的 PyTorch 镜像源类型: `$mirror_type, 使用默认 PyTorch 镜像源`"
-            `$cuda_ver = `"+cu118`"
+            `$mirror_pip_index_url = `$Env:PIP_INDEX_URL
+            `$mirror_uv_default_index = `$Env:UV_DEFAULT_INDEX
+            `$mirror_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+            `$mirror_uv_index = `$Env:UV_INDEX
+            `$mirror_pip_find_links = `$Env:PIP_FIND_LINKS
+            `$mirror_uv_find_links = `$Env:UV_FIND_LINKS
         }
     }
+    return `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links
+}
 
+
+# 获取 PyTorch 版本
+function Get-PyTorch-Package-Name {
     `$content = `"
-from importlib.metadata import requires, version
-
-
-pytorch_ver = []
-cuda_ver = '`$cuda_ver'
-xf_cuda_ver = ''
-ver_list = ''
-
-invokeai_requires = requires('invokeai')
-invokeai_version = version('invokeai')
-
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
+from importlib.metadata import requires
 
 
 def has_version(version: str) -> bool:
@@ -2321,29 +2380,30 @@ def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
+pytorch_ver = []
+invokeai_requires = requires('invokeai')
+
 for require in invokeai_requires:
-    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    require = require.split(';')[0].strip()
+    if get_package_name(require) == 'torch' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchvision' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchaudio' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
-        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+    if get_package_name(require) == 'xformers' and has_version(require):
+        pytorch_ver.append(require)
 
 
-for ver in pytorch_ver:
-    ver_list = f'{ver_list} {ver}'
-
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
+ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
 
 print(ver_list)
 `".Trim()
 
-    return `$(python -c `"`$content`") # 获取 PyTorch 版本
+    return `$(python -c `"`$content`")
 }
 
 
@@ -2353,15 +2413,177 @@ function Get-InvokeAI-Version {
 from importlib.metadata import version
 
 try:
-    ver = version('invokeai')
+    print('invokeai==' + version('invokeai'))
 except:
-    ver = '5.0.2'
-
-print(f'InvokeAI=={ver}')
+    print('invokeai==5.0.2')
 `".Trim()
 
     `$status = `$(python -c `"`$content`")
     return `$status
+}
+
+
+# 更新 InvokeAI 内核
+function Update-InvokeAI {
+    Print-Msg `"更新 InvokeAI 中`"
+    if (`$InvokeAIPackage -ne `"InvokeAI`") {
+        Print-Msg `"更新到 InvokeAI 指定版本: `$InvokeAIPackage`"
+    }
+    if (`$USE_UV) {
+        uv pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
+        }
+    } else {
+        python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
+    }
+
+    if (`$?) {
+        Print-Msg `"更新 InvokeAI 内核成功`"
+        `$Global:UPDATE_INVOKEAI_STATUS = `$true
+    } else {
+        Print-Msg `"更新 InvokeAI 内核失败`"
+        `$Global:UPDATE_INVOKEAI_STATUS = `$false
+    }
+}
+
+
+# 更新 PyTorch
+function Update-PyTorch {
+    `$pytorch_package = Get-PyTorch-Package-Name
+    `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror `$pytorch_package
+
+    # 备份镜像源配置
+    `$tmp_pip_index_url = `$Env:PIP_INDEX_URL
+    `$tmp_uv_default_index = `$Env:UV_DEFAULT_INDEX
+    `$tmp_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+    `$tmp_uv_index = `$Env:UV_INDEX
+    `$tmp_pip_find_links = `$Env:PIP_FIND_LINKS
+    `$tmp_uv_find_links = `$Env:UV_FIND_LINKS
+
+    # 设置新的镜像源
+    `$Env:PIP_INDEX_URL = `$mirror_pip_index_url
+    `$Env:UV_DEFAULT_INDEX = `$mirror_uv_default_index
+    `$Env:PIP_EXTRA_INDEX_URL = `$mirror_pip_extra_index_url
+    `$Env:UV_INDEX = `$mirror_uv_index
+    `$Env:PIP_FIND_LINKS = `$mirror_pip_find_links
+    `$Env:UV_FIND_LINKS = `$mirror_uv_find_links
+
+    Print-Msg `"更新 PyTorch / xFormers 中`"
+    if (`$USE_UV) {
+        uv pip install `$pytorch_package.ToString().Split()
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install `$pytorch_package.ToString().Split() --use-pep517 --no-warn-conflicts
+        }
+    } else {
+        python -m pip install `$pytorch_package.ToString().Split() --use-pep517 --no-warn-conflicts
+    }
+
+    if (`$?) {
+        Print-Msg `"PyTorch / xFormers 更新成功`"
+        `$Global:UPDATE_PYTORCH_STATUS = `$true
+    } else {
+        Print-Msg `"PyTorch / xFormers 更新失败`"
+        `$Global:UPDATE_PYTORCH_STATUS = `$false
+    }
+
+    # 还原镜像源配置
+    `$Env:PIP_INDEX_URL = `$tmp_pip_index_url
+    `$Env:UV_DEFAULT_INDEX = `$tmp_uv_default_index
+    `$Env:PIP_EXTRA_INDEX_URL = `$tmp_pip_extra_index_url
+    `$Env:UV_INDEX = `$tmp_uv_index
+    `$Env:PIP_FIND_LINKS = `$tmp_pip_find_links
+    `$Env:UV_FIND_LINKS = `$tmp_uv_find_links
+}
+
+
+# 更新 InvokeAI 依赖
+function Update-InvokeAI-Requirements {
+    `$invokeai_core_ver = Get-InvokeAI-Version
+
+    Print-Msg `"更新 InvokeAI 依赖中`"
+    if (`$USE_UV) {
+        uv pip install `$invokeai_core_ver.ToString().Split()
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517
+        }
+    } else {
+        python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517
+    }
+
+    if (`$?) {
+        Print-Msg `"更新 InvokeAI 依赖成功`"
+        `$Global:UPDATE_INVOKEAI_REQ_STATUS = `$true
+    } else {
+        Print-Msg `"更新 InvokeAI 依赖失败`"
+        `$Global:UPDATE_INVOKEAI_REQ_STATUS = `$false
+    }
+}
+
+
+# 处理 InvokeAI 更新流程
+function Process-InvokeAI-Update {
+    `$invokeai_current_ver = Get-InvokeAI-Version
+    `$fallback_invokeai_ver = `$false
+    `$Global:PROCESS_INVOKEAI_UPDATE_STATUS = `$false
+
+    Print-Msg `"开始更新 InvokeAI`"
+    while (`$true) {
+        Update-InvokeAI
+        if (`$UPDATE_INVOKEAI_STATUS) {
+            `$Global:UPDATE_CORE_INFO = `"更新成功`"
+        } else {
+            `$Global:UPDATE_CORE_INFO = `"更新失败`"
+            `$Global:UPDATE_PYTORCH_INFO = `"由于内核更新失败, 不进行 PyTorch 更新`"
+            `$Global:UPDATE_REQ_INFO = `"由于内核更新失败, 不进行依赖更新`"
+            break
+        }
+
+        Update-PyTorch
+        if (`$UPDATE_PYTORCH_STATUS) {
+            `$Global:UPDATE_PYTORCH_INFO = `"更新成功`"
+        } else {
+            `$Global:UPDATE_PYTORCH_INFO = `"更新失败`"
+            `$Global:UPDATE_REQ_INFO = `"由于 PyTorch 更新失败, 不进行依赖更新`"
+            `$fallback_invokeai_ver = `$true
+            break
+        }
+
+        Update-InvokeAI-Requirements
+        if (`$UPDATE_INVOKEAI_REQ_STATUS) {
+            `$Global:UPDATE_REQ_INFO = `"更新成功`"
+        } else {
+            `$Global:UPDATE_REQ_INFO = `"更新成功`"
+            `$fallback_invokeai_ver = `$true
+            break
+        }
+
+        `$Global:PROCESS_INVOKEAI_UPDATE_STATUS = `$true
+        break
+    }
+
+    if (`$fallback_invokeai_ver) {
+        Print-Msg `"尝试回退 InvokeAI 内核版本`"
+        if (`$USE_UV) {
+            uv pip install `$invokeai_core_ver.ToString().Split() --no-deps
+            if (!(`$?)) {
+                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+                python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+            }
+        } else {
+            python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+        }
+        if (`$?) {
+            Print-Msg `"回退 InvokeAI 内核版本成功`"
+            `$Global:UPDATE_CORE_INFO = `"由于 InvokeAI 依赖 / PyTorch 更新失败, 已尝试回退内核版本`"
+        } else {
+            Print-Msg `"回退 InvokeAI 内核版本失败`"
+            `$Global:UPDATE_CORE_INFO = `"由于 InvokeAI 依赖 / PyTorch 更新失败, 已尝试回退内核版本, 但出现回退失败`"
+        }
+    }
 }
 
 
@@ -2377,81 +2599,17 @@ function Main {
     }
     Set-uv
     PyPI-Mirror-Status
-    `$update_fail = 0
-
-    Print-Msg `"更新 InvokeAI 内核中`"
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
-    `$invokeai_core_ver = Get-InvokeAI-Version
-    if (`$InvokeAIPackage -ne `"InvokeAI`") {
-        Print-Msg `"更新到 InvokeAI 指定版本: `$InvokeAIPackage`"
-    }
-    if (`$USE_UV) {
-        uv pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps
-        if (!(`$?)) {
-            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-            python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
-        }
-    } else {
-        python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
-    }
+    Process-InvokeAI-Update
+    `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
 
-    if (`$?) {
-        Print-Msg `"InvokeAI 内核更新成功, 开始更新 InvokeAI 依赖`"
-        `$core_update_msg = `"更新成功`"
-
-        # 获取 PyTorch 版本
-        `$pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI
-
-        `$ver_ = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).Trim().Split(`"==`")[2]
-        if (`$USE_UV) {
-            uv pip install `$pytorch_ver.ToString().Split()
-            if (!(`$?)) {
-                Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
-            }
-        } else {
-            python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
-        }
-        if (`$?) {
-            Print-Msg `"InvokeAI 依赖更新成功`"
-            `$req_update_msg = `"更新成功`"
-        } else {
-            Print-Msg `"InvokeAI 依赖更新失败`"
-            `$core_update_msg = `"由于内核依赖更新失败, 已回退内核版本`"
-            `$req_update_msg = `"更新失败`"
-            `$update_fail = 1
-
-            # 依赖更新失败时回退内核版本
-            Print-Msg `"尝试回退 InvokeAI 内核版本`"
-            if (`$USE_UV) {
-                uv pip install `$invokeai_core_ver.ToString().Split() --no-deps
-                if (!(`$?)) {
-                    Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                    python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
-                }
-            } else {
-                python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
-            }
-
-            if (`$?) {
-                Print-Msg `"回退 InvokeAI 内核版本成功`"
-            } else {
-                Print-Msg `"回退 InvokeAI 内核版本失败`"
-                `$core_update_msg = `"由于内核依赖更新失败, 已尝试回退内核版本, 但出现回退失败`"
-            }
-        }
-    } else {
-        Print-Msg `"InvokeAI 内核更新失败`"
-        `$core_update_msg = `"更新失败`"
-        `$req_update_msg = `"由于内核更新失败, 不进行依赖更新`"
-        `$update_fail = 1
-    }
     Print-Msg `"============================================================================`"
     Print-Msg `"InvokeAI 更新结果：`"
-    Print-Msg `"InvokeAI 核心: `$core_update_msg`"
-    Print-Msg `"InvokeAI 依赖: `$req_update_msg`"
+    Print-Msg `"InvokeAI 核心: `$UPDATE_CORE_INFO`"
+    Print-Msg `"PyTorch: `$UPDATE_PYTORCH_INFO`"
+    Print-Msg `"InvokeAI 依赖: `$UPDATE_REQ_INFO`"
     Print-Msg `"============================================================================`"
-    if (`$update_fail -eq 0) {
+    if (`$PROCESS_INVOKEAI_UPDATE_STATUS) {
         if (`$ver -eq `$ver_) {
             Print-Msg `"InvokeAI 更新成功, 当前版本：`$ver_`"
         } else {
@@ -3427,8 +3585,8 @@ function Set-Proxy {
 }
 
 
-# 获取 PyTorch 版本并设置镜像源
-function Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI {
+# 获取 PyTorch 镜像源
+function Get-PyTorch-Mirror {
     `$content = `"
 import re
 from importlib.metadata import requires
@@ -3559,100 +3717,92 @@ if __name__ == '__main__':
     switch (`$mirror_type) {
         cu11x {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu11x`"
-            `$cuda_ver = `"`"
+            `$mirror_pip_index_url = `$Env:PIP_INDEX_URL
+            `$mirror_uv_default_index = `$Env:UV_DEFAULT_INDEX
+            `$mirror_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+            `$mirror_uv_index = `$Env:UV_INDEX
+            `$mirror_pip_find_links = `$Env:PIP_FIND_LINKS
+            `$mirror_uv_find_links = `$Env:UV_FIND_LINKS
         }
         cu118 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu118`"
-            `$cuda_ver = `"+cu118`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU118
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU118 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu121 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu121`"
-            `$cuda_ver = `"+cu121`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
-            `$Env:UV_INDEX = `"`$PIP_EXTRA_INDEX_MIRROR_CU121 `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = `"`$PIP_EXTRA_INDEX_MIRROR_CU121`"
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu124 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu124`"
-            `$cuda_ver = `"+cu124`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU124
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU124 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu126 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu126`"
-            `$cuda_ver = `"+cu126`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU126
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU126 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         cu128 {
             Print-Msg `"设置 PyTorch 镜像源类型为 cu128`"
-            `$cuda_ver = `"+cu128`"
-            `$Env:PIP_FIND_LINKS = `" `"
-            `$Env:UV_FIND_LINKS = `"`"
-            `$Env:PIP_EXTRA_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
+                `$PIP_EXTRA_INDEX_MIRROR_CU128
             }
-            `$Env:UV_INDEX = if (`$USE_PIP_MIRROR) {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU `$PIP_EXTRA_INDEX_MIRROR`"
-            } else {
-                `"`$PIP_EXTRA_INDEX_MIRROR_CU128 `$PIP_EXTRA_INDEX_MIRROR`"
-            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
         }
         Default {
             Print-Msg `"未知的 PyTorch 镜像源类型: `$mirror_type, 使用默认 PyTorch 镜像源`"
-            `$cuda_ver = `"+cu118`"
+            `$mirror_pip_index_url = `$Env:PIP_INDEX_URL
+            `$mirror_uv_default_index = `$Env:UV_DEFAULT_INDEX
+            `$mirror_pip_extra_index_url = `$Env:PIP_EXTRA_INDEX_URL
+            `$mirror_uv_index = `$Env:UV_INDEX
+            `$mirror_pip_find_links = `$Env:PIP_FIND_LINKS
+            `$mirror_uv_find_links = `$Env:UV_FIND_LINKS
         }
     }
+    return `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links
+}
 
+
+# 获取 PyTorch 版本
+function Get-PyTorch-Package-Name {
     `$content = `"
-from importlib.metadata import requires, version
-
-
-pytorch_ver = []
-cuda_ver = '`$cuda_ver'
-xf_cuda_ver = ''
-ver_list = ''
-
-invokeai_requires = requires('invokeai')
-invokeai_version = version('invokeai')
-
-if cuda_ver == '+cu118':
-    xf_cuda_ver = cuda_ver
+from importlib.metadata import requires
 
 
 def has_version(version: str) -> bool:
@@ -3663,29 +3813,30 @@ def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
 
+pytorch_ver = []
+invokeai_requires = requires('invokeai')
+
 for require in invokeai_requires:
-    if get_package_name(require) == 'torch' and has_version(require) and require.startswith('torch=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    require = require.split(';')[0].strip()
+    if get_package_name(require) == 'torch' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require) and require.startswith('torchvision=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchvision' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require) and require.startswith('torchaudio=='):
-        pytorch_ver.append(require.split(';')[0].strip() + cuda_ver)
+    if get_package_name(require) == 'torchaudio' and has_version(require):
+        pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require) and require.startswith('xformers=='):
-        pytorch_ver.append(require.split(';')[0].strip() + xf_cuda_ver)
+    if get_package_name(require) == 'xformers' and has_version(require):
+        pytorch_ver.append(require)
 
 
-for ver in pytorch_ver:
-    ver_list = f'{ver_list} {ver}'
-
-ver_list = f'InvokeAI[xformers]=={invokeai_version} {ver_list.strip()}'.strip()
+ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
 
 print(ver_list)
 `".Trim()
 
-    return `$(python -c `"`$content`") # 获取 PyTorch 版本
+    return `$(python -c `"`$content`")
 }
 
 
@@ -3928,17 +4079,29 @@ function Main {
             }
         }
 
+        # 获取 PyTorch 软件包名和版本
+        `$pytorch_package = Get-PyTorch-Package-Name
+
+        # 获取 PyTorch 镜像源
+        `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror `$pytorch_package
+
+        # 设置新的镜像源
+        `$Env:PIP_INDEX_URL = `$mirror_pip_index_url
+        `$Env:UV_DEFAULT_INDEX = `$mirror_uv_default_index
+        `$Env:PIP_EXTRA_INDEX_URL = `$mirror_pip_extra_index_url
+        `$Env:UV_INDEX = `$mirror_uv_index
+        `$Env:PIP_FIND_LINKS = `$mirror_pip_find_links
+        `$Env:UV_FIND_LINKS = `$mirror_uv_find_links
+
         Print-Msg `"重新安装 PyTorch`"
-        # 获取 PyTorch 版本
-        `$pytorch_ver = Get-PyTorch-Version-And-Set-Mirror-For-InvokeAI
         if (`$USE_UV) {
-            uv pip install `$pytorch_ver.ToString().Split()
+            uv pip install `$pytorch_package.ToString().Split()
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
+                python -m pip install `$pytorch_package.ToString().Split() --use-pep517
             }
         } else {
-            python -m pip install `$pytorch_ver.ToString().Split() --use-pep517
+            python -m pip install `$pytorch_package.ToString().Split() --use-pep517
         }
         if (`$?) {
             Print-Msg `"重新安装 PyTorch 成功`"
