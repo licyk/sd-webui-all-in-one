@@ -1,6 +1,8 @@
 ﻿param (
     [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "InvokeAI"),
+    [string]$InvokeAIPackage = "InvokeAI",
+    [string]$PyTorchMirrorType,
     [switch]$UseUpdateMode,
     [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
@@ -412,14 +414,17 @@ function Install-uv {
 # 安装 InvokeAI
 function Install-InvokeAI {
     Print-Msg "正在下载 InvokeAI"
+    if ($InvokeAIPackage -ne "InvokeAI") {
+        Print-Msg "使用自定义 InvokeAI 版本: $InvokeAIPackage"
+    }
     if ($USE_UV) {
-        uv pip install InvokeAI --no-deps
+        uv pip install $InvokeAIPackage.ToString().Split() --no-deps
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install InvokeAI --no-deps --use-pep517
+            python -m pip install $InvokeAIPackage.ToString().Split() --no-deps --use-pep517
         }
     } else {
-        python -m pip install InvokeAI --no-deps --use-pep517
+        python -m pip install $InvokeAIPackage.ToString().Split() --no-deps --use-pep517
     }
     if ($?) { # 检测是否下载成功
         Print-Msg "InvokeAI 安装成功"
@@ -554,7 +559,12 @@ if __name__ == '__main__':
 ".Trim()
 
     # 获取镜像类型
-    $mirror_type = $(python -c "$content")
+    if ($PyTorchMirrorType) {
+        Print-Msg "使用自定义 PyTorch 镜像源类型: $PyTorchMirrorType"
+        $mirror_type = $PyTorchMirrorType
+    } else {
+        $mirror_type = $(python -c "$content")
+    }
 
     # 设置 PyTorch 镜像源
     switch ($mirror_type) {
@@ -1711,7 +1721,9 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUV
+    [switch]`$DisableUV,
+    [string]`$InvokeAIPackage = `"InvokeAI`",
+    [string]`$PyTorchMirrorType
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -1827,6 +1839,13 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -InvokeAIPackage <安装 InvokeAI 的软件包名>
+        指定 InvokeAI Installer 安装的 InvokeAI 版本
+        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+
+    -PyTorchMirrorType <PyTorch 镜像源类型>
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu11x, cu118, cu121, cu124, cu126, cu128
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
@@ -2187,7 +2206,12 @@ if __name__ == '__main__':
 `".Trim()
 
     # 获取镜像类型
-    `$mirror_type = `$(python -c `"`$content`")
+    if (`$PyTorchMirrorType) {
+        Print-Msg `"使用自定义 PyTorch 镜像源类型: `$PyTorchMirrorType`"
+        `$mirror_type = `$PyTorchMirrorType
+    } else {
+        `$mirror_type = `$(python -c `"`$content`")
+    }
 
     # 设置 PyTorch 镜像源
     switch (`$mirror_type) {
@@ -2358,14 +2382,17 @@ function Main {
     Print-Msg `"更新 InvokeAI 内核中`"
     `$ver = `$(python -m pip freeze | Select-String -Pattern `"invokeai`" | Out-String).trim().split(`"==`")[2]
     `$invokeai_core_ver = Get-InvokeAI-Version
+    if (`$InvokeAIPackage -ne `"InvokeAI`") {
+        Print-Msg `"更新到 InvokeAI 指定版本: `$InvokeAIPackage`"
+    }
     if (`$USE_UV) {
-        uv pip install InvokeAI --upgrade --no-deps
+        uv pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps
         if (!(`$?)) {
             Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-            python -m pip install InvokeAI --upgrade --no-deps --use-pep517
+            python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
         }
     } else {
-        python -m pip install InvokeAI --upgrade --no-deps --use-pep517
+        python -m pip install `$InvokeAIPackage.ToString().Split() --upgrade --no-deps --use-pep517
     }
 
     if (`$?) {
@@ -3192,7 +3219,9 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate,
-    [switch]`$DisableUV
+    [switch]`$DisableUV,
+    [string]`$InvokeAIPackage = `"InvokeAI`",
+    [string]`$PyTorchMirrorType
 )
 # InvokeAI Installer 版本和检查更新间隔
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
@@ -3308,6 +3337,13 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -DisableUV
         禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -InvokeAIPackage <安装 InvokeAI 的软件包名>
+        指定 InvokeAI Installer 安装的 InvokeAI 版本
+        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+
+    -PyTorchMirrorType <PyTorch 镜像源类型>
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu11x, cu118, cu121, cu124, cu126, cu128
 
 
 更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
@@ -3512,7 +3548,12 @@ if __name__ == '__main__':
 `".Trim()
 
     # 获取镜像类型
-    `$mirror_type = `$(python -c `"`$content`")
+    if (`$PyTorchMirrorType) {
+        Print-Msg `"使用自定义 PyTorch 镜像源类型: `$PyTorchMirrorType`"
+        `$mirror_type = `$PyTorchMirrorType
+    } else {
+        `$mirror_type = `$(python -c `"`$content`")
+    }
 
     # 设置 PyTorch 镜像源
     switch (`$mirror_type) {
@@ -3864,15 +3905,17 @@ function Main {
         python -m pip show invokeai --quiet 2> `$null
         if (!(`$?)) {
             Print-Msg `"检测到 InvokeAI 未安装, 尝试安装中`"
-
+            if (`$InvokeAIPackage -ne `"InvokeAI`") {
+                Print-Msg `"安装 InvokeAI 指定版本: `$InvokeAIPackage`"
+            }
             if (`$USE_UV) {
-                uv pip install InvokeAI --no-deps
+                uv pip install `$InvokeAIPackage.ToString().Split() --no-deps
                 if (!(`$?)) {
                     Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                    python -m pip install InvokeAI --no-deps --use-pep517
+                    python -m pip install `$InvokeAIPackage.ToString().Split() --no-deps --use-pep517
                 }
             } else {
-                python -m pip install InvokeAI --no-deps --use-pep517
+                python -m pip install `$InvokeAIPackage.ToString().Split() --no-deps --use-pep517
             }
             if (`$?) { # 检测是否下载成功
                 Print-Msg `"InvokeAI 安装成功`"
@@ -6860,6 +6903,8 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        if ($InvokeAIPackage) { $launch_args.Add("-InvokeAIPackage", $InvokeAIPackage) }
+        if ($PyTorchMirrorType) { $launch_args.Add("-PyTorchMirrorType", $PyTorchMirrorType) }
         Print-Msg "执行重装 PyTorch 脚本中"
         . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
     }
@@ -6882,6 +6927,8 @@ function Use-Build-Mode {
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        if ($InvokeAIPackage) { $launch_args.Add("-InvokeAIPackage", $InvokeAIPackage) }
+        if ($PyTorchMirrorType) { $launch_args.Add("-PyTorchMirrorType", $PyTorchMirrorType) }
         Print-Msg "执行 InvokeAI 更新脚本中"
         . "$InstallPath/update.ps1" -BuildMode @launch_args
     }
@@ -6985,6 +7032,13 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -InstallPath <安装 InvokeAI 的绝对路径>
         指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
         例如: .\invokeai_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Donwload 这个路径
+
+    -InvokeAIPackage <安装 InvokeAI 的软件包名>
+        指定 InvokeAI Installer 安装的 InvokeAI 版本
+        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+
+    -PyTorchMirrorType <PyTorch 镜像源类型>
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu11x, cu118, cu121, cu124, cu126, cu128
 
     -UseUpdateMode
         指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新

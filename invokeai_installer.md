@@ -574,6 +574,8 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |参数|作用|
 |---|---|
 |`-InstallPath` <InvokeAI 安装路径>|指定安装 InvokeAI 的路径，使用绝对路径进行指定。|
+|`-InvokeAIPackage` <安装 InvokeAI 的软件包名>|指定 InvokeAI Installer 安装的 InvokeAI 版本。<br>例如: `-InvokeAIPackage InvokeAI==5.0.2`, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2。|
+|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`|
 |`-UseUpdateMode`|使用 InvokeAI Installer 的更新脚本模式，不进行 InvokeAI 的安装。|
 |`-DisablePyPIMirror`|禁用 InvokeAI Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 InvokeAI Installer 自动设置代理服务器。|
