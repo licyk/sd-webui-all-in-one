@@ -658,10 +658,6 @@ function Get-PyTorch-Package-Name {
 from importlib.metadata import requires
 
 
-def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
-
-
 def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
@@ -671,16 +667,16 @@ invokeai_requires = requires('invokeai')
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch' and has_version(require):
+    if get_package_name(require) == 'torch':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require):
+    if get_package_name(require) == 'torchvision':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require):
+    if get_package_name(require) == 'torchaudio':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require):
+    if get_package_name(require) == 'xformers':
         pytorch_ver.append(require)
 
 
@@ -2372,10 +2368,6 @@ function Get-PyTorch-Package-Name {
 from importlib.metadata import requires
 
 
-def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
-
-
 def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
@@ -2385,16 +2377,16 @@ invokeai_requires = requires('invokeai')
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch' and has_version(require):
+    if get_package_name(require) == 'torch':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require):
+    if get_package_name(require) == 'torchvision':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require):
+    if get_package_name(require) == 'torchaudio':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require):
+    if get_package_name(require) == 'xformers':
         pytorch_ver.append(require)
 
 
@@ -2568,13 +2560,13 @@ function Process-InvokeAI-Update {
     if (`$fallback_invokeai_ver) {
         Print-Msg `"尝试回退 InvokeAI 内核版本`"
         if (`$USE_UV) {
-            uv pip install `$invokeai_core_ver.ToString().Split() --no-deps
+            uv pip install `$invokeai_current_ver.ToString().Split() --no-deps
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+                python -m pip install `$invokeai_current_ver.ToString().Split() --use-pep517 --no-deps
             }
         } else {
-            python -m pip install `$invokeai_core_ver.ToString().Split() --use-pep517 --no-deps
+            python -m pip install `$invokeai_current_ver.ToString().Split() --use-pep517 --no-deps
         }
         if (`$?) {
             Print-Msg `"回退 InvokeAI 内核版本成功`"
@@ -3805,10 +3797,6 @@ function Get-PyTorch-Package-Name {
 from importlib.metadata import requires
 
 
-def has_version(version: str) -> bool:
-    return version != version.replace('~=', '').replace('===', '').replace('!=', '').replace('<=', '').replace('>=', '').replace('<', '').replace('>', '').replace('==', '')
-
-
 def get_package_name(package: str) -> str:
     return package.split('~=')[0].split('===')[0].split('!=')[0].split('<=')[0].split('>=')[0].split('<')[0].split('>')[0].split('==')[0]
 
@@ -3818,16 +3806,16 @@ invokeai_requires = requires('invokeai')
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch' and has_version(require):
+    if get_package_name(require) == 'torch':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchvision' and has_version(require):
+    if get_package_name(require) == 'torchvision':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'torchaudio' and has_version(require):
+    if get_package_name(require) == 'torchaudio':
         pytorch_ver.append(require)
 
-    if get_package_name(require) == 'xformers' and has_version(require):
+    if get_package_name(require) == 'xformers':
         pytorch_ver.append(require)
 
 
