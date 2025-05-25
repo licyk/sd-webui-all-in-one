@@ -29,7 +29,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 263
+$INVOKEAI_INSTALLER_VERSION = 264
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -692,7 +692,7 @@ print(ver_list)
 # 安装 PyTorch
 function Install-PyTorch {
     $pytorch_package = Get-PyTorch-Package-Name
-    $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links = Get-PyTorch-Mirror $pytorch_package
+    $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links = Get-PyTorch-Mirror
 
     # 备份镜像源配置
     $tmp_pip_index_url = $Env:PIP_INDEX_URL
@@ -2444,7 +2444,7 @@ function Update-InvokeAI {
 # 更新 PyTorch
 function Update-PyTorch {
     `$pytorch_package = Get-PyTorch-Package-Name
-    `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror `$pytorch_package
+    `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror
 
     # 备份镜像源配置
     `$tmp_pip_index_url = `$Env:PIP_INDEX_URL
@@ -4071,7 +4071,7 @@ function Main {
         `$pytorch_package = Get-PyTorch-Package-Name
 
         # 获取 PyTorch 镜像源
-        `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror `$pytorch_package
+        `$mirror_pip_index_url, `$mirror_uv_default_index, `$mirror_pip_extra_index_url, `$mirror_uv_index, `$mirror_pip_find_links, `$mirror_uv_find_links = Get-PyTorch-Mirror
 
         # 设置新的镜像源
         `$Env:PIP_INDEX_URL = `$mirror_pip_index_url
