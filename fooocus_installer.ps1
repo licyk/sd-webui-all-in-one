@@ -1,6 +1,7 @@
 ﻿param (
     [switch]$Help,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "Fooocus"),
+    [string]$PyTorchMirrorType,
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
     [switch]$DisablePyPIMirror,
@@ -33,7 +34,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 177
+$FOOOCUS_INSTALLER_VERSION = 178
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -562,7 +563,10 @@ function Get-PyTorch-Mirror ($pytorch_package) {
     # 获取 PyTorch 的版本
     $torch_part = @($pytorch_package -split ' ' | Where-Object { $_ -like "torch==*" })[0]
 
-    if ($torch_part) {
+    if ($PyTorchMirrorType) {
+        Print-Msg "使用指定的 PyTorch 镜像源类型: $PyTorchMirrorType"
+        $mirror_type = $PyTorchMirrorType
+    } elseif ($torch_part) {
         # 获取 PyTorch 镜像源类型
         if ($torch_part.split("+") -eq $torch_part) {
             $content = "
@@ -665,97 +669,92 @@ if __name__ == '__main__':
         }
 
         Print-Msg "PyTorch 镜像源类型: $mirror_type"
-
-        # 设置对应的镜像源
-        switch ($mirror_type) {
-            cu11x {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
-                $mirror_pip_index_url = $Env:PIP_INDEX_URL
-                $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
-                $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
-                $mirror_uv_index = $Env:UV_INDEX
-                $mirror_pip_find_links = $Env:PIP_FIND_LINKS
-                $mirror_uv_find_links = $Env:UV_FIND_LINKS
-            }
-            cu118 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu118"
-                $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
-                    $PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    $PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                $mirror_uv_default_index = $mirror_pip_index_url
-                $mirror_pip_extra_index_url = ""
-                $mirror_uv_index = $mirror_pip_extra_index_url
-                $mirror_pip_find_links = ""
-                $mirror_uv_find_links = $mirror_pip_find_links
-            }
-            cu121 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu121"
-                $mirror_pip_index_url = "$PIP_EXTRA_INDEX_MIRROR_CU121"
-                $mirror_uv_default_index = $mirror_pip_index_url
-                $mirror_pip_extra_index_url = ""
-                $mirror_uv_index = $mirror_pip_extra_index_url
-                $mirror_pip_find_links = ""
-                $mirror_uv_find_links = $mirror_pip_find_links
-            }
-            cu124 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu124"
-                $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
-                    $PIP_EXTRA_INDEX_MIRROR_CU124_NJU
-                } else {
-                    $PIP_EXTRA_INDEX_MIRROR_CU124
-                }
-                $mirror_uv_default_index = $mirror_pip_index_url
-                $mirror_pip_extra_index_url = ""
-                $mirror_uv_index = $mirror_pip_extra_index_url
-                $mirror_pip_find_links = ""
-                $mirror_uv_find_links = $mirror_pip_find_links
-            }
-            cu126 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu126"
-                $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
-                    $PIP_EXTRA_INDEX_MIRROR_CU126_NJU
-                } else {
-                    $PIP_EXTRA_INDEX_MIRROR_CU126
-                }
-                $mirror_uv_default_index = $mirror_pip_index_url
-                $mirror_pip_extra_index_url = ""
-                $mirror_uv_index = $mirror_pip_extra_index_url
-                $mirror_pip_find_links = ""
-                $mirror_uv_find_links = $mirror_pip_find_links
-            }
-            cu128 {
-                Print-Msg "设置 PyTorch 镜像源类型为 cu128"
-                $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
-                    $PIP_EXTRA_INDEX_MIRROR_CU128_NJU
-                } else {
-                    $PIP_EXTRA_INDEX_MIRROR_CU128
-                }
-                $mirror_uv_default_index = $mirror_pip_index_url
-                $mirror_pip_extra_index_url = ""
-                $mirror_uv_index = $mirror_pip_extra_index_url
-                $mirror_pip_find_links = ""
-                $mirror_uv_find_links = $mirror_pip_find_links
-            }
-            Default {
-                Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
-                $mirror_pip_index_url = $Env:PIP_INDEX_URL
-                $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
-                $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
-                $mirror_uv_index = $Env:UV_INDEX
-                $mirror_pip_find_links = $Env:PIP_FIND_LINKS
-                $mirror_uv_find_links = $Env:UV_FIND_LINKS
-            }
-        }
     } else {
         Print-Msg "未获取到 PyTorch 版本, 无法确定镜像源类型, 可能导致 PyTorch 安装失败"
+        $mirror_type = "null"
+    }
+
+    # 设置对应的镜像源
+    switch ($mirror_type) {
+        cu11x {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
             $mirror_pip_index_url = $Env:PIP_INDEX_URL
             $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
             $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
             $mirror_uv_index = $Env:UV_INDEX
             $mirror_pip_find_links = $Env:PIP_FIND_LINKS
             $mirror_uv_find_links = $Env:UV_FIND_LINKS
+        }
+        cu118 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu118"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU118
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
+        cu121 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu121"
+            $mirror_pip_index_url = "$PIP_EXTRA_INDEX_MIRROR_CU121"
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
+        cu124 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu124"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU124_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU124
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
+        cu126 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu126"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU126
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
+        cu128 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu128"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU128
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
+        Default {
+            Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
+            $mirror_pip_index_url = $Env:PIP_INDEX_URL
+            $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
+            $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+            $mirror_uv_index = $Env:UV_INDEX
+            $mirror_pip_find_links = $Env:PIP_FIND_LINKS
+            $mirror_uv_find_links = $Env:UV_FIND_LINKS
+        }
     }
     return $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links
 }
@@ -852,7 +851,7 @@ if __name__ == '__main__':
 
 
 # 获取合适的 PyTorch / xFormers 版本
-function Get-PyTorch-And-xFormers-Version {
+function Get-PyTorch-And-xFormers-Package {
     Print-Msg "设置 PyTorch 和 xFormers 版本"
 
     if ($PyTorchPackage -and $xFormersPackage) {
@@ -864,7 +863,13 @@ function Get-PyTorch-And-xFormers-Version {
         Print-Msg "不允许单独设置 -PyTorchPackage / -xFormersPackage 命令行参数, 将重新设置合适的 PyTorch 和 xFormers 版本"
     }
 
-    $appropriate_cuda_version = Get-Appropriate-CUDA-Version-Type
+    if ($PyTorchMirrorType) {
+        Print-Msg "根据 $PyTorchMirrorType 类型的 PyTorch 镜像源配置 PyTorch 组合"
+        $appropriate_cuda_version = $PyTorchMirrorType
+    } else {
+        $appropriate_cuda_version = Get-Appropriate-CUDA-Version-Type
+    }
+
     switch ($appropriate_cuda_version) {
         cu128 {
             $pytorch_package = "torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128"
@@ -904,7 +909,7 @@ function Get-PyTorch-And-xFormers-Version {
 
 # 安装 PyTorch
 function Install-PyTorch {
-    $pytorch_package, $xformers_package = Get-PyTorch-And-xFormers-Version
+    $pytorch_package, $xformers_package = Get-PyTorch-And-xFormers-Package
     $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links = Get-PyTorch-Mirror $pytorch_package
 
     # 备份镜像源配置
@@ -9206,7 +9211,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -9215,6 +9220,9 @@ function Get-Fooocus-Installer-Cmdlet-Help {
     -InstallPath <安装 Fooocus 的绝对路径>
         指定 Fooocus Installer 安装 Fooocus 的路径, 使用绝对路径表示
         例如: .\fooocus_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 Fooocus Installer 安装 Fooocus 到 D:\Donwload 这个路径
+
+    -PyTorchMirrorType <PyTorch 镜像源类型>
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu11x, cu118, cu121, cu124, cu126, cu128
 
     -InstallBranch <安装的 Fooocus 分支>
         指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
