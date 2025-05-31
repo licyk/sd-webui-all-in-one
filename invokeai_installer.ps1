@@ -54,7 +54,8 @@ $PIP_EXTRA_INDEX_MIRROR_CU128 = "https://download.pytorch.org/whl/cu128"
 $PIP_EXTRA_INDEX_MIRROR_CU118_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu118"
 $PIP_EXTRA_INDEX_MIRROR_CU124_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu126"
-$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
+# $PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128" # BUG: https://github.com/nju-lug/NJU-Mirror-Issue/issues/63
+$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://download.pytorch.org/whl/cu128" # TODO: 替换成国内镜像源
 # uv 最低版本
 $UV_MINIMUM_VER = "0.7.7"
 # Aria2 最低版本
