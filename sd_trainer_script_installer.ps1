@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 177
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 178
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3978,85 +3978,18 @@ Main
 function Write-Launch-SD-Trainer-Script-Install-Script {
     $content = "
 param (
-    [switch]`$Help,
+    [string]`$InstallPath = `$PSScriptRoot,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [string]`$InstallBranch
+    [string]`$InstallBranch,
+    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 
-
-
-# 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
-    `$content = `"
-使用:
-    .\launch_sd_trainer_script_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePyPIMirror] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-InstallBranch <Fooocus 分支名称>]
-
-参数:
-    -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
-
-    -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUV
-        禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-    -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
-
-    -UseCustomGithubMirror <Github 镜像站地址>
-        使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
-
-    -InstallBranch <安装的 SD-Trainer-Script 分支>
-        指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts, simple_tuner, ai_toolkit, finetrainers, diffusion_pipe, musubi_tuner)
-        例如: .\launch_sd_trainer_script_installer.ps1 -InstallBranch ```"simple_tuner```", 这将指定 SD-Trainer-Script Installer 安装 bghira/SimpleTuner 分支
-        未指定该参数时, 默认安装 kohya-ss/sd-scripts 分支
-        支持指定安装的分支如下:
-            sd_scripts:     kohya-ss/sd-scripts
-            simple_tuner:   bghira/SimpleTuner
-            ai_toolkit:     ostris/ai-toolkit
-            finetrainers:   a-r-r-o-w/finetrainers
-            diffusion_pipe: tdrussell/diffusion-pipe
-            musubi_tuner:   kohya-ss/musubi-tuner
-
-
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
-`".Trim()
-
-    if (`$Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
 
 
 # 消息输出
@@ -4223,21 +4156,47 @@ function Get-Local-Setting {
         `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
     }
 
+    `$arg.Add(`"-InstallPath`", `$InstallPath)
+
     return `$arg
+}
+
+
+# 处理额外命令行参数
+function Get-ExtraArgs {
+    `$extra_args = New-Object System.Collections.ArrayList
+
+    ForEach (`$a in `$ExtraArgs) {
+        `$extra_args.Add(`$a) | Out-Null
+    }
+
+    `$params = `$extra_args.ForEach{ 
+        if (`$_ -match '\s|`"') { `"'{0}'`" -f (`$_ -replace `"'`", `"''`") } 
+        else { `$_ } 
+    } -join ' '
+
+    return `$params
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
     Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
     Set-Proxy
 
     `$status = Download-SD-Trainer-Script-Installer
+
     if (`$status) {
         Print-Msg `"运行 SD-Trainer-Script Installer 中`"
         `$arg = Get-Local-Setting
-        . `"`$PSScriptRoot/cache/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" @arg
+        `$extra_args = Get-ExtraArgs
+        try {
+            Invoke-Expression `"& ```"`$PSScriptRoot/cache/sd_trainer_script_installer.ps1```" `$extra_args @arg`"
+        }
+        catch {
+            Print-Msg `"运行 SD-Trainer-Script Installer 时出现了错误: `$_`"
+            Read-Host | Out-Null
+        }
     } else {
         Read-Host | Out-Null
     }

@@ -29,7 +29,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 267
+$INVOKEAI_INSTALLER_VERSION = 268
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3162,48 +3162,15 @@ Main
 function Write-Launch-InvokeAI-Install-Script {
     $content = "
 param (
-    [switch]`$Help,
+    [string]`$InstallPath = `$PSScriptRoot,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUV
+    [switch]`$DisableUV,
+    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
 `$INVOKEAI_INSTALLER_VERSION = $INVOKEAI_INSTALLER_VERSION
 
-
-
-# 帮助信息
-function Get-InvokeAI-Installer-Cmdlet-Help {
-    `$content = `"
-
-    使用:
-    .\launch_invokeai_installer.ps1 [-Help] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePyPIMirror] [-DisableUV]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUV
-        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
-`".Trim()
-
-    if (`$Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
 
 
 # 消息输出
@@ -3326,21 +3293,47 @@ function Get-Local-Setting {
         `$arg.Add(`"-DisableUV`", `$true)
     }
 
+    `$arg.Add(`"-InstallPath`", `$InstallPath)
+
     return `$arg
+}
+
+
+# 处理额外命令行参数
+function Get-ExtraArgs {
+    `$extra_args = New-Object System.Collections.ArrayList
+
+    ForEach (`$a in `$ExtraArgs) {
+        `$extra_args.Add(`$a) | Out-Null
+    }
+
+    `$params = `$extra_args.ForEach{ 
+        if (`$_ -match '\s|`"') { `"'{0}'`" -f (`$_ -replace `"'`", `"''`") } 
+        else { `$_ } 
+    } -join ' '
+
+    return `$params
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
     Get-InvokeAI-Installer-Version
-    Get-InvokeAI-Installer-Cmdlet-Help
     Set-Proxy
 
     `$status = Download-InvokeAI-Installer
+
     if (`$status) {
         Print-Msg `"运行 InvokeAI Installer 中`"
         `$arg = Get-Local-Setting
-        . `"`$PSScriptRoot/cache/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" @arg
+        `$extra_args = Get-ExtraArgs
+        try {
+            Invoke-Expression `"& ```"`$PSScriptRoot/cache/invokeai_installer.ps1```" `$extra_args @arg`"
+        }
+        catch {
+            Print-Msg `"运行 InvokeAI Installer 时出现了错误: `$_`"
+            Read-Host | Out-Null
+        }
     } else {
         Read-Host | Out-Null
     }
