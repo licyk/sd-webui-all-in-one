@@ -90,6 +90,7 @@ _✨一键安装 InvokeAI_
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
     - [更新到 InvokeAI RC 版](#更新到-invokeai-rc-版)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
+    - [解决 AttributeError: module 'cv2.ximgproc' has no attribute 'thinning'](#解决-attributeerror-module-cv2ximgproc-has-no-attribute-thinning)
 
 ***
 
@@ -889,4 +890,10 @@ python -m pip install invokeai --pre -U
 
 # 查看其他命令的实际调用路径也是同样的方法
 # (Get-Command <command>).Source
+```
+
+
+### 解决 AttributeError: module 'cv2.ximgproc' has no attribute 'thinning'
+```powershell
+python -m pip install opencv-contrib-python --force-reinstall --no-deps
 ```
