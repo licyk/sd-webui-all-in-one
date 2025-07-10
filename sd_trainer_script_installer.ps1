@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 178
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 179
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -57,8 +57,7 @@ $PIP_EXTRA_INDEX_MIRROR_CU128 = "https://download.pytorch.org/whl/cu128"
 $PIP_EXTRA_INDEX_MIRROR_CU118_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu118"
 $PIP_EXTRA_INDEX_MIRROR_CU124_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu126"
-# $PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128" # BUG: https://github.com/nju-lug/NJU-Mirror-Issue/issues/63
-$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://download.pytorch.org/whl/cu128" # TODO: 替换成国内镜像源
+$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
 # Github 镜像源列表
 $GITHUB_MIRROR_LIST = @(
     "https://ghfast.top/https://github.com",
@@ -79,7 +78,7 @@ $GITHUB_MIRROR_LIST = @(
     "https://gitclone.com/github.com"
 )
 # uv 最低版本
-$UV_MINIMUM_VER = "0.7.7"
+$UV_MINIMUM_VER = "0.7.20"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
 # SD-Trainer-Script 仓库地址
@@ -1007,15 +1006,31 @@ function Install-SD-Trainer-Script-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/sd-scripts"
+    $no_requirements_file = $false
+    if (Test-Path "$InstallPath/sd-scripts/requirements.txt") {
+        $no_requirements_file = $true
+    }
     Print-Msg "安装 SD-Trainer-Script 依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements.txt
+        if ($no_requirements_file) {
+            uv pip install -e .
+        } else {
+            uv pip install -r requirements.txt
+        }
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install -r requirements.txt
+            if ($no_requirements_file) {
+                python -m pip install -e .
+            } else {
+                python -m pip install -r requirements.txt
+            }
         }
     } else {
-        python -m pip install -r requirements.txt
+        if ($no_requirements_file) {
+            python -m pip install -e .
+        } else {
+            python -m pip install -r requirements.txt
+        }
     }
     if ($?) {
         Print-Msg "SD-Trainer-Script 依赖安装成功"
@@ -1436,8 +1451,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
             Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
             . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-            Read-Host | Out-Null
+            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
             exit 0
         } else {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
@@ -2735,7 +2751,16 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
 
-    `$status = `$(python `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" --requirement-path `"`$PSScriptRoot/sd-scripts/requirements.txt`")
+    `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements_versions.txt`"
+    if (!(Test-Path `"`$dep_path`")) {
+        `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+    }
+    if (!(Test-Path `"`$dep_path`")) {
+        Print-Msg `"未检测到 SD-Trainer-Scripts 依赖文件, 跳过依赖完整性检查`"
+        return
+    }
+
+    `$status = `$(python `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 SD-Trainer-Scripts 内核有依赖缺失, 安装 SD-Trainer-Scripts 依赖中`"
@@ -3176,8 +3201,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
             Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
             . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-            Read-Host | Out-Null
+            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
             exit 0
         } else {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
@@ -3636,8 +3662,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
             Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
             . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-            Read-Host | Out-Null
+            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
             exit 0
         } else {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
@@ -4462,8 +4489,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
             Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
             . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-            Read-Host | Out-Null
+            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
             exit 0
         } else {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
@@ -4708,6 +4736,10 @@ function Main {
 - 35、Torch 2.7.0 (CUDA 11.8)
 - 36、Torch 2.7.0 (CUDA 12.6) + xFormers 0.0.30
 - 37、Torch 2.7.0 (CUDA 12.8) + xFormers 0.0.30
+- 38、Torch 2.7.1 (Intel Arc)
+- 39、Torch 2.7.1 (CUDA 11.8)
+- 40、Torch 2.7.1 (CUDA 12.6) + xFormers 0.0.31.post1
+- 41、Torch 2.7.1 (CUDA 12.8) + xFormers 0.0.31.post1
 -----------------------------------------------------
     `".Trim()
 
@@ -5117,6 +5149,62 @@ function Main {
                 `$Env:UV_FIND_LINKS = `"`"
                 `$go_to = 1
             }
+            38 {
+                `$torch_ver = `"torch==2.7.1+xpu torchvision==0.22.1+xpu torchaudio==2.7.1+xpu`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_XPU
+                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
+                `$Env:PIP_EXTRA_INDEX_URL = `"`"
+                `$Env:UV_INDEX = `"`"
+                `$Env:PIP_FIND_LINKS = `"`"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            39 {
+                `$torch_ver = `"torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118`"
+                `$xformers_ver = `"`"
+                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+                } else {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU118
+                }
+                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
+                `$Env:PIP_EXTRA_INDEX_URL = `"`"
+                `$Env:UV_INDEX = `"`"
+                `$Env:PIP_FIND_LINKS = `"`"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            40 {
+                `$torch_ver = `"torch==2.7.1+cu126 torchvision==0.22.1+cu126 torchaudio==2.7.1+cu126`"
+                `$xformers_ver = `"xformers==0.0.31.post1`"
+                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+                } else {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU126
+                }
+                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
+                `$Env:PIP_EXTRA_INDEX_URL = `"`"
+                `$Env:UV_INDEX = `"`"
+                `$Env:PIP_FIND_LINKS = `"`"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
+            41 {
+                `$torch_ver = `"torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128`"
+                `$xformers_ver = `"xformers==0.0.31.post1`"
+                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+                } else {
+                    `$PIP_EXTRA_INDEX_MIRROR_CU128
+                }
+                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
+                `$Env:PIP_EXTRA_INDEX_URL = `"`"
+                `$Env:UV_INDEX = `"`"
+                `$Env:PIP_FIND_LINKS = `"`"
+                `$Env:UV_FIND_LINKS = `"`"
+                `$go_to = 1
+            }
             exit {
                 Print-Msg `"退出 PyTorch 重装脚本`"
                 `$to_exit = 1
@@ -5507,8 +5595,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
             Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
             . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-            Read-Host | Out-Null
+            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
             exit 0
         } else {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
@@ -6648,8 +6737,9 @@ function Check-SD-Trainer-Script-Installer-Update {
         Print-Msg `"SD-Trainer-Script Installer 有新版本可用`"
         Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
         . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-        Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
-        Read-Host | Out-Null
+        `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+        Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+        Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
         exit 0
     } else {
         Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"

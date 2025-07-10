@@ -28,13 +28,13 @@ jobs:
         source-repo: git@github.com:licyk/sd-webui-all-in-one.git
         destination-repo: git@gitlab.com:licyk/sd-webui-all-in-one.git
 
-  Sync-To-Bitbucket:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Sync to Bitbucket
-      uses: wearerequired/git-mirror-action@master
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
-      with:
-        source-repo: git@github.com:licyk/sd-webui-all-in-one.git
-        destination-repo: git@bitbucket.org:licyks/sd-webui-all-in-one.git
+  # Sync-To-Bitbucket:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Sync to Bitbucket
+  #     uses: wearerequired/git-mirror-action@master
+  #     env:
+  #       SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
+  #     with:
+  #       source-repo: git@github.com:licyk/sd-webui-all-in-one.git
+  #       destination-repo: git@bitbucket.org:licyks/sd-webui-all-in-one.git
