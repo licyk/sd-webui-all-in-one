@@ -34,7 +34,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 260
+$COMFYUI_INSTALLER_VERSION = 261
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4715,9 +4715,11 @@ def get_value_from_variable(content: str, var_name: str) -> str | None:
     :param var_name(str): 待查找的字符串变量
     :return str | None: 返回字符串变量的值
     '''
-    pattern = fr'{var_name}\s*=\s*```"([^```"]+)```"'
-    match = re.search(pattern, content)
-    return match.group(1) if match else None
+    pattern = fr'^\s*{var_name}\s*=\s*.*\s*$'
+    match = re.findall(pattern, content, flags=re.MULTILINE)
+    if match:
+        match_str = ''.join(re.findall(r'[\d.]+', match[0].split('=').pop().strip()))
+    return match_str if len(match_str) != 0 else None
 
 
 def compare_versions(version1: str, version2: str) -> int:
