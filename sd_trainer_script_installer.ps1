@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 181
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 182
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1737,6 +1737,94 @@ if __name__ == '__main__':
 }
 
 
+# 从 pyproject.toml 中解析出依赖列表
+function Get-Requirement-From-PyProject-File (`$pyproj_toml_path, `$save_path, `$deps_type = `"pip`") {
+    `$content = Get-Content -Path `$pyproj_toml_path -Raw
+    if (`$deps_type -eq `"pip`") {
+        `$dependencies = `$content | Select-String -Pattern '(?ms)\bdependencies\s*=\s*\[(.*?)\]' |
+            ForEach-Object { `$_.Matches.Groups[1].Value }
+
+        `$clean_deps = `$dependencies -split '\r?\n' |
+            Where-Object {
+                `$_.Trim() -ne '' -and
+                -not `$_.Trim().StartsWith('#') -and
+                `$_.Contains('`"')
+            } |
+            ForEach-Object {
+                (`$_.Split('#')[0].Trim() -replace '`"|,', '').Trim()
+            }
+    } elseif (`$deps_type -eq `"poetry`") {
+        `$exclude_packages = @('python')
+
+        `$deps_content = [regex]::Match(
+            `$content,
+            '(?ms)\[tool\.poetry\.dependencies\](.*?)(?=\n\[|\Z)'
+        ).Groups[1].Value
+
+        `$clean_deps = `$deps_content -split '\r?\n' | ForEach-Object {
+            `$line = `$_.Trim()
+            if (-not `$line) { return }
+
+            if (`$line -match '^([\w-]+)\s*=\s*`"([^`"]+)`"') {
+                `$package = `$matches[1]
+                if (`$exclude_packages -contains `$package) { return }
+
+                `$version = `$matches[2] -replace '^\^'
+                if (`$version -eq '*') {
+                    `$package
+                } else {
+                    if (`$version -match '^[<>=!]') {
+                        `"`$package`$version`"
+                    } else {
+                        `"`$package==`$version`"
+                    }
+                }
+            } elseif (`$line -match '^([\w-]+)\s*=\s*{\s*.*version\s*=\s*`"([^`"]+)`".*?}') {
+                `$package = `$matches[1]
+                if (`$exclude_packages -contains `$package) { return }
+
+                `$version = `$matches[2] -replace '^\^'
+                if (`$version -eq '*') {
+                    `$package
+                } else {
+                    if (`$version -match '^[<>=!]') {
+                        `"`$package`$version`"
+                    } else {
+                        `"`$package==`$version`"
+                    }
+                }
+            } elseif (`$line -match '^([\w-]+)\s*=\s*{') {
+                `$package = `$matches[1]
+                if (`$exclude_packages -contains `$package) { return }
+
+                `$package
+            }
+        } | Where-Object { `$_ }
+    }
+
+    `$utf8_encoding = New-Object System.Text.UTF8Encoding(`$false)
+    `$stream_writer = [System.IO.StreamWriter]::new(`"`$save_path`", `$false, `$utf8_encoding)
+    foreach (`$dependency in `$clean_deps) {
+        `$stream_writer.WriteLine(`$dependency)
+    }
+    `$stream_writer.Close()
+}
+
+
+# 解析 kohya-ss/musubi-tuner 分支的依赖列表
+function Get-PyProject-Requirement {
+    `$git_remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
+    `$array = `$git_remote -split `"/`"
+    `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+    if ((`$branch -eq `"kohya-ss/musubi-tuner`") -or (`$branch -eq `"kohya-ss/musubi-tuner.git`")) {
+        `$pyproj_toml_path = `"`$PSScriptRoot/sd-scripts/pyproject.toml`"
+        `$req_path = `"`$Env:CACHE_HOME/requirements.txt`"
+        Get-Requirement-From-PyProject-File `"`$pyproj_toml_path`" `"`$req_path`"
+    }
+    return `$req_path
+}
+
+
 # 检查 SD-Trainer-Scripts 依赖完整性
 function Check-SD-Trainer-Scripts-Requirements {
     `$content = `"
@@ -2751,10 +2839,15 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/sd-scripts/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/sd-scripts/requirements.txt`"
     }
+
+    if (!(Test-Path `"`$dep_path`")) {
+        `$dep_path = Get-PyProject-Requirement
+    }
+
     if (!(Test-Path `"`$dep_path`")) {
         Print-Msg `"未检测到 SD-Trainer-Scripts 依赖文件, 跳过依赖完整性检查`"
         return
@@ -2765,13 +2858,13 @@ if __name__ == '__main__':
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 SD-Trainer-Scripts 内核有依赖缺失, 安装 SD-Trainer-Scripts 依赖中`"
         if (`$USE_UV) {
-            uv pip install -r `"`$PSScriptRoot/sd-scripts/requirements.txt`"
+            uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r `"`$PSScriptRoot/sd-scripts/requirements.txt`"
+                python -m pip install -r `"`$dep_path`"
             }
         } else {
-            python -m pip install -r `"`$PSScriptRoot/sd-scripts/requirements.txt`"
+            python -m pip install -r `"`$dep_path`"
         }
         if (`$?) {
             Print-Msg `"SD-Trainer-Scripts 依赖安装成功`"
