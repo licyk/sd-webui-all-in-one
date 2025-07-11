@@ -27,6 +27,11 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
+      - name: Install fake nvidia-smi
+        shell: pwsh
+        run: |
+          Copy-Item -Path "${{ github.workspace }}/.github/nvidia-smi.bat" -Destination "C:/Program Files/Git/cmd/nvidia-smi.bat" -Force
+
       - name: Launch SD-Trainer Installer
         shell: pwsh
         env:
@@ -41,9 +46,7 @@ jobs:
             -InstallBranch "kohya_gui" `
             -DisablePyPIMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror `
-            -PyTorchPackage "torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128" `
-            -xFormersPackage "xformers==0.0.30"
+            -DisableHuggingFaceMirror
 
       - name: Make docs
         shell: pwsh

@@ -27,6 +27,11 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
+      - name: Install fake nvidia-smi
+        shell: pwsh
+        run: |
+          Copy-Item -Path "${{ github.workspace }}/.github/nvidia-smi.bat" -Destination "C:/Program Files/Git/cmd/nvidia-smi.bat" -Force
+
       - name: Launch InvokeAI Installer
         shell: pwsh
         env:
