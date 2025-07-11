@@ -57,8 +57,8 @@ jobs:
         shell: pwsh
         run: |
           $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "sd_scripts_licyk_${build_time}"
-          $protable_name = "${package_name}_nightly.7z"
+          $package_name = "sd_scripts-licyk-${build_time}"
+          $protable_name = "${package_name}-nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/sd_scripts" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_scripts/${protable_name}" "${{ github.workspace }}/${package_name}"

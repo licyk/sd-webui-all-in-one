@@ -83,8 +83,8 @@ jobs:
         shell: pwsh
         run: |
           $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "comfyui_licyk_${build_time}"
-          $protable_name = "${package_name}_nightly.7z"
+          $package_name = "comfyui-licyk-${build_time}"
+          $protable_name = "${package_name}-nightly.7z"
           New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
           Move-Item -Path "${{ github.workspace }}/comfyui" -Destination "${{ github.workspace }}/${package_name}" -Force
           7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/comfyui/${protable_name}" "${{ github.workspace }}/${package_name}"
