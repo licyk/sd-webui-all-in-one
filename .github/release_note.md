@@ -4,6 +4,8 @@
 
 整合包下载页使用 [build_sd_portable_download_link.py](build_sd_portable_download_link.py)、[build_sd_portable_download_page.py](build_sd_portable_download_page.py) 进行构建。
 
+下载页模板：[download_page](./download_page/index.html)。
+
 解析文件名使用以下的代码：
 
 ```python

@@ -1,0 +1,186 @@
+/* 基础样式 */
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+/* 版本区块样式 */
+.version-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border-radius: 6px;
+}
+
+.version-section h2 {
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.version-section:nth-child(1) h2 {
+    background-color: #27ae60; /* stable版本颜色 */
+}
+
+.version-section:nth-child(2) h2 {
+    background-color: #3498db; /* nightly版本颜色 */
+}
+
+/* 软件分类样式 */
+.software-section {
+    margin-bottom: 25px;
+}
+
+.software-section h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+/* 下载项样式 */
+.download-items {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.download-items li {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    transition: all 0.2s ease;
+}
+
+.download-items li:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.download-items a {
+    color: #2980b9;
+    text-decoration: none;
+    display: block;
+    padding: 8px;
+}
+
+.download-items a:hover {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+/* 加载动画样式 */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 错误提示样式 */
+.error {
+    color: #e74c3c;
+    text-align: center;
+    padding: 20px;
+    background-color: #fdecea;
+    border-radius: 4px;
+}
+
+/* 公告区域样式 */
+.announcement {
+    background-color: #f8f9fa;
+    border-left: 4px solid #3498db;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 4px;
+}
+
+.announcement h3 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.announcement p {
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+.announcement a {
+    color: #2980b9;
+    text-decoration: none;
+}
+
+.announcement a:hover {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+.update-time {
+    font-weight: bold;
+    color: #27ae60;
+}
+
+/* Footer样式 */
+.footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .download-items {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+    
+    .footer {
+        padding: 15px;
+    }
+}
