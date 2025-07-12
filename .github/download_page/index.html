@@ -49,18 +49,58 @@
                 for (const [software, items] of Object.entries(data.stable)) {
                     const softwareDiv = document.createElement('div');
                     softwareDiv.className = 'software-section';
-                    softwareDiv.innerHTML = `<h3>${software}</h3><ul class="download-items"></ul>`;
+                    const itemsList = document.createElement('ul');
+                    itemsList.className = 'download-items';
                     
-                    items.forEach(item => {
+                    // 创建标题
+                    softwareDiv.innerHTML = `<h3>${software}</h3>`;
+                    softwareDiv.appendChild(itemsList);
+                    
+                    // 添加下载项(默认只显示前3个)
+                    items.forEach((item, index) => {
                         const li = document.createElement('li');
                         li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
-                        softwareDiv.querySelector('ul').appendChild(li);
+                        if (index >= 3) {
+                            li.classList.add('hidden-item');
+                        }
+                        itemsList.appendChild(li);
                     });
+                    
+                    // 如果超过3个，添加展开按钮
+                    if (items.length > 3) {
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.className = 'toggle-btn';
+                        toggleBtn.innerHTML = '展开更多 ▼';
+                        toggleBtn.addEventListener('click', function() {
+                            const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
+                            const firstHidden = hiddenItems[0];
+                            const isHidden = firstHidden.style.display === 'none' || 
+                                           firstHidden.classList.contains('hidden-item');
+                            
+                            if (isHidden) {
+                                // 展开
+                                hiddenItems.forEach(item => {
+                                    item.style.display = 'block';
+                                    item.classList.remove('hidden-item');
+                                });
+                                toggleBtn.innerHTML = '收起 ▲';
+                            } else {
+                                // 收起
+                                hiddenItems.forEach(item => {
+                                    item.style.display = 'none';
+                                    item.classList.add('hidden-item');
+                                });
+                                toggleBtn.innerHTML = '展开更多 ▼';
+                            }
+                        });
+                        
+                        softwareDiv.appendChild(toggleBtn);
+                    }
                     
                     stableDiv.appendChild(softwareDiv);
                 }
                 
-                // 处理nightly版本
+                // 处理nightly版本(同上)
                 const nightlyDiv = document.createElement('div');
                 nightlyDiv.className = 'version-section';
                 nightlyDiv.innerHTML = '<h2>Nightly 版本</h2>';
@@ -69,13 +109,50 @@
                 for (const [software, items] of Object.entries(data.nightly)) {
                     const softwareDiv = document.createElement('div');
                     softwareDiv.className = 'software-section';
-                    softwareDiv.innerHTML = `<h3>${software}</h3><ul class="download-items"></ul>`;
+                    const itemsList = document.createElement('ul');
+                    itemsList.className = 'download-items';
                     
-                    items.forEach(item => {
+                    softwareDiv.innerHTML = `<h3>${software}</h3>`;
+                    softwareDiv.appendChild(itemsList);
+                    
+                    items.forEach((item, index) => {
                         const li = document.createElement('li');
                         li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
-                        softwareDiv.querySelector('ul').appendChild(li);
+                        if (index >= 3) {
+                            li.classList.add('hidden-item');
+                        }
+                        itemsList.appendChild(li);
                     });
+                    
+                    if (items.length > 3) {
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.className = 'toggle-btn';
+                        toggleBtn.innerHTML = '展开更多 ▼';
+                        toggleBtn.addEventListener('click', function() {
+                            const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
+                            const firstHidden = hiddenItems[0];
+                            const isHidden = firstHidden.style.display === 'none' || 
+                                           firstHidden.classList.contains('hidden-item');
+                            
+                            if (isHidden) {
+                                // 展开
+                                hiddenItems.forEach(item => {
+                                    item.style.display = 'block';
+                                    item.classList.remove('hidden-item');
+                                });
+                                toggleBtn.innerHTML = '收起 ▲';
+                            } else {
+                                // 收起
+                                hiddenItems.forEach(item => {
+                                    item.style.display = 'none';
+                                    item.classList.add('hidden-item');
+                                });
+                                toggleBtn.innerHTML = '展开更多 ▼';
+                            }
+                        });
+                        
+                        softwareDiv.appendChild(toggleBtn);
+                    }
                     
                     nightlyDiv.appendChild(softwareDiv);
                 }

@@ -1,5 +1,7 @@
 import os
 import re
+import json
+from functools import cmp_to_key
 from collections import namedtuple
 from typing import Union, Literal
 from pathlib import Path
@@ -269,49 +271,169 @@ def classify_package(
     return stable_portable, nightly_portable
 
 
+# 整合包别名
+PROTABLE_ALIAS = {
+    "sd_webui": "Stable Diffusion WebUI",
+    "sd_webui_forge": "Stable Diffusion WebUI Forge",
+    "sd_webui_reforge": "Stable Diffusion WebUI reForge",
+    "sd_webui_forge_classic": "Stable Diffusion WebUI Forge Classic",
+    "sd_next": "SD Next",
+    "comfyui": "ComfyUI",
+    "fooocus": "Fooocus",
+    "invokeai": "InvokeAI",
+    "sd_trainer": "SD Trainer",
+    "kohya_gui": "Kohya GUI",
+    "sd_scripts": "SD Scripts",
+    "musubi_tuner": "Musubi Tuner",
+}
+
+
 def replace_package_name(name: str) -> str:
     '''替换原有整合包名
 
     :param name`(str)`: 整合包名
     :return `str`: 替换后的整合包名
     '''
-    if name == "sd_webui":
-        return "Stable Diffusion WebUI"
+    return PROTABLE_ALIAS.get(name, name)
 
-    if name == "sd_webui_forge":
-        return "Stable Diffusion WebUI Forge"
 
-    if name == "sd_webui_reforge":
-        return "Stable Diffusion WebUI reForge"
+def save_list_to_json(save_path: Path | str, origin_list: list) -> bool:
+    """保存列表到 Json 文件中
 
-    if name == "sd_webui_forge_classic":
-        return "Stable Diffusion WebUI Forge Classic"
+    :param save_path`(Path,str)`: 保存 Json 文件的路径
+    :param origin_list`(list)`: 要保存的列表
+    :return `bool`: 当文件保存成功时返回`True`
+    """
+    dir_path = os.path.dirname(save_path)
 
-    if name == "sd_next":
-        return "SD Next"
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
 
-    if name == "comfyui":
-        return "ComfyUI"
+    try:
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(
+                origin_list,
+                f,
+                ensure_ascii=False,
+                indent=4,
+                separators=(',', ': ')
+            )
+        print(f"保存 Json 文件到 {save_path}")
+        return True
+    except Exception as e:
+        print(f"保存列表到 {save_path} 时发生错误: {e}")
+        return False
 
-    if name == "fooocus":
-        return "Fooocus"
 
-    if name == "invokeai":
-        return "InvokeAI"
+def compare_versions(version1: str, version2: str) -> int:
+    '''对比两个版本号大小
 
-    if name == "sd_trainer":
-        return "SD Trainer"
+    :param version1(str): 第一个版本号
+    :param version2(str): 第二个版本号
+    :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+    '''
+    # 将版本号拆分成数字列表
+    try:
+        nums1 = (
+            re.sub(r'[a-zA-Z]+', '', version1)
+            .replace('-', '.')
+            .replace('_', '.')
+            .replace('+', '.')
+            .split('.')
+        )
+        nums2 = (
+            re.sub(r'[a-zA-Z]+', '', version2)
+            .replace('-', '.')
+            .replace('_', '.')
+            .replace('+', '.')
+            .split('.')
+        )
+    except Exception as _:
+        return 0
 
-    if name == "kohya_gui":
-        return "Kohya GUI"
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
 
-    if name == "sd_scripts":
-        return "SD Scripts"
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1  # 版本号 1 更大
+        else:
+            return -1  # 版本号 2 更大
 
-    if name == "musubi_tuner":
-        return "Musubi Tuner"
+    return 0  # 版本号相同
 
-    return name
+
+def sort_portable_impl(item1: list[str, str], item2: list[str, str]) -> int:
+    '''整合包列表排序
+
+    :param item1`(list[str,str])`: 第一个整合包列表 `[<文件名>, <下载链接>]`
+    :param item2`(list[str,str])`: 第二个整合包列表 `[<文件名>, <下载链接>]`
+    :param `int`: 对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+    '''
+    p1 = parse_portable_filename(item1[0])
+    p2 = parse_portable_filename(item2[0])
+
+    if p1.version is not None and p2.version is not None:
+        return compare_versions(p1.version, p2.version)
+
+    if p1.build_date is not None and p2.build_date is not None:
+        return compare_versions(p1.build_date, p2.build_date)
+
+    return 0
+
+
+def build_portable_dict(
+    stable_list: list[str, str, str],
+    nightly_list: list[str, str, str],
+) -> dict:
+    '''将整合包列表保存为 Json 文件
+
+    :param stable_list`(list[str,str,str])`: 正式版整合包列表 `[<稳定版整合包名>, <文件名>, <链接>]`
+    :param nightly_list`(list[str,str,str])`: 每日构建版整合包列表 `[<每日构建版整合包名>, <文件名>, <链接>]`
+    :param `dict`: 整合包列表字典
+    '''
+    stable_p_type = list(set([p_type for p_type, _, _ in stable_list]))
+    nightly_p_type = list(set([p_type for p_type, _, _ in nightly_list]))
+    stable_p_type.sort()
+    nightly_p_type.sort()
+    portable_dict = {}
+    stable_dict = {}
+    nightly_dict = {}
+
+    for p_type in stable_p_type:
+        portable_type_list = [
+            [os.path.basename(file), url]
+            for name, file, url in stable_list
+            if name == p_type
+        ]
+        stable_dict[replace_package_name(p_type)] = sorted(
+            portable_type_list, key=cmp_to_key(sort_portable_impl), reverse=True
+        )
+
+    portable_dict["stable"] = stable_dict
+
+    for p_type in nightly_p_type:
+        portable_type_list = [
+            [os.path.basename(file), url]
+            for name, file, url in nightly_list
+            if name == p_type
+        ]
+        nightly_dict[replace_package_name(p_type)] = sorted(
+            portable_type_list, key=cmp_to_key(sort_portable_impl), reverse=True
+        )
+
+    portable_dict["nightly"] = nightly_dict
+
+    current_time = (
+        datetime.now(timezone.utc)
+        +
+        timedelta(hours=8)
+    ).strftime(r"%Y-%m-%d %H:%M:%S")
+    portable_dict["update_time"] = current_time
+
+    return portable_dict
 
 
 def main() -> None:
@@ -322,66 +444,9 @@ def main() -> None:
     ms_file = get_modelscope_repo_file(repo_id=repo_id, repo_type=repo_type)
     ms_file = filter_portable_file(ms_file)
     stable, nightly = classify_package(ms_file)
-    html_string_stable = build_download_page_list(stable)
-    html_string_nightly = build_download_page_list(nightly)
-
-    current_time = (
-        datetime.now(timezone.utc) + timedelta(hours=8)
-    ).strftime(r"%Y-%m-%d %H:%M:%S")
-
-    content_s = """
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
-    <style>
-        body {
-            line-height: 1.5;
-        }
-    </style>
-    <title>AI 绘画 / 训练整合包列表</title>
-</head>
-<body>
-    <h1>AI 绘画 / 训练整合包列表</h1>
-    基于 <a href="https://github.com/licyk/sd-webui-all-in-one?tab=readme-ov-file#installer">sd-webui-all-in-one/Installer</a> 全自动构建整合包
-    <br>
-    项目地址：<a href="https://github.com/licyk/sd-webui-all-in-one">https://github.com/licyk/sd-webui-all-in-one</a>
-    <br>
-    原仓库：<a href="https://huggingface.co/licyk/sdnote/tree/main/portable">HuggingFace</a> / <a href="https://modelscope.cn/models/licyks/sdnote/files">ModelScope</a>
-    <br>
-    <br>
-    Stable 列表为稳定版本, Nightly 为测试版本, 根据需求自行下载
-    <br>
-    若整合包无法解压，请下载并安装 <a href="https://7-zip.org/">7-Zip</a> 后再尝试解压
-    <br>
-    整合包说明可阅读：<a href="https://github.com/licyk/sd-webui-all-in-one/discussions/1">AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1</a>
-    <br>
-    <br>
-    """ + f"""
-    列表更新时间：{current_time}
-    <br>
-    ===================================================
-    <h2>下载列表</h2>
-    """
-
-    content_e = """
-</body>
-</html>
-    """
-
-    package_list_html = (
-        content_s.strip().split("\n")
-        + ["<h3>Stable</h3>"]
-        + html_string_stable
-        + ["<h3>Nightly</h3>"]
-        + html_string_nightly
-        + content_e.strip().split("\n")
-    )
-
-    write_content_to_file(
-        package_list_html, os.path.join(root_path, "index.html"))
+    portable_dict = build_portable_dict(stable, nightly)
+    save_list_to_json(os.path.join(
+        root_path, "portable_list.json"), portable_dict)
 
 
 if __name__ == "__main__":

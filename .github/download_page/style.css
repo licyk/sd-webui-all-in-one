@@ -170,6 +170,27 @@ h1 {
     font-size: 0.9em;
 }
 
+/* 折叠列表相关样式 */
+.hidden-item {
+    display: none;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-top: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background-color: #f0f0f0;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .download-items {
@@ -182,5 +203,10 @@ h1 {
     
     .footer {
         padding: 15px;
+    }
+    
+    .toggle-btn {
+        width: 100%;
+        text-align: center;
     }
 }
