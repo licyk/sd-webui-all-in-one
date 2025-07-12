@@ -161,6 +161,20 @@ h1 {
     color: #27ae60;
 }
 
+/* 最新版标记样式 */
+.latest-item {
+    background-color: #fff8e6;
+    border-left: 4px solid #ff9800;
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.1);
+}
+
+.latest-tag {
+    color: #ff5722;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
 /* Footer样式 */
 .footer {
     text-align: center;
