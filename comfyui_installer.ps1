@@ -34,7 +34,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 262
+$COMFYUI_INSTALLER_VERSION = 263
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -81,7 +81,7 @@ $GITHUB_MIRROR_LIST = @(
     "https://gitclone.com/github.com"
 )
 # uv 最低版本
-$UV_MINIMUM_VER = "0.7.20"
+$UV_MINIMUM_VER = "0.8"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
 # ComfyUI 仓库地址
@@ -4663,9 +4663,22 @@ if __name__ == '__main__':
 function Check-Onnxruntime-GPU {
     `$content = `"
 import re
+import argparse
 import importlib.metadata
 from pathlib import Path
 from enum import Enum
+
+
+def get_args() -> argparse.Namespace:
+    '''获取命令行参数
+
+    :return argparse.Namespace: 命令行参数命名空间
+    '''
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--ignore-ort-install', action='store_true', help='忽略 onnxruntime-gpu 未安装的状态, 强制进行检查')
+
+    return parser.parse_args()
 
 
 def get_onnxruntime_version_file() -> Path | None:
@@ -4862,6 +4875,8 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
 
 
 if __name__ == '__main__':
+    arg = get_args()
+    # print(need_install_ort_ver(not arg.ignore_ort_install))
     print(need_install_ort_ver())
 `".Trim()
 
