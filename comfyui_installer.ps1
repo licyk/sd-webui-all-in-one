@@ -34,7 +34,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 263
+$COMFYUI_INSTALLER_VERSION = 264
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4785,7 +4785,11 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         torch_ver = torch.__version__
         cuda_ver = torch.version.cuda
         cudnn_ver = torch.backends.cudnn.version()
-        return str(torch_ver), str(cuda_ver), str(cudnn_ver)
+        return (
+            str(torch_ver) if torch_ver is not None else None,
+            str(cuda_ver) if cuda_ver is not None else None,
+            str(cudnn_ver) if cudnn_ver is not None else None,
+        )
     except Exception as _:
         return None, None, None
 
