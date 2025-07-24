@@ -31,7 +31,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 185
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 186
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1691,17 +1691,20 @@ def is_nvidia_device():
     return False
 
 
-def get_pytorch_cuda_alloc_conf():
+def get_pytorch_cuda_alloc_conf(is_cuda = True):
     if is_nvidia_device():
         if cuda_malloc_supported():
-            return 'cuda_malloc'
+            if is_cuda:
+                return 'cuda_malloc'
+            else:
+                return 'pytorch_malloc'
         else:
             return 'pytorch_malloc'
     else:
         return None
 
 
-if __name__ == '__main__':
+def main():
     try:
         version = ''
         torch_spec = importlib.util.find_spec('torch')
@@ -1713,11 +1716,18 @@ if __name__ == '__main__':
                 spec.loader.exec_module(module)
                 version = module.__version__
         if int(version[0]) >= 2: #enable by default for torch version 2.0 and up
-            print(get_pytorch_cuda_alloc_conf())
+            if '+cu' in version: #only on cuda torch
+                print(get_pytorch_cuda_alloc_conf())
+            else:
+                print(get_pytorch_cuda_alloc_conf(False))
         else:
             print(None)
-    except:
+    except Exception as _:
         print(None)
+
+
+if __name__ == '__main__':
+    main()
 `".Trim()
 
     `$status = `$(python -c `"`$content`")
