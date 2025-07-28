@@ -36,7 +36,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 252
+$SD_WEBUI_INSTALLER_VERSION = 253
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3297,6 +3297,16 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
     `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/stable-diffusion-webui`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
     Print-Msg `"检查 Stable Diffusion WebUI 扩展依赖中`"
     `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$current_live_config = `$Env:WEBUI_LAUNCH_LIVE_OUTPUT
+    `$Env:WEBUI_LAUNCH_LIVE_OUTPUT = 1
+
+    if (`$LaunchArg) {
+        `$launch_args = `$LaunchArg
+    } elseif (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
+        `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+    } else {
+        `$launch_args = `"`"
+    }
 
     `$sum = 0
     ForEach (`$extension_path in `$extension_list) {
@@ -3306,6 +3316,9 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
     }
 
     `$count = 0
+    if ((`$launch_args -match `"--disable-extra-extensions`") -or (`$launch_args -match `"--disable-all-extensions`")) {
+        `$extension_list = @()
+    }
     ForEach (`$extension_path in `$extension_list) {
         if (!(Test-Path `"`$extension_path/install.py`")) {
             continue
@@ -3338,6 +3351,9 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
     }
 
     `$count = 0
+    if (`$launch_args -match `"--disable-all-extensions`") {
+        `$extension_list = @()
+    }
     ForEach (`$extension_path in `$extension_list) {
         if (!(Test-Path `"`$extension_path/install.py`")) {
             continue
@@ -3359,6 +3375,7 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
     }
     Print-Msg `"Stable Diffusion WebUI 内置扩展依赖检查完成`"
     `$Env:PYTHONPATH = `$current_python_path
+    `$Env:WEBUI_LAUNCH_LIVE_OUTPUT = `$current_live_config
 }
 
 
