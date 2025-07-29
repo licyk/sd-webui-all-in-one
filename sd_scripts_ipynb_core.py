@@ -1,0 +1,2172 @@
+"""
+SD Scripts 环境管理模块, 可用于 Jupyter Notebook
+"""
+import os
+import re
+import sys
+import stat
+import copy
+import time
+import shutil
+import inspect
+import logging
+import hashlib
+import datetime
+import threading
+import traceback
+import subprocess
+from queue import Queue
+from pathlib import Path
+from urllib.parse import urlparse
+from typing import Callable, Literal, Any
+
+
+VERSION = "1.0.0"
+
+
+class LoggingColoredFormatter(logging.Formatter):
+    """Logging 格式化类"""
+    COLORS = {
+        "DEBUG": "\033[0;36m",          # CYAN
+        "INFO": "\033[0;32m",           # GREEN
+        "WARNING": "\033[0;33m",        # YELLOW
+        "ERROR": "\033[0;31m",          # RED
+        "CRITICAL": "\033[0;37;41m",    # WHITE ON RED
+        "RESET": "\033[0m",             # RESET COLOR
+    }
+
+    def __init__(self, fmt, datefmt=None, color=True):
+        super().__init__(fmt, datefmt)
+        self.color = color
+
+    def format(self, record):
+        colored_record = copy.copy(record)
+        levelname = colored_record.levelname
+
+        if self.color:
+            seq = self.COLORS.get(levelname, self.COLORS["RESET"])
+            colored_record.levelname = "{}{}{}".format(
+                seq, levelname, self.COLORS["RESET"]
+            )
+
+        return super().format(colored_record)
+
+
+def get_logger(
+    name: str | None = None,
+    level: int | None = logging.INFO,
+    color: bool | None = True
+) -> logging.Logger:
+    """获取 Loging 对象
+
+    :param name`(str|None)`: Logging 名称
+    :param level`(int|None)`: 日志级别
+    :param color`(bool|None)`: 是否启用彩色日志
+    :return `logging.Logger`: Logging 对象
+    """
+    stack = inspect.stack()
+    calling_filename = os.path.basename(stack[1].filename)
+    if name is None:
+        name = calling_filename
+
+    _logger = logging.getLogger(name)
+    _logger.propagate = False
+
+    if not _logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            LoggingColoredFormatter(
+                r"[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s", r"%Y-%m-%d %H:%M:%S",
+                color=color
+            )
+        )
+        _logger.addHandler(handler)
+
+    _logger.setLevel(level)
+    _logger.debug("Logger 初始化完成")
+
+    return _logger
+
+
+logger = get_logger("SD Scripts Manager", color=False)
+
+
+def run_cmd(
+    command: str | list,
+    desc: str | None = None,
+    errdesc: str | None = None,
+    custom_env: list | None = None,
+    live: bool | None = True,
+    shell: bool | None = None
+) -> str | None:
+    """执行 Shell 命令
+
+    :param command`(str|list)`: 要执行的命令
+    :param desc`(str|None)`: 执行命令的描述
+    :param errdesc`(str|None)`: 执行命令报错时的描述
+    :param custom_env`(str|None)`: 自定义环境变量
+    :param live`(bool|None)`: 是否实时输出命令执行日志
+    :param shell`(bool|None)`: 是否使用内置 Shell 执行命令
+    :return `str|None`: 命令执行时输出的内容
+    :raises RuntimeError: 当命令执行失败时
+    """
+
+    if shell is None:
+        shell = sys.platform != "win32"
+
+    if desc is not None:
+        logger.info(desc)
+
+    if custom_env is None:
+        custom_env = os.environ
+
+    if live:
+        process_output = []
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            encoding="utf-8",
+            env=custom_env,
+        )
+
+        for line in process.stdout:
+            process_output.append(line)
+            print(line, end="")
+            sys.stdout.flush()
+
+        process.wait()
+        if process.returncode != 0:
+            raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
+命令: {command if isinstance(command, str) else " ".join(command)}
+错误代码: {process.returncode}""")
+
+        return "".join(process_output)
+
+    result: subprocess.CompletedProcess = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=shell,
+        env=custom_env
+    )
+
+    if result.returncode != 0:
+        message = f"""{errdesc or "执行命令时发生错误"}
+命令: {command if isinstance(command, str) else " ".join(command)}
+错误代码: {result.returncode}
+标准输出: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout) > 0 else ""}
+错误输出: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr) > 0 else ""}
+"""
+        raise RuntimeError(message)
+
+    return result.stdout.decode(encoding="utf8", errors="ignore")
+
+
+def remove_files(path: str | Path) -> bool:
+    """文件删除工具
+
+    :param path`(str|Path)`: 要删除的文件路径
+    :return `bool`: 删除结果
+    """
+    def _handle_remove_readonly(_func, _path, _):
+        """处理只读文件的错误处理函数"""
+        if os.path.exists(_path):
+            os.chmod(_path, stat.S_IWRITE)
+            _func(_path)
+
+    try:
+        path_obj = Path(path)
+        if path_obj.is_file():
+            os.chmod(path_obj, stat.S_IWRITE)
+            path_obj.unlink()
+            return True
+        if path_obj.is_dir():
+            shutil.rmtree(path_obj, onerror=_handle_remove_readonly)
+            return True
+
+        logger.error("路径不存在: %s", path)
+        return False
+    except Exception as e:
+        logger.error("删除失败: %s", e)
+        return False
+
+
+class GitWarpper:
+    """Git 工具集合"""
+    @staticmethod
+    def clone(
+        repo: str,
+        path: Path | str | None = None,
+    ) -> Path | None:
+        """下载 Git 仓库到本地
+
+        :param repo`(str)`: Git 仓库链接
+        :param path`(Path|str|None)`: 下载到本地的路径
+        :return `Path|None`: 下载成功时返回路径, 否则返回`None`
+        """
+        if path is None:
+            path = os.getcwd()
+
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+
+        try:
+            logger.info("下载 %s 到 %s 中", repo, path)
+            run_cmd(["git", "clone", "--recurse-submodules", repo, str(path)])
+            return path
+        except Exception as e:
+            logger.error("下载 %s 失败: %s", repo, e)
+            return None
+
+    @staticmethod
+    def update(path: Path | str) -> bool:
+        """更新 Git 仓库
+
+        :param path`(Path|str)`: Git 仓库路径
+        :return `bool`: 更新 Git 仓库结果
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        use_submodule = []
+        try:
+            logger.info("拉取 %s 更新中", path)
+            if GitWarpper.check_point_offset(path):
+                if GitWarpper.fix_point_offset(path):
+                    logger.error("更新 %s 失败", path)
+                    return False
+
+            if len(run_cmd(["git", "-C", str(path), "submodule", "status"], live=False).strip()) != 0:
+                use_submodule = ["--recurse-submodules"]
+                run_cmd(["git", "-C", str(path), "submodule", "init"])
+
+            run_cmd(["git", "-C", str(path), "fetch", "--all"] + use_submodule)
+            branch = GitWarpper.get_current_branch(path)
+            ref = run_cmd(["git", "-C", str(path), "symbolic-ref",
+                          "--quiet", "HEAD"], live=False)
+
+            if GitWarpper.check_repo_on_origin_remote(path):
+                origin_branch = f"origin/{branch}"
+            else:
+                origin_branch = str.replace(ref, "refs/heads/", "", 1)
+                try:
+                    _ = run_cmd(["git", "-C", str(path), "config", "--get",
+                                f"branch.{origin_branch}.remote"], live=False)
+                    origin_branch = run_cmd(
+                        ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "{}@{upstream}".format(origin_branch)], live=False)
+                except Exception as _:
+                    pass
+            run_cmd(["git", "-C", str(path), "reset",
+                    "--hard", origin_branch] + use_submodule)
+            logger.info("更新 %s 完成", path)
+            return True
+        except Exception as e:
+            logger.error("更新 %s 时发生错误: %s", str(path), e)
+            return False
+
+    @staticmethod
+    def check_point_offset(path: Path | str) -> bool:
+        """检查 Git 仓库的指针是否游离
+
+        :param path`(Path|str)`: Git 仓库路径
+        :return `bool`: 当 Git 指针游离时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            _ = run_cmd(["git", "-C", str(path),
+                        "symbolic-ref", "HEAD"], live=False)
+            return False
+        except Exception as _:
+            return True
+
+    @staticmethod
+    def fix_point_offset(path: Path | str) -> bool:
+        """修复 Git 仓库的 Git 指针游离
+
+        :param path`(Path|str)`: Git 仓库路径
+        :return `bool`: 修复结果
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            logger.info("修复 %s 的 Git 指针游离中", path)
+            # run_cmd(["git", "-C", str(path), "remote", "prune", "origin"])
+            run_cmd(["git", "-C", str(path), "submodule", "init"])
+            branch_info = run_cmd(
+                ["git", "-C", str(path), "branch", "-a"], live=False)
+            main_branch = None
+            for info in branch_info.split("\n"):
+                if "/HEAD" in info:
+                    main_branch = info.split(
+                        " -> ").pop().strip().split("/").pop()
+                    break
+            if main_branch is None:
+                logger.error("未找到 %s 主分支, 无法修复 Git 指针游离", path)
+                return False
+            logger.info("%s 主分支: %s", str(path), main_branch)
+            run_cmd(["git", "-C", str(path), "checkout", main_branch])
+            run_cmd(["git", "-C", str(path), "reset",
+                    "--recurse-submodules", "--hard", f"origin/{main_branch}"])
+            logger.info("修复 %s 的 Git 指针游离完成", path)
+            return True
+        except Exception as e:
+            logger.error("修复 %s 的 Git 指针游离失败: %s", path, e)
+            traceback.print_exc()
+            return False
+
+    @staticmethod
+    def get_current_branch(path: Path | str) -> str | None:
+        """获取 Git 仓库的当前所处分支
+
+        :param path`(Path|str)`: Git 仓库路径
+        :return `str`: 仓库所处分支, 获取失败时返回`None`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            return run_cmd(["git", "-C", str(path), "branch", "--show-current"], live=False).strip()
+        except Exception as e:
+            logger.error("获取 %s 当前分支失败: %s", path, e)
+            return None
+
+    @staticmethod
+    def check_repo_on_origin_remote(path: Path | str) -> bool:
+        """检查 Git 仓库的远程源是否在 origin
+
+        :param path`(Path|str)`: Git 仓库路径
+        :return `bool`: 远程源在 origin 时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            current_branch = GitWarpper.get_current_branch(path)
+            _ = run_cmd(["git", "-C", str(path), "show-ref", "--verify",
+                        "--quiet", f"refs/remotes/origin/{current_branch}"], live=False)
+            return True
+        except Exception as _:
+            return False
+
+    @staticmethod
+    def check_local_branch_exists(
+        path: Path | str,
+        branch: str,
+    ) -> bool:
+        """检查 Git 仓库是否存在某个本地分支
+
+        :param path`(Path|str)`: Git 仓库路径
+        :param branch`(str)`: 要检查的本地分支
+        :return `bool`: 分支存在时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            _ = run_cmd(["git", "-C", str(path), "show-ref", "--verify",
+                        "--quiet", f"refs/heads/{branch}"], live=False)
+            return True
+        except Exception as _:
+            return False
+
+    @staticmethod
+    def switch_branch(
+        path: Path | str,
+        branch: str,
+        new_url: str | None = None,
+        recurse_submodules: bool | None = False,
+    ) -> bool:
+        """切换 Git 仓库的分支和远程源
+
+        :param path`(Path|str)`: Git 仓库路径
+        :param branch`(str)`: 要切换的分支
+        :param new_url`(str|None)`: 要切换的远程源
+        :param recurse_submodules`(bool|None)`: 是否启用 Git 子模块
+        :return `bool`: 切换分支结果
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        custom_env = os.environ.copy()
+        custom_env.pop("GIT_CONFIG_GLOBAL")
+        try:
+            current_url = run_cmd(
+                ["git", "-C", str(path), "remote", "get-url", "origin"], custom_env=custom_env)
+        except Exception as e:
+            current_url = "None"
+            logger.warning("获取 %s 原有的远程源失败: %s", path, e)
+
+        use_submodules = ["--recurse-submodules"] if recurse_submodules else []
+        if new_url is not None:
+            logger.info("替换 %s 远程源: %s -> %s", path, current_url, new_url)
+            try:
+                run_cmd(["git", "-C", str(path), "remote",
+                        "set-url", "origin", new_url])
+            except Exception as e:
+                logger.error("替换 %s 远程源失败: %s", path, e)
+                return False
+
+        if recurse_submodules:
+            try:
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "update", "--init", "--recursive"])
+            except Exception as e:
+                logger.warning("更新 %s 的 Git 子模块信息发生错误: %s", path, e)
+        else:
+            try:
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "deinit", "--all", "-f"])
+            except Exception as e:
+                logger.warning("更新 %s 的 Git 子模块信息发生错误: %s", path, e)
+
+        logger.info("拉取 %s 远程源更新中")
+        try:
+            run_cmd(["git", "-C", str(path), "fetch"])
+            run_cmd(["git", "-C", str(path), "submodule", "deinit", "--all", "-f"])
+            if not GitWarpper.check_local_branch_exists(path, branch):
+                run_cmd(["git", "-C", str(path), "branch", branch])
+
+            run_cmd(["git", "-C", str(path), "checkout", branch, "--force"])
+            logger.info("应用 %s 的远程源最新内容中")
+            if recurse_submodules:
+                run_cmd(["git", "-C", str(path), "reset",
+                        "--hard", f"origin/{branch}"])
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "deinit", "--all", "-f"])
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "update", "--init", "--recursive"])
+
+            run_cmd(["git", "-C", str(path), "reset", "--hard",
+                    f"origin/{branch}"] + use_submodules)
+        except Exception as e:
+            logger.error("切换 %s 分支到 %s 失败: %s", path, branch, e)
+            logger.warning("回退分支切换")
+            run_cmd(["git", "-C", str(path), "remote",
+                    "set-url", "origin", current_url])
+            if recurse_submodules:
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "deinit", "--all", "-f"])
+
+            else:
+                run_cmd(["git", "-C", str(path), "submodule",
+                        "update", "--init", "--recursive"])
+
+    @staticmethod
+    def switch_commit(
+        path: Path | str,
+        commit: str,
+    ) -> bool:
+        """切换 Git 仓库到指定提交记录上
+
+        :param path`(Path|str)`: Git 仓库路径
+        :param commit`(str)`: Git 仓库提交记录
+        :return `bool`: 切换结果
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        logger.info("切换 %s 的 Git 指针到 %s 版本", path, commit)
+        try:
+            run_cmd(["git", "-C", str(path), "reset", "--hanrd", commit])
+            return True
+        except Exception as e:
+            logger.error("切换 %s 的 Git 指针到 %s 版本时失败: %s", path, commit, e)
+            return False
+
+    @staticmethod
+    def is_git_repo(path: Path | str) -> bool:
+        """检查该路径是否为 Git 仓库路径
+
+        :param path`(Path|str)`: 要检查的路径
+        :return `bool`: 当该路径为 Git 仓库时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            _ = run_cmd(["git", "-C", str(path), "rev-parse",
+                        "--git-dir"], live=False)
+            return True
+        except Exception as _:
+            return False
+
+    @staticmethod
+    def set_git_config(
+        email: str,
+        username: str,
+    ) -> bool:
+        """配置 Git 信息
+
+        :param email`(str)`: 邮箱地址
+        :param username`(str)`: 用户名
+        :return `bool`: 配置成功时返回`True`
+        """
+        logger.info("配置 Git 信息中")
+        try:
+            run_cmd(["git", "config", "--global", "user.email", email])
+            run_cmd(["git", "config", "--global", "user.name", username])
+            return True
+        except Exception as e:
+            logger.error("配置 Git 信息时发生错误: %s", e)
+            return False
+
+
+class Downloader:
+    """下载工具"""
+
+    @staticmethod
+    def aria2(
+        url: str,
+        path: Path | str | None = None,
+        save_name: str | None = None,
+    ) -> Path | None:
+        """Aria2 下载工具
+
+        :param url`(str)`: 文件下载链接
+        :param path`(Path|str|None)`: 下载文件的路径, 为`None`时使用当前路径
+        :param save_name`(str|None)`: 保存的文件名, 为`None`时使用`url`提取保存的文件名
+        :return `Path|None`: 下载成功时返回文件路径, 否则返回`None`
+        """
+        if path is None:
+            path = os.getcwd()
+
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        if save_name is None:
+            parts = urlparse(url)
+            save_name = os.path.basename(parts.path)
+
+        save_path = path / save_name
+        try:
+            logger.info("下载 %s 到 %s 中", url, save_path)
+            run_cmd(["aria2c", "--console-log-level=error", "-c", "-x", "16",
+                    "-s", "16", "-k", "1M", url, "-d", str(path), "-o", save_name])
+            return save_path
+        except Exception as e:
+            logger.error("下载 %s 时发生错误: %s", url, e)
+            raise Exception(e)
+
+    @staticmethod
+    def load_file_from_url(
+        url: str,
+        *,
+        model_dir: Path | str | None = None,
+        progress: bool | None = True,
+        file_name: str | None = None,
+        hash_prefix: str | None = None,
+        re_download: bool | None = False,
+    ):
+        """使用 requrest 库下载文件
+
+        :param url`(str)`: 下载链接
+        :param model`(Path|str|None)`: 下载路径
+        :param progress`(bool|None)`: 是否启用下载进度条
+        :param file_name`(str|None)`: 保存的文件名, 如果为`None`则从`url`中提取文件
+        :param hash_prefix`(str|None)`: sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
+        :param re_download`(bool)`: 强制重新下载文件
+        :return `Path`: 下载的文件路径
+        """
+        import requests
+        from tqdm import tqdm
+
+        if model_dir is None:
+            model_dir = os.getcwd()
+
+        model_dir = Path(model_dir) if not isinstance(
+            model_dir, Path) and model_dir is not None else model_dir
+
+        if not file_name:
+            parts = urlparse(url)
+            file_name = os.path.basename(parts.path)
+
+        cached_file = model_dir.resolve() / file_name
+
+        if re_download or not cached_file.exists():
+            model_dir.mkdir(exist_ok=True)
+            temp_file = model_dir / f"{file_name}.tmp"
+            logger.info("下载 %s 到 %s 中", file_name, cached_file)
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            total_size = int(response.headers.get("content-length", 0))
+            with tqdm(total=total_size, unit="B", unit_scale=True, desc=file_name, disable=not progress) as progress_bar:
+                with open(temp_file, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:
+                            file.write(chunk)
+                            progress_bar.update(len(chunk))
+
+            if hash_prefix and not Downloader.compare_sha256(temp_file, hash_prefix):
+                logger.error("%s 的哈希值不匹配, 正在删除临时文件", temp_file)
+                temp_file.unlink()
+                raise ValueError(f"文件哈希值与预期的哈希前缀不匹配: {hash_prefix}")
+
+            temp_file.rename(cached_file)
+            logger.info("%s 下载完成", file_name)
+        else:
+            logger.info("%s 已存在于 %s 中", file_name, cached_file)
+        return cached_file
+
+    @staticmethod
+    def compare_sha256(file_path: str | Path, hash_prefix: str) -> bool:
+        """检查文件的 sha256 哈希值是否与给定的前缀匹配
+
+        :param file_path`(str|Path)`: 文件路径
+        :param hash_prefix`(str)`: 哈希前缀
+        :return `bool`: 匹配结果
+        """
+        hash_sha256 = hashlib.sha256()
+        blksize = 1024 * 1024
+
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(blksize), b""):
+                hash_sha256.update(chunk)
+        return hash_sha256.hexdigest().startswith(hash_prefix.strip().lower())
+
+    @staticmethod
+    def download_file(
+        url: str,
+        path: str | Path = None,
+        save_name: str | None = None,
+        tools: Literal["aria2", "request"] = "aria2",
+        retry: int | None = 3,
+    ) -> Path | None:
+        """下载文件工具
+
+        :param url`(str)`: 文件下载链接
+        :param path`(Path|str)`: 文件下载路径
+        :param save_name`(str)`: 文件保存名称, 当为`None`时从`url`中解析文件名
+        :param tools`(Literal["aria2","request"])`: 下载工具
+        :param retry`(int)`: 重试下载的次数
+        :return `Path|None`: 保存的文件路径
+        """
+        count = 0
+        while count < retry:
+            count += 1
+            try:
+                if tools == "aria2":
+                    output = Downloader.aria2(
+                        url=url,
+                        path=path,
+                        save_name=save_name,
+                    )
+                    if output is None:
+                        continue
+                    return output
+                elif tools == "request":
+                    output = Downloader.load_file_from_url(
+                        url=url,
+                        model_dir=path,
+                        file_name=save_name,
+                    )
+                    if output is None:
+                        continue
+                    return output
+                else:
+                    logger.error("未知下载工具: %s", tools)
+                    return None
+            except Exception as e:
+                logger.error("[%s/%s] 下载 %s 出现错误: %s", count, retry, url, e)
+
+            if count < retry:
+                logger.warning("[%s/%s] 重试下载 %s 中", count, retry, url)
+            else:
+                return None
+
+
+class EnvManager:
+    """依赖环境管理工具"""
+    @staticmethod
+    def pip_install(
+        *args: Any,
+        use_uv: bool | None = True,
+    ) -> str:
+        """使用 Pip / uv 安装 Python 软件包
+
+        :param *args`(Any)`: 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
+        :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+        :return `str`: 命令的执行输出
+        :raises RuntimeError: 当 uv 和 pip 都无法安装软件包时抛出异常
+        """
+        if use_uv:
+            try:
+                _ = run_cmd(["uv", "--version"], live=False)
+            except Exception as _:
+                logger.info("安装 uv 中")
+                run_cmd([sys.executable, "-m", "pip", "install", "uv"])
+
+            try:
+                return run_cmd(["uv", "pip", "install", *args])
+            except Exception as e:
+                logger.warning(
+                    "检测到 uv 安装 Python 软件包失败, 尝试回退到 Pip 重试 Python 软件包安装: %s", e)
+                return run_cmd([sys.executable, "-m", "pip", "install", *args])
+        else:
+            return run_cmd([sys.executable, "-m", "pip", "install", *args])
+
+    @staticmethod
+    def install_manager_depend(use_uv: bool | None = True) -> bool:
+        """安装自身组件依赖
+
+        :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+        :return `bool`: 组件安装结果
+        """
+        try:
+            logger.info("安装自身组件依赖中")
+            EnvManager.pip_install("uv", "--upgrade", use_uv=False)
+            EnvManager.pip_install(
+                "modelscope", "huggingface_hub", "requests", "tqdm", "wandb", use_uv=use_uv)
+            run_cmd(["apt", "update"])
+            run_cmd(["apt", "install", "aria2", "google-perftools",
+                    "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"])
+            return True
+        except Exception as e:
+            logger.error("安装自身组件依赖失败: %s", e)
+            return False
+
+    @staticmethod
+    def install_pytorch(
+        torch_package: str | list | None = None,
+        xformers_package: str | list | None = None,
+        pytorch_mirror: str | None = None,
+        use_uv: bool | None = True,
+    ) -> bool:
+        """安装 PyTorch / xFormers
+
+        :param torch_package`(str|list|None)`: PyTorch 软件包名称和版本信息, 如`torch==2.0.0 torchvision==0.15.1` / `["torch==2.0.0", "torchvision==0.15.1"]`
+        :param xformers_package`(str|list|None)`: xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
+        :param pytorch_mirror`(str|None)`: 指定安装 PyTorch / xFormers 时使用的镜像源
+        :param use_uv`(bool|None)`: 是否使用 uv 代替 Pip 进行安装
+        :return `bool`: 安装 PyTorch / xFormers 成功时返回`True`
+        """
+        custom_env = os.environ.copy()
+        if pytorch_mirror is not None:
+            logger.info("使用自定义 PyTorch 镜像源: %s", pytorch_mirror)
+            custom_env.pop("PIP_EXTRA_INDEX_URL")
+            custom_env.pop("PIP_FIND_LINKS")
+            custom_env.pop("UV_INDEX")
+            custom_env.pop("UV_FIND_LINKS")
+            custom_env["PIP_INDEX_URL"] = pytorch_mirror
+            custom_env["UV_DEFAULT_INDEX"] = pytorch_mirror
+
+        if torch_package is not None:
+            logger.info("安装 PyTorch 中")
+            torch_package = torch_package.split() if isinstance(
+                torch_package, str) else torch_package
+            try:
+                EnvManager.pip_install(*torch_package, use_uv=use_uv)
+                logger.info("安装 PyTorch 成功")
+            except Exception as e:
+                logger.error("安装 PyTorch 时发生错误: %s", e)
+                return False
+
+        if xformers_package is not None:
+            logger.info("安装 xFormers 中")
+            xformers_package = xformers_package.split() if isinstance(
+                xformers_package, str) else xformers_package
+            try:
+                EnvManager.pip_install(*xformers_package, use_uv=use_uv)
+                logger.info("安装 xFormers 成功")
+            except Exception as e:
+                logger.error("安装 xFormers 时发生错误: %s", e)
+                return False
+
+        return True
+
+    @staticmethod
+    def install_requirements(
+        path: Path | str,
+        use_uv: bool | None = True,
+    ) -> bool:
+        """从 requirements.txt 文件指定安装的依赖
+
+        :param path`(Path|str)`: requirements.txt 文件路径
+        :param use_uv`(bool|None)`: 是否使用 uv 代替 Pip 进行安装
+        :return `bool`: 安装依赖成功时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+
+        try:
+            logger.info("从 %s 安装 Python 软件包中", path)
+            EnvManager.pip_install("-r", str(path), use_uv=use_uv)
+            logger.info("从 %s 安装 Python 软件包成功", path)
+            return True
+        except Exception as e:
+            logger.info("从 %s 安装 Python 软件包时发生错误: %s", path, e)
+            return False
+
+
+class Utils:
+    """其他工具集合"""
+    @staticmethod
+    def clear_up() -> bool:
+        """清理 Jupyter Notebook 输出内容
+
+        :return `bool`: 清理输出结果
+        """
+        try:
+            from IPython.display import clear_output
+            clear_output(wait=False)
+            return True
+        except Exception as e:
+            logger.error("清理 Jupyter Notebook 输出内容失败: %s", e)
+            return False
+
+    @staticmethod
+    def check_gpu() -> bool:
+        """检查环境中是否有可用的 GPU
+
+        :return `bool`: 当有可用 GPU 时返回`True`
+        """
+        logger.info("检查当前环境是否有 GPU 可用")
+        try:
+            import tensorflow as tf
+        except Exception as _:
+            EnvManager.pip_install("tensorflow")
+
+        try:
+            tf.test.gpu_device_name()
+            logger.info("有可用的 GPU")
+            return True
+        except Exception as _:
+            logger.error("无可用 GPU")
+            return False
+
+    @staticmethod
+    def get_file_list(path: Path | str) -> list[Path]:
+        """获取当前路径下的所有文件的绝对路径
+
+        :param path`(Path|str)`: 要获取文件列表的目录
+        :return `list[Path]`: 文件列表的绝对路径
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+
+        if not path.exists():
+            return []
+
+        return [
+            p.resolve()
+            for p in path.rglob("*")
+            if p.is_file()
+        ]
+
+    @staticmethod
+    def config_wandb_token(token: str) -> None:
+        """配置 WandB 所需 Token"""
+        os.environ["WANDB_API_KEY"] = token
+
+    @staticmethod
+    def download_archive_and_unpack(
+        url: str,
+        local_dir: Path | str,
+        name: str | None = None,
+        retry: int | None = 3
+    ) -> Path | None:
+        """下载压缩包并解压到指定路径
+
+        :param url`(str)`: 压缩包下载链接, 压缩包只支持`zip`,`7z`,`tar`格式
+        :param local_dir`(Path|str)`: 下载路径
+        :param name`(str|None)`: 下载文件保存的名称, 为`None`时从`url`解析文件名
+        :param retry`(int|None)`: 重试下载的次数
+        :return `Path|None`: 下载成功并解压成功时返回路径
+        """
+        path = Path("/tmp")
+        if name is None:
+            parts = urlparse(url)
+            name = os.path.basename(parts.path)
+
+        archive_format = Path(name).suffix  # 压缩包格式
+        count = 0
+        while count < retry:
+            count += 1
+            origin_file_path = Downloader.aria2(  # 下载文件
+                url=url,
+                path=path,
+                save_name=name,
+            )
+            if origin_file_path is None:
+                logger.warning("[%s/%s] 重试下载 %s 中", count, retry, url)
+                continue
+            else:
+                break
+
+        if origin_file_path is not None:
+            # 解压文件
+            logger.info("解压 %s 到 %s 中", name, local_dir)
+            try:
+                if archive_format == ".7z":
+                    run_cmd(["7z", "x", origin_file_path, f"-o{local_dir}"])
+                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                    return local_dir
+                elif archive_format == ".zip":
+                    run_cmd(["unzip", origin_file_path, "-d", local_dir])
+                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                    return local_dir
+                elif archive_format == ".tar":
+                    run_cmd(["tar", "-xvf", origin_file_path, "-C", local_dir])
+                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                    return local_dir
+                else:
+                    logger.error("%s 的格式不支持解压", name)
+                    return None
+            except Exception as e:
+                logger.error("解压 %s 时发生错误: %s", name, e)
+                traceback.print_exc()
+                return None
+        else:
+            logger.error("%s 下载失败", name)
+            return None
+
+    @staticmethod
+    def tcmalloc() -> None:
+        """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc"""
+        logger.info("配置内存优化")
+        os.environ["LD_PRELOAD"] = "/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4"
+
+
+    @staticmethod
+    def compare_versions(version1: str, version2: str) -> int:
+        """对比两个版本号大小
+
+        :param version1(str): 第一个版本号
+        :param version2(str): 第二个版本号
+        :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+        """
+        # 将版本号拆分成数字列表
+        try:
+            nums1 = (
+                re.sub(r"[a-zA-Z]+", "", version1)
+                .replace("-", ".")
+                .replace("_", ".")
+                .replace("+", ".")
+                .split(".")
+            )
+            nums2 = (
+                re.sub(r"[a-zA-Z]+", "", version2)
+                .replace("-", ".")
+                .replace("_", ".")
+                .replace("+", ".")
+                .split(".")
+            )
+        except Exception as _:
+            return 0
+
+        for i in range(max(len(nums1), len(nums2))):
+            num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
+            num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
+
+            if num1 == num2:
+                continue
+            elif num1 > num2:
+                return 1  # 版本号 1 更大
+            else:
+                return -1  # 版本号 2 更大
+
+        return 0  # 版本号相同
+
+
+class MultiThreadDownloader:
+    """通用多线程下载器"""
+
+    def __init__(
+        self,
+        download_func: Callable,
+        download_args_list: list[Any] | None = None,
+        download_kwargs_list: list[dict[str, Any]] | None = None,
+    ) -> None:
+        """多线程下载器初始化
+
+        :param download_func`(Callable)`: 执行下载任务的函数
+        :param download_args_list`(list[Any])`: 传入下载函数的参数列表
+
+        :notes
+            下载参数列表,, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
+
+            格式示例:
+            ```python
+            # 仅使用位置参数
+            download_args_list = [
+                [arg1, arg2, arg3, ...],  # 第一个下载任务的参数
+                [arg1, arg2, arg3, ...],  # 第二个下载任务的参数
+                [arg1, arg2, arg3, ...],  # 第三个下载任务的参数
+            ]
+
+            # 仅使用关键字参数
+            download_kwargs_list = [
+                {"param1": value1, "param2": value2},  # 第一个下载任务的参数
+                {"param1": value3, "param2": value4},  # 第二个下载任务的参数
+                {"param1": value5, "param2": value6},  # 第三个下载任务的参数
+            ]
+
+            # 混合使用位置参数和关键字参数
+            download_args_list = [
+                [arg1, arg2],
+                [arg3, arg4],
+                [arg5, arg6],
+            ]
+            download_kwargs_list = [
+                {"param1": value1, "param2": value2},
+                {"param1": value3, "param2": value4},
+                {"param1": value5, "param2": value6},
+            ]
+            ```
+        """
+        self.download_func = download_func
+        self.download_args_list = download_args_list or []
+        self.download_kwargs_list = download_kwargs_list or []
+        self.queue = Queue()
+        self.total_tasks = max(len(download_args_list or []), len(
+            download_kwargs_list or []))  # 记录总的下载任务数 (以参数列表长度为准)
+        self.completed_count = 0  # 记录已完成的任务数
+        self.lock = threading.Lock()  # 创建锁以保护对计数器的访问
+        self.retry = None
+        self.start_time = None
+
+    def worker(self) -> None:
+        """工作线程函数, 执行下载任务"""
+        while True:
+            task = self.queue.get()
+            if task is None:
+                break
+
+            args, kwargs = task
+            self.download_func(*args, **kwargs)
+            self.queue.task_done()
+            with self.lock:  # 访问共享资源时加锁
+                self.completed_count += 1
+                self.print_progress()  # 打印进度
+
+    def print_progress(self) -> None:
+        """进度条显示"""
+        progress = (self.completed_count / self.total_tasks) * 100
+        current_time = datetime.datetime.now()
+        time_interval = current_time - self.start_time
+        hours = time_interval.seconds // 3600
+        minutes = (time_interval.seconds // 60) % 60
+        seconds = time_interval.seconds % 60
+        formatted_time = f"{hours:02}:{minutes:02}:{seconds:02}"
+
+        if self.completed_count > 0:
+            speed = self.completed_count / time_interval.total_seconds()
+        else:
+            speed = 0
+
+        remaining_tasks = self.total_tasks - self.completed_count
+
+        if speed > 0:
+            estimated_remaining_time_seconds = remaining_tasks / speed
+            estimated_remaining_time = datetime.timedelta(
+                seconds=estimated_remaining_time_seconds)
+            estimated_hours = estimated_remaining_time.seconds // 3600
+            estimated_minutes = (estimated_remaining_time.seconds // 60) % 60
+            estimated_seconds = estimated_remaining_time.seconds % 60
+            formatted_estimated_time = f"{estimated_hours:02}:{estimated_minutes:02}:{estimated_seconds:02}"
+        else:
+            formatted_estimated_time = "N/A"
+
+        logger.info(
+            "下载进度: %.2f%% | %d/%d [%s<%s, %.2f it/s]",
+            progress, self.completed_count, self.total_tasks, formatted_time, formatted_estimated_time, speed)
+
+    def start(
+        self,
+        num_threads: int | None = 16,
+        retry: int | None = 3,
+    ) -> None:
+        """启动多线程下载器
+
+        :param num_threads`(int)`: 下载线程数, 默认为 16
+        :param retry`(int)`: 重试次数, 默认为 3
+        """
+
+        # 将重试次数作为属性传递给下载函数
+        self.retry = retry
+
+        threads = []
+        self.start_time = datetime.datetime.now()
+        time.sleep(0.1)  # 避免 print_progress() 计算时间时出现 division by zero
+
+        # 启动工作线程
+        for _ in range(num_threads):
+            thread = threading.Thread(target=self.worker)
+            thread.start()
+            threads.append(thread)
+
+        # 准备下载任务参数
+        max_tasks = max(len(self.download_args_list),
+                        len(self.download_kwargs_list))
+
+        # 将下载任务添加到队列
+        for i in range(max_tasks):
+            # 获取位置参数
+            args = self.download_args_list[i] if i < len(
+                self.download_args_list) else []
+
+            # 获取关键字参数
+            kwargs = self.download_kwargs_list[i] if i < len(
+                self.download_kwargs_list) else {}
+
+            # 将任务参数打包
+            self.queue.put((args, kwargs))
+
+        # 等待所有任务完成
+        self.queue.join()
+
+        # 停止所有工作线程
+        for _ in range(num_threads):
+            self.queue.put(None)
+
+        for thread in threads:
+            thread.join()
+
+
+class RepoManager:
+    """HuggingFace / ModelScope 仓库管理器"""
+
+    def __init__(
+        self,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+    ) -> None:
+        """HuggingFace / ModelScope 仓库管理器初始化
+
+        :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
+        :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
+        """
+        from huggingface_hub import HfApi
+        from modelscope import HubApi
+        self.hf_api = HfApi(token=hf_token)
+        self.ms_api = HubApi()
+        if hf_token is not None:
+            os.environ["HF_TOKEN"] = hf_token
+            self.hf_token = hf_token
+        if ms_token is not None:
+            os.environ["MODELSCOPE_API_TOKEN"] = ms_token
+            self.ms_api.login(access_token=ms_token)
+            self.ms_token = ms_token
+
+    def get_repo_file(
+        self,
+        api_type: Literal["huggingface", "modelscope"],
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        retry: int | None = 3,
+    ) -> list[str]:
+        """获取 HuggingFace / ModelScope 仓库文件列表
+
+        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
+        :param repo_id`(str)`: HuggingFace / ModelScope 仓库 ID
+        :param repo_type`(str)`: HuggingFace / ModelScope 仓库类型
+        :param retry`(int|None)`: 重试次数
+        :return `list[str]`: 仓库文件列表
+        """
+        if api_type == "huggingface":
+            logger.info("获取 HuggingFace 仓库 %s (类型: %s) 的文件列表",
+                        repo_id, repo_type)
+            return self.get_hf_repo_files(repo_id, repo_type, retry)
+        if api_type == "modelscope":
+            logger.info("获取 ModelScope 仓库 %s (类型: %s}) 的文件列表",
+                        repo_id, repo_type)
+            return self.get_ms_repo_files(repo_id, repo_type, retry)
+
+        logger.error("未知 Api 类型: %s", api_type)
+        return []
+
+    def get_hf_repo_files(
+        self,
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        retry: int | None = 3,
+    ) -> list[str]:
+        """获取 HuggingFace 仓库文件列表
+
+        :param repo_id`(str)`: HuggingFace 仓库 ID
+        :param repo_type`(str)`: HuggingFace 仓库类型
+        :param retry`(int|None)`: 重试次数
+        :return `list[str]`: 仓库文件列表
+        """
+        count = 0
+        while count < retry:
+            count += 1
+            try:
+                return self.hf_api.list_repo_files(
+                    repo_id=repo_id,
+                    repo_type=repo_type,
+                )
+            except Exception as e:
+                logger.error("[%s/%s] 获取 %s (类型: %s) 仓库的文件列表出现错误: %s", count, retry,
+                             repo_id, repo_type, e)
+                traceback.print_exc()
+                if count < retry:
+                    logger.warning("[%s/%s] 重试获取文件列表中", count, retry)
+        return []
+
+    def get_ms_repo_files(
+        self,
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        retry: int | None = 3,
+    ) -> list[str]:
+        """ 获取 ModelScope 仓库文件列表
+
+        :param repo_id`(str)`: ModelScope 仓库 ID
+        :param repo_type`(str)`: ModelScope 仓库类型
+        :param retry`(int|None)`: 重试次数
+        :return `list[str]`: 仓库文件列表
+        """
+        file_list = []
+        count = 0
+
+        def _get_file_path(repo_files: list) -> list[str]:
+            """获取 ModelScope Api 返回的仓库列表中的模型路径"""
+            return [
+                file["Path"]
+                for file in repo_files
+                if file["Type"] != "tree"
+            ]
+
+        if repo_type == "model":
+            while count < retry:
+                count += 1
+                try:
+                    repo_files = self.ms_api.get_model_files(
+                        model_id=repo_id,
+                        recursive=True
+                    )
+                    file_list = _get_file_path(repo_files)
+                    break
+                except Exception as e:
+                    traceback.print_exc()
+                    logger.error("[%s/%s] 获取 %s (类型: %s) 仓库的文件列表出现错误: %s", count, retry,
+                                 repo_id, repo_type, e)
+                    if count < retry:
+                        logger.warning("[%s/%s] 重试获取文件列表中", count, retry)
+        elif repo_type == "dataset":
+            while count < retry:
+                count += 1
+                try:
+                    repo_files = self.ms_api.get_dataset_files(
+                        repo_id=repo_id,
+                        recursive=True
+                    )
+                    file_list = _get_file_path(repo_files)
+                    break
+                except Exception as e:
+                    traceback.print_exc()
+                    logger.error("[%s/%s] 获取 %s (类型: %s) 仓库的文件列表出现错误: %s", count, retry,
+                                 repo_id, repo_type, e)
+                    if count < retry:
+                        logger.warning("[%s/%s] 重试获取文件列表中", count, retry)
+        elif repo_type == "space":
+            # TODO: 支持创空间
+            logger.error("%s 仓库类型为创空间, 不支持获取文件列表", repo_id)
+        else:
+            logger.error("未知的 %s 仓库类型", repo_type)
+
+        return file_list
+
+    def check_repo(
+        self,
+        api_type: Literal["huggingface", "modelscope"],
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        visibility: bool | None = False,
+    ) -> bool:
+        """检查 HuggingFace / ModelScope 仓库是否存在, 当不存在时则自动创建
+
+        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
+        :param repo_id`(str)`: 仓库 ID
+        :param repo_type`(str)`: 仓库类型
+        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        """
+        if api_type == "huggingface":
+            return self.check_hf_repo(repo_id, repo_type, visibility)
+        if api_type == "modelscope":
+            return self.check_ms_repo(repo_id, repo_type, visibility)
+
+        logger.error("未知 Api 类型: %s", api_type)
+        return False
+
+    def check_hf_repo(
+        self,
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        visibility: bool | None = False,
+    ) -> bool:
+        """检查 HuggingFace 仓库是否存在, 当不存在时则自动创建
+
+        :param repo_id`(str)`: HuggingFace 仓库 ID
+        :param repo_type`(str)`: HuggingFace 仓库类型
+        :param visibility`(bool|None)`: HuggingFace 仓库可见性
+        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        """
+        if repo_type in ["model", "dataset", "space"]:
+            try:
+                if not self.hf_api.repo_exists(
+                    repo_id=repo_id,
+                    repo_type=repo_type
+                ):
+                    self.hf_api.create_repo(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        private=visibility
+                    )
+                return True
+            except Exception as e:
+                traceback.print_exc()
+                logger.error("检查 HuggingFace 仓库时发生错误: %s", e)
+                return False
+
+        logger.error("未知 HuggingFace 仓库类型: %s", repo_type)
+        return False
+
+    def check_ms_repo(
+        self,
+        repo_id: str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        visibility: bool | None = False,
+    ) -> bool:
+        """检查 ModelScope 仓库是否存在, 当不存在时则自动创建
+
+        :param repo_id`(str)`: ModelScope 仓库 ID
+        :param repo_type`(str)`: ModelScope 仓库类型
+        :param visibility`(bool|None)`: HuggingFace 仓库可见性
+        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        """
+        from modelscope.hub.constants import Visibility
+        if repo_type in ["model", "dataset"]:
+            try:
+                if not self.ms_api.repo_exists(
+                    repo_id=repo_id,
+                    repo_type=repo_type,
+                    token=self.ms_token,
+                ):
+                    self.ms_api.create_repo(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        visibility=Visibility.PUBLIC if visibility else Visibility.PRIVATE,
+                        token=self.ms_token
+                    )
+                return True
+            except Exception as e:
+                traceback.print_exc()
+                logger.error("检查 ModelScope 仓库时发生错误: %s", e)
+                return False
+        if repo_type == "space":
+            logger.error("未支持 ModelScope 创空间")
+            return False
+
+        logger.error("未知 ModelScope 仓库类型: %s", repo_type)
+        return False
+
+    def upload_files_to_repo(
+        self,
+        api_type: Literal["huggingface", "modelscope"],
+        repo_id: str,
+        upload_path: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        visibility: bool | None = False,
+        retry: int | None = 3,
+    ) -> None:
+        """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
+
+        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
+        :param repo_id`(str)`: 仓库 ID
+        :param repo_type`(str)`: 仓库类型
+        :param upload_path`(Path|str)`: 要上传的文件夹
+        :param visibility`(bool|None)`: 当仓库不存在时自动创建的仓库的可见性
+        :param retry`(int|None)`: 上传重试次数
+        """
+        if api_type in ["huggingface", "modelscope"]:
+            if not self.check_repo(
+                api_type=api_type,
+                repo_id=repo_id,
+                repo_type=repo_type,
+                visibility=visibility,
+            ):
+                logger.error("检查 %s (类型: %s) 仓库失败, 无法上传文件")
+                return
+
+        upload_path = Path(upload_path) if not isinstance(
+            upload_path, Path) and upload_path is not None else upload_path
+
+        if api_type == "huggingface":
+            self.upload_files_to_huggingface(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                upload_path=upload_path,
+                retry=retry,
+            )
+        elif api_type == "modelscope":
+            self.upload_files_to_modelscope(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                upload_path=upload_path,
+                retry=retry,
+            )
+        else:
+            logger.error("未知 Api 类型: %s", api_type)
+
+    def upload_files_to_huggingface(
+        self,
+        repo_id: str,
+        upload_path: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        retry: int | None = 3,
+    ) -> None:
+        """上传文件夹中的内容到 HuggingFace 仓库中
+
+        :param repo_id`(str)`: HuggingFace 仓库 ID
+        :param repo_type`(str)`: HuggingFace 仓库类型
+        :param upload_path`(Path|str)`: 要上传到 HuggingFace 仓库的文件夹
+        :param retry`(int|None)`: 上传重试次数
+        """
+        upload_files = Utils.get_file_list(upload_path)
+        repo_files = self.get_repo_file(
+            api_type="huggingface",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            retry=retry,
+        )
+        logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s",
+                    upload_path, repo_id)
+        files_count = len(upload_files)
+        count = 0
+        for upload_file in upload_files:
+            count += 1
+            upload_file_rel_path = upload_file.relative_to(
+                upload_path).as_posix()
+            if upload_file_rel_path in repo_files:
+                logger.info("[%s/%s] %s 已存在于 HuggingFace 仓库中, 跳过上传",
+                            count, files_count, upload_file)
+                continue
+
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", count,
+                        files_count, upload_file, repo_id, repo_type)
+            retry_num = 0
+            while retry_num < retry:
+                try:
+                    self.hf_api.upload_file(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        path_in_repo=upload_file_rel_path,
+                        path_or_fileobj=upload_file,
+                        commit_message=f"Upload {upload_file.name}",
+                    )
+                    break
+                except Exception as e:
+                    logger.error("[%s/%s] 上传 %s 时发生错误: %s", count,
+                                 files_count, upload_file.name, e)
+                    traceback.print_exc()
+                    if retry_num < retry:
+                        logger.warning("[%s/%s] 重试上传 %s", count,
+                                       files_count, upload_file.name)
+
+        logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 完成", count,
+                    files_count, upload_path, repo_id, repo_type)
+
+    def upload_files_to_modelscope(
+        self,
+        repo_id: str,
+        upload_path: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        retry: int | None = 3,
+    ) -> None:
+        """上传文件夹中的内容到 ModelScope 仓库中
+
+        :param repo_id`(str)`: ModelScope 仓库 ID
+        :param repo_type`(str)`: ModelScope 仓库类型
+        :param upload_path`(Path|str)`: 要上传到 ModelScope 仓库的文件夹
+        :param retry`(int|None)`: 上传重试次数
+        """
+        upload_files = Utils.get_file_list(upload_path)
+        repo_files = self.get_repo_file(
+            api_type="modelscope",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            retry=retry,
+        )
+        logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s",
+                    upload_path, repo_id)
+        files_count = len(upload_files)
+        count = 0
+        for upload_file in upload_files:
+            count += 1
+            upload_file_rel_path = upload_file.relative_to(
+                upload_path).as_posix()
+            if upload_file_rel_path in repo_files:
+                logger.info("[%s/%s] %s 已存在于 ModelScope 仓库中, 跳过上传",
+                            count, files_count, upload_file)
+                continue
+
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", count,
+                        files_count, upload_file, repo_id, repo_type)
+            retry_num = 0
+            while retry_num < retry:
+                try:
+                    self.ms_api.upload_file(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        path_in_repo=upload_file_rel_path,
+                        path_or_fileobj=upload_file,
+                        commit_message=f"Upload {upload_file.name}",
+                        token=self.ms_token
+                    )
+                    break
+                except Exception as e:
+                    logger.error("[%s/%s] 上传 %s 时发生错误: %s", count,
+                                 files_count, upload_file.name, e)
+                    traceback.print_exc()
+                    if retry_num < retry:
+                        logger.warning("[%s/%s] 重试上传 %s", count,
+                                       files_count, upload_file.name)
+
+        logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 完成", count,
+                    files_count, upload_path, repo_id, repo_type)
+
+    def download_files_from_repo(
+        self,
+        api_type: Literal["huggingface", "modelscope"],
+        repo_id: str,
+        local_dir: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        folder: str | None = None,
+        retry: int | None = 3,
+        num_threads: int | None = 16,
+    ) -> Path:
+        """从 HuggingFace / ModelScope 仓库下载文文件
+
+        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
+        :param repo_id`(str)`: 仓库 ID
+        :param repo_type`(Literal["model","dataset","space"])`: 仓库类型
+        :param local_dir`(Path|str)`: 下载路径
+        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param retry`(int|None)`: 重试下载的次数
+        :param num_threads`(int|None)`: 下载线程
+        :return `Path`: 下载路径
+        :notes
+            `folder`参数未指定时, 则下载 HuggingFace / ModelScope 仓库中的所有文件, 如果`folder`参数指定了, 例如指定的是`aaaki`
+
+            而仓库的文件结构如下:
+
+            ```markdown
+            HuggingFace / ModelScope Repositories
+            ├── Nachoneko
+            │   ├── 1_nachoneko
+            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.png
+            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.txt
+            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).png
+            │   │       └── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).txt
+            │   ├── 2_nachoneko
+            │   │       ├── 0(8).txt
+            │   │       ├── 0(8).webp
+            │   │       ├── 001_2.png
+            │   │       └── 001_2.txt
+            │   └── 4_nachoneko
+            │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.png
+            │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.txt
+            │           ├── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.png
+            │           └── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.txt
+            └ aaaki
+                ├── 1_aaaki
+                │   ├── 1.png
+                │   ├── 1.txt
+                │   ├── 11.png
+                │   ├── 11.txt
+                │   ├── 12.png
+                │   └── 12.txt
+                └── 3_aaaki
+                    ├── 14.png
+                    ├── 14.txt
+                    ├── 16.png
+                    └── 16.txt
+            ```
+
+            则使用该函数下载 HuggingFace / ModelScope 仓库的文件时将下载`aaaki`文件夹中的所有文件, 而`Nachoneko`文件夹中的文件不会被下载
+
+            `folder`参数使用的是前缀匹配方式, 从路径的开头的字符串进行匹配, 匹配成功则进行下载
+
+            如果要指定下载某个文件, 则`folder`参数需要指定该文件在仓库中的完整路径, 比如`aaaki/1_aaaki/1.png`, 此时只会下载该文件, 其他文件不会被下载
+
+        """
+        local_dir = Path(local_dir) if not isinstance(
+            local_dir, Path) and local_dir is not None else local_dir
+
+        logger.info("从 %s (类型: %s) 下载文件中", repo_id, repo_type)
+        if api_type == "huggingface":
+            self.download_files_from_huggingface(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                local_dir=local_dir,
+                folder=folder,
+                retry=retry,
+                num_threads=num_threads,
+            )
+            return local_dir
+
+        if api_type == "modelscope":
+            self.download_files_from_modelscope(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                local_dir=local_dir,
+                folder=folder,
+                retry=retry,
+                num_threads=num_threads,
+            )
+            return local_dir
+
+        logger.error("未知 Api 类型: %s", api_type)
+        return None
+
+    def download_files_from_huggingface(
+        self,
+        repo_id: str,
+        local_dir: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        folder: str | None = None,
+        retry: int | None = 3,
+        num_threads: int | None = 16,
+    ) -> None:
+        """从 HuggingFace 仓库下载文文件
+
+        :param repo_id`(str)`: HuggingFace 仓库 ID
+        :param repo_type`(Literal["model","dataset","space"])`: HuggingFace 仓库类型
+        :param local_dir`(Path|str)`: 下载路径
+        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param retry`(int|None)`: 重试下载的次数
+        :param num_threads`(int|None)`: 下载线程
+        """
+        from huggingface_hub import hf_hub_download
+        repo_files = self.get_repo_file(
+            api_type="huggingface",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            retry=retry,
+        )
+        download_task = []
+
+        for repo_file in repo_files:
+            if folder is not None and not repo_file.startswith(folder):
+                continue
+            download_task.append({
+                "repo_id": repo_id,
+                "repo_type": repo_type,
+                "local_dir": local_dir,
+                "filename": repo_file,
+            })
+
+        if folder is not None:
+            logger.info("指定下载文件: %s", folder)
+        logger.info("下载文件数量: %s", len(download_task))
+
+        files_downloader = MultiThreadDownloader(
+            download_func=hf_hub_download,
+            download_kwargs_list=download_task
+        )
+        files_downloader.start(
+            num_threads=num_threads,
+            retry=retry,
+        )
+
+    def download_files_from_modelscope(
+        self,
+        repo_id: str,
+        local_dir: Path | str,
+        repo_type: Literal["model", "dataset", "space"] = "model",
+        folder: str | None = None,
+        retry: int | None = 3,
+        num_threads: int | None = 16,
+    ) -> None:
+        """从 ModelScope 仓库下载文文件
+
+        :param repo_id`(str)`: ModelScope 仓库 ID
+        :param repo_type`(Literal["model","dataset","space"])`: ModelScope 仓库类型
+        :param local_dir`(Path|str)`: 下载路径
+        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param retry`(int|None)`: 重试下载的次数
+        :param num_threads`(int|None)`: 下载线程
+        """
+        from modelscope import snapshot_download
+        repo_files = self.get_repo_file(
+            api_type="modelscope",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            retry=retry,
+        )
+        download_task = []
+
+        for repo_file in repo_files:
+            if folder is not None and not repo_file.startswith(folder):
+                continue
+            download_task.append({
+                "repo_id": repo_id,
+                "repo_type": repo_type,
+                "local_dir": local_dir,
+                "allow_patterns": repo_file,
+            })
+
+        if folder is not None:
+            logger.info("指定下载文件: %s", folder)
+        logger.info("下载文件数量: %s", len(download_task))
+
+        files_downloader = MultiThreadDownloader(
+            download_func=snapshot_download,
+            download_kwargs_list=download_task
+        )
+        files_downloader.start(
+            num_threads=num_threads,
+            retry=retry,
+        )
+
+
+class MirrorConfigManager:
+    """PyPI, HuggingFace, Github 镜像管理工具"""
+    @staticmethod
+    def set_pypi_index_mirror(mirror: str | None = None) -> None:
+        """设置 PyPI Index 镜像源
+
+        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        """
+        if mirror is not None:
+            logger.info(
+                "使用 PIP_INDEX_URL, UV_DEFAULT_INDEX 环境变量设置 PyPI Index 镜像源")
+            os.environ["PIP_INDEX_URL"] = mirror
+            os.environ["UV_DEFAULT_INDEX"] = mirror
+        else:
+            logger.info(
+                "清除 PIP_INDEX_URL, UV_DEFAULT_INDEX 环境变量, 取消使用 PyPI Index 镜像源")
+            os.environ.pop("PIP_INDEX_URL")
+            os.environ.pop("UV_DEFAULT_INDEX")
+
+    @staticmethod
+    def set_pypi_extra_index_mirror(mirror: str | None = None) -> None:
+        """设置 PyPI Extra Index 镜像源
+
+        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        """
+        import os
+        if mirror is not None:
+            logger.info(
+                "使用 PIP_EXTRA_INDEX_URL, UV_INDEX 环境变量设置 PyPI Extra Index 镜像源")
+            os.environ["PIP_EXTRA_INDEX_URL"] = mirror
+            os.environ["UV_INDEX"] = mirror
+        else:
+            logger.info(
+                "清除 PIP_EXTRA_INDEX_URL, UV_INDEX 环境变量, 取消使用 PyPI Extra Index 镜像源")
+            os.environ.pop("PIP_EXTRA_INDEX_URL")
+            os.environ.pop("UV_INDEX")
+
+    @staticmethod
+    def set_pypi_find_links_mirror(mirror: str | None = None) -> None:
+        """设置 PyPI Find Links 镜像源
+
+        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        """
+        if mirror is not None:
+            logger.info(
+                "使用 PIP_FIND_LINKS, UV_FIND_LINKS 环境变量设置 PyPI Find Links 镜像源")
+            os.environ["PIP_FIND_LINKS"] = mirror
+            os.environ["UV_FIND_LINKS"] = mirror
+        else:
+            logger.info(
+                "清除 PIP_FIND_LINKS, UV_FIND_LINKS 环境变量, 取消使用 PyPI Find Links 镜像源")
+            os.environ.pop("PIP_FIND_LINKS")
+            os.environ.pop("UV_FIND_LINKS")
+
+    @staticmethod
+    def set_github_mirror(mirror: str | list | None = None, config_path: Path | str = None) -> None:
+        """设置 Github 镜像源
+
+        :param mirror`(str|list|None)`: Github 镜像源地址
+
+        :notes
+            当`mirror`传入的是 Github 镜像源地址, 则直接设置 GIT_CONFIG_GLOBAL 环境变量并直接使用该镜像源地址
+
+            如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 GIT_CONFIG_GLOBAL 环境变量
+
+            当不传入参数时则清除 GIT_CONFIG_GLOBAL 环境变量并删除 GIT_CONFIG_GLOBAL 环境变量对应的 Git 配置文件
+
+            使用:
+            ```python
+            set_github_mirror() # 不传入参数时则清除 Github 镜像源
+
+            set_github_mirror("https://ghfast.top/https://github.com") # 只设置一个 Github 镜像源时将直接使用该 Github 镜像源
+
+            set_github_mirror( # 传入 Github 镜像源列表时将自动测试可用的 Github 镜像源并设置
+                [
+                    "https://ghfast.top/https://github.com",
+                    "https://mirror.ghproxy.com/https://github.com",
+                    "https://ghproxy.net/https://github.com",
+                    "https://gh.api.99988866.xyz/https://github.com",
+                    "https://gh-proxy.com/https://github.com",
+                    "https://ghps.cc/https://github.com",
+                    "https://gh.idayer.com/https://github.com",
+                    "https://ghproxy.1888866.xyz/github.com",
+                    "https://slink.ltd/https://github.com",
+                    "https://github.boki.moe/github.com",
+                    "https://github.moeyy.xyz/https://github.com",
+                    "https://gh-proxy.net/https://github.com",
+                    "https://gh-proxy.ygxz.in/https://github.com",
+                    "https://wget.la/https://github.com",
+                    "https://kkgithub.com",
+                    "https://gitclone.com/github.com",
+                ]
+            )
+            ```
+        """
+        if mirror is None:
+            logger.info("清除 GIT_CONFIG_GLOBAL 环境变量, 取消使用 Github 镜像源")
+            git_config = os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            if git_config is not None:
+                p = Path(git_config)
+                if p.exists():
+                    p.unlink()
+            return
+
+        if config_path is None:
+            config_path = os.getcwd()
+
+        config_path = Path(config_path) if not isinstance(
+            config_path, Path) and config_path is not None else config_path
+        git_config_path = config_path / ".gitconfig"
+        os.environ["GIT_CONFIG_GLOBAL"] = str(git_config_path)
+
+        if isinstance(mirror, str):
+            logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
+            try:
+                run_cmd(["git", "config", "--global",
+                        f"url.{mirror}.insteadOf", "https://github.com"])
+            except Exception as e:
+                logger.error("设置 Github 镜像源时发生错误: %s", e)
+        elif isinstance(mirror, list):
+            mirror_test_path = config_path / "__github_mirror_test__"
+            custon_env = os.environ.copy()
+            custon_env.pop("GIT_CONFIG_GLOBAL")
+            for gh in mirror:
+                logger.info("测试 Github 镜像源: %s", gh)
+                test_repo = f"{gh}/licyk/empty"
+                if mirror_test_path.exists():
+                    remove_files(mirror_test_path)
+                try:
+                    run_cmd(["git", "clone", test_repo, str(
+                        mirror_test_path)], custom_env=custon_env, live=False)
+                    if mirror_test_path.exists():
+                        remove_files(mirror_test_path)
+                    run_cmd(["git", "config", "--global",
+                            f"url.{gh}.insteadOf", "https://github.com"])
+                    logger.info("该镜像源可用")
+                    return
+                except Exception as _:
+                    logger.info("镜像源不可用")
+
+            logger.info("无可用的 Github 镜像源, 取消使用 Github 镜像源")
+            if git_config_path.exists():
+                git_config_path.unlink()
+            os.environ.pop("GIT_CONFIG_GLOBAL")
+        else:
+            logger.info("未知镜像源参数类型: %s", type(mirror))
+            return
+
+    @staticmethod
+    def set_huggingface_mirror(mirror: str | None = None) -> None:
+        """设置 HuggingFace 镜像源
+
+        :param mirror`(str|None)`: HuggingFace 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        """
+        if mirror is not None:
+            logger.info("使用 HF_ENDPOINT 环境变量设置 HuggingFace 镜像源")
+            os.environ["HF_ENDPOINT"] = mirror
+        else:
+            logger.info("清除 HF_ENDPOINT 环境变量, 取消使用 HuggingFace 镜像源")
+            os.environ.pop("HF_ENDPOINT")
+
+    @staticmethod
+    def set_mirror(
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None
+    ) -> None:
+        """镜像源设置
+
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        """
+        logger.info("配置镜像源中")
+        MirrorConfigManager.set_pypi_index_mirror(pypi_index_mirror)
+        MirrorConfigManager.set_pypi_extra_index_mirror(
+            pypi_extra_index_mirror)
+        MirrorConfigManager.set_pypi_find_links_mirror(pypi_find_links_mirror)
+        MirrorConfigManager.set_github_mirror(github_mirror)
+        MirrorConfigManager.set_huggingface_mirror(huggingface_mirror)
+        logger.info("镜像源配置完成")
+
+    @staticmethod
+    def configure_pip() -> None:
+        """使用环境变量配置 Pip / uv"""
+        logger.info("配置 Pip / uv")
+        os.environ["UV_HTTP_TIMEOUT"] = "30"
+        os.environ["UV_CONCURRENT_DOWNLOADS"] = "50"
+        os.environ["UV_INDEX_STRATEGY"] = "unsafe-best-match"
+        os.environ["UV_PYTHON"] = sys.executable
+        os.environ["UV_NO_PROGRESS"] = "1"
+        os.environ["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+        os.environ["PIP_NO_WARN_SCRIPT_LOCATION"] = "0"
+        os.environ["PIP_TIMEOUT"] = "30"
+        os.environ["PIP_RETRIES"] = "5"
+        os.environ["PYTHONUTF8"] = "1"
+        os.environ["PYTHONIOENCODING"] = "utf8"
+
+
+class SDScriptsManager:
+    """sd-scripts 管理工具"""
+
+    def __init__(
+        self,
+        workspace: str | Path,
+        workfolder: str
+    ) -> None:
+        """sd-scripts 管理工具初始化
+
+        :param workspace`(str|Path)`: 工作区路径
+        :param workfolder`(str)`: 工作区的文件夹名称
+        """
+        self.workspace = Path(workspace)
+        self.workfolder = workfolder
+        self.git = GitWarpper()
+        self.downloader = Downloader()
+        self.env = EnvManager()
+        self.utils = Utils()
+        self.repo = RepoManager()
+        self.mirror = MirrorConfigManager()
+        self.remove_files = remove_files
+        self.run_cmd = run_cmd
+        self.multi_thread_downloader_class = MultiThreadDownloader
+
+    def restart_repo_manager(
+        self,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+    ) -> None:
+        """重新初始化 HuggingFace / ModelScope 仓库管理工具
+
+        :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
+        :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
+        """
+        self.repo = RepoManager(
+            hf_token=hf_token,
+            ms_token=ms_token,
+        )
+
+    def get_model(
+        self,
+        url: str,
+        path: str | Path,
+        filename: str | None = None,
+        retry: int | None = 3
+    ) -> Path:
+        """下载模型文件到本地中
+
+        :param url`(str)`: 模型文件的下载链接
+        :param path`(str|Path)`: 模型文件下载到本地的路径
+        :param filename`(str)`: 指定下载的模型文件名称
+        :param retry`(int)`: 重试下载的次数, 默认为 3
+        :return `Path`: 文件保存路径
+        """
+        if filename is None:
+            parts = urlparse(url)
+            filename = os.path.basename(parts.path)
+
+        count = 0
+        while count < retry:
+            count += 1
+            file_path = Downloader.aria2(
+                url=url,
+                path=path,
+                save_name=filename,
+            )
+            if file_path is None:
+                logger.warning("[%s/%s] 重试下载 %s", count, retry, url)
+                continue
+            else:
+                logger.warning("[%s/%s] 下载 %s 成功, 路径: %s",
+                               count, retry, url, file_path)
+                return file_path
+        return None
+
+    def get_model_from_list(
+        self,
+        path: str | Path,
+        model_list: list[str],
+        retry: int | None = 3
+    ) -> None:
+        """从模型列表下载模型
+
+        :param path`(str|Path)`: 将模型下载到的本地路径
+        :param model_list`(list[str])`: 模型列表
+        :param retry`(int|None)`: 重试下载的次数, 默认为 3
+
+        :notes
+            `model_list`需要指定模型下载的链接和下载状态, 例如
+            ```python
+            model_list = [
+                ["url1", 0],
+                ["url2", 1],
+                ["url3", 0],
+                ["url4", 1, "file.safetensors"]
+            ]
+            ```
+
+            在这个例子中, 第一个参数指定了模型的下载链接, 第二个参数设置了是否要下载这个模型, 当这个值为 1 时则下载该模型
+
+            第三个参数是可选参数, 用于指定下载到本地后的文件名称
+
+            则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
+        """
+        for model in model_list:
+            url = model[0]
+            status = model[1]
+            filename = model[2] if len(model) > 2 else None
+            if status >= 1:
+                if filename is None:
+                    self.get_model(
+                        url=url,
+                        path=path,
+                        retry=retry
+                    )
+                else:
+                    self.get_model(
+                        url=url,
+                        path=path,
+                        filename=filename,
+                        retry=retry
+                    )
+
+    def install(
+        self,
+        torch_ver: str | list | None = None,
+        xformers_ver: str | list | None = None,
+        git_branch: str | None = None,
+        git_commit: str | None = None,
+        model_path: str | Path = None,
+        model_list: list[str] | None = None,
+        use_uv: bool | None = True,
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None,
+        pytorch_mirror: str | None = None,
+        sd_scripts_repo: str | None = None,
+        sd_scripts_requirment: str | None = None,
+        retry: int | None = 3,
+        huggingface_token: str | None = None,
+        modelscope_token: str | None = None,
+        wandb_token: str | None = None,
+    ) -> None:
+        """安装 sd-scripts 和其余环境
+
+        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
+        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
+        :param git_branch`(str|None)`: 指定要切换 sd-scripts 的分支
+        :param git_commit`(str|None)`: 指定要切换到 sd-scripts 的提交记录
+        :param model_path`(str|Path|None)`: 指定模型下载的路径
+        :param model_list`(list[str]|None)`: 模型下载列表
+        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
+        :param sd_scripts_repo`(str|None)`: sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
+        :param sd_scripts_requirment`(str|None)`: sd-scripts 的依赖文件名, 未指定时默认为`requirements.txt`
+        :param retry`(int|None)`: 设置下载模型失败时重试次数
+        :param huggingface_token`(str|None)`: 配置 HuggingFace Token
+        :param modelscope_tokenn`(str|None)`: 配置 ModelScope Token
+        :param wandb_token`(str|None)`: 配置 WandB Token
+        """
+        sd_scripts_path = self.workspace / self.workfolder
+        requirement_path = sd_scripts_path / \
+            (sd_scripts_requirment if sd_scripts_requirment is not None else "requirements.txt")
+        sd_scripts_repo = sd_scripts_repo if sd_scripts_repo is not None else "https://github.com/kohya-ss/sd-scripts"
+        model_path = model_path if model_path is not None else (
+            self.workspace / "sd-models")
+        model_list = model_list if model_list else []
+
+        self.utils.check_gpu()  # 检查是否有可用的 GPU
+        # 配置镜像源
+        self.mirror.set_mirror(
+            pypi_index_mirror=pypi_index_mirror,
+            pypi_extra_index_mirror=pypi_extra_index_mirror,
+            pypi_find_links_mirror=pypi_find_links_mirror,
+            github_mirror=github_mirror,
+            huggingface_mirror=huggingface_mirror
+        )
+        self.mirror.configure_pip()  # 配置 Pip / uv
+        self.env.install_manager_depend(use_uv=use_uv)  # 准备 Notebook 的运行依赖
+        # 下载 sd-scripts
+        self.git.clone(
+            repo=sd_scripts_repo,
+            path=sd_scripts_path,
+        )
+        # 切换指定的 sd-scripts 分支
+        if git_branch is not None:
+            self.git.switch_branch(
+                path=sd_scripts_path,
+                branch=git_branch
+            )
+        # 切换到指定的 sd-scripts 提交记录
+        if git_commit is not None:
+            self.git.switch_commit(
+                path=sd_scripts_path,
+                commit=git_commit
+            )
+        # 安装 PyTorch 和 xFormers
+        self.env.install_pytorch(
+            torch_package=torch_ver,
+            xformers_package=xformers_ver,
+            pytorch_mirror=pytorch_mirror,
+            use_uv=use_uv
+        )
+        # 安装 sd-scripts 的依赖
+        os.chdir(sd_scripts_path)
+        self.env.install_requirements(
+            path=requirement_path,
+            use_uv=use_uv
+        )
+        os.chdir(self.workspace)
+        # 安装使用 sd-scripts 进行训练所需的其他软件包
+        try:
+            self.env.pip_install(
+                "lycoris-lora",
+                "dadaptation",
+                "open-clip-torch",
+                use_uv=use_uv
+            )
+        except Exception as e:
+            logger.error("安装额外 Python 软件包时发生错误: %s", e)
+        # 更新 urllib3
+        try:
+            self.env.pip_install(
+                "urllib3",
+                "--upgrade",
+                use_uv=False
+            )
+        except Exception as e:
+            logger.error("更新 urllib3 时发生错误: %s", e)
+        self.utils.tcmalloc()  # 设置 TCMalloc 内存优化
+        self.get_model_from_list(
+            path=model_path,
+            model_list=model_list,
+            retry=retry
+        )
+        self.restart_repo_manager(
+            hf_token=huggingface_token,
+            ms_token=modelscope_token,
+        )
+        self.utils.config_wandb_token(wandb_token)
+        logger.info("sd-scripts 环境配置完成")
