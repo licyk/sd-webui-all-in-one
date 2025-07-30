@@ -21,7 +21,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -192,6 +192,49 @@ def remove_files(path: str | Path) -> bool:
         return False
     except Exception as e:
         logger.error("删除失败: %s", e)
+        return False
+
+
+def copy_files(src: Path | str, dst: Path | str) -> bool:
+    """复制文件或目录
+
+    :param src`(Path|str)`: 源文件路径
+    :param dst`(Path|str)`: 复制文件到指定的路径
+    :return `bool`: 复制结果
+    """
+    try:
+        src_path = Path(src)
+        dst_path = Path(dst)
+
+        # 检查源是否存在
+        if not src_path.exists():
+            logger.error("源路径不存在: %s", src)
+            return False
+
+        # 如果目标是目录，创建完整路径
+        if dst_path.is_dir():
+            dst_file = dst_path / src_path.name
+        else:
+            dst_file = dst_path
+
+        # 确保目标目录存在
+        dst_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # 复制文件
+        if src_path.is_file():
+            shutil.copy2(src, dst_file)
+        else:
+            # 如果是目录，使用 copytree
+            if dst_file.exists():
+                shutil.rmtree(dst_file)
+            shutil.copytree(src, dst_file)
+
+        return True
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        return False
+    except Exception as e:
+        logger.error("复制失败: %s", e)
         return False
 
 
@@ -490,19 +533,21 @@ class GitWarpper:
 
     @staticmethod
     def set_git_config(
-        email: str,
-        username: str,
+        username: str | None = None,
+        email: str | None = None,
     ) -> bool:
         """配置 Git 信息
 
-        :param email`(str)`: 邮箱地址
-        :param username`(str)`: 用户名
+        :param username`(str|None)`: 用户名
+        :param email`(str|None)`: 邮箱地址
         :return `bool`: 配置成功时返回`True`
         """
         logger.info("配置 Git 信息中")
         try:
-            run_cmd(["git", "config", "--global", "user.email", email])
-            run_cmd(["git", "config", "--global", "user.name", username])
+            if username is not None:
+                run_cmd(["git", "config", "--global", "user.name", username])
+            if email is not None:
+                run_cmd(["git", "config", "--global", "user.email", email])
             return True
         except Exception as e:
             logger.error("配置 Git 信息时发生错误: %s", e)
@@ -712,7 +757,7 @@ class EnvManager:
             logger.info("安装自身组件依赖中")
             EnvManager.pip_install("uv", "--upgrade", use_uv=False)
             EnvManager.pip_install(
-                "modelscope", "huggingface_hub", "requests", "tqdm", "wandb", use_uv=use_uv)
+                "modelscope", "huggingface_hub", "requests", "tqdm", "wandb", "--upgrade", use_uv=use_uv)
             run_cmd(["apt", "update"])
             run_cmd(["apt", "install", "aria2", "google-perftools",
                     "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"])
@@ -850,9 +895,10 @@ class Utils:
         ]
 
     @staticmethod
-    def config_wandb_token(token: str) -> None:
+    def config_wandb_token(token: str | None = None) -> None:
         """配置 WandB 所需 Token"""
-        os.environ["WANDB_API_KEY"] = token
+        if token is not None:
+            os.environ["WANDB_API_KEY"] = token
 
     @staticmethod
     def download_archive_and_unpack(
@@ -922,7 +968,6 @@ class Utils:
         logger.info("配置内存优化")
         os.environ["LD_PRELOAD"] = "/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4"
 
-
     @staticmethod
     def compare_versions(version1: str, version2: str) -> int:
         """对比两个版本号大小
@@ -951,8 +996,10 @@ class Utils:
             return 0
 
         for i in range(max(len(nums1), len(nums2))):
-            num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
-            num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
+            num1 = int(nums1[i]) if i < len(
+                nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
+            num2 = int(nums2[i]) if i < len(
+                nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
 
             if num1 == num2:
                 continue
@@ -1539,7 +1586,7 @@ class RepoManager:
         :param repo_id`(str)`: 仓库 ID
         :param repo_type`(Literal["model","dataset","space"])`: 仓库类型
         :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
         :param retry`(int|None)`: 重试下载的次数
         :param num_threads`(int|None)`: 下载线程
         :return `Path`: 下载路径
@@ -1632,7 +1679,7 @@ class RepoManager:
         :param repo_id`(str)`: HuggingFace 仓库 ID
         :param repo_type`(Literal["model","dataset","space"])`: HuggingFace 仓库类型
         :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
         :param retry`(int|None)`: 重试下载的次数
         :param num_threads`(int|None)`: 下载线程
         """
@@ -1682,7 +1729,7 @@ class RepoManager:
         :param repo_id`(str)`: ModelScope 仓库 ID
         :param repo_type`(Literal["model","dataset","space"])`: ModelScope 仓库类型
         :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
+        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
         :param retry`(int|None)`: 重试下载的次数
         :param num_threads`(int|None)`: 下载线程
         """
@@ -1945,6 +1992,7 @@ class SDScriptsManager:
         self.mirror = MirrorConfigManager()
         self.remove_files = remove_files
         self.run_cmd = run_cmd
+        self.copy_files = copy_files
         self.multi_thread_downloader_class = MultiThreadDownloader
 
     def restart_repo_manager(
@@ -2001,13 +2049,13 @@ class SDScriptsManager:
     def get_model_from_list(
         self,
         path: str | Path,
-        model_list: list[str],
+        model_list: list[str, int],
         retry: int | None = 3
     ) -> None:
         """从模型列表下载模型
 
         :param path`(str|Path)`: 将模型下载到的本地路径
-        :param model_list`(list[str])`: 模型列表
+        :param model_list`(list[str|int])`: 模型列表
         :param retry`(int|None)`: 重试下载的次数, 默认为 3
 
         :notes
@@ -2028,9 +2076,13 @@ class SDScriptsManager:
             则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
         """
         for model in model_list:
-            url = model[0]
-            status = model[1]
-            filename = model[2] if len(model) > 2 else None
+            try:
+                url = model[0]
+                status = model[1]
+                filename = model[2] if len(model) > 2 else None
+            except Exception as e:
+                logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
+                continue
             if status >= 1:
                 if filename is None:
                     self.get_model(
@@ -2053,7 +2105,7 @@ class SDScriptsManager:
         git_branch: str | None = None,
         git_commit: str | None = None,
         model_path: str | Path = None,
-        model_list: list[str] | None = None,
+        model_list: list[str, int] | None = None,
         use_uv: bool | None = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
@@ -2067,6 +2119,9 @@ class SDScriptsManager:
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
         wandb_token: str | None = None,
+        git_username: str | None = None,
+        git_email: str | None = None,
+        skip_check_gpu: bool | None = False
     ) -> None:
         """安装 sd-scripts 和其余环境
 
@@ -2075,7 +2130,7 @@ class SDScriptsManager:
         :param git_branch`(str|None)`: 指定要切换 sd-scripts 的分支
         :param git_commit`(str|None)`: 指定要切换到 sd-scripts 的提交记录
         :param model_path`(str|Path|None)`: 指定模型下载的路径
-        :param model_list`(list[str]|None)`: 模型下载列表
+        :param model_list`(list[str|int]|None)`: 模型下载列表
         :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
         :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
         :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
@@ -2089,7 +2144,11 @@ class SDScriptsManager:
         :param huggingface_token`(str|None)`: 配置 HuggingFace Token
         :param modelscope_tokenn`(str|None)`: 配置 ModelScope Token
         :param wandb_token`(str|None)`: 配置 WandB Token
+        :param git_username`(str|None)`: Git 用户名
+        :param git_email`(str|None)`: Git 邮箱
+        :param skip_check_gpu`(bool|None)`: 跳过检查是否有可用的 GPU; 当 GPU 不可用时引发`Exception`
         """
+        logger.info("配置 sd-scripts 环境中")
         sd_scripts_path = self.workspace / self.workfolder
         requirement_path = sd_scripts_path / \
             (sd_scripts_requirment if sd_scripts_requirment is not None else "requirements.txt")
@@ -2097,10 +2156,10 @@ class SDScriptsManager:
         model_path = model_path if model_path is not None else (
             self.workspace / "sd-models")
         model_list = model_list if model_list else []
-
-        if not self.utils.check_gpu():
-            # 检查是否有可用的 GPU
-            raise Exception("没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!")
+        # 检查是否有可用的 GPU
+        if not skip_check_gpu and not self.utils.check_gpu():
+            raise Exception(
+                "没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!")
         # 配置镜像源
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
@@ -2172,4 +2231,8 @@ class SDScriptsManager:
             ms_token=modelscope_token,
         )
         self.utils.config_wandb_token(wandb_token)
+        self.git.set_git_config(
+            username=git_username,
+            email=git_email,
+        )
         logger.info("sd-scripts 环境配置完成")
