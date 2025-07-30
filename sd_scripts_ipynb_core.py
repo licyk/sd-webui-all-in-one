@@ -7,6 +7,7 @@ import sys
 import stat
 import copy
 import time
+import shlex
 import shutil
 import inspect
 import logging
@@ -120,10 +121,12 @@ def run_cmd(
     if custom_env is None:
         custom_env = os.environ
 
+    command_str = shlex.join(command) if isinstance(command, list) else command
+
     if live:
         process_output = []
         process = subprocess.Popen(
-            command,
+            command_str,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -141,13 +144,13 @@ def run_cmd(
         process.wait()
         if process.returncode != 0:
             raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
-命令: {command}
+命令: {command_str}
 错误代码: {process.returncode}""")
 
         return "".join(process_output)
 
     result: subprocess.CompletedProcess = subprocess.run(
-        command,
+        command_str,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell,
@@ -156,7 +159,7 @@ def run_cmd(
 
     if result.returncode != 0:
         message = f"""{errdesc or "执行命令时发生错误"}
-命令: {command}
+命令: {command_str}
 错误代码: {result.returncode}
 标准输出: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout) > 0 else ""}
 错误输出: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr) > 0 else ""}
