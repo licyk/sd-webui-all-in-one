@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -465,7 +465,7 @@ class GitWarpper:
             except Exception as e:
                 logger.warning("更新 %s 的 Git 子模块信息发生错误: %s", path, e)
 
-        logger.info("拉取 %s 远程源更新中")
+        logger.info("拉取 %s 远程源更新中", path)
         try:
             run_cmd(["git", "-C", str(path), "fetch"])
             run_cmd(["git", "-C", str(path), "submodule", "deinit", "--all", "-f"])
@@ -473,7 +473,7 @@ class GitWarpper:
                 run_cmd(["git", "-C", str(path), "branch", branch])
 
             run_cmd(["git", "-C", str(path), "checkout", branch, "--force"])
-            logger.info("应用 %s 的远程源最新内容中")
+            logger.info("应用 %s 的远程源最新内容中", path)
             if recurse_submodules:
                 run_cmd(["git", "-C", str(path), "reset",
                         "--hard", f"origin/{branch}"])
@@ -487,15 +487,18 @@ class GitWarpper:
         except Exception as e:
             logger.error("切换 %s 分支到 %s 失败: %s", path, branch, e)
             logger.warning("回退分支切换")
-            run_cmd(["git", "-C", str(path), "remote",
-                    "set-url", "origin", current_url])
-            if recurse_submodules:
-                run_cmd(["git", "-C", str(path), "submodule",
-                        "deinit", "--all", "-f"])
+            try:
+                run_cmd(["git", "-C", str(path), "remote",
+                        "set-url", "origin", current_url])
+                if recurse_submodules:
+                    run_cmd(["git", "-C", str(path), "submodule",
+                            "deinit", "--all", "-f"])
 
-            else:
-                run_cmd(["git", "-C", str(path), "submodule",
-                        "update", "--init", "--recursive"])
+                else:
+                    run_cmd(["git", "-C", str(path), "submodule",
+                            "update", "--init", "--recursive"])
+            except Exception as e:
+                logger.error("回退分支切换失败: %s", e)
 
     @staticmethod
     def switch_commit(
