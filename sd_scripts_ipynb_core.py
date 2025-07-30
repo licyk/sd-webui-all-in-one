@@ -872,13 +872,7 @@ class Utils:
         :return `bool`: 当有可用 GPU 时返回`True`
         """
         logger.info("检查当前环境是否有 GPU 可用")
-        try:
-            import tensorflow as tf
-        except Exception as _:
-            EnvManager.pip_install("tensorflow")
-            import tensorflow as tf
-
-        logger.info("TensorFlow 版本: %s", tf.__version__)
+        import tensorflow as tf
         if tf.test.gpu_device_name():
             logger.info("有可用的 GPU")
             return True
