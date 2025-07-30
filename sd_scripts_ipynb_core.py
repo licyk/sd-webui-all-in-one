@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1082,7 +1082,18 @@ class MultiThreadDownloader:
                 break
 
             args, kwargs = task
-            self.download_func(*args, **kwargs)
+            count = 0
+            while count < self.retry:
+                count += 1
+                try:
+                    self.download_func(*args, **kwargs)
+                    break
+                except Exception as e:
+                    logger.error("[%s/%s] 执行 %s 时发生错误: %s", count,
+                                 self.retry, self.download_func, e)
+                    if count < self.retry:
+                        logger.warning("[%s/%s] 重试执行中", count, self.retry)
+
             self.queue.task_done()
             with self.lock:  # 访问共享资源时加锁
                 self.completed_count += 1
@@ -2191,7 +2202,7 @@ class SDScriptsManager:
             repo=sd_scripts_repo,
             path=sd_scripts_path,
         )
-        self.git.update(sd_scripts_path) # 更新 sd-scripts
+        self.git.update(sd_scripts_path)  # 更新 sd-scripts
         # 切换指定的 sd-scripts 分支
         if git_branch is not None:
             self.git.switch_branch(
