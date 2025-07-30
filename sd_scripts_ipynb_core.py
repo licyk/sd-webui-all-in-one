@@ -1179,17 +1179,23 @@ class RepoManager:
         :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
         :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
-        from huggingface_hub import HfApi
-        from modelscope import HubApi
-        self.hf_api = HfApi(token=hf_token)
-        self.ms_api = HubApi()
-        if hf_token is not None:
-            os.environ["HF_TOKEN"] = hf_token
-            self.hf_token = hf_token
-        if ms_token is not None:
-            os.environ["MODELSCOPE_API_TOKEN"] = ms_token
-            self.ms_api.login(access_token=ms_token)
-            self.ms_token = ms_token
+        try:
+            from huggingface_hub import HfApi
+            self.hf_api = HfApi(token=hf_token)
+            if hf_token is not None:
+                os.environ["HF_TOKEN"] = hf_token
+                self.hf_token = hf_token
+        except Exception as e:
+            logger.warning("HuggingFace 库未安装, 部分功能将不可用: %s", e)
+        try:
+            from modelscope import HubApi
+            self.ms_api = HubApi()
+            if ms_token is not None:
+                os.environ["MODELSCOPE_API_TOKEN"] = ms_token
+                self.ms_api.login(access_token=ms_token)
+                self.ms_token = ms_token
+        except Exception as e:
+            logger.warning("ModelScope 库未安装, 部分功能将不可用: %s", e)
 
     def get_repo_file(
         self,
@@ -1975,12 +1981,16 @@ class SDScriptsManager:
     def __init__(
         self,
         workspace: str | Path,
-        workfolder: str
+        workfolder: str,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
     ) -> None:
         """sd-scripts 管理工具初始化
 
         :param workspace`(str|Path)`: 工作区路径
         :param workfolder`(str)`: 工作区的文件夹名称
+        :param hf_token`(str|None)`: HuggingFace Token
+        :param ms_token`(str|None)`: ModelScope Token
         """
         self.workspace = Path(workspace)
         self.workfolder = workfolder
@@ -1988,7 +1998,7 @@ class SDScriptsManager:
         self.downloader = Downloader()
         self.env = EnvManager()
         self.utils = Utils()
-        self.repo = RepoManager()
+        self.repo = RepoManager(hf_token, ms_token)
         self.mirror = MirrorConfigManager()
         self.remove_files = remove_files
         self.run_cmd = run_cmd
