@@ -515,7 +515,7 @@ class GitWarpper:
             path, Path) and path is not None else path
         logger.info("切换 %s 的 Git 指针到 %s 版本", path, commit)
         try:
-            run_cmd(["git", "-C", str(path), "reset", "--hanrd", commit])
+            run_cmd(["git", "-C", str(path), "reset", "--hard", commit])
             return True
         except Exception as e:
             logger.error("切换 %s 的 Git 指针到 %s 版本时失败: %s", path, commit, e)
