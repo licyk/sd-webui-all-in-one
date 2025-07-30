@@ -1587,6 +1587,7 @@ class RepoManager:
 
             如果要指定下载某个文件, 则`folder`参数需要指定该文件在仓库中的完整路径, 比如`aaaki/1_aaaki/1.png`, 此时只会下载该文件, 其他文件不会被下载
 
+            文件下载下来后, 保存路径为`local_dir/<文件在仓库中的路径>`, 比如`local_dir`为`/kaggle/dataset`, 上面下载单个文件的例子下载下载下来的文件就会保存在`/kaggle/dataset/aaaki/1_aaaki/1.png`
         """
         local_dir = Path(local_dir) if not isinstance(
             local_dir, Path) and local_dir is not None else local_dir
@@ -2097,7 +2098,9 @@ class SDScriptsManager:
             self.workspace / "sd-models")
         model_list = model_list if model_list else []
 
-        self.utils.check_gpu()  # 检查是否有可用的 GPU
+        if not self.utils.check_gpu():
+            # 检查是否有可用的 GPU
+            raise Exception("没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!")
         # 配置镜像源
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
