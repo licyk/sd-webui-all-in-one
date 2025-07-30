@@ -141,7 +141,7 @@ def run_cmd(
         process.wait()
         if process.returncode != 0:
             raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
-命令: {command if isinstance(command, str) else " ".join(command)}
+命令: {command}
 错误代码: {process.returncode}""")
 
         return "".join(process_output)
@@ -156,7 +156,7 @@ def run_cmd(
 
     if result.returncode != 0:
         message = f"""{errdesc or "执行命令时发生错误"}
-命令: {command if isinstance(command, str) else " ".join(command)}
+命令: {command}
 错误代码: {result.returncode}
 标准输出: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout) > 0 else ""}
 错误输出: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr) > 0 else ""}
@@ -431,7 +431,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(
             path, Path) and path is not None else path
         custom_env = os.environ.copy()
-        custom_env.pop("GIT_CONFIG_GLOBAL")
+        custom_env.pop("GIT_CONFIG_GLOBAL", None)
         try:
             current_url = run_cmd(
                 ["git", "-C", str(path), "remote", "get-url", "origin"], custom_env=custom_env)
@@ -784,10 +784,10 @@ class EnvManager:
         custom_env = os.environ.copy()
         if pytorch_mirror is not None:
             logger.info("使用自定义 PyTorch 镜像源: %s", pytorch_mirror)
-            custom_env.pop("PIP_EXTRA_INDEX_URL")
-            custom_env.pop("PIP_FIND_LINKS")
-            custom_env.pop("UV_INDEX")
-            custom_env.pop("UV_FIND_LINKS")
+            custom_env.pop("PIP_EXTRA_INDEX_URL", None)
+            custom_env.pop("PIP_FIND_LINKS", None)
+            custom_env.pop("UV_INDEX", None)
+            custom_env.pop("UV_FIND_LINKS", None)
             custom_env["PIP_INDEX_URL"] = pytorch_mirror
             custom_env["UV_DEFAULT_INDEX"] = pytorch_mirror
 
@@ -1894,7 +1894,7 @@ class MirrorConfigManager:
         elif isinstance(mirror, list):
             mirror_test_path = config_path / "__github_mirror_test__"
             custon_env = os.environ.copy()
-            custon_env.pop("GIT_CONFIG_GLOBAL")
+            custon_env.pop("GIT_CONFIG_GLOBAL", None)
             for gh in mirror:
                 logger.info("测试 Github 镜像源: %s", gh)
                 test_repo = f"{gh}/licyk/empty"
