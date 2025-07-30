@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -2223,6 +2223,7 @@ class SDScriptsManager:
                 "lycoris-lora",
                 "dadaptation",
                 "open-clip-torch",
+                "bitsandbytes",
                 use_uv=use_uv
             )
         except Exception as e:
