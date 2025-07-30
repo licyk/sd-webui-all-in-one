@@ -877,13 +877,11 @@ class Utils:
         except Exception as _:
             EnvManager.pip_install("tensorflow")
 
-        try:
-            tf.test.gpu_device_name()
+        if tf.test.gpu_device_name():
             logger.info("有可用的 GPU")
             return True
-        except Exception as _:
-            logger.error("无可用 GPU")
-            return False
+        logger.error("无可用 GPU")
+        return False
 
     @staticmethod
     def get_file_list(path: Path | str) -> list[Path]:
