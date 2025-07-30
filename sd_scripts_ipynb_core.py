@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -898,7 +898,7 @@ class Utils:
             return []
 
         return [
-            p.resolve()
+            p.absolute()
             for p in path.rglob("*")
             if p.is_file()
         ]
