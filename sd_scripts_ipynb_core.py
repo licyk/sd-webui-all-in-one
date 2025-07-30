@@ -876,12 +876,15 @@ class Utils:
             import tensorflow as tf
         except Exception as _:
             EnvManager.pip_install("tensorflow")
+            import tensorflow as tf
 
+        logger.info("TensorFlow 版本: %s", tf.__version__)
         if tf.test.gpu_device_name():
             logger.info("有可用的 GPU")
             return True
-        logger.error("无可用 GPU")
-        return False
+        else:
+            logger.error("无可用 GPU")
+            return False
 
     @staticmethod
     def get_file_list(path: Path | str) -> list[Path]:
@@ -2151,7 +2154,7 @@ class SDScriptsManager:
         wandb_token: str | None = None,
         git_username: str | None = None,
         git_email: str | None = None,
-        skip_check_gpu: bool | None = False
+        check_avaliable_gpu: bool | None = False
     ) -> None:
         """安装 sd-scripts 和其余环境
 
@@ -2176,7 +2179,7 @@ class SDScriptsManager:
         :param wandb_token`(str|None)`: 配置 WandB Token
         :param git_username`(str|None)`: Git 用户名
         :param git_email`(str|None)`: Git 邮箱
-        :param skip_check_gpu`(bool|None)`: 跳过检查是否有可用的 GPU; 当 GPU 不可用时引发`Exception`
+        :param check_avaliable_gpu`(bool|None)`: 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
         """
         logger.info("配置 sd-scripts 环境中")
         sd_scripts_path = self.workspace / self.workfolder
@@ -2187,7 +2190,7 @@ class SDScriptsManager:
             self.workspace / "sd-models")
         model_list = model_list if model_list else []
         # 检查是否有可用的 GPU
-        if not skip_check_gpu and not self.utils.check_gpu():
+        if check_avaliable_gpu and not self.utils.check_gpu():
             raise Exception(
                 "没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!")
         # 配置镜像源
