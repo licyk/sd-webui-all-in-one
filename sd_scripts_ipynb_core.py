@@ -138,8 +138,9 @@ def run_cmd(
 
         for line in process.stdout:
             process_output.append(line)
-            print(line, end="")
-            sys.stdout.flush()
+            print(line, end="", flush=True)
+            if sys.stdout and hasattr(sys.stdout, "flush"):
+                sys.stdout.flush()
 
         process.wait()
         if process.returncode != 0:
@@ -1092,6 +1093,7 @@ class MultiThreadDownloader:
                     self.download_func(*args, **kwargs)
                     break
                 except Exception as e:
+                    traceback.print_exc()
                     logger.error("[%s/%s] 执行 %s 时发生错误: %s", count,
                                  self.retry, self.download_func, e)
                     if count < self.retry:
