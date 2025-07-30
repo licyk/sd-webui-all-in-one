@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -437,7 +437,7 @@ class GitWarpper:
         custom_env.pop("GIT_CONFIG_GLOBAL", None)
         try:
             current_url = run_cmd(
-                ["git", "-C", str(path), "remote", "get-url", "origin"], custom_env=custom_env)
+                ["git", "-C", str(path), "remote", "get-url", "origin"], custom_env=custom_env, live=False)
         except Exception as e:
             current_url = "None"
             logger.warning("获取 %s 原有的远程源失败: %s", path, e)
@@ -484,6 +484,8 @@ class GitWarpper:
 
             run_cmd(["git", "-C", str(path), "reset", "--hard",
                     f"origin/{branch}"] + use_submodules)
+            logger.info("切换 %s 分支到 %s 完成", path, branch)
+            return True
         except Exception as e:
             logger.error("切换 %s 分支到 %s 失败: %s", path, branch, e)
             logger.warning("回退分支切换")
@@ -499,6 +501,7 @@ class GitWarpper:
                             "update", "--init", "--recursive"])
             except Exception as e:
                 logger.error("回退分支切换失败: %s", e)
+            return False
 
     @staticmethod
     def switch_commit(
@@ -2235,7 +2238,6 @@ class SDScriptsManager:
                 "lycoris-lora",
                 "dadaptation",
                 "open-clip-torch",
-                "bitsandbytes",
                 use_uv=use_uv
             )
         except Exception as e:
