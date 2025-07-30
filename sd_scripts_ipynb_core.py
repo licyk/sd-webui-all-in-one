@@ -2191,6 +2191,7 @@ class SDScriptsManager:
             repo=sd_scripts_repo,
             path=sd_scripts_path,
         )
+        self.git.update(sd_scripts_path) # 更新 sd-scripts
         # 切换指定的 sd-scripts 分支
         if git_branch is not None:
             self.git.switch_branch(
