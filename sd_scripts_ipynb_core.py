@@ -1788,8 +1788,8 @@ class MirrorConfigManager:
         else:
             logger.info(
                 "清除 PIP_INDEX_URL, UV_DEFAULT_INDEX 环境变量, 取消使用 PyPI Index 镜像源")
-            os.environ.pop("PIP_INDEX_URL")
-            os.environ.pop("UV_DEFAULT_INDEX")
+            os.environ.pop("PIP_INDEX_URL", None)
+            os.environ.pop("UV_DEFAULT_INDEX", None)
 
     @staticmethod
     def set_pypi_extra_index_mirror(mirror: str | None = None) -> None:
@@ -1806,8 +1806,8 @@ class MirrorConfigManager:
         else:
             logger.info(
                 "清除 PIP_EXTRA_INDEX_URL, UV_INDEX 环境变量, 取消使用 PyPI Extra Index 镜像源")
-            os.environ.pop("PIP_EXTRA_INDEX_URL")
-            os.environ.pop("UV_INDEX")
+            os.environ.pop("PIP_EXTRA_INDEX_URL", None)
+            os.environ.pop("UV_INDEX", None)
 
     @staticmethod
     def set_pypi_find_links_mirror(mirror: str | None = None) -> None:
@@ -1823,8 +1823,8 @@ class MirrorConfigManager:
         else:
             logger.info(
                 "清除 PIP_FIND_LINKS, UV_FIND_LINKS 环境变量, 取消使用 PyPI Find Links 镜像源")
-            os.environ.pop("PIP_FIND_LINKS")
-            os.environ.pop("UV_FIND_LINKS")
+            os.environ.pop("PIP_FIND_LINKS", None)
+            os.environ.pop("UV_FIND_LINKS", None)
 
     @staticmethod
     def set_github_mirror(mirror: str | list | None = None, config_path: Path | str = None) -> None:
@@ -1915,7 +1915,7 @@ class MirrorConfigManager:
             logger.info("无可用的 Github 镜像源, 取消使用 Github 镜像源")
             if git_config_path.exists():
                 git_config_path.unlink()
-            os.environ.pop("GIT_CONFIG_GLOBAL")
+            os.environ.pop("GIT_CONFIG_GLOBAL", None)
         else:
             logger.info("未知镜像源参数类型: %s", type(mirror))
             return
@@ -1931,7 +1931,7 @@ class MirrorConfigManager:
             os.environ["HF_ENDPOINT"] = mirror
         else:
             logger.info("清除 HF_ENDPOINT 环境变量, 取消使用 HuggingFace 镜像源")
-            os.environ.pop("HF_ENDPOINT")
+            os.environ.pop("HF_ENDPOINT", None)
 
     @staticmethod
     def set_mirror(
