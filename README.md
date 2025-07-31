@@ -24,6 +24,7 @@ _✨快速部署，简单易用_
     - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
     - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
     - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
+    - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
   - [主要功能](#主要功能)
   - [其他功能](#其他功能)
   - [提示](#提示)
@@ -86,6 +87,10 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 >使用方法可阅读：  
 >[使用 HuggingFace / ModelScope 保存和下载文件 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-huggingface-or-modelscope-to-save-file/)  
 >[使用 Kaggle 进行模型训练 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-kaggle-to-training-sd-model)
+
+
+### SD Scripts Colab Jupyter NoteBook
+[sd_scripts_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_scripts_kaggle.ipynb))：适用于 Colab 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，**自己写来玩的，还有用来开发和测试管理核心**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
 
 ## 主要功能

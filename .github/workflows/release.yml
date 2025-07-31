@@ -21,6 +21,7 @@ on:
       - "install_embed_python.ps1"
       - "sd_scripts_kaggle.ipynb"
       - "sd_scripts_ipynb_core.py"
+      - "sd_scripts_colab.ipynb"
       - "sd_webui_all_in_one_colab.ipynb"
       - "sd_webui_all_in_one.ipynb"
       - "sd_trainer_kaggle.ipynb"
@@ -127,6 +128,9 @@ jobs:
           gh release delete-asset archive sd_scripts_ipynb_core.py -y || true
           gh release upload archive sd_scripts_ipynb_core.py
 
+          gh release delete-asset archive sd_scripts_colab.ipynb -y || true
+          gh release upload archive sd_scripts_colab.ipynb
+
           gh release delete-asset archive sd_webui_all_in_one_colab.ipynb -y || true
           gh release upload archive sd_webui_all_in_one_colab.ipynb
 
@@ -189,6 +193,7 @@ jobs:
           gitee_files: |
             sd_scripts_kaggle.ipynb
             sd_scripts_ipynb_core.py
+            sd_scripts_colab.ipynb
             sd_webui_all_in_one_colab.ipynb
             sd_webui_all_in_one.ipynb
             sd_trainer_kaggle.ipynb

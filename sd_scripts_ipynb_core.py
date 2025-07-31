@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -2150,7 +2150,7 @@ class SDScriptsManager:
                 logger.warning("[%s/%s] 重试下载 %s", count, retry, url)
                 continue
             else:
-                logger.warning("[%s/%s] 下载 %s 成功, 路径: %s",
+                logger.info("[%s/%s] 下载 %s 成功, 路径: %s",
                                count, retry, url, file_path)
                 return file_path
         return None
