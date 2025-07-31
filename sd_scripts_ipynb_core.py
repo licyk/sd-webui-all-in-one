@@ -2090,6 +2090,7 @@ class SDScriptsManager:
         :param ms_token`(str|None)`: ModelScope Token
         """
         self.workspace = Path(workspace)
+        self.workspace.mkdir(exist_ok=True)
         self.workfolder = workfolder
         self.git = GitWarpper()
         self.downloader = Downloader()
@@ -2268,6 +2269,7 @@ class SDScriptsManager:
             9. 配置其他工具
         """
         logger.info("配置 sd-scripts 环境中")
+        os.chdir(self.workspace)
         sd_scripts_path = self.workspace / self.workfolder
         requirement_path = sd_scripts_path / \
             (sd_scripts_requirment if sd_scripts_requirment is not None else "requirements.txt")
