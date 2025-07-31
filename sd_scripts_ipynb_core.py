@@ -946,15 +946,18 @@ class Utils:
             logger.info("解压 %s 到 %s 中", name, local_dir)
             try:
                 if archive_format == ".7z":
-                    run_cmd(["7z", "x", origin_file_path, f"-o{local_dir}"])
+                    run_cmd(
+                        ["7z", "x", str(origin_file_path), f"-o{local_dir}"])
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".zip":
-                    run_cmd(["unzip", origin_file_path, "-d", str(local_dir)])
+                    run_cmd(["unzip", str(origin_file_path),
+                            "-d", str(local_dir)])
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".tar":
-                    run_cmd(["tar", "-xvf", origin_file_path, "-C", str(local_dir)])
+                    run_cmd(["tar", "-xvf", str(origin_file_path),
+                            "-C", str(local_dir)])
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 else:
@@ -2151,7 +2154,7 @@ class SDScriptsManager:
                 continue
             else:
                 logger.info("[%s/%s] 下载 %s 成功, 路径: %s",
-                               count, retry, url, file_path)
+                            count, retry, url, file_path)
                 return file_path
         return None
 
