@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -950,11 +950,11 @@ class Utils:
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".zip":
-                    run_cmd(["unzip", origin_file_path, "-d", local_dir])
+                    run_cmd(["unzip", origin_file_path, "-d", str(local_dir)])
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".tar":
-                    run_cmd(["tar", "-xvf", origin_file_path, "-C", local_dir])
+                    run_cmd(["tar", "-xvf", origin_file_path, "-C", str(local_dir)])
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 else:
@@ -2324,6 +2324,7 @@ class SDScriptsManager:
         )
         os.chdir(self.workspace)
         # 安装使用 sd-scripts 进行训练所需的其他软件包
+        logger.info("安装其他 Python 模块中")
         try:
             self.env.pip_install(
                 "lycoris-lora",
@@ -2342,6 +2343,13 @@ class SDScriptsManager:
             )
         except Exception as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
+        try:
+            self.env.pip_install(
+                "numpy==1.26.4",
+                use_uv=use_uv
+            )
+        except Exception as e:
+            logger.error("降级 numpy 时发生错误: %s", e)
         self.get_model_from_list(
             path=model_path,
             model_list=model_list,
