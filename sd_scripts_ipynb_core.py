@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -903,6 +903,7 @@ class Utils:
     def config_wandb_token(token: str | None = None) -> None:
         """配置 WandB 所需 Token"""
         if token is not None:
+            logger.info("配置 WandB Token")
             os.environ["WANDB_API_KEY"] = token
 
     @staticmethod
@@ -968,10 +969,89 @@ class Utils:
             return None
 
     @staticmethod
-    def tcmalloc() -> None:
-        """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc"""
-        logger.info("配置内存优化")
-        os.environ["LD_PRELOAD"] = "/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4"
+    def config_tcmalloc() -> bool:
+        """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
+
+        :return `bool`: 配置成功时返回`True`
+        """
+        # 检查 glibc 版本
+        try:
+            result = subprocess.run(
+                ["ldd", "--version"], capture_output=True, text=True)
+            libc_ver_line = result.stdout.split('\n')[0]
+            libc_ver = re.search(r"(\d+\.\d+)", libc_ver_line)
+            if libc_ver:
+                libc_ver = libc_ver.group(1)
+                logger.info("glibc 版本: %s", libc_ver)
+            else:
+                logger.error("无法确定 glibc 版本")
+                return False
+        except Exception as e:
+            logger.error("检查 glibc 版本时出错: %s", e)
+            return False
+
+        # 从 2.34 开始, libpthread 已经集成到 libc.so 中
+        libc_v234 = "2.34"
+
+        # 定义 Tcmalloc 库数组
+        tcmalloc_libs = [
+            r"libtcmalloc(_minimal|)\.so\.\d+", r"libtcmalloc\.so\.\d+"]
+
+        # 遍历数组
+        for lib_pattern in tcmalloc_libs:
+            try:
+                # 获取系统库缓存信息
+                result = subprocess.run(["ldconfig", "-p"], capture_output=True, text=True,
+                                        env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")))
+                libraries = result.stdout.split("\n")
+
+                # 查找匹配的 TCMalloc 库
+                for lib in libraries:
+                    if re.search(lib_pattern, lib):
+                        # 解析库信息
+                        match = re.search(r"(.+?)\s+=>\s+(.+)", lib)
+                        if match:
+                            lib_name, lib_path = match.group(
+                                1).strip(), match.group(2).strip()
+                            logger.info("检查 TCMalloc: %s => %s",
+                                        lib_name, lib_path)
+
+                            # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
+                            if Utils.compare_versions(libc_ver, libc_v234) < 0:
+                                # glibc < 2.34，pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
+                                ldd_result = subprocess.run(
+                                    ["ldd", lib_path], capture_output=True, text=True)
+                                if "libpthread" in ldd_result.stdout:
+                                    logger.info(
+                                        "%s 链接到 libpthread, 执行 LD_PRELOAD=%s", lib_name, lib_path)
+                                    # 设置完整路径 LD_PRELOAD
+                                    if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
+                                        os.environ["LD_PRELOAD"] = os.environ["LD_PRELOAD"] + \
+                                            ":" + lib_path
+                                    else:
+                                        os.environ["LD_PRELOAD"] = lib_path
+                                    return True
+                                else:
+                                    logger.info(
+                                        "%s 没有链接到 libpthread, 将触发未定义符号: pthread_Key_create 错误", lib_name)
+                            else:
+                                # libc.so (glibc) 的 2.34 版本已将 pthread 库集成到 glibc 内部
+                                logger.info(
+                                    "%s 链接到 libc.so, 执行 LD_PRELOAD=%s", lib_name, lib_path)
+                                # 设置完整路径 LD_PRELOAD
+                                if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
+                                    os.environ["LD_PRELOAD"] = os.environ["LD_PRELOAD"] + \
+                                        ":" + lib_path
+                                else:
+                                    os.environ["LD_PRELOAD"] = lib_path
+                                return True
+            except Exception as e:
+                logger.error("检查 TCMalloc 库时出错: %s", e)
+                continue
+
+        if "LD_PRELOAD" not in os.environ:
+            print("无法定位 TCMalloc。未在系统上找到 tcmalloc 或 google-perftool, 取消加载内存优化")
+            return False
 
     @staticmethod
     def compare_versions(version1: str, version2: str) -> int:
@@ -2032,6 +2112,7 @@ class SDScriptsManager:
         :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
         :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
+        logger.info("重启 HuggingFace / ModelScope 仓库管理模块")
         self.repo = RepoManager(
             hf_token=hf_token,
             ms_token=ms_token,
@@ -2174,6 +2255,17 @@ class SDScriptsManager:
         :param git_username`(str|None)`: Git 用户名
         :param git_email`(str|None)`: Git 邮箱
         :param check_avaliable_gpu`(bool|None)`: 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
+        :notes
+            self.install() 将会以下几件事
+            1. 配置 PyPI / Github / HuggingFace 镜像源
+            2. 配置 Pip / uv
+            3. 安装管理工具自身依赖
+            4. 安装 sd-scripts
+            5. 安装 PyTorch / xFormers
+            6. 安装 sd-scripts 的依赖
+            7. 下载模型
+            8. 配置 HuggingFace / ModelScope / WandB Token 环境变量
+            9. 配置其他工具
         """
         logger.info("配置 sd-scripts 环境中")
         sd_scripts_path = self.workspace / self.workfolder
@@ -2248,7 +2340,6 @@ class SDScriptsManager:
             )
         except Exception as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
-        self.utils.tcmalloc()  # 设置 TCMalloc 内存优化
         self.get_model_from_list(
             path=model_path,
             model_list=model_list,
@@ -2263,4 +2354,5 @@ class SDScriptsManager:
             username=git_username,
             email=git_email,
         )
+        self.utils.config_tcmalloc()
         logger.info("sd-scripts 环境配置完成")
