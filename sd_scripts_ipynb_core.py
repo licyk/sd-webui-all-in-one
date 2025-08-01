@@ -594,7 +594,7 @@ class Downloader:
 
         save_path = path / save_name
         try:
-            logger.info("下载 %s 到 %s 中", url, save_path)
+            logger.info("下载 %s 到 %s 中", os.path.basename(url), save_path)
             run_cmd(["aria2c", "--console-log-level=error", "-c", "-x", "16",
                     "-s", "16", "-k", "1M", url, "-d", str(path), "-o", save_name])
             return save_path
@@ -1104,7 +1104,7 @@ class Utils:
             logger.info("挂载 Google Drive 中, 请根据提示进行操作")
             try:
                 from google.colab import drive
-                drive.mount(path)
+                drive.mount(path.as_posix())
                 logger.info("Google Dirve 挂载完成")
                 return True
             except Exception as e:
