@@ -3,8 +3,7 @@ import re
 from collections import namedtuple
 from typing import Union, Literal
 from pathlib import Path
-from modelscope.hub.snapshot_download import fetch_repo_files
-from modelscope.hub.api import HubApi, DEFAULT_DATASET_REVISION
+from modelscope.hub.api import HubApi
 
 
 # 解析整合包文件名的正则表达式
@@ -112,16 +111,11 @@ def get_modelscope_repo_file(
         except Exception as e:
             print(f"获取 {repo_id} (类型: {repo_type}) 仓库的文件列表出现错误: {e}")
     elif repo_type == "dataset":
-        user = repo_id.split("/")[0]
-        name = repo_id.split("/")[1]
         try:
             print(f"获取 {repo_id} (类型: {repo_type}) 中的文件列表")
-            repo_files = fetch_repo_files(
-                _api=api,
-                group_or_owner=user,
-                name=name,
-                revision=DEFAULT_DATASET_REVISION,
-                endpoint=api.endpoint
+            repo_files = api.get_dataset_files(
+                repo_id=repo_id,
+                recursive=True
             )
             file_list = _get_file_path(repo_files)
         except Exception as e:
