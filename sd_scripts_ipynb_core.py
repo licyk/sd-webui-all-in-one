@@ -607,7 +607,7 @@ class Downloader:
         url: str,
         *,
         model_dir: Path | str | None = None,
-        progress: bool | None = True,
+        progress: bool | None = False,
         file_name: str | None = None,
         hash_prefix: str | None = None,
         re_download: bool | None = False,
@@ -1131,7 +1131,7 @@ class MultiThreadDownloader:
         :param download_kwargs_list`(list[dict[str,Any]])`: 传入下载函数的参数字典列表
 
         :notes
-            下载参数列表,, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
+            下载参数列表, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
 
             格式示例:
             ```python
