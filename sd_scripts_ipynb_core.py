@@ -2328,6 +2328,7 @@ class TunnelManager:
         use_localhost_run: bool | None = False,
         use_gradio: bool | None = False,
         use_pinggy_io: bool | None = False,
+        message: str | None = None,
     ) -> tuple[str]:
         """启动内网穿透
 
@@ -2338,6 +2339,7 @@ class TunnelManager:
         :param use_localhost_run`(bool|None)`: 使用 localhost.run 内网穿透
         :param use_gradio`(bool|None)`: 使用 Gradio 内网穿透
         :param use_pinggy_io`(bool|None)`: 使用 pinggy.io 内网穿透
+        :param message`(str|None)`: 描述信息
         :return `tuple[str]`: 内网穿透地址
         """
 
@@ -2362,6 +2364,8 @@ class TunnelManager:
 
         logger.info("http://127.0.0.1:%s 的内网穿透地址", self.port)
         print("==================================================================================")
+        if message is not None:
+            print(f"{message}")
         print(f":: CloudFlare: {cloudflare_url}")
         print(f":: Ngrok: {ngrok_url}")
         print(f":: remote.moe: {remote_moe_url}")
