@@ -9,6 +9,7 @@ import copy
 import time
 import shlex
 import shutil
+import secrets
 import inspect
 import logging
 import hashlib
@@ -16,9 +17,10 @@ import datetime
 import threading
 import traceback
 import subprocess
-from queue import Queue
+import queue
 from pathlib import Path
 from urllib.parse import urlparse
+from tempfile import TemporaryDirectory
 from typing import Callable, Literal, Any
 
 
@@ -127,7 +129,7 @@ def run_cmd(
         process_output = []
         process = subprocess.Popen(
             command_str,
-            shell=True,
+            shell=shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True,
@@ -927,19 +929,13 @@ class Utils:
             name = os.path.basename(parts.path)
 
         archive_format = Path(name).suffix  # 压缩包格式
-        count = 0
-        while count < retry:
-            count += 1
-            origin_file_path = Downloader.aria2(  # 下载文件
-                url=url,
-                path=path,
-                save_name=name,
-            )
-            if origin_file_path is None:
-                logger.warning("[%s/%s] 重试下载 %s 中", count, retry, url)
-                continue
-            else:
-                break
+        origin_file_path = Downloader.download_file(  # 下载文件
+            url=url,
+            path=path,
+            save_name=name,
+            tools="aria2",
+            retry=retry
+        )
 
         if origin_file_path is not None:
             # 解压文件
@@ -1148,7 +1144,7 @@ class MultiThreadDownloader:
         self.download_func = download_func
         self.download_args_list = download_args_list or []
         self.download_kwargs_list = download_kwargs_list or []
-        self.queue = Queue()
+        self.queue = queue.Queue()
         self.total_tasks = max(len(download_args_list or []), len(
             download_kwargs_list or []))  # 记录总的下载任务数 (以参数列表长度为准)
         self.completed_count = 0  # 记录已完成的任务数
@@ -2075,8 +2071,288 @@ class MirrorConfigManager:
         os.environ["PYTHONIOENCODING"] = "utf8"
 
 
-class SDScriptsManager:
-    """sd-scripts 管理工具"""
+class TunnelManager:
+    """内网穿透工具"""
+
+    def __init__(self, workspace: Path | str, port: int) -> None:
+        """内网穿透工具初始化
+
+        :param workspace`(Path|str)`: 工作区路径
+        :param port`(int)`: 要进行端口映射的端口
+        """
+        self.workspace = Path(workspace)
+        self.port = port
+
+    def ngrok(self, ngrok_token: str | None = None) -> str | None:
+        """使用 Ngrok 内网穿透
+
+        :param ngrok_token`(str)`: Ngrok 账号 Token
+        :return `str`: Ngrok 内网穿透生成的访问地址
+        """
+        if ngrok_token is None:
+            return None
+        logger.info("启动 Ngrok 内网穿透")
+        try:
+            from pyngrok import conf, ngrok
+        except Exception as _:
+            try:
+                EnvManager.pip_install("pyngrok")
+                from pyngrok import conf, ngrok
+            except Exception as e:
+                logger.error("安装 Ngrok 内网穿透模块失败: %s", e)
+                return None
+
+        try:
+            conf.get_default().auth_token = ngrok_token
+            conf.get_default().monitor_thread = False
+            ssh_tunnels = ngrok.get_tunnels(conf.get_default())
+            if len(ssh_tunnels) == 0:
+                ssh_tunnel = ngrok.connect(self.port, bind_tls=True)
+                return ssh_tunnel.public_url
+            else:
+                return ssh_tunnels[0].public_url
+        except Exception as e:
+            logger.error("启动 Ngrok 内网穿透时出现了错误: %s", e)
+            return None
+
+    def cloudflare(self) -> str | None:
+        """使用 CloudFlare 内网穿透
+
+        :return `str`: CloudFlare 内网穿透生成的访问地址
+        """
+        logger.info("启动 CloudFlare 内网穿透")
+        try:
+            from pycloudflared import try_cloudflare
+        except Exception as _:
+            try:
+                EnvManager.pip_install("pycloudflared")
+                from pycloudflared import try_cloudflare
+            except Exception as e:
+                logger.error("安装 CloudFlare 内网穿透失败: %s", e)
+                return None
+
+        try:
+            return try_cloudflare(self.port).tunnel
+        except Exception as e:
+            logger.error("启动 CloudFlare 内网穿透时出现了错误: %s", e)
+            return None
+
+    def gradio(self) -> str | None:
+        """使用 Gradio 进行内网穿透
+
+        :return `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        """
+        logger.info("启动 Gradio 内网穿透")
+        try:
+            from gradio_tunneling.main import setup_tunnel
+        except Exception as _:
+            try:
+                EnvManager.pip_install("gradio-tunneling")
+                from gradio_tunneling.main import setup_tunnel
+            except Exception as e:
+                logger.error("安装 Gradio Tunneling 内网穿透时出现了错误: %s", e)
+                return None
+
+        try:
+            tunnel_url = setup_tunnel(
+                local_host="127.0.0.1",
+                local_port=self.port,
+                share_token=secrets.token_urlsafe(32),
+                share_server_address=None
+            )
+            return tunnel_url
+        except Exception as e:
+            logger.error("启动 Gradio 内网穿透时出现错误: %s", e)
+            return None
+
+    def gen_key(self, path: Path | str) -> bool:
+        """生成 SSH 密钥
+
+        :param path`(str|Path)`: 生成 SSH 密钥的路径
+        :return `bool`: 生成成功时返回`True`
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        try:
+            arg_string = f'ssh-keygen -t rsa -b 4096 -N "" -q -f {path.as_posix()}'
+            args = shlex.split(arg_string)
+            subprocess.run(args, check=True)
+            path.chmod(0o600)
+            return True
+        except Exception as e:
+            logger.error("生成 SSH 密钥失败: %s", e)
+            return False
+
+    def ssh_tunnel(
+        self,
+        launch_args: list,
+        host_pattern: re.Pattern[str],
+        line_limit: int,
+    ) -> str | None:
+        """使用 SSH 进行内网穿透
+
+        :param launch_args`(list)`: 启动 SSH 内网穿透的参数
+        :param host_pattern`(re.Pattern[str])`: 用于匹配内网穿透地址的正则表达式
+        :param line_limit`(int)`: 内网穿透地址所在的输出行数
+        :return `str|None`: 内网穿透地址
+        :notes
+            基础 SSH 命令为: `ssh -o StrictHostKeyChecking=no -i <ssh_path>`
+        """
+        ssh_name = "id_rsa"
+        ssh_path = self.workspace / ssh_name
+
+        tmp = None
+        if not ssh_path.exists():
+            if not self.gen_key(ssh_path):
+                tmp = TemporaryDirectory()
+                ssh_path = Path(tmp.name) / ssh_name
+                self.gen_key(ssh_path)
+
+        command = ["ssh", "-o", "StrictHostKeyChecking=no",
+                   "-i", ssh_path.as_posix()] + launch_args
+        command_str = shlex.join(command) if isinstance(
+            command, list) else command
+        tunnel = subprocess.Popen(
+            command_str,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            encoding="utf-8",
+        )
+
+        output_queue = queue.Queue()
+        lines = []
+
+        def _read_output():
+            for line in iter(tunnel.stdout.readline, ''):
+                output_queue.put(line)
+            tunnel.stdout.close()
+
+        thread = threading.Thread(target=_read_output)
+        thread.daemon = True
+        thread.start()
+
+        for _ in range(line_limit):
+            try:
+                line = output_queue.get(timeout=10)
+                lines.append(line)
+                if line.startswith("Warning"):
+                    print(line, end="")
+
+                url_match = host_pattern.search(line)
+                if url_match:
+                    return url_match.group("url")
+            except queue.Empty:
+                break
+
+        return None
+
+    def localhost_run(self) -> str | None:
+        """使用 localhost.run 进行内网穿透
+
+        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        """
+        logger.info("启动 localhost.run 内网穿透")
+        urls = self.ssh_tunnel(
+            launch_args=["-R", f"80:127.0.0.1:{self.port}", "localhost.run"],
+            host_pattern=re.compile(r"(?P<url>https?://\S+\.lhr\.life)"),
+            line_limit=27,
+        )
+        if urls is not None:
+            return urls
+        logger.error("启动 localhost.run 内网穿透失败")
+        return None
+
+    def remote_moe(self) -> str | None:
+        """使用 remote.moe 进行内网穿透
+
+        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        """
+        logger.info("启动 remote.moe 内网穿透")
+        urls = self.ssh_tunnel(
+            launch_args=["-R", f"80:127.0.0.1:{self.port}", "remote.moe"],
+            host_pattern=re.compile(r"(?P<url>https?://\S+\.remote\.moe)"),
+            line_limit=10,
+        )
+        if urls is not None:
+            return urls
+        logger.error("启动 remote.moe 内网穿透失败")
+        return None
+
+    def pinggy_io(self) -> str | None:
+        """使用 pinggy.io 进行内网穿透
+
+        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        """
+        logger.info("启动 pinggy.io 内网穿透")
+        urls = self.ssh_tunnel(
+            launch_args=["-p", "443",
+                         f"-R0:127.0.0.1:{self.port}", "free.pinggy.io"],
+            host_pattern=re.compile(r"(?P<url>https?://\S+\.pinggy\.link)"),
+            line_limit=10,
+        )
+        if urls is not None:
+            return urls
+        logger.error("启动 pinggy.io 内网穿透失败")
+        return None
+
+    def start_tunnel(
+        self,
+        use_ngrok: bool | None = False,
+        ngrok_token: str | None = None,
+        use_cloudflare: bool | None = False,
+        use_remote_moe: bool | None = False,
+        use_localhost_run: bool | None = False,
+        use_gradio: bool | None = False,
+        use_pinggy_io: bool | None = False,
+    ) -> tuple[str]:
+        """启动内网穿透
+
+        :param use_ngrok`(bool|None)`: 启用 Ngrok 内网穿透
+        :param ngrok_token`(str|None)`: Ngrok 账号 Token
+        :param use_cloudflare`(bool|None)`: 启用 CloudFlare 内网穿透
+        :param use_remote_moe`(bool|None)`: 启用 remote.moe 内网穿透
+        :param use_localhost_run`(bool|None)`: 使用 localhost.run 内网穿透
+        :param use_gradio`(bool|None)`: 使用 Gradio 内网穿透
+        :param use_pinggy_io`(bool|None)`: 使用 pinggy.io 内网穿透
+        :return `tuple[str]`: 内网穿透地址
+        """
+
+        if any([
+                use_cloudflare,
+                use_ngrok and ngrok_token,
+                use_remote_moe,
+                use_localhost_run,
+                use_gradio,
+                use_pinggy_io]):
+            logger.info("启动内网穿透")
+        else:
+            return
+
+        cloudflare_url = self.cloudflare() if use_cloudflare else None
+        ngrok_url = self.ngrok(
+            ngrok_token) if use_ngrok and ngrok_token else None
+        remote_moe_url = self.remote_moe() if use_remote_moe else None
+        localhost_run_url = self.localhost_run() if use_localhost_run else None
+        gradio_url = self.gradio() if use_gradio else None
+        pinggy_io_url = self.pinggy_io() if use_pinggy_io else None
+
+        logger.info("http://127.0.0.1:%s 的内网穿透地址", self.port)
+        print("==================================================================================")
+        print(f":: CloudFlare: {cloudflare_url}")
+        print(f":: Ngrok: {ngrok_url}")
+        print(f":: remote.moe: {remote_moe_url}")
+        print(f":: localhost_run: {localhost_run_url}")
+        print(f":: Gradio: {gradio_url}")
+        print(f":: pinggy.io: {pinggy_io_url}")
+        print("==================================================================================")
+        return cloudflare_url, ngrok_url, remote_moe_url, localhost_run_url, gradio_url, pinggy_io_url
+
+
+class BaseManager:
+    """管理工具基础类"""
 
     def __init__(
         self,
@@ -2084,13 +2360,15 @@ class SDScriptsManager:
         workfolder: str,
         hf_token: str | None = None,
         ms_token: str | None = None,
+        port: int | None = 7860,
     ) -> None:
-        """sd-scripts 管理工具初始化
+        """管理工具初始化
 
         :param workspace`(str|Path)`: 工作区路径
         :param workfolder`(str)`: 工作区的文件夹名称
         :param hf_token`(str|None)`: HuggingFace Token
         :param ms_token`(str|None)`: ModelScope Token
+        :param port`(int|None)`: 内网穿透端口
         """
         self.workspace = Path(workspace)
         self.workspace.mkdir(exist_ok=True)
@@ -2101,9 +2379,11 @@ class SDScriptsManager:
         self.utils = Utils()
         self.repo = RepoManager(hf_token, ms_token)
         self.mirror = MirrorConfigManager()
+        self.tun = TunnelManager(workspace, port)
         self.remove_files = remove_files
         self.run_cmd = run_cmd
         self.copy_files = copy_files
+        self.get_logger = get_logger
         self.multi_thread_downloader_class = MultiThreadDownloader
 
     def restart_repo_manager(
@@ -2209,6 +2489,10 @@ class SDScriptsManager:
                         filename=filename,
                         retry=retry
                     )
+
+
+class SDScriptsManager(BaseManager):
+    """sd-scripts 管理工具"""
 
     def install(
         self,
