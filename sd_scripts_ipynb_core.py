@@ -6,6 +6,7 @@ import re
 import sys
 import stat
 import copy
+import json
 import time
 import shlex
 import shutil
@@ -91,7 +92,7 @@ def get_logger(
     return _logger
 
 
-logger = get_logger("SD Scripts Manager", color=False)
+logger = get_logger("Manager", color=False)
 
 
 def run_cmd(
@@ -1094,6 +1095,25 @@ class Utils:
 
         return 0  # 版本号相同
 
+    @staticmethod
+    def mount_google_drive(path: Path | str) -> bool:
+        """挂载 Google Drive"""
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        if not path.exists():
+            logger.info("挂载 Google Drive 中, 请根据提示进行操作")
+            try:
+                from google.colab import drive
+                drive.mount(path)
+                logger.info("Google Dirve 挂载完成")
+                return True
+            except Exception as e:
+                logger.error("挂载 Google Drive 时出现问题: %e", e)
+                return False
+        else:
+            logger.info("Google Drive 已挂载")
+            return True
+
 
 class MultiThreadDownloader:
     """通用多线程下载器"""
@@ -1108,6 +1128,7 @@ class MultiThreadDownloader:
 
         :param download_func`(Callable)`: 执行下载任务的函数
         :param download_args_list`(list[Any])`: 传入下载函数的参数列表
+        :param download_kwargs_list`(list[dict[str,Any]])`: 传入下载函数的参数字典列表
 
         :notes
             下载参数列表,, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
@@ -2517,7 +2538,8 @@ class SDScriptsManager(BaseManager):
         wandb_token: str | None = None,
         git_username: str | None = None,
         git_email: str | None = None,
-        check_avaliable_gpu: bool | None = False
+        check_avaliable_gpu: bool | None = False,
+        enable_tcmalloc: bool | None = True,
     ) -> None:
         """安装 sd-scripts 和其余环境
 
@@ -2543,6 +2565,7 @@ class SDScriptsManager(BaseManager):
         :param git_username`(str|None)`: Git 用户名
         :param git_email`(str|None)`: Git 邮箱
         :param check_avaliable_gpu`(bool|None)`: 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
+        :param enable_tcmalloc`(bool|None)`: 启用 TCMalloc 内存优化
         :notes
             self.install() 将会以下几件事
             1. 配置 PyPI / Github / HuggingFace 镜像源
@@ -2651,5 +2674,296 @@ class SDScriptsManager(BaseManager):
             username=git_username,
             email=git_email,
         )
-        self.utils.config_tcmalloc()
+        enable_tcmalloc and self.utils.config_tcmalloc()
         logger.info("sd-scripts 环境配置完成")
+
+
+class FooocusManager(BaseManager):
+    """Fooocus 管理工具"""
+
+    def mount_drive(self) -> None:
+        """挂载 Google Drive 并创建 Fooocus 输出文件夹"""
+        drive_path = Path("/content/drive")
+        if not (drive_path / "MyDrive").exists():
+            if not self.utils.mount_google_drive(drive_path):
+                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+
+        fooocus_output = drive_path / "MyDrive" / "fooocus_output"
+        fooocus_output.mkdir(exist_ok=True)
+
+    def get_sd_model(
+        self,
+        url: str,
+        filename: str = None
+    ) -> None:
+        """下载大模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        """
+        path = self.workspace / self.workfolder / "models" / "checkpoints"
+        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+
+    def get_lora_model(
+        self,
+        url: str,
+        filename: str = None
+    ) -> None:
+        """下载 LoRA 模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        """
+        path = self.workspace / self.workfolder / "models" / "loras"
+        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+
+    def get_vae_model(
+        self,
+        url: str,
+        filename: str = None
+    ) -> None:
+        """下载 VAE 模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        """
+        path = self.workspace / self.workfolder / "models" / "vae"
+        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+
+    def get_embedding_model(
+        self,
+        url: str,
+        filename: str = None
+    ) -> None:
+        """下载 Embedding 模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        """
+        path = self.workspace / self.workfolder / "models" / "embeddings"
+        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+
+    def install_config(
+        self,
+        preset: str | None = None,
+        path_config: str | None = None,
+        translation: str | None = None,
+    ) -> None:
+        """下载 Fooocus 配置文件
+
+        :param preset`(str|None)`: Fooocus 预设文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/presets/custom.json`
+        :param path_config`(str|None)`: Fooocus 路径配置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.txt`
+        :param translation`(str|None)`: Fooocus 翻译文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/language/zh.json`
+        """
+        path = self.workspace / self.workfolder
+        preset_path = path / "presets"
+        language_path = path / "language"
+        logger.info("下载配置文件")
+        preset and self.downloader.download_file(
+            url=preset, path=preset_path, save_name="custom.json", tools="aria2")
+        path_config and self.downloader.download_file(
+            url=path_config, path=path, save_name="config.txt", tools="aria2")
+        translation and self.downloader.download_file(
+            url=translation, path=language_path, save_name="zh.json", tools="aria2")
+
+    def pre_download_model(
+        self,
+        path: str | Path,
+        thread_num: int | None = 16,
+        downloader: Literal["aria2", "requests", "mix"] = "mix"
+    ) -> None:
+        """根据 Fooocus 配置文件预下载模型
+
+        :param path`(str|Path)`: Fooocus 配置文件路径
+        :param thread_num`(int|None)`: 下载模型的线程数
+        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的下载器 (`aria2`, `requests`, `mix`)
+        """
+        path = Path(path) if not isinstance(
+            path, Path) and path is not None else path
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf8") as file:
+                    data = json.load(file)
+            except Exception as e:
+                logger.warning("打开 Fooocus 配置文件时出现错误: %s", e)
+                data = {}
+        else:
+            data = {}
+
+        if downloader == "aria2":
+            sd_model_downloader = "aria2"
+            vae_downloader = "aria2"
+            embedding_downloader = "aria2"
+            lora_downloader = "aria2"
+        elif downloader == "request":
+            sd_model_downloader = "request"
+            vae_downloader = "request"
+            embedding_downloader = "request"
+            lora_downloader = "request"
+        elif downloader == "mix":
+            sd_model_downloader = "aria2"
+            vae_downloader = "aria2"
+            embedding_downloader = "request"
+            lora_downloader = "request"
+        else:
+            sd_model_downloader = "aria2"
+            vae_downloader = "aria2"
+            embedding_downloader = "aria2"
+            lora_downloader = "aria2"
+
+        sd_model_list: dict = data.get("checkpoint_downloads", {})
+        lora_list: dict = data.get("lora_downloads", {})
+        vae_list: dict = data.get("vae_downloads", {})
+        embedding_list: dict = data.get("embeddings_downloads", {})
+        fooocus_path = self.workspace / self.workfolder
+        sd_model_path = fooocus_path / "models" / "checkpoints"
+        lora_path = fooocus_path / "models" / "loras"
+        vae_path = fooocus_path / "models" / "vae"
+        embedding_path = fooocus_path / "models" / "embeddings"
+
+        downloader_params = []
+        downloader_params += [
+            {
+                "url": sd_model_list.get(i),
+                "path": sd_model_path,
+                "save_name": i,
+                "tools": sd_model_downloader
+            }
+            for i in sd_model_list
+        ]
+        downloader_params += [
+            {
+                "url": lora_list.get(i),
+                "path": lora_path,
+                "save_name": i,
+                "tools": lora_downloader
+            }
+            for i in lora_list
+        ]
+        downloader_params += [
+            {
+                "url": vae_list.get(i),
+                "path": vae_path,
+                "save_name": i,
+                "tools": vae_downloader
+            }
+            for i in vae_list
+        ]
+        downloader_params += [
+            {
+                "url": embedding_list.get(i),
+                "path": embedding_path,
+                "save_name": i,
+                "tools": embedding_downloader
+            }
+            for i in embedding_list
+        ]
+
+        model_downloader = MultiThreadDownloader(
+            download_func=self.downloader.download_file,
+            download_kwargs_list=downloader_params,
+        )
+        model_downloader.start(num_threads=thread_num)
+        logger.info("预下载 Fooocus 模型完成")
+
+    def tcmalloc_colab(self) -> None:
+        """配置 TCMalloc (Colab)"""
+        logger.info("配置 TCMalloc 内存优化")
+        url = "https://github.com/licyk/term-sd/releases/download/archive/libtcmalloc_minimal.so.4"
+        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
+        self.downloader.download_file(
+            url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4")
+        os.environ["LD_PRELOAD"] = str(libtcmalloc_path)
+
+    def install(
+        self,
+        torch_ver: str | list | None = None,
+        xformers_ver: str | list | None = None,
+        use_uv: bool | None = True,
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None,
+        pytorch_mirror: str | None = None,
+        fooocus_repo: str | None = None,
+        fooocus_requirment: str | None = None,
+        fooocus_preset: str | None = None,
+        fooocus_path_config: str | None = None,
+        fooocus_translation: str | None = None,
+        downloader: Literal["aria2", "request", "mix"] = "mix",
+        download_model_thread: int | None = 16,
+        check_avaliable_gpu: bool | None = False,
+        enable_tcmalloc: bool | None = True,
+    ) -> None:
+        """安装 Fooocus
+
+        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
+        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
+        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
+        :param fooocus_repo`(str|None)`: Fooocus 仓库地址
+        :param fooocus_requirment`(str|None)`: Fooocus 依赖文件名
+        :param fooocus_preset`(str|None)`: Fooocus 预设文件下载链接
+        :param fooocus_path_config`(str|None)`: Fooocus 路径配置文件下载地址
+        :param fooocus_translation`(str|None)`: Fooocus 翻译文件下载地址
+        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
+        :param download_model_thread`(int|None)`: 预下载模型的线程
+        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
+        """
+        logger.info("开始安装 Fooocus")
+        os.chdir(self.workspace)
+        fooocus_path = self.workspace / self.workfolder
+        fooocus_repo = "https://github.com/lllyasviel/Fooocus" if fooocus_repo is None else fooocus_repo
+        fooocus_preset = "https://github.com/licyk/term-sd/releases/download/archive/fooocus_config.json" if fooocus_preset is None else fooocus_preset
+        fooocus_path_config = "https://github.com/licyk/term-sd/releases/download/archive/fooocus_path_config_colab.json" if fooocus_path_config is None else fooocus_path_config
+        fooocus_translation = "https://github.com/licyk/term-sd/releases/download/archive/fooocus_zh_cn.json" if fooocus_translation is None else fooocus_translation
+        requirment_path = fooocus_path / \
+            ("requirements_versions.txt" if fooocus_requirment is None else fooocus_requirment)
+        config_file = fooocus_path / "presets" / "custom.json"
+        if check_avaliable_gpu and not self.utils.check_gpu():
+            raise Exception(
+                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!")
+        logger.info("Fooocus 内核分支: %s", fooocus_repo)
+        logger.info("Fooocus 预设配置: %s", fooocus_preset)
+        logger.info("Fooocus 路径配置: %s", fooocus_path_config)
+        logger.info("Fooocus 翻译配置: %s", fooocus_translation)
+        self.mirror.set_mirror(
+            pypi_index_mirror=pypi_index_mirror,
+            pypi_extra_index_mirror=pypi_extra_index_mirror,
+            pypi_find_links_mirror=pypi_find_links_mirror,
+            github_mirror=github_mirror,
+            huggingface_mirror=huggingface_mirror
+        )
+        self.mirror.configure_pip()
+        self.env.install_manager_depend(use_uv)
+        self.git.clone(fooocus_repo, fooocus_path)
+        self.git.update(fooocus_path)
+        self.env.install_pytorch(
+            torch_package=torch_ver,
+            xformers_package=xformers_ver,
+            pytorch_mirror=pytorch_mirror,
+            pytorch_mirror=pytorch_mirror,
+            use_uv=use_uv,
+        )
+        os.chdir(fooocus_path)
+        self.env.install_requirements(requirment_path, use_uv)
+        os.chdir(self.workspace)
+        self.install_config(
+            preset=fooocus_preset,
+            path_config=fooocus_path_config,
+            translation=fooocus_translation
+        )
+        enable_tcmalloc and self.tcmalloc_colab()
+        self.pre_download_model(
+            path=config_file,
+            thread_num=download_model_thread,
+            downloader=downloader,
+        )
+        logger.info("Fooocus 安装完成")
