@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.9"
+VERSION = "1.0.10"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -884,10 +884,11 @@ class Utils:
             return False
 
     @staticmethod
-    def get_file_list(path: Path | str) -> list[Path]:
+    def get_file_list(path: Path | str, resolve: bool | None = False) -> list[Path]:
         """获取当前路径下的所有文件的绝对路径
 
         :param path`(Path|str)`: 要获取文件列表的目录
+        :param resolve`(bool|None)`: 将路径进行完全解析, 包括链接路径
         :return `list[Path]`: 文件列表的绝对路径
         """
         path = Path(path) if not isinstance(
@@ -897,7 +898,7 @@ class Utils:
             return []
 
         return [
-            p.absolute()
+            p.resolve() if resolve else p.absolute()
             for p in path.rglob("*")
             if p.is_file()
         ]
