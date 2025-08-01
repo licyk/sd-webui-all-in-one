@@ -2891,7 +2891,7 @@ class FooocusManager(BaseManager):
         fooocus_preset: str | None = None,
         fooocus_path_config: str | None = None,
         fooocus_translation: str | None = None,
-        downloader: Literal["aria2", "request", "mix"] = "mix",
+        model_downloader: Literal["aria2", "request", "mix"] = "mix",
         download_model_thread: int | None = 16,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
@@ -2912,7 +2912,7 @@ class FooocusManager(BaseManager):
         :param fooocus_preset`(str|None)`: Fooocus 预设文件下载链接
         :param fooocus_path_config`(str|None)`: Fooocus 路径配置文件下载地址
         :param fooocus_translation`(str|None)`: Fooocus 翻译文件下载地址
-        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
+        :param model_downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
         :param download_model_thread`(int|None)`: 预下载模型的线程
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
@@ -2963,6 +2963,6 @@ class FooocusManager(BaseManager):
         self.pre_download_model(
             path=config_file,
             thread_num=download_model_thread,
-            downloader=downloader,
+            downloader=model_downloader,
         )
         logger.info("Fooocus 安装完成")
