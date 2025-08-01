@@ -2949,7 +2949,6 @@ class FooocusManager(BaseManager):
             torch_package=torch_ver,
             xformers_package=xformers_ver,
             pytorch_mirror=pytorch_mirror,
-            pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
         os.chdir(fooocus_path)
