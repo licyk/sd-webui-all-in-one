@@ -225,8 +225,23 @@ $ tree -L 1
 要设置 SD-Trainer 的启动参数，可以在和`launch.ps1`脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
 >[!NOTE]  
->1. SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts ### 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
->2. Kohya GUI 可用的启动参数可阅读：[bmaltais/kohya_ss - Starting GUI Service](https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service)
+>SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts ### 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
+>
+>Kohya GUI 可用的启动参数可阅读：[bmaltais/kohya_ss - Starting GUI Service](https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service)
+>
+>如果修改启动参数导致无法正常启动，可将启动参数设置为默认启动参数。
+>
+>SD-Trainer 默认使用的启动参数：
+>
+>```
+>--skip-prepare-onnxruntime
+>```
+>
+>Kohya GUI 默认使用的启动参数：
+>
+>```
+>--inbrowser --language zh-CN --noverify
+>```
 
 
 ## 切换 SD-Trainer 分支

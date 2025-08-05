@@ -363,6 +363,48 @@ $ tree -L 1
 
 >[!NOTE]  
 >Stable Diffusion WebUI 支持的启动参数可阅读：[Command Line Arguments and Settings · AUTOMATIC1111/stable-diffusion-webui Wiki](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings)。
+>
+>Stable Diffusion WebUI Forge Classic 支持的启动参数可阅读：[Commandline - Haoming02/sd-webui-forge-classic: The "classic" version of the Forge WebUI](https://github.com/Haoming02/sd-webui-forge-classic?tab=readme-ov-file#commandline)。
+>
+>SD.Next 支持的启动参数可阅读：[CLI Arguments - SD.Next Documentation](https://vladmandic.github.io/sdnext-docs/CLI-Arguments)。
+>
+>如果修改启动参数导致无法正常启动，可将启动参数设置为默认启动参数。
+>
+>Stable Diffusion WebUI 默认使用的启动参数：
+>
+>```
+>--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model
+>```
+>
+>Stable Diffusion WebUI Forge 默认使用的启动参数：
+>
+>```
+>--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model
+>```
+>
+>Stable Diffusion WebUI reForge 默认使用的启动参数：
+>
+>```
+>--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model
+>```
+>
+>Stable Diffusion WebUI Forge Classic 默认使用的启动参数：
+>
+>```
+>--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model
+>```
+>
+>Stable Diffusion WebUI AMDGPU 默认使用的启动参数：
+>
+>```
+>--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check --skip-version-check --no-download-sd-model
+>```
+>
+>SD.Next 默认使用的启动参数：
+>
+>```
+>--autolaunch --use-cuda --use-xformers
+>```
 
 
 ## 切换 Stable Diffusion WebUI 分支

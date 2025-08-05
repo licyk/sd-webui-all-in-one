@@ -218,6 +218,14 @@ $ tree -L 1
 
 >[!NOTE]  
 >Fooocus 支持的启动参数可阅读：[All CMD Flags · lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags)。
+>
+>如果修改启动参数导致无法正常启动，可将启动参数设置为默认启动参数。
+>
+>Fooocus 默认使用的启动参数：
+>
+>```
+>--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics
+>```
 
 
 ## 切换 Fooocus 分支
