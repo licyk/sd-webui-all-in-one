@@ -801,6 +801,7 @@ SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI �
 |`-EnableShortcut`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI  启动快捷方式。|
 |`-DisableCUDAMalloc`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题，禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复。|
+|`-DisableAutoApplyUpdate`|(仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 自动应用新版本更新|
 |`-Help`|显示 SD WebUI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)，则在 SD WebUI Installer 所在路径打开 PowerShell，使用参数运行 SD WebUI Installer。

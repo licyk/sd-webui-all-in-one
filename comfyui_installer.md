@@ -703,6 +703,7 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |`-EnableShortcut`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 创建 ComfyUI 启动快捷方式。|
 |`-DisableCUDAMalloc`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题，禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复。|
+|`-DisableAutoApplyUpdate`|(仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 自动应用新版本更新|
 |`-Help`|显示 ComfyUI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 ComfyUI，则在 ComfyUI Installer 所在路径打开 PowerShell，使用参数运行 ComfyUI Installer。

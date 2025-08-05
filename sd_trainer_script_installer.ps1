@@ -25,13 +25,14 @@
     [switch]$DisableHuggingFaceMirror,
     [string]$UseCustomHuggingFaceMirror,
     [switch]$DisableCUDAMalloc,
-    [switch]$DisableEnvCheck
+    [switch]$DisableEnvCheck,
+    [switch]$DisableAutoApplyUpdate
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 187
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 188
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1177,7 +1178,8 @@ param (
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableUV,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [switch]`$DisableEnvCheck,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -1273,7 +1275,7 @@ param (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\init.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\init.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -1307,7 +1309,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        禁用 SD-Trainer-Script Installer检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
+        禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -1444,23 +1449,29 @@ function Check-SD-Trainer-Script-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"==================================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -3329,7 +3340,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -3444,7 +3456,7 @@ param (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -3487,6 +3499,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://wget.la/https://github.com
             https://kkgithub.com
             https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -3597,23 +3612,29 @@ function Check-SD-Trainer-Script-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"==================================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -3805,7 +3826,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -3920,7 +3942,7 @@ param (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -3929,9 +3951,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     -BuildMode
         启用 SD-Trainer-Script Installer 构建模式
 
-    -BuildWitchBranch <Fooocus 分支编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
-        Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
+    -BuildWitchBranch <SD-Trainer-Script 分支编号>
+        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer-Script 分支编号切换到对应的 SD-Trainer-Script 分支
+        SD-Trainer-Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -3967,6 +3989,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://wget.la/https://github.com
             https://kkgithub.com
             https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -4058,23 +4083,29 @@ function Check-SD-Trainer-Script-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"==================================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -4658,7 +4689,8 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -4754,7 +4786,7 @@ param (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -4764,7 +4796,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         启用 SD-Trainer-Script Installer 构建模式
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
@@ -4784,6 +4816,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -4885,23 +4920,29 @@ function Check-SD-Trainer-Script-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"==================================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -5738,7 +5779,8 @@ param (
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [switch]`$DisableUpdate,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD-Trainer-Script Installer 版本和检查更新间隔
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -5834,7 +5876,7 @@ param (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -5844,7 +5886,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         启用 SD-Trainer-Script Installer 构建模式
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式) SD-Trainer-Script Installer执行完基础安装流程后调用 SD-Trainer-Script Installer的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
     -DisablePyPIMirror
@@ -5858,6 +5900,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -DisableUpdate
         禁用 SD-Trainer-Script Installer 更新检查
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
@@ -5991,23 +6036,29 @@ function Check-SD-Trainer-Script-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"==================================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -6726,6 +6777,16 @@ function Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
 }
 
 
+# 获取 SD-Trainer-Script Installer 自动应用更新设置
+function Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting {
+    if (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") {
+        return `"禁用`"
+    } else {
+        return `"启用`"
+    }
+}
+
+
 # 获取 PyPI 镜像源配置
 function Get-PyPI-Mirror-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) {
@@ -7019,6 +7080,46 @@ function Update-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
 }
 
 
+# SD-Trainer-Script Installer 自动应用更新设置
+function Update-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 SD-Trainer-Script Installer 自动应用更新设置: `$(Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 SD-Trainer-Script Installer 自动应用更新`"
+        Print-Msg `"2. 禁用 SD-Trainer-Script Installer 自动应用更新`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 SD-Trainer-Script Installer 自动应用更新成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force > `$null
+                Print-Msg `"禁用 SD-Trainer-Script Installer 自动应用更新成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # PyPI 镜像源设置
 function PyPI-Mirror-Setting {
     while (`$true) {
@@ -7278,6 +7379,7 @@ function Main {
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"SD-Trainer-Script Installer 自动检查更新: `$(Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"SD-Trainer-Script Installer 自动应用更新: `$(Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting)`"
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"SD-Trainer-Script 运行环境检测设置: `$(Get-SD-Trainer-Script-Env-Check-Setting)`"
@@ -7288,13 +7390,14 @@ function Main {
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
         Print-Msg `"5. 进入 SD-Trainer-Script Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 PyPI 镜像源设置`"
-        Print-Msg `"7. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"8. 进入 SD-Trainer-Scripts 运行环境检测设置`"
-        Print-Msg `"9. 更新 SD-Trainer-Script Installer 管理脚本`"
-        Print-Msg `"10. 检查环境完整性`"
-        Print-Msg `"11. 查看 SD-Trainer-Script Installer 文档`"
-        Print-Msg `"12. 退出 SD-Trainer-Script Installer 设置`"
+        Print-Msg `"6. 进入 SD-Trainer-Script Installer 自动应用更新设置`"
+        Print-Msg `"7. 进入 PyPI 镜像源设置`"
+        Print-Msg `"8. 进入自动设置 CUDA 内存分配器设置`"
+        Print-Msg `"9. 进入 SD-Trainer-Scripts 运行环境检测设置`"
+        Print-Msg `"10. 更新 SD-Trainer-Script Installer 管理脚本`"
+        Print-Msg `"11. 检查环境完整性`"
+        Print-Msg `"12. 查看 SD-Trainer-Script Installer 文档`"
+        Print-Msg `"13. 退出 SD-Trainer-Script Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -7319,30 +7422,34 @@ function Main {
                 break
             }
             6 {
-                PyPI-Mirror-Setting
+                Update-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting
                 break
             }
             7 {
-                PyTorch-CUDA-Memory-Alloc-Setting
+                PyPI-Mirror-Setting
                 break
             }
             8 {
-                SD-Trainer-Script-Env-Check-Setting
+                PyTorch-CUDA-Memory-Alloc-Setting
                 break
             }
             9 {
-                Check-SD-Trainer-Script-Installer-Update
+                SD-Trainer-Script-Env-Check-Setting
                 break
             }
             10 {
-                Check-Env
+                Check-SD-Trainer-Script-Installer-Update
                 break
             }
             11 {
-                Get-SD-Trainer-Script-Installer-Help-Docs
+                Check-Env
                 break
             }
             12 {
+                Get-SD-Trainer-Script-Installer-Help-Docs
+                break
+            }
+            13 {
                 `$go_to = 1
                 break
             }
@@ -8047,6 +8154,7 @@ function Use-Build-Mode {
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行重装 PyTorch 脚本中"
         . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
     }
@@ -8058,6 +8166,7 @@ function Use-Build-Mode {
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行模型安装脚本中"
         . "$InstallPath/download_models.ps1" -BuildMode @launch_args
     }
@@ -8071,6 +8180,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 SD-Trainer-Script 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" -BuildMode @launch_args
     }
@@ -8083,6 +8193,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 SD-Trainer-Script 更新脚本中"
         . "$InstallPath/update.ps1" -BuildMode @launch_args
     }
@@ -8100,6 +8211,7 @@ function Use-Build-Mode {
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 SD-Trainer-Script 启动脚本中"
         . "$InstallPath/init.ps1" -BuildMode @launch_args
     }
@@ -8166,7 +8278,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -8279,6 +8391,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -DisableEnvCheck
         (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
+
+    -DisableAutoApplyUpdate
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md

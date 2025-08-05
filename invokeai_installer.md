@@ -596,6 +596,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |`-DisableEnvCheck`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题，禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复。|
 |`-DisableGithubMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 Fooocus Installer 自动设置 Github 镜像源。|
 |`-UseCustomGithubMirror` <Github 镜像站地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义的 Github 镜像站地址。<br>可用的 Github 镜像站地址:<br>`https://ghfast.top/https://github.com`<br>`https://mirror.ghproxy.com/https://github.com`<br>`https://ghproxy.net/https://github.com`<br>`https://gh.api.99988866.xyz/https://github.com`<br>`https://gitclone.com/github.com`<br>`https://gh-proxy.com/https://github.com`<br>`https://ghps.cc/https://github.com`<br>`https://gh.idayer.com/https://github.com`|
+|`-DisableAutoApplyUpdate`|(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 自动应用新版本更新|
 |`-Help`|显示 InvokeAI Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 InvokeAI，则在 InvokeAI Installer 所在路径打开 PowerShell，使用参数运行 InvokeAI Installer。

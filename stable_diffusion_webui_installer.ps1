@@ -30,13 +30,14 @@
     [string]$LaunchArg,
     [switch]$EnableShortcut,
     [switch]$DisableCUDAMalloc,
-    [switch]$DisableEnvCheck
+    [switch]$DisableEnvCheck,
+    [switch]$DisableAutoApplyUpdate
 )
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 253
+$SD_WEBUI_INSTALLER_VERSION = 254
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1448,7 +1449,8 @@ param (
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [switch]`$DisableEnvCheck,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -1563,7 +1565,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-DisableUV] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-DisableUV] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -1627,6 +1629,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -DisableEnvCheck
         禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -1763,23 +1768,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -3902,7 +3913,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -4017,7 +4029,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -4060,6 +4072,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             https://wget.la/https://github.com
             https://kkgithub.com
             https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -4170,23 +4185,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -4375,7 +4396,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -4490,7 +4512,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update_extension.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\update_extension.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -4533,6 +4555,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             https://wget.la/https://github.com
             https://kkgithub.com
             https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -4643,23 +4668,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -4906,7 +4937,8 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomGithubMirror,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -5021,7 +5053,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -5068,6 +5100,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
             https://wget.la/https://github.com
             https://kkgithub.com
             https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -5159,23 +5194,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -5802,7 +5843,8 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableUV,
     [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [string]`$UseCustomProxy,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -5898,7 +5940,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -5928,6 +5970,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -6029,23 +6074,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -6891,7 +6942,8 @@ param (
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [switch]`$DisableUpdate,
+    [switch]`$DisableAutoApplyUpdate
 )
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
@@ -6987,7 +7039,7 @@ param (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -7011,6 +7063,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -DisableUpdate
         禁用 SD WebUI Installer 更新检查
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
@@ -7144,23 +7199,29 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
         }
     }
 
-    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
         Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"=========================================>`").Trim()
-        if (`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`") {
-            Print-Msg `"调用 SD WebUI Installer 进行更新中`"
-            . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-            `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-            Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-            Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-            exit 0
-        } else {
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
             Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
         }
     } else {
-        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -8122,6 +8183,16 @@ function Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
 }
 
 
+# 获取 SD WebUI Installer 自动应用更新设置
+function Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting {
+    if (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") {
+        return `"禁用`"
+    } else {
+        return `"启用`"
+    }
+}
+
+
 # 获取启动参数设置
 function Get-Launch-Args-Setting {
     if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
@@ -8417,6 +8488,46 @@ function Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_update.txt`" -Force > `$null
                 Print-Msg `"禁用 SD WebUI Installer 自动更新检查成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
+# SD WebUI Installer 自动应用更新设置
+function Update-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 SD WebUI Installer 自动应用更新设置: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 SD WebUI Installer 自动应用更新`"
+        Print-Msg `"2. 禁用 SD WebUI Installer 自动应用更新`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 SD WebUI Installer 自动应用更新成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force > `$null
+                Print-Msg `"禁用 SD WebUI Installer 自动应用更新成功`"
                 break
             }
             3 {
@@ -8786,6 +8897,7 @@ function Main {
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
         Print-Msg `"SD WebUI Installer 自动检查更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"SD WebUI Installer 自动应用更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting)`"
         Print-Msg `"Stable Diffusion WebUI 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"自动创建 Stable Diffusion WebUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
@@ -8798,15 +8910,16 @@ function Main {
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
         Print-Msg `"5. 进入 SD WebUI Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 Stable Diffusion WebUI 启动参数设置`"
-        Print-Msg `"7. 进入自动创建 Stable Diffusion WebUI 快捷启动方式设置`"
-        Print-Msg `"8. 进入 PyPI 镜像源设置`"
-        Print-Msg `"9. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"10. 进入 Stable Diffusion WebUI 运行环境检测设置`"
-        Print-Msg `"11. 更新 SD WebUI Installer 管理脚本`"
-        Print-Msg `"12. 检查环境完整性`"
-        Print-Msg `"13. 查看 SD WebUI Installer 文档`"
-        Print-Msg `"14. 退出 SD WebUI Installer 设置`"
+        Print-Msg `"6. 进入 SD WebUI Installer 自动应用更新设置`"
+        Print-Msg `"7. 进入 Stable Diffusion WebUI 启动参数设置`"
+        Print-Msg `"8. 进入自动创建 Stable Diffusion WebUI 快捷启动方式设置`"
+        Print-Msg `"9. 进入 PyPI 镜像源设置`"
+        Print-Msg `"10. 进入自动设置 CUDA 内存分配器设置`"
+        Print-Msg `"11. 进入 Stable Diffusion WebUI 运行环境检测设置`"
+        Print-Msg `"12 更新 SD WebUI Installer 管理脚本`"
+        Print-Msg `"13. 检查环境完整性`"
+        Print-Msg `"14. 查看 SD WebUI Installer 文档`"
+        Print-Msg `"15. 退出 SD WebUI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -8831,38 +8944,42 @@ function Main {
                 break
             }
             6 {
-                Update-Stable-Diffusion-WebUI-Launch-Args-Setting
+                Update-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting
                 break
             }
             7 {
-                Auto-Set-Launch-Shortcut-Setting
+                Update-Stable-Diffusion-WebUI-Launch-Args-Setting
                 break
             }
             8 {
-                PyPI-Mirror-Setting
+                Auto-Set-Launch-Shortcut-Setting
                 break
             }
             9 {
-                PyTorch-CUDA-Memory-Alloc-Setting
+                PyPI-Mirror-Setting
                 break
             }
             10 {
-                Stable-Diffusion-WebUI-Env-Check-Setting
+                PyTorch-CUDA-Memory-Alloc-Setting
                 break
             }
             11 {
-                Check-Stable-Diffusion-WebUI-Installer-Update
+                Stable-Diffusion-WebUI-Env-Check-Setting
                 break
             }
             12 {
-                Check-Env
+                Check-Stable-Diffusion-WebUI-Installer-Update
                 break
             }
             13 {
-                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
+                Check-Env
                 break
             }
             14 {
+                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
+                break
+            }
+            15 {
                 `$go_to = 1
                 break
             }
@@ -9836,6 +9953,7 @@ function Use-Build-Mode {
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行重装 PyTorch 脚本中"
         . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
     }
@@ -9847,6 +9965,7 @@ function Use-Build-Mode {
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行模型安装脚本中"
         . "$InstallPath/download_models.ps1" -BuildMode @launch_args
     }
@@ -9860,6 +9979,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 Stable Diffusion WebUI 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" -BuildMode @launch_args
     }
@@ -9872,6 +9992,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 Stable Diffusion WebUI 更新脚本中"
         . "$InstallPath/update.ps1" -BuildMode @launch_args
     }
@@ -9884,6 +10005,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 Stable Diffusion WebUI 插件更新脚本中"
         . "$InstallPath/update_extension.ps1" -BuildMode @launch_args
     }
@@ -9903,6 +10025,7 @@ function Use-Build-Mode {
         if ($EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         Print-Msg "执行 Stable Diffusion WebUI 启动脚本中"
         . "$InstallPath/launch.ps1" -BuildMode @launch_args
     }
@@ -9969,7 +10092,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -10098,6 +10221,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -DisableEnvCheck
         (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
+
+    -DisableAutoApplyUpdate
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 自动应用新版本更新
 
 
 更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
