@@ -35,7 +35,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 297
+$SD_TRAINER_INSTALLER_VERSION = 298
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1081,7 +1081,7 @@ function Check-Install {
         if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
             $content = "--skip-prepare-onnxruntime"
         } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
-            $content = "--inbrowser --language zh-CN"
+            $content = "--inbrowser --language zh-CN --noverify"
         } else {
             $content = "--skip-prepare-onnxruntime"
         }
