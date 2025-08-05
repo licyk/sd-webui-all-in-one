@@ -30,7 +30,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 276
+$INVOKEAI_INSTALLER_VERSION = 277
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -499,6 +499,7 @@ def get_invokeai_require_torch_version() -> str:
     for require in invokeai_requires:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
+            break
 
     if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
@@ -665,20 +666,30 @@ def get_package_name(package: str) -> str:
 
 pytorch_ver = []
 invokeai_requires = requires('invokeai')
+torch_added = False
+torchvision_added = False
+torchaudio_added = False
+xformers_added = False
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch':
-        pytorch_ver.append(require)
+    package_name = get_package_name(require)
 
-    if get_package_name(require) == 'torchvision':
+    if package_name == 'torch' and not torch_added:
         pytorch_ver.append(require)
+        torch_added = True
 
-    if get_package_name(require) == 'torchaudio':
+    if package_name == 'torchvision' and not torchvision_added:
         pytorch_ver.append(require)
+        torchvision_added = True
 
-    if get_package_name(require) == 'xformers':
+    if package_name == 'torchaudio' and not torchaudio_added:
         pytorch_ver.append(require)
+        torchaudio_added = True
+
+    if package_name == 'xformers' and not xformers_added:
+        pytorch_ver.append(require)
+        xformers_added = True
 
 
 ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
@@ -2541,6 +2552,7 @@ def get_invokeai_require_torch_version() -> str:
     for require in invokeai_requires:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
+            break
 
     if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
@@ -2707,20 +2719,30 @@ def get_package_name(package: str) -> str:
 
 pytorch_ver = []
 invokeai_requires = requires('invokeai')
+torch_added = False
+torchvision_added = False
+torchaudio_added = False
+xformers_added = False
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch':
-        pytorch_ver.append(require)
+    package_name = get_package_name(require)
 
-    if get_package_name(require) == 'torchvision':
+    if package_name == 'torch' and not torch_added:
         pytorch_ver.append(require)
+        torch_added = True
 
-    if get_package_name(require) == 'torchaudio':
+    if package_name == 'torchvision' and not torchvision_added:
         pytorch_ver.append(require)
+        torchvision_added = True
 
-    if get_package_name(require) == 'xformers':
+    if package_name == 'torchaudio' and not torchaudio_added:
         pytorch_ver.append(require)
+        torchaudio_added = True
+
+    if package_name == 'xformers' and not xformers_added:
+        pytorch_ver.append(require)
+        xformers_added = True
 
 
 ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
@@ -3978,6 +4000,7 @@ def get_invokeai_require_torch_version() -> str:
     for require in invokeai_requires:
         if get_package_name(require) == 'torch' and has_version(require):
             torch_version = require
+            break
 
     if torch_version.startswith('torch>') and not torch_version.startswith('torch>='):
         return version_increment(get_package_version(torch_version))
@@ -4144,20 +4167,30 @@ def get_package_name(package: str) -> str:
 
 pytorch_ver = []
 invokeai_requires = requires('invokeai')
+torch_added = False
+torchvision_added = False
+torchaudio_added = False
+xformers_added = False
 
 for require in invokeai_requires:
     require = require.split(';')[0].strip()
-    if get_package_name(require) == 'torch':
-        pytorch_ver.append(require)
+    package_name = get_package_name(require)
 
-    if get_package_name(require) == 'torchvision':
+    if package_name == 'torch' and not torch_added:
         pytorch_ver.append(require)
+        torch_added = True
 
-    if get_package_name(require) == 'torchaudio':
+    if package_name == 'torchvision' and not torchvision_added:
         pytorch_ver.append(require)
+        torchvision_added = True
 
-    if get_package_name(require) == 'xformers':
+    if package_name == 'torchaudio' and not torchaudio_added:
         pytorch_ver.append(require)
+        torchaudio_added = True
+
+    if package_name == 'xformers' and not xformers_added:
+        pytorch_ver.append(require)
+        xformers_added = True
 
 
 ver_list = ' '.join([str(x).strip() for x in pytorch_ver])
