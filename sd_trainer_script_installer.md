@@ -510,7 +510,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 SD-Trainer-Script Installer 构建模式下生效，并且只作用于 SD-Trainer-Script Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
 |`-DisableCUDAMalloc`|(仅在 SD-Trainer-Script Installer 构建模式下生效，并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 通过`PYTORCH_CUDA_ALLOC_CONF`环境 变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 SD-Trainer-Script Installer 构建模式下生效，并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中 存在的问题，禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复。|
-|`-DisableAutoApplyUpdate`|(仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 自动应用新版本更新|
+|`-DisableAutoApplyUpdate`|(仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 自动应用新版本更新。|
 |`-Help`|显示 SD-Trainer-Script Installer 可用的命令行参数。|
 
 例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer-Script Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer-Script Installer。

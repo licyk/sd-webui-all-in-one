@@ -22,6 +22,7 @@
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
+    [switch]$InstallHanamizuki,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -37,7 +38,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 254
+$SD_WEBUI_INSTALLER_VERSION = 255
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -9313,7 +9314,7 @@ function global:Test-Github-Mirror {
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if ((Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+    if ((Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
@@ -9470,7 +9471,7 @@ function global:Install-Hanamizuki {
     `$i = 0
 
     if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Print-Msg `"在 `$Env:SD_WEBUI_INSTALLER_ROOT 路径中未找到 stable-diffusion-webui 文件夹, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         return
     }
 
@@ -9886,6 +9887,101 @@ function Copy-Stable-Diffusion-WebUI-Installer-Config {
 }
 
 
+# 安装绘世启动器
+function Install-Hanamizuki {
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe",
+        "https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe",
+        "https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe"
+    )
+    $i = 0
+
+    if (!($InstallHanamizuki)) {
+        return
+    }
+
+    New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
+
+    if (Test-Path "$InstallPath/stable-diffusion-webui/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/stable-diffusion-webui/hanamizuki.exe"))"
+        Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
+    } else {
+        ForEach ($url in $urls) {
+            Print-Msg "下载绘世启动器中"
+            try {
+                Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/stable-diffusion-webui/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/stable-diffusion-webui/hanamizuki.exe"))"
+                Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
+                break
+            }
+            catch {
+                $i += 1
+                if ($i -lt $urls.Length) {
+                    Print-Msg "重试下载绘世启动器中"
+                } else {
+                    Print-Msg "下载绘世启动器失败"
+                    return
+                }
+            }
+        }
+    }
+
+    $content = "
+@echo off
+if exist `"%~dp0`"\stable-diffusion-webui (
+    cd /d `"%~dp0`"\stable-diffusion-webui
+) else (
+    echo Stable Diffusion WebUI not found
+    pause
+    exit 1
+)
+if exist .\hanamizuki.exe (
+    start /B .\hanamizuki.exe
+) else (
+    echo Hanamizuki not found
+    pause
+    exit 1
+)
+    ".Trim()
+
+    Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
+
+    Print-Msg "检查绘世启动器运行环境"
+    if (!(Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe")) {
+        if (Test-Path "$InstallPath/python") {
+            Print-Msg "尝试将 Python 移动至 $InstallPath\stable-diffusion-webui 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/stable-diffusion-webui" -Force
+            if ($?) {
+                Print-Msg "Python 路径移动成功"
+            } else {
+                Print-Msg "Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境"
+                Print-Msg "请关闭所有占用 Python 的进程, 并重新运行该命令"
+            }
+        } else {
+            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境"
+        }
+    }
+
+    if (!(Test-Path "$InstallPath/stable-diffusion-webui/git/bin/git.exe")) {
+        if (Test-Path "$InstallPath/git") {
+            Print-Msg "尝试将 Git 移动至 $InstallPath\stable-diffusion-webui 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/stable-diffusion-webui" -Force
+            if ($?) {
+                Print-Msg "Git 路径移动成功"
+            } else {
+                Print-Msg "Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境"
+                Print-Msg "请关闭所有占用 Git 的进程, 并重新运行该命令"
+            }
+        } else {
+            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境"
+        }
+    }
+
+    Print-Msg "检查绘世启动器运行环境结束"
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
@@ -9917,8 +10013,10 @@ function Use-Install-Mode {
 
     if ($BuildMode) {
         Use-Build-Mode
+        Install-Hanamizuki
         Print-Msg "SD WebUI 环境构建完成, 路径: $InstallPath"
     } else {
+        Install-Hanamizuki
         Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $InstallPath"
     }
 
@@ -10092,7 +10190,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -10200,6 +10298,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -xFormersPackage <xFormers 软件包>
         (需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
+
+    -InstallHanamizuki
+        安装绘世启动器, 并生成 hanamizuki.bat 用于启动绘世启动器
 
     -DisableUpdate
         (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 更新检查
