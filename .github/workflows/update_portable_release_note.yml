@@ -1,0 +1,42 @@
+name: Update Portable Release Note
+
+on:
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+  # UTC 17:00 -> CST (China) 1:00, see https://datetime360.com/cn/utc-cst-china-time/
+  # https://docs.github.com/zh/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
+  - cron: '20 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  Update-Portable-Release-Note:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files in the repository
+        run: |
+          ls "${{ github.workspace }}"
+
+      - name: Update Portable Release Note
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          portable_list_file="${{ github.workspace }}/portable_list.json"
+          release_note_file="${{ github.workspace }}/portable_release_note.md"
+          curl -L https://github.com/licyk/t/raw/gh-pages/sd_portable/portable_list.json -o "${portable_list_file}"
+          update_time=$(jq -r '.update_time' "${portable_list_file}")
+
+          echo "**详细说明与使用请阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)**" > "${release_note_file}"
+          echo "---" >> "${release_note_file}"
+          echo "更新时间: \`${update_time}\`" >> "${release_note_file}"
+          echo "|Stable 版整合包|最新版本|" >> "${release_note_file}"
+          echo "|---|---|" >> "${release_note_file}"
+          jq -r '.stable | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
+          echo "" >> "${release_note_file}"
+          echo "|Nightly 版整合包|最新版本|" >> "${release_note_file}"
+          echo "|---|---|" >> "${release_note_file}"
+          jq -r '.nightly | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
+
+          gh release edit portable --notes-file "${release_note_file}" --repo "licyk/sd-webui-all-in-one"
