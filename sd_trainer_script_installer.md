@@ -430,7 +430,7 @@ SD-Trainer-Script Installer 的管理脚本在启动时会检查管理脚本的�
 
 
 ### 1. 直接更新
-当检测到有新版的 SD-Trainer-Script Installer 时，将询问是否进行更新，输入`y`并回车后将运行 SD-Trainer-Script Installer 进行更新。
+当检测到有新版的 SD-Trainer-Script Installer 时将自动更新。如果需要手动确认 SD-Trainer-Script Installer 更新，可在脚本同级的目录创建`disable_auto_apply_update.txt`文件。
 
 
 ### 2. 使用 SD-Trainer-Script Installer 配置管理器进行更新
