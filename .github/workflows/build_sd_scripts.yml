@@ -56,7 +56,7 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+          & "${{ github.workspace }}/.github/archive_portable.ps1" `
             -SoftwareName "sd_scripts" `
             -Workspace "${{ github.workspace }}" `
             -Source "${{ github.workspace }}/sd_scripts" `

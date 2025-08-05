@@ -73,7 +73,7 @@ jobs:
       - name: Download VAE approx model
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/.gituhb/install_vae_approx_model.ps1" `
+          & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
             -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_classic/stable-diffusion-webui/models/VAE-approx"
 
       - name: Make docs
@@ -84,7 +84,7 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+          & "${{ github.workspace }}/.github/archive_portable.ps1" `
             -SoftwareName "sd_webui_forge_classic" `
             -Workspace "${{ github.workspace }}" `
             -Source "${{ github.workspace }}/sd_webui_forge_classic" `
