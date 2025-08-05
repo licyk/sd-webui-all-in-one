@@ -45,7 +45,7 @@ _✨一键安装 SD-Trainer_
     - [2. 使用 SD-Trainer Installer 配置管理器进行更新](#2-使用-sd-trainer-installer-配置管理器进行更新)
     - [3. 运行 SD-Trainer Installer 进行更新](#3-运行-sd-trainer-installer-进行更新)
     - [4. 使用命令更新](#4-使用命令更新)
-    - [禁用 SD-Trainer Installer 更新检查](#禁用-sd-trainer-installer-更新检查)
+    - [禁用 SD-Trainer Installer 更新检查 / 自动应用更新](#禁用-sd-trainer-installer-更新检查--自动应用更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
   - [管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)
@@ -219,7 +219,7 @@ $ tree -L 1
 
 
 ## 设置 SD-Trainer 启动参数
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 要设置 SD-Trainer 的启动参数，可以在和`launch.ps1`脚本同级的目录创建一个`launch_args.txt`文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
@@ -292,7 +292,7 @@ $ tree -L 2
 
 
 ## 设置 HuggingFace 镜像
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 SD-Trainer Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建`hf_mirror.txt`文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
@@ -306,7 +306,7 @@ SD-Trainer Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜�
 
 
 ## 设置 Github 镜像源
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新 SD-Trainer 的速度，默认在启动脚本时自动检测可用的 Github 镜像源并设置。如果需要自定义 Github 镜像源，可以在和脚本同级的目录创建`gh_mirror.txt`文件，在文件中填写 Github 镜像源的地址后保存，再次启动脚本时将取消自动检测可用的 Github 镜像源，而是读取该文件的配置并设置 Github 镜像源。
@@ -334,7 +334,7 @@ SD-Trainer Installer 为了加速访问 Github 的速度，加快下载和更新
 
 
 ## 设置 PyPI 镜像源
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 SD-Trainer Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包，如果需要禁用 PyPI 镜像源，可以在脚本同级目录创建`disable_pypi_mirror.txt`文件，再次运行脚本时将 PyPI 源切换至官方源。
@@ -348,7 +348,7 @@ SD-Trainer Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包
 
 
 ### 2. 使用配置文件
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 在和脚本同级的路径中创建一个`proxy.txt`文件，在文件中填写代理地址，如`http://127.0.0.1:10809`，保存后运行脚本，这时候脚本会自动读取这个配置文件中的代理配置并设置代理。
@@ -358,7 +358,7 @@ SD-Trainer Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包
 
 
 ### 禁用自动设置代理
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 在和脚本同级的路径中创建一个`disable_proxy.txt`文件，再次启动脚本时将禁用设置代理。
@@ -496,7 +496,7 @@ SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新�
 
 
 ### 1. 直接更新
-当检测到有新版的 SD-Trainer Installer 时将自动更新。如果需要手动确认 SD-Trainer Installer 更新，可在脚本同级的目录创建`disable_auto_apply_update.txt`文件。
+当检测到有新版的 SD-Trainer Installer 时将自动应用更新。
 
 
 ### 2. 使用 SD-Trainer Installer 配置管理器进行更新
@@ -511,18 +511,20 @@ SD-Trainer Installer 的管理脚本在启动时会检查管理脚本的更新�
 参考[命令的使用](#命令的使用)的方法进入 SD-Trainer Env，并运行`Check-SD-Trainer-Installer-Update`命令进行更新。
 
 
-### 禁用 SD-Trainer Installer 更新检查
+### 禁用 SD-Trainer Installer 更新检查 / 自动应用更新
 >[!WARNING]  
 >通常不建议禁用 SD-Trainer Installer 的更新检查，当 SD-Trainer 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 如果要禁用更新检查，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 SD-Trainer Installer 更新检查。
 
+如果需要手动确认 SD-Trainer Installer 更新，可在脚本同级的目录创建`disable_auto_apply_update.txt`文件，这将禁用自动应用更新，需要手动输入`y`才会应用更新。
+
 
 ## 设置 uv 包管理器
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
@@ -534,12 +536,12 @@ SD-Trainer Installer 默认使用了 uv 作为 Python 包管理器，大大加�
 
 
 ## 创建快捷启动方式
->[!NOTE]  
+>[!IMPORTANT]  
 >该设置可通过[管理 SD-Trainer Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
 
 在脚本同级目录创建`enable_shortcut.txt`文件，当运行`launch.ps1`时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 SD-Trainer。
 
->[!IMPORTANT]  
+>[!WARNING]  
 >如果 SD-Trainer 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
 
 
