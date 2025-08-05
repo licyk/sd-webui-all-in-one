@@ -57,7 +57,7 @@ jobs:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          & "${{ github.workspace }}/sd_webui_forge_classic/python/python.exe" -m pip install insightface
+          & "${{ github.workspace }}/sd_webui_forge_classic/stable-diffusion-webui/python/python.exe" -m pip install insightface
 
       - name: Launch to complete dependencies
         shell: pwsh

@@ -56,7 +56,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
           Set-Location -Path "${{ github.workspace }}/comfyui"
-          & "${{ github.workspace }}/comfyui/python/python.exe" "${{ github.workspace }}/comfyui/ComfyUI/main.py" --quick-test-for-ci --cpu
+          & "${{ github.workspace }}/comfyui/ComfyUI/python/python.exe" "${{ github.workspace }}/comfyui/ComfyUI/main.py" --quick-test-for-ci --cpu
 
       - name: Launch to complete dependencies
         shell: pwsh
