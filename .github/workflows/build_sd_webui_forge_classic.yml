@@ -48,6 +48,7 @@ jobs:
             -NoPreDownloadModel `
             -DisablePyPIMirror `
             -DisableGithubMirror `
+            -InstallHanamizuki `
             -DisableHuggingFaceMirror
 
       - name: Install Insightface
@@ -69,33 +70,11 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
-      - name: Install Hanamizuki
-        shell: pwsh
-        run: |
-          . "${{ github.workspace }}/sd_webui_forge_classic/activate.ps1"
-          Install-Hanamizuki
-
       - name: Download VAE approx model
         shell: pwsh
         run: |
-          $model_list = @(
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/model.pt",
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sd3.pt",
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sdxl.pt"
-          )
-          $vae_approx_path = "${{ github.workspace }}/sd_webui_forge_classic/stable-diffusion-webui/models/VAE-approx"
-          New-Item -ItemType Directory -Path "$vae_approx_path" -Force
-
-          ForEach ($url in $model_list) {
-              $filename = Split-Path $url -Leaf
-              $model_path = Join-Path -Path $vae_approx_path -ChildPath $filename
-              if (Test-Path $model_path) {
-                  Write-Host "$filename 已存在于 $vae_approx_path"
-              } else {
-                  Write-Host "下载 $filename 到 $vae_approx_path 中"
-                  Invoke-WebRequest -Uri $url -OutFile $model_path
-              }
-          }
+          & "${{ github.workspace }}/.gituhb/install_vae_approx_model.ps1" `
+            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_classic/stable-diffusion-webui/models/VAE-approx"
 
       - name: Make docs
         shell: pwsh
@@ -105,12 +84,12 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "sd_webui_forge_classic-licyk-${build_time}"
-          $protable_name = "${package_name}-nightly.7z"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui_forge_classic" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_webui_forge_classic/${protable_name}" "${{ github.workspace }}/${package_name}"
+          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+            -SoftwareName "sd_webui_forge_classic" `
+            -Workspace "${{ github.workspace }}" `
+            -Source "${{ github.workspace }}/sd_webui_forge_classic" `
+            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+            -Author "licyk"
 
       - name: Install HuggingFace and ModelScope library
         shell: pwsh

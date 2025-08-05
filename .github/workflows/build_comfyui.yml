@@ -46,6 +46,7 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
+            -InstallHanamizuki `
             -NoPreDownloadModel
 
       - name: Launch ComfyUI to init custom nodes
@@ -68,12 +69,6 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
-      - name: Install Hanamizuki
-        shell: pwsh
-        run: |
-          . "${{ github.workspace }}/comfyui/activate.ps1"
-          Install-Hanamizuki
-
       - name: Make docs
         shell: pwsh
         run: |
@@ -82,12 +77,12 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "comfyui-licyk-${build_time}"
-          $protable_name = "${package_name}-nightly.7z"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/comfyui" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/comfyui/${protable_name}" "${{ github.workspace }}/${package_name}"
+          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+            -SoftwareName "comfyui" `
+            -Workspace "${{ github.workspace }}" `
+            -Source "${{ github.workspace }}/comfyui" `
+            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+            -Author "licyk"
 
       - name: Install HuggingFace and ModelScope library
         shell: pwsh

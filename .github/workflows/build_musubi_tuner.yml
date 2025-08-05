@@ -56,12 +56,12 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "musubi_tuner-licyk-${build_time}"
-          $protable_name = "${package_name}-nightly.7z"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/musubi_tuner" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/musubi_tuner/${protable_name}" "${{ github.workspace }}/${package_name}"
+          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+            -SoftwareName "musubi_tuner" `
+            -Workspace "${{ github.workspace }}" `
+            -Source "${{ github.workspace }}/musubi_tuner" `
+            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+            -Author "licyk"
 
       - name: Install HuggingFace and ModelScope library
         shell: pwsh

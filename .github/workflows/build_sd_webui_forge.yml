@@ -48,6 +48,7 @@ jobs:
             -NoPreDownloadModel `
             -DisablePyPIMirror `
             -DisableGithubMirror `
+            -InstallHanamizuki `
             -DisableHuggingFaceMirror
 
       - name: Install Insightface
@@ -61,28 +62,9 @@ jobs:
       - name: Install OpenPose Editor Assets
         shell: pwsh
         run: |
-          function Install-OpenPose-Editor-Assets ($temp_path, $install_path) {
-              $url = "https://github.com/huchenlei/sd-webui-openpose-editor/releases/download/v0.3.0/dist.zip"
-              $archive_path = "${temp_path}/dist_archive.zip"
-              $expand_path = "${temp_path}/editor_dist"
-
-              if (!(Test-Path $temp_path)) {
-                  New-Item -ItemType Directory -Path $temp_path -Force
-              }
-
-              try {
-                  Invoke-WebRequest -Uri $url -OutFile $archive_path
-                  Expand-Archive -Path $archive_path -DestinationPath $expand_path -Force
-                  Move-Item -Path $expand_path -Destination $install_path -Force
-              }
-              catch {
-                  Write-Host "安装 OpenPose Editor 资源出现错误: $_"
-              }
-          }
-
-          Install-OpenPose-Editor-Assets `
-            "${{ github.workspace }}/temp" `
-            "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/extensions/sd-webui-openpose-editor/dist"
+          & "${{ github.workspace }}/.gituhb/install_openpose_editor_assets.ps1" `
+            -TempPath "${{ github.workspace }}/temp" `
+            -InstallPath "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/extensions/sd-webui-openpose-editor/dist"
 
       - name: Launch to complete dependencies
         shell: pwsh
@@ -95,33 +77,11 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
-      - name: Install Hanamizuki
-        shell: pwsh
-        run: |
-          . "${{ github.workspace }}/sd_webui_forge/activate.ps1"
-          Install-Hanamizuki
-
       - name: Download VAE approx model
         shell: pwsh
         run: |
-          $model_list = @(
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/model.pt",
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sd3.pt",
-              "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sdxl.pt"
-          )
-          $vae_approx_path = "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/models/VAE-approx"
-          New-Item -ItemType Directory -Path "$vae_approx_path" -Force
-
-          ForEach ($url in $model_list) {
-              $filename = Split-Path $url -Leaf
-              $model_path = Join-Path -Path $vae_approx_path -ChildPath $filename
-              if (Test-Path $model_path) {
-                  Write-Host "$filename 已存在于 $vae_approx_path"
-              } else {
-                  Write-Host "下载 $filename 到 $vae_approx_path 中"
-                  Invoke-WebRequest -Uri $url -OutFile $model_path
-              }
-          }
+          & "${{ github.workspace }}/.gituhb/install_vae_approx_model.ps1" `
+            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge/stable-diffusion-webui/models/VAE-approx"
 
       - name: Make docs
         shell: pwsh
@@ -131,12 +91,12 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-          $package_name = "sd_webui_forge-licyk-${build_time}"
-          $protable_name = "${package_name}-nightly.7z"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/sdnote/portable/nightly" -Force
-          Move-Item -Path "${{ github.workspace }}/sd_webui_forge" -Destination "${{ github.workspace }}/${package_name}" -Force
-          7z a -t7z -bsp1 "${{ github.workspace }}/sdnote/portable/nightly/sd_webui_forge/${protable_name}" "${{ github.workspace }}/${package_name}"
+          & "${{ github.workspace }}/.gituhb/archive_portable.ps1" `
+            -SoftwareName "sd_webui_forge" `
+            -Workspace "${{ github.workspace }}" `
+            -Source "${{ github.workspace }}/sd_webui_forge" `
+            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+            -Author "licyk"
 
       - name: Install HuggingFace and ModelScope library
         shell: pwsh
