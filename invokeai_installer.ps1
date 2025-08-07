@@ -555,6 +555,7 @@ def get_pytorch_mirror_type() -> str:
     elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
         # torch >= 2.7.0
         return 'cu128'
+    # TODO: 更新类型分配
 
 
 
@@ -2625,6 +2626,7 @@ def get_pytorch_mirror_type() -> str:
     elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
         # torch >= 2.7.0
         return 'cu128'
+    # TODO: 更新类型分配
 
 
 
@@ -2705,6 +2707,19 @@ if __name__ == '__main__':
                 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
                 `$PIP_EXTRA_INDEX_MIRROR_CU128
+            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
+        }
+        cu129 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu129`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU
+            } else {
+                `PIP_EXTRA_INDEX_MIRROR_CU129
             }
             `$mirror_uv_default_index = `$mirror_pip_index_url
             `$mirror_pip_extra_index_url = `"`"
@@ -4077,6 +4092,7 @@ def get_pytorch_mirror_type() -> str:
     elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
         # torch >= 2.7.0
         return 'cu128'
+    # TODO: 更新类型分配
 
 
 
@@ -4157,6 +4173,19 @@ if __name__ == '__main__':
                 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
                 `$PIP_EXTRA_INDEX_MIRROR_CU128
+            }
+            `$mirror_uv_default_index = `$mirror_pip_index_url
+            `$mirror_pip_extra_index_url = `"`"
+            `$mirror_uv_index = `$mirror_pip_extra_index_url
+            `$mirror_pip_find_links = `"`"
+            `$mirror_uv_find_links = `$mirror_pip_find_links
+        }
+        cu129 {
+            Print-Msg `"设置 PyTorch 镜像源类型为 cu129`"
+            `$mirror_pip_index_url = if (`$USE_PIP_MIRROR) {
+                `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU
+            } else {
+                `PIP_EXTRA_INDEX_MIRROR_CU129
             }
             `$mirror_uv_default_index = `$mirror_pip_index_url
             `$mirror_pip_extra_index_url = `"`"

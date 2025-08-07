@@ -5552,6 +5552,53 @@ function Get-PyTorch-List {
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.8.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.8.0+xpu torchvision==0.23.0+xpu torchaudio==2.8.0+xpu`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.8.0 (CUDA 12.6)`"
+        `"type`" = `"cu126`"
+        `"torch`" = `"torch==2.8.0+cu126 torchvision==0.23.0+cu126 torchaudio==2.8.0+cu126`"
+        `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.8.0 (CUDA 12.8)`"
+        `"type`" = `"cu128`"
+        `"torch`" = `"torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128`"
+        `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.8.0 (CUDA 12.9)`"
+        `"type`" = `"cu129`"
+        `"torch`" = `"torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129`"
+        # `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU129
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
     return `$pytorch_list
 }
 
