@@ -5032,8 +5032,432 @@ except:
     if (`$torch_ver -eq `"None`") { `$torch_ver = `"未安装`" }
     if (`$xformers_ver -eq `"None`") { `$xformers_ver = `"未安装`" }
 
-    Print-Msg `"当前 PyTorch 版本: `$torch_ver`"
-    Print-Msg `"当前 xFormers 版本: `$xformers_ver`"
+    return `$torch_ver, `$xformers_ver
+}
+
+
+# 获取 HashTable 的值
+function Get-HashValue {
+    param(
+        [hashtable]`$Hashtable,
+        [string]`$Key,
+        [object]`$Default = `$null
+    )
+
+    if (`$Hashtable.ContainsKey(`$Key)) {
+        return `$Hashtable[`$Key]
+    } else {
+        return `$Default
+    }
+}
+
+
+function Get-PyTorch-List {
+    `$pytorch_list = New-Object System.Collections.ArrayList
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14`"
+        `"type`" = `"cu113`"
+        `"torch`" = `"torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==1.12.1+cu113`"
+        `"xformers`" = `"xformers==0.0.14`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 1.13.1 (DirectML)`"
+        `"type`" = `"directml`"
+        `"torch`" = `"torch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 torch-directml==0.1.13.1.dev230413`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16`"
+        `"type`" = `"cu117`"
+        `"torch`" = `"torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==1.13.1+cu117`"
+        `"xformers`" = `"xformers==0.0.18`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.0 (DirectML)`"
+        `"type`" = `"directml`"
+        `"torch`" = `"torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.0 torch-directml==0.2.0.dev230426`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.0.0a0+gite9ebda2 torchvision==0.15.2a0+fa99a53 intel_extension_for_pytorch==2.0.110+gitc6ea20b`"
+        `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.0+cu118`"
+        `"xformers`" = `"xformers==0.0.14`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.1+cu118`"
+        `"xformers`" = `"xformers==0.0.22`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.1.0a0+cxx11.abi torchvision==0.16.0a0+cxx11.abi torchaudio==2.1.0a0+cxx11.abi intel_extension_for_pytorch==2.1.10+xpu`"
+        `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.0 (Intel Core Ultra)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.1.0a0+git7bcf7da torchvision==0.16.0+fbb4cc5 torchaudio==2.1.0+6ea1133 intel_extension_for_pytorch==2.1.20+git4849f3b`"
+        `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.1.1+cu118 torchvision==0.16.1+cu118 torchaudio==2.1.1+cu118`"
+        `"xformers`" = `"xformers==0.0.23+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
+        `"xformers`" = `"xformers===0.0.23`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118`"
+        `"xformers`" = `"xformers==0.0.23.post1+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
+        `"xformers`" = `"xformers===0.0.23.post1`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118`"
+        `"xformers`" = `"xformers==0.0.24+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
+        `"xformers`" = `"xformers===0.0.24`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1+cu118`"
+        `"xformers`" = `"xformers==0.0.25+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.1 (DirectML)`"
+        `"type`" = `"directml`"
+        `"torch`" = `"torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
+        `"xformers`" = `"xformers===0.0.25`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118`"
+        `"xformers`" = `"xformers==0.0.25.post1+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
+        `"xformers`" = `"xformers===0.0.25.post1`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
+        `"xformers`" = `"xformers==0.0.26.post1+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
+        `"xformers`" = `"xformers===0.0.26.post1`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.1 (DirectML)`"
+        `"type`" = `"directml`"
+        `"torch`" = `"torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 torch-directml==0.2.3.dev240715`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
+        `"xformers`" = `"xformers==0.0.27+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
+        `"xformers`" = `"xformers===0.0.27`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_CU121
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
+        `"xformers`" = `"xformers==0.0.27.post2+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2`"
+        `"type`" = `"cu121`"
+        `"torch`" = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
+        `"xformers`" = `"xformers==0.0.27.post2`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_CU121
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1`"
+        `"type`" = `"cu124`"
+        `"torch`" = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
+        `"xformers`" = `"xformers==0.0.28.post1`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2`"
+        `"type`" = `"cu124`"
+        `"torch`" = `"torch==2.5.0+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.0+cu124`"
+        `"xformers`" = `"xformers==0.0.28.post2`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3`"
+        `"type`" = `"cu124`"
+        `"torch`" = `"torch==2.5.1+cu124 torchvision==0.20.1+cu124 torchaudio==2.5.1+cu124`"
+        `"xformers`" = `"xformers==0.0.28.post3`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.6.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.6.0+xpu torchvision==0.21.0+xpu torchaudio==2.6.0+xpu`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3`"
+        `"type`" = `"cu124`"
+        `"torch`" = `"torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124`"
+        `"xformers`" = `"xformers==0.0.29.post3`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU124
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3`"
+        `"type`" = `"cu126`"
+        `"torch`" = `"torch==2.6.0+cu126 torchvision==0.21.0+cu126 torchaudio==2.6.0+cu126`"
+        `"xformers`" = `"xformers==0.0.29.post3`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.7.0+xpu torchvision==0.22.0+xpu torchaudio==2.7.0+xpu`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.0 (CUDA 11.8)`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.7.0+cu118 torchvision==0.22.0+cu118 torchaudio==2.7.0+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.0 (CUDA 12.6) + xFormers 0.0.30`"
+        `"type`" = `"cu126`"
+        `"torch`" = `"torch==2.7.0+cu126 torchvision==0.22.0+cu126 torchaudio==2.7.0+cu126`"
+        `"xformers`" = `"xformers==0.0.30`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.0 (CUDA 12.8) + xFormers 0.0.30`"
+        `"type`" = `"cu128`"
+        `"torch`" = `"torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128`"
+        `"xformers`" = `"xformers==0.0.30`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.1 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"torch`" = `"torch==2.7.1+xpu torchvision==0.22.1+xpu torchaudio==2.7.1+xpu`"
+        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.1 (CUDA 11.8)`"
+        `"type`" = `"cu118`"
+        `"torch`" = `"torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU118
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.1 (CUDA 12.6) + xFormers 0.0.31.post1`"
+        `"type`" = `"cu126`"
+        `"torch`" = `"torch==2.7.1+cu126 torchvision==0.22.1+cu126 torchaudio==2.7.1+cu126`"
+        `"xformers`" = `"xformers==0.0.31.post1`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.1 (CUDA 12.8) + xFormers 0.0.31.post1`"
+        `"type`" = `"cu128`"
+        `"torch`" = `"torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128`"
+        `"xformers`" = `"xformers==0.0.31.post1`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    return `$pytorch_list
+}
+
+
+# 列出 PyTorch 列表
+function List-PyTorch (`$pytorch_list) {
+    Print-Msg `"PyTorch 版本列表`"
+    Write-Host `"-----------------------------------------------------`"
+    Write-Host `"版本序号`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"PyTorch 版本`" -ForegroundColor White
+    for (`$i = 0; `$i -lt `$pytorch_list.Count; `$i++) {
+        `$pytorch_hashtables = `$pytorch_list[`$i]
+        `$count += 1
+        `$name = Get-HashValue -Hashtable `$pytorch_hashtables -Key `"name`"
+        Write-Host `"- `${count}、`" -ForegroundColor Yellow -NoNewline
+        Write-Host `"`$name`" -ForegroundColor White
+    }
+    Write-Host `"-----------------------------------------------------`"
 }
 
 
@@ -5050,63 +5474,28 @@ function Main {
     Set-uv
     PyPI-Mirror-Status
 
-    # PyTorch 版本列表
-    `$content = `"
------------------------------------------------------
-- 1、Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14
-- 2、Torch 1.13.1 (DirectML)
-- 3、Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16
-- 4、Torch 2.0.0 (DirectML)
-- 5、Torch 2.0.0 (Intel Arc)
-- 6、Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18
-- 7、Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22
-- 8、Torch 2.1.0 (Intel Arc)
-- 9、Torch 2.1.0 (Intel Core Ultra)
-- 10、Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23
-- 11、Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23
-- 12、Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1
-- 13、Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1
-- 14、Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24
-- 15、Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24
-- 16、Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25
-- 17、Torch 2.2.1 (DirectML)
-- 18、Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25
-- 19、Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1
-- 20、Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1
-- 21、Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1
-- 22、Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1
-- 23、Torch 2.3.1 (DirectML)
-- 24、Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27
-- 25、Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27
-- 26、Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2
-- 27、Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2
-- 28、Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1
-- 29、Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2
-- 30、Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3
-- 31、Torch 2.6.0 (Intel Arc)
-- 32、Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3
-- 33、Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3
-- 34、Torch 2.7.0 (Intel Arc)
-- 35、Torch 2.7.0 (CUDA 11.8)
-- 36、Torch 2.7.0 (CUDA 12.6) + xFormers 0.0.30
-- 37、Torch 2.7.0 (CUDA 12.8) + xFormers 0.0.30
-- 38、Torch 2.7.1 (Intel Arc)
-- 39、Torch 2.7.1 (CUDA 11.8)
-- 40、Torch 2.7.1 (CUDA 12.6) + xFormers 0.0.31.post1
-- 41、Torch 2.7.1 (CUDA 12.8) + xFormers 0.0.31.post1
------------------------------------------------------
-    `".Trim()
-
+    `$pytorch_list = Get-PyTorch-List
+    `$go_to = 0
     `$to_exit = 0
     `$torch_ver = `"`"
     `$xformers_ver = `"`"
     `$cuda_support_ver = Get-Drive-Support-CUDA-Version
+    `$current_torch_ver, `$current_xformers_ver = Get-PyTorch-And-xFormers-Version
+    `$after_list_model_option = `"`"
 
     while (`$True) {
-        Print-Msg `"PyTorch 版本列表`"
-        `$go_to = 0
-        Write-Host `$content
-        Get-PyTorch-And-xFormers-Version
+        switch (`$after_list_model_option) {
+            display_input_error {
+                Print-Msg `"输入有误, 请重试`"
+            }
+            Default {
+                break
+            }
+        }
+        `$after_list_model_option = `"`"
+        List-PyTorch `$pytorch_list
+        Print-Msg `"当前 PyTorch 版本: `$current_torch_ver`"
+        Print-Msg `"当前 xFormers 版本: `$current_xformers_ver`"
         Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$cuda_support_ver`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
@@ -5122,450 +5511,54 @@ function Main {
         }
 
         switch (`$arg) {
-            1 {
-                `$torch_ver = `"torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==1.12.1+cu113`"
-                `$xformers_ver = `"xformers==0.0.14`"
-                `$go_to = 1
-            }
-            2 {
-                `$torch_ver = `"torch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 torch-directml==0.1.13.1.dev230413`"
-                `$xformers_ver = `"`"
-                `$go_to = 1
-            }
-            3 {
-                `$torch_ver = `"torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==1.13.1+cu117`"
-                `$xformers_ver = `"xformers==0.0.18`"
-                `$go_to = 1
-            }
-            4 {
-                `$torch_ver = `"torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.0 torch-directml==0.2.0.dev230426`"
-                `$xformers_ver = `"`"
-                `$go_to = 1
-            }
-            5 {
-                `$torch_ver = `"torch==2.0.0a0+gite9ebda2 torchvision==0.15.2a0+fa99a53 intel_extension_for_pytorch==2.0.110+gitc6ea20b`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$go_to = 1
-            }
-            6 {
-                `$torch_ver = `"torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.0+cu118`"
-                `$xformers_ver = `"xformers==0.0.14`"
-                `$go_to = 1
-            }
-            7 {
-                `$torch_ver = `"torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.1+cu118`"
-                `$xformers_ver = `"xformers==0.0.22`"
-                `$go_to = 1
-            }
-            8 {
-                `$torch_ver = `"torch==2.1.0a0+cxx11.abi torchvision==0.16.0a0+cxx11.abi torchaudio==2.1.0a0+cxx11.abi intel_extension_for_pytorch==2.1.10+xpu`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$go_to = 1
-            }
-            9 {
-                `$torch_ver = `"torch==2.1.0a0+git7bcf7da torchvision==0.16.0+fbb4cc5 torchaudio==2.1.0+6ea1133 intel_extension_for_pytorch==2.1.20+git4849f3b`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$Env:UV_FIND_LINKS = `"https://licyk.github.io/t/pypi/index.html`"
-                `$go_to = 1
-            }
-            10 {
-                `$torch_ver = `"torch==2.1.1+cu118 torchvision==0.16.1+cu118 torchaudio==2.1.1+cu118`"
-                `$xformers_ver = `"xformers==0.0.23+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            11 {
-                `$torch_ver = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
-                `$xformers_ver = `"xformers===0.0.23`"
-                `$go_to = 1
-            }
-            12 {
-                `$torch_ver = `"torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118`"
-                `$xformers_ver = `"xformers==0.0.23.post1+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            13 {
-                `$torch_ver = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
-                `$xformers_ver = `"xformers===0.0.23.post1`"
-                `$go_to = 1
-            }
-            14 {
-                `$torch_ver = `"torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118`"
-                `$xformers_ver = `"xformers==0.0.24+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            15 {
-                `$torch_ver = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
-                `$xformers_ver = `"xformers===0.0.24`"
-                `$go_to = 1
-            }
-            16 {
-                `$torch_ver = `"torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1+cu118`"
-                `$xformers_ver = `"xformers==0.0.25+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            17 {
-                `$torch_ver = `"torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
-                `$xformers_ver = `"`"
-                `$go_to = 1
-            }
-            18 {
-                `$torch_ver = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
-                `$xformers_ver = `"xformers===0.0.25`"
-                `$go_to = 1
-            }
-            19 {
-                `$torch_ver = `"torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118`"
-                `$xformers_ver = `"xformers==0.0.25.post1+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            20 {
-                `$torch_ver = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
-                `$xformers_ver = `"xformers===0.0.25.post1`"
-                `$go_to = 1
-            }
-            21 {
-                `$torch_ver = `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
-                `$xformers_ver = `"xformers==0.0.26.post1+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            22 {
-                `$torch_ver = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
-                `$xformers_ver = `"xformers===0.0.26.post1`"
-                `$go_to = 1
-            }
-            23 {
-                `$torch_ver = `"torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 torch-directml==0.2.3.dev240715`"
-                `$xformers_ver = `"torch==2.3.1 torchvision==0.18.1 torch-directml==0.2.3.dev240715`"
-                `$go_to = 1
-            }
-            24 {
-                `$torch_ver = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
-                `$xformers_ver = `"xformers==0.0.27+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            25 {
-                `$torch_ver = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
-                `$xformers_ver = `"xformers===0.0.27`"
-                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            26 {
-                `$torch_ver = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
-                `$xformers_ver = `"xformers==0.0.27.post2+cu118`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            27 {
-                `$torch_ver = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
-                `$xformers_ver = `"xformers==0.0.27.post2`"
-                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_CU121
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            28 {
-                `$torch_ver = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
-                `$xformers_ver = `"xformers==0.0.28.post1`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            29 {
-                `$torch_ver = `"torch==2.5.0+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.0+cu124`"
-                `$xformers_ver = `"xformers==0.0.28.post2`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            30 {
-                `$torch_ver = `"torch==2.5.1+cu124 torchvision==0.20.1+cu124 torchaudio==2.5.1+cu124`"
-                `$xformers_ver = `"xformers==0.0.28.post3`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            31 {
-                `$torch_ver = `"torch==2.6.0+xpu torchvision==0.21.0+xpu torchaudio==2.6.0+xpu`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_XPU
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            32 {
-                `$torch_ver = `"torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124`"
-                `$xformers_ver = `"xformers==0.0.29.post3`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU124
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            33 {
-                `$torch_ver = `"torch==2.6.0+cu126 torchvision==0.21.0+cu126 torchaudio==2.6.0+cu126`"
-                `$xformers_ver = `"xformers==0.0.29.post3`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            34 {
-                `$torch_ver = `"torch==2.7.0+xpu torchvision==0.22.0+xpu torchaudio==2.7.0+xpu`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_XPU
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            35 {
-                `$torch_ver = `"torch==2.7.0+cu118 torchvision==0.22.0+cu118 torchaudio==2.7.0+cu118`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            36 {
-                `$torch_ver = `"torch==2.7.0+cu126 torchvision==0.22.0+cu126 torchaudio==2.7.0+cu126`"
-                `$xformers_ver = `"xformers==0.0.30`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            37 {
-                `$torch_ver = `"torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128`"
-                `$xformers_ver = `"xformers==0.0.30`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU128
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            38 {
-                `$torch_ver = `"torch==2.7.1+xpu torchvision==0.22.1+xpu torchaudio==2.7.1+xpu`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_INDEX_URL = `$PIP_EXTRA_INDEX_MIRROR_XPU
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            39 {
-                `$torch_ver = `"torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118`"
-                `$xformers_ver = `"`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU118
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            40 {
-                `$torch_ver = `"torch==2.7.1+cu126 torchvision==0.22.1+cu126 torchaudio==2.7.1+cu126`"
-                `$xformers_ver = `"xformers==0.0.31.post1`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU126
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
-            41 {
-                `$torch_ver = `"torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128`"
-                `$xformers_ver = `"xformers==0.0.31.post1`"
-                `$Env:PIP_INDEX_URL = if (`$USE_PIP_MIRROR) {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
-                } else {
-                    `$PIP_EXTRA_INDEX_MIRROR_CU128
-                }
-                `$Env:UV_DEFAULT_INDEX = `$Env:PIP_INDEX_URL
-                `$Env:PIP_EXTRA_INDEX_URL = `"`"
-                `$Env:UV_INDEX = `"`"
-                `$Env:PIP_FIND_LINKS = `"`"
-                `$Env:UV_FIND_LINKS = `"`"
-                `$go_to = 1
-            }
             exit {
                 Print-Msg `"退出 PyTorch 重装脚本`"
                 `$to_exit = 1
                 `$go_to = 1
             }
             Default {
-                Print-Msg `"输入有误, 请重试`"
+                try {
+                    # 检测输入是否符合列表
+                    `$i = [int]`$arg
+                    if (!((`$i -ge 1) -and (`$i -le `$pytorch_list.Count))) {
+                        `$has_error = `$true
+                        `$after_list_model_option = `"display_input_error`"
+                        break
+                    }
+
+                    `$pytorch_info = `$pytorch_list[(`$i - 1)]
+                    `$torch_ver = Get-HashValue -Hashtable `$pytorch_info -Key `"torch`"
+                    `$xformers_ver = Get-HashValue -Hashtable `$pytorch_info -Key `"xformers`"
+                    `$index_mirror = Get-HashValue -Hashtable `$pytorch_info -Key `"index_mirror`"
+                    `$extra_index_mirror = Get-HashValue -Hashtable `$pytorch_info -Key `"extra_index_mirror`"
+                    `$find_links = Get-HashValue -Hashtable `$pytorch_info -Key `"find_links`"
+
+                    if (`$null -ne `$index_mirror) {
+                        `$Env:PIP_INDEX_URL = `$index_mirror
+                        `$Env:UV_DEFAULT_INDEX = `$index_mirror
+                    }
+                    if (`$null -ne `$extra_index_mirror) {
+                        `$Env:PIP_EXTRA_INDEX_URL = `$extra_index_mirror
+                        `$Env:UV_INDEX = `$extra_index_mirror
+                    }
+                    if (`$null -ne `$find_links) {
+                        `$Env:PIP_FIND_LINKS = `$find_links
+                        `$Env:UV_FIND_LINKS = `$find_links
+                    }
+                }
+                catch {
+                    `$has_error = `$true
+                    break
+                }
+
+                if (`$has_error) {
+                    `$after_list_model_option = `"display_input_error`"
+                    `$has_error = `$false
+                    break
+                }
+
+                `$go_to = 1
+                break
             }
         }
 
@@ -5630,7 +5623,7 @@ function Main {
             exit 1
         }
 
-        if (`$xformers_ver -ne `"`") {
+        if (`$null -ne `$xformers_ver) {
             Print-Msg `"重装 xFormers 中`"
             if (`$USE_UV) {
                 `$current_xf_ver = Get-xFormers-Version
