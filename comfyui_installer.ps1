@@ -6923,64 +6923,283 @@ function Get-HashValue {
 }
 
 
+# 获取可用的 PyTorch 类型
+function Get-Avaliable-PyTorch-Type {
+    `$content = `"
+import re
+import json
+import subprocess
+
+
+def get_cuda_comp_cap() -> float:
+    # Returns float of CUDA Compute Capability using nvidia-smi
+    # Returns 0.0 on error
+    # CUDA Compute Capability
+    # ref https://developer.nvidia.com/cuda-gpus
+    # ref https://en.wikipedia.org/wiki/CUDA
+    # Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+    try:
+        return max(map(float, subprocess.check_output(['nvidia-smi', '--query-gpu=compute_cap', '--format=noheader,csv'], text=True).splitlines()))
+    except Exception as _:
+        return 0.0
+
+
+def get_cuda_version() -> str:
+    try:
+        # 获取 nvidia-smi 输出
+        output = subprocess.check_output(['nvidia-smi', '-q'], text=True)
+        match = re.search(r'CUDA Version\s+:\s+(\d+\.\d+)', output)
+        if match:
+            return match.group(1)
+        return 0.0
+    except:
+        return 0.0
+
+
+def get_gpu_list() -> list[dict[str, str]]:
+    try:
+        cmd = [
+            'powershell',
+            '-Command',
+            'Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json'
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpus = json.loads(result.stdout)
+        if isinstance(gpus, dict):
+            gpus = [gpus]
+
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append({
+                'Name': gpu.get('Name', None),
+                'AdapterCompatibility': gpu.get('AdapterCompatibility', None),
+                'AdapterRAM': gpu.get('AdapterRAM', None),
+                'DriverVersion': gpu.get('DriverVersion', None),
+            })
+        return gpu_info
+    except Exception as _:
+        return []
+
+
+def compare_versions(version1: str, version2: str) -> int:
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+CUDA_TYPE = [
+    'cu113', 'cu117', 'cu118', 'cu121',
+    'cu124', 'cu126', 'cu128', 'cu129',
+]
+
+def get_avaliable_device() -> str:
+    cuda_comp_cap = get_cuda_comp_cap()
+    cuda_support_ver = get_cuda_version()
+    gpu_list = get_gpu_list()
+    device_list = ['cpu']
+    if any([
+        x for x in gpu_list
+        if 'Intel' in x.get('AdapterCompatibility', '')
+        and (
+            x.get('Name', '').startswith('Intel(R) Arc')
+            or
+            x.get('Name', '').startswith('Intel(R) Core Ultra')
+        )
+    ]):
+        device_list.append('xpu')
+
+    if any([
+        x for x in gpu_list
+        if 'Intel' in x.get('AdapterCompatibility', '')
+        or 'NVIDIA' in x.get('AdapterCompatibility', '')
+        or 'Advanced Micro Devices' in x.get('AdapterCompatibility', '')
+    ]):
+        device_list.append('directml')
+
+    if compare_versions(cuda_comp_cap, '10.0') > 0:
+        for ver in CUDA_TYPE:
+            if compare_versions(ver, str(int(12.8 * 10))) >= 0:
+                device_list.append(ver)
+    else:
+        for ver in CUDA_TYPE:
+            if compare_versions(ver, str(int(float(cuda_support_ver) * 10))) <= 0:
+                device_list.append(ver)
+
+    return ','.join(list(set(device_list)))
+
+
+if __name__ == '__main__':
+    print(get_avaliable_device())
+`".Trim()
+    Print-Msg `"获取可用的 PyTorch 类型`"
+    `$res = `$(python -c `"`$content`")
+    return `$res -split ',' | ForEach-Object { `$_.Trim() }
+}
+
+
 # 获取 PyTorch 列表
 function Get-PyTorch-List {
     `$pytorch_list = New-Object System.Collections.ArrayList
+    `$supported_type = Get-Avaliable-PyTorch-Type
+    # >>>>>>>>>> Start
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 1.12.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==1.12.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 1.12.1 (CUDA 11.3) + xFormers 0.0.14`"
         `"type`" = `"cu113`"
+        `"supported`" = `"cu113`" -in `$supported_type
         `"torch`" = `"torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==1.12.1+cu113`"
         `"xformers`" = `"xformers==0.0.14`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 1.13.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 1.13.1 (DirectML)`"
         `"type`" = `"directml`"
+        `"supported`" = `"directml`" -in `$supported_type
         `"torch`" = `"torch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 torch-directml==0.1.13.1.dev230413`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 1.13.1 (CUDA 11.7) + xFormers 0.0.16`"
         `"type`" = `"cu117`"
+        `"supported`" = `"cu117`" -in `$supported_type
         `"torch`" = `"torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==1.13.1+cu117`"
         `"xformers`" = `"xformers==0.0.18`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.0.0+cpu torchvision==0.15.1+cpu torchaudio==2.0.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.0.0 (DirectML)`"
         `"type`" = `"directml`"
+        `"supported`" = `"directml`" -in `$supported_type
         `"torch`" = `"torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.0 torch-directml==0.2.0.dev230426`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.0.0 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.0.0a0+gite9ebda2 torchvision==0.15.2a0+fa99a53 intel_extension_for_pytorch==2.0.110+gitc6ea20b`"
         `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.0.0 (CUDA 11.8) + xFormers 0.0.18`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.0+cu118`"
         `"xformers`" = `"xformers==0.0.14`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.0.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.0.1+cpu torchvision==0.15.2+cpu torchaudio==2.0.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.0.1 (CUDA 11.8) + xFormers 0.0.22`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.1+cu118`"
         `"xformers`" = `"xformers==0.0.22`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.1.0+cpu torchvision==0.16.0+cpu torchaudio==2.1.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.0 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.1.0a0+cxx11.abi torchvision==0.16.0a0+cxx11.abi torchaudio==2.1.0a0+cxx11.abi intel_extension_for_pytorch==2.1.10+xpu`"
         `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.0 (Intel Core Ultra)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.1.0a0+git7bcf7da torchvision==0.16.0+fbb4cc5 torchaudio==2.1.0+6ea1133 intel_extension_for_pytorch==2.1.20+git4849f3b`"
         `"find_links`" = `"https://licyk.github.io/t/pypi/index.html`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.1.1+cpu torchvision==0.16.1+cpu torchaudio==2.1.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.1 (CUDA 11.8) + xFormers 0.0.23`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.1.1+cu118 torchvision==0.16.1+cu118 torchaudio==2.1.1+cu118`"
         `"xformers`" = `"xformers==0.0.23+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -6994,12 +7213,27 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.1 (CUDA 12.1) + xFormers 0.0.23`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.1.1+cu121 torchvision==0.16.1+cu121 torchaudio==2.1.1+cu121`"
         `"xformers`" = `"xformers===0.0.23`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.1.2 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.1.2+cpu torchvision==0.16.2+cpu torchaudio==2.1.2+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.2 (CUDA 11.8) + xFormers 0.0.23.post1`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118`"
         `"xformers`" = `"xformers==0.0.23.post1+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7013,12 +7247,27 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.1.2 (CUDA 12.1) + xFormers 0.0.23.post1`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2+cu121`"
         `"xformers`" = `"xformers===0.0.23.post1`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.2.0+cpu torchvision==0.17.0+cpu torchaudio==2.2.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.0 (CUDA 11.8) + xFormers 0.0.24`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.2.0+cu118 torchvision==0.17.0+cu118 torchaudio==2.2.0+cu118`"
         `"xformers`" = `"xformers==0.0.24+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7032,12 +7281,27 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.0 (CUDA 12.1) + xFormers 0.0.24`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.2.0+cu121 torchvision==0.17.0+cu121 torchaudio==2.2.0+cu121`"
         `"xformers`" = `"xformers===0.0.24`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.2.1+cpu torchvision==0.17.1+cpu torchaudio==2.2.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.1 (CUDA 11.8) + xFormers 0.0.25`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1+cu118`"
         `"xformers`" = `"xformers==0.0.25+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7051,17 +7315,33 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.1 (DirectML)`"
         `"type`" = `"directml`"
+        `"supported`" = `"directml`" -in `$supported_type
         `"torch`" = `"torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 torch-directml==0.2.1.dev240521`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.1 (CUDA 12.1) + xFormers 0.0.25`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121`"
         `"xformers`" = `"xformers===0.0.25`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.2.2 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.2.2+cpu torchvision==0.17.2+cpu torchaudio==2.2.2+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.2 (CUDA 11.8) + xFormers 0.0.25.post1`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118`"
         `"xformers`" = `"xformers==0.0.25.post1+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7075,12 +7355,27 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.2.2 (CUDA 12.1) + xFormers 0.0.25.post1`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121`"
         `"xformers`" = `"xformers===0.0.25.post1`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.3.0+cpu torchvision==0.18.0+cpu torchaudio==2.3.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
         `"xformers`" = `"xformers==0.0.26.post1+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7094,17 +7389,33 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.3.0 (CUDA 12.1) + xFormers 0.0.26.post1`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0+cu121`"
         `"xformers`" = `"xformers===0.0.26.post1`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.3.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.3.1+cpu torchvision==0.18.1+cpu torchaudio==2.3.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.3.1 (DirectML)`"
         `"type`" = `"directml`"
+        `"supported`" = `"directml`" -in `$supported_type
         `"torch`" = `"torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 torch-directml==0.2.3.dev240715`"
     }) | Out-Null
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.3.1 (CUDA 11.8) + xFormers 0.0.27`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118`"
         `"xformers`" = `"xformers==0.0.27+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7118,6 +7429,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.3.1 (CUDA 12.1) + xFormers 0.0.27`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
         `"xformers`" = `"xformers===0.0.27`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7129,8 +7441,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.4.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.4.0 (CUDA 11.8) + xFormers 0.0.27.post2`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.4.0+cu118 torchvision==0.19.0+cu118 torchaudio==2.4.0+cu118`"
         `"xformers`" = `"xformers==0.0.27.post2+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7144,6 +7470,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.4.0 (CUDA 12.1) + xFormers 0.0.27.post2`"
         `"type`" = `"cu121`"
+        `"supported`" = `"cu121`" -in `$supported_type
         `"torch`" = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
         `"xformers`" = `"xformers==0.0.27.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7155,8 +7482,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.4.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.4.1+cpu torchvision==0.19.1+cpu torchaudio==2.4.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.4.1 (CUDA 12.4) + xFormers 0.0.28.post1`"
         `"type`" = `"cu124`"
+        `"supported`" = `"cu124`" -in `$supported_type
         `"torch`" = `"torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124`"
         `"xformers`" = `"xformers==0.0.28.post1`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7168,8 +7509,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.5.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.5.0+cpu torchvision==0.20.0+cpu torchaudio==2.5.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.5.0 (CUDA 12.4) + xFormers 0.0.28.post2`"
         `"type`" = `"cu124`"
+        `"supported`" = `"cu124`" -in `$supported_type
         `"torch`" = `"torch==2.5.0+cu124 torchvision==0.20.0+cu124 torchaudio==2.5.0+cu124`"
         `"xformers`" = `"xformers==0.0.28.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7181,8 +7536,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.5.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.5.1+cpu torchvision==0.20.1+cpu torchaudio==2.5.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.5.1 (CUDA 12.4) + xFormers 0.0.28.post3`"
         `"type`" = `"cu124`"
+        `"supported`" = `"cu124`" -in `$supported_type
         `"torch`" = `"torch==2.5.1+cu124 torchvision==0.20.1+cu124 torchaudio==2.5.1+cu124`"
         `"xformers`" = `"xformers==0.0.28.post3`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7194,8 +7563,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.6.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.6.0+cpu torchvision==0.21.0+cpu torchaudio==2.6.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.6.0 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.6.0+xpu torchvision==0.21.0+xpu torchaudio==2.6.0+xpu`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
@@ -7208,6 +7591,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.6.0 (CUDA 12.4) + xFormers 0.0.29.post3`"
         `"type`" = `"cu124`"
+        `"supported`" = `"cu124`" -in `$supported_type
         `"torch`" = `"torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124`"
         `"xformers`" = `"xformers==0.0.29.post3`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7221,6 +7605,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.6.0 (CUDA 12.6) + xFormers 0.0.29.post3`"
         `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
         `"torch`" = `"torch==2.6.0+cu126 torchvision==0.21.0+cu126 torchaudio==2.6.0+cu126`"
         `"xformers`" = `"xformers==0.0.29.post3`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7232,8 +7617,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.7.0+cpu torchvision==0.22.0+cpu torchaudio==2.7.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.0 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.7.0+xpu torchvision==0.22.0+xpu torchaudio==2.7.0+xpu`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
@@ -7246,6 +7645,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.0 (CUDA 11.8)`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.7.0+cu118 torchvision==0.22.0+cu118 torchaudio==2.7.0+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
@@ -7258,6 +7658,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.0 (CUDA 12.6) + xFormers 0.0.30`"
         `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
         `"torch`" = `"torch==2.7.0+cu126 torchvision==0.22.0+cu126 torchaudio==2.7.0+cu126`"
         `"xformers`" = `"xformers==0.0.30`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7271,6 +7672,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.0 (CUDA 12.8) + xFormers 0.0.30`"
         `"type`" = `"cu128`"
+        `"supported`" = `"cu128`" -in `$supported_type
         `"torch`" = `"torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128`"
         `"xformers`" = `"xformers==0.0.30`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7282,8 +7684,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.7.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.7.1+cpu torchvision==0.22.1+cpu torchaudio==2.7.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.1 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.7.1+xpu torchvision==0.22.1+xpu torchaudio==2.7.1+xpu`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
@@ -7296,6 +7712,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.1 (CUDA 11.8)`"
         `"type`" = `"cu118`"
+        `"supported`" = `"cu118`" -in `$supported_type
         `"torch`" = `"torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU
@@ -7308,6 +7725,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.1 (CUDA 12.6) + xFormers 0.0.31.post1`"
         `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
         `"torch`" = `"torch==2.7.1+cu126 torchvision==0.22.1+cu126 torchaudio==2.7.1+cu126`"
         `"xformers`" = `"xformers==0.0.31.post1`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7321,6 +7739,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.7.1 (CUDA 12.8) + xFormers 0.0.31.post1`"
         `"type`" = `"cu128`"
+        `"supported`" = `"cu128`" -in `$supported_type
         `"torch`" = `"torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128`"
         `"xformers`" = `"xformers==0.0.31.post1`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7332,8 +7751,22 @@ function Get-PyTorch-List {
         `"find_links`" = `"`"
     }) | Out-Null
     `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.8.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.8.0+cpu torchvision==0.23.0+cpu torchaudio==2.8.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.8.0 (Intel Arc)`"
         `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+xpu torchvision==0.23.0+xpu torchaudio==2.8.0+xpu`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
@@ -7346,6 +7779,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.8.0 (CUDA 12.6)`"
         `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu126 torchvision==0.23.0+cu126 torchaudio==2.8.0+cu126`"
         `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7359,6 +7793,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.8.0 (CUDA 12.8)`"
         `"type`" = `"cu128`"
+        `"supported`" = `"cu128`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128`"
         `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7372,6 +7807,7 @@ function Get-PyTorch-List {
     `$pytorch_list.Add(@{
         `"name`" = `"Torch 2.8.0 (CUDA 12.9)`"
         `"type`" = `"cu129`"
+        `"supported`" = `"cu129`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129`"
         # `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
@@ -7382,6 +7818,7 @@ function Get-PyTorch-List {
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
+    # <<<<<<<<<< End
     return `$pytorch_list
 }
 
@@ -7392,13 +7829,21 @@ function List-PyTorch (`$pytorch_list) {
     Write-Host `"-----------------------------------------------------`"
     Write-Host `"版本序号`" -ForegroundColor Yellow -NoNewline
     Write-Host `" | `" -NoNewline
-    Write-Host `"PyTorch 版本`" -ForegroundColor White
+    Write-Host `"PyTorch 版本`" -ForegroundColor White -NoNewline
+    Write-Host `" | `" -NoNewline
+    Write-Host `"支持当前设备情况`" -ForegroundColor Blue
     for (`$i = 0; `$i -lt `$pytorch_list.Count; `$i++) {
         `$pytorch_hashtables = `$pytorch_list[`$i]
         `$count += 1
         `$name = Get-HashValue -Hashtable `$pytorch_hashtables -Key `"name`"
+        `$supported = Get-HashValue -Hashtable `$pytorch_hashtables -Key `"supported`"
         Write-Host `"- `${count}、`" -ForegroundColor Yellow -NoNewline
-        Write-Host `"`$name`" -ForegroundColor White
+        Write-Host `"`$name `" -ForegroundColor White -NoNewline
+        if (`$supported) {
+            Write-Host `"(支持✓)`" -ForegroundColor Green
+        } else {
+            Write-Host `"(不支持×)`" -ForegroundColor Red
+        }
     }
     Write-Host `"-----------------------------------------------------`"
 }
@@ -7442,9 +7887,9 @@ function Main {
         Print-Msg `"当前显卡驱动支持的最高 CUDA 版本: `$cuda_support_ver`"
         Print-Msg `"请选择 PyTorch 版本`"
         Print-Msg `"提示:`"
-        Print-Msg `"1. PyTroch 版本通常来说选择最新版的即可`"
+        Print-Msg `"1. PyTorch 版本通常来说选择最新版的即可`"
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
-        Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTroch 重装脚本`"
+        Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTorch 重装脚本`"
         if (`$BuildMode) {
             Print-Msg `"ComfyUI Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
@@ -7464,7 +7909,6 @@ function Main {
                     # 检测输入是否符合列表
                     `$i = [int]`$arg
                     if (!((`$i -ge 1) -and (`$i -le `$pytorch_list.Count))) {
-                        `$has_error = `$true
                         `$after_list_model_option = `"display_input_error`"
                         break
                     }
@@ -7490,13 +7934,7 @@ function Main {
                     }
                 }
                 catch {
-                    `$has_error = `$true
-                    break
-                }
-
-                if (`$has_error) {
                     `$after_list_model_option = `"display_input_error`"
-                    `$has_error = `$false
                     break
                 }
 
