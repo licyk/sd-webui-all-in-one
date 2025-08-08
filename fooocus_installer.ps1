@@ -579,7 +579,6 @@ function Get-PyTorch-Mirror ($pytorch_package) {
 import re
 
 
-
 def version_increment(version: str) -> str:
     version = ''.join(re.findall(r'\d|\.', version))
     ver_parts = list(map(int, version.split('.')))
@@ -659,11 +658,12 @@ def get_pytorch_mirror_type(torch_version: str) -> str:
     elif compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
         # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif compare_versions(torch_ver, '2.7.0') >= 0:
-        # torch >= 2.7.0
+    elif compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
+        # 2.7.0 <= torch < 2.8.0
         return 'cu128'
-    # TODO: 更新类型分配
-
+    elif compare_versions(torch_ver, '2.8.0') >= 0:
+        # torch >= 2.8.0
+        return 'cu129'
 
 
 if __name__ == '__main__':
@@ -801,8 +801,8 @@ if __name__ == '__main__':
 function Get-Appropriate-CUDA-Version-Type {
     $content = "
 import re
+import json
 import subprocess
-
 
 
 def get_cuda_comp_cap() -> float:
@@ -820,7 +820,7 @@ def get_cuda_comp_cap() -> float:
 
 def get_cuda_version() -> str:
     try:
-        # 获取nvidia-smi输出
+        # 获取 nvidia-smi 输出
         output = subprocess.check_output(['nvidia-smi', '-q'], text=True)
         match = re.search(r'CUDA Version\s+:\s+(\d+\.\d+)', output)
         if match:
@@ -828,6 +828,31 @@ def get_cuda_version() -> str:
         return 0.0
     except:
         return 0.0
+
+
+def get_gpu_list() -> list[dict[str, str]]:
+    try:
+        cmd = [
+            'powershell',
+            '-Command',
+            'Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json'
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpus = json.loads(result.stdout)
+        if isinstance(gpus, dict):
+            gpus = [gpus]
+
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append({
+                'Name': gpu.get('Name', None),
+                'AdapterCompatibility': gpu.get('AdapterCompatibility', None),
+                'AdapterRAM': gpu.get('AdapterRAM', None),
+                'DriverVersion': gpu.get('DriverVersion', None),
+            })
+        return gpu_info
+    except Exception as _:
+        return []
 
 
 def compare_versions(version1: str, version2: str) -> int:
@@ -851,37 +876,44 @@ def compare_versions(version1: str, version2: str) -> int:
     return 0
 
 
-def is_vers_ge(ver_1: str, ver_2: str) -> bool:
-    if compare_versions(ver_1, ver_2) == 1 or compare_versions(ver_1, ver_2) == 0:
-        return True
-    return False
-
-
-def select_avaliable_cuda_type() -> str:
+def select_avaliable_type() -> str:
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
-    # TODO: 更新类型分配
-    if is_vers_ge(cuda_support_ver, '12.8'):
+    if compare_versions(cuda_support_ver, '12.9') >= 0:
+        return 'cu129'
+    elif compare_versions(cuda_support_ver, '12.8') >= 0:
         return 'cu128'
-    elif is_vers_ge(cuda_support_ver, '12.6'):
+    elif compare_versions(cuda_support_ver, '12.6') >= 0:
         return 'cu126'
-    elif is_vers_ge(cuda_support_ver, '12.4'):
+    elif compare_versions(cuda_support_ver, '12.4') >= 0:
         return 'cu124'
-    elif is_vers_ge(cuda_support_ver, '12.1'):
+    elif compare_versions(cuda_support_ver, '12.1') >= 0:
         return 'cu121'
-    elif is_vers_ge(cuda_support_ver, '11.8'):
+    elif compare_versions(cuda_support_ver, '11.8') >= 0:
         return 'cu118'
-
-    if compare_versions(cuda_comp_cap, '10.0') == 1:
+    elif compare_versions(cuda_comp_cap, '10.0') > 0:
         return 'cu128' # RTX 50xx
-    else:
+    elif compare_versions(cuda_comp_cap, '0.0') > 0:
         return 'cu118' # 其他 Nvidia 显卡
+    else:
+        gpus = get_gpu_list()
+        if any([
+            x for x in gpus
+            if 'Intel' in x.get('AdapterCompatibility', '')
+            and (
+                x.get('Name', '').startswith('Intel(R) Arc')
+                or
+                x.get('Name', '').startswith('Intel(R) Core Ultra')
+            )
+        ]):
+            return 'xpu'
 
+    return 'cu118'
 
 
 if __name__ == '__main__':
-    print(select_avaliable_cuda_type())
+    print(select_avaliable_type())
 ".Trim()
 
     return $(python -c "$content")
@@ -892,13 +924,13 @@ if __name__ == '__main__':
 function Get-PyTorch-And-xFormers-Package {
     Print-Msg "设置 PyTorch 和 xFormers 版本"
 
-    if ($PyTorchPackage -and $xFormersPackage) {
+    if ($PyTorchPackage) {
         # 使用自定义的 PyTorch / xFormers 版本
-        return $PyTorchPackage, $xFormersPackage
-    }
-
-    if ((!$PyTorchPackage -and $xFormersPackage) -or ($PyTorchPackage -and !$xFormersPackage)) {
-        Print-Msg "不允许单独设置 -PyTorchPackage / -xFormersPackage 命令行参数, 将重新设置合适的 PyTorch 和 xFormers 版本"
+        if ($xFormersPackage){
+            return $PyTorchPackage, $xFormersPackage
+        } else {
+            return $PyTorchPackage, $null
+        }
     }
 
     if ($PyTorchMirrorType) {
@@ -909,6 +941,13 @@ function Get-PyTorch-And-xFormers-Package {
     }
 
     switch ($appropriate_cuda_version) {
+        cu129 {
+            # TODO: 重新分配合适的版本
+            # $pytorch_package = "torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129"
+            $pytorch_package = "torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128"
+            $xformers_package = "xformers==0.0.31.post1"
+            break
+        }
         cu128 {
             $pytorch_package = "torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128"
             $xformers_package = "xformers==0.0.31.post1"
@@ -932,6 +971,11 @@ function Get-PyTorch-And-xFormers-Package {
         cu118 {
             $pytorch_package = "torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118"
             $xformers_package = "xformers==0.0.27+cu118"
+            break
+        }
+        xpu {
+            $pytorch_package = "torch==2.8.0+xpu torchvision==0.23.0+xpu torchaudio==2.8.0+xpu"
+            $xformers_package = $null
             break
         }
         Default {
@@ -997,24 +1041,26 @@ function Install-PyTorch {
     Print-Msg "检测是否需要安装 xFormers"
     python -m pip show xformers --quiet 2> $null
     if (!($?)) {
-        Print-Msg "安装 xFormers 中"
-        if ($USE_UV) {
-            uv pip install $xformers_package.ToString().Split() --no-deps
-            if (!($?)) {
-                Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+        if ($xformers_package) {
+            Print-Msg "安装 xFormers 中"
+            if ($USE_UV) {
+                uv pip install $xformers_package.ToString().Split() --no-deps
+                if (!($?)) {
+                    Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+                    python -m pip install $xformers_package.ToString().Split() --no-deps
+                }
+            } else {
                 python -m pip install $xformers_package.ToString().Split() --no-deps
             }
-        } else {
-            python -m pip install $xformers_package.ToString().Split() --no-deps
-        }
-        if ($?) {
-            Print-Msg "xFormers 安装成功"
-        } else {
-            Print-Msg "xFormers 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
-            if (!($BuildMode)) {
-                Read-Host | Out-Null
+            if ($?) {
+                Print-Msg "xFormers 安装成功"
+            } else {
+                Print-Msg "xFormers 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+                if (!($BuildMode)) {
+                    Read-Host | Out-Null
+                }
+                exit 1
             }
-            exit 1
         }
     } else {
         Print-Msg "xFormers 已安装, 无需再次安装"
