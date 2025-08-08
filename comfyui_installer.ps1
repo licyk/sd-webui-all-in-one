@@ -60,7 +60,9 @@ $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126 = "https://download.pytorch.org/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128 = "https://download.pytorch.org/whl/cu128"
 $PIP_EXTRA_INDEX_MIRROR_CU129 = "https://download.pytorch.org/whl/cu129"
+$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = "https://mirror.nju.edu.cn/pytorch/whl/xpu"
 $PIP_EXTRA_INDEX_MIRROR_CU118_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu118"
+$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu121"
 $PIP_EXTRA_INDEX_MIRROR_CU124_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
@@ -638,21 +640,22 @@ def get_pytorch_mirror_type(torch_version: str) -> str:
     if compare_versions(torch_ver, '2.0.0') == -1:
         # torch < 2.0.0
         return 'cu11x'
-    elif (compare_versions(torch_ver, '2.0.0') == 1 or compare_versions(torch_ver, '2.0.0') == 0) and compare_versions(torch_ver, '2.3.1') == -1:
+    elif compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
         # 2.0.0 <= torch < 2.3.1
         return 'cu118'
-    elif (compare_versions(torch_ver, '2.3.0') == 1 or compare_versions(torch_ver, '2.3.0') == 0) and compare_versions(torch_ver, '2.4.1') == -1:
+    elif compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
         # 2.3.0 <= torch < 2.4.1
         return 'cu121'
-    elif (compare_versions(torch_ver, '2.4.0') == 1 or compare_versions(torch_ver, '2.4.0') == 0) and compare_versions(torch_ver, '2.6.0') == -1:
+    elif compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
         # 2.4.0 <= torch < 2.6.0
         return 'cu124'
-    elif (compare_versions(torch_ver, '2.6.0') == 1 or compare_versions(torch_ver, '2.6.0') == 0) and compare_versions(torch_ver, '2.7.0') == -1:
+    elif compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
         # 2.6.0 <= torch < 2.7.0
         return 'cu126'
-    elif (compare_versions(torch_ver, '2.7.0') == 1 or compare_versions(torch_ver, '2.7.0') == 0):
+    elif compare_versions(torch_ver, '2.7.0') >= 0:
         # torch >= 2.7.0
         return 'cu128'
+    # TODO: 更新类型分配
 
 
 
@@ -673,6 +676,19 @@ if __name__ == '__main__':
 
     # 设置对应的镜像源
     switch ($mirror_type) {
+        xpu {
+            Print-Msg "设置 PyTorch 镜像源类型为 xpu"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_XPU
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
         cu11x {
             Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
             $mirror_pip_index_url = $Env:PIP_INDEX_URL
@@ -697,7 +713,11 @@ if __name__ == '__main__':
         }
         cu121 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu121"
-            $mirror_pip_index_url = "$PIP_EXTRA_INDEX_MIRROR_CU121"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU121_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU121
+            }
             $mirror_uv_default_index = $mirror_pip_index_url
             $mirror_pip_extra_index_url = ""
             $mirror_uv_index = $mirror_pip_extra_index_url
@@ -834,6 +854,7 @@ def select_avaliable_cuda_type() -> str:
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
+    # TODO: 更新类型分配
     if is_vers_ge(cuda_support_ver, '12.8'):
         return 'cu128'
     elif is_vers_ge(cuda_support_ver, '12.6'):
@@ -1204,7 +1225,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -5174,7 +5197,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -5659,7 +5684,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -6413,7 +6440,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -7044,7 +7073,11 @@ function Get-PyTorch-List {
         `"type`" = `"cu121`"
         `"torch`" = `"torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121`"
         `"xformers`" = `"xformers===0.0.27`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_CU121
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU121_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU121
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7066,7 +7099,11 @@ function Get-PyTorch-List {
         `"type`" = `"cu121`"
         `"torch`" = `"torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121`"
         `"xformers`" = `"xformers==0.0.27.post2`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_CU121
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU121_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU121
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7113,7 +7150,11 @@ function Get-PyTorch-List {
         `"name`" = `"Torch 2.6.0 (Intel Arc)`"
         `"type`" = `"xpu`"
         `"torch`" = `"torch==2.6.0+xpu torchvision==0.21.0+xpu torchaudio==2.6.0+xpu`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7147,7 +7188,11 @@ function Get-PyTorch-List {
         `"name`" = `"Torch 2.7.0 (Intel Arc)`"
         `"type`" = `"xpu`"
         `"torch`" = `"torch==2.7.0+xpu torchvision==0.22.0+xpu torchaudio==2.7.0+xpu`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7193,7 +7238,11 @@ function Get-PyTorch-List {
         `"name`" = `"Torch 2.7.1 (Intel Arc)`"
         `"type`" = `"xpu`"
         `"torch`" = `"torch==2.7.1+xpu torchvision==0.22.1+xpu torchaudio==2.7.1+xpu`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7239,7 +7288,11 @@ function Get-PyTorch-List {
         `"name`" = `"Torch 2.8.0 (Intel Arc)`"
         `"type`" = `"xpu`"
         `"torch`" = `"torch==2.8.0+xpu torchvision==0.23.0+xpu torchaudio==2.8.0+xpu`"
-        `"index_mirror`" = `$PIP_EXTRA_INDEX_MIRROR_XPU
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
@@ -7554,7 +7607,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -8610,7 +8665,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
@@ -9682,7 +9739,9 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
