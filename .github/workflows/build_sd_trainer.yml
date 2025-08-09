@@ -1,11 +1,11 @@
 name: Build SD-Trainer
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_sd_trainer.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_sd_trainer.yml"
   # delete:
   # create:
   schedule:
@@ -40,9 +40,7 @@ jobs:
           & "${{ github.workspace }}/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_trainer" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
-            -BuildWitchBranch 1 `
             -InstallBranch "sd_trainer" `
             -DisablePyPIMirror `
             -DisableGithubMirror `

@@ -1,11 +1,11 @@
 name: Build Kohya GUI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_kohya_gui.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_kohya_gui.yml"
   # delete:
   # create:
   schedule:
@@ -40,9 +40,7 @@ jobs:
           & "${{ github.workspace }}/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/kohya_gui" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
-            -BuildWitchBranch 2 `
             -InstallBranch "kohya_gui" `
             -DisablePyPIMirror `
             -DisableGithubMirror `

@@ -1,11 +1,11 @@
 name: Build InvokeAI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_invokeai.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_invokeai.yml"
   # delete:
   # create:
   schedule:
@@ -40,7 +40,6 @@ jobs:
           & "${{ github.workspace }}/invokeai_installer.ps1" `
             -InstallPath "${{ github.workspace }}/invokeai" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
             -DisablePyPIMirror `
             -DisableGithubMirror `

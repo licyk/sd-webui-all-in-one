@@ -1,11 +1,11 @@
 name: Build SD Scripts
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_sd_scripts.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_sd_scripts.yml"
   # delete:
   # create:
   schedule:
@@ -40,7 +40,6 @@ jobs:
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_scripts" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
             -BuildWitchBranch 2 `
             -InstallBranch "sd_scripts" `

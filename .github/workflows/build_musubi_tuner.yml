@@ -1,11 +1,11 @@
 name: Build Musubi Tuner
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_musubi_tuner.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_musubi_tuner.yml"
   # delete:
   # create:
   schedule:
@@ -40,9 +40,7 @@ jobs:
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/musubi_tuner" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
-            -BuildWitchBranch 7 `
             -InstallBranch "musubi_tuner" `
             -DisablePyPIMirror `
             -DisableGithubMirror `

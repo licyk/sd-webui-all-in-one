@@ -1,11 +1,11 @@
 name: Build ComfyUI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_comfyui.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_comfyui.yml"
   # delete:
   # create:
   schedule:
@@ -40,8 +40,6 @@ jobs:
           & "${{ github.workspace }}/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
             -BuildMode `
-            -BuildWithUpdate `
-            -BuildWithUpdateNode `
             -BuildWithLaunch `
             -DisablePyPIMirror `
             -DisableGithubMirror `

@@ -1,11 +1,11 @@
 name: Build SD WebUI Forge
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_sd_webui_forge.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_sd_webui_forge.yml"
   # delete:
   # create:
   schedule:
@@ -40,10 +40,7 @@ jobs:
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge" `
             -BuildMode `
-            -BuildWithUpdate `
-            -BuildWithUpdateExtension `
             -BuildWithLaunch `
-            -BuildWitchBranch 3 `
             -InstallBranch "sd_webui_forge" `
             -NoPreDownloadModel `
             -DisablePyPIMirror `

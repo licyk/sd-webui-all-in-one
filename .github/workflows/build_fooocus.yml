@@ -1,11 +1,11 @@
 name: Build Fooocus
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build_fooocus.yml"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - ".github/workflows/build_fooocus.yml"
   # delete:
   # create:
   schedule:
@@ -40,7 +40,6 @@ jobs:
           & "${{ github.workspace }}/fooocus_installer.ps1" `
             -InstallPath "${{ github.workspace }}/fooocus" `
             -BuildMode `
-            -BuildWithUpdate `
             -BuildWithLaunch `
             -InstallBranch "fooocus" `
             -DisablePyPIMirror `
