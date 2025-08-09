@@ -14,6 +14,7 @@
     [switch]$BuildWithLaunch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
+    [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -1101,9 +1102,13 @@ function Check-Install {
     Install-PyPatchMatch
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -8094,9 +8099,13 @@ function Use-Build-Mode {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 }
 
 
@@ -8155,7 +8164,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-DisableAutoApplyUpdate]
+    .\invokeai_installer.ps1 [-Help] [-InstallPath <安装 InvokeAI 的绝对路径>] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoCleanCache] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -8211,6 +8220,9 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
+
+    -NoCleanCache
+        安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
         (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查

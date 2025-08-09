@@ -590,6 +590,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |`-BuildWithLaunch`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本，执行启动 InvokeAI 前的环境检查流程，但跳过启动 InvokeAI|
 |`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本，卸载并重新安装 PyTorch。|
 |`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本，根据模型编号列表下载指 定的模型。<br>模型编号可运行 download_models.ps1 脚本进行查看。|
+|`-NoCleanCache`|安装结束后保留下载 Python 软件包缓存。|
 |`-DisableUpdate`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查。|
 |`-DisableHuggingFaceMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|

@@ -21,6 +21,7 @@
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
     [switch]$InstallHanamizuki,
+    [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -1336,9 +1337,13 @@ function Check-Install {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -11409,9 +11414,13 @@ function Use-Build-Mode {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 }
 
 
@@ -11470,7 +11479,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -11564,6 +11573,9 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
     -InstallHanamizuki
         安装绘世启动器, 并生成 hanamizuki.bat 用于启动绘世启动器
+
+    -NoCleanCache
+        安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
         (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查

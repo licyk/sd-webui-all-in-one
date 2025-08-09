@@ -23,6 +23,7 @@
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
     [switch]$InstallHanamizuki,
+    [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -1623,9 +1624,13 @@ function Check-Install {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -10879,9 +10884,13 @@ function Use-Build-Mode {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 }
 
 
@@ -10940,7 +10949,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\stable_diffusion_webui_installer.ps1 [-Help] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -11051,6 +11060,9 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
 
     -InstallHanamizuki
         安装绘世启动器, 并生成 hanamizuki.bat 用于启动绘世启动器
+
+    -NoCleanCache
+        安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
         (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 更新检查

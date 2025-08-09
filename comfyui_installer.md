@@ -707,6 +707,7 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |`-PyTorchPackage` <PyTorch 软件包>|(需要同时搭配`-xFormersPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本，如`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`，在例子中指定的 PyTorch 软件包中指定了 torch 的版本，也就是`2.3.0+cu118`这个版本，`+`号后面的参数将作为指定 PyTorch 镜像源的参数，则这个例子中将会指定 PyTorch 镜像源的类型为`cu118`。若缺少`+`号和后面的参数，则根据 torch 的版本决定要设置的 PyTorch 镜像源类型。|
 |`-xFormersPackage` <xFormers 软件包>|(需要同时搭配`-PyTorchPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本，如`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
 |`-InstallHanamizuki`|安装绘世启动器, 并生成 hanamizuki.bat 用于启动绘世启动器。|
+|`-NoCleanCache`|安装结束后保留下载 Python 软件包缓存。|
 |`-DisableUpdate`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查。|
 |`-DisableHuggingFaceMirror`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|

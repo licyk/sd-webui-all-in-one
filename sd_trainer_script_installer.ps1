@@ -19,6 +19,7 @@
     [int]$BuildWitchBranch,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
+    [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
@@ -1317,9 +1318,13 @@ function Check-Install {
     Install-Python-Package "lycoris-lora dadaptation open-clip-torch wandb tensorboard"
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 
     Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
@@ -8961,9 +8966,13 @@ function Use-Build-Mode {
     }
 
     # 清理缓存
-    Print-Msg "清理下载 Python 软件包的缓存中"
-    python -m pip cache purge
-    uv cache clean
+    if ($NoCleanCache) {
+        Print-Msg "跳过清理下载 Python 软件包的缓存"
+    } else {
+        Print-Msg "清理下载 Python 软件包的缓存中"
+        python -m pip cache purge
+        uv cache clean
+    }
 }
 
 
@@ -9022,7 +9031,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\sd_trainer_script_installer.ps1 [-Help] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -9120,6 +9129,9 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
     -xFormersPackage <xFormers 软件包>
         (需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
+
+    -NoCleanCache
+        安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
         (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 更新检查
