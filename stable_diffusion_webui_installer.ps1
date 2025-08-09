@@ -5671,9 +5671,10 @@ function Main {
 - 4、Panchovix - Stable-Diffusion-WebUI-reForge 主分支
 - 5、Panchovix - Stable-Diffusion-WebUI-reForge 测试分支
 - 6、Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支
-- 7、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
-- 8、vladmandic - SD.NEXT 主分支
-- 9、vladmandic - SD.NEXT 测试分支
+- 7、Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支
+- 8、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
+- 9、vladmandic - SD.NEXT 主分支
+- 10、vladmandic - SD.NEXT 测试分支
 -----------------------------------------------------
 `".Trim()
 
@@ -5737,20 +5738,27 @@ function Main {
                 `$go_to = 1
             }
             7 {
+                `$remote = `"https://github.com/Haoming02/sd-webui-forge-classic`"
+                `$branch = `"neo`"
+                `$branch_name = `"Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            8 {
                 `$remote = `"https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu`"
                 `$branch = `"master`"
                 `$branch_name = `"lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支`"
                 `$use_submod = `$false
                 `$go_to = 1
             }
-            8 {
+            9 {
                 `$remote = `"https://github.com/vladmandic/automatic`"
                 `$branch = `"master`"
                 `$branch_name = `"vladmandic - SD.NEXT 主分支`"
                 `$use_submod = `$true
                 `$go_to = 1
             }
-            9 {
+            10 {
                 `$remote = `"https://github.com/vladmandic/automatic`"
                 `$branch = `"dev`"
                 `$branch_name = `"vladmandic - SD.NEXT 测试分支`"
