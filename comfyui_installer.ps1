@@ -11481,7 +11481,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         例如: .\comfyui_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -UseUpdateMode
         指定 ComfyUI Installer 使用更新模式, 只对 ComfyUI Installer 的管理脚本进行更新

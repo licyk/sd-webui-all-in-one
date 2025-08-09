@@ -9258,7 +9258,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         例如: .\sd_trainer_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -InstallBranch <安装的 SD-Trainer 分支>
         指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)

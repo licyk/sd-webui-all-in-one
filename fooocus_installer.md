@@ -616,7 +616,7 @@ Fooocus Installer 支持使用命令参数设置安装 Fooocus 的参数，支�
 |参数|作用|
 |---|---|
 |`-InstallPath` <Fooocus 安装路径>|指定安装 Fooocus 的路径，使用绝对路径进行指定。|
-|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`|
+|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`|
 |`-InstallBranch` <Fooocus 分支名>|指定 Fooocus Installer 安装的 Fooocus 的分支，Fooocus 分支名对应的分支如下：</br>`fooocus`: [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)</br>`fooocus_mre`: [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)</br>`ruined_fooocus`: [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
 |`-UseUpdateMode`|使用 Fooocus Installer 的更新脚本模式，不进行 Fooocus 的安装。|
 |`-DisablePyPIMirror`|禁用 Fooocus Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|

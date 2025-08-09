@@ -2420,7 +2420,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -DisableAutoApplyUpdate
         禁用 InvokeAI Installer 自动应用新版本更新
@@ -4199,7 +4199,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -DisableAutoApplyUpdate
         禁用 InvokeAI Installer 自动应用新版本更新
@@ -8170,7 +8170,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -UseUpdateMode
         指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新

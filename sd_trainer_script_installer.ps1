@@ -9033,7 +9033,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         例如: .\sd_trainer_script_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer-Script Installer 安装 SD-Trainer-Script 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -InstallBranch <安装的 SD-Trainer-Script 分支>
         指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts, simple_tuner, ai_toolkit, finetrainers, diffusion_pipe, musubi_tuner)

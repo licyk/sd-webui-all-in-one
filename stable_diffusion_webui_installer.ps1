@@ -10951,7 +10951,7 @@ function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
         例如: .\stable_diffusion_webui_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD WebUI Installer 安装 Stable Diffusion WebUI 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
     -InstallBranch <安装的 Stable Diffusion WebUI 分支>
         指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_forge_classic, sd_webui_amdgpu, sdnext)
