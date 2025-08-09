@@ -582,6 +582,57 @@ function Get-PyTorch-Mirror ($pytorch_package) {
         if ($torch_part.split("+") -eq $torch_part) {
             $content = "
 import re
+import json
+import subprocess
+
+def get_cuda_comp_cap() -> float:
+    # Returns float of CUDA Compute Capability using nvidia-smi
+    # Returns 0.0 on error
+    # CUDA Compute Capability
+    # ref https://developer.nvidia.com/cuda-gpus
+    # ref https://en.wikipedia.org/wiki/CUDA
+    # Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+    try:
+        return max(map(float, subprocess.check_output(['nvidia-smi', '--query-gpu=compute_cap', '--format=noheader,csv'], text=True).splitlines()))
+    except Exception as _:
+        return 0.0
+
+
+def get_cuda_version() -> float:
+    try:
+        # 获取 nvidia-smi 输出
+        output = subprocess.check_output(['nvidia-smi', '-q'], text=True)
+        match = re.search(r'CUDA Version\s+:\s+(\d+\.\d+)', output)
+        if match:
+            return float(match.group(1))
+        return 0.0
+    except:
+        return 0.0
+
+
+def get_gpu_list() -> list[dict[str, str]]:
+    try:
+        cmd = [
+            'powershell',
+            '-Command',
+            'Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json'
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpus = json.loads(result.stdout)
+        if isinstance(gpus, dict):
+            gpus = [gpus]
+
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append({
+                'Name': gpu.get('Name', None),
+                'AdapterCompatibility': gpu.get('AdapterCompatibility', None),
+                'AdapterRAM': gpu.get('AdapterRAM', None),
+                'DriverVersion': gpu.get('DriverVersion', None),
+            })
+        return gpu_info
+    except Exception as _:
+        return []
 
 
 def version_increment(version: str) -> str:
@@ -645,30 +696,89 @@ def compare_versions(version1: str, version2: str) -> int:
     return 0
 
 
-def get_pytorch_mirror_type(torch_version: str) -> str:
+def get_pytorch_mirror_type(
+    torch_version: str,
+    use_xpu: bool = False,
+    use_cpu: bool = False,
+    use_rocm: bool = False,
+) -> str:
+    # cu118: 2.0.0 ~ 2.4.0
+    # cu121； 2.1.1 ~ 2.4.0
+    # cu124: 2.4.0 ~ 2.6.0
+    # cu126: 2.6.0 ~ 2.7.1
+    # cu128: 2.7.0 ~ 2.7.1
+    # cu129: 2.8.0 ~
     torch_ver = get_package_version(torch_version)
+    cuda_comp_cap = get_cuda_comp_cap()
+    cuda_support_ver = get_cuda_version()
+    gpu_list = get_gpu_list()
+    has_gpus = any([
+        x for x in gpu_list
+        if 'Intel' in x.get('AdapterCompatibility', '')
+        or 'NVIDIA' in x.get('AdapterCompatibility', '')
+        or 'Advanced Micro Devices' in x.get('AdapterCompatibility', '')
+    ])
+    has_xpu = any([
+        x for x in gpu_list
+        if 'Intel' in x.get('AdapterCompatibility', '')
+        and (
+            x.get('Name', '').startswith('Intel(R) Arc')
+            or
+            x.get('Name', '').startswith('Intel(R) Core Ultra')
+        )
+    ])
 
     if compare_versions(torch_ver, '2.0.0') == -1:
-        # torch < 2.0.0
-        return 'cu11x'
-    elif compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
-        # 2.0.0 <= torch < 2.3.1
-        return 'cu118'
-    elif compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
-        # 2.3.0 <= torch < 2.4.1
-        return 'cu121'
-    elif compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
-        # 2.4.0 <= torch < 2.6.0
-        return 'cu124'
-    elif compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
-        # 2.6.0 <= torch < 2.7.0
-        return 'cu126'
-    elif compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
-        # 2.7.0 <= torch < 2.8.0
-        return 'cu128'
-    elif compare_versions(torch_ver, '2.8.0') >= 0:
-        # torch >= 2.8.0
-        return 'cu129'
+        # torch < 2.0.0: default cu11x
+        if has_gpus:
+            return 'cu11x'
+    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
+        # 2.0.0 <= torch < 2.3.1: default cu118
+        if has_gpus:
+            return 'cu118'
+    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
+        # 2.3.0 <= torch < 2.4.1: default cu121
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu118') >= 0:
+                return 'cu118'
+        if has_gpus:
+            return 'cu121'
+    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
+        # 2.4.0 <= torch < 2.6.0: default cu124
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') >= 0:
+                return 'cu121'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu118') >= 0:
+                return 'cu118'
+        if has_gpus:
+            return 'cu124'
+    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
+        # 2.6.0 <= torch < 2.7.0: default cu126
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') >= 0:
+                return 'cu124'
+        if compare_versions(cuda_comp_cap, '10.0') > 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu126'
+    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
+        # 2.7.0 <= torch < 2.8.0: default cu128
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu128'
+    if compare_versions(torch_ver, '2.8.0') >= 0:
+        # torch >= 2.8.0: default cu129
+        if has_gpus:
+            return 'cu129'
+
+    return 'cpu'
 
 
 if __name__ == '__main__':
@@ -688,6 +798,19 @@ if __name__ == '__main__':
 
     # 设置对应的镜像源
     switch ($mirror_type) {
+        cpu {
+            Print-Msg "设置 PyTorch 镜像源类型为 cpu"
+            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CPU
+            }
+            $mirror_uv_default_index = $mirror_pip_index_url
+            $mirror_pip_extra_index_url = ""
+            $mirror_uv_index = $mirror_pip_extra_index_url
+            $mirror_pip_find_links = ""
+            $mirror_uv_find_links = $mirror_pip_find_links
+        }
         xpu {
             Print-Msg "设置 PyTorch 镜像源类型为 xpu"
             $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
@@ -823,13 +946,13 @@ def get_cuda_comp_cap() -> float:
         return 0.0
 
 
-def get_cuda_version() -> str:
+def get_cuda_version() -> float:
     try:
         # 获取 nvidia-smi 输出
         output = subprocess.check_output(['nvidia-smi', '-q'], text=True)
         match = re.search(r'CUDA Version\s+:\s+(\d+\.\d+)', output)
         if match:
-            return match.group(1)
+            return float(match.group(1))
         return 0.0
     except:
         return 0.0
@@ -914,7 +1037,14 @@ def select_avaliable_type() -> str:
         ]):
             return 'xpu'
 
-    return 'cu118'
+        if any([
+            x for x in gpus
+            or 'NVIDIA' in x.get('AdapterCompatibility', '')
+            or 'Advanced Micro Devices' in x.get('AdapterCompatibility', '')
+        ]):
+            return 'cu118'
+
+    return 'cpu'
 
 
 if __name__ == '__main__':
@@ -980,6 +1110,11 @@ function Get-PyTorch-And-xFormers-Package {
         }
         xpu {
             $pytorch_package = "torch==2.8.0+xpu torchvision==0.23.0+xpu torchaudio==2.8.0+xpu"
+            $xformers_package = $null
+            break
+        }
+        cpu {
+            $pytorch_package = "torch==2.8.0+cpu torchvision==0.23.0+cpu torchaudio==2.8.0+cpu"
             $xformers_package = $null
             break
         }
@@ -5181,13 +5316,13 @@ def get_cuda_comp_cap() -> float:
         return 0.0
 
 
-def get_cuda_version() -> str:
+def get_cuda_version() -> float:
     try:
         # 获取 nvidia-smi 输出
         output = subprocess.check_output(['nvidia-smi', '-q'], text=True)
         match = re.search(r'CUDA Version\s+:\s+(\d+\.\d+)', output)
         if match:
-            return match.group(1)
+            return float(match.group(1))
         return 0.0
     except:
         return 0.0
@@ -5274,7 +5409,7 @@ def get_avaliable_device() -> str:
                 device_list.append(ver)
     else:
         for ver in CUDA_TYPE:
-            if compare_versions(ver, str(int(float(cuda_support_ver) * 10))) <= 0:
+            if compare_versions(ver, str(int(cuda_support_ver * 10))) <= 0:
                 device_list.append(ver)
 
     return ','.join(list(set(device_list)))
@@ -9143,7 +9278,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         例如: .\sd_trainer_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu11x, cu118, cu121, cu124, cu126, cu128
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128
 
     -InstallBranch <安装的 SD-Trainer 分支>
         指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
