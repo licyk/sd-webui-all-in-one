@@ -708,7 +708,7 @@ def get_pytorch_mirror_type(
     use_rocm: bool = False,
 ) -> str:
     # cu118: 2.0.0 ~ 2.4.0
-    # cu121； 2.1.1 ~ 2.4.0
+    # cu121: 2.1.1 ~ 2.4.0
     # cu124: 2.4.0 ~ 2.6.0
     # cu126: 2.6.0 ~ 2.7.1
     # cu128: 2.7.0 ~ 2.7.1
@@ -805,128 +805,108 @@ if __name__ == '__main__':
     switch ($mirror_type) {
         cpu {
             Print-Msg "设置 PyTorch 镜像源类型为 cpu"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cpu"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CPU_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CPU
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         xpu {
             Print-Msg "设置 PyTorch 镜像源类型为 xpu"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "xpu"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_XPU_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_XPU
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu11x {
             Print-Msg "设置 PyTorch 镜像源类型为 cu11x"
-            $mirror_pip_index_url = $Env:PIP_INDEX_URL
-            $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
-            $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
-            $mirror_uv_index = $Env:UV_INDEX
-            $mirror_pip_find_links = $Env:PIP_FIND_LINKS
-            $mirror_uv_find_links = $Env:UV_FIND_LINKS
+            $pytorch_mirror_type = "cu11x"
+            $mirror_index_url = $Env:PIP_INDEX_URL
+            $mirror_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+            $mirror_find_links = $Env:PIP_FIND_LINKS
         }
         cu118 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu118"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu118"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU118_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU118
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu121 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu121"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu121"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU121_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU121
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu124 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu124"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu124"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU124_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU124
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu126 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu126"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu126"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU126
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu128 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu128"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu128"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU128_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU128
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         cu129 {
             Print-Msg "设置 PyTorch 镜像源类型为 cu129"
-            $mirror_pip_index_url = if ($USE_PIP_MIRROR) {
+            $pytorch_mirror_type = "cu129"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
                 $PIP_EXTRA_INDEX_MIRROR_CU129_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU129
             }
-            $mirror_uv_default_index = $mirror_pip_index_url
-            $mirror_pip_extra_index_url = ""
-            $mirror_uv_index = $mirror_pip_extra_index_url
-            $mirror_pip_find_links = ""
-            $mirror_uv_find_links = $mirror_pip_find_links
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
         }
         Default {
             Print-Msg "未知的 PyTorch 镜像源类型: $mirror_type, 使用默认 PyTorch 镜像源"
-            $mirror_pip_index_url = $Env:PIP_INDEX_URL
-            $mirror_uv_default_index = $Env:UV_DEFAULT_INDEX
-            $mirror_pip_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
-            $mirror_uv_index = $Env:UV_INDEX
-            $mirror_pip_find_links = $Env:PIP_FIND_LINKS
-            $mirror_uv_find_links = $Env:UV_FIND_LINKS
+            $pytorch_mirror_type = "null"
+            $mirror_index_url = $Env:PIP_INDEX_URL
+            $mirror_extra_index_url = $Env:PIP_EXTRA_INDEX_URL
+            $mirror_find_links = $Env:PIP_FIND_LINKS
         }
     }
-    return $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links
+    return $mirror_index_url, $mirror_extra_index_url, $mirror_find_links, $pytorch_mirror_type
 }
 
 
@@ -1137,7 +1117,7 @@ function Get-PyTorch-And-xFormers-Package {
 # 安装 PyTorch
 function Install-PyTorch {
     $pytorch_package, $xformers_package = Get-PyTorch-And-xFormers-Package
-    $mirror_pip_index_url, $mirror_uv_default_index, $mirror_pip_extra_index_url, $mirror_uv_index, $mirror_pip_find_links, $mirror_uv_find_links = Get-PyTorch-Mirror $pytorch_package
+    $mirror_pip_index_url, $mirror_pip_extra_index_url, $mirror_pip_find_links, $pytorch_mirror_type = Get-PyTorch-Mirror $pytorch_package
 
     # 备份镜像源配置
     $tmp_pip_index_url = $Env:PIP_INDEX_URL
@@ -1149,11 +1129,11 @@ function Install-PyTorch {
 
     # 设置新的镜像源
     $Env:PIP_INDEX_URL = $mirror_pip_index_url
-    $Env:UV_DEFAULT_INDEX = $mirror_uv_default_index
+    $Env:UV_DEFAULT_INDEX = $mirror_pip_index_url
     $Env:PIP_EXTRA_INDEX_URL = $mirror_pip_extra_index_url
-    $Env:UV_INDEX = $mirror_uv_index
+    $Env:UV_INDEX = $mirror_pip_extra_index_url
     $Env:PIP_FIND_LINKS = $mirror_pip_find_links
-    $Env:UV_FIND_LINKS = $mirror_uv_find_links
+    $Env:UV_FIND_LINKS = $mirror_pip_find_links
 
     Print-Msg "将要安装的 PyTorch: $pytorch_package"
     Print-Msg "将要安装的 xFormers: $xformers_package"
