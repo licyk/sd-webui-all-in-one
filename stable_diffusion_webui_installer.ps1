@@ -1,5 +1,6 @@
 ﻿param (
     [switch]$Help,
+    [string]$CorePrefix,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "stable-diffusion-webui"),
     [string]$PyTorchMirrorType,
     [string]$InstallBranch,
@@ -35,6 +36,28 @@
     [switch]$DisableEnvCheck,
     [switch]$DisableAutoApplyUpdate
 )
+& {
+    $prefix_list = @("core", "stable-diffusion-webui", "stable-diffusion-webui-forge", "stable-diffusion-webui-reForge", "sd-webui-forge-classic", "stable-diffusion-webui-amdgpu", "automatic", "sd_webui", "sd_webui_forge", "sd-webui-aki-v4.10", "sd-webui-aki-v4.11.1-cu128", "sd-webui-forge-aki-v1.0")
+    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
+        Write-Host "[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
+        if ($CorePrefix) {
+            $Env:CORE_PREFIX = $CorePrefix
+        } else {
+            $Env:CORE_PREFIX = Get-Content "$PSScriptRoot/core_prefix.txt"
+        }
+        Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
+        return
+    }
+    ForEach ($i in $prefix_list) {
+        if (Test-Path "$InstallPath/$i") {
+            $Env:CORE_PREFIX = $i
+            Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
+            return
+        }
+    }
+    $Env:CORE_PREFIX = "core"
+    Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
+}
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
@@ -1641,6 +1664,7 @@ function Write-Launch-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
@@ -1657,6 +1681,28 @@ param (
     [switch]`$DisableEnvCheck,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4118,6 +4164,7 @@ function Write-Update-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
@@ -4127,6 +4174,28 @@ param (
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -4607,6 +4676,7 @@ function Write-Update-Extension-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
@@ -4616,6 +4686,28 @@ param (
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -5153,6 +5245,7 @@ function Write-Switch-Branch-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [int]`$BuildWitchBranch,
     [switch]`$DisablePyPIMirror,
@@ -5163,6 +5256,28 @@ param (
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -6073,6 +6188,7 @@ function Write-PyTorch-ReInstall-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [int]`$BuildWithTorch,
     [switch]`$BuildWithTorchReinstall,
@@ -6083,6 +6199,28 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -7683,6 +7821,7 @@ function Write-Download-Model-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
     [switch]`$DisablePyPIMirror,
@@ -7691,6 +7830,28 @@ param (
     [switch]`$DisableUpdate,
     [switch]`$DisableAutoApplyUpdate
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -8694,10 +8855,33 @@ function Write-Stable-Diffusion-WebUI-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxys,
     [string]`$UseCustomProxy
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -9774,6 +9958,7 @@ function Write-Env-Activate-Script {
     $content = "
 param (
     [switch]`$Help,
+    [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
@@ -9782,6 +9967,28 @@ param (
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror
 )
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$Env:CORE_PREFIX = `$CorePrefix
+        } else {
+            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$InstallPath/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
+}
 # SD WebUI Installer 版本和检查更新间隔
 `$Env:SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
@@ -10647,6 +10854,11 @@ function Copy-Stable-Diffusion-WebUI-Installer-Config {
         Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$InstallPath" -Force
         Print-Msg "$PSScriptRoot/gh_mirror.txt -> $InstallPath/gh_mirror.txt"
     }
+
+    if ((!($CorePrefix)) -and (Test-Path "$PSScriptRoot/core_prefix.txt")) {
+        Copy-Item -Path "$PSScriptRoot/core_prefix.txt" -Destination "$InstallPath" -Force
+        Print-Msg "$PSScriptRoot/core_prefix.txt -> $InstallPath/core_prefix.txt" -Force
+    }
 }
 
 
@@ -10815,6 +11027,7 @@ function Use-Build-Mode {
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行重装 PyTorch 脚本中"
         . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
     }
@@ -10827,6 +11040,7 @@ function Use-Build-Mode {
         if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行模型安装脚本中"
         . "$InstallPath/download_models.ps1" -BuildMode @launch_args
     }
@@ -10841,6 +11055,7 @@ function Use-Build-Mode {
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 Stable Diffusion WebUI 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" -BuildMode @launch_args
     }
@@ -10854,6 +11069,7 @@ function Use-Build-Mode {
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 Stable Diffusion WebUI 更新脚本中"
         . "$InstallPath/update.ps1" -BuildMode @launch_args
     }
@@ -10867,6 +11083,7 @@ function Use-Build-Mode {
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 Stable Diffusion WebUI 插件更新脚本中"
         . "$InstallPath/update_extension.ps1" -BuildMode @launch_args
     }
@@ -10887,6 +11104,7 @@ function Use-Build-Mode {
         if ($DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 Stable Diffusion WebUI 启动脚本中"
         . "$InstallPath/launch.ps1" -BuildMode @launch_args
     }
