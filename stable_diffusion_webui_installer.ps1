@@ -113,11 +113,11 @@ $SD_WEBUI_REPO = if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($Inst
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
-$PYTHON_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python/Scripts"
 $GIT_PATH = "$InstallPath/git/bin"
-$GIT_EXTRA_PATH = "$InstallPath/stable-diffusion-webui/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -1241,11 +1241,11 @@ function Install-CLIP {
 function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$InstallPath/stable-diffusion-webui"
-    $dep_path = "$InstallPath/stable-diffusion-webui/requirements_versions.txt"
+    Set-Location "$InstallPath/$Env:CORE_PREFIX"
+    $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements_versions.txt"
     # SD Next
     if (!(Test-Path "$dep_path")) {
-        $dep_path = "$InstallPath/stable-diffusion-webui/requirements.txt"
+        $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements.txt"
     }
     Print-Msg "安装 Stable Diffusion WebUI 依赖中"
     if ($USE_UV) {
@@ -1299,7 +1299,7 @@ function Model-Downloader ($download_list) {
 function Get-Stable-Diffusion-WebUI-Component-List ($branch) {
     $sd_webui_repositories = New-Object System.Collections.ArrayList
     $repositories_list = New-Object System.Collections.ArrayList
-    $sd_webui_repositories_path = "$InstallPath/stable-diffusion-webui/repositories"
+    $sd_webui_repositories_path = "$InstallPath/$Env:CORE_PREFIX/repositories"
 
     $sd_webui_repositories.Add(@(
         @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
@@ -1345,7 +1345,7 @@ function Get-Stable-Diffusion-WebUI-Component-List ($branch) {
 function Get-Stable-Diffusion-WebUI-Extension ($branch) {
     $sd_webui_extension = New-Object System.Collections.ArrayList
     $extension_list = New-Object System.Collections.ArrayList
-    $sd_webui_extension_path = "$InstallPath/stable-diffusion-webui/extensions"
+    $sd_webui_extension_path = "$InstallPath/$Env:CORE_PREFIX/extensions"
 
     $sd_webui_extension.Add(@(
         @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
@@ -1461,7 +1461,7 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -1469,12 +1469,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe") {
-        $Env:UV_PYTHON = "$InstallPath/stable-diffusion-webui/python/python.exe"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/$Env:CORE_PREFIX/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -1482,7 +1482,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/stable-diffusion-webui/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -1521,7 +1521,7 @@ function Check-Install {
     $sd_webui_extension = Get-Stable-Diffusion-WebUI-Extension $branch_type
 
     # SD WebUI 核心
-    Git-Clone "$SD_WEBUI_REPO" "$InstallPath/stable-diffusion-webui"
+    Git-Clone "$SD_WEBUI_REPO" "$InstallPath/$Env:CORE_PREFIX"
 
     # SD WebUI 组件
     for ($i = 0; $i -lt $sd_webui_component.Count; $i++) {
@@ -1563,7 +1563,7 @@ function Check-Install {
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
-    if (!(Test-Path "$InstallPath/stable-diffusion-webui/config.json")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/config.json")) {
         Print-Msg "设置默认 Stable Diffusion WebUI 设置"
         $json_content = @{
             "quicksettings_list" = @(
@@ -1597,7 +1597,7 @@ function Check-Install {
         # 创建一个不带 BOM 的 UTF-8 编码器
         $utf8_encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/stable-diffusion-webui/config.json", $false, $utf8_encoding)
+        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/config.json", $false, $utf8_encoding)
         $stream_writer.Write($json_content)
         $stream_writer.Close()
     }
@@ -1607,8 +1607,8 @@ function Check-Install {
     } else {
         Print-Msg "预下载模型中"
         $model_list = New-Object System.Collections.ArrayList
-        $checkpoint_path = "$InstallPath/stable-diffusion-webui/models/Stable-diffusion"
-        $vae_approx_path = "$InstallPath/stable-diffusion-webui/models/VAE-approx"
+        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/Stable-diffusion"
+        $vae_approx_path = "$InstallPath/$Env:CORE_PREFIX/models/VAE-approx"
 
         $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt", "$vae_approx_path", "model.pt")) | Out-Null
         $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt", "$vae_approx_path", "vaeapprox-sdxl.pt")) | Out-Null
@@ -1714,11 +1714,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -2194,8 +2194,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -2236,8 +2236,8 @@ function Get-Stable-Diffusion-WebUI-Launch-Args {
 # 设置 Stable Diffusion WebUI 的快捷启动方式
 function Create-Stable-Diffusion-WebUI-Shortcut {
     # 设置快捷方式名称
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
@@ -3455,9 +3455,9 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_stable_diffusion_webui_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/stable-diffusion-webui/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
         Print-Msg `"未检测到 Stable Diffusion WebUI 依赖文件, 跳过依赖完整性检查`"
@@ -3490,7 +3490,7 @@ if __name__ == '__main__':
 
 # 检查插件是否被禁用
 function Check-Extension-Is-Disabled (`$name) {
-    `$sd_webui_config = `"`$PSScriptRoot/stable-diffusion-webui/config.json`"
+    `$sd_webui_config = `"`$PSScriptRoot/`$Env:CORE_PREFIX/config.json`"
 
     try {
         `$json_content = Get-Content -Path `$sd_webui_config -Raw | ConvertFrom-Json
@@ -3516,9 +3516,9 @@ function Check-Extension-Is-Disabled (`$name) {
 # 检查 Stable Diffusion WebUI 环境中组件依赖
 function Check-Stable-Diffusion-WebUI-Env-Requirements {
     `$current_python_path = `$Env:PYTHONPATH
-    `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/stable-diffusion-webui`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
+    `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/`$Env:CORE_PREFIX`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
     Print-Msg `"检查 Stable Diffusion WebUI 扩展依赖中`"
-    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
     `$current_live_config = `$Env:WEBUI_LAUNCH_LIVE_OUTPUT
     `$Env:WEBUI_LAUNCH_LIVE_OUTPUT = 1
 
@@ -3563,7 +3563,7 @@ function Check-Stable-Diffusion-WebUI-Env-Requirements {
     Print-Msg `"Stable Diffusion WebUI 扩展依赖检查完成`"
 
     Print-Msg `"检查 Stable Diffusion WebUI 内置扩展依赖中`"
-    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions-builtin`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions-builtin`" | Select-Object -ExpandProperty FullName
 
     `$sum = 0
     ForEach (`$extension_path in `$extension_list) {
@@ -4069,7 +4069,7 @@ function Main {
     Set-Stable-Diffusion-WebUI-Extension-List-Mirror
     Set-ControlNet-Extension-Requirement-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -4078,7 +4078,7 @@ function Main {
     `$launch_args = Get-Stable-Diffusion-WebUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
-    Set-Location `"`$PSScriptRoot/stable-diffusion-webui`"
+    Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
     Create-Stable-Diffusion-WebUI-Shortcut
     Check-Stable-Diffusion-WebUI-Env
@@ -4184,11 +4184,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -4541,35 +4541,35 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     Print-Msg `"拉取 Stable Diffusion WebUI 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/stable-diffusion-webui`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    git -C `"`$PSScriptRoot/stable-diffusion-webui`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" branch --show-current)`"
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
     if (`$?) {
         `$remote_branch = `"origin/`$branch`"
     } else {
-        `$author=`$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" config --get `"branch.`${branch}.remote`")
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
         if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
             `$remote_branch = `$branch
         }
     }
 
-    git -C `"`$PSScriptRoot/stable-diffusion-webui`" fetch --recurse-submodules --all
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 Stable Diffusion WebUI 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/stable-diffusion-webui`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"Stable Diffusion WebUI 已为最新版, 当前版本：`$core_origin_ver`"
@@ -4673,11 +4673,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5066,13 +5066,13 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
     ForEach (`$extension in `$extension_list) {
@@ -5220,11 +5220,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5552,10 +5552,10 @@ function Set-Github-Mirror {
 
 # 获取 SD WebUI 分支
 function Get-Stable-Diffusion-WebUI-Branch {
-    `$remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
-    `$ref = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" symbolic-ref --quiet HEAD 2> `$null)
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
-        `$ref = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" show -s --format=`"%h`")
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
     }
 
     return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
@@ -5564,7 +5564,7 @@ function Get-Stable-Diffusion-WebUI-Branch {
 
 # 切换 SD WebUI 分支
 function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod) {
-    `$sd_webui_path = `"`$PSScriptRoot/stable-diffusion-webui`"
+    `$sd_webui_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$preview_url = `$(git -C `"`$sd_webui_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
@@ -5629,7 +5629,7 @@ function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod)
 
 # 重置 repositories 中的组件
 function Reset-Repositories {
-    `$repositories_path = `"`$PSScriptRoot/stable-diffusion-webui/repositories`"
+    `$repositories_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/repositories`"
     if (!(Test-Path `"`$repositories_path`")) {
         return
     }
@@ -5657,7 +5657,7 @@ function Main {
         Check-Stable-Diffusion-WebUI-Installer-Update
     }
 
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -5977,8 +5977,8 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/stable-diffusion-webui`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
@@ -6121,11 +6121,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -6409,8 +6409,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -7729,11 +7729,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8069,8 +8069,8 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/git.exe`")) {
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`" -Force
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
     } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
         Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
     } else {
@@ -8541,7 +8541,7 @@ function Main {
     }
     Check-Aria2-Version
 
-    if (!(Test-Path `"`$PSScriptRoot/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 stable-diffusion-webui 文件夹, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -8608,7 +8608,7 @@ function Main {
                         `$content = `$model_list[(`$i - 1)]
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
-                        `$path = `"`$PSScriptRoot/stable-diffusion-webui/models/`$(`$content[2])`" # 模型放置路径
+                        `$path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/models/`$(`$content[2])`" # 模型放置路径
                         # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
                         `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
@@ -8736,11 +8736,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -9563,14 +9563,14 @@ function Check-Stable-Diffusion-WebUI-Installer-Update {
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
     `$broken = 0
-    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/python/python.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`")) {
         `$python_status = `"已安装`"
     } else {
         `$python_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         `$git_status = `"已安装`"
     } else {
         `$git_status = `"未安装`"
@@ -9585,14 +9585,14 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/git/bin/aria2c.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`")) {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/stable-diffusion-webui/launch.py`") {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/launch.py`") {
         `$stable_diffusion_webui_status = `"已安装`"
     } else {
         `$stable_diffusion_webui_status = `"未安装`"
@@ -9839,11 +9839,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/stable-diffusion-webui/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -10134,7 +10134,7 @@ function global:Install-Stable-Diffusion-WebUI-Extension (`$url) {
 
     `$extension_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
     `$cache_path = `"`$Env:CACHE_HOME/`${extension_name}_tmp`"
-    `$path = `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions/`$extension_name`"
+    `$path = `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions/`$extension_name`"
     if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
@@ -10209,7 +10209,7 @@ function global:Git-Clone (`$url, `$path) {
 
 # 列出已安装的 Stable Diffusion WebUI 扩展
 function global:List-Extension {
-    `$extension_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
     Print-Msg `"当前 Stable Diffusion WebUI 已安装的扩展`"
     `$count = 0
     ForEach (`$i in `$extension_list) {
@@ -10219,7 +10219,7 @@ function global:List-Extension {
             Print-Msg `"- `$name`"
         }
     }
-    Print-Msg `"Stable Diffusion WebUI 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/extensions`"))`"
+    Print-Msg `"Stable Diffusion WebUI 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions`"))`"
     Print-Msg `"Stable Diffusion WebUI 扩展数量: `$count`"
 }
 
@@ -10233,23 +10233,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui`")) {
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$Env:SD_WEBUI_INSTALLER_ROOT 路径中未找到 stable-diffusion-webui 文件夹, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -10286,10 +10286,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/python/python.exe`")) {
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
         if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\stable-diffusion-webui 中`"
-            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/python`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui`" -Force
+            Print-Msg `"尝试将 Python 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/python`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -10301,10 +10301,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/git/bin/git.exe`")) {
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\stable-diffusion-webui 中`"
-            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/git`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui`" -Force
+            Print-Msg `"尝试将 Git 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/git`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -10479,8 +10479,8 @@ function Main {
     Set-Github-Mirror
     PyPI-Mirror-Status
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:SD_WEBUI_INSTALLER_ROOT/stable-diffusion-webui/python/python.exe`"
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
     Print-Msg `"激活 Stable Diffusion WebUI Env`"
     Print-Msg `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md`"
@@ -10665,16 +10665,16 @@ function Install-Hanamizuki {
 
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
-    if (Test-Path "$InstallPath/stable-diffusion-webui/hanamizuki.exe") {
-        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/stable-diffusion-webui/hanamizuki.exe"))"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
         Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
         ForEach ($url in $urls) {
             Print-Msg "下载绘世启动器中"
             try {
                 Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
-                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/stable-diffusion-webui/hanamizuki.exe" -Force
-                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/stable-diffusion-webui/hanamizuki.exe"))"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
                 Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
                 break
             }
@@ -10711,10 +10711,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
 
     Print-Msg "检查绘世启动器运行环境"
-    if (!(Test-Path "$InstallPath/stable-diffusion-webui/python/python.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         if (Test-Path "$InstallPath/python") {
-            Print-Msg "尝试将 Python 移动至 $InstallPath\stable-diffusion-webui 中"
-            Move-Item -Path "$InstallPath/python" "$InstallPath/stable-diffusion-webui" -Force
+            Print-Msg "尝试将 Python 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Python 路径移动成功"
             } else {
@@ -10726,10 +10726,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path "$InstallPath/stable-diffusion-webui/git/bin/git.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         if (Test-Path "$InstallPath/git") {
-            Print-Msg "尝试将 Git 移动至 $InstallPath\stable-diffusion-webui 中"
-            Move-Item -Path "$InstallPath/git" "$InstallPath/stable-diffusion-webui" -Force
+            Print-Msg "尝试将 Git 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Git 路径移动成功"
             } else {

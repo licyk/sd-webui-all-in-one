@@ -102,11 +102,11 @@ $SD_TRAINER_REPO = if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
-$PYTHON_EXTRA_PATH = "$InstallPath/lora-scripts/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/lora-scripts/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python/Scripts"
 $GIT_PATH = "$InstallPath/git/bin"
-$GIT_EXTRA_PATH = "$InstallPath/lora-scripts/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -516,16 +516,16 @@ function Set-Github-Mirror {
 # 安装 SD-Trainer
 function Install-SD-Trainer {
     $status = 0
-    if (!(Test-Path "$InstallPath/lora-scripts")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "$InstallPath/lora-scripts" -Recurse
+        $items = Get-ChildItem "$InstallPath/$Env:CORE_PREFIX" -Recurse
         if ($items.Count -eq 0) {
             $status = 1
         }
     }
 
-    $path = "$InstallPath/lora-scripts"
+    $path = "$InstallPath/$Env:CORE_PREFIX"
     $cache_path = "$Env:CACHE_HOME/lora-scripts_tmp"
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer"
@@ -556,8 +556,8 @@ function Install-SD-Trainer {
     }
 
     Print-Msg "安装 SD-Trainer 子模块中"
-    git -C "$InstallPath/lora-scripts" submodule init
-    git -C "$InstallPath/lora-scripts" submodule update
+    git -C "$InstallPath/$Env:CORE_PREFIX" submodule init
+    git -C "$InstallPath/$Env:CORE_PREFIX" submodule update
     if ($?) {
         Print-Msg "SD-Trainer 子模块安装成功"
     } else {
@@ -1201,7 +1201,7 @@ function Install-PyTorch {
 function Install-SD-Trainer-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$InstallPath/lora-scripts"
+    Set-Location "$InstallPath/$Env:CORE_PREFIX"
     Print-Msg "安装 SD-Trainer 依赖中"
     if ($USE_UV) {
         uv pip install -r requirements.txt
@@ -1232,7 +1232,7 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/lora-scripts/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -1240,12 +1240,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$InstallPath/lora-scripts/python/python.exe") {
-        $Env:UV_PYTHON = "$InstallPath/lora-scripts/python/python.exe"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/$Env:CORE_PREFIX/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/lora-scripts/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -1253,7 +1253,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/lora-scripts/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -1358,11 +1358,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -1756,8 +1756,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -1798,8 +1798,8 @@ function Get-SD-Trainer-Launch-Args {
 # 设置 SD-Trainer 的快捷启动方式
 function Create-SD-Trainer-Shortcut {
     # 设置快捷方式名称
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/lora-scripts/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
@@ -3009,9 +3009,9 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/lora-scripts/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
         Print-Msg `"未检测到 SD-Trainer 依赖文件, 跳过依赖完整性检查`"
@@ -3273,8 +3273,8 @@ if __name__ == '__main__':
     print(need_install_ort_ver(False))
 `".Trim()
 
-    if (Test-Path `"`$PSScriptRoot/lora-scripts/.git`") {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if (((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) -and (((!(Test-Path `"`$PSScriptRoot/launch_args.txt`")) -and (!(`$LaunchArg))) -or (((Test-Path `"`$PSScriptRoot/launch_args.txt`") -and (!(Select-String -Path `"`$PSScriptRoot/launch_args.txt`" -Pattern `"--skip-prepare-onnxruntime`"))) -and ((`$LaunchArg) -and (!(`$LaunchArg -match `"--skip-prepare-onnxruntime`")))))) {
@@ -3446,7 +3446,7 @@ function Main {
     Set-uv
     PyPI-Mirror-Status
 
-    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -3455,12 +3455,12 @@ function Main {
     `$launch_args = Get-SD-Trainer-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
-    Set-Location `"`$PSScriptRoot/lora-scripts`"
+    Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
     # 检测使用的启动脚本
-    if (Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") {
         `$launch_script = `"gui.py`"
-    } elseif (Test-Path `"`$PSScriptRoot/lora-scripts/kohya_gui.py`") {
+    } elseif (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`") {
         `$launch_script = `"kohya_gui.py`"
     } else {
         `$launch_script = `"gui.py`"
@@ -3570,11 +3570,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -3927,35 +3927,35 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     Print-Msg `"拉取 SD-Trainer 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/lora-scripts`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/lora-scripts`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    git -C `"`$PSScriptRoot/lora-scripts`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/lora-scripts`" branch --show-current)`"
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
     if (`$?) {
         `$remote_branch = `"origin/`$branch`"
     } else {
-        `$author=`$(git -C `"`$PSScriptRoot/lora-scripts`" config --get `"branch.`${branch}.remote`")
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
         if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/lora-scripts`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
             `$remote_branch = `$branch
         }
     }
 
-    git -C `"`$PSScriptRoot/lora-scripts`" fetch --recurse-submodules --all
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 SD-Trainer 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/lora-scripts`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/lora-scripts`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"SD-Trainer 已为最新版`"
@@ -4062,11 +4062,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -4394,10 +4394,10 @@ function Set-Github-Mirror {
 
 # 获取 SD-Trainer 分支
 function Get-SD-Trainer-Branch {
-    `$remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
-    `$ref = `$(git -C `"`$PSScriptRoot/lora-scripts`" symbolic-ref --quiet HEAD 2> `$null)
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
-        `$ref = `$(git -C `"`$PSScriptRoot/lora-scripts`" show -s --format=`"%h`")
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
     }
 
     return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
@@ -4406,7 +4406,7 @@ function Get-SD-Trainer-Branch {
 
 # 切换 SD-Trainer 分支
 function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
-    `$sd_trainer_path = `"`$PSScriptRoot/lora-scripts`"
+    `$sd_trainer_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$preview_url = `$(git -C `"`$sd_trainer_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
@@ -4478,7 +4478,7 @@ function Main {
         Check-SD-Trainer-Installer-Update
     }
 
-    if (!(Test-Path `"`$PSScriptRoot/lora-scripts`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -4729,8 +4729,8 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/lora-scripts/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/lora-scripts`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
@@ -4857,11 +4857,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5145,8 +5145,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/lora-scripts/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -6461,11 +6461,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -6801,8 +6801,8 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/lora-scripts/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/git/bin/git.exe`")) {
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/lora-scripts/git/bin/aria2c.exe`" -Force
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
     } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
         Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
     } else {
@@ -7227,11 +7227,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8057,14 +8057,14 @@ function SD-Trainer-Env-Check-Setting {
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
     `$broken = 0
-    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/python/python.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`")) {
         `$python_status = `"已安装`"
     } else {
         `$python_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         `$git_status = `"已安装`"
     } else {
         `$git_status = `"未安装`"
@@ -8079,14 +8079,14 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/git/bin/aria2c.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`")) {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/lora-scripts/gui.py`") -or (Test-Path `"`$PSScriptRoot/lora-scripts/kohya_gui.py`")) {
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`")) {
         `$sd_trainer_status = `"已安装`"
     } else {
         `$sd_trainer_status = `"未安装`"
@@ -8313,11 +8313,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/lora-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8549,23 +8549,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts`")) {
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$Env:SD_TRAINER_INSTALLER_ROOT 路径中未找到 lora-scripts 文件夹, 无法安装绘世启动器, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -8602,10 +8602,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`")) {
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
         if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\lora-scripts 中`"
-            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts`" -Force
+            Print-Msg `"尝试将 Python 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -8617,10 +8617,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/git/bin/git.exe`")) {
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\lora-scripts 中`"
-            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts`" -Force
+            Print-Msg `"尝试将 Git 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -8790,8 +8790,8 @@ function Main {
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     PyPI-Mirror-Status
-    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/lora-scripts/python/python.exe`"
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
     Print-Msg `"激活 SD-Trainer Env`"
     Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
@@ -8985,16 +8985,16 @@ function Install-Hanamizuki {
 
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
-    if (Test-Path "$InstallPath/lora-scripts/hanamizuki.exe") {
-        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/lora-scripts/hanamizuki.exe"))"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
         Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
         ForEach ($url in $urls) {
             Print-Msg "下载绘世启动器中"
             try {
                 Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
-                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/lora-scripts/hanamizuki.exe" -Force
-                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/lora-scripts/hanamizuki.exe"))"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
                 Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
                 break
             }
@@ -9031,10 +9031,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
 
     Print-Msg "检查绘世启动器运行环境"
-    if (!(Test-Path "$InstallPath/lora-scripts/python/python.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         if (Test-Path "$InstallPath/python") {
-            Print-Msg "尝试将 Python 移动至 $InstallPath\lora-scripts 中"
-            Move-Item -Path "$InstallPath/python" "$InstallPath/lora-scripts" -Force
+            Print-Msg "尝试将 Python 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Python 路径移动成功"
             } else {
@@ -9046,10 +9046,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path "$InstallPath/lora-scripts/git/bin/git.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         if (Test-Path "$InstallPath/git") {
-            Print-Msg "尝试将 Git 移动至 $InstallPath\lora-scripts 中"
-            Move-Item -Path "$InstallPath/git" "$InstallPath/lora-scripts" -Force
+            Print-Msg "尝试将 Git 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Git 路径移动成功"
             } else {

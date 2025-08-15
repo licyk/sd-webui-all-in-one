@@ -97,11 +97,11 @@ $ARIA2_MINIMUM_VER = "1.37.0"
 $COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
-$PYTHON_EXTRA_PATH = "$InstallPath/ComfyUI/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/ComfyUI/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python/Scripts"
 $GIT_PATH = "$InstallPath/git/bin"
-$GIT_EXTRA_PATH = "$InstallPath/ComfyUI/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -152,7 +152,7 @@ $Env:TORCHINDUCTOR_CACHE_DIR = "$InstallPath/cache/torchinductor"
 $Env:TRITON_CACHE_DIR = "$InstallPath/cache/triton"
 $Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
 $Env:UV_PYTHON = "$InstallPath/python/python.exe"
-$Env:COMFYUI_PATH = "$InstallPath/ComfyUI"
+$Env:COMFYUI_PATH = "$InstallPath/$Env:CORE_PREFIX"
 
 
 
@@ -1191,7 +1191,7 @@ function Install-PyTorch {
 function Install-ComfyUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$InstallPath/ComfyUI"
+    Set-Location "$InstallPath/$Env:CORE_PREFIX"
     Print-Msg "安装 ComfyUI 依赖中"
     if ($USE_UV) {
         uv pip install -r requirements.txt
@@ -1222,7 +1222,7 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/ComfyUI/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -1230,12 +1230,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$InstallPath/ComfyUI/python/python.exe") {
-        $Env:UV_PYTHON = "$InstallPath/ComfyUI/python/python.exe"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/$Env:CORE_PREFIX/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/ComfyUI/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -1243,7 +1243,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/ComfyUI/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -1261,7 +1261,7 @@ function Check-Install {
     Check-uv-Version
 
     Set-Github-Mirror
-    $comfyui_path = "$InstallPath/ComfyUI"
+    $comfyui_path = "$InstallPath/$Env:CORE_PREFIX"
     $custom_node_path = "$comfyui_path/custom_nodes"
     Git-CLone "$COMFYUI_REPO" "$comfyui_path"
 
@@ -1300,7 +1300,7 @@ function Check-Install {
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
-    if (!(Test-Path "$InstallPath/ComfyUI/user/default/comfy.settings.json")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/user/default/comfy.settings.json")) {
         Print-Msg "设置默认 ComfyUI 设置"
         $json_content = @{
             "Comfy.Settings.ExtensionPanel" = $true
@@ -1310,11 +1310,11 @@ function Check-Install {
             "Comfy.RerouteBeta" = $true
         }
         $json_content = $json_content | ConvertTo-Json -Depth 4
-        New-Item -ItemType Directory -Path "$InstallPath/ComfyUI/user/default" -Force > $null
+        New-Item -ItemType Directory -Path "$InstallPath/$Env:CORE_PREFIX/user/default" -Force > $null
         # 创建一个不带 BOM 的 UTF-8 编码器
         $utf8_encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/ComfyUI/user/default/comfy.settings.json", $false, $utf8_encoding)
+        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/user/default/comfy.settings.json", $false, $utf8_encoding)
         $stream_writer.Write($json_content)
         $stream_writer.Close()
     }
@@ -1322,7 +1322,7 @@ function Check-Install {
     if ($NoPreDownloadModel) {
         Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
     } else {
-        $checkpoint_path = "$InstallPath/ComfyUI/models/checkpoints"
+        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/checkpoints"
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors"
         $name = Split-Path -Path $url -Leaf
         if ((!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) -or (Test-Path "$checkpoint_path/${name}.aria2")) {
@@ -1427,11 +1427,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -1482,7 +1482,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -1908,8 +1908,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -3146,9 +3146,9 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/ComfyUI/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/ComfyUI/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
         Print-Msg `"未检测到 ComfyUI 依赖文件, 跳过依赖完整性检查`"
@@ -4823,11 +4823,11 @@ if __name__ == '__main__':
     Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
     Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
 
-    python `"`$Env:CACHE_HOME/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/ComfyUI`" --conflict-depend-notice-path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" `
+    python `"`$Env:CACHE_HOME/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/`$Env:CORE_PREFIX`" --conflict-depend-notice-path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" `
 
     if (Test-Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`") {
         Print-Msg `"检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用`"
-        Print-Msg `"您可以进入 ComfyUI 后使用 ComfyUI Manager 禁用或者卸载冲突的插件, 也可以进入 `$PSScriptRoot/ComfyUI/custom_nodes 路径, 将冲突插件的文件夹名称进行修改, 加上 .disabled 后缀后即可禁用插件, 或者直接删除插件的文件夹以卸载插件`"
+        Print-Msg `"您可以进入 ComfyUI 后使用 ComfyUI Manager 禁用或者卸载冲突的插件, 也可以进入 `$PSScriptRoot/`$Env:CORE_PREFIX/custom_nodes 路径, 将冲突插件的文件夹名称进行修改, 加上 .disabled 后缀后即可禁用插件, 或者直接删除插件的文件夹以卸载插件`"
         Print-Msg `"您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况`"
         Print-Msg `"您通常情况下可以选择忽略该警告并继续运行`"
         Write-Host `"-------------------------------------------------------------------------------`"
@@ -5286,7 +5286,7 @@ function Main {
     Set-uv
     PyPI-Mirror-Status
 
-    if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -5295,7 +5295,7 @@ function Main {
     `$launch_args = Get-ComfyUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
-    Set-Location `"`$PSScriptRoot/ComfyUI`"
+    Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
     Create-ComfyUI-Shortcut
     Check-ComfyUI-Env
@@ -5401,11 +5401,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5456,7 +5456,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -5759,35 +5759,35 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     Print-Msg `"拉取 ComfyUI 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/ComfyUI`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/ComfyUI`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    git -C `"`$PSScriptRoot/ComfyUI`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/ComfyUI`" branch --show-current)`"
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
     if (`$?) {
         `$remote_branch = `"origin/`$branch`"
     } else {
-        `$author=`$(git -C `"`$PSScriptRoot/ComfyUI`" config --get `"branch.`${branch}.remote`")
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
         if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/ComfyUI`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
             `$remote_branch = `$branch
         }
     }
 
-    git -C `"`$PSScriptRoot/ComfyUI`" fetch --recurse-submodules --all
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 ComfyUI 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/ComfyUI`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/ComfyUI`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/ComfyUI`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"ComfyUI 已为最新版, 当前版本：`$core_origin_ver`"
@@ -5890,11 +5890,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5945,7 +5945,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -6284,13 +6284,13 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/ComfyUI/custom_nodes`" | Select-Object -ExpandProperty FullName
+    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/custom_nodes`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
     ForEach (`$node in `$node_list) {
@@ -6629,11 +6629,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -6684,7 +6684,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -6918,8 +6918,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/ComfyUI/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -8237,11 +8237,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8292,7 +8292,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -8578,8 +8578,8 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/ComfyUI/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/ComfyUI/git/bin/git.exe`")) {
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/ComfyUI/git/bin/aria2c.exe`" -Force
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
     } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
         Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
     } else {
@@ -9102,7 +9102,7 @@ function Main {
     }
     Check-Aria2-Version
 
-    if (!(Test-Path `"`$PSScriptRoot/ComfyUI`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 ComfyUI 文件夹, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -9169,7 +9169,7 @@ function Main {
                         `$content = `$model_list[(`$i - 1)]
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
-                        `$path = `"`$PSScriptRoot/ComfyUI/models/`$(`$content[2])`" # 模型放置路径
+                        `$path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/models/`$(`$content[2])`" # 模型放置路径
                         # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
                         `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
@@ -9297,11 +9297,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -9352,7 +9352,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
@@ -10117,14 +10117,14 @@ function Check-ComfyUI-Installer-Update {
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
     `$broken = 0
-    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/ComfyUI/python/python.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`")) {
         `$python_status = `"已安装`"
     } else {
         `$python_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/ComfyUI/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         `$git_status = `"已安装`"
     } else {
         `$git_status = `"未安装`"
@@ -10139,14 +10139,14 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/ComfyUI/git/bin/aria2c.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`")) {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/ComfyUI/main.py`") {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/main.py`") {
         `$comfyui_status = `"已安装`"
     } else {
         `$comfyui_status = `"未安装`"
@@ -10392,11 +10392,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/ComfyUI/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -10447,7 +10447,7 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/ComfyUI`"
+`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
 
 
@@ -10688,7 +10688,7 @@ function global:Install-ComfyUI-Node (`$url) {
 
     `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
     `$cache_path = `"`$Env:CACHE_HOME/`${node_name}_tmp`"
-    `$path = `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes/`$node_name`"
+    `$path = `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes/`$node_name`"
     if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
@@ -10763,7 +10763,7 @@ function global:Git-Clone (`$url, `$path) {
 
 # 列出已安装的 ComfyUI 自定义节点
 function global:List-Node {
-    `$node_list = Get-ChildItem -Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes`" | Select-Object -ExpandProperty FullName
+    `$node_list = Get-ChildItem -Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes`" | Select-Object -ExpandProperty FullName
     Print-Msg `"当前 ComfyUI 已安装的自定义节点`"
     `$count = 0
     ForEach (`$i in `$node_list) {
@@ -10773,7 +10773,7 @@ function global:List-Node {
             Print-Msg `"- `$name`"
         }
     }
-    Print-Msg `"ComfyUI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/custom_nodes`"))`"
+    Print-Msg `"ComfyUI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes`"))`"
     Print-Msg `"ComfyUI 自定义节点数量: `$count`"
 }
 
@@ -10787,23 +10787,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI`")) {
+    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$Env:COMFYUI_INSTALLER_ROOT 路径中未找到 ComfyUI 文件夹, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -10840,10 +10840,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/python/python.exe`")) {
+    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
         if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:COMFYUI_INSTALLER_ROOT\ComfyUI 中`"
-            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI`" -Force
+            Print-Msg `"尝试将 Python 移动至 `$Env:COMFYUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -10855,10 +10855,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/git/bin/git.exe`")) {
+    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:COMFYUI_INSTALLER_ROOT\ComfyUI 中`"
-            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`" `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI`" -Force
+            Print-Msg `"尝试将 Git 移动至 `$Env:COMFYUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -11032,8 +11032,8 @@ function Main {
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     PyPI-Mirror-Status
-    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:COMFYUI_INSTALLER_ROOT/ComfyUI/python/python.exe`"
+    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
     Print-Msg `"激活 ComfyUI Env`"
     Print-Msg `"更多帮助信息可在 ComfyUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md`"
@@ -11216,16 +11216,16 @@ function Install-Hanamizuki {
 
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
-    if (Test-Path "$InstallPath/ComfyUI/hanamizuki.exe") {
-        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/ComfyUI/hanamizuki.exe"))"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
         Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
         ForEach ($url in $urls) {
             Print-Msg "下载绘世启动器中"
             try {
                 Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
-                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/ComfyUI/hanamizuki.exe" -Force
-                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/ComfyUI/hanamizuki.exe"))"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
                 Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
                 break
             }
@@ -11262,10 +11262,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
 
     Print-Msg "检查绘世启动器运行环境"
-    if (!(Test-Path "$InstallPath/ComfyUI/python/python.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         if (Test-Path "$InstallPath/python") {
-            Print-Msg "尝试将 Python 移动至 $InstallPath\ComfyUI 中"
-            Move-Item -Path "$InstallPath/python" "$InstallPath/ComfyUI" -Force
+            Print-Msg "尝试将 Python 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Python 路径移动成功"
             } else {
@@ -11277,10 +11277,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path "$InstallPath/ComfyUI/git/bin/git.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         if (Test-Path "$InstallPath/git") {
-            Print-Msg "尝试将 Git 移动至 $InstallPath\ComfyUI 中"
-            Move-Item -Path "$InstallPath/git" "$InstallPath/ComfyUI" -Force
+            Print-Msg "尝试将 Git 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Git 路径移动成功"
             } else {

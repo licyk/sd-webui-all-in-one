@@ -119,7 +119,7 @@ $Env:PIP_CACHE_DIR = "$InstallPath/cache/pip"
 $Env:PYTHONPYCACHEPREFIX = "$InstallPath/cache/pycache"
 $Env:TORCHINDUCTOR_CACHE_DIR = "$InstallPath/cache/torchinductor"
 $Env:TRITON_CACHE_DIR = "$InstallPath/cache/triton"
-$Env:INVOKEAI_ROOT = "$InstallPath/invokeai"
+$Env:INVOKEAI_ROOT = "$InstallPath/$Env:CORE_PREFIX"
 $Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
 $Env:UV_PYTHON = "$InstallPath/python/python.exe"
 
@@ -1219,7 +1219,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -1544,9 +1544,9 @@ function Get-InvokeAI-Launch-Address {
     `$ip = `"127.0.0.1`"
 
     Print-Msg `"获取 InvokeAI 界面地址`"
-    if (Test-Path `"`$PSScriptRoot/invokeai/invokeai.yaml`") {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/invokeai.yaml`") {
         # 读取配置文件中的端口配置
-        Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
+        Get-Content -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/invokeai.yaml`" | ForEach-Object {
             `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
             foreach (`$match in `$matches) {
                 `$key = `$match.Groups[1].Value
@@ -1558,7 +1558,7 @@ function Get-InvokeAI-Launch-Address {
             }
         }
 
-        Get-Content -Path `"`$PSScriptRoot/invokeai/invokeai.yaml`" | ForEach-Object {
+        Get-Content -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/invokeai.yaml`" | ForEach-Object {
             `$matches = [regex]::Matches(`$_, '^(\w+): (.+)')
             foreach (`$match in `$matches) {
                 `$key = `$match.Groups[1].Value
@@ -2260,7 +2260,7 @@ function Main {
 
         Print-Msg `"启动 InvokeAI 中`"
         Write-Launch-InvokeAI-Script
-        python `"`$Env:CACHE_HOME/launch_invokeai.py`" # --root `"`$PSScriptRoot/invokeai`"
+        python `"`$Env:CACHE_HOME/launch_invokeai.py`"
         if (`$?) {
             Print-Msg `"InvokeAI 正常退出`"
         } else {
@@ -2386,7 +2386,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -3446,7 +3446,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -3787,13 +3787,13 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/invokeai/nodes`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 invokeai/nodes 文件夹, 无法更新 InvokeAI 自定义节点`"
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/nodes`")) {
+        Print-Msg `"在 `$PSScriptRoot 路径中未找到 `$Env:CORE_PREFIX/nodes 文件夹, 无法更新 InvokeAI 自定义节点`"
         Read-Host | Out-Null
         return
     }
 
-    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/nodes`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
     ForEach (`$node in `$node_list) {
@@ -4165,7 +4165,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -5114,7 +5114,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -6327,7 +6327,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
@@ -7368,7 +7368,7 @@ param (
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/invokeai`"
+`$Env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 `$Env:INVOKEAI_INSTALLER_ROOT = `$PSScriptRoot
@@ -7686,7 +7686,7 @@ function global:Git-Clone (`$url, `$path) {
 
 # 列出已安装的 InvokeAI 自定义节点
 function global:List-Node {
-    `$node_list = Get-ChildItem -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`" | Select-Object -ExpandProperty FullName
+    `$node_list = Get-ChildItem -Path `"`$Env:INVOKEAI_INSTALLER_ROOT/`$Env:CORE_PREFIX/nodes`" | Select-Object -ExpandProperty FullName
     Print-Msg `"当前 InvokeAI 已安装的自定义节点`"
     `$count = 0
     ForEach (`$i in `$node_list) {
@@ -7696,7 +7696,7 @@ function global:List-Node {
             Print-Msg `"- `$name`"
         }
     }
-    Print-Msg `"InvokeAI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:INVOKEAI_INSTALLER_ROOT/invokeai/nodes`"))`"
+    Print-Msg `"InvokeAI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:INVOKEAI_INSTALLER_ROOT/`$Env:CORE_PREFIX/nodes`"))`"
     Print-Msg `"InvokeAI 自定义节点数量: `$count`"
 }
 

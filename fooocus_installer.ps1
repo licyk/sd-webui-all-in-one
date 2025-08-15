@@ -105,11 +105,11 @@ $FOOOCUS_REPO = if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($Instal
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
-$PYTHON_EXTRA_PATH = "$InstallPath/Fooocus/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/Fooocus/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python/Scripts"
 $GIT_PATH = "$InstallPath/git/bin"
-$GIT_EXTRA_PATH = "$InstallPath/Fooocus/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -1198,8 +1198,8 @@ function Install-PyTorch {
 function Install-Fooocus-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$InstallPath/Fooocus"
-    $dep_path = "$InstallPath/Fooocus/requirements_versions.txt"
+    Set-Location "$InstallPath/$Env:CORE_PREFIX"
+    $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements_versions.txt"
 
     Print-Msg "安装 Fooocus 依赖中"
     if ($USE_UV) {
@@ -1924,12 +1924,12 @@ function Update-Fooocus-Preset {
     $fooocus_language_zh_json_content = $fooocus_language_zh_json_content | ConvertTo-Json -Depth 4
 
     Print-Msg "更新 Fooocus 预设文件"
-    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/Fooocus/presets/fooocus_installer.json", $false, $utf8_encoding)
+    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/presets/fooocus_installer.json", $false, $utf8_encoding)
     $stream_writer.Write($fooocus_preset_json_content)
     $stream_writer.Close()
 
     Print-Msg "更新 Fooocus 翻译文件"
-    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/Fooocus/language/zh.json", $false, $utf8_encoding)
+    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/language/zh.json", $false, $utf8_encoding)
     $stream_writer.Write($fooocus_language_zh_json_content)
     $stream_writer.Close()
 }
@@ -1941,7 +1941,7 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/Fooocus/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -1949,12 +1949,12 @@ function Check-Install {
     }
 
     # 切换 uv 指定的 Python
-    if (Test-Path "$InstallPath/Fooocus/python/python.exe") {
-        $Env:UV_PYTHON = "$InstallPath/Fooocus/python/python.exe"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/$Env:CORE_PREFIX/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/Fooocus/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -1962,7 +1962,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/Fooocus/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -1982,7 +1982,7 @@ function Check-Install {
     Set-Github-Mirror
 
     # Fooocus 核心
-    Git-CLone "$FOOOCUS_REPO" "$InstallPath/Fooocus"
+    Git-CLone "$FOOOCUS_REPO" "$InstallPath/$Env:CORE_PREFIX"
 
     Install-PyTorch
     Install-Fooocus-Dependence
@@ -2001,12 +2001,12 @@ function Check-Install {
         Print-Msg "预下载模型中"
         $model_list = New-Object System.Collections.ArrayList
 
-        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/vaeapp_sd15.pth", "$InstallPath/Fooocus/models/vae_approx", "vaeapp_sd15.pth")) | Out-Null
-        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xlvaeapp.pth", "$InstallPath/Fooocus/models/vae_approx", "xlvaeapp.pth")) | Out-Null
-        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/Fooocus/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors")) | Out-Null
-        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/prompt_expansion/fooocus_expansion/pytorch_model.bin", "$InstallPath/Fooocus/models/prompt_expansion/fooocus_expansion", "pytorch_model.bin")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/vaeapp_sd15.pth", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "vaeapp_sd15.pth")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xlvaeapp.pth", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "xlvaeapp.pth")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/prompt_expansion/fooocus_expansion/pytorch_model.bin", "$InstallPath/$Env:CORE_PREFIX/models/prompt_expansion/fooocus_expansion", "pytorch_model.bin")) | Out-Null
 
-        $checkpoint_path = "$InstallPath/Fooocus/models/checkpoints"
+        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/checkpoints"
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors"
         $name = Split-Path -Path $url -Leaf
         if ((!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) -or (Test-Path "$checkpoint_path/${name}.aria2")){
@@ -2105,11 +2105,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -2503,8 +2503,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/Fooocus/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/Fooocus/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -2545,8 +2545,8 @@ function Get-Fooocus-Launch-Args {
 # 设置 Fooocus 的快捷启动方式
 function Create-Fooocus-Shortcut {
     # 设置快捷方式名称
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
@@ -3758,9 +3758,9 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_fooocus_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/Fooocus/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/Fooocus/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
         Print-Msg `"未检测到 Fooocus 依赖文件, 跳过依赖完整性检查`"
@@ -4174,8 +4174,8 @@ function Check-Fooocus-Env {
 function Get-Fooocus-HuggingFace-Mirror-Arg {
     `$hf_mirror_arg = New-Object System.Collections.ArrayList
 
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if (!((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`"))) {
@@ -4206,7 +4206,7 @@ function Main {
     Set-uv
     PyPI-Mirror-Status
 
-    if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -4216,7 +4216,7 @@ function Main {
     `$hf_mirror_arg = Get-Fooocus-HuggingFace-Mirror-Arg
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
-    Set-Location `"`$PSScriptRoot/Fooocus`"
+    Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
     Create-Fooocus-Shortcut
     Check-Fooocus-Env
@@ -4322,11 +4322,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -4679,35 +4679,35 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     Print-Msg `"拉取 Fooocus 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/Fooocus`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/Fooocus`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/Fooocus`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    git -C `"`$PSScriptRoot/Fooocus`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/Fooocus`" branch --show-current)`"
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
     if (`$?) {
         `$remote_branch = `"origin/`$branch`"
     } else {
-        `$author=`$(git -C `"`$PSScriptRoot/Fooocus`" config --get `"branch.`${branch}.remote`")
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
         if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/Fooocus`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
             `$remote_branch = `$branch
         }
     }
 
-    git -C `"`$PSScriptRoot/Fooocus`" fetch --recurse-submodules --all
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 Fooocus 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/Fooocus`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/Fooocus`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/Fooocus`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"Fooocus 已为最新版, 当前版本：`$core_origin_ver`"
@@ -4811,11 +4811,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5143,10 +5143,10 @@ function Set-Github-Mirror {
 
 # 获取 Fooocus 分支
 function Get-Fooocus-Branch {
-    `$remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
-    `$ref = `$(git -C `"`$PSScriptRoot/Fooocus`" symbolic-ref --quiet HEAD 2> `$null)
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
-        `$ref = `$(git -C `"`$PSScriptRoot/Fooocus`" show -s --format=`"%h`")
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
     }
 
     return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
@@ -5155,7 +5155,7 @@ function Get-Fooocus-Branch {
 
 # 切换 Fooocus 分支
 function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
-    `$fooocus_path = `"`$PSScriptRoot/Fooocus`"
+    `$fooocus_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$preview_url = `$(git -C `"`$fooocus_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
@@ -5229,7 +5229,7 @@ function Main {
         Check-Fooocus-Installer-Update
     }
 
-    if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -5492,8 +5492,8 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/Fooocus/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/Fooocus`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
@@ -5624,11 +5624,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -5912,8 +5912,8 @@ print(is_uv_need_update())
 # 设置 uv 的使用状态
 function Set-uv {
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$PSScriptRoot/Fooocus/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$PSScriptRoot/Fooocus/python/python.exe`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
     }
 
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
@@ -7231,11 +7231,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -7571,8 +7571,8 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/Fooocus/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/Fooocus/git/bin/git.exe`")) {
-        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/Fooocus/git/bin/aria2c.exe`" -Force
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
     } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
         Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
     } else {
@@ -8095,7 +8095,7 @@ function Main {
     }
     Check-Aria2-Version
 
-    if (!(Test-Path `"`$PSScriptRoot/Fooocus`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 Fooocus 文件夹, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -8162,7 +8162,7 @@ function Main {
                         `$content = `$model_list[(`$i - 1)]
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
-                        `$path = `"`$PSScriptRoot/Fooocus/models/`$(`$content[2])`" # 模型放置路径
+                        `$path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/models/`$(`$content[2])`" # 模型放置路径
                         # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
                         `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
@@ -8290,11 +8290,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8874,7 +8874,7 @@ function Update-Fooocus-Launch-Args-Setting {
         switch (`$arg) {
             1 {
                 Print-Msg `"请输入 Fooocus 启动参数`"
-                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, Fooocus 可用的启动参数可阅读: https://github.com/AUTOMATIC1111/Fooocus/wiki/Command-Line-Arguments-and-Settings`"
+                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, Fooocus 可用的启动参数可阅读: https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags`"
                 Print-Msg `"输入启动参数后回车保存`"
                 `$fooocus_launch_args = Get-User-Input
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$fooocus_launch_args
@@ -9117,14 +9117,14 @@ function Check-Fooocus-Installer-Update {
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
     `$broken = 0
-    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/Fooocus/python/python.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`")) {
         `$python_status = `"已安装`"
     } else {
         `$python_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/Fooocus/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         `$git_status = `"已安装`"
     } else {
         `$git_status = `"未安装`"
@@ -9139,14 +9139,14 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/Fooocus/git/bin/aria2c.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`")) {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/Fooocus/launch.py`") {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/launch.py`") {
         `$fooocus_status = `"已安装`"
     } else {
         `$fooocus_status = `"未安装`"
@@ -9393,11 +9393,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/Fooocus/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -9629,23 +9629,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus`")) {
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$Env:FOOOCUS_INSTALLER_ROOT 路径中未找到 Fooocus 文件夹, 无法安装绘世启动器, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -9682,10 +9682,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/python/python.exe`")) {
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
         if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\Fooocus 中`"
-            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/python`" `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus`" -Force
+            Print-Msg `"尝试将 Python 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/python`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -9697,10 +9697,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/git/bin/git.exe`")) {
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\Fooocus 中`"
-            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/git`" `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus`" -Force
+            Print-Msg `"尝试将 Git 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/git`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -9871,8 +9871,8 @@ function Main {
     Set-Github-Mirror
     PyPI-Mirror-Status
     # 切换 uv 指定的 Python
-    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:FOOOCUS_INSTALLER_ROOT/Fooocus/python/python.exe`"
+    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
     Print-Msg `"激活 Fooocus Env`"
     Print-Msg `"更多帮助信息可在 Fooocus Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md`"
@@ -10052,16 +10052,16 @@ function Install-Hanamizuki {
 
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
-    if (Test-Path "$InstallPath/Fooocus/hanamizuki.exe") {
-        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/Fooocus/hanamizuki.exe"))"
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
         Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
         ForEach ($url in $urls) {
             Print-Msg "下载绘世启动器中"
             try {
                 Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
-                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/Fooocus/hanamizuki.exe" -Force
-                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/Fooocus/hanamizuki.exe"))"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
                 Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
                 break
             }
@@ -10098,10 +10098,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
 
     Print-Msg "检查绘世启动器运行环境"
-    if (!(Test-Path "$InstallPath/Fooocus/python/python.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         if (Test-Path "$InstallPath/python") {
-            Print-Msg "尝试将 Python 移动至 $InstallPath\Fooocus 中"
-            Move-Item -Path "$InstallPath/python" "$InstallPath/Fooocus" -Force
+            Print-Msg "尝试将 Python 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Python 路径移动成功"
             } else {
@@ -10113,10 +10113,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path "$InstallPath/Fooocus/git/bin/git.exe")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         if (Test-Path "$InstallPath/git") {
-            Print-Msg "尝试将 Git 移动至 $InstallPath\Fooocus 中"
-            Move-Item -Path "$InstallPath/git" "$InstallPath/Fooocus" -Force
+            Print-Msg "尝试将 Git 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/$Env:CORE_PREFIX" -Force
             if ($?) {
                 Print-Msg "Git 路径移动成功"
             } else {

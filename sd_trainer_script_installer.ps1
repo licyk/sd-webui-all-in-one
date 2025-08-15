@@ -107,11 +107,11 @@ $SD_TRAINER_SCRIPT_REPO = if ((Test-Path "$PSScriptRoot/install_sd_scripts.txt")
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
-$PYTHON_EXTRA_PATH = "$InstallPath/sd-scripts/python"
+$PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
 $PYTHON_SCRIPTS_PATH = "$InstallPath/python/Scripts"
-$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/sd-scripts/python/Scripts"
+$PYTHON_SCRIPTS_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python/Scripts"
 $GIT_PATH = "$InstallPath/git/bin"
-$GIT_EXTRA_PATH = "$InstallPath/sd-scripts/git/bin"
+$GIT_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/git/bin"
 $Env:PATH = "$PYTHON_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_EXTRA_PATH$([System.IO.Path]::PathSeparator)$GIT_EXTRA_PATH$([System.IO.Path]::PathSeparator)$PYTHON_PATH$([System.IO.Path]::PathSeparator)$PYTHON_SCRIPTS_PATH$([System.IO.Path]::PathSeparator)$GIT_PATH$([System.IO.Path]::PathSeparator)$Env:PATH"
 # 环境变量
 $Env:PIP_INDEX_URL = $PIP_INDEX_MIRROR
@@ -521,16 +521,16 @@ function Set-Github-Mirror {
 # 安装 SD-Trainer-Script
 function Install-SD-Trainer-Script {
     $status = 0
-    if (!(Test-Path "$InstallPath/sd-scripts")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "$InstallPath/sd-scripts" -Recurse
+        $items = Get-ChildItem "$InstallPath/$Env:CORE_PREFIX" -Recurse
         if ($items.Count -eq 0) {
             $status = 1
         }
     }
 
-    $path = "$InstallPath/sd-scripts"
+    $path = "$InstallPath/$Env:CORE_PREFIX"
     $cache_path = "$Env:CACHE_HOME/sd-scripts_tmp"
     if ($status -eq 1) {
         Print-Msg "正在下载 SD-Trainer-Script"
@@ -561,8 +561,8 @@ function Install-SD-Trainer-Script {
     }
 
     Print-Msg "安装 SD-Trainer-Script 子模块中"
-    git -C "$InstallPath/sd-scripts" submodule init
-    git -C "$InstallPath/sd-scripts" submodule update
+    git -C "$InstallPath/$Env:CORE_PREFIX" submodule init
+    git -C "$InstallPath/$Env:CORE_PREFIX" submodule update
     if ($?) {
         Print-Msg "SD-Trainer-Script 子模块安装成功"
     } else {
@@ -1206,9 +1206,9 @@ function Install-PyTorch {
 function Install-SD-Trainer-Script-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
-    Set-Location "$InstallPath/sd-scripts"
+    Set-Location "$InstallPath/$Env:CORE_PREFIX"
     $no_requirements_file = $false
-    if (!(Test-Path "$InstallPath/sd-scripts/requirements.txt")) {
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/requirements.txt")) {
         $no_requirements_file = $true
     }
     Print-Msg "安装 SD-Trainer-Script 依赖中"
@@ -1278,7 +1278,7 @@ function Check-Install {
     New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
 
     Print-Msg "检测是否安装 Python"
-    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/sd-scripts/python/python.exe")) {
+    if ((Test-Path "$InstallPath/python/python.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
         Print-Msg "Python 已安装"
     } else {
         Print-Msg "Python 未安装"
@@ -1286,7 +1286,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Git"
-    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/sd-scripts/git/bin/git.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/git.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
         Print-Msg "Git 已安装"
     } else {
         Print-Msg "Git 未安装"
@@ -1294,7 +1294,7 @@ function Check-Install {
     }
 
     Print-Msg "检测是否安装 Aria2"
-    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/sd-scripts/git/bin/aria2c.exe")) {
+    if ((Test-Path "$InstallPath/git/bin/aria2c.exe") -or (Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/aria2c.exe")) {
         Print-Msg "Aria2 已安装"
     } else {
         Print-Msg "Aria2 未安装"
@@ -1423,11 +1423,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -2044,11 +2044,11 @@ function Get-Requirement-From-PyProject-File (`$pyproj_toml_path, `$save_path, `
 
 # 解析 kohya-ss/musubi-tuner 分支的依赖列表
 function Get-PyProject-Requirement {
-    `$git_remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
+    `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
     `$array = `$git_remote -split `"/`"
     `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
     if ((`$branch -eq `"kohya-ss/musubi-tuner`") -or (`$branch -eq `"kohya-ss/musubi-tuner.git`")) {
-        `$pyproj_toml_path = `"`$PSScriptRoot/sd-scripts/pyproject.toml`"
+        `$pyproj_toml_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/pyproject.toml`"
         `$req_path = `"`$Env:CACHE_HOME/requirements.txt`"
         Get-Requirement-From-PyProject-File `"`$pyproj_toml_path`" `"`$req_path`"
     }
@@ -3070,9 +3070,9 @@ if __name__ == '__main__':
     }
     Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
 
-    `$dep_path = `"`$PSScriptRoot/sd-scripts/requirements_versions.txt`"
+    `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = `"`$PSScriptRoot/sd-scripts/requirements.txt`"
+        `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
 
     if (!(Test-Path `"`$dep_path`")) {
@@ -3501,13 +3501,13 @@ function Main {
     Set-uv
     PyPI-Mirror-Status
     `$current_path = `$(Get-Location).ToString()
-    Set-Location `"`$PSScriptRoot/sd-scripts`"
+    Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     Check-SD-Trainer-Script-Env
     Set-Location `"`$current_path`"
     Set-PyTorch-CUDA-Memory-Alloc
 
     `$Global:ROOT_PATH = `$PSScriptRoot
-    `$Global:SD_SCRIPTS_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/sd-scripts`")
+    `$Global:SD_SCRIPTS_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/`$Env:CORE_PREFIX`")
     `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/datasets`")
     `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/models`")
     `$Global:OUTPUT_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/outputs`")
@@ -3610,11 +3610,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -3967,35 +3967,35 @@ function Main {
     }
     Set-Github-Mirror
 
-    if (!(Test-Path `"`$PSScriptRoot/sd-scripts`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 sd-scripts 文件夹, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     Print-Msg `"拉取 SD-Trainer-Script 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/sd-scripts`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/sd-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/sd-scripts`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    git -C `"`$PSScriptRoot/sd-scripts`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/sd-scripts`" branch --show-current)`"
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
     if (`$?) {
         `$remote_branch = `"origin/`$branch`"
     } else {
-        `$author=`$(git -C `"`$PSScriptRoot/sd-scripts`" config --get `"branch.`${branch}.remote`")
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
         if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/sd-scripts`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
             `$remote_branch = `$branch
         }
     }
 
-    git -C `"`$PSScriptRoot/sd-scripts`" fetch --recurse-submodules --all
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
         Print-Msg `"应用 SD-Trainer-Script 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/sd-scripts`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/sd-scripts`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/sd-scripts`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
             Print-Msg `"SD-Trainer-Script 已为最新版`"
@@ -4102,11 +4102,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -4434,10 +4434,10 @@ function Set-Github-Mirror {
 
 # 获取 SD-Trainer-Script 分支
 function Get-SD-Trainer-Script-Branch {
-    `$remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
-    `$ref = `$(git -C `"`$PSScriptRoot/sd-scripts`" symbolic-ref --quiet HEAD 2> `$null)
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
-        `$ref = `$(git -C `"`$PSScriptRoot/sd-scripts`" show -s --format=`"%h`")
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
     }
 
     return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
@@ -4446,7 +4446,7 @@ function Get-SD-Trainer-Script-Branch {
 
 # 切换 SD-Trainer-Script 分支
 function Switch-SD-Trainer-Script-Branch (`$remote, `$branch, `$use_submod) {
-    `$sd_trainer_script_path = `"`$PSScriptRoot/sd-scripts`"
+    `$sd_trainer_script_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$preview_url = `$(git -C `"`$sd_trainer_script_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
@@ -4518,7 +4518,7 @@ function Main {
         Check-SD-Trainer-Script-Installer-Update
     }
 
-    if (!(Test-Path `"`$PSScriptRoot/sd-scripts`")) {
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
         Print-Msg `"在 `$PSScriptRoot 路径中未找到 sd-scripts 文件夹, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -4808,8 +4808,8 @@ function Get-Local-Setting {
         }
     }
 
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/sd-scripts/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/sd-scripts`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"kohya-ss/sd-scripts`") -or (`$branch -eq `"kohya-ss/sd-scripts.git`")) {
@@ -4952,11 +4952,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -6551,11 +6551,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -7315,11 +7315,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -8038,14 +8038,14 @@ function SD-Trainer-Script-Env-Check-Setting {
 function Check-Env {
     Print-Msg `"检查环境完整性中`"
     `$broken = 0
-    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/sd-scripts/python/python.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/python/python.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`")) {
         `$python_status = `"已安装`"
     } else {
         `$python_status = `"未安装`"
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/sd-scripts/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/git.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
         `$git_status = `"已安装`"
     } else {
         `$git_status = `"未安装`"
@@ -8060,7 +8060,7 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/sd-scripts/git/bin/aria2c.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`")) {
         `$aria2_status = `"已安装`"
     } else {
         `$aria2_status = `"未安装`"
@@ -8274,11 +8274,11 @@ param (
 `$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
 # PATH
 `$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
 `$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
 `$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/sd-scripts/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
 `$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
 # 环境变量
 `$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
