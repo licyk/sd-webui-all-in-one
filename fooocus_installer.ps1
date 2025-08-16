@@ -37,24 +37,20 @@
 & {
     $prefix_list = @("core", "Fooocus", "fooocus", "fooocus_portable")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
-        Write-Host "[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
         if ($CorePrefix) {
             $Env:CORE_PREFIX = $CorePrefix
         } else {
             $Env:CORE_PREFIX = Get-Content "$PSScriptRoot/core_prefix.txt"
         }
-        Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
         return
     }
     ForEach ($i in $prefix_list) {
         if (Test-Path "$InstallPath/$i") {
             $Env:CORE_PREFIX = $i
-            Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
             return
         }
     }
     $Env:CORE_PREFIX = "core"
-    Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
 }
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
@@ -192,6 +188,16 @@ function Print-Msg ($msg) {
     Write-Host "[Fooocus Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
+        Print-Msg "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
+    }
+    Print-Msg "当前内核路径前缀: $Env:CORE_PREFIX"
+    Print-Msg "完整内核路径: $InstallPath/$Env:CORE_PREFIX"
 }
 
 
@@ -2075,24 +2081,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -2213,11 +2215,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\launch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 Fooocus Installer 构建模式
@@ -2275,6 +2280,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -4242,6 +4257,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
@@ -4315,24 +4331,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -4453,11 +4465,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\update.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 Fooocus Installer 构建模式
@@ -4517,6 +4532,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -4740,6 +4765,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
@@ -4827,24 +4853,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -4965,11 +4987,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\switch_branch.ps1 [-Help] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\switch_branch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 Fooocus Installer 构建模式
@@ -5033,6 +5058,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -5314,6 +5349,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
@@ -5682,24 +5718,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -5801,11 +5833,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
+    .\reinstall_pytorch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 Fooocus Installer 构建模式
@@ -5852,6 +5887,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -7092,6 +7137,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
@@ -7312,24 +7358,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -7431,11 +7473,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
+    .\download_models.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 Fooocus Installer 构建模式
@@ -7476,6 +7521,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -8225,6 +8280,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
@@ -8394,24 +8450,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -8513,11 +8565,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\settings.ps1 [-Help] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\settings.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -8545,6 +8600,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -9359,6 +9424,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
 
     while (`$true) {
@@ -9501,24 +9567,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$InstallPath/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # Fooocus Installer 版本和检查更新间隔
 `$Env:FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
@@ -9640,11 +9702,14 @@ param (
 function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\activate.ps1 [-Help] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\activate.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -9943,6 +10008,16 @@ function Get-Fooocus-Installer-Version {
 }
 
 
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+}
+
+
 # PyPI 镜像源状态
 function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -10050,6 +10125,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -10519,11 +10595,14 @@ if '%errorlevel%' NEQ '0' (
 function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\fooocus_installer.ps1 [-Help] [-InstallPath <安装 Fooocus 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\fooocus_installer.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Fooocus 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 Fooocus Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -InstallPath <安装 Fooocus 的绝对路径>
         指定 Fooocus Installer 安装 Fooocus 的路径, 使用绝对路径表示
@@ -10664,6 +10743,7 @@ function Main {
     Print-Msg "初始化中"
     Get-Fooocus-Installer-Version
     Get-Fooocus-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
 
     if ($UseUpdateMode) {
         Print-Msg "使用更新模式"

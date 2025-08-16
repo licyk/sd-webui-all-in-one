@@ -37,24 +37,20 @@
 & {
     $prefix_list = @("core", "ComfyUI", "comfyui", "ComfyUI-aki-v1.0", "ComfyUI-aki-v1.1", "ComfyUI-aki-v1.2", "ComfyUI-aki-v1.3", "ComfyUI-aki-v1.4", "ComfyUI-aki-v1.5", "ComfyUI-aki-v1.6", "ComfyUI-aki-v1.7", "ComfyUI-aki-v2")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
-        Write-Host "[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
         if ($CorePrefix) {
             $Env:CORE_PREFIX = $CorePrefix
         } else {
             $Env:CORE_PREFIX = Get-Content "$PSScriptRoot/core_prefix.txt"
         }
-        Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
         return
     }
     ForEach ($i in $prefix_list) {
         if (Test-Path "$InstallPath/$i") {
             $Env:CORE_PREFIX = $i
-            Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
             return
         }
     }
     $Env:CORE_PREFIX = "core"
-    Write-Host "[Core Prefix Manager]:: 设置内核路径前缀: $Env:CORE_PREFIX"
 }
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
@@ -185,6 +181,16 @@ function Print-Msg ($msg) {
     Write-Host "[ComfyUI Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
+        Print-Msg "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
+    }
+    Print-Msg "当前内核路径前缀: $Env:CORE_PREFIX"
+    Print-Msg "完整内核路径: $InstallPath/$Env:CORE_PREFIX"
 }
 
 
@@ -1397,24 +1403,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -1536,11 +1538,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableUV] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\launch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableUV] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
@@ -1621,6 +1626,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -5321,6 +5336,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -5394,24 +5410,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -5533,11 +5545,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\update.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
@@ -5597,6 +5612,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -5820,6 +5845,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -5906,24 +5932,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -6045,11 +6067,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update_node.ps1 [-Help] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\update_node.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
@@ -6109,6 +6134,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -6368,6 +6403,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -6687,24 +6723,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -6807,11 +6839,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy] [-DisableAutoApplyUpdate]
+    .\reinstall_pytorch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
@@ -6858,6 +6893,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -8098,6 +8143,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -8318,24 +8364,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -8438,11 +8480,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
+    .\download_models.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
@@ -8483,6 +8528,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -9232,6 +9287,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
         Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
@@ -9401,24 +9457,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -9521,11 +9573,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\settings.ps1 [-Help] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy]
+    .\settings.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -9553,6 +9608,16 @@ function Print-Msg (`$msg) {
     Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
+}
+
+
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
 }
 
 
@@ -10359,6 +10424,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
 
     while (`$true) {
@@ -10500,24 +10566,20 @@ param (
 & {
     `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Write-Host `"[Core Prefix Manager]:: 检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         if (`$CorePrefix) {
             `$Env:CORE_PREFIX = `$CorePrefix
         } else {
             `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
-        Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
         return
     }
     ForEach (`$i in `$prefix_list) {
         if (Test-Path `"`$PSScriptRoot/`$i`") {
             `$Env:CORE_PREFIX = `$i
-            Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
             return
         }
     }
     `$Env:CORE_PREFIX = `"core`"
-    Write-Host `"[Core Prefix Manager]:: 设置内核路径前缀: `$Env:CORE_PREFIX`"
 }
 # ComfyUI Installer 版本和检查更新间隔
 `$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
@@ -10640,11 +10702,14 @@ param (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\activate.ps1 [-Help] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\activate.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -11105,6 +11170,16 @@ function Get-ComfyUI-Installer-Version {
 }
 
 
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+}
+
+
 # PyPI 镜像源状态
 function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
@@ -11212,6 +11287,7 @@ function Main {
     Print-Msg `"初始化中`"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
@@ -11673,11 +11749,14 @@ if '%errorlevel%' NEQ '0' (
 function Get-ComfyUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\comfyui_installer.ps1 [-Help] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\comfyui_installer.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
         获取 ComfyUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -InstallPath <安装 ComfyUI 的绝对路径>
         指定 ComfyUI Installer 安装 ComfyUI 的路径, 使用绝对路径表示
@@ -11811,6 +11890,7 @@ function Main {
     Print-Msg "初始化中"
     Get-ComfyUI-Installer-Version
     Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
 
     if ($UseUpdateMode) {
         Print-Msg "使用更新模式"
