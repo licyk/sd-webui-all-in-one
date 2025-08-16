@@ -11,10 +11,6 @@ _✨一键安装 InvokeAI_
 - [目录](#目录)
 - [简介](#简介)
 - [环境配置](#环境配置)
-  - [1. 使用自动环境配置脚本](#1-使用自动环境配置脚本)
-  - [2. 手动使用命令配置](#2-手动使用命令配置)
-    - [2.1 解除脚本限制](#21-解除脚本限制)
-    - [2.2 启用 Windows 长路径支持](#22-启用-windows-长路径支持)
 - [安装](#安装)
 - [使用](#使用)
   - [启动 InvokeAI](#启动-invokeai)
@@ -59,6 +55,7 @@ _✨一键安装 InvokeAI_
   - [InvokeAI Installer 构建模式和普通安装模式](#invokeai-installer-构建模式和普通安装模式)
   - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
   - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
+  - [启用 Windows 长路径支持](#启用-windows-长路径支持)
   - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
   - [运行 InvokeAI 时 InvokeAI 出现崩溃](#运行-invokeai-时-invokeai-出现崩溃)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
@@ -104,10 +101,8 @@ _✨一键安装 InvokeAI_
 
 Windows 系统默认未启用长路径支持，这可能会导致部分功能出现异常，需要启用 Windows 长路径支持来解决该问题。
 
-下面提供 2 种方法进行环境配置。
+以上两个问题可以通过自动环境配置进行修复。
 
-
-## 1. 使用自动环境配置脚本
 下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
@@ -117,33 +112,6 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 |[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
 |[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
 |[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/configure_env.bat)|
-
->[!NOTE]  
->[使用自动环境配置脚本](#1-使用自动环境配置脚本)的方法和[手动使用命令配置](#2-手动使用命令配置)的方法效果一致。
-
-
-## 2. 手动使用命令配置
-
-### 2.1 解除脚本限制
-使用管理员权限打开 PowerShell，运行以下命令：
-
-```powershell
-Set-ExecutionPolicy Unrestricted -Scope CurrentUser
-```
-
->[!NOTE]  
->关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
-
-
-### 2.2 启用 Windows 长路径支持
-在刚刚的 PowerShell 中运行下面的命令：
-
-```powershell
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-```
-
->[!NOTE]  
->关于 Windows 长路径支持的说明：[最大路径长度限制 - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
 
 ***
 
@@ -171,12 +139,6 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 >[!NOTE]  
 >1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
 >2. InvokeAI Installer 支持使用在命令行中通过参数配置 InvokeAI 的安装参数，具体说明可阅读[使用命令运行 InvokeAI Installer](#使用命令运行-invokeai-installer)。
-
->[!IMPORTANT]  
->~~从 InvokeAI 5.1.0 开始，InvokeAI 要求的 PyTorch 版本更改为 2.4.1，而 InvokeAI Installer 使用的 [PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels) 并没有提供 PyTorch 2.4.1 的镜像，则 InvokeAI Installer 在安装 PyTorch 2.4.1 时将会切换至 PyTorch 官方源进行安装。~~  
->~~但在不使用代理的情况下从 PyTorch 官方源安装 PyTorch 时失败的概率较高（通常是下载 PyTorch 安装包失败导致安装失败），所以 InvokeAI Installer 默认安装 InvokeAI 5.0.2 以保证在安装 PyTorch 时能够使用 PyTorch 镜像源进行安装。~~  
->~~如果需要安装更高的 InvokeAI 版本，在 InvokeAI Installer 安装 InvokeAI 成功后进入`InvokeAI`文件夹运行`update.ps1`进行更新（需要使用代理）。~~  
->目前使用 [NTU PyTorch 镜像源](https://mirror.nju.edu.cn/pytorch) 代替 [SJTU PyTorch 镜像源](https://mirror.sjtu.edu.cn/docs/pytorch-wheels)，解决 PyTorch 镜像源缺失的问题，所以 InvokeAI Installer 不再默认安装 InvokeAI 5.0.2，而是安装 InvokeAI 最新版。
 
 ***
 
@@ -637,11 +599,11 @@ InvokeAI Installer 主要由两部分构成：安装脚本和环境管理脚本�
 运行 PowerShell 脚本时出现以下错误。
 
 ```
-.\invokeai_installer.ps1 : 无法加载文件 D:\InvokeAI\invokeai_installer.ps1。
-未对文件 D:\InvokeAI\invokeai_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
+.\comfyui_installer.ps1 : 无法加载文件 D:\ComfyUI\comfyui_installer.ps1。
+未对文件 D:\ComfyUI\comfyui_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
 有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
 所在位置 行:1 字符: 1
-+ .\invokeai_installer.ps1
++ .\comfyui_installer.ps1
 + ~~~~~~~~~~~~~~~~~~~~~~~~
    + CategoryInfo          : SecurityError: (:) []，PSSecurityException
    + FullyQualifiedErrorId : UnauthorizedAccess
@@ -655,7 +617,21 @@ InvokeAI Installer 主要由两部分构成：安装脚本和环境管理脚本�
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
-或者使用[自动环境配置脚本](#1-使用自动环境配置脚本)解除 Windows 系统对运行 PowerShell 脚本的限制。
+或者使用[环境配置](#环境配置)中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+
+>[!NOTE]  
+>关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
+
+
+## 启用 Windows 长路径支持
+使用管理员权限打开 PowerShell，运行以下命令：
+
+```powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+
+>[!NOTE]  
+>关于 Windows 长路径支持的说明：[最大路径长度限制 ### Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
 
 
 ## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
