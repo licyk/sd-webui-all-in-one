@@ -159,7 +159,7 @@ function Get-Core-Prefix-Status {
         Print-Msg "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
     }
     Print-Msg "当前内核路径前缀: $Env:CORE_PREFIX"
-    Print-Msg "完整内核路径: $InstallPath/$Env:CORE_PREFIX"
+    Print-Msg "完整内核路径: $InstallPath\$Env:CORE_PREFIX"
 }
 
 
@@ -1348,7 +1348,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -2540,7 +2540,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -3646,7 +3646,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -4385,7 +4385,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -5361,7 +5361,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -6594,7 +6594,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -8002,7 +8002,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 

@@ -194,7 +194,7 @@ function Get-Core-Prefix-Status {
         Print-Msg "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
     }
     Print-Msg "当前内核路径前缀: $Env:CORE_PREFIX"
-    Print-Msg "完整内核路径: $InstallPath/$Env:CORE_PREFIX"
+    Print-Msg "完整内核路径: $InstallPath\$Env:CORE_PREFIX"
 }
 
 
@@ -1087,20 +1087,18 @@ function Get-PyTorch-And-xFormers-Package {
 
     switch ($appropriate_cuda_version) {
         cu129 {
-            # TODO: 重新分配合适的版本
-            # $pytorch_package = "torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129"
-            $pytorch_package = "torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128"
-            $xformers_package = "xformers==0.0.31.post1"
+            $pytorch_package = "torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129"
+            $xformers_package = "xformers==0.0.32.post2"
             break
         }
         cu128 {
-            $pytorch_package = "torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128"
-            $xformers_package = "xformers==0.0.31.post1"
+            $pytorch_package = "torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128"
+            $xformers_package = "xformers==0.0.32.post2"
             break
         }
         cu126 {
-            $pytorch_package = "torch==2.7.1+cu126 torchvision==0.22.1+cu126 torchaudio==2.7.1+cu126"
-            $xformers_package = "xformers==0.0.31.post1"
+            $pytorch_package = "torch==2.8.0+cu126 torchvision==0.23.0+cu126 torchaudio==2.8.0+cu126"
+            $xformers_package = "xformers==0.0.32.post2"
             break
         }
         cu124 {
@@ -1542,7 +1540,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -3789,7 +3787,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -4318,7 +4316,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -5129,7 +5127,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -6298,7 +6296,7 @@ function Get-PyTorch-List {
         `"type`" = `"cu126`"
         `"supported`" = `"cu126`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu126 torchvision==0.23.0+cu126 torchaudio==2.8.0+cu126`"
-        `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        `"xformers`" = `"xformers==0.0.32.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
         } else {
@@ -6312,7 +6310,7 @@ function Get-PyTorch-List {
         `"type`" = `"cu128`"
         `"supported`" = `"cu128`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128`"
-        `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        `"xformers`" = `"xformers==0.0.32.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
         } else {
@@ -6326,7 +6324,7 @@ function Get-PyTorch-List {
         `"type`" = `"cu129`"
         `"supported`" = `"cu129`" -in `$supported_type
         `"torch`" = `"torch==2.8.0+cu129 torchvision==0.23.0+cu129 torchaudio==2.8.0+cu129`"
-        # `"xformers`" = `"xformers==0.0.31.post1`" # TODO: 更新 xformers 信息
+        # `"xformers`" = `"xformers==0.0.32.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU
         } else {
@@ -6760,7 +6758,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -7546,7 +7544,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
@@ -8934,7 +8932,7 @@ function Get-Core-Prefix-Status {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot/`$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
 }
 
 
