@@ -9382,6 +9382,7 @@ function Use-Build-Mode {
 
     if ($BuildWithTorch) {
         $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
         $launch_args.Add("-BuildWithTorch", $BuildWithTorch)
         if ($BuildWithTorchReinstall) { $launch_args.Add("-BuildWithTorchReinstall", $true) }
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
@@ -9392,11 +9393,12 @@ function Use-Build-Mode {
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行重装 PyTorch 脚本中"
-        . "$InstallPath/reinstall_pytorch.ps1" -BuildMode @launch_args
+        . "$InstallPath/reinstall_pytorch.ps1" @launch_args
     }
 
     if ($BuildWitchModel) {
         $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
         $launch_args.Add("-BuildWitchModel", $BuildWitchModel)
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -9405,11 +9407,12 @@ function Use-Build-Mode {
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行模型安装脚本中"
-        . "$InstallPath/download_models.ps1" -BuildMode @launch_args
+        . "$InstallPath/download_models.ps1" @launch_args
     }
 
     if ($BuildWitchBranch) {
         $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
         $launch_args.Add("-BuildWitchBranch", $BuildWitchBranch)
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
@@ -9420,11 +9423,12 @@ function Use-Build-Mode {
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 SD-Trainer 分支切换脚本中"
-        . "$InstallPath/switch_branch.ps1" -BuildMode @launch_args
+        . "$InstallPath/switch_branch.ps1" @launch_args
     }
 
     if ($BuildWithUpdate) {
         $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -9434,11 +9438,12 @@ function Use-Build-Mode {
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 SD-Trainer 更新脚本中"
-        . "$InstallPath/update.ps1" -BuildMode @launch_args
+        . "$InstallPath/update.ps1" @launch_args
     }
 
     if ($BuildWithLaunch) {
         $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -9455,7 +9460,7 @@ function Use-Build-Mode {
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
         Print-Msg "执行 SD-Trainer 启动脚本中"
-        . "$InstallPath/launch.ps1" -BuildMode @launch_args
+        . "$InstallPath/launch.ps1" @launch_args
     }
 
     # 清理缓存
