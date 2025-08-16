@@ -3916,7 +3916,7 @@ function Main {
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/nodes`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 `$Env:CORE_PREFIX/nodes 文件夹, 无法更新 InvokeAI 自定义节点`"
+        Print-Msg `"内核所对应扩展路径 `$PSScriptRoot\`$Env:CORE_PREFIX\nodes 未找到, 无法更新 InvokeAI 自定义节点`"
         Read-Host | Out-Null
         return
     }

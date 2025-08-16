@@ -3507,7 +3507,7 @@ function Main {
     PyPI-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
@@ -4021,7 +4021,7 @@ function Main {
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
@@ -4605,7 +4605,7 @@ function Main {
     }
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"在 `$PSScriptRoot 路径中未找到 lora-scripts 文件夹, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
@@ -8797,7 +8797,7 @@ function global:Install-Hanamizuki {
     `$i = 0
 
     if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"在 `$Env:SD_TRAINER_INSTALLER_ROOT 路径中未找到 lora-scripts 文件夹, 无法安装绘世启动器, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         return
     }
 
