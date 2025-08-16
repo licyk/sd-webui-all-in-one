@@ -6756,6 +6756,16 @@ function Get-InvokeAI-Env-Check-Setting {
 }
 
 
+# 获取路径前缀设置
+function Get-Core-Prefix-Setting {
+    if (Test-Path `"`$PSScriptRoot/core_prefix.txt`") {
+        return `"自定义 (使用自定义路径前缀: `$(Get-Content `"`$PSScriptRoot/core_prefix.txt`"))`"
+    } else {
+        return `"自动`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return (Read-Host `"=========================================>`").Trim()
@@ -7179,6 +7189,49 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# 内核路径前缀设置
+function Update-Core-Prefix-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 配置自定义路径前缀`"
+        Print-Msg `"2. 启用自动选择路径前缀`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Print-Msg `"请输入自定义内核路径前缀`"
+                Print-Msg `"提示: 路径前缀为内核在当前脚本目录中的名字 (也可以通过相对路径指定当前脚本目录外的内核), 输入后回车保存`"
+                `$custom_core_prefix = Get-User-Input
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/core_prefix.txt`" -Value `$custom_core_prefix
+                Print-Msg `"自定义内核路径前缀成功, 使用的路径前缀为: `$custom_core_prefix`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/core_prefix.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用自动选择内核路径前缀成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 InvokeAI Installer 更新
 function Check-InvokeAI-Installer-Update {
     # 可用的下载源
@@ -7373,6 +7426,7 @@ function Main {
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"InvokeAI 运行环境检测设置: `$(Get-InvokeAI-Env-Check-Setting)`"
+        Print-Msg `"InvokeAI 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -7385,10 +7439,11 @@ function Main {
         Print-Msg `"8. 进入 PyPI 镜像源设置`"
         Print-Msg `"9. 进入自动设置 CUDA 内存分配器设置`"
         Print-Msg `"10. 进入 InvokeAI 运行环境检测设置`"
-        Print-Msg `"11. 更新 InvokeAI Installer 管理脚本`"
-        Print-Msg `"12. 检查环境完整性`"
-        Print-Msg `"13. 查看 InvokeAI Installer 文档`"
-        Print-Msg `"14. 退出 InvokeAI Installer 设置`"
+        Print-Msg `"11. 进入 InvokeAI 内核路径前缀设置`"
+        Print-Msg `"12. 更新 InvokeAI Installer 管理脚本`"
+        Print-Msg `"13. 检查环境完整性`"
+        Print-Msg `"14. 查看 InvokeAI Installer 文档`"
+        Print-Msg `"15. 退出 InvokeAI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -7433,18 +7488,22 @@ function Main {
                 break
             }
             11 {
-                Check-InvokeAI-Installer-Update
+                Update-Core-Prefix-Setting
                 break
             }
             12 {
-                Check-Env
+                Check-InvokeAI-Installer-Update
                 break
             }
             13 {
-                Get-InvokeAI-Installer-Help-Docs
+                Check-Env
                 break
             }
             14 {
+                Get-InvokeAI-Installer-Help-Docs
+                break
+            }
+            15 {
                 `$go_to = 1
                 break
             }

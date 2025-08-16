@@ -786,6 +786,7 @@ SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI �
 |参数|作用|
 |---|---|
 |`-InstallPath` <Stable Diffusion WebUI 安装路径>|指定安装 Stable Diffusion WebUI 的路径，使用绝对路径进行指定。|
+|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀, 默认路径前缀为 core。|
 |`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`|
 |`-InstallBranch` <Stable Diffusion WebUI 分支名>|指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 的分支，Stable Diffusion WebUI 分支名对应的分支如下：<br>`sd_webui`: [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)<br>`sd_webui_forge`: [lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)<br>`sd_webui_reforge`: [Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)<br>`sd_webui_forge_classic`: [Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)<br>`sd_webui_amdgpu`: [lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)<br>`sdnext`: [vladmandic/SD.Next](https://github.com/vladmandic/automatic)|
 |`-UseUpdateMode`|使用 SD WebUI Installer 的更新脚本模式，不进行 Stable Diffusion WebUI 的安装。|

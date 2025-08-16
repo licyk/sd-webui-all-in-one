@@ -46,6 +46,7 @@ _✨一键安装 ComfyUI_
     - [禁用 ComfyUI Installer 更新检查 / 自动应用更新](#禁用-comfyui-installer-更新检查--自动应用更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
+  - [设置路径前缀](#设置路径前缀)
   - [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)
   - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
   - [使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)
@@ -413,6 +414,7 @@ comfyui:
 ComfyUI 的使用教程：
 - https://sdnote.netlify.app/guide/comfyui
 - https://sdnote.netlify.app/help/comfyui
+- https://docs.comfy.org/zh-CN/get_started/first_generation
 - https://www.aigodlike.com
 - https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
 - https://comfyanonymous.github.io/ComfyUI_examples
@@ -636,6 +638,13 @@ ComfyUI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 >如果 ComfyUI 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
 
 
+## 设置路径前缀
+>[!IMPORTANT]  
+>该设置可通过[管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)中提到的的`settings.ps1`进行修改。
+
+ComfyUI Installer 通过路径前缀在安装目录中寻找 ComfyUI 内核，默认使用的路径前缀为`core`。
+
+
 ## 管理 ComfyUI Installer 设置
 运行`settings.ps1`，根据提示进行设置管理和调整。
 
@@ -656,6 +665,7 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |参数|作用|
 |---|---|
 |`-InstallPath` <ComfyUI 安装路径>|指定安装 ComfyUI 的路径，使用绝对路径进行指定。|
+|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀, 默认路径前缀为 core。|
 |`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`|
 |`-UseUpdateMode`|使用 ComfyUI Installer 的更新脚本模式，不进行 ComfyUI 的安装。|
 |`-DisablePyPIMirror`|禁用 ComfyUI Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|
@@ -668,8 +678,8 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |`-BuildWithUpdate`|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update.ps1 脚本，更新 ComfyUI 内核。|
 |`-BuildWithUpdateNode`|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_node.ps1 脚本，更新 ComfyUI 自定义节点。|
 |`-BuildWithLaunch`|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 launch.ps1 脚本，执行启动 ComfyUI 前的环境检查流程，但跳过启动 ComfyUI。|
-|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本，根据 PyTorch 版本编号安 装指定的 PyTorch 版本。<br>PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看。|
-|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式，并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下，执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安 装时使用强制重新安装。|
+|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本，根据 PyTorch 版本编号安装指定的 PyTorch 版本。<br>PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看。|
+|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式，并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下，执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装。|
 |`-BuildWitchModel` <模型编号列表>|(需添加`-BuildMode`启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本，根据模型编号列表下载指定的模型。<br>模型编号可运行 download_models.ps1 脚本进行查看。|
 |`-NoPreDownloadNode`|安装 ComfyUI 时跳过安装 ComfyUI 扩展。|
 |`-NoPreDownloadModel`|安装 ComfyUI 时跳过预下载模型。|

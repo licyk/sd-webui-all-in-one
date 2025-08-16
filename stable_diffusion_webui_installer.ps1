@@ -9258,6 +9258,16 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# 获取路径前缀设置
+function Get-Core-Prefix-Setting {
+    if (Test-Path `"`$PSScriptRoot/core_prefix.txt`") {
+        return `"自定义 (使用自定义路径前缀: `$(Get-Content `"`$PSScriptRoot/core_prefix.txt`"))`"
+    } else {
+        return `"自动`"
+    }
+}
+
+
 # 获取用户输入
 function Get-User-Input {
     return (Read-Host `"=========================================>`").Trim()
@@ -9765,6 +9775,49 @@ function Stable-Diffusion-WebUI-Env-Check-Setting {
 }
 
 
+# 内核路径前缀设置
+function Update-Core-Prefix-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 配置自定义路径前缀`"
+        Print-Msg `"2. 启用自动选择路径前缀`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Print-Msg `"请输入自定义内核路径前缀`"
+                Print-Msg `"提示: 路径前缀为内核在当前脚本目录中的名字 (也可以通过相对路径指定当前脚本目录外的内核), 输入后回车保存`"
+                `$custom_core_prefix = Get-User-Input
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/core_prefix.txt`" -Value `$custom_core_prefix
+                Print-Msg `"自定义内核路径前缀成功, 使用的路径前缀为: `$custom_core_prefix`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/core_prefix.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用自动选择内核路径前缀成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 检查 SD WebUI Installer 更新
 function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
@@ -9919,6 +9972,7 @@ function Main {
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
         Print-Msg `"Stable Diffusion WebUI 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
@@ -9932,10 +9986,11 @@ function Main {
         Print-Msg `"9. 进入 PyPI 镜像源设置`"
         Print-Msg `"10. 进入自动设置 CUDA 内存分配器设置`"
         Print-Msg `"11. 进入 Stable Diffusion WebUI 运行环境检测设置`"
-        Print-Msg `"12 更新 SD WebUI Installer 管理脚本`"
-        Print-Msg `"13. 检查环境完整性`"
-        Print-Msg `"14. 查看 SD WebUI Installer 文档`"
-        Print-Msg `"15. 退出 SD WebUI Installer 设置`"
+        Print-Msg `"12. 进入 Stable Diffusion WebUI 内核路径前缀设置`"
+        Print-Msg `"13 更新 SD WebUI Installer 管理脚本`"
+        Print-Msg `"14. 检查环境完整性`"
+        Print-Msg `"15. 查看 SD WebUI Installer 文档`"
+        Print-Msg `"16. 退出 SD WebUI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -9984,18 +10039,22 @@ function Main {
                 break
             }
             12 {
-                Check-Stable-Diffusion-WebUI-Installer-Update
+                Update-Core-Prefix-Setting
                 break
             }
             13 {
-                Check-Env
+                Check-Stable-Diffusion-WebUI-Installer-Update
                 break
             }
             14 {
-                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
+                Check-Env
                 break
             }
             15 {
+                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
+                break
+            }
+            16 {
                 `$go_to = 1
                 break
             }

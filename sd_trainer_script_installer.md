@@ -458,6 +458,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |参数|作用|
 |---|---|
 |`-InstallPath` <SD-Trainer-Script 安装路径>|指定安装 SD-Trainer-Script 的路径，使用绝对路径进行指定。|
+|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀, 默认路径前缀为 core。|
 |`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`|
 |`-InstallBranch` <SD-Trainer-Script 分支名>|指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 的分支，SD-Trainer-Script 分支名对应的分支如下：</br>`sd_scripts`：[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)</br>~~`Simple_tuner`：[bghira/SimpleTuner](https://github.com/bghira/SimpleTuner)~~</br>`ai_toolkit`：[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)</br>`finetrainers`：[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)</br>`diffusion_pipe`：[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)</br>`musubi_tuner`：[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
 |`-UseUpdateMode`|使用 SD-Trainer-Script Installer 的更新脚本模式，不进行 SD-Trainer-Script 的安装。|
