@@ -247,6 +247,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -574,7 +576,10 @@ def get_package_name(package: str) -> str:
 def get_package_version(package: str) -> str:
     return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
+
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -598,7 +603,6 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type(
     torch_version: str,
     use_xpu: bool = False,
-    use_cpu: bool = False,
     use_rocm: bool = False,
 ) -> str:
     # cu118: 2.0.0 ~ 2.4.0
@@ -1531,6 +1535,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -1931,6 +1937,8 @@ def compare_versions(version1: str, version2: str) -> int:
     :param version2(str): 第二个版本号
     :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
     '''
+    version1 = str(version1)
+    version2 = str(version2)
     # 将版本号拆分成数字列表
     try:
         nums1 = (
@@ -2701,6 +2709,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -2868,7 +2878,10 @@ def get_package_name(package: str) -> str:
 def get_package_version(package: str) -> str:
     return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
+
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -2892,7 +2905,6 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type(
     torch_version: str,
     use_xpu: bool = False,
-    use_cpu: bool = False,
     use_rocm: bool = False,
 ) -> str:
     # cu118: 2.0.0 ~ 2.4.0
@@ -4550,7 +4562,10 @@ def get_package_name(package: str) -> str:
 def get_package_version(package: str) -> str:
     return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
+
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -4574,7 +4589,6 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type(
     torch_version: str,
     use_xpu: bool = False,
-    use_cpu: bool = False,
     use_rocm: bool = False,
 ) -> str:
     # cu118: 2.0.0 ~ 2.4.0
@@ -4950,6 +4964,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -5526,6 +5542,8 @@ def get_aria2_ver() -> str:
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')

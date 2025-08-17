@@ -285,6 +285,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -702,7 +704,10 @@ def get_package_name(package: str) -> str:
 def get_package_version(package: str) -> str:
     return package.split('~=').pop().split('===').pop().split('!=').pop().split('<=').pop().split('>=').pop().split('<').pop().split('>').pop().split('==').pop()
 
+
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -726,7 +731,6 @@ def compare_versions(version1: str, version2: str) -> int:
 def get_pytorch_mirror_type(
     torch_version: str,
     use_xpu: bool = False,
-    use_cpu: bool = False,
     use_rocm: bool = False,
 ) -> str:
     # cu118: 2.0.0 ~ 2.4.0
@@ -809,7 +813,7 @@ def get_pytorch_mirror_type(
 
 
 if __name__ == '__main__':
-    print(get_pytorch_mirror_type('$torch_part'))
+    print(get_pytorch_mirror_type('$torch_part', use_xpu=True))
 ".Trim()
 
             $mirror_type = $(python -c "$content")
@@ -991,6 +995,8 @@ def get_gpu_list() -> list[dict[str, str]]:
 
 
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -1046,7 +1052,7 @@ def select_avaliable_type() -> str:
 
         if any([
             x for x in gpus
-            or 'NVIDIA' in x.get('AdapterCompatibility', '')
+            if 'NVIDIA' in x.get('AdapterCompatibility', '')
             or 'Advanced Micro Devices' in x.get('AdapterCompatibility', '')
         ]):
             return 'cu118'
@@ -2505,6 +2511,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -3933,6 +3941,8 @@ def compare_versions(version1: str, version2: str) -> int:
     :param version2(str): 第二个版本号
     :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
     '''
+    version1 = str(version1)
+    version2 = str(version2)
     # 将版本号拆分成数字列表
     try:
         nums1 = (
@@ -6013,6 +6023,8 @@ from importlib.metadata import version
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -6264,6 +6276,8 @@ def get_gpu_list() -> list[dict[str, str]]:
 
 
 def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -7693,6 +7707,8 @@ def get_aria2_ver() -> str:
 
 
 def compare_versions(version1, version2) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
