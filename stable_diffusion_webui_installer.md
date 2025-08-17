@@ -159,6 +159,7 @@ $ tree -L 1
 >- [设置 PyPI 镜像源](#设置-pypi-镜像源)
 >- [设置 uv 包管理器](#设置-uv-包管理器)
 >- [配置代理](#配置代理)
+>- [设置内核路径前缀](#设置内核路径前缀)
 >
 >通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
@@ -311,7 +312,7 @@ $ tree -L 1
 ***
 
 # 使用
-在`stable-diffusion-webui`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。在`stable-diffusion-webui`文件夹中也有 PowerShell 脚本，但不建议使用该文件夹中的脚本进行运行。
+在`stable-diffusion-webui`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
 
 
 ## 启动 Stable Diffusion WebUI
@@ -622,6 +623,9 @@ D:/stable-diffusion-webui
 ```
 
 接下来需要将 Stable Diffusion WebUI 移动到`D:/stable-diffusion-webui`目录中，如果 Stable Diffusion WebUI 的文件夹名称不是`stable-diffusion-webui`，比如`sd-webui-aki-v1.2`，需要将名称修改成`stable-diffusion-webui`。
+
+>[!NOTE]  
+>如果不修改名称，需要根据[设置内核路径前缀](#设置内核路径前缀)中的说明配置内核路径前缀。在这个例子中内核路径前缀就需要设置为`sd-webui-aki-v1.2`。
 
 移动进去后此时的目录结构如下。
 

@@ -30,10 +30,13 @@ def write_content_to_file(content: Union[list, str], path: Union[str, Path]) -> 
 if __name__ == "__main__":
     args = get_args()
     help_content = """
-首次使用需要双击运行 configure_env.bat 配置环境
-运行后即可正常运行 PowerShell 脚本, PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
-简单使用说明可打开 help.txt 进行阅读
+首次使用该需要双击运行 configure_env.bat 配置环境
+运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
+
+使用该整合包启动前请打开 help.txt 文件阅读说明
 更多说明请阅读: https://github.com/licyk/sd-webui-all-in-one/discussions/1
+
+！！！不会启动该整合包的请重新阅读 help.txt 文件中的说明！！！
 
 ！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
 """.strip()

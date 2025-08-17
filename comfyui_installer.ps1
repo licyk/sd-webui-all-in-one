@@ -56,7 +56,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 271
+$COMFYUI_INSTALLER_VERSION = 272
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -11485,21 +11485,21 @@ Github：https://github.com/licyk
 
 使用 ComfyUI Installer 进行安装并安装成功后，将在当前目录生成 ComfyUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-launch.ps1：启动 ComfyUI 的脚本。
-update.ps1：更新 ComfyUI 的脚本，可使用该脚本更新 ComfyUI。
-update_node.ps1：更新 ComfyUI 自定义节点的脚本，可使用该脚本更新 ComfyUI 自定义节点。
-download_models.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
-reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-settings.ps1：管理 ComfyUI Installer 的设置。
-terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令
-activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-launch_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本并运行。
-configure_env.bat：配置环境脚本，解决 PowerShell 运行闪退和启用 Windows 长路径支持。
-help.txt：帮助文档。
-cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
-python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
-git：Git 的存放路径。
-ComfyUI：ComfyUI 存放的文件夹。
+- launch.ps1：启动 ComfyUI。
+- update.ps1：更新 ComfyUI。
+- update_node.ps1：更新 ComfyUI 自定义节点。
+- download_models.ps1：下载模型的脚本，下载的模型将存放在 ComfyUI 的模型文件夹中。
+- reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
+- settings.ps1：管理 ComfyUI Installer 的设置。
+- terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令
+- activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
+- launch_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本并运行。
+- configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
+
+- cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
+- python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
+- git：Git 的存放路径。
+- ComfyUI / core：ComfyUI 内核。
 
 详细的 ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
 
