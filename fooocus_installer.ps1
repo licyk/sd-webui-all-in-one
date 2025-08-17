@@ -9978,17 +9978,54 @@ function global:Install-Hanamizuki {
 
     `$content = `"
 @echo off
-if exist ```"%~dp0```"\Fooocus (
-    cd /d ```"%~dp0```"\Fooocus
+set DefaultCorePrefix=Fooocus
+if exist ```"%~dp0%DefaultCorePrefix%```" (
+    set CorePrefix=%DefaultCorePrefix%
 ) else (
-    echo Fooocus not found
+    set CorePrefix=core
+)
+set CorePrefixFile=%~dp0core_prefix.txt
+
+set ArgIndex=0
+set NextIsValue=0
+for %%i in (%*) do (
+    set /a ArgIndex+=1
+    if !NextIsValue!==1 (
+        set CorePrefix=%%i
+        set NextIsValue=0
+        goto :continue
+    ) else (
+        if ```"%%i```"==```"-CorePrefix```" (
+            set NextIsValue=1
+        )
+    )
+)
+
+if exist ```"%CorePrefixFile%```" (
+    for /f ```"delims=```" %%i in ('powershell -command ```"Get-Content -Path '%CorePrefixFile%'```"') do (
+        set CorePrefix=%%i
+        goto :continue
+    )
+)
+
+:continue
+set RootPath=%~dp0%CorePrefix%
+echo CorePrefix: %CorePrefix%
+echo RootPath: %RootPath%
+if exist ```"%RootPath%```" (
+    cd /d ```"%RootPath%```"
+) else (
+    echo %CorePrefix% not found
+    echo Please check if comfyui is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
 if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
     start /B .\hanamizuki.exe
 ) else (
     echo Hanamizuki not found
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
     pause
     exit 1
 )
@@ -10422,17 +10459,54 @@ function Install-Hanamizuki {
 
     $content = "
 @echo off
-if exist `"%~dp0`"\Fooocus (
-    cd /d `"%~dp0`"\Fooocus
+set DefaultCorePrefix=Fooocus
+if exist `"%~dp0%DefaultCorePrefix%`" (
+    set CorePrefix=%DefaultCorePrefix%
 ) else (
-    echo Fooocus not found
+    set CorePrefix=core
+)
+set CorePrefixFile=%~dp0core_prefix.txt
+
+set ArgIndex=0
+set NextIsValue=0
+for %%i in (%*) do (
+    set /a ArgIndex+=1
+    if !NextIsValue!==1 (
+        set CorePrefix=%%i
+        set NextIsValue=0
+        goto :continue
+    ) else (
+        if `"%%i`"==`"-CorePrefix`" (
+            set NextIsValue=1
+        )
+    )
+)
+
+if exist `"%CorePrefixFile%`" (
+    for /f `"delims=`" %%i in ('powershell -command `"Get-Content -Path '%CorePrefixFile%'`"') do (
+        set CorePrefix=%%i
+        goto :continue
+    )
+)
+
+:continue
+set RootPath=%~dp0%CorePrefix%
+echo CorePrefix: %CorePrefix%
+echo RootPath: %RootPath%
+if exist `"%RootPath%`" (
+    cd /d `"%RootPath%`"
+) else (
+    echo %CorePrefix% not found
+    echo Please check if comfyui is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
 if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
     start /B .\hanamizuki.exe
 ) else (
     echo Hanamizuki not found
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
     pause
     exit 1
 )
