@@ -19,6 +19,13 @@
             <p>整合包说明与反馈可前往：<a href="https://github.com/licyk/sd-webui-all-in-one/discussions/1" target="_blank">AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1</a></p>
             <p class="update-time">列表更新时间：<span id="update-time"></span></p>
         </div>
+        <!-- 添加数据源切换按钮 -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <label style="font-weight: bold; margin-right: 10px;">
+                <input type="checkbox" id="source-toggle" checked>
+                使用国内加速镜像
+            </label>
+        </div>
         <div id="download-list">
             <div class="loading">
                 <div class="spinner"></div>
@@ -31,146 +38,177 @@
     </footer>
 
     <script>
-        fetch('portable_list.json')
-            .then(response => response.json())
-            .then(data => {
-                // 显示更新时间
-                document.getElementById('update-time').textContent = data.update_time;
-                
-                const container = document.getElementById('download-list');
-                container.innerHTML = '';
-                
-                // 处理stable版本
-                const stableDiv = document.createElement('div');
-                stableDiv.className = 'version-section';
-                stableDiv.innerHTML = '<h2>Stable 版本</h2>';
-                container.appendChild(stableDiv);
-                
-                for (const [software, items] of Object.entries(data.stable)) {
-                    const softwareDiv = document.createElement('div');
-                    softwareDiv.className = 'software-section';
-                    const itemsList = document.createElement('ul');
-                    itemsList.className = 'download-items';
+        // 获取数据源切换按钮
+        const sourceToggle = document.getElementById('source-toggle');
+        
+        // 加载数据的函数
+        function loadData() {
+            fetch('portable_list.json')
+                .then(response => response.json())
+                .then(data => {
+                    // 显示更新时间
+                    document.getElementById('update-time').textContent = data.update_time;
                     
-                    // 创建标题
-                    softwareDiv.innerHTML = `<h3>${software}</h3>`;
-                    softwareDiv.appendChild(itemsList);
+                    // 根据切换按钮状态选择数据源
+                    const dataSource = sourceToggle.checked ? 'modelscope' : 'huggingface';
                     
-                    // 添加下载项(默认只显示前3个)
-                    items.forEach((item, index) => {
-                        const li = document.createElement('li');
-                        if (index === 0) {
-                            li.innerHTML = `<a href="${item[1]}" download>${item[0]} <span class="latest-tag">(最新版)</span></a>`;
-                            li.classList.add('latest-item');
-                        } else {
-                            li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
-                        }
-                        if (index >= 3) {
-                            li.classList.add('hidden-item');
-                        }
-                        itemsList.appendChild(li);
-                    });
+                    const container = document.getElementById('download-list');
+                    container.innerHTML = '';
                     
-                    // 如果超过3个，添加展开按钮
-                    if (items.length > 3) {
-                        const toggleBtn = document.createElement('button');
-                        toggleBtn.className = 'toggle-btn';
-                        toggleBtn.innerHTML = '展开更多 ▼';
-                        toggleBtn.addEventListener('click', function() {
-                            const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
-                            const firstHidden = hiddenItems[0];
-                            const isHidden = firstHidden.style.display === 'none' || 
-                                           firstHidden.classList.contains('hidden-item');
+                    // 处理stable版本
+                    const stableDiv = document.createElement('div');
+                    stableDiv.className = 'version-section';
+                    stableDiv.innerHTML = '<h2>Stable 版本</h2>';
+                    container.appendChild(stableDiv);
+                    
+                    // 检查数据源是否存在
+                    if (!data[dataSource] || !data[dataSource].stable) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'error';
+                        errorDiv.textContent = `未找到 ${dataSource} 数据源的 stable 版本数据`;
+                        stableDiv.appendChild(errorDiv);
+                    } else {
+                        for (const [software, items] of Object.entries(data[dataSource].stable)) {
+                            const softwareDiv = document.createElement('div');
+                            softwareDiv.className = 'software-section';
+                            const itemsList = document.createElement('ul');
+                            itemsList.className = 'download-items';
                             
-                            if (isHidden) {
-                                // 展开
-                                hiddenItems.forEach(item => {
-                                    item.style.display = 'block';
-                                    item.classList.remove('hidden-item');
-                                });
-                                toggleBtn.innerHTML = '收起 ▲';
-                            } else {
-                                // 收起
-                                hiddenItems.forEach(item => {
-                                    item.style.display = 'none';
-                                    item.classList.add('hidden-item');
-                                });
+                            // 创建标题
+                            softwareDiv.innerHTML = `<h3>${software}</h3>`;
+                            softwareDiv.appendChild(itemsList);
+                            
+                            // 添加下载项(默认只显示前3个)
+                            items.forEach((item, index) => {
+                                const li = document.createElement('li');
+                                if (index === 0) {
+                                    li.innerHTML = `<a href="${item[1]}" download>${item[0]} <span class="latest-tag">(最新版)</span></a>`;
+                                    li.classList.add('latest-item');
+                                } else {
+                                    li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
+                                }
+                                if (index >= 3) {
+                                    li.classList.add('hidden-item');
+                                }
+                                itemsList.appendChild(li);
+                            });
+                            
+                            // 如果超过3个，添加展开按钮
+                            if (items.length > 3) {
+                                const toggleBtn = document.createElement('button');
+                                toggleBtn.className = 'toggle-btn';
                                 toggleBtn.innerHTML = '展开更多 ▼';
+                                toggleBtn.addEventListener('click', function() {
+                                    const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
+                                    const firstHidden = hiddenItems[0];
+                                    const isHidden = firstHidden.style.display === 'none' || 
+                                                   firstHidden.classList.contains('hidden-item');
+                                    
+                                    if (isHidden) {
+                                        // 展开
+                                        hiddenItems.forEach(item => {
+                                            item.style.display = 'block';
+                                            item.classList.remove('hidden-item');
+                                        });
+                                        toggleBtn.innerHTML = '收起 ▲';
+                                    } else {
+                                        // 收起
+                                        hiddenItems.forEach(item => {
+                                            item.style.display = 'none';
+                                            item.classList.add('hidden-item');
+                                        });
+                                        toggleBtn.innerHTML = '展开更多 ▼';
+                                    }
+                                });
+                                
+                                softwareDiv.appendChild(toggleBtn);
                             }
-                        });
-                        
-                        softwareDiv.appendChild(toggleBtn);
+                            
+                            stableDiv.appendChild(softwareDiv);
+                        }
                     }
                     
-                    stableDiv.appendChild(softwareDiv);
-                }
-                
-                // 处理nightly版本(同上)
-                const nightlyDiv = document.createElement('div');
-                nightlyDiv.className = 'version-section';
-                nightlyDiv.innerHTML = '<h2>Nightly 版本</h2>';
-                container.appendChild(nightlyDiv);
-                
-                for (const [software, items] of Object.entries(data.nightly)) {
-                    const softwareDiv = document.createElement('div');
-                    softwareDiv.className = 'software-section';
-                    const itemsList = document.createElement('ul');
-                    itemsList.className = 'download-items';
+                    // 处理nightly版本
+                    const nightlyDiv = document.createElement('div');
+                    nightlyDiv.className = 'version-section';
+                    nightlyDiv.innerHTML = '<h2>Nightly 版本</h2>';
+                    container.appendChild(nightlyDiv);
                     
-                    softwareDiv.innerHTML = `<h3>${software}</h3>`;
-                    softwareDiv.appendChild(itemsList);
-                    
-                    items.forEach((item, index) => {
-                        const li = document.createElement('li');
-                        if (index === 0) {
-                            li.innerHTML = `<a href="${item[1]}" download>${item[0]} <span class="latest-tag">(最新版)</span></a>`;
-                            li.classList.add('latest-item');
-                        } else {
-                            li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
-                        }
-                        if (index >= 3) {
-                            li.classList.add('hidden-item');
-                        }
-                        itemsList.appendChild(li);
-                    });
-                    
-                    if (items.length > 3) {
-                        const toggleBtn = document.createElement('button');
-                        toggleBtn.className = 'toggle-btn';
-                        toggleBtn.innerHTML = '展开更多 ▼';
-                        toggleBtn.addEventListener('click', function() {
-                            const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
-                            const firstHidden = hiddenItems[0];
-                            const isHidden = firstHidden.style.display === 'none' || 
-                                           firstHidden.classList.contains('hidden-item');
+                    // 检查数据源是否存在nightly版本
+                    if (!data[dataSource] || !data[dataSource].nightly) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'error';
+                        errorDiv.textContent = `未找到 ${dataSource} 数据源的 nightly 版本数据`;
+                        nightlyDiv.appendChild(errorDiv);
+                    } else {
+                        for (const [software, items] of Object.entries(data[dataSource].nightly)) {
+                            const softwareDiv = document.createElement('div');
+                            softwareDiv.className = 'software-section';
+                            const itemsList = document.createElement('ul');
+                            itemsList.className = 'download-items';
                             
-                            if (isHidden) {
-                                // 展开
-                                hiddenItems.forEach(item => {
-                                    item.style.display = 'block';
-                                    item.classList.remove('hidden-item');
-                                });
-                                toggleBtn.innerHTML = '收起 ▲';
-                            } else {
-                                // 收起
-                                hiddenItems.forEach(item => {
-                                    item.style.display = 'none';
-                                    item.classList.add('hidden-item');
-                                });
+                            softwareDiv.innerHTML = `<h3>${software}</h3>`;
+                            softwareDiv.appendChild(itemsList);
+                            
+                            items.forEach((item, index) => {
+                                const li = document.createElement('li');
+                                if (index === 0) {
+                                    li.innerHTML = `<a href="${item[1]}" download>${item[0]} <span class="latest-tag">(最新版)</span></a>`;
+                                    li.classList.add('latest-item');
+                                } else {
+                                    li.innerHTML = `<a href="${item[1]}" download>${item[0]}</a>`;
+                                }
+                                if (index >= 3) {
+                                    li.classList.add('hidden-item');
+                                }
+                                itemsList.appendChild(li);
+                            });
+                            
+                            if (items.length > 3) {
+                                const toggleBtn = document.createElement('button');
+                                toggleBtn.className = 'toggle-btn';
                                 toggleBtn.innerHTML = '展开更多 ▼';
+                                toggleBtn.addEventListener('click', function() {
+                                    const hiddenItems = itemsList.querySelectorAll('li:nth-child(n+4)');
+                                    const firstHidden = hiddenItems[0];
+                                    const isHidden = firstHidden.style.display === 'none' || 
+                                                   firstHidden.classList.contains('hidden-item');
+                                    
+                                    if (isHidden) {
+                                        // 展开
+                                        hiddenItems.forEach(item => {
+                                            item.style.display = 'block';
+                                            item.classList.remove('hidden-item');
+                                        });
+                                        toggleBtn.innerHTML = '收起 ▲';
+                                    } else {
+                                        // 收起
+                                        hiddenItems.forEach(item => {
+                                            item.style.display = 'none';
+                                            item.classList.add('hidden-item');
+                                        });
+                                        toggleBtn.innerHTML = '展开更多 ▼';
+                                    }
+                                });
+                                
+                                softwareDiv.appendChild(toggleBtn);
                             }
-                        });
-                        
-                        softwareDiv.appendChild(toggleBtn);
+                            
+                            nightlyDiv.appendChild(softwareDiv);
+                        }
                     }
-                    
-                    nightlyDiv.appendChild(softwareDiv);
-                }
-            })
-            .catch(error => {
-                console.error('加载数据失败:', error);
-                document.getElementById('download-list').innerHTML = '<p class="error">加载数据失败，请刷新页面重试。</p>';
-            });
+                })
+                .catch(error => {
+                    console.error('加载数据失败:', error);
+                    document.getElementById('download-list').innerHTML = '<p class="error">加载数据失败，请刷新页面重试。</p>';
+                });
+        }
+        
+        // 页面加载时初始化数据
+        loadData();
+        
+        // 监听切换按钮变化
+        sourceToggle.addEventListener('change', loadData);
     </script>
 </body>
 </html>

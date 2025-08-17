@@ -3,10 +3,11 @@ import re
 import json
 from functools import cmp_to_key
 from collections import namedtuple
-from typing import Union, Literal
+from typing import Any, Union, Literal
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from modelscope.hub.api import HubApi
+from huggingface_hub import HfApi
 
 
 # 解析整合包文件名的正则表达式
@@ -85,15 +86,52 @@ def parse_portable_filename(filename: str) -> PortableNameComponent:
     )
 
 
-def get_modelscope_repo_file(
+def get_huggingface_repo_file(
     repo_id: str,
     repo_type: Literal["model", "dataset", "space"],
-) -> list[str, str]:
+) -> list[str]:
     '''从 ModelScope 仓库获取文件列表
 
     :param repo_id`(str)`: 仓库 ID
     :param repo_type`(str)`: 仓库种类 (model/dataset/space)
-    :return `list[str,str]`: 仓库文件列表 `[<路径>, <链接>]`
+    :return `list[str]`: 仓库文件列表 `[<路径>, <链接>]`
+    '''
+    api = HfApi()
+    file_list = []
+    try:
+        print(f"获取 {repo_id} (类型: {repo_type}) 中的文件列表")
+        repo_files = api.list_repo_files(
+            repo_id=repo_id,
+            repo_type=repo_type,
+        )
+    except Exception as e:
+        print(f"获取 {repo_id} (类型: {repo_type}) 中的文件列表出现错误: {e}")
+        return file_list
+
+    for i in repo_files:
+        if repo_type == "model":
+            url = f"https://huggingface.co/{repo_id}/resolve/main/{i}"
+        elif repo_type == "dataset":
+            url = f"https://huggingface.co/datasets/{repo_id}/resolve/main/{i}"
+        elif repo_type == "space":
+            url = f"https://huggingface.co/spaces/{repo_id}/resolve/main/{i}"
+        else:
+            raise Exception(f"错误的 HuggingFace 仓库类型: {repo_type}")
+
+        file_list.append([i, url])
+
+    return file_list
+
+
+def get_modelscope_repo_file(
+    repo_id: str,
+    repo_type: Literal["model", "dataset", "space"],
+) -> list[str]:
+    '''从 ModelScope 仓库获取文件列表
+
+    :param repo_id`(str)`: 仓库 ID
+    :param repo_type`(str)`: 仓库种类 (model/dataset/space)
+    :return `list[str]`: 仓库文件列表 `[<路径>, <链接>]`
     '''
     api = HubApi()
     file_list = []
@@ -326,6 +364,8 @@ def compare_versions(version1: str, version2: str) -> int:
     :param version2(str): 第二个版本号
     :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
     '''
+    version1 = str(version1)
+    version2 = str(version2)
     # 将版本号拆分成数字列表
     try:
         nums1 = (
@@ -379,22 +419,35 @@ def sort_portable_impl(item1: list[str, str], item2: list[str, str]) -> int:
 
 
 def build_portable_dict(
-    stable_list: list[str, str, str],
-    nightly_list: list[str, str, str],
+    type_key: str,
+    stable_list: list[str],
+    nightly_list: list[str],
+    portable_dict: dict[str, Any] = None,
 ) -> dict:
     '''将整合包列表保存为 Json 文件
 
-    :param stable_list`(list[str,str,str])`: 正式版整合包列表 `[<稳定版整合包名>, <文件名>, <链接>]`
-    :param nightly_list`(list[str,str,str])`: 每日构建版整合包列表 `[<每日构建版整合包名>, <文件名>, <链接>]`
-    :param `dict`: 整合包列表字典
+    :param type_key`(str)`: 在字典中新增的键
+    :param stable_list`(list[str])`: 正式版整合包列表 `[<稳定版整合包名>, <文件名>, <链接>]`
+    :param nightly_list`(list[str])`: 每日构建版整合包列表 `[<每日构建版整合包名>, <文件名>, <链接>]`
+    :param portable_dict`(dict[str,Any])`: 需要更新的整合包列表
     '''
     stable_p_type = list(set([p_type for p_type, _, _ in stable_list]))
     nightly_p_type = list(set([p_type for p_type, _, _ in nightly_list]))
     stable_p_type.sort()
     nightly_p_type.sort()
-    portable_dict = {}
+    portable_dict = {} if portable_dict is None else portable_dict
     stable_dict = {}
     nightly_dict = {}
+
+    if type_key not in portable_dict:
+        portable_dict[type_key] = {}
+
+    current_time = (
+        datetime.now(timezone.utc)
+        +
+        timedelta(hours=8)
+    ).strftime(r"%Y-%m-%d %H:%M:%S")
+    portable_dict["update_time"] = current_time
 
     for p_type in stable_p_type:
         portable_type_list = [
@@ -406,7 +459,7 @@ def build_portable_dict(
             portable_type_list, key=cmp_to_key(sort_portable_impl), reverse=True
         )
 
-    portable_dict["stable"] = stable_dict
+    portable_dict[type_key]["stable"] = stable_dict
 
     for p_type in nightly_p_type:
         portable_type_list = [
@@ -418,27 +471,41 @@ def build_portable_dict(
             portable_type_list, key=cmp_to_key(sort_portable_impl), reverse=True
         )
 
-    portable_dict["nightly"] = nightly_dict
-
-    current_time = (
-        datetime.now(timezone.utc)
-        +
-        timedelta(hours=8)
-    ).strftime(r"%Y-%m-%d %H:%M:%S")
-    portable_dict["update_time"] = current_time
-
-    return portable_dict
+    portable_dict[type_key]["nightly"] = nightly_dict
 
 
 def main() -> None:
     '''主函数'''
     root_path = os.environ.get("ROOT_PATH")
-    repo_id = os.environ.get("REPO_ID")
-    repo_type = os.environ.get("REPO_TYPE")
-    ms_file = get_modelscope_repo_file(repo_id=repo_id, repo_type=repo_type)
+    hf_repo_id = os.environ.get("HF_REPO_ID")
+    hf_repo_type = os.environ.get("HF_REPO_TYPE")
+    ms_repo_id = os.environ.get("MS_REPO_ID")
+    ms_repo_type = os.environ.get("MS_REPO_TYPE")
+    hf_file = get_huggingface_repo_file(
+        repo_id=hf_repo_id,
+        repo_type=hf_repo_type,
+    )
+    ms_file = get_modelscope_repo_file(
+        repo_id=ms_repo_id,
+        repo_type=ms_repo_type,
+    )
+    hf_file = filter_portable_file(hf_file)
     ms_file = filter_portable_file(ms_file)
-    stable, nightly = classify_package(ms_file)
-    portable_dict = build_portable_dict(stable, nightly)
+    hf_stable, hf_nightly = classify_package(hf_file)
+    ms_stable, ms_nightly = classify_package(ms_file)
+    portable_dict = {}
+    build_portable_dict(
+        type_key="huggingface",
+        stable_list=hf_stable,
+        nightly_list=hf_nightly,
+        portable_dict=portable_dict,
+    )
+    build_portable_dict(
+        type_key="modelscope",
+        stable_list=ms_stable,
+        nightly_list=ms_nightly,
+        portable_dict=portable_dict,
+    )
     save_list_to_json(os.path.join(
         root_path, "portable_list.json"), portable_dict)
 

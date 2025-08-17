@@ -33,10 +33,10 @@ jobs:
           echo "更新时间: \`${update_time}\`" >> "${release_note_file}"
           echo "|Stable 版整合包|最新版本|" >> "${release_note_file}"
           echo "|---|---|" >> "${release_note_file}"
-          jq -r '.stable | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
+          jq -r '.modelscope.stable | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
           echo "" >> "${release_note_file}"
           echo "|Nightly 版整合包|最新版本|" >> "${release_note_file}"
           echo "|---|---|" >> "${release_note_file}"
-          jq -r '.nightly | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
+          jq -r '.modelscope.nightly | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
 
           gh release edit portable --notes-file "${release_note_file}" --repo "licyk/sd-webui-all-in-one"
