@@ -27,11 +27,6 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Install fake nvidia-smi
-        shell: pwsh
-        run: |
-          Copy-Item -Path "${{ github.workspace }}/.github/nvidia-smi.bat" -Destination "C:/Program Files/Git/cmd/nvidia-smi.bat" -Force
-
       - name: Launch SD WebUI Installer
         shell: pwsh
         env:
@@ -39,6 +34,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_next" `
+            -PyTorchMirrorType cu129 `
             -BuildMode `
             -BuildWithLaunch `
             -BuildWitchBranch 10 `
@@ -55,14 +51,14 @@ jobs:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          & "${{ github.workspace }}/sd_next/stable-diffusion-webui/python/python.exe" -m pip install insightface
+          & "${{ github.workspace }}/sd_next/core/python/python.exe" -m pip install insightface
 
       - name: Install OpenPose Editor Assets
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/install_openpose_editor_assets.ps1" `
             -TempPath "${{ github.workspace }}/temp" `
-            -InstallPath "${{ github.workspace }}/sd_next/stable-diffusion-webui/extensions/sd-webui-openpose-editor/dist"
+            -InstallPath "${{ github.workspace }}/sd_next/core/extensions/sd-webui-openpose-editor/dist"
 
       - name: Launch to complete dependencies
         shell: pwsh
@@ -79,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
-            -VAEApproxPath "${{ github.workspace }}/sd_next/stable-diffusion-webui/models/VAE-approx"
+            -VAEApproxPath "${{ github.workspace }}/sd_next/core/models/VAE-approx"
 
       - name: Make docs
         shell: pwsh

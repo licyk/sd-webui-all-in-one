@@ -27,11 +27,6 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse
 
-      - name: Install fake nvidia-smi
-        shell: pwsh
-        run: |
-          Copy-Item -Path "${{ github.workspace }}/.github/nvidia-smi.bat" -Destination "C:/Program Files/Git/cmd/nvidia-smi.bat" -Force
-
       - name: Launch SD-Trainer-Script Installer
         shell: pwsh
         env:
@@ -39,6 +34,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/musubi_tuner" `
+            -PyTorchMirrorType cu129 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "musubi_tuner" `
