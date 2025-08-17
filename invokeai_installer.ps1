@@ -1277,7 +1277,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\launch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -2477,7 +2477,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -2506,7 +2506,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -InvokeAIPackage <安装 InvokeAI 的软件包名>
         指定 InvokeAI Installer 安装的 InvokeAI 版本
-        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+        例如: .\`$(`$script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
@@ -3570,7 +3570,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\update.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -4322,7 +4322,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\reinstall_pytorch.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableUV] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableUV] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -4351,7 +4351,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -InvokeAIPackage <安装 InvokeAI 的软件包名>
         指定 InvokeAI Installer 安装的 InvokeAI 版本
-        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+        例如: .\`$(`$script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
@@ -5304,7 +5304,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\download_models.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -6550,7 +6550,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\settings.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
@@ -7693,7 +7693,7 @@ param (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\activate.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
@@ -8519,7 +8519,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InvokeAI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\invokeai_installer.ps1 [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 InvokeAI 的绝对路径>] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoCleanCache] [-DisableAutoApplyUpdate]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 InvokeAI 的绝对路径>] [-InvokeAIPackage <安装 InvokeAI 的软件包名>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoCleanCache] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
@@ -8530,11 +8530,11 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
 
     -InstallPath <安装 InvokeAI 的绝对路径>
         指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
-        例如: .\invokeai_installer.ps1 -InstallPath `"D:\Donwload`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Donwload 这个路径
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Donwload 这个路径
 
     -InvokeAIPackage <安装 InvokeAI 的软件包名>
         指定 InvokeAI Installer 安装的 InvokeAI 版本
-        例如: .\invokeai_installer.ps1 -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
