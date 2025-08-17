@@ -11136,6 +11136,8 @@ function global:Install-Hanamizuki {
 
     `$content = `"
 @echo off
+setlocal enabledelayedexpansion
+set CurrentPath=%~dp0
 set DefaultCorePrefix=ComfyUI
 if exist ```"%~dp0%DefaultCorePrefix%```" (
     set CorePrefix=%DefaultCorePrefix%
@@ -11181,9 +11183,11 @@ if exist ```"%RootPath%```" (
 if exist .\hanamizuki.exe (
     echo Launch Hanamizuki
     start /B .\hanamizuki.exe
+    cd /d ```"%CurrentPath%```"
 ) else (
     echo Hanamizuki not found
     echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
+    cd /d ```"%CurrentPath%```"
     pause
     exit 1
 )
@@ -11624,6 +11628,8 @@ function Install-Hanamizuki {
 
     $content = "
 @echo off
+setlocal enabledelayedexpansion
+set CurrentPath=%~dp0
 set DefaultCorePrefix=ComfyUI
 if exist `"%~dp0%DefaultCorePrefix%`" (
     set CorePrefix=%DefaultCorePrefix%
@@ -11669,9 +11675,11 @@ if exist `"%RootPath%`" (
 if exist .\hanamizuki.exe (
     echo Launch Hanamizuki
     start /B .\hanamizuki.exe
+    cd /d `"%CurrentPath%`"
 ) else (
     echo Hanamizuki not found
     echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
+    cd /d `"%CurrentPath%`"
     pause
     exit 1
 )
