@@ -1,5 +1,5 @@
 """
-SD Scripts 环境管理模块, 可用于 Jupyter Notebook
+SD Scripts / Fooocus 环境管理模块, 可用于 Jupyter Notebook
 """
 import os
 import re
@@ -1055,13 +1055,15 @@ class Utils:
             return False
 
     @staticmethod
-    def compare_versions(version1: str, version2: str) -> int:
+    def compare_versions(version1: str | int | float, version2: str| int | float) -> int:
         """对比两个版本号大小
 
-        :param version1(str): 第一个版本号
-        :param version2(str): 第二个版本号
+        :param version1(str|int|float): 第一个版本号
+        :param version2(str|int|float): 第二个版本号
         :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
         """
+        version1 = str(version1)
+        version2 = str(version2)
         # 将版本号拆分成数字列表
         try:
             nums1 = (
