@@ -8193,8 +8193,17 @@ function Update-Core-Prefix-Setting {
         switch (`$arg) {
             1 {
                 Print-Msg `"请输入自定义内核路径前缀`"
-                Print-Msg `"提示: 路径前缀为内核在当前脚本目录中的名字 (也可以通过相对路径指定当前脚本目录外的内核), 输入后回车保存`"
+                Print-Msg `"提示: 路径前缀为内核在当前脚本目录中的名字 (也可以通过绝对路径指定当前脚本目录外的内核), 输入后回车保存`"
                 `$custom_core_prefix = Get-User-Input
+                if ([System.IO.Path]::IsPathRooted(`$custom_core_prefix)) {
+                    Print-Msg `"将绝对路径转换为内核路径前缀中`"
+                    `$from_path = `$PSScriptRoot
+                    `$to_path = `$custom_core_prefix
+                    `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
+                    `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+                    `$custom_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+                    Print-Msg `"`$to_path -> `$custom_core_prefix`"
+                }
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/core_prefix.txt`" -Value `$custom_core_prefix
                 Print-Msg `"自定义内核路径前缀成功, 使用的路径前缀为: `$custom_core_prefix`"
                 break
@@ -8807,6 +8816,17 @@ function global:Check-SD-Trainer-Script-Installer-Update {
 }
 
 
+# 获取指定路径的内核路径前缀
+function global:Get-Core-Prefix (`$to_path) {
+    `$from_path = `$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT
+    `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
+    `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+    `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+    Print-Msg `"`$from_path 路径的内核路径前缀: `$relative_path`"
+    Print-Msg `"提示: 可使用 settings.ps1 设置内核路径前缀`"
+}
+
+
 # 设置 Python 命令别名
 function global:pip {
     python -m pip @args
@@ -8832,6 +8852,7 @@ Github：https://github.com/licyk
     Update-uv
     Update-Aria2
     Check-SD-Trainer-Script-Installer-Update
+    Get-Core-Prefix
     List-CMD
 
 更多帮助信息可在 SD-Trainer-Script Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md

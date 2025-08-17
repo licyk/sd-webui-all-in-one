@@ -41,6 +41,7 @@ _✨快速部署训练环境_
     - [4. 使用命令更新](#4-使用命令更新)
     - [禁用 SD-Trainer-Script Installer 更新检查 / 自动应用更新](#禁用-sd-trainer-script-installer-更新检查--自动应用更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
+  - [设置内核路径前缀](#设置内核路径前缀)
   - [管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-script-installer-设置)
   - [SD-Trainer-Script Installer 对 Python / Git 环境的识别](#sd-trainer-script-installer-对-python--git-环境的识别)
   - [使用命令运行 SD-Trainer-Script Installer](#使用命令运行-sd-trainer-script-installer)
@@ -78,6 +79,7 @@ _✨快速部署训练环境_
     - [更新 Aria2](#更新-aria2)
     - [列出 SD-Trainer-Script Installer 内置命令](#列出-sd-trainer-script-installer-内置命令)
     - [检查 SD-Trainer-Script Installer 更新](#检查-sd-trainer-script-installer-更新)
+    - [计算 SD-Trainer-Script 内核路径前缀](#计算-sd-trainer-script-内核路径前缀)
     - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
@@ -434,8 +436,20 @@ SD-Trainer-Script Installer 默认使用了 uv 作为 Python 包管理器，大�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->1. 当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
->2. uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
+
+
+## 设置内核路径前缀
+>[!IMPORTANT]  
+>该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-script-installer-设置)中提到的的`settings.ps1`进行修改。
+
+SD-Trainer-Script Installer 通过路径前缀在安装目录中寻找 SD-Trainer-Script 内核并使用。查找时通过遍历 SD-Trainer-Script Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`core`。
+
+内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`SD-Trainer-Script-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`SD-Trainer-Script-aki-v1`，再保存文件，此时 SD-Trainer-Script Installer 将对该内核文件夹进行启动和管理。
+
+内核路径前缀除了可以使用名称，还可以使用相对路径，即 SD-Trainer-Script Installer 可以启动和管理在当前脚本所在路径之外的 SD-Trainer-Script。比如 SD-Trainer-Script Installer 所在路径`D:/Downloads/SD-Trainer-Script`，SD-Trainer-Script 所在路径为`D:/Tools/AI/SD-Trainer-Script-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/SD-Trainer-Script-aki-v1.1`。
+
+相对路径可使用[命令的使用](#命令的使用)中的[计算 SD-Trainer-Script 内核路径前缀](#计算-sd-trainer-script-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 SD-Trainer-Script 内核的绝对路径转换为内核路径前缀。
 
 
 ## 管理 SD-Trainer-Script Installer 设置
@@ -521,11 +535,11 @@ SD-Trainer-Script Installer 主要由两部分构成：安装脚本和环境管�
 运行 PowerShell 脚本时出现以下错误。
 
 ```
-.\comfyui_installer.ps1 : 无法加载文件 D:\ComfyUI\comfyui_installer.ps1。
-未对文件 D:\ComfyUI\comfyui_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
+.\sd_trainer_script_installer.ps1 : 无法加载文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1。
+未对文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
 有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
 所在位置 行:1 字符: 1
-+ .\comfyui_installer.ps1
++ .\sd_trainer_script_installer.ps1
 + ~~~~~~~~~~~~~~~~~~~~~~~~
    + CategoryInfo          : SecurityError: (:) []，PSSecurityException
    + FullyQualifiedErrorId : UnauthorizedAccess
@@ -773,6 +787,12 @@ List-CMD
 ### 检查 SD-Trainer-Script Installer 更新
 ```powershell
 Check-SD-Trainer-Script-Installer-Update
+```
+
+
+### 计算 SD-Trainer-Script 内核路径前缀
+```powershell
+Get-Core-Prefix <内核的绝对路径>
 ```
 
 

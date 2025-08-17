@@ -45,6 +45,7 @@ _✨一键安装 Fooocus_
     - [禁用 Fooocus Installer 更新检查 / 自动应用更新](#禁用-fooocus-installer-更新检查--自动应用更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
+  - [设置内核路径前缀](#设置内核路径前缀)
   - [管理 Fooocus Installer 设置](#管理-fooocus-installer-设置)
   - [Fooocus Installer 对 Python / Git 环境的识别](#fooocus-installer-对-python--git-环境的识别)
   - [使用命令运行 Fooocus Installer](#使用命令运行-fooocus-installer)
@@ -78,6 +79,7 @@ _✨一键安装 Fooocus_
     - [安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)
     - [列出 Fooocus Installer 内置命令](#列出-fooocus-installer-内置命令)
     - [检查 Fooocus Installer 更新](#检查-fooocus-installer-更新)
+    - [计算 Fooocus 内核路径前缀](#计算-fooocus-内核路径前缀)
     - [查看并切换 Fooocus 的版本](#查看并切换-fooocus-的版本)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
@@ -551,8 +553,7 @@ Fooocus Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->1. 当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
->2. uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
 
 
 ## 创建快捷启动方式
@@ -563,6 +564,19 @@ Fooocus Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 
 >[!WARNING]  
 >如果 Fooocus 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
+
+
+## 设置内核路径前缀
+>[!IMPORTANT]  
+>该设置可通过[管理 Fooocus Installer 设置](#管理-fooocus-installer-设置)中提到的的`settings.ps1`进行修改。
+
+Fooocus Installer 通过路径前缀在安装目录中寻找 Fooocus 内核并使用。查找时通过遍历 Fooocus Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`core`。
+
+内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`Fooocus-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`Fooocus-aki-v1`，再保存文件，此时 Fooocus Installer 将对该内核文件夹进行启动和管理。
+
+内核路径前缀除了可以使用名称，还可以使用相对路径，即 Fooocus Installer 可以启动和管理在当前脚本所在路径之外的 Fooocus。比如 Fooocus Installer 所在路径`D:/Downloads/Fooocus`，Fooocus 所在路径为`D:/Tools/AI/Fooocus-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/Fooocus-aki-v1.1`。
+
+相对路径可使用[命令的使用](#命令的使用)中的[计算 Fooocus 内核路径前缀](#计算-fooocus-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 Fooocus 内核的绝对路径转换为内核路径前缀。
 
 
 ## 管理 Fooocus Installer 设置
@@ -652,11 +666,11 @@ Fooocus Installer 主要由两部分构成：安装脚本和环境管理脚本�
 运行 PowerShell 脚本时出现以下错误。
 
 ```
-.\comfyui_installer.ps1 : 无法加载文件 D:\ComfyUI\comfyui_installer.ps1。
-未对文件 D:\ComfyUI\comfyui_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
+.\fooocus_installer.ps1 : 无法加载文件 D:\Fooocus\fooocus_installer.ps1。
+未对文件 D:\Fooocus\fooocus_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
 有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
 所在位置 行:1 字符: 1
-+ .\comfyui_installer.ps1
++ .\fooocus_installer.ps1
 + ~~~~~~~~~~~~~~~~~~~~~~~~
    + CategoryInfo          : SecurityError: (:) []，PSSecurityException
    + FullyQualifiedErrorId : UnauthorizedAccess
@@ -871,6 +885,13 @@ List-CMD
 ```powershell
 Check-Stable-Diffusion-WebUI-Installer-Update
 ```
+
+
+### 计算 Fooocus 内核路径前缀
+```powershell
+Get-Core-Prefix <内核的绝对路径>
+```
+
 
 ### 查看并切换 Fooocus 的版本
 ```powershell

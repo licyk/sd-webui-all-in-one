@@ -46,7 +46,7 @@ _✨一键安装 ComfyUI_
     - [禁用 ComfyUI Installer 更新检查 / 自动应用更新](#禁用-comfyui-installer-更新检查--自动应用更新)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
-  - [设置路径前缀](#设置路径前缀)
+  - [设置内核路径前缀](#设置内核路径前缀)
   - [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)
   - [ComfyUI Installer 对 Python / Git 环境的识别](#comfyui-installer-对-python--git-环境的识别)
   - [使用命令运行 ComfyUI Installer](#使用命令运行-comfyui-installer)
@@ -82,6 +82,7 @@ _✨一键安装 ComfyUI_
     - [列出 ComfyUI 已存在的自定义节点](#列出-comfyui-已存在的自定义节点)
     - [列出 ComfyUI Installer 内置命令](#列出-comfyui-installer-内置命令)
     - [检查 ComfyUI Installer 更新](#检查-comfyui-installer-更新)
+    - [计算 ComfyUI 内核路径前缀](#计算-comfyui-内核路径前缀)
     - [查看并切换 ComfyUI 的版本](#查看并切换-comfyui-的版本)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
@@ -603,6 +604,7 @@ ComfyUI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 ### 4. 使用命令更新
 参考[命令的使用](#命令的使用)的方法进入 ComfyUI Env，并运行`Check-ComfyUI-Installer-Update`命令进行更新。
 
+
 ### 禁用 ComfyUI Installer 更新检查 / 自动应用更新
 >[!WARNING]  
 >通常不建议禁用 ComfyUI Installer 的更新检查，当 ComfyUI 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
@@ -624,8 +626,7 @@ ComfyUI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
 
 >[!NOTE]  
->1. 当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
->2. uv 包管理器对网络的稳定性要求更高，在网络不稳定时可能会出现下载软件包出错的问题，可尝试重新运行，或者禁用 uv，这时将切换成 Pip 作为 Python 包管理器，Pip 在网络稳定性差的情况下不容易出错，但这将降低 Python 软件包的安装速度。
+>当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
 
 
 ## 创建快捷启动方式
@@ -638,11 +639,17 @@ ComfyUI Installer 默认使用了 uv 作为 Python 包管理器，大大加快�
 >如果 ComfyUI 的路径发生移动，需要重新运行`launch.ps1`更新快捷启动方式。
 
 
-## 设置路径前缀
+## 设置内核路径前缀
 >[!IMPORTANT]  
 >该设置可通过[管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置)中提到的的`settings.ps1`进行修改。
 
-ComfyUI Installer 通过路径前缀在安装目录中寻找 ComfyUI 内核，默认使用的路径前缀为`core`。
+ComfyUI Installer 通过路径前缀在安装目录中寻找 ComfyUI 内核并使用。查找时通过遍历 ComfyUI Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`core`。
+
+内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`ComfyUI-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`ComfyUI-aki-v1`，再保存文件，此时 ComfyUI Installer 将对该内核文件夹进行启动和管理。
+
+内核路径前缀除了可以使用名称，还可以使用相对路径，即 ComfyUI Installer 可以启动和管理在当前脚本所在路径之外的 ComfyUI。比如 ComfyUI Installer 所在路径`D:/Downloads/ComfyUI`，ComfyUI 所在路径为`D:/Tools/AI/ComfyUI-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/ComfyUI-aki-v1.1`。
+
+相对路径可使用[命令的使用](#命令的使用)中的[计算 ComfyUI 内核路径前缀](#计算-comfyui-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 ComfyUI 内核的绝对路径转换为内核路径前缀。
 
 
 ## 管理 ComfyUI Installer 设置
@@ -964,6 +971,13 @@ List-CMD
 ```powershell
 Check-ComfyUI-Installer-Update
 ```
+
+
+### 计算 ComfyUI 内核路径前缀
+```powershell
+Get-Core-Prefix <内核的绝对路径>
+```
+
 
 ### 查看并切换 ComfyUI 的版本
 ```powershell
