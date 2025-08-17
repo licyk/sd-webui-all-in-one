@@ -10655,7 +10655,7 @@ if exist ```"%RootPath%```" (
     cd /d ```"%RootPath%```"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if comfyui is installed, or if the CorePrefix is set correctly
+    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -10665,7 +10665,7 @@ if exist .\hanamizuki.exe (
     cd /d ```"%CurrentPath%```"
 ) else (
     echo Hanamizuki not found
-    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
     cd /d ```"%CurrentPath%```"
     pause
     exit 1
@@ -11149,7 +11149,7 @@ if exist `"%RootPath%`" (
     cd /d `"%RootPath%`"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if comfyui is installed, or if the CorePrefix is set correctly
+    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -11159,7 +11159,7 @@ if exist .\hanamizuki.exe (
     cd /d `"%CurrentPath%`"
 ) else (
     echo Hanamizuki not found
-    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install hanamizuki
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
     cd /d `"%CurrentPath%`"
     pause
     exit 1
