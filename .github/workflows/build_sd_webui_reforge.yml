@@ -52,6 +52,7 @@ jobs:
         shell: pwsh
         env:
           UV_PYTHON: "${{ github.workspace }}/sd_webui_reforge/core/python/python.exe"
+          UV_LINK_MODE: copy
         run: |
           uv pip install insightface
 
@@ -96,6 +97,7 @@ jobs:
         shell: pwsh
         env:
           UV_SYSTEM_PYTHON: 1
+          UV_LINK_MODE: copy
         run: |
           uv pip install huggingface_hub modelscope
 

@@ -28,9 +28,11 @@ jobs:
           curl -L https://github.com/licyk/t/raw/gh-pages/sd_portable/portable_list.json -o "${portable_list_file}"
           update_time=$(jq -r '.update_time' "${portable_list_file}")
 
-          echo "**详细说明与使用请阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)**" > "${release_note_file}"
+          echo "详细说明与使用请阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)" > "${release_note_file}"
           echo "---" >> "${release_note_file}"
-          echo "更新时间: \`${update_time}\`" >> "${release_note_file}"
+          echo "- 更新时间: \`${update_time}\`" >> "${release_note_file}"
+          echo "- 所有历史版本下载: [AI 绘画 / 训练整合包下载列表](https://licyk.github.io/t/sd_portable)" >> "${release_note_file}"
+          echo "---" >> "${release_note_file}"
           echo "|Stable 版整合包|最新版本|" >> "${release_note_file}"
           echo "|---|---|" >> "${release_note_file}"
           jq -r '.modelscope.stable | to_entries[] | "|\(.key)|[\(.value[0][0])](\(.value[0][1]))|"' "${portable_list_file}" >> "${release_note_file}"
