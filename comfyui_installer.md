@@ -651,7 +651,7 @@ ComfyUI Installer 通过路径前缀在安装目录中寻找 ComfyUI 内核并�
 
 内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`ComfyUI-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`ComfyUI-aki-v1`，再保存文件，此时 ComfyUI Installer 将对该内核文件夹进行启动和管理。
 
-内核路径前缀除了可以使用名称，还可以使用相对路径，即 ComfyUI Installer 可以启动和管理在当前脚本所在路径之外的 ComfyUI。比如 ComfyUI 所在路径为`D:/Tools/AI/ComfyUI-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
+内核路径前缀除了可以使用名称，还可以使用绝对路径或者相对路径，即 ComfyUI Installer 可以启动和管理在当前脚本所在路径之外的 ComfyUI。比如 ComfyUI 所在路径为`D:/Tools/AI/ComfyUI-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
 
 如果使用相对路径，此时需要知道 ComfyUI Installer 所在路径，比如`D:/Downloads/ComfyUI`，则可以得出内核路径前缀为`../../Tools/AI/ComfyUI-aki-v1.1`。
 
