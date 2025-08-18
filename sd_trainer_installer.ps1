@@ -63,7 +63,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 304
+$SD_TRAINER_INSTALLER_VERSION = 305
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -4782,6 +4782,7 @@ Main
 function Write-Launch-SD-Trainer-Install-Script {
     $content = "
 param (
+    [string]`$InstallPath,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePyPIMirror,
@@ -4792,6 +4793,9 @@ param (
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
 `$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+if (-not `$InstallPath) {
+    `$InstallPath = `$PSScriptRoot
+}
 
 
 
@@ -4942,6 +4946,8 @@ function Get-Local-Setting {
     } elseif ((Test-Path `"`$PSScriptRoot/install_kohya_gui.txt`") -or (`$InstallBranch -eq `"kohya_gui`")) {
         `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
     }
+
+    `$arg.Add(`"-InstallPath`", `$InstallPath)
 
     return `$arg
 }
