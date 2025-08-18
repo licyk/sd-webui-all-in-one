@@ -542,7 +542,9 @@ SD-Trainer Installer 通过路径前缀在安装目录中寻找 SD-Trainer 内�
 
 内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`SD-Trainer-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`SD-Trainer-aki-v1`，再保存文件，此时 SD-Trainer Installer 将对该内核文件夹进行启动和管理。
 
-内核路径前缀除了可以使用名称，还可以使用相对路径，即 SD-Trainer Installer 可以启动和管理在当前脚本所在路径之外的 SD-Trainer。比如 SD-Trainer Installer 所在路径`D:/Downloads/SD-Trainer`，SD-Trainer 所在路径为`D:/Tools/AI/SD-Trainer-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/SD-Trainer-aki-v1.1`。
+内核路径前缀除了可以使用名称，还可以使用相对路径，即 SD-Trainer Installer 可以启动和管理在当前脚本所在路径之外的 SD-Trainer。比如 SD-Trainer 所在路径为`D:/Tools/AI/lora-scripts-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
+
+如果使用相对路径，此时需要知道 SD-Trainer Installer 所在路径，比如`D:/Downloads/SD-Trainer`，则可以得出内核路径前缀为`../../Tools/AI/lora-scripts-aki-v1.1`。
 
 相对路径可使用[命令的使用](#命令的使用)中的[计算 SD-Trainer 内核路径前缀](#计算-sd-trainer-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 SD-Trainer 内核的绝对路径转换为内核路径前缀。
 
@@ -613,7 +615,7 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 
 |绘世启动器下载|
 |---|
-|[下载地址 1](https://modelscope.cn/models/licyks/SD-Trainer-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
+|[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
 |[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 |[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 

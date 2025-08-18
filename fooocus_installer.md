@@ -578,7 +578,9 @@ Fooocus Installer 通过路径前缀在安装目录中寻找 Fooocus 内核并�
 
 内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`Fooocus-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`Fooocus-aki-v1`，再保存文件，此时 Fooocus Installer 将对该内核文件夹进行启动和管理。
 
-内核路径前缀除了可以使用名称，还可以使用相对路径，即 Fooocus Installer 可以启动和管理在当前脚本所在路径之外的 Fooocus。比如 Fooocus Installer 所在路径`D:/Downloads/Fooocus`，Fooocus 所在路径为`D:/Tools/AI/Fooocus-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/Fooocus-aki-v1.1`。
+内核路径前缀除了可以使用名称，还可以使用相对路径，即 Fooocus Installer 可以启动和管理在当前脚本所在路径之外的 Fooocus。比如 Fooocus 所在路径为`D:/Tools/AI/Fooocus-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
+
+如果使用相对路径，此时需要知道 Fooocus Installer 所在路径，比如`D:/Downloads/Fooocus`，则可以得出内核路径前缀为`../../Tools/AI/Fooocus-aki-v1.1`。
 
 相对路径可使用[命令的使用](#命令的使用)中的[计算 Fooocus 内核路径前缀](#计算-fooocus-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 Fooocus 内核的绝对路径转换为内核路径前缀。
 

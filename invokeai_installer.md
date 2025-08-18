@@ -542,7 +542,9 @@ InvokeAI Installer 通过路径前缀在安装目录中寻找 InvokeAI 内核并
 
 内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`InvokeAI-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`InvokeAI-aki-v1`，再保存文件，此时 InvokeAI Installer 将对该内核文件夹进行启动和管理。
 
-内核路径前缀除了可以使用名称，还可以使用相对路径，即 InvokeAI Installer 可以启动和管理在当前脚本所在路径之外的 InvokeAI。比如 InvokeAI Installer 所在路径`D:/Downloads/InvokeAI`，InvokeAI 所在路径为`D:/Tools/AI/InvokeAI-aki-v1.1`，则可以得出内核路径前缀为`../../Tools/AI/InvokeAI-aki-v1.1`。
+内核路径前缀除了可以使用名称，还可以使用绝对路径或者相对路径，即 InvokeAI Installer 可以启动和管理在当前脚本所在路径之外的 InvokeAI。比如 InvokeAI 所在路径为`D:/Tools/AI/InvokeAI-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
+
+如果使用相对路径，此时需要知道 InvokeAI Installer 所在路径，比如`D:/Downloads/InvokeAI`，则可以得出内核路径前缀为`../../Tools/AI/InvokeAI-aki-v1.1`。
 
 相对路径可使用[命令的使用](#命令的使用)中的[计算 InvokeAI 内核路径前缀](#计算-invokeai-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 InvokeAI 内核的绝对路径转换为内核路径前缀。
 
@@ -672,7 +674,6 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 ## Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
 下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
-
 
 
 ## NotFoundError: 无法在“Node”上执行“removeChild”: 要删除的节点不是此节点的子节点

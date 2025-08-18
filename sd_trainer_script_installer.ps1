@@ -34,10 +34,18 @@
     $prefix_list = @("core", "sd-scripts", "SimpleTuner", "ai-toolkit", "finetrainers", "diffusion-pipe", "musubi-tuner")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
         if ($CorePrefix) {
-            $Env:CORE_PREFIX = $CorePrefix
+            $origin_core_prefix = $CorePrefix
         } else {
-            $Env:CORE_PREFIX = Get-Content "$PSScriptRoot/core_prefix.txt"
+            $origin_core_prefix = Get-Content "$PSScriptRoot/core_prefix.txt"
         }
+        $origin_core_prefix = $origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
+            $to_path = $origin_core_prefix
+            $from_uri = New-Object System.Uri($InstallPath.Replace('\', '/') + '/')
+            $to_uri = New-Object System.Uri($to_path.Replace('\', '/'))
+            $origin_core_prefix = $from_uri.MakeRelativeUri($to_uri).ToString().Trim('/')
+        }
+        $Env:CORE_PREFIX = $origin_core_prefix
         return
     }
     ForEach ($i in $prefix_list) {
@@ -197,6 +205,14 @@ function Print-Msg ($msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
         Print-Msg "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
+        if ($CorePrefix) {
+            $origin_core_prefix = $CorePrefix
+        } else {
+            $origin_core_prefix = Get-Content "$PSScriptRoot/core_prefix.txt"
+        }
+        if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg "转换绝对路径为内核路径前缀: $origin_core_prefix -> $Env:CORE_PREFIX"
+        }
     }
     Print-Msg "当前内核路径前缀: $Env:CORE_PREFIX"
     Print-Msg "完整内核路径: $InstallPath\$Env:CORE_PREFIX"
@@ -1423,10 +1439,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -1603,6 +1627,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -3628,10 +3660,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -3835,6 +3875,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -4153,10 +4201,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -4364,6 +4420,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -5055,10 +5119,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -5230,6 +5302,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -6691,10 +6771,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -6860,6 +6948,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -7490,10 +7586,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -7646,6 +7750,14 @@ function Print-Msg (`$msg) {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
@@ -8211,6 +8323,8 @@ function Update-Core-Prefix-Setting {
                 Print-Msg `"请输入自定义内核路径前缀`"
                 Print-Msg `"提示: 路径前缀为内核在当前脚本目录中的名字 (也可以通过绝对路径指定当前脚本目录外的内核), 输入后回车保存`"
                 `$custom_core_prefix = Get-User-Input
+                `$origin_path = `$origin_core_prefix
+                `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
                 if ([System.IO.Path]::IsPathRooted(`$custom_core_prefix)) {
                     Print-Msg `"将绝对路径转换为内核路径前缀中`"
                     `$from_path = `$PSScriptRoot
@@ -8218,7 +8332,7 @@ function Update-Core-Prefix-Setting {
                     `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
                     `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
                     `$custom_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-                    Print-Msg `"`$to_path -> `$custom_core_prefix`"
+                    Print-Msg `"`$origin_path -> `$custom_core_prefix`"
                 }
                 Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/core_prefix.txt`" -Value `$custom_core_prefix
                 Print-Msg `"自定义内核路径前缀成功, 使用的路径前缀为: `$custom_core_prefix`"
@@ -8550,10 +8664,18 @@ param (
     `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
-            `$Env:CORE_PREFIX = `$CorePrefix
+            `$origin_core_prefix = `$CorePrefix
         } else {
-            `$Env:CORE_PREFIX = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
         }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
         return
     }
     ForEach (`$i in `$prefix_list) {
@@ -8836,9 +8958,9 @@ function global:Check-SD-Trainer-Script-Installer-Update {
 function global:Get-Core-Prefix (`$to_path) {
     `$from_path = `$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT
     `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
-    `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+    `$to_uri = New-Object System.Uri(`$to_path.Trim('/').Trim('\').Replace('\', '/'))
     `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-    Print-Msg `"`$from_path 路径的内核路径前缀: `$relative_path`"
+    Print-Msg `"`$to_path 路径的内核路径前缀: `$relative_path`"
     Print-Msg `"提示: 可使用 settings.ps1 设置内核路径前缀`"
 }
 
@@ -8890,6 +9012,14 @@ function Get-SD-Trainer-Script-Installer-Version {
 function Get-Core-Prefix-Status {
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
     }
     Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
     Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
