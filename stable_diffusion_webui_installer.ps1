@@ -10769,6 +10769,7 @@ function global:Install-Hanamizuki {
 
     `$content = `"
 @echo off
+echo Initialize configuration
 setlocal enabledelayedexpansion
 set CurrentPath=%~dp0
 set DefaultCorePrefix=stable-diffusion-webui
@@ -10786,7 +10787,7 @@ for %%i in (%*) do (
     if !NextIsValue!==1 (
         set CorePrefix=%%i
         set NextIsValue=0
-        goto :continue
+        goto :convert
     ) else (
         if ```"%%i```"==```"-CorePrefix```" (
             set NextIsValue=1
@@ -10797,8 +10798,14 @@ for %%i in (%*) do (
 if exist ```"%CorePrefixFile%```" (
     for /f ```"delims=```" %%i in ('powershell -command ```"Get-Content -Path '%CorePrefixFile%'```"') do (
         set CorePrefix=%%i
-        goto :continue
+        goto :convert
     )
+)
+
+:convert
+for /f ```"delims=```" %%i in ('powershell -command ```"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix```"') do (
+    set CorePrefix=%%i
+    goto :continue
 )
 
 :continue
@@ -11189,6 +11196,7 @@ function Write-Manager-Scripts {
     Write-Launch-Terminal-Script
     Write-ReadMe
     Write-Configure-Env-Script
+    Write-Hanamizuki-Script
 }
 
 
@@ -11226,6 +11234,90 @@ function Copy-Stable-Diffusion-WebUI-Installer-Config {
         Copy-Item -Path "$PSScriptRoot/core_prefix.txt" -Destination "$InstallPath" -Force
         Print-Msg "$PSScriptRoot/core_prefix.txt -> $InstallPath/core_prefix.txt" -Force
     }
+}
+
+
+# 写入启动绘世启动器脚本
+function Write-Hanamizuki-Script {
+    param (
+        [switch]$Force
+    )
+    $content = "
+@echo off
+echo Initialize configuration
+setlocal enabledelayedexpansion
+set CurrentPath=%~dp0
+set DefaultCorePrefix=stable-diffusion-webui
+if exist `"%~dp0%DefaultCorePrefix%`" (
+    set CorePrefix=%DefaultCorePrefix%
+) else (
+    set CorePrefix=core
+)
+set CorePrefixFile=%~dp0core_prefix.txt
+
+set ArgIndex=0
+set NextIsValue=0
+for %%i in (%*) do (
+    set /a ArgIndex+=1
+    if !NextIsValue!==1 (
+        set CorePrefix=%%i
+        set NextIsValue=0
+        goto :convert
+    ) else (
+        if `"%%i`"==`"-CorePrefix`" (
+            set NextIsValue=1
+        )
+    )
+)
+
+if exist `"%CorePrefixFile%`" (
+    for /f `"delims=`" %%i in ('powershell -command `"Get-Content -Path '%CorePrefixFile%'`"') do (
+        set CorePrefix=%%i
+        goto :convert
+    )
+)
+
+:convert
+for /f `"delims=`" %%i in ('powershell -command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
+    set CorePrefix=%%i
+    goto :continue
+)
+
+:continue
+set RootPath=%~dp0%CorePrefix%
+echo CorePrefix: %CorePrefix%
+echo RootPath: %RootPath%
+if exist `"%RootPath%`" (
+    cd /d `"%RootPath%`"
+) else (
+    echo %CorePrefix% not found
+    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
+    pause
+    exit 1
+)
+if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
+    start /B .\hanamizuki.exe
+    cd /d `"%CurrentPath%`"
+) else (
+    echo Hanamizuki not found
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
+    cd /d `"%CurrentPath%`"
+    pause
+    exit 1
+)
+    ".Trim()
+
+    if ((!($Force)) -and (!(Test-Path "$InstallPath/hanamizuki.bat"))) {
+        return
+    }
+
+    if (Test-Path "$InstallPath/hanamizuki.bat") {
+        Print-Msg "更新 hanamizuki.bat 中"
+    } else {
+        Print-Msg "生成 hanamizuki.bat 中"
+    }
+    Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
 }
 
 
@@ -11269,66 +11361,7 @@ function Install-Hanamizuki {
         }
     }
 
-    $content = "
-@echo off
-setlocal enabledelayedexpansion
-set CurrentPath=%~dp0
-set DefaultCorePrefix=stable-diffusion-webui
-if exist `"%~dp0%DefaultCorePrefix%`" (
-    set CorePrefix=%DefaultCorePrefix%
-) else (
-    set CorePrefix=core
-)
-set CorePrefixFile=%~dp0core_prefix.txt
-
-set ArgIndex=0
-set NextIsValue=0
-for %%i in (%*) do (
-    set /a ArgIndex+=1
-    if !NextIsValue!==1 (
-        set CorePrefix=%%i
-        set NextIsValue=0
-        goto :continue
-    ) else (
-        if `"%%i`"==`"-CorePrefix`" (
-            set NextIsValue=1
-        )
-    )
-)
-
-if exist `"%CorePrefixFile%`" (
-    for /f `"delims=`" %%i in ('powershell -command `"Get-Content -Path '%CorePrefixFile%'`"') do (
-        set CorePrefix=%%i
-        goto :continue
-    )
-)
-
-:continue
-set RootPath=%~dp0%CorePrefix%
-echo CorePrefix: %CorePrefix%
-echo RootPath: %RootPath%
-if exist `"%RootPath%`" (
-    cd /d `"%RootPath%`"
-) else (
-    echo %CorePrefix% not found
-    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
-    pause
-    exit 1
-)
-if exist .\hanamizuki.exe (
-    echo Launch Hanamizuki
-    start /B .\hanamizuki.exe
-    cd /d `"%CurrentPath%`"
-) else (
-    echo Hanamizuki not found
-    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
-    cd /d `"%CurrentPath%`"
-    pause
-    exit 1
-)
-    ".Trim()
-
-    Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
+    Write-Hanamizuki-Script -Force
 
     Print-Msg "检查绘世启动器运行环境"
     if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
