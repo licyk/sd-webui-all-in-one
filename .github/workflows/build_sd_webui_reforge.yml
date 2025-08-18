@@ -25,6 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: List files in the repository
         shell: pwsh
         run: |
@@ -32,8 +35,6 @@ jobs:
 
       - name: Launch SD WebUI Installer
         shell: pwsh
-        env:
-          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_reforge" `
@@ -50,10 +51,9 @@ jobs:
       - name: Install Insightface
         shell: pwsh
         env:
-          PIP_NO_WARN_SCRIPT_LOCATION: 0
-          PIP_DISABLE_PIP_VERSION_CHECK: 1
+          UV_PYTHON: "${{ github.workspace }}/sd_webui_reforge/core/python/python.exe"
         run: |
-          & "${{ github.workspace }}/sd_webui_reforge/core/python/python.exe" -m pip install insightface
+          uv pip install insightface
 
       - name: Install OpenPose Editor Assets
         shell: pwsh
@@ -64,8 +64,6 @@ jobs:
 
       - name: Launch to complete dependencies
         shell: pwsh
-        env:
-          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/sd_webui_reforge/launch.ps1" `
             -BuildMode `
@@ -97,9 +95,9 @@ jobs:
       - name: Install HuggingFace and ModelScope library
         shell: pwsh
         env:
-          PIP_DISABLE_PIP_VERSION_CHECK: 1
+          UV_SYSTEM_PYTHON: 1
         run: |
-          pip install huggingface_hub modelscope
+          uv pip install huggingface_hub modelscope
 
       - name: Upload to HuggingFace repo
         shell: pwsh

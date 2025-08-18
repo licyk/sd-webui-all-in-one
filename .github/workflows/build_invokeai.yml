@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: List files in the repository
         shell: pwsh
         run: |
@@ -29,8 +32,6 @@ jobs:
 
       - name: Launch InvokeAI Installer
         shell: pwsh
-        env:
-          UV_NO_PROGRESS: 1
         run: |
           & "${{ github.workspace }}/invokeai_installer.ps1" `
             -InstallPath "${{ github.workspace }}/invokeai" `
@@ -59,9 +60,9 @@ jobs:
       - name: Install HuggingFace and ModelScope library
         shell: pwsh
         env:
-          PIP_DISABLE_PIP_VERSION_CHECK: 1
+          UV_SYSTEM_PYTHON: 1
         run: |
-          pip install huggingface_hub modelscope
+          uv pip install huggingface_hub modelscope
 
       - name: Upload to HuggingFace repo
         shell: pwsh
