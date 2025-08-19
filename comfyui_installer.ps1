@@ -64,7 +64,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 276
+$COMFYUI_INSTALLER_VERSION = 277
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -11311,7 +11311,7 @@ if exist ```"%CorePrefixFile%```" (
 )
 
 :convert
-for /f ```"delims=```" %%i in ('powershell -command ```"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix```"') do (
+for /f ```"delims=```" %%i in ('powershell -command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
     set CorePrefix=%%i
     goto :continue
 )
