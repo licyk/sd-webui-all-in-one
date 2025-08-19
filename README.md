@@ -25,6 +25,7 @@ _✨快速部署，简单易用_
     - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
     - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
     - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
+    - [HDM Train Kaggle Jupyter NoteBook](#hdm-train-kaggle-jupyter-notebook)
   - [主要功能](#主要功能)
   - [其他功能](#其他功能)
   - [提示](#提示)
@@ -95,6 +96,12 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_scripts_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
+### HDM Train Kaggle Jupyter NoteBook
+[hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb))：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
 ## 主要功能
 1. 功能初始化：导入 SD WebUI All In One 所使用的功能
 2. 参数配置：配置安装参数和远程访问方式
@@ -119,7 +126,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 ***
 
 # Installer
-适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。
+适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。不仅仅是部署工具，还是管理工具，实现环境的启动和维护。
 
 >[!IMPORTANT]  
 >1. Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。

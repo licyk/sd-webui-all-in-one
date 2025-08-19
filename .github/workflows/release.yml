@@ -27,6 +27,7 @@ on:
       - "sd_trainer_kaggle.ipynb"
       - "fooocus_colab.ipynb"
       - "fooocus_kaggle.ipynb"
+      - "hdm_train_kaggle.ipynb"
   delete:
   create:
 
@@ -146,6 +147,9 @@ jobs:
           gh release delete-asset archive fooocus_kaggle.ipynb -y || true
           gh release upload archive fooocus_kaggle.ipynb
 
+          gh release delete-asset archive hdm_train_kaggle.ipynb -y || true
+          gh release upload archive hdm_train_kaggle.ipynb
+
   Release-To-Gitee:
     # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
     # fork: https://github.com/licyk/action-gitee-release
@@ -199,6 +203,7 @@ jobs:
             sd_trainer_kaggle.ipynb
             fooocus_colab.ipynb
             fooocus_kaggle.ipynb
+            hdm_train_kaggle.ipynb
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
