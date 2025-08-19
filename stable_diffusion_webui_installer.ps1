@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 263
+$SD_WEBUI_INSTALLER_VERSION = 264
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -7840,6 +7840,7 @@ function Main {
                     }
 
                     `$pytorch_info = `$pytorch_list[(`$i - 1)]
+                    `$combination_name = Get-HashValue -Hashtable `$pytorch_info -Key `"name`"
                     `$torch_ver = Get-HashValue -Hashtable `$pytorch_info -Key `"torch`"
                     `$xformers_ver = Get-HashValue -Hashtable `$pytorch_info -Key `"xformers`"
                     `$index_mirror = Get-HashValue -Hashtable `$pytorch_info -Key `"index_mirror`"
@@ -7899,7 +7900,7 @@ function Main {
         `$force_reinstall_status = `"禁用`"
     }
 
-    Print-Msg `"当前的选择`"
+    Print-Msg `"当前的选择: `$combination_name`"
     Print-Msg `"PyTorch: `$torch_ver`"
     Print-Msg `"xFormers: `$xformers_ver`"
     Print-Msg `"仅强制重装: `$force_reinstall_status`"
