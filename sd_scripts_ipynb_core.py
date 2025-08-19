@@ -1337,7 +1337,7 @@ class RepoManager:
                         repo_id, repo_type)
             return self.get_hf_repo_files(repo_id, repo_type, retry)
         if api_type == "modelscope":
-            logger.info("获取 ModelScope 仓库 %s (类型: %s}) 的文件列表",
+            logger.info("获取 ModelScope 仓库 %s (类型: %s) 的文件列表",
                         repo_id, repo_type)
             return self.get_ms_repo_files(repo_id, repo_type, retry)
 
