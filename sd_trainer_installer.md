@@ -561,6 +561,9 @@ SD-Trainer Installer 部署出来的 SD-Trainer 可以通过绘世启动器进�
 
 将`SD-Trainer/python`目录移动到`SD-Trainer/lora-scripts/python`，`SD-Trainer/git`移动到`SD-Trainer/lora-scripts/git`。
 
+>[!NOTE]  
+>实际路径需要根据内核路径前缀来决定，如果内核路径前缀为`core`，则实际移动到的路径分别为`SD-Trainer/core/python`和`SD-Trainer/core/git`。建议通过自动安装绘世启动器的方法来安装绘世启动器。
+
 移动前目录的结构如下。
 
 ```

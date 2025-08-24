@@ -349,6 +349,9 @@ Fooocus Installer 部署出来的 Fooocus 可以通过绘世启动器进行启�
 
 将`Fooocus/python`目录移动到`Fooocus/Fooocus/python`，`Fooocus/git`移动到`Fooocus/Fooocus/git`。
 
+>[!NOTE]  
+>实际路径需要根据内核路径前缀来决定，如果内核路径前缀为`core`，则实际移动到的路径分别为`Fooocus/core/python`和`Fooocus/core/git`。建议通过自动安装绘世启动器的方法来安装绘世启动器。
+
 移动前目录的结构如下。
 
 ```
