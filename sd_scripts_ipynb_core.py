@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.10"
+VERSION = "1.0.11"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -897,11 +897,13 @@ class Utils:
         if not path.exists():
             return []
 
-        return [
-            p.resolve() if resolve else p.absolute()
-            for p in path.rglob("*")
-            if p.is_file()
-        ]
+        file_list: list[Path] = []
+        for root, _, files in os.walk(path):
+            for file in files:
+                file_path = Path(root) / file
+                file_list.append(file_path.resolve() if resolve else file_path.absolute())
+
+        return file_list
 
     @staticmethod
     def config_wandb_token(token: str | None = None) -> None:
@@ -1594,12 +1596,12 @@ class RepoManager:
         :param retry`(int|None)`: 上传重试次数
         """
         upload_files = Utils.get_file_list(upload_path)
-        repo_files = self.get_repo_file(
+        repo_files = set(self.get_repo_file(
             api_type="huggingface",
             repo_id=repo_id,
             repo_type=repo_type,
             retry=retry,
-        )
+        ))
         logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s",
                     upload_path, repo_id)
         files_count = len(upload_files)
@@ -1652,12 +1654,12 @@ class RepoManager:
         :param retry`(int|None)`: 上传重试次数
         """
         upload_files = Utils.get_file_list(upload_path)
-        repo_files = self.get_repo_file(
+        repo_files = set(self.get_repo_file(
             api_type="modelscope",
             repo_id=repo_id,
             repo_type=repo_type,
             retry=retry,
-        )
+        ))
         logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s",
                     upload_path, repo_id)
         files_count = len(upload_files)
