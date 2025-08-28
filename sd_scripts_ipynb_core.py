@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 from typing import Callable, Literal, Any
 
 
-VERSION = "1.0.11"
+VERSION = "1.0.12"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -760,20 +760,40 @@ class EnvManager:
             return run_cmd([sys.executable, "-m", "pip", "install", *args])
 
     @staticmethod
-    def install_manager_depend(use_uv: bool | None = True) -> bool:
+    def install_manager_depend(
+        use_uv: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] = None,
+    ) -> bool:
         """安装自身组件依赖
 
         :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+        :param custom_sys_pkg_cmd`(list[list[str]]|None)`: 自定义调用系统包管理器命令
         :return `bool`: 组件安装结果
+        :notes
+            自定义命令的例子:
+            ```python
+            custom_sys_pkg_cmd = [
+                ["apt", "update"],
+                ["apt", "install", "aria2", "google-perftools", "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"]
+            ]
+            ```
+            这将分别执行两条命令:  
+            `apt update`  
+            `apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y`  
         """
+        if custom_sys_pkg_cmd is None:
+            custom_sys_pkg_cmd = [
+                ["apt", "update"],
+                ["apt", "install", "aria2", "google-perftools",
+                    "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"]
+            ]
         try:
             logger.info("安装自身组件依赖中")
             EnvManager.pip_install("uv", "--upgrade", use_uv=False)
             EnvManager.pip_install(
-                "modelscope", "huggingface_hub", "requests", "tqdm", "wandb", "--upgrade", use_uv=use_uv)
-            run_cmd(["apt", "update"])
-            run_cmd(["apt", "install", "aria2", "google-perftools",
-                    "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"])
+                "modelscope", "huggingface_hub[hf_xet]", "requests", "tqdm", "wandb", "--upgrade", use_uv=use_uv)
+            for cmd in custom_sys_pkg_cmd:
+                run_cmd(cmd)
             return True
         except Exception as e:
             logger.error("安装自身组件依赖失败: %s", e)
@@ -901,7 +921,8 @@ class Utils:
         for root, _, files in os.walk(path):
             for file in files:
                 file_path = Path(root) / file
-                file_list.append(file_path.resolve() if resolve else file_path.absolute())
+                file_list.append(file_path.resolve()
+                                 if resolve else file_path.absolute())
 
         return file_list
 
@@ -1057,7 +1078,7 @@ class Utils:
             return False
 
     @staticmethod
-    def compare_versions(version1: str | int | float, version2: str| int | float) -> int:
+    def compare_versions(version1: str | int | float, version2: str | int | float) -> int:
         """对比两个版本号大小
 
         :param version1(str|int|float): 第一个版本号
