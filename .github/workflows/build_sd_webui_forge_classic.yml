@@ -38,7 +38,7 @@ jobs:
             -PyTorchMirrorType cu129 `
             -BuildMode `
             -BuildWithLaunch `
-            -BuildWitchBranch 6 `
+            -BuildWitchBranch 7 `
             -InstallBranch "sd_webui_forge_classic" `
             -NoPreDownloadModel `
             -DisablePyPIMirror `
