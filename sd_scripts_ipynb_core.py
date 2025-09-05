@@ -7,6 +7,7 @@ import sys
 import stat
 import copy
 import json
+import uuid
 import time
 import shlex
 import ctypes
@@ -4009,7 +4010,6 @@ class ComfyUIRequirementCheck(RequirementCheck):
         :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
         :param debug_mode`(bool|None)`: 显示调试信息
         '''
-
         if not os.path.exists(os.path.join(comfyui_root_path, 'requirements.txt')):
             logger.error('ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整')
             return
@@ -4062,7 +4062,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
             except Exception as e:
                 logger.error(f'安装 {name} 的依赖失败: {e}')
 
-        logger.debug('ComfyUI 环境检查完成')
+        logger.info('ComfyUI 环境检查完成')
 
 
 class OrtType(str, Enum):
@@ -4320,6 +4320,8 @@ class CUDAMalloc:
                     "GeForce GTX 1650", "GeForce GTX 1630", "Tesla M4", "Tesla M6", "Tesla M10", "Tesla M40", "Tesla M60"
                     }
 
+    gpu_keywords = ["NVIDIA", "GeForce", "Tesla", "Quadro"]
+
     @staticmethod
     def cuda_malloc_supported():
         try:
@@ -4327,7 +4329,7 @@ class CUDAMalloc:
         except:
             names = set()
         for x in names:
-            if "NVIDIA" in x:
+            if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
                 for b in CUDAMalloc.blacklist:
                     if b in x:
                         return False
@@ -4340,7 +4342,7 @@ class CUDAMalloc:
         except:
             names = set()
         for x in names:
-            if "NVIDIA" in x:
+            if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
                 return True
         return False
 
@@ -5014,6 +5016,13 @@ class ComfyUIManager(BaseManager):
 
         comfyui_output = drive_path / "MyDrive" / "comfyui_output"
         comfyui_output.mkdir(exist_ok=True)
+        comfyui_output_path = self.workspace / self.workfolder / "output"
+        try:
+            if comfyui_output_path.exists():
+                shutil.move(comfyui_output_path, comfyui_output_path.parent / f"output_{uuid.uuid4()}")
+            comfyui_output_path.symlink_to(comfyui_output)
+        except Exception as e:
+            logger.error("为 ComfyUI 输出目录创建软链接失败: %s", e)
 
     def get_sd_model(
         self,
@@ -5076,14 +5085,16 @@ class ComfyUIManager(BaseManager):
         self,
         use_uv: bool | None = True,
         install_conflict_component_requirement: bool | None = True,
+        requirements_file: str | None = "requirements.txt",
     ) -> None:
         """检查 ComfyUI 运行环境
 
         :param use_uv`(bool|None)`: 使用 uv 安装依赖
         :param install_conflict_component_requirement`(bool|None)`: 检测到冲突依赖时是否按顺序安装组件依赖
+        :param requirements_file`(str|None)`: 依赖文件名
         """
         comfyui_path = self.workspace / self.workfolder
-        requirement_path = comfyui_path / "requirements.txt"
+        requirement_path = comfyui_path / requirements_file
         self.env_check.check_env(requirement_path=requirement_path, name="ComfyUI", use_uv=use_uv)
         self.env_check.check_comfyui_env(
             comfyui_root_path=comfyui_path,
