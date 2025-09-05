@@ -5079,7 +5079,42 @@ class ComfyUIManager(BaseManager):
         logger.info("下载配置文件")
         setting and self.downloader.download_file(
             url=setting, path=setting_path, save_name="comfy.settings.json", tool="aria2")
-        
+
+    def install_custom_node(
+        self,
+        custom_node: str,
+    ) -> Path | None:
+        """安装 ComfyUI 自定义节点
+
+        :param custom_node`(str)`: 自定义节点下载地址
+        :return `Path|None`: 自定义节点安装路径
+        """
+        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
+        name = os.path.basename(custom_node)
+        logger.info("安装 %s 自定义节点中", name)
+        p = GitWarpper.clone(
+                repo=custom_node,
+                path=custom_node_path / name
+            )
+        if p is not None:
+            logger.info("安装 %s 自定义节点完成", name)
+            return p
+        else:
+            logger.error("安装 %s 自定义节点失败", name)
+            return None
+
+    def install_custom_nodes_from_list(
+        self,
+        custom_node_list: list[str],
+    ) -> None:
+        """安装 ComfyUI 自定义节点
+
+        :param custom_node_list`(list[str])`: 自定义节点列表
+        """
+        logger.info("安装 ComfyUI 自定义节点中")
+        for node in custom_node_list:
+            self.install_custom_node(node)
+        logger.info("安装 ComfyUI 自定义节点完成")
 
     def check_env(
         self,
@@ -5120,6 +5155,7 @@ class ComfyUIManager(BaseManager):
         comfyui_repo: str | None = None,
         comfyui_requirment: str | None = None,
         comfyui_setting: str | None = None,
+        custom_node_list: list[str] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -5138,21 +5174,21 @@ class ComfyUIManager(BaseManager):
         :param comfyui_repo`(str|None)`: ComfyUI 仓库地址
         :param comfyui_requirment`(str|None)`: ComfyUI 依赖文件名
         :param comfyui_setting`(str|None)`: ComfyUI 预设文件下载链接
-        :param fooocus_path_config`(str|None)`: ComfyUI 路径配置文件下载地址
         :param fooocus_translation`(str|None)`: ComfyUI 翻译文件下载地址
         :param model_downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
         :param download_model_thread`(int|None)`: 预下载模型的线程
+        :param custom_node_list`(list[str])`: 自定义节点列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
         logger.info("开始安装 ComfyUI")
         os.chdir(self.workspace)
-        fooocus_path = self.workspace / self.workfolder
-        comfyui_repo = "https://github.com/lllyasviel/ComfyUI" if comfyui_repo is None else comfyui_repo
-        comfyui_setting = "https://github.com/licyk/term-sd/releases/download/archive/fooocus_config.json" if comfyui_setting is None else comfyui_setting
-        requirment_path = fooocus_path / \
-            ("requirements_versions.txt" if comfyui_requirment is None else comfyui_requirment)
+        comfyui_path = self.workspace / self.workfolder
+        comfyui_repo = "https://github.com/comfyanonymous/ComfyUI" if comfyui_repo is None else comfyui_repo
+        comfyui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/comfy.settings.json" if comfyui_setting is None else comfyui_setting
+        requirment_path = comfyui_path / \
+            ("requirements.txt" if comfyui_requirment is None else comfyui_requirment)
         if check_avaliable_gpu and not self.utils.check_gpu():
             raise Exception(
                 "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!")
@@ -5165,15 +5201,17 @@ class ComfyUIManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.env.install_manager_depend(use_uv)
-        self.git.clone(comfyui_repo, fooocus_path)
-        self.git.update(fooocus_path)
+        self.git.clone(comfyui_repo, comfyui_path)
+        if custom_node_list is not None:
+            self.install_custom_nodes_from_list(custom_node_list)
+        self.git.update(comfyui_path)
         self.env.install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
             pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
-        os.chdir(fooocus_path)
+        os.chdir(comfyui_path)
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(comfyui_setting)
