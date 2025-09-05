@@ -9,6 +9,7 @@ import copy
 import json
 import time
 import shlex
+import ctypes
 import shutil
 import secrets
 import inspect
@@ -19,10 +20,14 @@ import threading
 import traceback
 import subprocess
 import queue
+import importlib.metadata
+import importlib.util
 from pathlib import Path
 from urllib.parse import urlparse
 from tempfile import TemporaryDirectory
-from typing import Callable, Literal, Any
+from typing import Callable, Literal, Any, TypedDict
+from collections import namedtuple
+from enum import Enum
 
 
 VERSION = "1.0.12"
@@ -99,7 +104,7 @@ def run_cmd(
     command: str | list,
     desc: str | None = None,
     errdesc: str | None = None,
-    custom_env: list | None = None,
+    custom_env: dict[str, str] | None = None,
     live: bool | None = True,
     shell: bool | None = None
 ) -> str | None:
@@ -108,7 +113,7 @@ def run_cmd(
     :param command`(str|list)`: 要执行的命令
     :param desc`(str|None)`: 执行命令的描述
     :param errdesc`(str|None)`: 执行命令报错时的描述
-    :param custom_env`(str|None)`: 自定义环境变量
+    :param custom_env`(dict[str,str]|None)`: 自定义环境变量
     :param live`(bool|None)`: 是否实时输出命令执行日志
     :param shell`(bool|None)`: 是否使用内置 Shell 执行命令
     :return `str|None`: 命令执行时输出的内容
@@ -303,7 +308,7 @@ class GitWarpper:
             else:
                 origin_branch = str.replace(ref, "refs/heads/", "", 1)
                 try:
-                    _ = run_cmd(["git", "-C", str(path), "config", "--get",
+                    run_cmd(["git", "-C", str(path), "config", "--get",
                                 f"branch.{origin_branch}.remote"], live=False)
                     origin_branch = run_cmd(
                         ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "{}@{upstream}".format(origin_branch)], live=False)
@@ -327,7 +332,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(
             path, Path) and path is not None else path
         try:
-            _ = run_cmd(["git", "-C", str(path),
+            run_cmd(["git", "-C", str(path),
                         "symbolic-ref", "HEAD"], live=False)
             return False
         except Exception as _:
@@ -394,7 +399,7 @@ class GitWarpper:
             path, Path) and path is not None else path
         try:
             current_branch = GitWarpper.get_current_branch(path)
-            _ = run_cmd(["git", "-C", str(path), "show-ref", "--verify",
+            run_cmd(["git", "-C", str(path), "show-ref", "--verify",
                         "--quiet", f"refs/remotes/origin/{current_branch}"], live=False)
             return True
         except Exception as _:
@@ -414,7 +419,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(
             path, Path) and path is not None else path
         try:
-            _ = run_cmd(["git", "-C", str(path), "show-ref", "--verify",
+            run_cmd(["git", "-C", str(path), "show-ref", "--verify",
                         "--quiet", f"refs/heads/{branch}"], live=False)
             return True
         except Exception as _:
@@ -538,7 +543,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(
             path, Path) and path is not None else path
         try:
-            _ = run_cmd(["git", "-C", str(path), "rev-parse",
+            run_cmd(["git", "-C", str(path), "rev-parse",
                         "--git-dir"], live=False)
             return True
         except Exception as _:
@@ -683,7 +688,7 @@ class Downloader:
         url: str,
         path: str | Path = None,
         save_name: str | None = None,
-        tools: Literal["aria2", "request"] = "aria2",
+        tool: Literal["aria2", "request"] = "aria2",
         retry: int | None = 3,
     ) -> Path | None:
         """下载文件工具
@@ -699,7 +704,7 @@ class Downloader:
         while count < retry:
             count += 1
             try:
-                if tools == "aria2":
+                if tool == "aria2":
                     output = Downloader.aria2(
                         url=url,
                         path=path,
@@ -708,7 +713,7 @@ class Downloader:
                     if output is None:
                         continue
                     return output
-                elif tools == "request":
+                elif tool == "request":
                     output = Downloader.load_file_from_url(
                         url=url,
                         model_dir=path,
@@ -718,7 +723,7 @@ class Downloader:
                         continue
                     return output
                 else:
-                    logger.error("未知下载工具: %s", tools)
+                    logger.error("未知下载工具: %s", tool)
                     return None
             except Exception as e:
                 logger.error("[%s/%s] 下载 %s 出现错误: %s", count, retry, url, e)
@@ -735,39 +740,45 @@ class EnvManager:
     def pip_install(
         *args: Any,
         use_uv: bool | None = True,
+        custom_env: dict[str, str] | None = None,
     ) -> str:
         """使用 Pip / uv 安装 Python 软件包
 
         :param *args`(Any)`: 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
         :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+        :param custom_env`(dict[str,str]|None)`: 自定义环境变量
         :return `str`: 命令的执行输出
         :raises RuntimeError: 当 uv 和 pip 都无法安装软件包时抛出异常
         """
+        if custom_env is None:
+            custom_env = os.environ.copy()
         if use_uv:
             try:
-                _ = run_cmd(["uv", "--version"], live=False)
+                run_cmd(["uv", "--version"], live=False, custom_env=custom_env)
             except Exception as _:
                 logger.info("安装 uv 中")
-                run_cmd([sys.executable, "-m", "pip", "install", "uv"])
+                run_cmd([sys.executable, "-m", "pip", "install", "uv"], custom_env=custom_env)
 
             try:
-                return run_cmd(["uv", "pip", "install", *args])
+                return run_cmd(["uv", "pip", "install", *args], custom_env=custom_env)
             except Exception as e:
                 logger.warning(
                     "检测到 uv 安装 Python 软件包失败, 尝试回退到 Pip 重试 Python 软件包安装: %s", e)
-                return run_cmd([sys.executable, "-m", "pip", "install", *args])
+                return run_cmd([sys.executable, "-m", "pip", "install", *args], custom_env=custom_env)
         else:
-            return run_cmd([sys.executable, "-m", "pip", "install", *args])
+            return run_cmd([sys.executable, "-m", "pip", "install", *args], custom_env=custom_env)
 
     @staticmethod
     def install_manager_depend(
         use_uv: bool | None = True,
-        custom_sys_pkg_cmd: list[list[str]] = None,
+        custom_env: dict[str, str] | None = None,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | None = None,
     ) -> bool:
         """安装自身组件依赖
 
         :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
-        :param custom_sys_pkg_cmd`(list[list[str]]|None)`: 自定义调用系统包管理器命令
+        :param custom_env`(dict[str,str]|None)`: 自定义环境变量
+        :param custom_sys_pkg_cmd`(list[list[str]]|list[str]|None)`: 自定义调用系统包管理器命令
         :return `bool`: 组件安装结果
         :notes
             自定义命令的例子:
@@ -776,11 +787,18 @@ class EnvManager:
                 ["apt", "update"],
                 ["apt", "install", "aria2", "google-perftools", "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"]
             ]
+            # 另一种等效形式
+            custom_sys_pkg_cmd = [
+                "apt update",
+                "apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y",
+            ]
             ```
             这将分别执行两条命令:  
             `apt update`  
             `apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y`  
         """
+        if custom_env is None:
+            custom_env = os.environ.copy()
         if custom_sys_pkg_cmd is None:
             custom_sys_pkg_cmd = [
                 ["apt", "update"],
@@ -789,11 +807,11 @@ class EnvManager:
             ]
         try:
             logger.info("安装自身组件依赖中")
-            EnvManager.pip_install("uv", "--upgrade", use_uv=False)
+            EnvManager.pip_install("uv", "--upgrade", use_uv=False, custom_env=custom_env)
             EnvManager.pip_install(
-                "modelscope", "huggingface_hub[hf_xet]", "requests", "tqdm", "wandb", "--upgrade", use_uv=use_uv)
+                "modelscope", "huggingface_hub[hf_xet]", "requests", "tqdm", "wandb", "--upgrade", use_uv=use_uv, custom_env=custom_env)
             for cmd in custom_sys_pkg_cmd:
-                run_cmd(cmd)
+                run_cmd(cmd, custom_env=custom_env)
             return True
         except Exception as e:
             logger.error("安装自身组件依赖失败: %s", e)
@@ -852,6 +870,7 @@ class EnvManager:
     def install_requirements(
         path: Path | str,
         use_uv: bool | None = True,
+        custom_env: dict[str, str] | None = None,
     ) -> bool:
         """从 requirements.txt 文件指定安装的依赖
 
@@ -859,12 +878,14 @@ class EnvManager:
         :param use_uv`(bool|None)`: 是否使用 uv 代替 Pip 进行安装
         :return `bool`: 安装依赖成功时返回`True`
         """
+        if custom_env is None:
+            custom_env = os.environ.copy()
         path = Path(path) if not isinstance(
             path, Path) and path is not None else path
 
         try:
             logger.info("从 %s 安装 Python 软件包中", path)
-            EnvManager.pip_install("-r", str(path), use_uv=use_uv)
+            EnvManager.pip_install("-r", str(path), use_uv=use_uv, custom_env=custom_env)
             logger.info("从 %s 安装 Python 软件包成功", path)
             return True
         except Exception as e:
@@ -958,7 +979,7 @@ class Utils:
             url=url,
             path=path,
             save_name=name,
-            tools="aria2",
+            tool="aria2",
             retry=retry
         )
 
@@ -1940,7 +1961,6 @@ class MirrorConfigManager:
 
         :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
         """
-        import os
         if mirror is not None:
             logger.info(
                 "使用 PIP_EXTRA_INDEX_URL, UV_INDEX 环境变量设置 PyPI Extra Index 镜像源")
@@ -2402,6 +2422,1973 @@ class TunnelManager:
         return cloudflare_url, ngrok_url, remote_moe_url, localhost_run_url, gradio_url, pinggy_io_url
 
 
+class RequirementCheck:
+    """依赖检查工具"""
+    # 提取版本标识符组件的正则表达式
+    # ref:
+    # https://peps.python.org/pep-0440
+    # https://packaging.python.org/en/latest/specifications/version-specifiers
+    VERSION_PATTERN = r'''
+        v?
+        (?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
+                [-_\.]?
+                (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+                [-_\.]?
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_\.]?
+                    (?P<post_l>post|rev|r)
+                    [-_\.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_\.]?
+                (?P<dev_l>dev)
+                [-_\.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+    '''
+
+    # 编译正则表达式
+    package_version_parse_regex = re.compile(
+        r'^\s*' + VERSION_PATTERN + r'\s*$',
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    # 定义版本组件的命名元组
+    VersionComponent = namedtuple(
+        'VersionComponent', [
+            'epoch',
+            'release',
+            'pre_l',
+            'pre_n',
+            'post_n1',
+            'post_l',
+            'post_n2',
+            'dev_l',
+            'dev_n',
+            'local',
+            'is_wildcard'
+        ]
+    )
+
+    @staticmethod
+    def parse_version(version_str: str) -> VersionComponent:
+        '''解释 Python 软件包版本号
+
+        参数:
+            version_str (`str`):
+                Python 软件包版本号
+
+        返回值:
+            `VersionComponent`: 版本组件的命名元组
+
+        异常:
+            `ValueError`: 如果 Python 版本号不符合 PEP440 规范
+        '''
+        # 检测并剥离通配符
+        wildcard = version_str.endswith('.*') or version_str.endswith('*')
+        clean_str = version_str.rstrip(
+            '*').rstrip('.') if wildcard else version_str
+
+        match = RequirementCheck.package_version_parse_regex.match(clean_str)
+        if not match:
+            logger.error(f'未知的版本号字符串: {version_str}')
+            raise ValueError(f'Invalid version string: {version_str}')
+
+        components = match.groupdict()
+
+        # 处理 release 段 (允许空字符串)
+        release_str = components['release'] or '0'
+        release_segments = [int(seg) for seg in release_str.split('.')]
+
+        # 构建命名元组
+        return RequirementCheck.VersionComponent(
+            epoch=int(components['epoch'] or 0),
+            release=release_segments,
+            pre_l=components['pre_l'],
+            pre_n=int(components['pre_n']) if components['pre_n'] else None,
+            post_n1=int(components['post_n1']
+                        ) if components['post_n1'] else None,
+            post_l=components['post_l'],
+            post_n2=int(components['post_n2']
+                        ) if components['post_n2'] else None,
+            dev_l=components['dev_l'],
+            dev_n=int(components['dev_n']) if components['dev_n'] else None,
+            local=components['local'],
+            is_wildcard=wildcard
+        )
+
+    @staticmethod
+    def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
+        '''比较两个版本字符串 Python 软件包版本号
+
+        参数:
+            v1 (`VersionComponent`):
+                第 1 个 Python 版本号标识符组件
+            v2 (`VersionComponent`):
+                第 2 个 Python 版本号标识符组件
+
+        返回值:
+            `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        '''
+
+        # 比较 epoch
+        if v1.epoch != v2.epoch:
+            return v1.epoch - v2.epoch
+
+        # 对其 release 长度, 缺失部分补 0
+        if len(v1.release) != len(v2.release):
+            for _ in range(abs(len(v1.release) - len(v2.release))):
+                if len(v1.release) < len(v2.release):
+                    v1.release.append(0)
+                else:
+                    v2.release.append(0)
+
+        # 比较 release
+        for n1, n2 in zip(v1.release, v2.release):
+            if n1 != n2:
+                return n1 - n2
+        # 如果 release 长度不同，较短的版本号视为较小 ?
+        # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+        # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+        # 但 0.15.0 和 0.15 实际上是一样的版本
+        # if len(v1.release) != len(v2.release):
+        #     return len(v1.release) - len(v2.release)
+
+        # 比较 pre-release
+        if v1.pre_l and not v2.pre_l:
+            return -1  # pre-release 小于正常版本
+        elif not v1.pre_l and v2.pre_l:
+            return 1
+        elif v1.pre_l and v2.pre_l:
+            pre_order = {
+                'a': 0,
+                'b': 1,
+                'c': 2,
+                'rc': 3,
+                'alpha': 0,
+                'beta': 1,
+                'pre': 0,
+                'preview': 0
+            }
+            if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
+                return pre_order[v1.pre_l] - pre_order[v2.pre_l]
+            elif v1.pre_n is not None and v2.pre_n is not None:
+                return v1.pre_n - v2.pre_n
+            elif v1.pre_n is None and v2.pre_n is not None:
+                return -1
+            elif v1.pre_n is not None and v2.pre_n is None:
+                return 1
+
+        # 比较 post-release
+        if v1.post_n1 is not None:
+            post_n1 = v1.post_n1
+        elif v1.post_l:
+            post_n1 = int(v1.post_n2) if v1.post_n2 else 0
+        else:
+            post_n1 = 0
+
+        if v2.post_n1 is not None:
+            post_n2 = v2.post_n1
+        elif v2.post_l:
+            post_n2 = int(v2.post_n2) if v2.post_n2 else 0
+        else:
+            post_n2 = 0
+
+        if post_n1 != post_n2:
+            return post_n1 - post_n2
+
+        # 比较 dev-release
+        if v1.dev_l and not v2.dev_l:
+            return -1  # dev-release 小于 post-release 或正常版本
+        elif not v1.dev_l and v2.dev_l:
+            return 1
+        elif v1.dev_l and v2.dev_l:
+            if v1.dev_n is not None and v2.dev_n is not None:
+                return v1.dev_n - v2.dev_n
+            elif v1.dev_n is None and v2.dev_n is not None:
+                return -1
+            elif v1.dev_n is not None and v2.dev_n is None:
+                return 1
+
+        # 比较 local version
+        if v1.local and not v2.local:
+            return -1  # local version 小于 dev-release 或正常版本
+        elif not v1.local and v2.local:
+            return 1
+        elif v1.local and v2.local:
+            local1 = v1.local.split('.')
+            local2 = v2.local.split('.')
+            # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+            if len(local1) != len(local2):
+                for _ in range(abs(len(local1) - len(local2))):
+                    if len(local1) < len(local2):
+                        local1.append(0)
+                    else:
+                        local2.append(0)
+            for l1, l2 in zip(local1, local2):
+                if l1.isdigit() and l2.isdigit():
+                    l1, l2 = int(l1), int(l2)
+                if l1 != l2:
+                    return (l1 > l2) - (l1 < l2)
+            return len(local1) - len(local2)
+
+        return 0  # 版本相同
+
+    @staticmethod
+    def compare_versions(version1: str, version2: str) -> int:
+        '''比较两个版本字符串 Python 软件包版本号
+
+        参数:
+            version1 (`str`):
+                版本号 1
+            version2 (`str`):
+                版本号 2
+
+        返回值:
+            `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        '''
+        v1 = RequirementCheck.parse_version(version1)
+        v2 = RequirementCheck.parse_version(version2)
+        return RequirementCheck.compare_version_objects(v1, v2)
+
+    @staticmethod
+    def compatible_version_matcher(spec_version: str):
+        '''PEP 440 兼容性版本匹配 (~= 操作符)
+
+        返回值:
+            `_is_compatible(version_str: str) -> bool`: 一个接受 version_str (`str`) 参数的判断函数
+        '''
+        # 解析规范版本
+        spec = RequirementCheck.parse_version(spec_version)
+
+        # 获取有效 release 段 (去除末尾的零)
+        clean_release = []
+        for num in spec.release:
+            if num != 0 or (clean_release and clean_release[-1] != 0):
+                clean_release.append(num)
+
+        # 确定最低版本和前缀匹配规则
+        if len(clean_release) == 0:
+            logger.error('解析到错误的兼容性发行版本号')
+            raise ValueError('Invalid version for compatible release clause')
+
+        # 生成前缀匹配模板 (忽略后缀)
+        prefix_length = len(clean_release) - 1
+        if prefix_length == 0:
+            # 处理类似 ~= 2 的情况 (实际 PEP 禁止，但这里做容错)
+            prefix_pattern = [spec.release[0]]
+            min_version = RequirementCheck.parse_version(f'{spec.release[0]}')
+        else:
+            prefix_pattern = list(spec.release[:prefix_length])
+            min_version = spec
+
+        def _is_compatible(version_str: str) -> bool:
+            target = RequirementCheck.parse_version(version_str)
+
+            # 主版本前缀检查
+            target_prefix = target.release[:len(prefix_pattern)]
+            if target_prefix != prefix_pattern:
+                return False
+
+            # 最低版本检查 (自动忽略 pre/post/dev 后缀)
+            return RequirementCheck.compare_version_objects(target, min_version) >= 0
+
+        return _is_compatible
+
+    @staticmethod
+    def version_match(spec: str, version: str) -> bool:
+        '''PEP 440 版本前缀匹配
+
+        参数:
+            spec (`str`): 版本匹配表达式 (e.g. '1.1.*')
+            version (`str`): 需要检测的实际版本号 (e.g. '1.1a1')
+
+        返回值:
+            `bool`: 是否匹配
+        '''
+        # 分离通配符和本地版本
+        spec_parts = spec.split('+', 1)
+        spec_main = spec_parts[0].rstrip('.*')  # 移除通配符
+        has_wildcard = spec.endswith('.*') and '+' not in spec
+
+        # 解析规范版本 (不带通配符)
+        try:
+            spec_ver = RequirementCheck.parse_version(spec_main)
+        except ValueError:
+            return False
+
+        # 解析目标版本 (忽略本地版本)
+        target_ver = RequirementCheck.parse_version(version.split('+', 1)[0])
+
+        # 前缀匹配规则
+        if has_wildcard:
+            # 生成补零后的 release 段
+            spec_release = spec_ver.release.copy()
+            while len(spec_release) < len(target_ver.release):
+                spec_release.append(0)
+
+            # 比较前 N 个 release 段 (N 为规范版本长度)
+            return (
+                target_ver.release[:len(spec_ver.release)] == spec_ver.release
+                and target_ver.epoch == spec_ver.epoch
+            )
+        else:
+            # 严格匹配时使用原比较函数
+            return RequirementCheck.compare_versions(spec_main, version) == 0
+
+    @staticmethod
+    def is_v1_ge_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否大于或等于 v2
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
+            e.g.:
+                1.1, 1.0 -> True
+                1.0, 1.0 -> True
+                0.9, 1.0 -> False
+        '''
+        return RequirementCheck.compare_versions(v1, v2) >= 0
+
+    @staticmethod
+    def is_v1_gt_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否大于 v2
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号大于 v2 版本号则返回`True`
+            e.g.:
+                1.1, 1.0 -> True
+                1.0, 1.0 -> False
+        '''
+        return RequirementCheck.compare_versions(v1, v2) > 0
+
+    @staticmethod
+    def is_v1_eq_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否等于 v2
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+            e.g.:
+                1.0, 1.0 -> True
+                0.9, 1.0 -> False
+                1.1, 1.0 -> False
+        '''
+        return RequirementCheck.compare_versions(v1, v2) == 0
+
+    @staticmethod
+    def is_v1_lt_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否小于 v2
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号小于 v2 版本号则返回`True`
+            e.g.:
+                0.9, 1.0 -> True
+                1.0, 1.0 -> False
+        '''
+        return RequirementCheck.compare_versions(v1, v2) < 0
+
+    @staticmethod
+    def is_v1_le_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否小于或等于 v2
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
+            e.g.:
+                0.9, 1.0 -> True
+                1.0, 1.0 -> True
+                1.1, 1.0 -> False
+        '''
+        return RequirementCheck.compare_versions(v1, v2) <= 0
+
+    @staticmethod
+    def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
+        '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
+
+        参数:
+            v1 (`str`):
+                第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
+
+            v2 (`str`):
+                第 2 个 Python 软件包版本号
+
+        返回值:
+            `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
+            e.g.:
+                1.0*, 1.0a1 -> True
+                0.9*, 1.0 -> False
+        '''
+        func = RequirementCheck.compatible_version_matcher(v1)
+        return func(v2)
+
+    @staticmethod
+    def version_string_is_canonical(version: str) -> bool:
+        '''判断版本号标识符是否符合标准
+
+        参数:
+            version (`str`):
+                版本号字符串
+
+        返回值:
+            `bool`: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
+
+        '''
+        return re.match(
+            r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$',
+            version,
+        ) is not None
+
+    @staticmethod
+    def is_package_has_version(package: str) -> bool:
+        '''检查 Python 软件包是否指定版本号
+
+        参数:
+            package (`str`):
+                Python 软件包名
+
+        返回值:
+            `bool`: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
+        '''
+        return package != (
+            package.replace('===', '')
+            .replace('~=', '')
+            .replace('!=', '')
+            .replace('<=', '')
+            .replace('>=', '')
+            .replace('<', '')
+            .replace('>', '')
+            .replace('==', '')
+        )
+
+    @staticmethod
+    def get_package_name(package: str) -> str:
+        '''获取 Python 软件包的包名, 去除末尾的版本声明
+
+        参数:
+            package (`str`):
+                Python 软件包名
+
+        返回值:
+            `str`: 返回去除版本声明后的 Python 软件包名
+        '''
+        return (
+            package.split('===')[0]
+            .split('~=')[0]
+            .split('!=')[0]
+            .split('<=')[0]
+            .split('>=')[0]
+            .split('<')[0]
+            .split('>')[0]
+            .split('==')[0]
+            .strip()
+        )
+
+    @staticmethod
+    def get_package_version(package: str) -> str:
+        '''获取 Python 软件包的包版本号
+
+        参数:
+            package (`str`):
+                Python 软件包名
+
+        返回值:
+            `str`: 返回 Python 软件包的包版本号
+        '''
+        return (
+            package.split('===').pop()
+            .split('~=').pop()
+            .split('!=').pop()
+            .split('<=').pop()
+            .split('>=').pop()
+            .split('<').pop()
+            .split('>').pop()
+            .split('==').pop()
+            .strip()
+        )
+
+    WHEEL_PATTERN = r'''
+        ^                           # 字符串开始
+        (?P<distribution>[^-]+)     # 包名 (匹配第一个非连字符段)
+        -                           # 分隔符
+        (?:                         # 版本号和可选构建号组合
+            (?P<version>[^-]+)      # 版本号 (至少一个非连字符段)
+            (?:-(?P<build>\d\w*))?  # 可选构建号 (以数字开头)
+        )
+        -                           # 分隔符
+        (?P<python>[^-]+)           # Python 版本标签
+        -                           # 分隔符
+        (?P<abi>[^-]+)              # ABI 标签
+        -                           # 分隔符
+        (?P<platform>[^-]+)         # 平台标签
+        \.whl$                      # 固定后缀
+    '''
+
+    @staticmethod
+    def parse_wheel_filename(filename: str) -> str:
+        '''解析 Python wheel 文件名并返回 distribution 名称
+
+        参数:
+            filename (`str`):
+                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+
+        返回值:
+            `str`: distribution 名称, 例如 pydantic
+
+        异常:
+            `ValueError`: 如果文件名不符合 PEP491 规范
+        '''
+        match = re.fullmatch(
+            RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
+        if not match:
+            logger.error('未知的 Wheel 文件名: %s', filename)
+            raise ValueError(f'Invalid wheel filename: {filename}')
+        return match.group('distribution')
+
+    @staticmethod
+    def parse_wheel_version(filename: str) -> str:
+        '''解析 Python wheel 文件名并返回 version 名称
+
+        参数:
+            filename (`str`):
+                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+
+        返回值:
+            `str`: version 名称, 例如 1.10.15
+
+        异常:
+            `ValueError`: 如果文件名不符合 PEP491 规范
+        '''
+        match = re.fullmatch(
+            RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
+        if not match:
+            logger.error('未知的 Wheel 文件名: %s', filename)
+            raise ValueError(f'Invalid wheel filename: {filename}')
+        return match.group('version')
+
+    @staticmethod
+    def parse_wheel_to_package_name(filename: str) -> str:
+        '''解析 Python wheel 文件名并返回 <distribution>==<version>
+
+        参数:
+            filename (`str`):
+                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+
+        返回值:
+            `str`: <distribution>==<version> 名称, 例如 pydantic==1.10.15
+        '''
+        distribution = RequirementCheck.parse_wheel_filename(filename)
+        version = RequirementCheck.parse_wheel_version(filename)
+        return f'{distribution}=={version}'
+
+    @staticmethod
+    def remove_optional_dependence_from_package(filename: str) -> str:
+        '''移除 Python 软件包声明中可选依赖
+
+        参数:
+            filename (`str`):
+                Python 软件包名
+
+        返回值:
+            `str`: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
+        '''
+        return re.sub(r'\[.*?\]', '', filename)
+
+    @staticmethod
+    def parse_requirement_list(requirements: list) -> list:
+        '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
+
+        参数:
+            requirements (`list`):
+                Python 软件包名声明列表
+                e.g:
+                ```python
+                requirements = [
+                    'torch==2.3.0',
+                    'diffusers[torch]==0.10.2',
+                    'NUMPY',
+                    '-e .',
+                    '--index-url https://pypi.python.org/simple',
+                    '--extra-index-url https://download.pytorch.org/whl/cu124',
+                    '--find-links https://download.pytorch.org/whl/torch_stable.html',
+                    '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
+                    'git+https://github.com/WASasquatch/img2texture.git',
+                    'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
+                    'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
+                    'protobuf<5,>=4.25.3',
+                ]
+                ```
+
+        返回值:
+            `list`: 将 Python 软件包名声明列表解析成标准声明列表
+            e.g. 上述例子中的软件包名声明列表将解析成:
+            ```python
+                requirements = [
+                    'torch==2.3.0',
+                    'diffusers==0.10.2',
+                    'numpy',
+                    'mgds',
+                    'img2texture',
+                    'pydantic==1.10.15',
+                    'prodigy-plus-schedule-free==1.9.1',
+                    'protobuf<5',
+                    'protobuf>=4.25.3',
+                ]
+                ```
+        '''
+        package_list = []
+        canonical_package_list = []
+        requirement: str
+        for requirement in requirements:
+            requirement = requirement.strip()
+            logger.debug('原始 Python 软件包名: %s', requirement)
+
+            if (
+                requirement is None
+                or requirement == ''
+                or requirement.startswith('#')
+                or '# skip_verify' in requirement
+                or requirement.startswith('--index-url')
+                or requirement.startswith('--extra-index-url')
+                or requirement.startswith('--find-links')
+                or requirement.startswith('-e .')
+            ):
+                continue
+
+            # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
+            # git+https://github.com/WASasquatch/img2texture.git -> img2texture
+            # git+https://github.com/deepghs/waifuc -> waifuc
+            if requirement.startswith('-e git+http') or requirement.startswith('git+http'):
+                egg_match = re.search(r'egg=([^#&]+)', requirement)
+                if egg_match:
+                    package_list.append(egg_match.group(1).split('-')[0])
+                    continue
+
+                package_name = os.path.basename(requirement)
+                package_name = package_name.split(
+                    '.git')[0] if package_name.endswith('.git') else package_name
+                package_list.append(package_name)
+                continue
+
+            # https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl -> pydantic==1.10.15
+            if requirement.startswith('https://') or requirement.startswith('http://'):
+                package_name = RequirementCheck.parse_wheel_to_package_name(
+                    os.path.basename(requirement))
+                package_list.append(package_name)
+                continue
+
+            # 常规 Python 软件包声明
+            # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
+            cleaned_requirements = re.sub(
+                r'\s*#.*$', '', requirement).strip().split(',')
+            if len(cleaned_requirements) > 1:
+                package_name = RequirementCheck.get_package_name(
+                    cleaned_requirements[0].strip())
+                for package_name_with_version_marked in cleaned_requirements:
+                    version_symbol = str.replace(
+                        package_name_with_version_marked, package_name, '', 1)
+                    format_package_name = RequirementCheck.remove_optional_dependence_from_package(
+                        f'{package_name}{version_symbol}'.strip())
+                    package_list.append(format_package_name)
+            else:
+                format_package_name = RequirementCheck.remove_optional_dependence_from_package(
+                    cleaned_requirements[0].strip())
+                package_list.append(format_package_name)
+
+        # 处理包名大小写并统一成小写
+        for p in package_list:
+            p: str = p.lower().strip()
+            logger.debug('预处理后的 Python 软件包名: %s', p)
+            if not RequirementCheck.is_package_has_version(p):
+                logger.debug('%s 无版本声明', p)
+                canonical_package_list.append(p)
+                continue
+
+            if RequirementCheck.version_string_is_canonical(RequirementCheck.get_package_version(p)):
+                canonical_package_list.append(p)
+            else:
+                logger.debug('%s 软件包名的版本不符合标准', p)
+
+        return canonical_package_list
+
+    @staticmethod
+    def remove_duplicate_object_from_list(origin: list) -> list:
+        '''对`list`进行去重
+
+        参数:
+            origin (`list`):
+                原始的`list`
+
+        返回值:
+            `list`: 去重后的`list`, e.g. [1, 2, 3, 2] -> [1, 2, 3]
+        '''
+        return list(set(origin))
+
+    @staticmethod
+    def read_packages_from_requirements_file(file_path: str | Path) -> list:
+        '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
+
+        参数:
+            file_path (`str`, `Path`):
+                requirements.txt 文件路径
+
+        返回值:
+            `list`: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+        '''
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return f.readlines()
+        except Exception as e:
+            logger.error('打开 %s 时出现错误: %s\n请检查文件是否出现损坏', file_path, e)
+            return []
+
+    @staticmethod
+    def get_package_version_from_library(package_name: str) -> str | None:
+        '''获取已安装的 Python 软件包版本号
+
+        参数:
+            package_name (`str`):
+
+        返回值:
+            (`str` | `None`): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
+        '''
+        try:
+            ver = importlib.metadata.version(package_name)
+        except:
+            ver = None
+
+        if ver is None:
+            try:
+                ver = importlib.metadata.version(package_name.lower())
+            except:
+                ver = None
+
+        if ver is None:
+            try:
+                ver = importlib.metadata.version(
+                    package_name.replace('_', '-'))
+            except:
+                ver = None
+
+        return ver
+
+    @staticmethod
+    def is_package_installed(package: str) -> bool:
+        '''判断 Python 软件包是否已安装在环境中
+
+        参数:
+            package (`str`):
+                Python 软件包名
+
+        返回值:
+            `bool`: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
+        '''
+        # 分割 Python 软件包名和版本号
+        if '===' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('===')]
+        elif '~=' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('~=')]
+        elif '!=' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('!=')]
+        elif '<=' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('<=')]
+        elif '>=' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('>=')]
+        elif '<' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('<')]
+        elif '>' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('>')]
+        elif '==' in package:
+            pkg_name, pkg_version = [x.strip() for x in package.split('==')]
+        else:
+            pkg_name, pkg_version = package.strip(), None
+
+        env_pkg_version = RequirementCheck.get_package_version_from_library(
+            pkg_name)
+        logger.debug(
+            '已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s',
+            pkg_name, env_pkg_version, pkg_version
+        )
+
+        if env_pkg_version is None:
+            return False
+
+        if pkg_version is not None:
+            # ok = env_pkg_version === / == pkg_version
+            if '===' in package or '==' in package:
+                logger.debug('包含条件: === / ==')
+                if RequirementCheck.is_v1_eq_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s == %s', env_pkg_version, pkg_version)
+                    return True
+
+            # ok = env_pkg_version ~= pkg_version
+            if '~=' in package:
+                logger.debug('包含条件: ~=')
+                if RequirementCheck.is_v1_c_eq_v2(pkg_version, env_pkg_version):
+                    logger.debug('%s ~= %s', pkg_version, env_pkg_version)
+                    return True
+
+            # ok = env_pkg_version != pkg_version
+            if '!=' in package:
+                logger.debug('包含条件: !=')
+                if not RequirementCheck.is_v1_eq_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s != %s', env_pkg_version, pkg_version)
+                    return True
+
+            # ok = env_pkg_version <= pkg_version
+            if '<=' in package:
+                logger.debug('包含条件: <=')
+                if RequirementCheck.is_v1_le_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s <= %s', env_pkg_version, pkg_version)
+                    return True
+
+            # ok = env_pkg_version >= pkg_version
+            if '>=' in package:
+                logger.debug('包含条件: >=')
+                if RequirementCheck.is_v1_ge_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s >= %s', env_pkg_version, pkg_version)
+                    return True
+
+            # ok = env_pkg_version < pkg_version
+            if '<' in package:
+                logger.debug('包含条件: <')
+                if RequirementCheck.is_v1_lt_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s < %s', env_pkg_version, pkg_version)
+                    return True
+
+            # ok = env_pkg_version > pkg_version
+            if '>' in package:
+                logger.debug('包含条件: >')
+                if RequirementCheck.is_v1_gt_v2(env_pkg_version, pkg_version):
+                    logger.debug('%s > %s', env_pkg_version, pkg_version)
+                    return True
+
+            logger.debug('%s 需要安装', package)
+            return False
+
+        return True
+
+    @staticmethod
+    def validate_requirements(requirement_path: str | Path) -> bool:
+        '''检测环境依赖是否完整
+
+        参数:
+            requirement_path (`str`, `Path`):
+                依赖文件路径
+
+        返回值:
+            `bool`: 如果有缺失依赖则返回`False`
+        '''
+        origin_requires = RequirementCheck.read_packages_from_requirements_file(
+            requirement_path)
+        requires = RequirementCheck.parse_requirement_list(origin_requires)
+        for package in requires:
+            if not RequirementCheck.is_package_installed(package):
+                return False
+
+        return True
+
+    @staticmethod
+    def check_env(
+        requirement_path: Path | str,
+        name: str | None = None,
+        use_uv: bool | None = True,
+    ) -> None:
+        '''检测依赖完整性并安装缺失依赖
+
+        :param requirement_path`(Path|str)`: 依赖文件路径
+        :param name`(str|None)`: 显示的名称
+        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        '''
+        if not os.path.exists(requirement_path):
+            logger.error(f"未找到 {requirement_path} 文件, 无法检查依赖完整性")
+            return
+        if name is None:
+            name = str(requirement_path).split('/')[-2]
+        logger.info(f'检查 {name} 依赖完整性中')
+        if not RequirementCheck.validate_requirements(requirement_path):
+            logger.info(f'安装 {name} 依赖中')
+            try:
+                EnvManager.install_requirements(requirement_path, use_uv)
+                logger.info(f'安装 {name} 依赖完成')
+            except Exception as e:
+                logger.error(f'安装 {name} 依赖出现错误: {e}')
+                return
+        logger.info(f'{name} 依赖完整性检查完成')
+
+    @staticmethod
+    def check_numpy(use_uv: bool | None = True) -> None:
+        '''检查 Numpy 是否需要降级
+
+        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        '''
+        logger.info('检查 Numpy 是否需要降级')
+        try:
+            numpy_ver = importlib.metadata.version('numpy')
+            if RequirementCheck.is_v1_gt_v2(numpy_ver, '1.26.4'):
+                logger.info('降级 Numoy 中')
+                EnvManager.pip_install("numpy==1.26.4", use_uv=use_uv)
+                logger.info('Numpy 降级完成')
+            else:
+                logger.info('Numpy 无需降级')
+        except Exception as e:
+            logger.error(f'检查 Numpy 时出现错误: {e}')
+
+    @staticmethod
+    def fix_torch() -> None:
+        """检测并修复 PyTorch 的 libomp 问题"""
+        logger.info("检测 PyTorch 的 libomp 问题")
+        torch_spec = importlib.util.find_spec("torch")
+        for folder in torch_spec.submodule_search_locations:
+            lib_folder = os.path.join(folder, "lib")
+            test_file = os.path.join(lib_folder, "fbgemm.dll")
+            dest = os.path.join(lib_folder, "libomp140.x86_64.dll")
+            if os.path.exists(dest):
+                break
+
+            with open(test_file, "rb") as f:
+                contents = f.read()
+                if b"libomp140.x86_64.dll" not in contents:
+                    break
+            try:
+                _ = ctypes.cdll.LoadLibrary(test_file)
+            except FileNotFoundError as _:
+                logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
+                shutil.copyfile(os.path.join(lib_folder, "libiomp5md.dll"), dest)
+
+
+class ComponentEnvironmentDetails(TypedDict):
+    '''ComfyUI 组件的环境信息结构'''
+    requirement_path: str           # 依赖文件路径
+    is_disabled: bool               # 组件是否禁用
+    requires: list[str]             # 需要的依赖列表
+    has_missing_requires: bool      # 是否存在缺失依赖
+    missing_requires: list[str]     # 具体缺失的依赖项
+    has_conflict_requires: bool     # 是否存在冲突依赖
+    conflict_requires: list[str]    # 具体冲突的依赖项
+
+
+ComfyUIEnvironmentComponent = dict[
+    str, ComponentEnvironmentDetails
+]  # ComfyUI 环境组件表字典
+
+
+class ComfyUIRequirementCheck(RequirementCheck):
+    """ComfyUI 依赖检查工具"""
+    @staticmethod
+    def create_comfyui_environment_dict(
+        comfyui_path: str | Path,
+    ) -> ComfyUIEnvironmentComponent:
+        '''创建 ComfyUI 环境组件表字典
+
+        参数:
+            comfyui_path (`str`, `Path`):
+                ComfyUI 根路径
+
+        返回值:
+            `ComfyUIEnvironmentComponent`: ComfyUI 环境组件表字典
+        '''
+        comfyui_env_data: ComfyUIEnvironmentComponent = {
+            'ComfyUI': {
+                'requirement_path': os.path.join(comfyui_path, 'requirements.txt'),
+                'is_disabled': False,
+                'requires': [],
+                'has_missing_requires': False,
+                'missing_requires': [],
+                'has_conflict_requires': False,
+                'conflict_requires': [],
+            },
+        }
+        custom_nodes_path = os.path.join(comfyui_path, 'custom_nodes')
+        for custom_node in os.listdir(custom_nodes_path):
+            if os.path.isfile(os.path.join(custom_nodes_path, custom_node)):
+                continue
+
+            custom_node_requirement_path = os.path.join(
+                custom_nodes_path, custom_node, 'requirements.txt')
+            custom_node_is_disabled = True if custom_node.endswith(
+                '.disabled') else False
+
+            comfyui_env_data[custom_node] = {
+                'requirement_path': (
+                    custom_node_requirement_path
+                    if os.path.exists(custom_node_requirement_path)
+                    else None
+                ),
+                'is_disabled': custom_node_is_disabled,
+                'requires': [],
+                'has_missing_requires': False,
+                'missing_requires': [],
+                'has_conflict_requires': False,
+                'conflict_requires': [],
+            }
+
+        return comfyui_env_data
+
+    @staticmethod
+    def update_comfyui_environment_dict(
+        env_data: ComfyUIEnvironmentComponent,
+        component_name: str,
+        requirement_path: str | None = None,
+        is_disabled: bool | None = None,
+        requires: list[str] | None = None,
+        has_missing_requires: bool | None = None,
+        missing_requires: list[str] | None = None,
+        has_conflict_requires: bool | None = None,
+        conflict_requires: list[str] | None = None,
+    ) -> None:
+        '''更新 ComfyUI 环境组件表字典
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+
+            component_name (`str`):
+                ComfyUI 组件名称
+
+            requirement_path (`str`, `None`):
+                ComfyUI 组件依赖文件路径
+
+            is_disabled (`bool`, `None`):
+                ComfyUI 组件是否被禁用
+
+            requires (`list[str]`, `None`):
+                ComfyUI 组件需要的依赖列表
+
+            has_missing_requires (`bool`, `None`):
+                ComfyUI 组件是否存在缺失依赖
+
+            missing_requires (`list[str]`, `None`):
+                ComfyUI 组件缺失依赖列表
+
+            has_conflict_requires (`bool`, `None`):
+                ComfyUI 组件是否存在冲突依赖
+
+            conflict_requires (`list[str]`, `None`):
+                ComfyUI 组件冲突依赖列表
+        '''
+        env_data[component_name] = {
+            'requirement_path': (
+                requirement_path
+                if requirement_path
+                else env_data.get(component_name).get('requirement_path')
+            ),
+            'is_disabled': (
+                is_disabled
+                if is_disabled
+                else env_data.get(component_name).get('is_disabled')
+            ),
+            'requires': (
+                requires
+                if requires
+                else env_data.get(component_name).get('requires')
+            ),
+            'has_missing_requires': (
+                has_missing_requires
+                if has_missing_requires
+                else env_data.get(component_name).get('has_missing_requires')
+            ),
+            'missing_requires': (
+                missing_requires
+                if missing_requires
+                else env_data.get(component_name).get('missing_requires')
+            ),
+            'has_conflict_requires': (
+                has_conflict_requires
+                if has_conflict_requires
+                else env_data.get(component_name).get('has_conflict_requires')
+            ),
+            'conflict_requires': (
+                conflict_requires
+                if conflict_requires
+                else env_data.get(component_name).get('conflict_requires')
+            ),
+        }
+
+    @staticmethod
+    def update_comfyui_component_requires_list(
+        env_data: ComfyUIEnvironmentComponent,
+    ) -> None:
+        '''更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+        '''
+        for component_name, details in env_data.items():
+            if details.get('is_disabled'):
+                continue
+
+            requirement_path = details.get('requirement_path')
+            if requirement_path is None:
+                continue
+
+            origin_requires = ComfyUIRequirementCheck.read_packages_from_requirements_file(
+                requirement_path
+            )
+            requires = ComfyUIRequirementCheck.parse_requirement_list(
+                origin_requires)
+            ComfyUIRequirementCheck.update_comfyui_environment_dict(
+                env_data=env_data,
+                component_name=component_name,
+                requires=requires,
+            )
+
+    @staticmethod
+    def update_comfyui_component_missing_requires_list(
+        env_data: ComfyUIEnvironmentComponent,
+    ) -> None:
+        '''更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+        '''
+        for component_name, details in env_data.items():
+            if details.get('is_disabled'):
+                continue
+
+            requires = details.get('requires')
+            has_missing_requires = False
+            missing_requires = []
+
+            for package in requires:
+                if not ComfyUIRequirementCheck.is_package_installed(package):
+                    has_missing_requires = True
+                    missing_requires.append(package)
+
+            ComfyUIRequirementCheck.update_comfyui_environment_dict(
+                env_data=env_data,
+                component_name=component_name,
+                has_missing_requires=has_missing_requires,
+                missing_requires=missing_requires,
+            )
+
+    @staticmethod
+    def update_comfyui_component_conflict_requires_list(
+        env_data: ComfyUIEnvironmentComponent,
+        conflict_package_list: list
+    ) -> None:
+        '''更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+
+            conflict_package_list (`list`):
+                冲突的 Python 软件包列表
+        '''
+        for component_name, details in env_data.items():
+            if details.get('is_disabled'):
+                continue
+
+            requires = details.get('requires')
+            has_conflict_requires = False
+            conflict_requires = []
+
+            for conflict_package in conflict_package_list:
+                for package in requires:
+                    if (
+                        ComfyUIRequirementCheck.is_package_has_version(package)
+                        and
+                        ComfyUIRequirementCheck.get_package_name(
+                            conflict_package
+                        ) == ComfyUIRequirementCheck.get_package_name(package)
+                    ):
+                        has_conflict_requires = True
+                        conflict_requires.append(package)
+
+            ComfyUIRequirementCheck.update_comfyui_environment_dict(
+                env_data=env_data,
+                component_name=component_name,
+                has_conflict_requires=has_conflict_requires,
+                conflict_requires=conflict_requires,
+            )
+
+    @staticmethod
+    def get_comfyui_component_requires_list(
+        env_data: ComfyUIEnvironmentComponent,
+    ) -> list:
+        '''从 ComfyUI 环境组件表字典读取所有组件的 requires
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+
+        返回值:
+            `list`: ComfyUI 环境组件的 Python 软件包列表
+        '''
+        package_list = []
+        for _, details in env_data.items():
+            if details.get('is_disabled'):
+                continue
+
+            package_list += details.get('requires')
+
+        return ComfyUIRequirementCheck.remove_duplicate_object_from_list(package_list)
+
+    @staticmethod
+    def statistical_need_install_require_component(
+        env_data: ComfyUIEnvironmentComponent,
+    ) -> list:
+        '''根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+
+        返回值:
+            `list`: ComfyUI 环境组件的依赖文件路径列表
+        '''
+        requirement_list = []
+        for _, details in env_data.items():
+            if (
+                details.get('has_missing_requires')
+                or details.get('has_conflict_requires')
+            ):
+                requirement_list.append(
+                    Path(details.get('requirement_path')).as_posix())
+
+        return requirement_list
+
+    @staticmethod
+    def statistical_has_conflict_component(
+        env_data: ComfyUIEnvironmentComponent,
+        conflict_package_list: list
+    ) -> list:
+        '''根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+
+        返回值:
+            `list`: ComfyUI 环境组件的依赖文件路径列表
+        '''
+        content = []
+        for conflict_package in conflict_package_list:
+            content.append(ComfyUIRequirementCheck.get_package_name(
+                f'{conflict_package}:'))
+            for component_name, details in env_data.items():
+                for conflict_component_package in details.get('conflict_requires'):
+                    if ComfyUIRequirementCheck.get_package_name(conflict_component_package) == conflict_package:
+                        content.append(
+                            f' - {component_name}: {conflict_component_package}')
+
+        return content[:-1] if len(content) > 0 and content[-1] == '' else content
+
+    @staticmethod
+    def fitter_has_version_package(package_list: list) -> list:
+        '''过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
+
+        参数:
+            package_list (`list`):
+                Python 软件包列表
+
+        返回值:
+            `list`: 仅包含版本号的 Python 软件包列表
+        '''
+        return [
+            p for p in package_list
+            if ComfyUIRequirementCheck.is_package_has_version(p)
+        ]
+
+    @staticmethod
+    def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
+        '''检测 Python 软件包版本号声明是否存在冲突
+
+        参数:
+            pkg1 (`str`):
+                第 1 个 Python 软件包名称
+
+            pkg2 (`str`):
+                第 2 个 Python 软件包名称
+
+        返回值:
+            `bool`: 如果 Python 软件包版本声明出现冲突则返回`True`
+        '''
+        # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
+        for i in range(2):
+            if i == 1:
+                if pkg1 == pkg2:
+                    break
+                else:
+                    pkg1, pkg2 = pkg2, pkg1
+
+            ver1 = ComfyUIRequirementCheck.get_package_version(pkg1)
+            ver2 = ComfyUIRequirementCheck.get_package_version(pkg2)
+            logger.debug(
+                '冲突依赖检测: pkg1: %s, pkg2: %s, ver1: %s, ver2: %s',
+                pkg1, pkg2, ver1, ver2)
+
+            # >=, <=
+            if '>=' in pkg1 and '<=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s > %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >=, <
+            if '>=' in pkg1 and '<' in pkg2 and '=' not in pkg2:
+                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s >= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >, <=
+            if '>' in pkg1 and '=' not in pkg1 and '<=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s >= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >, <
+            if '>' in pkg1 and '=' not in pkg1 and '<' in pkg2 and '=' not in pkg2:
+                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s >= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >, ==
+            if '>' in pkg1 and '=' not in pkg1 and '==' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s >= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >=, ==
+            if '>=' in pkg1 and '==' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s > %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # <, ==
+            if '<' in pkg1 and '=' not in pkg1 and '==' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_le_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s <= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # <=, ==
+            if '<=' in pkg1 and '==' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_lt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s < %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # !=, ==
+            if '!=' in pkg1 and '==' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_eq_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s == %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >, ~=
+            if '>' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s >= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # >=, ~=
+            if '>=' in pkg1 and '~=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s > %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # <, ~=
+            if '<' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_le_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s <= %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # <=, ~=
+            if '<=' in pkg1 and '~=' in pkg2:
+                if ComfyUIRequirementCheck.is_v1_lt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s < %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # !=, ~=
+            # 这个也没什么必要
+            # if '!=' in pkg1 and '~=' in pkg2:
+            #     if is_v1_c_eq_v2(ver1, ver2):
+            #         logger.debug(
+            #             '冲突依赖: %s, %s, 版本冲突: %s ~= %s',
+            #             pkg1, pkg2, ver1, ver2)
+            #         return True
+
+            # ~=, == / ~=, ===
+            if ('~=' in pkg1 and '==' in pkg2) or ('~=' in pkg1 and '===' in pkg2):
+                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s > %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+            # ~=, ~=
+            # ~= 类似 >= V.N, == V.*, 所以该部分的比较没必要使用
+            # if '~=' in pkg1 and '~=' in pkg2:
+            #     if not is_v1_c_eq_v2(ver1, ver2):
+            #         logger.debug(
+            #             '冲突依赖: %s, %s, 版本冲突: %s !~= %s',
+            #             pkg1, pkg2, ver1, ver2)
+            #         return True
+
+            # ==, == / ===, ===
+            if ('==' in pkg1 and '==' in pkg2) or ('===' in pkg1 and '===' in pkg2):
+                if not ComfyUIRequirementCheck.is_v1_eq_v2(ver1, ver2):
+                    logger.debug(
+                        '冲突依赖: %s, %s, 版本冲突: %s != %s',
+                        pkg1, pkg2, ver1, ver2)
+                    return True
+
+        return False
+
+    @staticmethod
+    def detect_conflict_package_from_list(package_list: list) -> list:
+        '''检测 Python 软件包版本声明列表中存在冲突的软件包
+
+        参数:
+            package_list (`list`):
+                Python 软件包版本声明列表
+
+        返回值:
+            `list`: 冲突的 Python 软件包列表
+        '''
+        conflict_package = []
+        for i in package_list:
+            for j in package_list:
+                if (
+                    ComfyUIRequirementCheck.get_package_name(
+                        i) == ComfyUIRequirementCheck.get_package_name(j)
+                    and ComfyUIRequirementCheck.detect_conflict_package(i, j)
+                ):
+                    conflict_package.append(
+                        ComfyUIRequirementCheck.get_package_name(i))
+
+        return ComfyUIRequirementCheck.remove_duplicate_object_from_list(conflict_package)
+
+    @staticmethod
+    def display_comfyui_environment_dict(
+        env_data: ComfyUIEnvironmentComponent,
+    ) -> None:
+        '''列出 ComfyUI 环境组件字典内容
+
+        参数:
+            env_data (`ComfyUIEnvironmentComponent`):
+                ComfyUI 环境组件表字典
+        '''
+        logger.debug('ComfyUI 环境组件表')
+        for component_name, details in env_data.items():
+            logger.debug(
+                'Component: %s', component_name
+            )
+            logger.debug(
+                ' - requirement_path: %s', details['requirement_path']
+            )
+            logger.debug(
+                ' - is_disabled: %s', details['is_disabled']
+            )
+            logger.debug(
+                ' - requires: %s', details['requires']
+            )
+            logger.debug(
+                ' - has_missing_requires: %s', details['has_missing_requires']
+            )
+            logger.debug(
+                ' - missing_requires: %s', details['missing_requires']
+            )
+            logger.debug(
+                ' - has_conflict_requires: %s', details['has_conflict_requires']
+            )
+            logger.debug(
+                ' - conflict_requires: %s', details['conflict_requires']
+            )
+            print()
+
+    @staticmethod
+    def display_check_result(
+        requirement_list: list,
+        conflict_result: list
+    ) -> None:
+        '''显示 ComfyUI 运行环境检查结果
+
+        参数:
+            requirement_list (`list`):
+                ComfyUI 组件依赖文件路径列表
+
+            conflict_result (`list`):
+                冲突组件统计信息
+        '''
+        if len(requirement_list) > 0:
+            logger.debug('需要安装 ComfyUI 组件列表')
+            for requirement in requirement_list:
+                component_name = requirement.split('/')[-2]
+                logger.debug('%s:', component_name)
+                logger.debug(' - %s', requirement)
+            print()
+
+        if len(conflict_result) > 0:
+            logger.debug('ComfyUI 冲突组件')
+            for text in conflict_result:
+                logger.debug(text)
+            print()
+
+    @staticmethod
+    def check_comfyui_env(
+        comfyui_root_path: Path | str,
+        install_conflict_component_requirement: bool | None = False,
+        use_uv: bool | None = True,
+        debug_mode: bool | None = False,
+    ) -> None:
+        '''检查并安装 ComfyUI 的依赖环境
+
+        :param comfyui_root_path`(Path|str)`: ComfyUI 根目录
+        :param install_conflict_component_requirement`(bool|None)`: 检测到冲突依赖时是否按顺序安装组件依赖
+        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        :param debug_mode`(bool|None)`: 显示调试信息
+        '''
+
+        if not os.path.exists(os.path.join(comfyui_root_path, 'requirements.txt')):
+            logger.error('ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整')
+            return
+
+        if not os.path.exists(os.path.join(comfyui_root_path, 'custom_nodes')):
+            logger.error('ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整')
+            return
+
+        logger.info('检测 ComfyUI 环境中')
+        env_data = ComfyUIRequirementCheck.create_comfyui_environment_dict(
+            comfyui_root_path)
+        ComfyUIRequirementCheck.update_comfyui_component_requires_list(
+            env_data)
+        ComfyUIRequirementCheck.update_comfyui_component_missing_requires_list(
+            env_data)
+        pkg_list = ComfyUIRequirementCheck.get_comfyui_component_requires_list(
+            env_data)
+        has_version_pkg = ComfyUIRequirementCheck.fitter_has_version_package(
+            pkg_list)
+        conflict_pkg = ComfyUIRequirementCheck.detect_conflict_package_from_list(
+            has_version_pkg)
+        ComfyUIRequirementCheck.update_comfyui_component_conflict_requires_list(
+            env_data, conflict_pkg)
+        req_list = ComfyUIRequirementCheck.statistical_need_install_require_component(
+            env_data)
+        conflict_info = ComfyUIRequirementCheck.statistical_has_conflict_component(
+            env_data, conflict_pkg)
+
+        if debug_mode:
+            ComfyUIRequirementCheck.display_comfyui_environment_dict(env_data)
+            ComfyUIRequirementCheck.display_check_result(
+                req_list, conflict_info)
+
+        if len(''.join(conflict_info)) > 0:
+            logger.warning(
+                '检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用')
+            logger.warning(
+                '您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况')
+            logger.warning('检测到冲突的依赖:')
+            print(''.join(conflict_info))
+            if not install_conflict_component_requirement:
+                logger.info('忽略警告并继续启动 ComfyUI')
+                return
+
+        for req in req_list:
+            name = req.split('/')[-2]
+            logger.info(f'安装 {name} 的依赖中')
+            try:
+                EnvManager.install_requirements(req, use_uv)
+            except Exception as e:
+                logger.error(f'安装 {name} 的依赖失败: {e}')
+
+        logger.debug('ComfyUI 环境检查完成')
+
+
+class OrtType(str, Enum):
+    '''onnxruntime-gpu 的类型
+
+    版本说明: 
+    - CU121CUDNN8: CUDA 12.1 + cuDNN8
+    - CU121CUDNN9: CUDA 12.1 + cuDNN9
+    - CU118: CUDA 11.8
+    '''
+    CU121CUDNN8 = 'cu121cudnn8'
+    CU121CUDNN9 = 'cu121cudnn9'
+    CU118 = 'cu118'
+
+    def __str__(self):
+        return self.value
+
+
+class OnnxRuntimeGPUCheck:
+    '''检查 onnxruntime-gpu'''
+    @staticmethod
+    def get_onnxruntime_version_file() -> Path | None:
+        '''获取记录 onnxruntime 版本的文件路径
+
+        :return Path | None: 记录 onnxruntime 版本的文件路径
+        '''
+        package = 'onnxruntime-gpu'
+        version_file = 'onnxruntime/capi/version_info.py'
+        try:
+            util = [
+                p for p in importlib.metadata.files(package)
+                if version_file in str(p)
+            ][0]
+            info_path = Path(util.locate())
+        except Exception as _:
+            info_path = None
+
+        return info_path
+
+    @staticmethod
+    def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
+        '''获取 onnxruntime 支持的 CUDA, cuDNN 版本
+
+        :return tuple[str | None, str | None]: onnxruntime 支持的 CUDA, cuDNN 版本
+        '''
+        ver_path = OnnxRuntimeGPUCheck.get_onnxruntime_version_file()
+        cuda_ver = None
+        cudnn_ver = None
+        try:
+            with open(ver_path, 'r', encoding='utf8') as f:
+                for line in f:
+                    if 'cuda_version' in line:
+                        cuda_ver = OnnxRuntimeGPUCheck.get_value_from_variable(line, 'cuda_version')
+                    if 'cudnn_version' in line:
+                        cudnn_ver = OnnxRuntimeGPUCheck.get_value_from_variable(line, 'cudnn_version')
+        except Exception as _:
+            pass
+
+        return cuda_ver, cudnn_ver
+
+    @staticmethod
+    def get_value_from_variable(content: str, var_name: str) -> str | None:
+        '''从字符串 (Python 代码片段) 中找出指定字符串变量的值
+
+        :param content(str): 待查找的内容
+        :param var_name(str): 待查找的字符串变量
+        :return str | None: 返回字符串变量的值
+        '''
+        pattern = fr'{var_name}\s*=\s*"([^"]+)"'
+        match = re.search(pattern, content)
+        return match.group(1) if match else None
+    
+    @staticmethod
+    def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
+        '''获取 Torch 的本体, CUDA, cuDNN 版本
+
+        :return tuple[str | None, str | None, str | None]: Torch, CUDA, cuDNN 版本
+        '''
+        try:
+            import torch
+            torch_ver = torch.__version__
+            cuda_ver = torch.version.cuda
+            cudnn_ver = torch.backends.cudnn.version()
+            return (
+                str(torch_ver) if torch_ver is not None else None,
+                str(cuda_ver) if cuda_ver is not None else None,
+                str(cudnn_ver) if cudnn_ver is not None else None,
+            )
+        except Exception as _:
+            return None, None, None
+        
+    @staticmethod
+    def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
+        '''判断需要安装的 onnxruntime 版本
+
+        :param ignore_ort_install(bool): 当 onnxruntime 未安装时跳过检查
+        :return OrtType: 需要安装的 onnxruntime-gpu 类型
+        '''
+        # 检测是否安装了 Torch
+        torch_ver, cuda_ver, cuddn_ver = OnnxRuntimeGPUCheck.get_torch_cuda_ver()
+        # 缺少 Torch / CUDA / cuDNN 版本时取消判断
+        if (
+            torch_ver is None
+            or cuda_ver is None
+            or cuddn_ver is None
+        ):
+            if not ignore_ort_install:
+                try:
+                    _ = importlib.metadata.version('onnxruntime-gpu')
+                except Exception as _:
+                    # onnxruntime-gpu 没有安装时
+                    return OrtType.CU121CUDNN9
+            return None
+
+        # onnxruntime 记录的 cuDNN 支持版本只有一位数, 所以 Torch 的 cuDNN 版本只能截取一位
+        cuddn_ver = cuddn_ver[0]
+
+        # 检测是否安装了 onnxruntime-gpu
+        ort_support_cuda_ver, ort_support_cudnn_ver = OnnxRuntimeGPUCheck.get_onnxruntime_support_cuda_version()
+        # 通常 onnxruntime 的 CUDA 版本和 cuDNN 版本会同时存在, 所以只需要判断 CUDA 版本是否存在即可
+        if ort_support_cuda_ver is not None:
+            # 当 onnxruntime 已安装
+
+            # 判断 Torch 中的 CUDA 版本
+            if Utils.compare_versions(cuda_ver, '12.0') >= 0:
+                # CUDA >= 12.0
+
+                # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
+                if Utils.compare_versions(ort_support_cuda_ver, '12.0') >= 0:
+                    # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
+
+                    # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
+                    if Utils.compare_versions(ort_support_cudnn_ver, cuddn_ver) > 0:
+                        # ort cuDNN 版本 > torch cuDNN 版本
+                        return OrtType.CU121CUDNN8
+                    elif Utils.compare_versions(ort_support_cudnn_ver, cuddn_ver) < 0:
+                        # ort cuDNN 版本 < torch cuDNN 版本
+                        return OrtType.CU121CUDNN9
+                    else:
+                        # 版本相等, 无需重装
+                        return None
+                else:
+                    # CUDA 版本非 12.x, 不匹配
+                    if Utils.compare_versions(cuddn_ver, '8') > 0:
+                        return OrtType.CU121CUDNN9
+                    else:
+                        return OrtType.CU121CUDNN8
+            else:
+                # CUDA <= 11.8
+                if Utils.compare_versions(ort_support_cuda_ver, '12.0') < 0:
+                    return None
+                else:
+                    return OrtType.CU118
+        else:
+            if ignore_ort_install:
+                return None
+
+            if Utils.compare_versions(cuda_ver, '12.0') >= 0:
+                if Utils.compare_versions(cuddn_ver, '8') > 0:
+                    return OrtType.CU121CUDNN9
+                else:
+                    return OrtType.CU121CUDNN8
+            else:
+                return OrtType.CU118
+
+
+    @staticmethod
+    def check_onnxruntime_gpu(
+        use_uv: bool | None = True,
+        ignore_ort_install: bool | None = False
+    ):
+        """检查并修复 Onnxruntime GPU 版本问题
+
+        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        :param ignore_ort_install`(bool|None)`: 当 onnxruntime 未安装时跳过检查
+        """
+        logger.info("检查 Onnxruntime GPU 版本问题中")
+        ver = OnnxRuntimeGPUCheck.need_install_ort_ver(ignore_ort_install)
+        if ver is None:
+            logger.info("Onnxruntime GPU 无版本问题")
+            return
+        custom_env = os.environ.copy()
+        custom_env.pop("PIP_EXTRA_INDEX_URL", None)
+        custom_env.pop("UV_INDEX", None)
+        custom_env.pop("PIP_FIND_LINKS", None)
+        custom_env.pop("UV_FIND_LINKS", None)
+        
+        try:
+            if ver == OrtType.CU118:
+                custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
+                custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
+                run_cmd([sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
+                EnvManager.pip_install("onnxruntime-gpu>=1.18.1", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
+            elif ver == OrtType.CU121CUDNN9:
+                run_cmd([sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
+                EnvManager.pip_install("onnxruntime-gpu>=1.19.0", "--no-cache-dir", use_uv=use_uv)
+            elif ver == OrtType.CU121CUDNN8:
+                custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
+                custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
+                run_cmd([sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
+                EnvManager.pip_install("onnxruntime-gpu==1.17.1", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
+        except Exception as e:
+            logger.error(f"修复 Onnxruntime GPU 版本问题时出现错误: {e}")
+            return
+            
+        logger.info("Onnxruntime GPU 版本问题修复完成")
+
+
+class CUDAMalloc:
+    """配置 CUDA Malloc 内存优化"""
+    @staticmethod
+    def get_gpu_names():
+        if os.name == 'nt':
+            import ctypes
+
+            # Define necessary C structures and types
+            class DISPLAY_DEVICEA(ctypes.Structure):
+                _fields_ = [
+                    ('cb', ctypes.c_ulong),
+                    ('DeviceName', ctypes.c_char * 32),
+                    ('DeviceString', ctypes.c_char * 128),
+                    ('StateFlags', ctypes.c_ulong),
+                    ('DeviceID', ctypes.c_char * 128),
+                    ('DeviceKey', ctypes.c_char * 128)
+                ]
+
+            # Load user32.dll
+            user32 = ctypes.windll.user32
+
+            # Call EnumDisplayDevicesA
+            def enum_display_devices():
+                device_info = DISPLAY_DEVICEA()
+                device_info.cb = ctypes.sizeof(device_info)
+                device_index = 0
+                gpu_names = set()
+
+                while user32.EnumDisplayDevicesA(None, device_index, ctypes.byref(device_info), 0):
+                    device_index += 1
+                    gpu_names.add(device_info.DeviceString.decode('utf-8'))
+                return gpu_names
+            return enum_display_devices()
+        else:
+            gpu_names = set()
+            out = subprocess.check_output(['nvidia-smi', '-L'])
+            for l in out.split(b'\n'):
+                if len(l) > 0:
+                    gpu_names.add(l.decode('utf-8').split(' (UUID')[0])
+            return gpu_names
+
+    blacklist = {"GeForce GTX TITAN X", "GeForce GTX 980", "GeForce GTX 970", "GeForce GTX 960", "GeForce GTX 950", "GeForce 945M",
+                    "GeForce 940M", "GeForce 930M", "GeForce 920M", "GeForce 910M", "GeForce GTX 750", "GeForce GTX 745", "Quadro K620",
+                    "Quadro K1200", "Quadro K2200", "Quadro M500", "Quadro M520", "Quadro M600", "Quadro M620", "Quadro M1000",
+                    "Quadro M1200", "Quadro M2000", "Quadro M2200", "Quadro M3000", "Quadro M4000", "Quadro M5000", "Quadro M5500", "Quadro M6000",
+                    "GeForce MX110", "GeForce MX130", "GeForce 830M", "GeForce 840M", "GeForce GTX 850M", "GeForce GTX 860M",
+                    "GeForce GTX 1650", "GeForce GTX 1630", "Tesla M4", "Tesla M6", "Tesla M10", "Tesla M40", "Tesla M60"
+                    }
+
+    @staticmethod
+    def cuda_malloc_supported():
+        try:
+            names = CUDAMalloc.get_gpu_names()
+        except:
+            names = set()
+        for x in names:
+            if "NVIDIA" in x:
+                for b in CUDAMalloc.blacklist:
+                    if b in x:
+                        return False
+        return True
+
+    @staticmethod
+    def is_nvidia_device():
+        try:
+            names = CUDAMalloc.get_gpu_names()
+        except:
+            names = set()
+        for x in names:
+            if "NVIDIA" in x:
+                return True
+        return False
+
+    @staticmethod
+    def get_pytorch_cuda_alloc_conf(is_cuda = True):
+        if CUDAMalloc.is_nvidia_device():
+            if CUDAMalloc.cuda_malloc_supported():
+                if is_cuda:
+                    return "cuda_malloc"
+                else:
+                    return "pytorch_malloc"
+            else:
+                return "pytorch_malloc"
+        else:
+            return None
+
+    @staticmethod
+    def set_cuda_malloc():
+        try:
+            version = ""
+            torch_spec = importlib.util.find_spec("torch")
+            for folder in torch_spec.submodule_search_locations:
+                ver_file = os.path.join(folder, "version.py")
+                if os.path.isfile(ver_file):
+                    spec = importlib.util.spec_from_file_location("torch_version_import", ver_file)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    version = module.__version__
+            if int(version[0]) >= 2: #enable by default for torch version 2.0 and up
+                if "+cu" in version: #only on cuda torch
+                    malloc_type = CUDAMalloc.get_pytorch_cuda_alloc_conf()
+                else:
+                    malloc_type = CUDAMalloc.get_pytorch_cuda_alloc_conf(False)
+            else:
+                malloc_type = None
+        except Exception as _:
+            malloc_type = None
+
+        if malloc_type == "cuda_malloc":
+            logger.info("设置 CUDA 内存分配器为 CUDA 内置异步分配器")
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:cudaMallocAsync"
+        elif malloc_type == "pytorch_malloc":
+            logger.info("设置 CUDA 内存分配器为 PyTorch 原生分配器")
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.9,max_split_size_mb:512"
+        else:
+            logger.warning("显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器")
+
+
 class BaseManager:
     """管理工具基础类"""
 
@@ -2431,6 +4418,9 @@ class BaseManager:
         self.repo = RepoManager(hf_token, ms_token)
         self.mirror = MirrorConfigManager()
         self.tun = TunnelManager(workspace, port)
+        self.env_check = RequirementCheck()
+        self.ort_check = OnnxRuntimeGPUCheck()
+        self.cuda_malloc = CUDAMalloc()
         self.remove_files = remove_files
         self.run_cmd = run_cmd
         self.copy_files = copy_files
@@ -2458,8 +4448,9 @@ class BaseManager:
         url: str,
         path: str | Path,
         filename: str | None = None,
-        retry: int | None = 3
-    ) -> Path:
+        tool: Literal["aria2", "request"] = "aria2",
+        retry: int | None = 3,
+    ) -> Path | None:
         """下载模型文件到本地中
 
         :param url`(str)`: 模型文件的下载链接
@@ -2468,26 +4459,7 @@ class BaseManager:
         :param retry`(int)`: 重试下载的次数, 默认为 3
         :return `Path`: 文件保存路径
         """
-        if filename is None:
-            parts = urlparse(url)
-            filename = os.path.basename(parts.path)
-
-        count = 0
-        while count < retry:
-            count += 1
-            file_path = Downloader.aria2(
-                url=url,
-                path=path,
-                save_name=filename,
-            )
-            if file_path is None:
-                logger.warning("[%s/%s] 重试下载 %s", count, retry, url)
-                continue
-            else:
-                logger.info("[%s/%s] 下载 %s 成功, 路径: %s",
-                            count, retry, url, file_path)
-                return file_path
-        return None
+        return self.downloader.download_file(url=url, path=path, save_name=filename, tool=tool, retry=retry)
 
     def get_model_from_list(
         self,
@@ -2542,6 +4514,16 @@ class BaseManager:
                     )
 
 
+    def tcmalloc_colab(self) -> None:
+        """配置 TCMalloc (Colab)"""
+        logger.info("配置 TCMalloc 内存优化")
+        url = "https://github.com/licyk/term-sd/releases/download/archive/libtcmalloc_minimal.so.4"
+        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
+        self.downloader.download_file(
+            url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4")
+        os.environ["LD_PRELOAD"] = str(libtcmalloc_path)
+
+
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
 
@@ -2570,6 +4552,7 @@ class SDScriptsManager(BaseManager):
         git_email: str | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
+        enable_cuda_malloc: bool | None = True,
     ) -> None:
         """安装 sd-scripts 和其余环境
 
@@ -2596,6 +4579,7 @@ class SDScriptsManager(BaseManager):
         :param git_email`(str|None)`: Git 邮箱
         :param check_avaliable_gpu`(bool|None)`: 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 启用 TCMalloc 内存优化
+        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         :notes
             self.install() 将会以下几件事
             1. 配置 PyPI / Github / HuggingFace 镜像源
@@ -2705,6 +4689,7 @@ class SDScriptsManager(BaseManager):
             email=git_email,
         )
         enable_tcmalloc and self.utils.config_tcmalloc()
+        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
         logger.info("sd-scripts 环境配置完成")
 
 
@@ -2732,7 +4717,7 @@ class FooocusManager(BaseManager):
         :param filename`(str|None)`: 模型下载后保存的名称
         """
         path = self.workspace / self.workfolder / "models" / "checkpoints"
-        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
     def get_lora_model(
         self,
@@ -2745,7 +4730,7 @@ class FooocusManager(BaseManager):
         :param filename`(str|None)`: 模型下载后保存的名称
         """
         path = self.workspace / self.workfolder / "models" / "loras"
-        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
     def get_vae_model(
         self,
@@ -2758,7 +4743,7 @@ class FooocusManager(BaseManager):
         :param filename`(str|None)`: 模型下载后保存的名称
         """
         path = self.workspace / self.workfolder / "models" / "vae"
-        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
     def get_embedding_model(
         self,
@@ -2771,7 +4756,7 @@ class FooocusManager(BaseManager):
         :param filename`(str|None)`: 模型下载后保存的名称
         """
         path = self.workspace / self.workfolder / "models" / "embeddings"
-        return self.downloader.download_file(url=url, path=path, save_name=filename, tools="aria2")
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
     def install_config(
         self,
@@ -2790,11 +4775,11 @@ class FooocusManager(BaseManager):
         language_path = path / "language"
         logger.info("下载配置文件")
         preset and self.downloader.download_file(
-            url=preset, path=preset_path, save_name="custom.json", tools="aria2")
+            url=preset, path=preset_path, save_name="custom.json", tool="aria2")
         path_config and self.downloader.download_file(
-            url=path_config, path=path, save_name="config.txt", tools="aria2")
+            url=path_config, path=path, save_name="config.txt", tool="aria2")
         translation and self.downloader.download_file(
-            url=translation, path=language_path, save_name="zh.json", tools="aria2")
+            url=translation, path=language_path, save_name="zh.json", tool="aria2")
 
     def pre_download_model(
         self,
@@ -2857,7 +4842,7 @@ class FooocusManager(BaseManager):
                 "url": sd_model_list.get(i),
                 "path": sd_model_path,
                 "save_name": i,
-                "tools": sd_model_downloader
+                "tool": sd_model_downloader
             }
             for i in sd_model_list
         ]
@@ -2866,7 +4851,7 @@ class FooocusManager(BaseManager):
                 "url": lora_list.get(i),
                 "path": lora_path,
                 "save_name": i,
-                "tools": lora_downloader
+                "tool": lora_downloader
             }
             for i in lora_list
         ]
@@ -2875,7 +4860,7 @@ class FooocusManager(BaseManager):
                 "url": vae_list.get(i),
                 "path": vae_path,
                 "save_name": i,
-                "tools": vae_downloader
+                "tool": vae_downloader
             }
             for i in vae_list
         ]
@@ -2884,7 +4869,7 @@ class FooocusManager(BaseManager):
                 "url": embedding_list.get(i),
                 "path": embedding_path,
                 "save_name": i,
-                "tools": embedding_downloader
+                "tool": embedding_downloader
             }
             for i in embedding_list
         ]
@@ -2895,15 +4880,6 @@ class FooocusManager(BaseManager):
         )
         model_downloader.start(num_threads=thread_num)
         logger.info("预下载 Fooocus 模型完成")
-
-    def tcmalloc_colab(self) -> None:
-        """配置 TCMalloc (Colab)"""
-        logger.info("配置 TCMalloc 内存优化")
-        url = "https://github.com/licyk/term-sd/releases/download/archive/libtcmalloc_minimal.so.4"
-        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
-        self.downloader.download_file(
-            url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4")
-        os.environ["LD_PRELOAD"] = str(libtcmalloc_path)
 
     def install(
         self,
@@ -2925,6 +4901,7 @@ class FooocusManager(BaseManager):
         download_model_thread: int | None = 16,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
+        enable_cuda_malloc: bool | None = True,
     ) -> None:
         """安装 Fooocus
 
@@ -2946,6 +4923,7 @@ class FooocusManager(BaseManager):
         :param download_model_thread`(int|None)`: 预下载模型的线程
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
+        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
         logger.info("开始安装 Fooocus")
         os.chdir(self.workspace)
@@ -2990,9 +4968,204 @@ class FooocusManager(BaseManager):
             translation=fooocus_translation
         )
         enable_tcmalloc and self.tcmalloc_colab()
+        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
         self.pre_download_model(
             path=config_file,
             thread_num=download_model_thread,
             downloader=model_downloader,
         )
         logger.info("Fooocus 安装完成")
+
+
+class ComfyUIManager(BaseManager):
+    """ComfyUI 管理工具"""
+
+    def __init__(
+        self,
+        workspace: str | Path,
+        workfolder: str,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+        port: int | None = 8188,
+    ) -> None:
+        """管理工具初始化
+
+        :param workspace`(str|Path)`: 工作区路径
+        :param workfolder`(str)`: 工作区的文件夹名称
+        :param hf_token`(str|None)`: HuggingFace Token
+        :param ms_token`(str|None)`: ModelScope Token
+        :param port`(int|None)`: 内网穿透端口
+        """
+        super().__init__(
+            workspace=workspace,
+            workfolder=workfolder,
+            hf_token=hf_token,
+            ms_token=ms_token,
+            port=port
+        )
+        self.env_check = ComfyUIRequirementCheck()
+
+    def mount_drive(self) -> None:
+        """挂载 Google Drive 并创建 ComfyUI 输出文件夹"""
+        drive_path = Path("/content/drive")
+        if not (drive_path / "MyDrive").exists():
+            if not self.utils.mount_google_drive(drive_path):
+                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+
+        comfyui_output = drive_path / "MyDrive" / "comfyui_output"
+        comfyui_output.mkdir(exist_ok=True)
+
+    def get_sd_model(
+        self,
+        url: str,
+        filename: str = None,
+        model_type: str | None = "checkpoints",
+    ) -> Path | None:
+        """下载大模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        :param model_type`(str|None)`: 模型的类型
+        """
+        path = self.workspace / self.workfolder / "models" / model_type
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+    
+
+    def get_sd_model_from_list(
+        self,
+        model_list: list[dict[str]],
+    ) -> None:
+        """从模型列表下载模型
+
+        :param path`(str|Path)`: 将模型下载到的本地路径
+        :param model_list`(list[str|int])`: 模型列表
+        :param retry`(int|None)`: 重试下载的次数, 默认为 3
+
+        :notes
+            `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
+            ```python
+            model_list = [
+                {"url": "url1", "type": "checkpoints"},
+                {"url": "url2", "filename": "file.safetensors"},
+                {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
+                {"url": "url4"},
+            ]
+            ```
+        """
+        for model in model_list:
+            url = model.get("url")
+            filename = model.get("filename")
+            model_type = model.get("type", "checkpoints")
+            self.get_sd_model(url=url, filename=filename, model_type=model_type)
+
+    def install_config(
+        self,
+        setting: str | None = None,
+    ) -> None:
+        """下载 ComfyUI 配置文件
+
+        :param setting`(str|None)`: ComfyUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/user/default/comfy.settings.json`
+        """
+        setting_path = self.workspace / self.workfolder / "user" / "default"
+        logger.info("下载配置文件")
+        setting and self.downloader.download_file(
+            url=setting, path=setting_path, save_name="comfy.settings.json", tool="aria2")
+        
+
+    def check_env(
+        self,
+        use_uv: bool | None = True,
+        install_conflict_component_requirement: bool | None = True,
+    ) -> None:
+        """检查 ComfyUI 运行环境
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        :param install_conflict_component_requirement`(bool|None)`: 检测到冲突依赖时是否按顺序安装组件依赖
+        """
+        comfyui_path = self.workspace / self.workfolder
+        requirement_path = comfyui_path / "requirements.txt"
+        self.env_check.check_env(requirement_path=requirement_path, name="ComfyUI", use_uv=use_uv)
+        self.env_check.check_comfyui_env(
+            comfyui_root_path=comfyui_path,
+            install_conflict_component_requirement=install_conflict_component_requirement,
+            use_uv=use_uv,
+        )
+        self.env_check.fix_torch()
+        self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+        self.env_check.check_numpy(use_uv=use_uv)
+
+
+    def install(
+        self,
+        torch_ver: str | list | None = None,
+        xformers_ver: str | list | None = None,
+        use_uv: bool | None = True,
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None,
+        pytorch_mirror: str | None = None,
+        comfyui_repo: str | None = None,
+        comfyui_requirment: str | None = None,
+        comfyui_setting: str | None = None,
+        check_avaliable_gpu: bool | None = False,
+        enable_tcmalloc: bool | None = True,
+        enable_cuda_malloc: bool | None = True,
+    ) -> None:
+        """安装 ComfyUI
+
+        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
+        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
+        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
+        :param comfyui_repo`(str|None)`: ComfyUI 仓库地址
+        :param comfyui_requirment`(str|None)`: ComfyUI 依赖文件名
+        :param comfyui_setting`(str|None)`: ComfyUI 预设文件下载链接
+        :param fooocus_path_config`(str|None)`: ComfyUI 路径配置文件下载地址
+        :param fooocus_translation`(str|None)`: ComfyUI 翻译文件下载地址
+        :param model_downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
+        :param download_model_thread`(int|None)`: 预下载模型的线程
+        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
+        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        """
+        logger.info("开始安装 ComfyUI")
+        os.chdir(self.workspace)
+        fooocus_path = self.workspace / self.workfolder
+        comfyui_repo = "https://github.com/lllyasviel/ComfyUI" if comfyui_repo is None else comfyui_repo
+        comfyui_setting = "https://github.com/licyk/term-sd/releases/download/archive/fooocus_config.json" if comfyui_setting is None else comfyui_setting
+        requirment_path = fooocus_path / \
+            ("requirements_versions.txt" if comfyui_requirment is None else comfyui_requirment)
+        if check_avaliable_gpu and not self.utils.check_gpu():
+            raise Exception(
+                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!")
+        self.mirror.set_mirror(
+            pypi_index_mirror=pypi_index_mirror,
+            pypi_extra_index_mirror=pypi_extra_index_mirror,
+            pypi_find_links_mirror=pypi_find_links_mirror,
+            github_mirror=github_mirror,
+            huggingface_mirror=huggingface_mirror
+        )
+        self.mirror.configure_pip()
+        self.env.install_manager_depend(use_uv)
+        self.git.clone(comfyui_repo, fooocus_path)
+        self.git.update(fooocus_path)
+        self.env.install_pytorch(
+            torch_package=torch_ver,
+            xformers_package=xformers_ver,
+            pytorch_mirror=pytorch_mirror,
+            use_uv=use_uv,
+        )
+        os.chdir(fooocus_path)
+        self.env.install_requirements(requirment_path, use_uv)
+        os.chdir(self.workspace)
+        self.install_config(comfyui_setting)
+        enable_tcmalloc and self.tcmalloc_colab()
+        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
+        logger.info("ComfyUI 安装完成")
