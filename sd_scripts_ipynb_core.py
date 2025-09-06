@@ -5918,6 +5918,7 @@ class SDWebUIManager(BaseManager):
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         sd_webui_repo: str | None = None,
+        sd_webui_branch: str | None = None,
         sd_webui_requirment: str | None = None,
         sd_webui_setting: str | None = None,
         extension_list: list[str] | None = None,
@@ -5981,6 +5982,12 @@ class SDWebUIManager(BaseManager):
         if extension_list is not None:
             self.install_extensions_from_list(extension_list)
         self.git.update(sd_webui_path)
+        if sd_webui_branch is not None:
+            self.git.switch_branch(
+                path=sd_webui_path,
+                branch=sd_webui_branch,
+                recurse_submodules=True,
+            )
         self.env.install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
