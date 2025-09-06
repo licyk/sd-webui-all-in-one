@@ -1255,10 +1255,49 @@ class Utils:
                 continue
 
         if "LD_PRELOAD" not in os.environ:
-            print(
+            logger.warning(
                 "无法定位 TCMalloc。未在系统上找到 tcmalloc 或 google-perftool, 取消加载内存优化"
             )
             return False
+
+    @staticmethod
+    def version_increment(version: str) -> str:
+        """增加版本号大小
+
+        :param version`(str)`: 初始版本号
+        :return `str`: 增加后的版本号
+        """
+        version = "".join(re.findall(r"\d|\.", version))
+        ver_parts = list(map(int, version.split(".")))
+        ver_parts[-1] += 1
+
+        for i in range(len(ver_parts) - 1, 0, -1):
+            if ver_parts[i] == 10:
+                ver_parts[i] = 0
+                ver_parts[i - 1] += 1
+
+        return ".".join(map(str, ver_parts))
+
+    @staticmethod
+    def version_decrement(version: str) -> str:
+        """减小版本号大小
+
+        :param version`(str)`: 初始版本号
+        :return `str`: 减小后的版本号
+        """
+        version = "".join(re.findall(r"\d|\.", version))
+        ver_parts = list(map(int, version.split(".")))
+        ver_parts[-1] -= 1
+
+        for i in range(len(ver_parts) - 1, 0, -1):
+            if ver_parts[i] == -1:
+                ver_parts[i] = 9
+                ver_parts[i - 1] -= 1
+
+        while len(ver_parts) > 1 and ver_parts[0] == 0:
+            ver_parts.pop(0)
+
+        return ".".join(map(str, ver_parts))
 
     @staticmethod
     def compare_versions(
@@ -1326,6 +1365,276 @@ class Utils:
         else:
             logger.info("Google Drive 已挂载")
             return True
+
+    @staticmethod
+    def get_cuda_comp_cap() -> float:
+        """
+        Returns float of CUDA Compute Capability using nvidia-smi
+        Returns 0.0 on error
+        CUDA Compute Capability
+        ref https://developer.nvidia.com/cuda-gpus
+        ref https://en.wikipedia.org/wiki/CUDA
+        Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+
+        :return `float`: Comp Cap 版本
+        """
+        try:
+            return max(
+                map(
+                    float,
+                    subprocess.check_output(
+                        [
+                            "nvidia-smi",
+                            "--query-gpu=compute_cap",
+                            "--format=noheader,csv",
+                        ],
+                        text=True,
+                    ).splitlines(),
+                )
+            )
+        except Exception as _:
+            return 0.0
+
+    @staticmethod
+    def get_cuda_version() -> float:
+        """获取驱动支持的 CUDA 版本
+
+        :return `float`: CUDA 支持的版本
+        """
+        try:
+            # 获取 nvidia-smi 输出
+            output = subprocess.check_output(["nvidia-smi", "-q"], text=True)
+            match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
+            if match:
+                return float(match.group(1))
+            return 0.0
+        except Exception as _:
+            return 0.0
+
+    @staticmethod
+    def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
+        """获取 CUDA 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: CUDA 类型的 PyTorch 镜像源类型
+        """
+        # cu118: 2.0.0 ~ 2.4.0
+        # cu121: 2.1.1 ~ 2.4.0
+        # cu124: 2.4.0 ~ 2.6.0
+        # cu126: 2.6.0 ~ 2.7.1
+        # cu128: 2.7.0 ~ 2.7.1
+        # cu129: 2.8.0 ~
+        cuda_comp_cap = Utils.get_cuda_comp_cap()
+        cuda_support_ver = Utils.get_cuda_version()
+
+        if Utils.compare_versions(torch_ver, "2.0.0") == -1:
+            # torch < 2.0.0: default cu11x
+            return "other"
+        if (
+            Utils.compare_versions(torch_ver, "2.0.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.3.1") == -1
+        ):
+            # 2.0.0 <= torch < 2.3.1: default cu118
+            return "cu118"
+        if (
+            Utils.compare_versions(torch_ver, "2.3.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.4.1") == -1
+        ):
+            # 2.3.0 <= torch < 2.4.1: default cu121
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
+                    >= 0
+                ):
+                    return "cu118"
+            return "cu121"
+        if (
+            Utils.compare_versions(torch_ver, "2.4.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.6.0") == -1
+        ):
+            # 2.4.0 <= torch < 2.6.0: default cu124
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121")
+                    >= 0
+                ):
+                    return "cu121"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
+                    >= 0
+                ):
+                    return "cu118"
+            return "cu124"
+        if (
+            Utils.compare_versions(torch_ver, "2.6.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.7.0") == -1
+        ):
+            # 2.6.0 <= torch < 2.7.0: default cu126
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124")
+                    >= 0
+                ):
+                    return "cu124"
+            if Utils.compare_versions(cuda_comp_cap, "10.0") > 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+            return "cu126"
+        if (
+            Utils.compare_versions(torch_ver, "2.7.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.8.0") == -1
+        ):
+            # 2.7.0 <= torch < 2.8.0: default cu128
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
+            return "cu128"
+        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
+            # torch >= 2.8.0: default cu129
+            return "cu129"
+
+        return "cu129"
+
+    @staticmethod
+    def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
+        """获取 ROCm 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: ROCm 类型的 PyTorch 镜像源类型
+        """
+        if Utils.compare_versions(torch_ver, "2.4.0") < 0:
+            # torch < 2.4.0
+            return "other"
+        if (
+            Utils.compare_versions(torch_ver, "2.4.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.5.0") < 0
+        ):
+            # 2.4.0 <= torch < 2.5.0
+            return "rocm61"
+        if (
+            Utils.compare_versions(torch_ver, "2.5.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.6.0") < 0
+        ):
+            # 2.5.0 <= torch < 2.6.0
+            return "rocm62"
+        if (
+            Utils.compare_versions(torch_ver, "2.6.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.7.0") < 0
+        ):
+            # 2.6.0 < torch < 2.7.0
+            return "rocm624"
+        if Utils.compare_versions(torch_ver, "2.7.0") >= 0:
+            # torch >= 2.7.0
+            return "rocm63"
+
+        return "rocm63"
+
+    @staticmethod
+    def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
+        """获取 IPEX 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: IPEX 类型的 PyTorch 镜像源类型
+        """
+        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
+            # torch < 2.0.0
+            return "other"
+        if Utils.compare_versions(torch_ver, "2.0.0") == 0:
+            # torch == 2.0.0
+            return "ipex_legacy_arc"
+        if (
+            Utils.compare_versions(torch_ver, "2.0.0") > 0
+            and Utils.compare_versions(torch_ver, "2.1.0") < 0
+        ):
+            # 2.0.0 < torch < 2.1.0
+            return "other"
+        if Utils.compare_versions(torch_ver, "2.1.0") == 0:
+            # torch == 2.1.0
+            return "ipex_legacy_arc"
+        if Utils.compare_versions(torch_ver, "2.6.0") >= 0:
+            # torch >= 2.6.0
+            return "xpu"
+
+        return "xpu"
+
+    @staticmethod
+    def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
+        """获取 CPU 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: CPU 类型的 PyTorch 镜像源类型
+        """
+        _ = torch_ver
+        return "cpu"
+
+    @staticmethod
+    def get_pytorch_mirror_type(
+        torch_ver: str, device_type: Literal["cuda", "rocm", "xpu", "cpu"]
+    ) -> str:
+        """获取 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本号
+        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡类型
+        :return `str`: PyTorch 镜像源类型
+        """
+        if device_type == "cuda":
+            return Utils.get_pytorch_mirror_type_cuda(torch_ver)
+
+        if device_type == "rocm":
+            return Utils.get_pytorch_mirror_type_rocm(torch_ver)
+
+        if device_type == "xpu":
+            return Utils.get_pytorch_mirror_type_ipex(torch_ver)
+
+        if device_type == "cpu":
+            return Utils.get_pytorch_mirror_type_cpu(torch_ver)
+
+        return "other"
+
+    @staticmethod
+    def get_env_pytorch_type() -> str:
+        """获取当前环境中 PyTorch 版本号对应的类型
+
+        :return `str`: PyTorch 类型 (cuda, rocm, xpu, cpu)
+        """
+        torch_ipex_legacy_ver_list = [
+            "2.0.0a0+gite9ebda2",
+            "2.1.0a0+git7bcf7da",
+            "2.1.0a0+cxx11.abi",
+            "2.0.1a0",
+            "2.1.0.post0",
+        ]
+        try:
+            import torch
+
+            torch_ver = torch.__version__
+        except Exception as _:
+            return "cuda"
+
+        torch_type = torch_ver.split("+").pop()
+
+        if torch_ver in torch_ipex_legacy_ver_list:
+            return "xpu"
+
+        if "cu" in torch_type:
+            return "cuda"
+
+        if "rocm" in torch_type:
+            return "rocm"
+
+        if "xpu" in torch_type:
+            return "xpu"
+
+        if "cpu" in torch_type:
+            return "cpu"
+
+        return "cuda"
 
 
 class MultiThreadDownloader:
@@ -5939,6 +6248,7 @@ class SDWebUIManager(BaseManager):
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
         :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
         :param sd_webui_repo`(str|None)`: Stable Diffusion WebUI 仓库地址
+        :param sd_webui_branch`(str|None)`: Stable Diffusion WebUI 分支
         :param sd_webui_requirment`(str|None)`: Stable Diffusion WebUI 依赖文件名
         :param sd_webui_setting`(str|None)`: Stable Diffusion WebUI 预设文件下载链接
         :param extension_list`(list[str])`: 扩展列表
@@ -6005,3 +6315,352 @@ class SDWebUIManager(BaseManager):
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("Stable Diffusion WebUI 安装完成")
+
+
+# PyTorch 镜像源字典
+PYTORCH_MIRROR_DICT = {
+    "other": "https://download.pytorch.org/whl",
+    "cpu": "https://download.pytorch.org/whl/cpu",
+    "xpu": "https://download.pytorch.org/whl/xpu",
+    "rocm61": "https://download.pytorch.org/whl/rocm6.1",
+    "rocm62": "https://download.pytorch.org/whl/rocm6.2",
+    "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
+    "rocm63": "https://download.pytorch.org/whl/rocm6.3",
+    "rocm64": "https://download.pytorch.org/whl/rocm6.4",
+    "cu118": "https://download.pytorch.org/whl/cu118",
+    "cu121": "https://download.pytorch.org/whl/cu121",
+    "cu124": "https://download.pytorch.org/whl/cu124",
+    "cu126": "https://download.pytorch.org/whl/cu126",
+    "cu128": "https://download.pytorch.org/whl/cu128",
+    "cu129": "https://download.pytorch.org/whl/cu129",
+}
+
+
+class InvokeAIComponentManager:
+    """InvokeAI 组件管理器"""
+
+    def __init__(self, pytorch_mirror_dict: dict[str, str] = None) -> None:
+        """InvokeAI 组件管理器初始化
+
+        :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
+        """
+        if pytorch_mirror_dict is None:
+            pytorch_mirror_dict = PYTORCH_MIRROR_DICT
+        self.pytorch_mirror_dict = pytorch_mirror_dict
+
+    def update_pytorch_mirror_dict(self, pytorch_mirror_dict: dict[str, str]) -> None:
+        """更新 PyTorch 镜像源字典
+
+        :param pytorch_mirror_dict`(dict[str,str])`: PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
+        """
+        logger.info("更新 PyTorch 镜像源信息")
+        self.pytorch_mirror_dict = pytorch_mirror_dict
+
+    def get_pytorch_mirror_url(self, mirror_type: str) -> str | None:
+        """获取 PyTorch 类型对应的镜像源
+
+        :param mirror_type`(str)`: PyTorch 类型
+        :return `str|None`: 对应的 PyTorch 镜像源
+        """
+        return self.pytorch_mirror_dict.get(mirror_type)
+
+    def get_invokeai_require_torch_version(self) -> str:
+        """获取 InvokeAI 依赖的 PyTorch 版本
+
+        :return `str`: PyTorch 版本
+        """
+        try:
+            invokeai_requires = importlib.metadata.requires("invokeai")
+        except Exception as _:
+            return "2.2.2"
+
+        torch_version = "torch==2.2.2"
+
+        for require in invokeai_requires:
+            if RequirementCheck.get_package_name(
+                require
+            ) == "torch" and RequirementCheck.is_package_has_version(require):
+                torch_version = require.split(";")[0]
+                break
+
+        if torch_version.startswith("torch>") and not torch_version.startswith(
+            "torch>="
+        ):
+            return Utils.version_increment(
+                RequirementCheck.get_package_version(torch_version)
+            )
+        elif torch_version.startswith("torch<") and not torch_version.startswith(
+            "torch<="
+        ):
+            return Utils.version_decrement(
+                RequirementCheck.get_package_version(torch_version)
+            )
+        elif torch_version.startswith("torch!="):
+            return Utils.version_increment(
+                RequirementCheck.get_package_version(torch_version)
+            )
+        else:
+            return RequirementCheck.get_package_version(torch_version)
+
+    def get_pytorch_mirror_type_for_ivnokeai(
+        self,
+        device_type: Literal["cuda", "rocm", "xpu", "cpu"],
+    ) -> str:
+        """获取 InvokeAI 安装 PyTorch 所需的 PyTorch 镜像源类型
+
+        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡设备类型
+        """
+        torch_ver = self.get_invokeai_require_torch_version()
+        return Utils.get_pytorch_mirror_type(
+            torch_ver=torch_ver, device_type=device_type
+        )
+
+    def get_pytorch_for_invokeai(self) -> str:
+        """获取 InvokeAI 所依赖的 PyTorch 包版本声明
+
+        :param `str`: PyTorch 包版本声明
+        """
+        pytorch_ver = []
+        try:
+            invokeai_requires = importlib.metadata.requires("invokeai")
+        except Exception as _:
+            invokeai_requires = []
+
+        torch_added = False
+        torchvision_added = False
+        torchaudio_added = False
+
+        for require in invokeai_requires:
+            require = require.split(";")[0].strip()
+            package_name = RequirementCheck.get_package_name(require)
+
+            if package_name == "torch" and not torch_added:
+                pytorch_ver.append(require)
+                torch_added = True
+
+            if package_name == "torchvision" and not torchvision_added:
+                pytorch_ver.append(require)
+                torchvision_added = True
+
+            if package_name == "torchaudio" and not torchaudio_added:
+                pytorch_ver.append(require)
+                torchaudio_added = True
+
+        return " ".join([str(x).strip() for x in pytorch_ver])
+
+    def get_xformers_for_invokeai(self) -> str:
+        """获取 InvokeAI 所依赖的 xFormers 包版本声明
+
+        :param `str`: xFormers 包版本声明
+        """
+        pytorch_ver = []
+        try:
+            invokeai_requires = importlib.metadata.requires("invokeai")
+        except Exception as _:
+            invokeai_requires = []
+
+        xformers_added = False
+
+        for require in invokeai_requires:
+            require = require.split(";")[0].strip()
+            package_name = RequirementCheck.get_package_name(require)
+
+            if package_name == "xformers" and not xformers_added:
+                pytorch_ver.append(require)
+                xformers_added = True
+
+        return " ".join([str(x).strip() for x in pytorch_ver])
+
+    def sync_invokeai_component(
+        self,
+        device_type: str,
+        use_uv: bool | None = True,
+    ) -> None:
+        """同步 InvokeAI 组件
+
+        :param device_type`(str)`: 显卡设备类型
+        :param use_uv`(bool|None)`: 是否使用 uv 安装 Python 软件包
+        :return `bool`: 同步组件结果
+        """
+        logger.info("获取安装配置")
+        invokeai_ver = importlib.metadata.version("invokeai")
+        torch_ver = self.get_invokeai_require_torch_version()
+        pytorch_mirror_type = Utils.get_pytorch_mirror_type(
+            torch_ver=torch_ver,
+            device_type=device_type,
+        )
+        pytorch_mirror = self.get_pytorch_mirror_url(pytorch_mirror_type)
+        pytorch_package = self.get_pytorch_for_invokeai()
+        xformers_package = self.get_xformers_for_invokeai()
+        pytorch_package_args = []
+        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm62", "other"]:
+            for i in pytorch_package.split():
+                pytorch_package_args.append(i.strip())
+        else:
+            for i in pytorch_package.split():
+                pytorch_package_args.append(i.strip())
+            for i in xformers_package.split():
+                pytorch_package_args.append(i.strip())
+
+        try:
+            logger.info("同步 PyTorch 组件中")
+            if pytorch_mirror is not None:
+                EnvManager.install_pytorch(
+                    *pytorch_package_args,
+                    use_uv=use_uv,
+                    pytorch_mirror=pytorch_mirror,
+                )
+            else:
+                EnvManager.install_pytorch(
+                    *pytorch_package_args,
+                    use_uv=use_uv,
+                )
+            logger.info("同步 InvokeAI 其他组件中")
+            EnvManager.pip_install(f"invokeai=={invokeai_ver}", use_uv=use_uv)
+            logger.info("同步 InvokeAI 组件完成")
+            return True
+        except Exception as e:
+            logger.error("同步 InvokeAI 组件时发生了错误: %s", e)
+            return False
+
+    def install_invokeai(
+        self,
+        device_type: str,
+        upgrade: bool | None = False,
+        use_uv: bool | None = True,
+    ) -> None:
+        """安装 InvokeAI
+
+        :param device_type`(str)`: 显卡设备类型
+        :param upgrade`(bool|None)`: 更新 InvokeAI
+        :param use_uv`(bool|None)`: 是否使用 uv 安装 Python 软件包
+        """
+        logger.info("安装 InvokeAI 核心中")
+        try:
+            if upgrade:
+                EnvManager.pip_install(
+                    "invokeai", "--no-deps", "--upgrade", use_uv=use_uv
+                )
+            else:
+                EnvManager.pip_install("invokeai", "--no-deps", use_uv=use_uv)
+
+            self.sync_invokeai_component(
+                device_type=device_type,
+                use_uv=use_uv,
+            )
+        except Exception as e:
+            logger.error("安装 InvokeAI 失败: %s", e)
+
+
+class InvokeAIManager(BaseManager):
+    """InvokeAI 管理模块"""
+
+    def __init__(
+        self,
+        workspace: str | Path,
+        workfolder: str,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+        port: int | None = 9090,
+    ) -> None:
+        """管理工具初始化
+
+        :param workspace`(str|Path)`: 工作区路径
+        :param workfolder`(str)`: 工作区的文件夹名称
+        :param hf_token`(str|None)`: HuggingFace Token
+        :param ms_token`(str|None)`: ModelScope Token
+        :param port`(int|None)`: 内网穿透端口
+        """
+        super().__init__(
+            workspace=workspace,
+            workfolder=workfolder,
+            hf_token=hf_token,
+            ms_token=ms_token,
+            port=port,
+        )
+        self.component = InvokeAIComponentManager()
+
+    def mount_drive(self) -> None:
+        """挂载 Google Drive 并创建 Fooocus 输出文件夹"""
+        drive_path = Path("/content/drive")
+        if not (drive_path / "MyDrive").exists():
+            if not self.utils.mount_google_drive(drive_path):
+                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+
+        invokeai_output = drive_path / "MyDrive" / "invokeai_output"
+        invokeai_output.mkdir(exist_ok=True)
+
+    def check_env(
+        self,
+        use_uv: bool | None = True,
+    ) -> None:
+        """检查 InvokeAI 运行环境
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        """
+        self.env_check.fix_torch()
+        self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+        self.env_check.check_numpy(use_uv=use_uv)
+
+    def install(
+        self,
+        device_type: Literal["cuda", "rocm", "xpu", "cpu"] = "cuda",
+        use_uv: bool | None = True,
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None,
+        pytorch_mirror_dict: str | None = None,
+        model_list: list[dict[str]] | None = None,
+        check_avaliable_gpu: bool | None = False,
+        enable_tcmalloc: bool | None = True,
+        enable_cuda_malloc: bool | None = True,
+    ) -> None:
+        """安装 InvokeAI
+
+        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡设备类型
+        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        :param pytorch_mirror_dict`(str|None)`: PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
+        :param model_list`(list[dict[str]])`: 模型下载列表
+        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
+        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        """
+        logger.info("开始安装 InvokeAI")
+        os.chdir(self.workspace)
+        if check_avaliable_gpu and not self.utils.check_gpu():
+            raise Exception(
+                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
+            )
+        self.mirror.set_mirror(
+            pypi_index_mirror=pypi_index_mirror,
+            pypi_extra_index_mirror=pypi_extra_index_mirror,
+            pypi_find_links_mirror=pypi_find_links_mirror,
+            github_mirror=github_mirror,
+            huggingface_mirror=huggingface_mirror,
+        )
+        self.mirror.configure_pip()
+        self.env.install_manager_depend(use_uv)
+        if pytorch_mirror_dict is not None:
+            self.component.update_pytorch_mirror_dict(pytorch_mirror_dict)
+        self.component.install_invokeai(
+            device_type=device_type,
+            upgrade=True,
+            use_uv=use_uv,
+        )
+        if model_list is not None:
+            self.get_model_from_list(
+                path=self.workspace / self.workfolder / "sd-models",
+                model_list=model_list,
+            )
+        if enable_tcmalloc:
+            self.tcmalloc_colab()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
+        logger.info("InvokeAI 安装完成")
