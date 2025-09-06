@@ -5647,7 +5647,8 @@ class ComfyUIManager(BaseManager):
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(comfyui_setting)
-        self.get_sd_model_from_list(model_list)
+        if model_list is not None:
+            self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
             self.tcmalloc_colab()
         if enable_cuda_malloc:
@@ -5920,6 +5921,7 @@ class SDWebUIManager(BaseManager):
         sd_webui_requirment: str | None = None,
         sd_webui_setting: str | None = None,
         extension_list: list[str] | None = None,
+        model_list: list[dict[str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -5938,7 +5940,8 @@ class SDWebUIManager(BaseManager):
         :param sd_webui_repo`(str|None)`: Stable Diffusion WebUI 仓库地址
         :param sd_webui_requirment`(str|None)`: Stable Diffusion WebUI 依赖文件名
         :param sd_webui_setting`(str|None)`: Stable Diffusion WebUI 预设文件下载链接
-        :param extension_list`(list[str])`: 自定义节点列表
+        :param extension_list`(list[str])`: 扩展列表
+        :param model_list`(list[dict[str]])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
@@ -5988,6 +5991,8 @@ class SDWebUIManager(BaseManager):
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(sd_webui_setting)
+        if model_list is not None:
+            self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
             self.tcmalloc_colab()
         if enable_cuda_malloc:
