@@ -3705,23 +3705,26 @@ class RequirementCheck:
     def fix_torch() -> None:
         """检测并修复 PyTorch 的 libomp 问题"""
         logger.info("检测 PyTorch 的 libomp 问题")
-        torch_spec = importlib.util.find_spec("torch")
-        for folder in torch_spec.submodule_search_locations:
-            lib_folder = os.path.join(folder, "lib")
-            test_file = os.path.join(lib_folder, "fbgemm.dll")
-            dest = os.path.join(lib_folder, "libomp140.x86_64.dll")
-            if os.path.exists(dest):
-                break
-
-            with open(test_file, "rb") as f:
-                contents = f.read()
-                if b"libomp140.x86_64.dll" not in contents:
+        try:
+            torch_spec = importlib.util.find_spec("torch")
+            for folder in torch_spec.submodule_search_locations:
+                lib_folder = os.path.join(folder, "lib")
+                test_file = os.path.join(lib_folder, "fbgemm.dll")
+                dest = os.path.join(lib_folder, "libomp140.x86_64.dll")
+                if os.path.exists(dest):
                     break
-            try:
-                _ = ctypes.cdll.LoadLibrary(test_file)
-            except FileNotFoundError as _:
-                logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
-                shutil.copyfile(os.path.join(lib_folder, "libiomp5md.dll"), dest)
+
+                with open(test_file, "rb") as f:
+                    contents = f.read()
+                    if b"libomp140.x86_64.dll" not in contents:
+                        break
+                try:
+                    _ = ctypes.cdll.LoadLibrary(test_file)
+                except FileNotFoundError as _:
+                    logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
+                    shutil.copyfile(os.path.join(lib_folder, "libiomp5md.dll"), dest)
+        except Exception as _:
+            pass
 
 
 class ComponentEnvironmentDetails(TypedDict):
@@ -4908,6 +4911,27 @@ class BaseManager:
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
 
+    def check_env(
+        self,
+        use_uv: bool | None = True,
+        requirements_file: str | None = "requirements.txt",
+    ) -> None:
+        """检查 sd-scripts 运行环境
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        :param requirements_file`(str|None)`: 依赖文件名
+        """
+        sd_webui_path = self.workspace / self.workfolder
+        requirement_path = sd_webui_path / requirements_file
+        self.env_check.check_env(
+            requirement_path=requirement_path,
+            name="sd-scripts",
+            use_uv=use_uv,
+        )
+        self.env_check.fix_torch()
+        self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=False)
+        self.env_check.check_numpy(use_uv=use_uv)
+
     def install(
         self,
         torch_ver: str | list | None = None,
@@ -5041,10 +5065,7 @@ class SDScriptsManager(BaseManager):
             self.env.pip_install("urllib3", "--upgrade", use_uv=False)
         except Exception as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
-        try:
-            self.env.pip_install("numpy==1.26.4", use_uv=use_uv)
-        except Exception as e:
-            logger.error("降级 numpy 时发生错误: %s", e)
+        self.env_check.check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list, retry=retry)
         self.restart_repo_manager(
             hf_token=huggingface_token,
@@ -5055,8 +5076,10 @@ class SDScriptsManager(BaseManager):
             username=git_username,
             email=git_email,
         )
-        enable_tcmalloc and self.utils.config_tcmalloc()
-        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
+        if enable_tcmalloc:
+            self.utils.config_tcmalloc()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
         logger.info("sd-scripts 环境配置完成")
 
 
@@ -5237,6 +5260,27 @@ class FooocusManager(BaseManager):
         model_downloader.start(num_threads=thread_num)
         logger.info("预下载 Fooocus 模型完成")
 
+    def check_env(
+        self,
+        use_uv: bool | None = True,
+        requirements_file: str | None = "requirements_versions.txt",
+    ) -> None:
+        """检查 Fooocus 运行环境
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        :param requirements_file`(str|None)`: 依赖文件名
+        """
+        sd_webui_path = self.workspace / self.workfolder
+        requirement_path = sd_webui_path / requirements_file
+        self.env_check.check_env(
+            requirement_path=requirement_path,
+            name="Fooocus",
+            use_uv=use_uv,
+        )
+        self.env_check.fix_torch()
+        self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+        self.env_check.check_numpy(use_uv=use_uv)
+
     def install(
         self,
         torch_ver: str | list | None = None,
@@ -5343,8 +5387,10 @@ class FooocusManager(BaseManager):
             path_config=fooocus_path_config,
             translation=fooocus_translation,
         )
-        enable_tcmalloc and self.tcmalloc_colab()
-        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
+        if enable_tcmalloc:
+            self.tcmalloc_colab()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
         self.pre_download_model(
             path=config_file,
             thread_num=download_model_thread,
