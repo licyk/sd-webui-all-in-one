@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 265
+$SD_WEBUI_INSTALLER_VERSION = 266
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1991,23 +1991,26 @@ import ctypes
 import logging
 
 
-torch_spec = importlib.util.find_spec('torch')
-for folder in torch_spec.submodule_search_locations:
-    lib_folder = os.path.join(folder, 'lib')
-    test_file = os.path.join(lib_folder, 'fbgemm.dll')
-    dest = os.path.join(lib_folder, 'libomp140.x86_64.dll')
-    if os.path.exists(dest):
-        break
-
-    with open(test_file, 'rb') as f:
-        contents = f.read()
-        if b'libomp140.x86_64.dll' not in contents:
+try:
+    torch_spec = importlib.util.find_spec('torch')
+    for folder in torch_spec.submodule_search_locations:
+        lib_folder = os.path.join(folder, 'lib')
+        test_file = os.path.join(lib_folder, 'fbgemm.dll')
+        dest = os.path.join(lib_folder, 'libomp140.x86_64.dll')
+        if os.path.exists(dest):
             break
-    try:
-        mydll = ctypes.cdll.LoadLibrary(test_file)
-    except FileNotFoundError as e:
-        logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
-        shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
+
+        with open(test_file, 'rb') as f:
+            contents = f.read()
+            if b'libomp140.x86_64.dll' not in contents:
+                break
+        try:
+            mydll = ctypes.cdll.LoadLibrary(test_file)
+        except FileNotFoundError as e:
+            logging.warning('检测到 PyTorch 版本存在 libomp 问题, 进行修复')
+            shutil.copyfile(os.path.join(lib_folder, 'libiomp5md.dll'), dest)
+except Exception as _:
+    pass
 `".Trim()
 
     Print-Msg `"检测 PyTorch 的 libomp 问题中`"
