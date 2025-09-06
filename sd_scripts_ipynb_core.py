@@ -6035,11 +6035,13 @@ class SDWebUIManager(BaseManager):
         self,
         setting: str | None = None,
         requirements: str | None = None,
+        requirements_file: str | None = None,
     ) -> None:
         """下载 Stable Diffusion WebUI 配置文件
 
         :param setting`(str|None)`: Stable Diffusion WebUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.json`
-        :param requirements`(str|None)`: Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/requirements_versions_new.txt`
+        :param requirements`(str|None)`: Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/{requirements_file}`
+        :param requirements_file`(str|None)`: Stable Diffusion WebUI 依赖表文件名
         """
         setting_path = self.workspace / self.workfolder
         logger.info("下载配置文件")
@@ -6048,9 +6050,13 @@ class SDWebUIManager(BaseManager):
                 url=setting, path=setting_path, save_name="config.json", tool="aria2"
             )
         if requirements is not None:
-            self.downloader.download_file(
-                url=requirements, path=setting_path, save_name="requirements_versions_new.txt", tool="aria2"
-            )
+            try:
+                (setting_path / requirements_file).unlink(missing_ok=True)
+                self.downloader.download_file(
+                    url=requirements, path=setting_path, save_name=requirements_file, tool="aria2"
+                )
+            except Exception as e:
+                logger.error("下载 Stable Diffusion WebUI 依赖文件出现错误: %s", e)
 
     def install_extension(
         self,
@@ -6316,6 +6322,7 @@ class SDWebUIManager(BaseManager):
         self.install_config(
             setting=sd_webui_setting,
             requirements=sd_webui_requirment_url,
+            requirements_file=requirment_path.name
         )
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
