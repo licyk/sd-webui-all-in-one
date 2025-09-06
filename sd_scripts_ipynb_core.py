@@ -6581,7 +6581,7 @@ class InvokeAIManager(BaseManager):
         self.component = InvokeAIComponentManager()
 
     def mount_drive(self) -> None:
-        """挂载 Google Drive 并创建 Fooocus 输出文件夹"""
+        """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录"""
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -6589,6 +6589,7 @@ class InvokeAIManager(BaseManager):
 
         invokeai_output = drive_path / "MyDrive" / "invokeai_output"
         invokeai_output.mkdir(exist_ok=True)
+        os.environ["INVOKEAI_ROOT"] = str(invokeai_output)
 
     def check_env(
         self,
