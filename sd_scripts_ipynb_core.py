@@ -6612,7 +6612,7 @@ class InvokeAIManager(BaseManager):
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror_dict: str | None = None,
+        pytorch_mirror_dict: dict[str, str] | None = None,
         model_list: list[dict[str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
@@ -6627,7 +6627,7 @@ class InvokeAIManager(BaseManager):
         :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
         :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror_dict`(str|None)`: PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
+        :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
         :param model_list`(list[dict[str]])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
