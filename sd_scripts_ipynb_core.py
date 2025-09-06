@@ -6034,16 +6034,22 @@ class SDWebUIManager(BaseManager):
     def install_config(
         self,
         setting: str | None = None,
+        requirements: str | None = None,
     ) -> None:
         """下载 Stable Diffusion WebUI 配置文件
 
         :param setting`(str|None)`: Stable Diffusion WebUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.json`
+        :param requirements`(str|None)`: Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/requirements_versions_new.txt`
         """
         setting_path = self.workspace / self.workfolder
         logger.info("下载配置文件")
         if setting is not None:
             self.downloader.download_file(
                 url=setting, path=setting_path, save_name="config.json", tool="aria2"
+            )
+        if requirements is not None:
+            self.downloader.download_file(
+                url=requirements, path=setting_path, save_name="requirements_versions_new.txt", tool="aria2"
             )
 
     def install_extension(
@@ -6229,6 +6235,7 @@ class SDWebUIManager(BaseManager):
         sd_webui_repo: str | None = None,
         sd_webui_branch: str | None = None,
         sd_webui_requirment: str | None = None,
+        sd_webui_requirment_url: str | None = None,
         sd_webui_setting: str | None = None,
         extension_list: list[str] | None = None,
         model_list: list[dict[str]] | None = None,
@@ -6250,6 +6257,7 @@ class SDWebUIManager(BaseManager):
         :param sd_webui_repo`(str|None)`: Stable Diffusion WebUI 仓库地址
         :param sd_webui_branch`(str|None)`: Stable Diffusion WebUI 分支
         :param sd_webui_requirment`(str|None)`: Stable Diffusion WebUI 依赖文件名
+        :param sd_webui_requirment_url`(str|None)`: Stable Diffusion WebUI 依赖文件下载地址
         :param sd_webui_setting`(str|None)`: Stable Diffusion WebUI 预设文件下载链接
         :param extension_list`(list[str])`: 扩展列表
         :param model_list`(list[dict[str]])`: 模型下载列表
@@ -6305,9 +6313,12 @@ class SDWebUIManager(BaseManager):
             use_uv=use_uv,
         )
         os.chdir(sd_webui_path)
+        self.install_config(
+            setting=sd_webui_setting,
+            requirements=sd_webui_requirment_url,
+        )
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
-        self.install_config(sd_webui_setting)
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
