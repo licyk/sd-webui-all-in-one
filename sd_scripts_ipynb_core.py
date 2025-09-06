@@ -5982,7 +5982,7 @@ class SDWebUIManager(BaseManager):
             if sd_webui_output_path.exists():
                 shutil.move(
                     sd_webui_output_path,
-                    sd_webui_output_path.parent / f"output_{uuid.uuid4()}",
+                    sd_webui_output_path.parent / f"outputs_{uuid.uuid4()}",
                 )
             sd_webui_output_path.symlink_to(sd_webui_output)
         except Exception as e:
