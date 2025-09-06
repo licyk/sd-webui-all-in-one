@@ -5125,15 +5125,18 @@ class FooocusManager(BaseManager):
         preset_path = path / "presets"
         language_path = path / "language"
         logger.info("下载配置文件")
-        preset and self.downloader.download_file(
-            url=preset, path=preset_path, save_name="custom.json", tool="aria2"
-        )
-        path_config and self.downloader.download_file(
-            url=path_config, path=path, save_name="config.txt", tool="aria2"
-        )
-        translation and self.downloader.download_file(
-            url=translation, path=language_path, save_name="zh.json", tool="aria2"
-        )
+        if preset is not None:
+            self.downloader.download_file(
+                url=preset, path=preset_path, save_name="custom.json", tool="aria2"
+            )
+        if path_config is not None:
+            self.downloader.download_file(
+                url=path_config, path=path, save_name="config.txt", tool="aria2"
+            )
+        if translation is not None:
+            self.downloader.download_file(
+                url=translation, path=language_path, save_name="zh.json", tool="aria2"
+            )
 
     def pre_download_model(
         self,
@@ -5419,9 +5422,7 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """从模型列表下载模型
 
-        :param path`(str|Path)`: 将模型下载到的本地路径
         :param model_list`(list[str|int])`: 模型列表
-        :param retry`(int|None)`: 重试下载的次数, 默认为 3
 
         :notes
             `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
@@ -5450,12 +5451,13 @@ class ComfyUIManager(BaseManager):
         """
         setting_path = self.workspace / self.workfolder / "user" / "default"
         logger.info("下载配置文件")
-        setting and self.downloader.download_file(
-            url=setting,
-            path=setting_path,
-            save_name="comfy.settings.json",
-            tool="aria2",
-        )
+        if setting is not None:
+            self.downloader.download_file(
+                url=setting,
+                path=setting_path,
+                save_name="comfy.settings.json",
+                tool="aria2",
+            )
 
     def install_custom_node(
         self,
@@ -5531,6 +5533,7 @@ class ComfyUIManager(BaseManager):
         comfyui_requirment: str | None = None,
         comfyui_setting: str | None = None,
         custom_node_list: list[str] | None = None,
+        model_list: list[dict[str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -5550,6 +5553,7 @@ class ComfyUIManager(BaseManager):
         :param comfyui_requirment`(str|None)`: ComfyUI 依赖文件名
         :param comfyui_setting`(str|None)`: ComfyUI 设置文件下载链接
         :param custom_node_list`(list[str])`: 自定义节点列表
+        :param model_list`(list[dict[str]])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
@@ -5597,8 +5601,11 @@ class ComfyUIManager(BaseManager):
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(comfyui_setting)
-        enable_tcmalloc and self.tcmalloc_colab()
-        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
+        self.get_sd_model_from_list(model_list)
+        if enable_tcmalloc:
+            self.tcmalloc_colab()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
         logger.info("ComfyUI 安装完成")
 
 
@@ -5649,9 +5656,7 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """从模型列表下载模型
 
-        :param path`(str|Path)`: 将模型下载到的本地路径
         :param model_list`(list[str|int])`: 模型列表
-        :param retry`(int|None)`: 重试下载的次数, 默认为 3
 
         :notes
             `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
@@ -5680,9 +5685,10 @@ class SDWebUIManager(BaseManager):
         """
         setting_path = self.workspace / self.workfolder
         logger.info("下载配置文件")
-        setting and self.downloader.download_file(
-            url=setting, path=setting_path, save_name="config.json", tool="aria2"
-        )
+        if setting is not None:
+            self.downloader.download_file(
+                url=setting, path=setting_path, save_name="config.json", tool="aria2"
+            )
 
     def install_extension(
         self,
@@ -5936,6 +5942,8 @@ class SDWebUIManager(BaseManager):
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(sd_webui_setting)
-        enable_tcmalloc and self.tcmalloc_colab()
-        enable_cuda_malloc and self.cuda_malloc.set_cuda_malloc()
+        if enable_tcmalloc:
+            self.tcmalloc_colab()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
         logger.info("Stable Diffusion WebUI 安装完成")
