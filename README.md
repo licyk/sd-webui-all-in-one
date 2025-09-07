@@ -18,24 +18,27 @@ _✨快速部署，简单易用_
 - [SD WebUI All In One](#sd-webui-all-in-one)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
   - [可用的 Jupyter Notebook](#可用的-jupyter-notebook)
-    - [SD WebUI All In One Jupyter NoteBook](#sd-webui-all-in-one-jupyter-notebook)
-    - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
-    - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
-    - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
-    - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
     - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
     - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
+    - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
+    - [Stable Diffusion WebUI Colab NoteBook](#stable-diffusion-webui-colab-notebook)
+    - [ComfyUI Colab NoteBook](#comfyui-colab-notebook)
+    - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
+    - [SD WebUI All In One Jupyter NoteBook](#sd-webui-all-in-one-jupyter-notebook)
+    - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
+    - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
+    - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
     - [HDM Train Kaggle Jupyter NoteBook](#hdm-train-kaggle-jupyter-notebook)
   - [主要功能](#主要功能)
   - [其他功能](#其他功能)
   - [提示](#提示)
 - [Installer](#installer)
-  - [InvokeAI Installer](#invokeai-installer)
-  - [SD-Trainer Installer](#sd-trainer-installer)
-  - [ComfyUI Installer](#comfyui-installer)
   - [SD WebUI Installer](#sd-webui-installer)
-  - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
+  - [ComfyUI Installer](#comfyui-installer)
+  - [InvokeAI Installer](#invokeai-installer)
   - [Fooocus Installer](#fooocus-installer)
+  - [SD-Trainer Installer](#sd-trainer-installer)
+  - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
   - [Python Installer](#python-installer)
   - [Installer 自动化构建状态](#installer-自动化构建状态)
 
@@ -58,29 +61,6 @@ _✨快速部署，简单易用_
 >点击蓝色名称可下载对应的 Jupyter NoteBook。
 
 
-### SD WebUI All In One Jupyter NoteBook
-[sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
-
-
-### SD WebUI All In One Colab Jupyter NoteBook
-[sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。
-
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-
-### Fooocus Colab Jupyter NoteBook
-[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
-
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-### Fooocus kaggle Jupyter NoteBook
-[fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
-
-
-### SD Trainer Kaggle Jupyter NoteBook
-[sd_trainer_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_kaggle.ipynb))：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
-
-
 ### SD Scripts Kaggle Jupyter NoteBook
 [sd_scripts_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_scripts_kaggle.ipynb))：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，可用于不同种类的模型训练，使用前需熟悉 sd-scripts 的使用方法。
 
@@ -94,6 +74,48 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 [sd_scripts_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_scripts_colab.ipynb))：适用于 Colab 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，**自己写来玩的，还有用来开发和测试管理核心**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_scripts_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### Fooocus Colab Jupyter NoteBook
+[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### Stable Diffusion WebUI Colab NoteBook
+[stable_diffusion_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/stable_diffusion_webui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_colab.ipynb))：适用于 Colab 一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### ComfyUI Colab NoteBook
+[comfyui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/comfyui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_colab.ipynb))：适用于 Colab 一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/comfyui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### InvokeAI Colab NoteBook
+[invokeai_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/invokeai_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_colab.ipynb))：适用于 Colab 一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/invokeai_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### SD WebUI All In One Jupyter NoteBook
+[sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
+
+
+### SD WebUI All In One Colab Jupyter NoteBook
+[sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### Fooocus kaggle Jupyter NoteBook
+[fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+
+### SD Trainer Kaggle Jupyter NoteBook
+[sd_trainer_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_kaggle.ipynb))：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
 
 
 ### HDM Train Kaggle Jupyter NoteBook
@@ -136,16 +158,10 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 [configure_env.bat](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/configure_env.bat))：配置 Installer 运行环境的一键配置脚本，首次使用 Installer 时需要运行一次该脚本。
 
 
-## InvokeAI Installer
-Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
+## SD WebUI Installer
+Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
 
-详细的说明[点击此处](./invokeai_installer.md)阅读。
-
-
-## SD-Trainer Installer
-Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
-
-详细的说明[点击此处](./sd_trainer_installer.md)阅读。
+详细的说明[点击此处](./stable_diffusion_webui_installer.md)阅读。
 
 
 ## ComfyUI Installer
@@ -154,10 +170,22 @@ Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 
 详细的说明[点击此处](./comfyui_installer.md)阅读。
 
 
-## SD WebUI Installer
-Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
+## InvokeAI Installer
+Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
 
-详细的说明[点击此处](./stable_diffusion_webui_installer.md)阅读。
+详细的说明[点击此处](./invokeai_installer.md)阅读。
+
+
+## Fooocus Installer
+Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
+
+详细的说明[点击此处](./fooocus_installer.md)阅读。
+
+
+## SD-Trainer Installer
+Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
+
+详细的说明[点击此处](./sd_trainer_installer.md)阅读。
 
 
 ## SD-Trainer-Script Installer
@@ -167,12 +195,6 @@ Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC
 Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [~~SimpleTuner~~](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
 
 详细的说明[点击此处](./sd_trainer_script_installer.md)阅读。
-
-
-## Fooocus Installer
-Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
-
-详细的说明[点击此处](./fooocus_installer.md)阅读。
 
 
 ## Python Installer
