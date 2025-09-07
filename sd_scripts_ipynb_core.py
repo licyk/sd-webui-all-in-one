@@ -6053,7 +6053,10 @@ class SDWebUIManager(BaseManager):
             try:
                 (setting_path / requirements_file).unlink(missing_ok=True)
                 self.downloader.download_file(
-                    url=requirements, path=setting_path, save_name=requirements_file, tool="aria2"
+                    url=requirements,
+                    path=setting_path,
+                    save_name=requirements_file,
+                    tool="aria2",
                 )
             except Exception as e:
                 logger.error("下载 Stable Diffusion WebUI 依赖文件出现错误: %s", e)
@@ -6322,7 +6325,7 @@ class SDWebUIManager(BaseManager):
         self.install_config(
             setting=sd_webui_setting,
             requirements=sd_webui_requirment_url,
-            requirements_file=requirment_path.name
+            requirements_file=requirment_path.name,
         )
         self.env.install_requirements(requirment_path, use_uv)
         os.chdir(self.workspace)
@@ -6609,6 +6612,188 @@ class InvokeAIManager(BaseManager):
         invokeai_output.mkdir(exist_ok=True)
         os.environ["INVOKEAI_ROOT"] = str(invokeai_output)
 
+    def import_model_to_invokeai(
+        self,
+        model_list: list[str],
+    ) -> None:
+        """将模型列表导入到 InvokeAI 中
+
+        :param model_list`(list[str])`: 模型路径列表
+        """
+        try:
+            import asyncio
+            from invokeai.app.services.model_manager.model_manager_default import (
+                ModelManagerService,
+            )
+            from invokeai.app.services.model_install.model_install_common import (
+                InstallStatus,
+            )
+            from invokeai.app.services.model_records.model_records_sql import (
+                ModelRecordServiceSQL,
+            )
+            from invokeai.app.services.download.download_default import (
+                DownloadQueueService,
+            )
+            from invokeai.app.services.events.events_fastapievents import (
+                FastAPIEventService,
+            )
+            from invokeai.app.services.config.config_default import get_config
+            from invokeai.app.services.shared.sqlite.sqlite_util import init_db
+            from invokeai.app.services.image_files.image_files_disk import (
+                DiskImageFileStorage,
+            )
+            from invokeai.app.services.invoker import Invoker
+        except Exception as e:
+            logger.error("导入 InvokeAI 模块失败, 无法自动导入模型: %s", e)
+            return
+
+        def _get_invokeai_model_manager() -> ModelManagerService:
+            logger.info("初始化 InvokeAI 模型管理服务中")
+            configuration = get_config()
+            output_folder = configuration.outputs_path
+            image_files = DiskImageFileStorage(f"{output_folder}/images")
+            db = init_db(config=configuration, logger=logger, image_files=image_files)
+            event_handler_id = 1234
+            loop = asyncio.get_event_loop()
+            events = FastAPIEventService(event_handler_id, loop=loop)
+
+            model_manager = ModelManagerService.build_model_manager(
+                app_config=configuration,
+                model_record_service=ModelRecordServiceSQL(db=db, logger=logger),
+                download_queue=DownloadQueueService(
+                    app_config=configuration, event_bus=events
+                ),
+                events=FastAPIEventService(event_handler_id, loop=loop),
+            )
+
+            logger.info("初始化 InvokeAI 模型管理服务完成")
+            return model_manager
+
+        def _import_model(
+            model_manager: ModelManagerService, inplace: bool, model_path: str | Path
+        ) -> bool:
+            file_name = os.path.basename(model_path)
+            try:
+                logger.info(f"导入 {file_name} 模型到 InvokeAI 中")
+                job = model_manager.install.heuristic_import(
+                    source=str(model_path), inplace=inplace
+                )
+                result = model_manager.install.wait_for_job(job)
+                if result.status == InstallStatus.COMPLETED:
+                    logger.info(f"导入 {file_name} 模型到 InvokeAI 成功")
+                    return True
+                else:
+                    logger.error(
+                        f"导入 {file_name} 模型到 InvokeAI 时出现了错误: {result.error}"
+                    )
+                    return False
+            except Exception as e:
+                logger.error(f"导入 {file_name} 模型到 InvokeAI 时出现了错误: {e}")
+                return False
+
+        install_model_to_local = False
+        install_result = []
+        count = 0
+        task_sum = len(model_list)
+        if task_sum == 0:
+            logger.info("无需要导入的模型")
+            return
+        logger.info("InvokeAI 根目录: {}".format(os.environ.get("INVOKEAI_ROOT")))
+        try:
+            model_manager = _get_invokeai_model_manager()
+            logger.info("启动 InvokeAI 模型管理服务")
+            model_manager.start(Invoker)
+        except Exception as e:
+            logger.error("启动 InvokeAI 模型管理服务失败, 无法导入模型: %s", e)
+            return
+        logger.info(
+            "就地安装 (仅本地) 模式: {}".format(
+                "禁用" if install_model_to_local else "启用"
+            )
+        )
+        for model in model_list:
+            count += 1
+            file_name = os.path.basename(model)
+            logger.info(f"[{count}/{task_sum}] 添加模型: {file_name}")
+            result = _import_model(
+                model_manager=model_manager,
+                inplace=not install_model_to_local,
+                model_path=model,
+            )
+            install_result.append([model, file_name, result])
+        logger.info("关闭 InvokeAI 模型管理服务")
+        try:
+            model_manager.stop(Invoker)
+        except Exception as e:
+            logger.error("关闭 InvokeAI 模型管理服务出现错误: %s", e)
+        logger.info("导入 InvokeAI 模型结果")
+        print("-" * 70)
+        for _, file, status in install_result:
+            status = "导入成功" if status else "导入失败"
+            print(f"- {file}: {status}")
+
+        print("-" * 70)
+        has_failed = False
+        for _, _, x in install_result:
+            if not x:
+                has_failed = True
+                break
+
+        if has_failed:
+            logger.warning("导入失败的模型列表和模型路径")
+            print("-" * 70)
+            for model, file_name, status in install_result:
+                if not status:
+                    print(f"- {file_name}: {model}")
+            print("-" * 70)
+            logger.warning(
+                f"导入失败的模型可尝试通过在 InvokeAI 的模型管理 -> 添加模型 -> 链接和本地路径, 手动输入模型路径并添加"
+            )
+
+        logger.info("导入模型结束")
+
+    def import_model(self) -> None:
+        """导入模型到 InvokeAI 中"""
+        model_path = self.workspace / self.workfolder / "sd-models"
+        model_list = Utils.get_file_list(model_path)
+        try:
+            self.mount_drive()
+        except Exception as e:
+            logger.error("挂载 Google Drive 失败, 无法导入模型: %s", e)
+            return
+        self.import_model_to_invokeai(model_list)
+
+    def get_sd_model(
+        self,
+        url: str,
+        filename: str = None,
+    ) -> Path | None:
+        """下载模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        :param model_type`(str|None)`: 模型的类型
+        """
+        path = self.workspace / self.workfolder / "sd-models"
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+
+    def get_sd_model_from_list(
+        self,
+        model_list: list[str],
+        retry: int | None = 3,
+    ) -> None:
+        """从模型列表下载模型
+
+        :param model_list`(list[str])`: 模型列表
+        :param retry`(int|None)`: 重试下载的次数, 默认为 3
+        """
+        new_model_list = [[model, 1] for model in model_list]
+        self.get_model_from_list(
+            path=self.workspace / self.workfolder / "sd-models",
+            model_list=new_model_list,
+            retry=retry,
+        )
+
     def check_env(
         self,
         use_uv: bool | None = True,
@@ -6631,7 +6816,7 @@ class InvokeAIManager(BaseManager):
         github_mirror: str | list | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror_dict: dict[str, str] | None = None,
-        model_list: list[dict[str]] | None = None,
+        model_list: list[str] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -6646,7 +6831,7 @@ class InvokeAIManager(BaseManager):
         :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
         :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
-        :param model_list`(list[dict[str]])`: 模型下载列表
+        :param model_list`(list[str])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
@@ -6674,10 +6859,7 @@ class InvokeAIManager(BaseManager):
             use_uv=use_uv,
         )
         if model_list is not None:
-            self.get_model_from_list(
-                path=self.workspace / self.workfolder / "sd-models",
-                model_list=model_list,
-            )
+            self.get_sd_model_from_list(model_list=model_list)
         if enable_tcmalloc:
             self.tcmalloc_colab()
         if enable_cuda_malloc:
