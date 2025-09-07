@@ -1,5 +1,11 @@
 """
-SD Scripts / Fooocus 环境管理模块, 可用于 Jupyter Notebook
+与 SD 有关的环境管理模块, 可用于 Jupyter Notebook
+支持管理的环境:
+- SD WebUI / SD WebUI Forge / SD WebUI reForge / SD WebUI Forge Classic / SD WebUI AMDGPU / SD.Next
+- ComfyUI
+- InvokeAI
+- Fooocus
+- SD Script
 """
 
 import os
@@ -32,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.0.12"
+VERSION = "1.1.0"
 
 
 class LoggingColoredFormatter(logging.Formatter):
