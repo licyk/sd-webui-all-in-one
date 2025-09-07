@@ -19,6 +19,8 @@ on:
       - "libtcmalloc_minimal.so.4"
       - "sd_webui_config.json"
       - "install_embed_python.ps1"
+      - "comfy.settings.json"
+      - "sd_webui_requirements_versions_new.txt"
       - "sd_scripts_kaggle.ipynb"
       - "sd_scripts_ipynb_core.py"
       - "sd_scripts_colab.ipynb"
@@ -28,6 +30,9 @@ on:
       - "fooocus_colab.ipynb"
       - "fooocus_kaggle.ipynb"
       - "hdm_train_kaggle.ipynb"
+      - "comfyui_colab.ipynb"
+      - "invokeai_colab.ipynb"
+      - "stable_diffusion_webui_colab.ipynb"
   delete:
   create:
 
@@ -115,8 +120,14 @@ jobs:
           gh release delete-asset archive sd_webui_config.json -y || true
           gh release upload archive sd_webui_config.json
 
-          gh release delete-asset archive install_embed_python.ps1  -y || true
+          gh release delete-asset archive install_embed_python.ps1 -y || true
           gh release upload archive install_embed_python.ps1
+
+          gh release delete-asset archive comfy.settings.json -y || true
+          gh release upload archive comfy.settings.json
+
+          gh release delete-asset archive sd_webui_requirements_versions_new.txt -y || true
+          gh release upload archive sd_webui_requirements_versions_new.txt
 
       - name: Release Jupyter Notebook
         shell: bash
@@ -149,6 +160,15 @@ jobs:
 
           gh release delete-asset archive hdm_train_kaggle.ipynb -y || true
           gh release upload archive hdm_train_kaggle.ipynb
+
+          gh release delete-asset archive comfyui_colab.ipynb -y || true
+          gh release upload archive comfyui_colab.ipynb
+
+          gh release delete-asset archive invokeai_colab.ipynb -y || true
+          gh release upload archive invokeai_colab.ipynb
+
+          gh release delete-asset archive stable_diffusion_webui_colab.ipynb -y || true
+          gh release upload archive stable_diffusion_webui_colab.ipynb
 
   Release-To-Gitee:
     # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
@@ -183,6 +203,8 @@ jobs:
             libtcmalloc_minimal.so.4
             sd_webui_config.json
             install_embed_python.ps1
+            comfy.settings.json
+            sd_webui_requirements_versions_new.txt
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -204,6 +226,9 @@ jobs:
             fooocus_colab.ipynb
             fooocus_kaggle.ipynb
             hdm_train_kaggle.ipynb
+            comfyui_colab.ipynb
+            invokeai_colab.ipynb
+            stable_diffusion_webui_colab.ipynb
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
