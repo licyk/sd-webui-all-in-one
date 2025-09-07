@@ -20,10 +20,10 @@ _✨快速部署，简单易用_
   - [可用的 Jupyter Notebook](#可用的-jupyter-notebook)
     - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
     - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
-    - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
     - [Stable Diffusion WebUI Colab NoteBook](#stable-diffusion-webui-colab-notebook)
     - [ComfyUI Colab NoteBook](#comfyui-colab-notebook)
     - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
+    - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
     - [SD WebUI All In One Jupyter NoteBook](#sd-webui-all-in-one-jupyter-notebook)
     - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
     - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
@@ -76,12 +76,6 @@ _✨快速部署，简单易用_
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_scripts_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
-### Fooocus Colab Jupyter NoteBook
-[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
-
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-
 ### Stable Diffusion WebUI Colab NoteBook
 [stable_diffusion_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/stable_diffusion_webui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_colab.ipynb))：适用于 Colab 一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
 
@@ -98,6 +92,12 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 [invokeai_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/invokeai_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_colab.ipynb))：适用于 Colab 一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/invokeai_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### Fooocus Colab Jupyter NoteBook
+[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb))：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
 ### SD WebUI All In One Jupyter NoteBook
