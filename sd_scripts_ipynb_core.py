@@ -6527,13 +6527,13 @@ class InvokeAIComponentManager:
             logger.info("同步 PyTorch 组件中")
             if pytorch_mirror is not None:
                 EnvManager.install_pytorch(
-                    *pytorch_package_args,
-                    use_uv=use_uv,
+                    torch_package=pytorch_package_args,
                     pytorch_mirror=pytorch_mirror,
+                    use_uv=use_uv,
                 )
             else:
                 EnvManager.install_pytorch(
-                    *pytorch_package_args,
+                    torch_package=pytorch_package_args,
                     use_uv=use_uv,
                 )
             logger.info("同步 InvokeAI 其他组件中")
