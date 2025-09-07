@@ -363,7 +363,7 @@ $ tree -L 1
 >Stable Diffusion WebUI Forge Classic 默认使用的启动参数：
 >
 >```
->--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model
+>--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check
 >```
 >
 >Stable Diffusion WebUI AMDGPU 默认使用的启动参数：
