@@ -6621,6 +6621,7 @@ class InvokeAIManager(BaseManager):
         :param model_list`(list[str])`: 模型路径列表
         """
         try:
+            logger.info("导入 InvokeAI 模块中")
             import asyncio
             from invokeai.app.services.model_manager.model_manager_default import (
                 ModelManagerService,
