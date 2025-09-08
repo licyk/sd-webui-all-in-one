@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1766,7 +1766,7 @@ class Utils:
             if link_path.exists():
                 Utils.sync_files(
                     src_path=link_path,
-                    dst_path=src_path,
+                    dst_path=src_path if not src_is_file else src_path.parent,
                 )
                 if link_path.is_symlink():
                     link_path.unlink()
