@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1706,7 +1706,7 @@ class Utils:
         """
         from tqdm import tqdm
 
-        logger.info("%s -> %s", src_path, dst_path)
+        logger.info("增量同步文件: %s -> %s", src_path, dst_path)
         file_list = Utils.get_sync_files(src_path, dst_path)
         if len(file_list) == 0:
             logger.info("没有需要同步的文件")
@@ -1757,7 +1757,7 @@ class Utils:
             if not isinstance(link_path, Path) and link_path is not None
             else link_path
         )
-        logger.info("链接路径: %s -> %s", link_path, src_path)
+        logger.info("链接路径: %s -> %s", src_path, link_path)
         try:
             if src_is_file:
                 src_path.parent.mkdir(parents=True, exist_ok=True)
