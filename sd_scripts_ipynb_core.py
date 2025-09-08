@@ -748,7 +748,7 @@ class Downloader:
         cached_file = model_dir.resolve() / file_name
 
         if re_download or not cached_file.exists():
-            model_dir.mkdir(exist_ok=True)
+            model_dir.mkdir(parents=True, exist_ok=True)
             temp_file = model_dir / f"{file_name}.tmp"
             logger.info("下载 %s 到 %s 中", file_name, cached_file)
             response = requests.get(url, stream=True)
@@ -1641,6 +1641,23 @@ class Utils:
             return "cpu"
 
         return "cuda"
+
+    @staticmethod
+    def warning_unexpected_params(
+        message: str,
+        args: tuple,
+        kwargs: dict,
+    ) -> None:
+        """显示多余参数警告"""
+        if args or kwargs:
+            logger.warning(message)
+            if args:
+                logger.warning("多余的位置参数: %s", args)
+
+            if kwargs:
+                logger.warning("多余的关键字参数: %s")
+
+            logger.warning("请移除这些多余参数以避免引发错误")
 
 
 class MultiThreadDownloader:
@@ -5118,7 +5135,7 @@ class BaseManager:
         :param port`(int|None)`: 内网穿透端口
         """
         self.workspace = Path(workspace)
-        self.workspace.mkdir(exist_ok=True)
+        self.workspace.mkdir(parents=True, exist_ok=True)
         self.workfolder = workfolder
         self.git = GitWarpper()
         self.downloader = Downloader()
@@ -5263,7 +5280,7 @@ class SDScriptsManager(BaseManager):
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         sd_scripts_repo: str | None = None,
-        sd_scripts_requirment: str | None = None,
+        sd_scripts_requirements: str | None = None,
         retry: int | None = 3,
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
@@ -5273,6 +5290,8 @@ class SDScriptsManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
     ) -> None:
         """安装 sd-scripts 和其余环境
 
@@ -5290,7 +5309,7 @@ class SDScriptsManager(BaseManager):
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
         :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
         :param sd_scripts_repo`(str|None)`: sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
-        :param sd_scripts_requirment`(str|None)`: sd-scripts 的依赖文件名, 未指定时默认为`requirements.txt`
+        :param sd_scripts_requirements`(str|None)`: sd-scripts 的依赖文件名, 未指定时默认为`requirements.txt`
         :param retry`(int|None)`: 设置下载模型失败时重试次数
         :param huggingface_token`(str|None)`: 配置 HuggingFace Token
         :param modelscope_tokenn`(str|None)`: 配置 ModelScope Token
@@ -5312,12 +5331,17 @@ class SDScriptsManager(BaseManager):
             8. 配置 HuggingFace / ModelScope / WandB Token 环境变量
             9. 配置其他工具
         """
+        Utils.warning_unexpected_params(
+            message="SDScriptsManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
         logger.info("配置 sd-scripts 环境中")
         os.chdir(self.workspace)
         sd_scripts_path = self.workspace / self.workfolder
         requirement_path = sd_scripts_path / (
-            sd_scripts_requirment
-            if sd_scripts_requirment is not None
+            sd_scripts_requirements
+            if sd_scripts_requirements is not None
             else "requirements.txt"
         )
         sd_scripts_repo = (
@@ -5409,7 +5433,7 @@ class FooocusManager(BaseManager):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         fooocus_output = drive_path / "MyDrive" / "fooocus_output"
-        fooocus_output.mkdir(exist_ok=True)
+        fooocus_output.mkdir(parents=True, exist_ok=True)
 
     def get_sd_model(self, url: str, filename: str = None) -> None:
         """下载大模型
@@ -5608,7 +5632,7 @@ class FooocusManager(BaseManager):
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         fooocus_repo: str | None = None,
-        fooocus_requirment: str | None = None,
+        fooocus_requirements: str | None = None,
         fooocus_preset: str | None = None,
         fooocus_path_config: str | None = None,
         fooocus_translation: str | None = None,
@@ -5617,6 +5641,8 @@ class FooocusManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
     ) -> None:
         """安装 Fooocus
 
@@ -5630,7 +5656,7 @@ class FooocusManager(BaseManager):
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
         :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
         :param fooocus_repo`(str|None)`: Fooocus 仓库地址
-        :param fooocus_requirment`(str|None)`: Fooocus 依赖文件名
+        :param fooocus_requirements`(str|None)`: Fooocus 依赖文件名
         :param fooocus_preset`(str|None)`: Fooocus 预设文件下载链接
         :param fooocus_path_config`(str|None)`: Fooocus 路径配置文件下载地址
         :param fooocus_translation`(str|None)`: Fooocus 翻译文件下载地址
@@ -5640,6 +5666,11 @@ class FooocusManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
+        Utils.warning_unexpected_params(
+            message="FooocusManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
         logger.info("开始安装 Fooocus")
         os.chdir(self.workspace)
         fooocus_path = self.workspace / self.workfolder
@@ -5663,10 +5694,10 @@ class FooocusManager(BaseManager):
             if fooocus_translation is None
             else fooocus_translation
         )
-        requirment_path = fooocus_path / (
+        requirements_path = fooocus_path / (
             "requirements_versions.txt"
-            if fooocus_requirment is None
-            else fooocus_requirment
+            if fooocus_requirements is None
+            else fooocus_requirements
         )
         config_file = fooocus_path / "presets" / "custom.json"
         if check_avaliable_gpu and not self.utils.check_gpu():
@@ -5695,7 +5726,7 @@ class FooocusManager(BaseManager):
             use_uv=use_uv,
         )
         os.chdir(fooocus_path)
-        self.env.install_requirements(requirment_path, use_uv)
+        self.env.install_requirements(requirements_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(
             preset=fooocus_preset,
@@ -5750,7 +5781,7 @@ class ComfyUIManager(BaseManager):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         comfyui_output = drive_path / "MyDrive" / "comfyui_output"
-        comfyui_output.mkdir(exist_ok=True)
+        comfyui_output.mkdir(parents=True, exist_ok=True)
         comfyui_output_path = self.workspace / self.workfolder / "output"
         try:
             if comfyui_output_path.exists():
@@ -5891,13 +5922,15 @@ class ComfyUIManager(BaseManager):
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         comfyui_repo: str | None = None,
-        comfyui_requirment: str | None = None,
+        comfyui_requirements: str | None = None,
         comfyui_setting: str | None = None,
         custom_node_list: list[str] | None = None,
-        model_list: list[dict[str]] | None = None,
+        model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
     ) -> None:
         """安装 ComfyUI
 
@@ -5911,14 +5944,19 @@ class ComfyUIManager(BaseManager):
         :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
         :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
         :param comfyui_repo`(str|None)`: ComfyUI 仓库地址
-        :param comfyui_requirment`(str|None)`: ComfyUI 依赖文件名
+        :param comfyui_requirements`(str|None)`: ComfyUI 依赖文件名
         :param comfyui_setting`(str|None)`: ComfyUI 设置文件下载链接
         :param custom_node_list`(list[str])`: 自定义节点列表
-        :param model_list`(list[dict[str]])`: 模型下载列表
+        :param model_list`(list[dict[str,str]])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
+        Utils.warning_unexpected_params(
+            message="ComfyUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
         logger.info("开始安装 ComfyUI")
         os.chdir(self.workspace)
         comfyui_path = self.workspace / self.workfolder
@@ -5932,8 +5970,8 @@ class ComfyUIManager(BaseManager):
             if comfyui_setting is None
             else comfyui_setting
         )
-        requirment_path = comfyui_path / (
-            "requirements.txt" if comfyui_requirment is None else comfyui_requirment
+        requirements_path = comfyui_path / (
+            "requirements.txt" if comfyui_requirements is None else comfyui_requirements
         )
         if check_avaliable_gpu and not self.utils.check_gpu():
             raise Exception(
@@ -5959,7 +5997,7 @@ class ComfyUIManager(BaseManager):
             use_uv=use_uv,
         )
         os.chdir(comfyui_path)
-        self.env.install_requirements(requirment_path, use_uv)
+        self.env.install_requirements(requirements_path, use_uv)
         os.chdir(self.workspace)
         self.install_config(comfyui_setting)
         if model_list is not None:
@@ -5982,7 +6020,7 @@ class SDWebUIManager(BaseManager):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         sd_webui_output = drive_path / "MyDrive" / "sd_webui_output"
-        sd_webui_output.mkdir(exist_ok=True)
+        sd_webui_output.mkdir(parents=True, exist_ok=True)
         sd_webui_output_path = self.workspace / self.workfolder / "outputs"
         try:
             if sd_webui_output_path.exists():
@@ -6249,14 +6287,16 @@ class SDWebUIManager(BaseManager):
         pytorch_mirror: str | None = None,
         sd_webui_repo: str | None = None,
         sd_webui_branch: str | None = None,
-        sd_webui_requirment: str | None = None,
-        sd_webui_requirment_url: str | None = None,
+        sd_webui_requirements: str | None = None,
+        sd_webui_requirements_url: str | None = None,
         sd_webui_setting: str | None = None,
         extension_list: list[str] | None = None,
-        model_list: list[dict[str]] | None = None,
+        model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
     ) -> None:
         """安装 Stable Diffusion WebUI
 
@@ -6271,15 +6311,20 @@ class SDWebUIManager(BaseManager):
         :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
         :param sd_webui_repo`(str|None)`: Stable Diffusion WebUI 仓库地址
         :param sd_webui_branch`(str|None)`: Stable Diffusion WebUI 分支
-        :param sd_webui_requirment`(str|None)`: Stable Diffusion WebUI 依赖文件名
-        :param sd_webui_requirment_url`(str|None)`: Stable Diffusion WebUI 依赖文件下载地址
+        :param sd_webui_requirements`(str|None)`: Stable Diffusion WebUI 依赖文件名
+        :param sd_webui_requirements_url`(str|None)`: Stable Diffusion WebUI 依赖文件下载地址
         :param sd_webui_setting`(str|None)`: Stable Diffusion WebUI 预设文件下载链接
         :param extension_list`(list[str])`: 扩展列表
-        :param model_list`(list[dict[str]])`: 模型下载列表
+        :param model_list`(list[dict[str,str]])`: 模型下载列表
         :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
+        Utils.warning_unexpected_params(
+            message="SDWebUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
         logger.info("开始安装 Stable Diffusion WebUI")
         os.chdir(self.workspace)
         sd_webui_path = self.workspace / self.workfolder
@@ -6293,10 +6338,10 @@ class SDWebUIManager(BaseManager):
             if sd_webui_setting is None
             else sd_webui_setting
         )
-        requirment_path = sd_webui_path / (
+        requirements_path = sd_webui_path / (
             "requirements_versions.txt"
-            if sd_webui_requirment is None
-            else sd_webui_requirment
+            if sd_webui_requirements is None
+            else sd_webui_requirements
         )
         if check_avaliable_gpu and not self.utils.check_gpu():
             raise Exception(
@@ -6330,10 +6375,10 @@ class SDWebUIManager(BaseManager):
         os.chdir(sd_webui_path)
         self.install_config(
             setting=sd_webui_setting,
-            requirements=sd_webui_requirment_url,
-            requirements_file=requirment_path.name,
+            requirements=sd_webui_requirements_url,
+            requirements_file=requirements_path.name,
         )
-        self.env.install_requirements(requirment_path, use_uv)
+        self.env.install_requirements(requirements_path, use_uv)
         os.chdir(self.workspace)
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
@@ -6615,7 +6660,7 @@ class InvokeAIManager(BaseManager):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         invokeai_output = drive_path / "MyDrive" / "invokeai_output"
-        invokeai_output.mkdir(exist_ok=True)
+        invokeai_output.mkdir(parents=True, exist_ok=True)
         os.environ["INVOKEAI_ROOT"] = str(invokeai_output)
 
     def import_model_to_invokeai(
@@ -6827,6 +6872,8 @@ class InvokeAIManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
     ) -> None:
         """安装 InvokeAI
 
@@ -6843,6 +6890,11 @@ class InvokeAIManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
+        Utils.warning_unexpected_params(
+            message="InvokeAIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
         logger.info("开始安装 InvokeAI")
         os.chdir(self.workspace)
         if check_avaliable_gpu and not self.utils.check_gpu():
