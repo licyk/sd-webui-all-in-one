@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1655,9 +1655,128 @@ class Utils:
                 logger.warning("多余的位置参数: %s", args)
 
             if kwargs:
-                logger.warning("多余的关键字参数: %s")
+                logger.warning("多余的关键字参数: %s", kwargs)
 
             logger.warning("请移除这些多余参数以避免引发错误")
+
+    @staticmethod
+    def get_sync_files(src_path: Path | str, dst_path: Path | str) -> list[Path]:
+        """获取需要进行同步的文件列表 (增量同步)
+
+        :param src_path`(Path|str)`: 同步文件的源路径
+        :param dst_path`(Path|str)`: 同步文件到的路径
+        :return `list[Path]`: 要进行同步的文件
+        """
+        from tqdm import tqdm
+
+        if not isinstance(src_path, Path) and src_path is not None:
+            src_path = Path(src_path)
+
+        if not isinstance(dst_path, Path) and dst_path is not None:
+            dst_path = Path(dst_path)
+
+        src_is_file = src_path.is_file()
+        if src_is_file:
+            src_files = [src_path]
+        else:
+            src_files = Utils.get_file_list(src_path)
+            logger.info("%s 中的文件数量: %s", src_path, len(src_files))
+
+        dst_files = Utils.get_file_list(dst_path)
+        logger.info("%s 中的文件数量: %s", dst_path, len(dst_files))
+        dst_files_set = set(dst_files)  # 加快统计速度
+        sync_file_list = [
+            x
+            for x in tqdm(src_files, desc="计算需要同步的文件")
+            if (
+                dst_path
+                / x.relative_to(src_path if not src_is_file else src_path.parent)
+            )
+            not in dst_files_set
+        ]
+        logger.info("要进行同步的文件数量: %s", len(sync_file_list))
+        return sync_file_list
+
+    @staticmethod
+    def sync_files(src_path: Path, dst_path: Path) -> None:
+        """同步文件 (增量同步)
+
+        :param src_path`(Path|str)`: 同步文件的源路径
+        :param dst_path`(Path|str)`: 同步文件到的路径
+        """
+        from tqdm import tqdm
+
+        logger.info("%s -> %s", src_path, dst_path)
+        file_list = Utils.get_sync_files(src_path, dst_path)
+        if len(file_list) == 0:
+            logger.info("没有需要同步的文件")
+            return
+        for file in tqdm(file_list, desc="同步文件"):
+            dst = dst_path / file.relative_to(src_path)
+            try:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(file, dst)
+            except Exception as e:
+                traceback.print_exc()
+                logger.error("同步 %s 到 %s 时发生错误: %s", file, dst, e)
+                if dst.exists():
+                    logger.warning("删除未复制完成的文件: %s", dst)
+                    try:
+                        os.remove(dst)
+                    except Exception as e:
+                        logger.error("删除未复制完成的文件失败: %s", e)
+
+        logger.info("同步文件完成")
+
+    @staticmethod
+    def sync_files_and_create_symlink(
+        src_path: Path | str,
+        link_path: Path | str,
+        src_is_file: bool | None = False,
+    ) -> None:
+        """同步文件并创建软链接
+
+        :param src_path`(Path|str)`: 源路径
+        :param link_path`(Path|str)`: 软链接路径
+        :parma src_is_file`(bool|None)`: 源路径是否为文件
+        :notes
+            当源路径不存在时, 则尝试创建源路径, 并检查链接路径状态
+            链接路径若已存在, 并且存在文件, 将检查链接路径中的文件是否存在于源路径中
+            在链接路径存在但在源路径不存在的文件将被复制 (增量同步)
+
+            完成增量同步后将链接路径属性, 若为实际路径则对该路径进行重命名; 如果为链接路径则删除链接
+            链接路径清理完成后, 在链接路径为源路径创建软链接
+        """
+        src_path = (
+            Path(src_path)
+            if not isinstance(src_path, Path) and src_path is not None
+            else src_path
+        )
+        link_path = (
+            Path(link_path)
+            if not isinstance(link_path, Path) and link_path is not None
+            else link_path
+        )
+        try:
+            if src_is_file:
+                src_path.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                src_path.mkdir(parents=True, exist_ok=True)
+            if link_path.exists():
+                Utils.sync_files(
+                    src_path=src_path,
+                    dst_path=link_path,
+                )
+                if link_path.is_symlink():
+                    link_path.unlink()
+                else:
+                    shutil.move(
+                        link_path,
+                        link_path.parent / str(uuid.uuid4()),
+                    )
+            link_path.symlink_to(src_path)
+        except Exception as e:
+            logger.error("创建 %s -> %s 的路径链接失败: %s", src_path, link_path, e)
 
 
 class MultiThreadDownloader:
@@ -5780,18 +5899,30 @@ class ComfyUIManager(BaseManager):
             if not self.utils.mount_google_drive(drive_path):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
-        comfyui_output = drive_path / "MyDrive" / "comfyui_output"
-        comfyui_output.mkdir(parents=True, exist_ok=True)
-        comfyui_output_path = self.workspace / self.workfolder / "output"
-        try:
-            if comfyui_output_path.exists():
-                shutil.move(
-                    comfyui_output_path,
-                    comfyui_output_path.parent / f"output_{uuid.uuid4()}",
-                )
-            comfyui_output_path.symlink_to(comfyui_output)
-        except Exception as e:
-            logger.error("为 ComfyUI 输出目录创建软链接失败: %s", e)
+        drive_output = drive_path / "MyDrive" / "comfyui_output"
+        comfyui_path = self.workspace / self.workfolder
+        comfyui_output_path = comfyui_path / "output"
+        comfyui_user_path = comfyui_path / "user"
+        comfyui_input_path = comfyui_path / "input"
+        comfyui_model_path_config = comfyui_path / "extra_model_paths.yaml"
+        Utils.sync_files_and_create_symlink(
+            src_path=drive_output / "output",
+            link_path=comfyui_output_path,
+        )
+        Utils.sync_files_and_create_symlink(
+            src_path=drive_output / "user",
+            link_path=comfyui_user_path,
+        )
+        Utils.sync_files_and_create_symlink(
+            src_path=drive_output / "input",
+            link_path=comfyui_input_path,
+        )
+        if comfyui_model_path_config.exists():
+            Utils.sync_files_and_create_symlink(
+                src_path=drive_output / "extra_model_paths.yaml",
+                link_path=comfyui_model_path_config,
+                src_is_file=True,
+            )
 
     def get_sd_model(
         self,
@@ -6019,18 +6150,46 @@ class SDWebUIManager(BaseManager):
             if not self.utils.mount_google_drive(drive_path):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
-        sd_webui_output = drive_path / "MyDrive" / "sd_webui_output"
-        sd_webui_output.mkdir(parents=True, exist_ok=True)
-        sd_webui_output_path = self.workspace / self.workfolder / "outputs"
-        try:
-            if sd_webui_output_path.exists():
-                shutil.move(
-                    sd_webui_output_path,
-                    sd_webui_output_path.parent / f"outputs_{uuid.uuid4()}",
-                )
-            sd_webui_output_path.symlink_to(sd_webui_output)
-        except Exception as e:
-            logger.error("为 Stable Diffusion WebUI 输出目录创建软链接失败: %s", e)
+        drive_output = drive_path / "MyDrive" / "sd_webui_output"
+        sd_webui_path = self.workspace / self.workfolder
+        sd_webui_output_path = sd_webui_path / "outputs"
+        sd_webui_config_states_path = sd_webui_path / "config_states"
+        sd_webui_params = sd_webui_path / "params.txt"
+        sd_webui_config = sd_webui_path / "config.json"
+        sd_webui_ui_config = sd_webui_path / "ui-config.json"
+        sd_webui_styles = sd_webui_path / "styles.csv"
+        Utils.sync_files_and_create_symlink(
+            src_path=drive_output / "outputs",
+            link_path=sd_webui_output_path,
+        )
+        Utils.sync_files_and_create_symlink(
+            src_path=drive_output / "config_states",
+            link_path=sd_webui_config_states_path,
+        )
+        if sd_webui_params.exists():
+            Utils.sync_files_and_create_symlink(
+                src_path=drive_output / "params.txt",
+                link_path=sd_webui_params,
+                src_is_file=True,
+            )
+        if sd_webui_config.exists():
+            Utils.sync_files_and_create_symlink(
+                src_path=drive_output / "config.json",
+                link_path=sd_webui_config,
+                src_is_file=True,
+            )
+        if sd_webui_ui_config.exists():
+            Utils.sync_files_and_create_symlink(
+                src_path=drive_output / "ui-config.json",
+                link_path=sd_webui_ui_config,
+                src_is_file=True,
+            )
+        if sd_webui_styles.exists():
+            Utils.sync_files_and_create_symlink(
+                src_path=drive_output / "styles.csv",
+                link_path=sd_webui_styles,
+                src_is_file=True,
+            )
 
     def get_sd_model(
         self,
