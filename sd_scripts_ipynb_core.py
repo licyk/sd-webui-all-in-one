@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1757,6 +1757,7 @@ class Utils:
             if not isinstance(link_path, Path) and link_path is not None
             else link_path
         )
+        logger.info("链接路径: %s -> %s", link_path, src_path)
         try:
             if src_is_file:
                 src_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1764,8 +1765,8 @@ class Utils:
                 src_path.mkdir(parents=True, exist_ok=True)
             if link_path.exists():
                 Utils.sync_files(
-                    src_path=src_path,
-                    dst_path=link_path,
+                    src_path=link_path,
+                    dst_path=src_path,
                 )
                 if link_path.is_symlink():
                     link_path.unlink()
