@@ -69,6 +69,7 @@ _✨一键安装 SD-Trainer_
   - [Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。](#torch-版本低于-230将无法正常训练-flux-模型请考虑升级到更新的版本)
     - [修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPU 的问题](#修复使用-wd-标签器出现-onnxruntime-无法正常调用-gpu-的问题)
   - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
+  - [使用 Kohya GUI 开始训练时出现`Failed to canonicalize script path`](#使用-kohya-gui-开始训练时出现failed-to-canonicalize-script-path)
   - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [命令的使用](#命令的使用)
     - [1. 使用自动环境激活脚本](#1-使用自动环境激活脚本)
@@ -872,6 +873,16 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 
 ## NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
 训练使用的模型可能有问题，尝试更换模型。
+
+
+## 使用 Kohya GUI 开始训练时出现`Failed to canonicalize script path`
+运行`terminal.ps1`打开终端，输入下面的命令并回车运行。
+
+```powershell
+python -m pip uninstall accelerate -y
+```
+
+再重新启动 Kohya GUI。
 
 
 ## Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
