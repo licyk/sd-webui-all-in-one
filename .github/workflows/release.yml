@@ -5,34 +5,36 @@ on:
     branches:
       - main
     paths:
-      - "sd_trainer_installer.ps1"
-      - "invokeai_installer.ps1"
-      - "comfyui_installer.ps1"
-      - "stable_diffusion_webui_installer.ps1"
-      - "fooocus_installer.ps1"
-      - "sd_trainer_script_installer.ps1"
-      - "configure_env.bat"
-      - "fooocus_config.json"
-      - "fooocus_path_config_colab.json"
-      - "fooocus_path_config_kaggle.json"
-      - "fooocus_zh_cn.json"
-      - "libtcmalloc_minimal.so.4"
-      - "sd_webui_config.json"
-      - "install_embed_python.ps1"
-      - "comfy.settings.json"
-      - "sd_webui_requirements_versions_new.txt"
-      - "sd_scripts_kaggle.ipynb"
-      - "sd_scripts_ipynb_core.py"
-      - "sd_scripts_colab.ipynb"
-      - "sd_webui_all_in_one_colab.ipynb"
-      - "sd_webui_all_in_one.ipynb"
-      - "sd_trainer_kaggle.ipynb"
-      - "fooocus_colab.ipynb"
-      - "fooocus_kaggle.ipynb"
-      - "hdm_train_kaggle.ipynb"
-      - "comfyui_colab.ipynb"
-      - "invokeai_colab.ipynb"
-      - "stable_diffusion_webui_colab.ipynb"
+      - sd_trainer_installer.ps1
+      - invokeai_installer.ps1
+      - comfyui_installer.ps1
+      - stable_diffusion_webui_installer.ps1
+      - fooocus_installer.ps1
+      - sd_trainer_script_installer.ps1
+      - configure_env.bat
+      - fooocus_config.json
+      - fooocus_path_config_colab.json
+      - fooocus_path_config_kaggle.json
+      - fooocus_zh_cn.json
+      - libtcmalloc_minimal.so.4
+      - sd_webui_config.json
+      - install_embed_python.ps1
+      - comfy.settings.json
+      - sd_webui_requirements_versions.txt
+      - sd_webui_forge_requirements_versions.txt
+      - sd_webui_forge_classic_requirements_versions.txt
+      - sd_scripts_kaggle.ipynb
+      - sd_scripts_ipynb_core.py
+      - sd_scripts_colab.ipynb
+      - sd_webui_all_in_one_colab.ipynb
+      - sd_webui_all_in_one.ipynb
+      - sd_trainer_kaggle.ipynb
+      - fooocus_colab.ipynb
+      - fooocus_kaggle.ipynb
+      - hdm_train_kaggle.ipynb
+      - comfyui_colab.ipynb
+      - invokeai_colab.ipynb
+      - stable_diffusion_webui_colab.ipynb
   delete:
   create:
 
@@ -126,8 +128,14 @@ jobs:
           gh release delete-asset archive comfy.settings.json -y || true
           gh release upload archive comfy.settings.json
 
-          gh release delete-asset archive sd_webui_requirements_versions_new.txt -y || true
-          gh release upload archive sd_webui_requirements_versions_new.txt
+          gh release delete-asset archive sd_webui_requirements_versions.txt -y || true
+          gh release upload archive sd_webui_requirements_versions.txt
+
+          gh release delete-asset archive sd_webui_forge_requirements_versions.txt -y || true
+          gh release upload archive sd_webui_forge_requirements_versions.txt
+
+          gh release delete-asset archive sd_webui_forge_classic_requirements_versions.txt -y || true
+          gh release upload archive sd_webui_forge_classic_requirements_versions.txt
 
       - name: Release Jupyter Notebook
         shell: bash
@@ -204,7 +212,9 @@ jobs:
             sd_webui_config.json
             install_embed_python.ps1
             comfy.settings.json
-            sd_webui_requirements_versions_new.txt
+            sd_webui_requirements_versions.txt
+            sd_webui_forge_requirements_versions.txt
+            sd_webui_forge_classic_requirements_versions.txt
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
