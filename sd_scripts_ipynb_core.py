@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.6"
+VERSION = "1.1.7"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -5454,7 +5454,7 @@ class SDScriptsManager(BaseManager):
             8. 配置 HuggingFace / ModelScope / WandB Token 环境变量
             9. 配置其他工具
         """
-        Utils.warning_unexpected_params(
+        self.utils.warning_unexpected_params(
             message="SDScriptsManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
@@ -5789,7 +5789,7 @@ class FooocusManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
-        Utils.warning_unexpected_params(
+        self.utils.warning_unexpected_params(
             message="FooocusManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
@@ -5913,20 +5913,20 @@ class ComfyUIManager(BaseManager):
         comfyui_input_path = comfyui_path / "input"
         drive_comfyui_model_path_config = drive_output / "extra_model_paths.yaml"
         comfyui_model_path_config = comfyui_path / "extra_model_paths.yaml"
-        Utils.sync_files_and_create_symlink(
+        self.utils.sync_files_and_create_symlink(
             src_path=drive_comfyui_output_path,
             link_path=comfyui_output_path,
         )
-        Utils.sync_files_and_create_symlink(
+        self.utils.sync_files_and_create_symlink(
             src_path=drive_comfyui_user_path,
             link_path=comfyui_user_path,
         )
-        Utils.sync_files_and_create_symlink(
+        self.utils.sync_files_and_create_symlink(
             src_path=drive_comfyui_input_path,
             link_path=comfyui_input_path,
         )
         if comfyui_model_path_config.exists() or drive_comfyui_model_path_config.exists():
-            Utils.sync_files_and_create_symlink(
+            self.utils.sync_files_and_create_symlink(
                 src_path=drive_comfyui_model_path_config,
                 link_path=comfyui_model_path_config,
                 src_is_file=True,
@@ -6002,7 +6002,7 @@ class ComfyUIManager(BaseManager):
         custom_node_path = self.workspace / self.workfolder / "custom_nodes"
         name = os.path.basename(custom_node)
         logger.info("安装 %s 自定义节点中", name)
-        p = GitWarpper.clone(repo=custom_node, path=custom_node_path / name)
+        p = self.git.clone(repo=custom_node, path=custom_node_path / name)
         if p is not None:
             logger.info("安装 %s 自定义节点完成", name)
             return p
@@ -6091,7 +6091,7 @@ class ComfyUIManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
-        Utils.warning_unexpected_params(
+        self.utils.warning_unexpected_params(
             message="ComfyUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
@@ -6172,34 +6172,34 @@ class SDWebUIManager(BaseManager):
         sd_webui_ui_config = sd_webui_path / "ui-config.json"
         drive_sd_webui_styles = drive_output / "styles.csv"
         sd_webui_styles = sd_webui_path / "styles.csv"
-        Utils.sync_files_and_create_symlink(
+        self.utils.sync_files_and_create_symlink(
             src_path=drive_sd_webui_output_path,
             link_path=sd_webui_output_path,
         )
-        Utils.sync_files_and_create_symlink(
+        self.utils.sync_files_and_create_symlink(
             src_path=drive_sd_webui_config_states_path,
             link_path=sd_webui_config_states_path,
         )
         if sd_webui_params.exists() or drive_sd_webui_params.exists():
-            Utils.sync_files_and_create_symlink(
+            self.utils.sync_files_and_create_symlink(
                 src_path=drive_sd_webui_params,
                 link_path=sd_webui_params,
                 src_is_file=True,
             )
         if sd_webui_config.exists() or drive_sd_webui_config.exists():
-            Utils.sync_files_and_create_symlink(
+            self.utils.sync_files_and_create_symlink(
                 src_path=drive_sd_webui_config,
                 link_path=sd_webui_config,
                 src_is_file=True,
             )
         if sd_webui_ui_config.exists() or drive_sd_webui_ui_config.exists():
-            Utils.sync_files_and_create_symlink(
+            self.utils.sync_files_and_create_symlink(
                 src_path=drive_sd_webui_ui_config,
                 link_path=sd_webui_ui_config,
                 src_is_file=True,
             )
         if sd_webui_styles.exists() or drive_sd_webui_styles.exists():
-            Utils.sync_files_and_create_symlink(
+            self.utils.sync_files_and_create_symlink(
                 src_path=drive_sd_webui_styles,
                 link_path=sd_webui_styles,
                 src_is_file=True,
@@ -6290,7 +6290,7 @@ class SDWebUIManager(BaseManager):
         extension_path = self.workspace / self.workfolder / "extensions"
         name = os.path.basename(extension)
         logger.info("安装 %s 扩展中", name)
-        p = GitWarpper.clone(repo=extension, path=extension_path / name)
+        p = self.git.clone(repo=extension, path=extension_path / name)
         if p is not None:
             logger.info("安装 %s 扩展完成", name)
             return p
@@ -6493,7 +6493,7 @@ class SDWebUIManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
-        Utils.warning_unexpected_params(
+        self.utils.warning_unexpected_params(
             message="SDWebUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
@@ -7063,7 +7063,7 @@ class InvokeAIManager(BaseManager):
         :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
         :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
         """
-        Utils.warning_unexpected_params(
+        self.utils.warning_unexpected_params(
             message="InvokeAIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
