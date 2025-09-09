@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.5"
+VERSION = "1.1.6"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -5905,25 +5905,29 @@ class ComfyUIManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "comfyui_output"
         comfyui_path = self.workspace / self.workfolder
+        drive_comfyui_output_path = drive_output / "output"
         comfyui_output_path = comfyui_path / "output"
+        drive_comfyui_user_path = drive_output / "user"
         comfyui_user_path = comfyui_path / "user"
+        drive_comfyui_input_path = drive_output / "input"
         comfyui_input_path = comfyui_path / "input"
+        drive_comfyui_model_path_config = drive_output / "extra_model_paths.yaml"
         comfyui_model_path_config = comfyui_path / "extra_model_paths.yaml"
         Utils.sync_files_and_create_symlink(
-            src_path=drive_output / "output",
+            src_path=drive_comfyui_output_path,
             link_path=comfyui_output_path,
         )
         Utils.sync_files_and_create_symlink(
-            src_path=drive_output / "user",
+            src_path=drive_comfyui_user_path,
             link_path=comfyui_user_path,
         )
         Utils.sync_files_and_create_symlink(
-            src_path=drive_output / "input",
+            src_path=drive_comfyui_input_path,
             link_path=comfyui_input_path,
         )
-        if comfyui_model_path_config.exists():
+        if comfyui_model_path_config.exists() or drive_comfyui_model_path_config.exists():
             Utils.sync_files_and_create_symlink(
-                src_path=drive_output / "extra_model_paths.yaml",
+                src_path=drive_comfyui_model_path_config,
                 link_path=comfyui_model_path_config,
                 src_is_file=True,
             )
@@ -6156,41 +6160,47 @@ class SDWebUIManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "sd_webui_output"
         sd_webui_path = self.workspace / self.workfolder
+        drive_sd_webui_output_path = drive_output / "outputs"
         sd_webui_output_path = sd_webui_path / "outputs"
+        drive_sd_webui_config_states_path = drive_output / "config_states"
         sd_webui_config_states_path = sd_webui_path / "config_states"
+        drive_sd_webui_params = drive_output / "params.txt"
         sd_webui_params = sd_webui_path / "params.txt"
+        drive_sd_webui_config = drive_output / "config.json"
         sd_webui_config = sd_webui_path / "config.json"
+        drive_sd_webui_ui_config = drive_output / "ui-config.json"
         sd_webui_ui_config = sd_webui_path / "ui-config.json"
+        drive_sd_webui_styles = drive_output / "styles.csv"
         sd_webui_styles = sd_webui_path / "styles.csv"
         Utils.sync_files_and_create_symlink(
-            src_path=drive_output / "outputs",
+            src_path=drive_sd_webui_output_path,
             link_path=sd_webui_output_path,
         )
         Utils.sync_files_and_create_symlink(
-            src_path=drive_output / "config_states",
+            src_path=drive_sd_webui_config_states_path,
             link_path=sd_webui_config_states_path,
         )
-        if sd_webui_params.exists():
+        if sd_webui_params.exists() or drive_sd_webui_params.exists():
             Utils.sync_files_and_create_symlink(
-                src_path=drive_output / "params.txt",
+                src_path=drive_sd_webui_params,
                 link_path=sd_webui_params,
                 src_is_file=True,
             )
-        if sd_webui_config.exists():
+        if sd_webui_config.exists() or drive_sd_webui_config.exists():
             Utils.sync_files_and_create_symlink(
-                src_path=drive_output / "config.json",
+                src_path=drive_sd_webui_config,
                 link_path=sd_webui_config,
                 src_is_file=True,
             )
-        if sd_webui_ui_config.exists():
+        if sd_webui_ui_config.exists() or drive_sd_webui_ui_config.exists():
             Utils.sync_files_and_create_symlink(
-                src_path=drive_output / "ui-config.json",
+                src_path=drive_sd_webui_ui_config,
                 link_path=sd_webui_ui_config,
                 src_is_file=True,
             )
-        if sd_webui_styles.exists():
+        if sd_webui_styles.exists() or drive_sd_webui_styles.exists():
             Utils.sync_files_and_create_symlink(
-                src_path=drive_output / "styles.csv",
+                src_path=drive_sd_webui_styles,
                 link_path=sd_webui_styles,
                 src_is_file=True,
             )
