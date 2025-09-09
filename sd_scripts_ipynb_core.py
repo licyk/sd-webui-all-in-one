@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1089,6 +1089,9 @@ class Utils:
         if not path.exists():
             return []
 
+        if path.is_file():
+            return [path.resolve() if resolve else path.absolute()]
+
         file_list: list[Path] = []
         for root, _, files in os.walk(path):
             for file in files:
@@ -1676,24 +1679,24 @@ class Utils:
             dst_path = Path(dst_path)
 
         src_is_file = src_path.is_file()
-        if src_is_file:
-            src_files = [src_path]
-        else:
-            src_files = Utils.get_file_list(src_path)
-            logger.info("%s 中的文件数量: %s", src_path, len(src_files))
-
+        src_files = Utils.get_file_list(src_path)
+        logger.info("%s 中的文件数量: %s", src_path, len(src_files))
         dst_files = Utils.get_file_list(dst_path)
         logger.info("%s 中的文件数量: %s", dst_path, len(dst_files))
-        dst_files_set = set(dst_files)  # 加快统计速度
-        sync_file_list = [
-            x
-            for x in tqdm(src_files, desc="计算需要同步的文件")
-            if (
-                dst_path
-                / x.relative_to(src_path if not src_is_file else src_path.parent)
-            )
-            not in dst_files_set
-        ]
+        if src_path.is_dir() and dst_path.is_file():
+            logger.warning("%s 为目录, 而 %s 为文件, 无法进行复制", src_path, dst_path)
+            sync_file_list = []
+        else:
+            dst_files_set = set(dst_files)  # 加快统计速度
+            sync_file_list = [
+                x
+                for x in tqdm(src_files, desc="计算需要同步的文件")
+                if (
+                    dst_path
+                    / x.relative_to(src_path if not src_is_file else src_path.parent)
+                )
+                not in dst_files_set
+            ]
         logger.info("要进行同步的文件数量: %s", len(sync_file_list))
         return sync_file_list
 
