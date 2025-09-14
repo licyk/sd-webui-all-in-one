@@ -35,7 +35,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/kohya_gui" `
-            -PyTorchMirrorType cu129 `
+            -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "kohya_gui" `
@@ -47,6 +47,11 @@ jobs:
         shell: pwsh
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/kohya_gui"
+
+      - name: Clean cache dir
+        shell: pwsh
+        run: |
+          Remove-Item -Path "${{ github.workspace }}/kohya_gui/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh

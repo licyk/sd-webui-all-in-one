@@ -47,6 +47,11 @@ jobs:
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/invokeai"
 
+      - name: Clean cache dir
+        shell: pwsh
+        run: |
+          Remove-Item -Path "${{ github.workspace }}/invokeai/cache" -Force -Recurse
+
       - name: Archive
         shell: pwsh
         run: |

@@ -35,7 +35,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_next" `
-            -PyTorchMirrorType cu129 `
+            -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
             -BuildWitchBranch 10 `
@@ -80,6 +80,11 @@ jobs:
         shell: pwsh
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_next"
+
+      - name: Clean cache dir
+        shell: pwsh
+        run: |
+          Remove-Item -Path "${{ github.workspace }}/sd_next/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh

@@ -35,7 +35,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/musubi_tuner" `
-            -PyTorchMirrorType cu129 `
+            -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "musubi_tuner" `
@@ -47,6 +47,11 @@ jobs:
         shell: pwsh
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/musubi_tuner"
+
+      - name: Clean cache dir
+        shell: pwsh
+        run: |
+          Remove-Item -Path "${{ github.workspace }}/musubi_tuner/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh

@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 267
+$SD_WEBUI_INSTALLER_VERSION = 268
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1422,7 +1422,7 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
     )) | Out-Null
     $sd_webui_extension.Add(@(
         @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu"),
-        "https://github.com/Akegarasu/sd-webui-wd14-tagger", "$sd_webui_extension_path/sd-webui-wd14-tagger"
+        "https://github.com/licyk/sd-webui-wd14-tagger", "$sd_webui_extension_path/sd-webui-wd14-tagger"
     )) | Out-Null
     $sd_webui_extension.Add(@(
         @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
@@ -1473,8 +1473,8 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         "https://github.com/arenasys/stable-diffusion-webui-model-toolkit", "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
     )) | Out-Null
     $sd_webui_extension.Add(@(
-        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
-        "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img", "$sd_webui_extension_path/a1111-sd-webui-haku-img"
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/a1111-sd-webui-haku-img", "$sd_webui_extension_path/a1111-sd-webui-haku-img"
     )) | Out-Null
     $sd_webui_extension.Add(@(
         @("sd_webui", "sd_webui_reforge", "sd_webui_amdgpu"),

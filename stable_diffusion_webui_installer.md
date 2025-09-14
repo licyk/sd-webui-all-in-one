@@ -184,7 +184,7 @@ $ tree -L 1
 |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
 |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
 |[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|
-|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|
+|[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
 |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
 |[Haoming02/sd-webui-mosaic-outpaint](https://github.com/Haoming02/sd-webui-mosaic-outpaint)|
 |[Haoming02/sd-webui-resource-monitor](https://github.com/Haoming02/sd-webui-resource-monitor)|
@@ -197,7 +197,7 @@ $ tree -L 1
 |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
 |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
 |[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|
-|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 
@@ -209,7 +209,7 @@ $ tree -L 1
 |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
 |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
 |[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|
-|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|
+|[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
 |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
 |[Haoming02/sd-webui-mosaic-outpaint](https://github.com/Haoming02/sd-webui-mosaic-outpaint)|
 |[Haoming02/sd-webui-resource-monitor](https://github.com/Haoming02/sd-webui-resource-monitor)|
@@ -217,6 +217,7 @@ $ tree -L 1
 |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
 |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
 |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[licyk/sd_forge_hypertile_svd_z123](https://github.com/licyk/sd_forge_hypertile_svd_z123)|
 |[lllyasviel/sd-forge-layerdiffuse](https://github.com/lllyasviel/sd-forge-layerdiffuse)|
 
@@ -228,7 +229,7 @@ $ tree -L 1
 |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
 |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
 |[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|
-|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|
+|[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
 |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
 |[Haoming02/sd-webui-mosaic-outpaint](https://github.com/Haoming02/sd-webui-mosaic-outpaint)|
 |[Haoming02/sd-webui-resource-monitor](https://github.com/Haoming02/sd-webui-resource-monitor)|
@@ -237,7 +238,7 @@ $ tree -L 1
 |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
 |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
 |[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|
-|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 
@@ -254,7 +255,7 @@ $ tree -L 1
 |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
 |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
 |[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|
-|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 
 |[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
@@ -265,7 +266,7 @@ $ tree -L 1
 |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
 |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
 |[Physton/sd-webui-prompt-all-in-one](https://github.com/Physton/sd-webui-prompt-all-in-one)|
-|[Akegarasu/sd-webui-wd14-tagger](https://github.com/Akegarasu/sd-webui-wd14-tagger)|
+|[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
 |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
 |[Haoming02/sd-webui-mosaic-outpaint](https://github.com/Haoming02/sd-webui-mosaic-outpaint)|
 |[Haoming02/sd-webui-resource-monitor](https://github.com/Haoming02/sd-webui-resource-monitor)|
@@ -278,7 +279,7 @@ $ tree -L 1
 |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
 |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
 |[arenasys/stable-diffusion-webui-model-toolkit](https://github.com/arenasys/stable-diffusion-webui-model-toolkit)|
-|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 
@@ -297,7 +298,7 @@ $ tree -L 1
 |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
 |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
 |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
-|[KohakuBlueleaf/a1111-sd-webui-haku-img](https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img)|
+|[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 
 >[!NOTE]  

@@ -35,7 +35,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_scripts" `
-            -PyTorchMirrorType cu129 `
+            -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
             -BuildWitchBranch 2 `
@@ -48,6 +48,11 @@ jobs:
         shell: pwsh
         run: |
           python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_scripts"
+
+      - name: Clean cache dir
+        shell: pwsh
+        run: |
+          Remove-Item -Path "${{ github.workspace }}/sd_scripts/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh
