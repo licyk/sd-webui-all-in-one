@@ -4,6 +4,7 @@ on:
   push:
   delete:
   create:
+  workflow_dispatch:
 
 jobs:
   Sync-To-Gitee:

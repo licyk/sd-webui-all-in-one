@@ -10,6 +10,7 @@ on:
   create:
     paths:
       - '**.ps1'
+  workflow_dispatch:
 
 jobs:
   Check-Installer-Version:

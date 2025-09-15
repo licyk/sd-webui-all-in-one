@@ -36,6 +36,7 @@ on:
       - stable_diffusion_webui_colab.ipynb
   delete:
   create:
+  workflow_dispatch:
 
 jobs:
   Release-To-Github:
