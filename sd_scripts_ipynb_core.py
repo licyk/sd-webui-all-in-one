@@ -166,7 +166,7 @@ def run_cmd(
 
         return "".join(process_output)
 
-    result: subprocess.CompletedProcess = subprocess.run(
+    result: subprocess.CompletedProcess[bytes] = subprocess.run(
         command_str,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -6057,7 +6057,9 @@ class ComfyUIManager(BaseManager):
             logger.error("安装 %s 自定义节点失败", name)
         u = self.git.update(install_path)
         if u:
+            logger.info("更新 %s 自定义节点完成", name)
             return p
+        logger.info("更新 %s 自定义节点失败", name)
         return None
 
     def install_custom_nodes_from_list(
@@ -6388,7 +6390,9 @@ class SDWebUIManager(BaseManager):
             logger.error("安装 %s 扩展失败", name)
         u = self.git.update(install_path)
         if u:
+            logger.info("更新 %s 扩展完成", name)
             return p
+        logger.info("更新 %s 扩展失败", name)
         return None
 
     def install_extensions_from_list(
