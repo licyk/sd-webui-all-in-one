@@ -5551,56 +5551,135 @@ class SDScriptsManager(BaseManager):
 class FooocusManager(BaseManager):
     """Fooocus 管理工具"""
 
-    def mount_drive(self) -> None:
-        """挂载 Google Drive 并创建 Fooocus 输出文件夹"""
+    def mount_drive(
+        self,
+        extras: list[dict[str, str | bool]] = None,
+    ) -> None:
+        """挂载 Google Drive 并创建 Fooocus 输出文件夹
+
+        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+
+        :notes
+            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+
+            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+
+            若额外链接路径为文件, 需指定`is_file`属性为`True`
+
+            例如:
+            ```python
+            extras = [
+                {"link_dir": "models/loras"},
+                {"link_dir": "custom_nodes"},
+                {"link_dir": "extra_model_paths.yaml", "is_file": True},
+            ]
+            ```
+        """
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
                 raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
-        fooocus_output = drive_path / "MyDrive" / "fooocus_output"
-        fooocus_output.mkdir(parents=True, exist_ok=True)
+        drive_output = drive_path / "MyDrive" / "fooocus_output"
+        fooocus_path = self.workspace / self.workfolder
+        drive_fooocus_output_path = drive_output / "outputs"
+        fooocus_output_path = fooocus_path / "outputs"
+        drive_fooocus_presets_path = drive_output / "presets"
+        fooocus_presets_path = fooocus_path / "presets"
+        drive_fooocus_language_path = drive_output / "language"
+        fooocus_language_path = fooocus_path / "language"
+        drive_fooocus_wildcards_path = drive_output / "wildcards"
+        fooocus_wildcards_path = fooocus_path / "wildcards"
+        drive_fooocus_config = drive_output / "config.txt"
+        fooocus_config = fooocus_path / "config.txt"
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_fooocus_output_path,
+            link_path=fooocus_output_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_fooocus_presets_path,
+            link_path=fooocus_presets_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_fooocus_language_path,
+            link_path=fooocus_language_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_fooocus_wildcards_path,
+            link_path=fooocus_wildcards_path,
+        )
+        if (
+            fooocus_config.exists()
+            or drive_fooocus_config.exists()
+        ):
+            self.utils.sync_files_and_create_symlink(
+                src_path=drive_fooocus_config,
+                link_path=fooocus_config,
+                src_is_file=True,
+            )
+        if extras is None:
+            return
+        for extra in extras:
+            link_dir = extra.get("link_dir")
+            is_file = extra.get("is_file", False)
+            if link_dir is None:
+                continue
+            full_link_path = fooocus_path / link_dir
+            full_drive_path = drive_output / link_dir
+            if is_file and (
+                not full_link_path.exists() and not full_drive_path.exists()
+            ):
+                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
+                continue
+            self.utils.sync_files_and_create_symlink(
+                src_path=full_drive_path,
+                link_path=full_link_path,
+                src_is_file=is_file,
+            )
 
-    def get_sd_model(self, url: str, filename: str = None) -> None:
-        """下载大模型
+    def get_sd_model(
+        self,
+        url: str,
+        filename: str = None,
+        model_type: str | None = "checkpoints",
+    ) -> Path | None:
+        """下载模型
 
         :param url`(str)`: 模型的下载链接
         :param filename`(str|None)`: 模型下载后保存的名称
+        :param model_type`(str|None)`: 模型的类型
         """
-        path = self.workspace / self.workfolder / "models" / "checkpoints"
+        path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
-    def get_lora_model(self, url: str, filename: str = None) -> None:
-        """下载 LoRA 模型
+    def get_sd_model_from_list(
+        self,
+        model_list: list[dict[str]],
+    ) -> None:
+        """从模型列表下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
+        :param model_list`(list[str|int])`: 模型列表
+
+        :notes
+            `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
+            ```python
+            model_list = [
+                {"url": "url1", "type": "checkpoints"},
+                {"url": "url2", "filename": "file.safetensors"},
+                {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
+                {"url": "url4"},
+            ]
+            ```
         """
-        path = self.workspace / self.workfolder / "models" / "loras"
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
-
-    def get_vae_model(self, url: str, filename: str = None) -> None:
-        """下载 VAE 模型
-
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        """
-        path = self.workspace / self.workfolder / "models" / "vae"
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
-
-    def get_embedding_model(self, url: str, filename: str = None) -> None:
-        """下载 Embedding 模型
-
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        """
-        path = self.workspace / self.workfolder / "models" / "embeddings"
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+        for model in model_list:
+            url = model.get("url")
+            filename = model.get("filename")
+            model_type = model.get("type", "checkpoints")
+            self.get_sd_model(url=url, filename=filename, model_type=model_type)
 
     def install_config(
         self,
         preset: str | None = None,
-        path_config: str | None = None,
         translation: str | None = None,
     ) -> None:
         """下载 Fooocus 配置文件
@@ -5617,10 +5696,6 @@ class FooocusManager(BaseManager):
             self.downloader.download_file(
                 url=preset, path=preset_path, save_name="custom.json", tool="aria2"
             )
-        if path_config is not None:
-            self.downloader.download_file(
-                url=path_config, path=path, save_name="config.txt", tool="aria2"
-            )
         if translation is not None:
             self.downloader.download_file(
                 url=translation, path=language_path, save_name="zh.json", tool="aria2"
@@ -5630,13 +5705,13 @@ class FooocusManager(BaseManager):
         self,
         path: str | Path,
         thread_num: int | None = 16,
-        downloader: Literal["aria2", "requests", "mix"] = "mix",
+        downloader: Literal["aria2", "request", "mix"] = "mix",
     ) -> None:
         """根据 Fooocus 配置文件预下载模型
 
         :param path`(str|Path)`: Fooocus 配置文件路径
         :param thread_num`(int|None)`: 下载模型的线程数
-        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的下载器 (`aria2`, `requests`, `mix`)
+        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的下载器 (`aria2`, `request`, `mix`)
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         if path.exists():
@@ -5760,7 +5835,6 @@ class FooocusManager(BaseManager):
         fooocus_repo: str | None = None,
         fooocus_requirements: str | None = None,
         fooocus_preset: str | None = None,
-        fooocus_path_config: str | None = None,
         fooocus_translation: str | None = None,
         model_downloader: Literal["aria2", "request", "mix"] = "mix",
         download_model_thread: int | None = 16,
@@ -5784,7 +5858,6 @@ class FooocusManager(BaseManager):
         :param fooocus_repo`(str|None)`: Fooocus 仓库地址
         :param fooocus_requirements`(str|None)`: Fooocus 依赖文件名
         :param fooocus_preset`(str|None)`: Fooocus 预设文件下载链接
-        :param fooocus_path_config`(str|None)`: Fooocus 路径配置文件下载地址
         :param fooocus_translation`(str|None)`: Fooocus 翻译文件下载地址
         :param model_downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
         :param download_model_thread`(int|None)`: 预下载模型的线程
@@ -5810,11 +5883,6 @@ class FooocusManager(BaseManager):
             if fooocus_preset is None
             else fooocus_preset
         )
-        fooocus_path_config = (
-            "https://github.com/licyk/term-sd/releases/download/archive/fooocus_path_config_colab.json"
-            if fooocus_path_config is None
-            else fooocus_path_config
-        )
         fooocus_translation = (
             "https://github.com/licyk/term-sd/releases/download/archive/fooocus_zh_cn.json"
             if fooocus_translation is None
@@ -5832,7 +5900,6 @@ class FooocusManager(BaseManager):
             )
         logger.info("Fooocus 内核分支: %s", fooocus_repo)
         logger.info("Fooocus 预设配置: %s", fooocus_preset)
-        logger.info("Fooocus 路径配置: %s", fooocus_path_config)
         logger.info("Fooocus 翻译配置: %s", fooocus_translation)
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
@@ -5856,7 +5923,6 @@ class FooocusManager(BaseManager):
         os.chdir(self.workspace)
         self.install_config(
             preset=fooocus_preset,
-            path_config=fooocus_path_config,
             translation=fooocus_translation,
         )
         if enable_tcmalloc:
