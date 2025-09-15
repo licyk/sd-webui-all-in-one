@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.9"
+VERSION = "1.1.10"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1744,10 +1744,13 @@ class Utils:
         :parma src_is_file`(bool|None)`: 源路径是否为文件
         :notes
             当源路径不存在时, 则尝试创建源路径, 并检查链接路径状态
+
             链接路径若已存在, 并且存在文件, 将检查链接路径中的文件是否存在于源路径中
+
             在链接路径存在但在源路径不存在的文件将被复制 (增量同步)
 
             完成增量同步后将链接路径属性, 若为实际路径则对该路径进行重命名; 如果为链接路径则删除链接
+
             链接路径清理完成后, 在链接路径为源路径创建软链接
         """
         src_path = (
@@ -6045,14 +6048,17 @@ class ComfyUIManager(BaseManager):
         """
         custom_node_path = self.workspace / self.workfolder / "custom_nodes"
         name = os.path.basename(custom_node)
+        install_path = custom_node_path / name
         logger.info("安装 %s 自定义节点中", name)
-        p = self.git.clone(repo=custom_node, path=custom_node_path / name)
+        p = self.git.clone(repo=custom_node, path=install_path)
         if p is not None:
             logger.info("安装 %s 自定义节点完成", name)
-            return p
         else:
             logger.error("安装 %s 自定义节点失败", name)
-            return None
+        u = self.git.update(install_path)
+        if u:
+            return p
+        return None
 
     def install_custom_nodes_from_list(
         self,
@@ -6373,14 +6379,17 @@ class SDWebUIManager(BaseManager):
         """
         extension_path = self.workspace / self.workfolder / "extensions"
         name = os.path.basename(extension)
+        install_path = extension_path / name
         logger.info("安装 %s 扩展中", name)
-        p = self.git.clone(repo=extension, path=extension_path / name)
+        p = self.git.clone(repo=extension, path=install_path)
         if p is not None:
             logger.info("安装 %s 扩展完成", name)
-            return p
         else:
             logger.error("安装 %s 扩展失败", name)
-            return None
+        u = self.git.update(install_path)
+        if u:
+            return p
+        return None
 
     def install_extensions_from_list(
         self,
