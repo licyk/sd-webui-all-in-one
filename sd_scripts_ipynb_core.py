@@ -342,7 +342,7 @@ class GitWarpper:
                             str(path),
                             "rev-parse",
                             "--abbrev-ref",
-                            "{}@{upstream}".format(origin_branch),
+                            f"{origin_branch}@{{upstream}}",
                         ],
                         live=False,
                     )
@@ -3975,19 +3975,19 @@ class RequirementCheck:
         """
         try:
             ver = importlib.metadata.version(package_name)
-        except:
+        except Exception as _:
             ver = None
 
         if ver is None:
             try:
                 ver = importlib.metadata.version(package_name.lower())
-            except:
+            except Exception as _:
                 ver = None
 
         if ver is None:
             try:
                 ver = importlib.metadata.version(package_name.replace("_", "-"))
-            except:
+            except Exception as _:
                 ver = None
 
         return ver
@@ -5114,9 +5114,9 @@ class CUDAMalloc:
         else:
             gpu_names = set()
             out = subprocess.check_output(["nvidia-smi", "-L"])
-            for l in out.split(b"\n"):
-                if len(l) > 0:
-                    gpu_names.add(l.decode("utf-8").split(" (UUID")[0])
+            for line in out.split(b"\n"):
+                if len(line) > 0:
+                    gpu_names.add(line.decode("utf-8").split(" (UUID")[0])
             return gpu_names
 
     blacklist = {
@@ -5169,7 +5169,7 @@ class CUDAMalloc:
     def cuda_malloc_supported():
         try:
             names = CUDAMalloc.get_gpu_names()
-        except:
+        except Exception as _:
             names = set()
         for x in names:
             if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
@@ -5182,7 +5182,7 @@ class CUDAMalloc:
     def is_nvidia_device():
         try:
             names = CUDAMalloc.get_gpu_names()
-        except:
+        except Exception as _:
             names = set()
         for x in names:
             if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
@@ -5896,8 +5896,27 @@ class ComfyUIManager(BaseManager):
         )
         self.env_check = ComfyUIRequirementCheck()
 
-    def mount_drive(self) -> None:
-        """挂载 Google Drive 并创建 ComfyUI 输出文件夹"""
+    def mount_drive(
+        self,
+        extras: list[dict[str, str | bool]] = None,
+    ) -> None:
+        """挂载 Google Drive 并创建 ComfyUI 输出文件夹
+
+        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+
+        :notes
+            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+            若额外链接路径为文件, 需指定`is_file`属性为`True`
+            例如:
+            ```python
+            extras = [
+                {"link_dir": "models/loras"},
+                {"link_dir": "custom_nodes"},
+                {"link_dir": "extra_model_paths.yaml", "is_file": True},
+            ]
+            ```
+        """
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -5925,11 +5944,33 @@ class ComfyUIManager(BaseManager):
             src_path=drive_comfyui_input_path,
             link_path=comfyui_input_path,
         )
-        if comfyui_model_path_config.exists() or drive_comfyui_model_path_config.exists():
+        if (
+            comfyui_model_path_config.exists()
+            or drive_comfyui_model_path_config.exists()
+        ):
             self.utils.sync_files_and_create_symlink(
                 src_path=drive_comfyui_model_path_config,
                 link_path=comfyui_model_path_config,
                 src_is_file=True,
+            )
+        if extras is None:
+            return
+        for extra in extras:
+            link_dir = extra.get("link_dir")
+            is_file = extra.get("is_file", False)
+            if link_dir is None:
+                continue
+            full_link_path = comfyui_path / link_dir
+            full_drive_path = drive_path / link_dir
+            if is_file and (
+                not full_link_path.exists() and not full_drive_path.exists()
+            ):
+                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
+                continue
+            self.utils.sync_files_and_create_symlink(
+                src_path=full_drive_path,
+                link_path=full_link_path,
+                src_is_file=is_file,
             )
 
     def get_sd_model(
@@ -6151,8 +6192,26 @@ class ComfyUIManager(BaseManager):
 class SDWebUIManager(BaseManager):
     """Stable Diffusion WebUI 管理工具"""
 
-    def mount_drive(self) -> None:
-        """挂载 Google Drive 并创建 Stable Diffusion WebUI 输出文件夹"""
+    def mount_drive(
+        self,
+        extras: list[dict[str, str | bool]] = None,
+    ) -> None:
+        """挂载 Google Drive 并创建 Stable Diffusion WebUI 输出文件夹
+
+        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+
+        :notes
+            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+            若额外链接路径为文件, 需指定`is_file`属性为`True`
+            例如:
+            ```python
+            extras = [
+                {"link_dir": "models/loras"},
+                {"link_dir": "custom_nodes"},
+                {"link_dir": "extra_model_paths.yaml", "is_file": True},
+            ]
+            ```"""
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -6203,6 +6262,25 @@ class SDWebUIManager(BaseManager):
                 src_path=drive_sd_webui_styles,
                 link_path=sd_webui_styles,
                 src_is_file=True,
+            )
+        if extras is None:
+            return
+        for extra in extras:
+            link_dir = extra.get("link_dir")
+            is_file = extra.get("is_file", False)
+            if link_dir is None:
+                continue
+            full_link_path = sd_webui_path / link_dir
+            full_drive_path = drive_output / link_dir
+            if is_file and (
+                not full_link_path.exists() and not full_drive_path.exists()
+            ):
+                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
+                continue
+            self.utils.sync_files_and_create_symlink(
+                src_path=full_drive_path,
+                link_path=full_link_path,
+                src_is_file=is_file,
             )
 
     def get_sd_model(
@@ -6972,7 +7050,7 @@ class InvokeAIManager(BaseManager):
                     print(f"- {file_name}: {model}")
             print("-" * 70)
             logger.warning(
-                f"导入失败的模型可尝试通过在 InvokeAI 的模型管理 -> 添加模型 -> 链接和本地路径, 手动输入模型路径并添加"
+                "导入失败的模型可尝试通过在 InvokeAI 的模型管理 -> 添加模型 -> 链接和本地路径, 手动输入模型路径并添加"
             )
 
         logger.info("导入模型结束")
