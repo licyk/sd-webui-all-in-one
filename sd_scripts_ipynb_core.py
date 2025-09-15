@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.8"
+VERSION = "1.1.9"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -5964,7 +5964,7 @@ class ComfyUIManager(BaseManager):
             if link_dir is None:
                 continue
             full_link_path = comfyui_path / link_dir
-            full_drive_path = drive_path / link_dir
+            full_drive_path = drive_output / link_dir
             if is_file and (
                 not full_link_path.exists() and not full_drive_path.exists()
             ):
