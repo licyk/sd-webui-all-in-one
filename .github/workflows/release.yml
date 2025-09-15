@@ -13,7 +13,6 @@ on:
       - sd_trainer_script_installer.ps1
       - configure_env.bat
       - fooocus_config.json
-      - fooocus_path_config_colab.json
       - fooocus_path_config_kaggle.json
       - fooocus_zh_cn.json
       - libtcmalloc_minimal.so.4
@@ -106,9 +105,6 @@ jobs:
 
           gh release delete-asset archive fooocus_config.json -y || true
           gh release upload archive fooocus_config.json
-
-          gh release delete-asset archive fooocus_path_config_colab.json -y || true
-          gh release upload archive fooocus_path_config_colab.json
 
           gh release delete-asset archive fooocus_path_config_kaggle.json -y || true
           gh release upload archive fooocus_path_config_kaggle.json
@@ -205,7 +201,6 @@ jobs:
           gitee_files: |
             configure_env.bat
             fooocus_config.json
-            fooocus_path_config_colab.json
             fooocus_path_config_kaggle.json
             fooocus_zh_cn.json
             libtcmalloc_minimal.so.4
