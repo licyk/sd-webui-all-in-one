@@ -38,7 +38,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.7"
+VERSION = "1.1.8"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -5906,8 +5906,11 @@ class ComfyUIManager(BaseManager):
 
         :notes
             挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+
             相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+
             若额外链接路径为文件, 需指定`is_file`属性为`True`
+
             例如:
             ```python
             extras = [
@@ -6202,8 +6205,11 @@ class SDWebUIManager(BaseManager):
 
         :notes
             挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+
             相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+
             若额外链接路径为文件, 需指定`is_file`属性为`True`
+
             例如:
             ```python
             extras = [
