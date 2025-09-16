@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 268
+$SD_WEBUI_INSTALLER_VERSION = 269
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -134,7 +134,7 @@ $SD_WEBUI_REPO = if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($Inst
 } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
     "https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu"
 } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
-    "https://github.com/vladmandic/automatic"
+    "https://github.com/vladmandic/sdnext"
 } else {
     "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
 }
@@ -1491,6 +1491,10 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
     $sd_webui_extension.Add(@(
         @("sd_webui_forge"),
         "https://github.com/lllyasviel/sd-forge-layerdiffuse", "$sd_webui_extension_path/sd-forge-layerdiffuse"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/sd-webui-licyk-style-image", "$sd_webui_extension_path/sd-webui-licyk-style-image"
     )) | Out-Null
 
     for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
@@ -6004,14 +6008,14 @@ function Main {
                 `$go_to = 1
             }
             9 {
-                `$remote = `"https://github.com/vladmandic/automatic`"
+                `$remote = `"https://github.com/vladmandic/sdnext`"
                 `$branch = `"master`"
                 `$branch_name = `"vladmandic - SD.NEXT 主分支`"
                 `$use_submod = `$true
                 `$go_to = 1
             }
             10 {
-                `$remote = `"https://github.com/vladmandic/automatic`"
+                `$remote = `"https://github.com/vladmandic/sdnext`"
                 `$branch = `"dev`"
                 `$branch_name = `"vladmandic - SD.NEXT 测试分支`"
                 `$use_submod = `$true
@@ -11158,7 +11162,7 @@ Stable Diffusion WebUI Forge 项目地址：https://github.com/lllyasviel/stable
 Stable Diffusion WebUI reForge 项目地址：https://github.com/Panchovix/stable-diffusion-webui-reForge
 Stable Diffusion WebUI Forge Classic 项目地址：https://github.com/Haoming02/sd-webui-forge-classic
 Stable Diffusion WebUI AMDGPU 项目地址：https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu
-SD Next 项目地址：https://github.com/vladmandic/automatic
+SD Next 项目地址：https://github.com/vladmandic/sdnext
 
 
 ====================================================================

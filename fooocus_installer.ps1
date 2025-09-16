@@ -64,7 +64,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 201
+$FOOOCUS_INSTALLER_VERSION = 202
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2038,7 +2038,7 @@ function Check-Install {
 
     if (!(Test-Path "$InstallPath/launch_args.txt")) {
         Print-Msg "设置默认 Fooocus 启动参数"
-        $content = "--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics"
+        $content = "--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics --always-download-new-model"
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 

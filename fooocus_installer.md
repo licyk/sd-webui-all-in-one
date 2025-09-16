@@ -196,7 +196,7 @@ $ tree -L 1
 >Fooocus 默认使用的启动参数：
 >
 >```
->--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics
+>--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics --always-download-new-model
 >```
 
 
