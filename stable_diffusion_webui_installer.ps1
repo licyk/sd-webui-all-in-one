@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 269
+$SD_WEBUI_INSTALLER_VERSION = 270
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2356,7 +2356,7 @@ function Create-Stable-Diffusion-WebUI-Shortcut {
             `$filename = `"SD-WebUI-Forge-Classic`"
         } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
             `$filename = `"SD-WebUI-AMDGPU`"
-        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
             `$filename = `"SD-Next`"
         } else {
             `$filename = `"SD-WebUI`"
@@ -6250,7 +6250,7 @@ function Get-Local-Setting {
             `$arg.Add(`"-InstallBranch`", `"sd_webui_forge_classic`")
         } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
             `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
-        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`")) {
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
             `$arg.Add(`"-InstallBranch`", `"sdnext`")
         }
     } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui.txt`") -or (`$InstallBranch -eq `"sd_webui`")) {
