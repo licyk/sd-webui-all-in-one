@@ -5360,7 +5360,7 @@ class BaseManager:
     def tcmalloc_colab(self) -> None:
         """配置 TCMalloc (Colab)"""
         logger.info("配置 TCMalloc 内存优化")
-        url = "https://github.com/licyk/term-sd/releases/download/archive/libtcmalloc_minimal.so.4"
+        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
         libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
         self.downloader.download_file(
             url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4"
@@ -5880,12 +5880,12 @@ class FooocusManager(BaseManager):
             else fooocus_repo
         )
         fooocus_preset = (
-            "https://github.com/licyk/term-sd/releases/download/archive/fooocus_config.json"
+            "https://github.com/licyk/sd-webui-all-in-one/raw/main/fooocus_config.json"
             if fooocus_preset is None
             else fooocus_preset
         )
         fooocus_translation = (
-            "https://github.com/licyk/term-sd/releases/download/archive/fooocus_zh_cn.json"
+            "https://github.com/licyk/sd-webui-all-in-one/raw/main/fooocus_zh_cn.json"
             if fooocus_translation is None
             else fooocus_translation
         )
