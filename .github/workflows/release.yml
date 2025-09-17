@@ -34,6 +34,7 @@ on:
       - comfyui_colab.ipynb
       - invokeai_colab.ipynb
       - stable_diffusion_webui_colab.ipynb
+      - sd_trainer_colab.ipynb
   delete:
   create:
   workflow_dispatch:
@@ -175,6 +176,9 @@ jobs:
           gh release delete-asset archive stable_diffusion_webui_colab.ipynb -y || true
           gh release upload archive stable_diffusion_webui_colab.ipynb
 
+          gh release delete-asset archive sd_trainer_colab.ipynb -y || true
+          gh release upload archive sd_trainer_colab.ipynb
+
   Release-To-Gitee:
     # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
     # fork: https://github.com/licyk/action-gitee-release
@@ -235,6 +239,7 @@ jobs:
             comfyui_colab.ipynb
             invokeai_colab.ipynb
             stable_diffusion_webui_colab.ipynb
+            sd_trainer_colab.ipynb
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 

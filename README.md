@@ -20,6 +20,8 @@ _✨快速部署，简单易用_
   - [可用的 Jupyter Notebook](#可用的-jupyter-notebook)
     - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
     - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
+    - [SD Trainer Colab Jupyter NoteBook](#sd-trainer-colab-jupyter-notebook)
+    - [HDM Train Kaggle Jupyter NoteBook](#hdm-train-kaggle-jupyter-notebook)
     - [Stable Diffusion WebUI Colab NoteBook](#stable-diffusion-webui-colab-notebook)
     - [ComfyUI Colab NoteBook](#comfyui-colab-notebook)
     - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
@@ -28,7 +30,6 @@ _✨快速部署，简单易用_
     - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
     - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
     - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
-    - [HDM Train Kaggle Jupyter NoteBook](#hdm-train-kaggle-jupyter-notebook)
   - [主要功能](#主要功能)
   - [其他功能](#其他功能)
   - [提示](#提示)
@@ -76,6 +77,18 @@ _✨快速部署，简单易用_
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_scripts_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
+### SD Trainer Colab Jupyter NoteBook
+[sd_trainer_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_colab.ipynb))：适用于 Colab 一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_trainer_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+### HDM Train Kaggle Jupyter NoteBook
+[hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb))：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
 ### Stable Diffusion WebUI Colab NoteBook
 [stable_diffusion_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/stable_diffusion_webui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_colab.ipynb))：适用于 Colab 一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
 
@@ -99,9 +112,13 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
+***
 
 ### SD WebUI All In One Jupyter NoteBook
 [sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
+
+>[!WARNING]  
+>已停止维护，可能存在的 BUG 将不再修复。
 
 
 ### SD WebUI All In One Colab Jupyter NoteBook
@@ -109,19 +126,22 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
+>[!WARNING]  
+>已停止维护，可能存在的 BUG 将不再修复。
+
 
 ### Fooocus kaggle Jupyter NoteBook
 [fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+>[!WARNING]  
+>已停止维护，可能存在的 BUG 将不再修复。
 
 
 ### SD Trainer Kaggle Jupyter NoteBook
 [sd_trainer_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_kaggle.ipynb))：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
 
-
-### HDM Train Kaggle Jupyter NoteBook
-[hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb))：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
-
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/hdm_train_kaggle.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+>[!WARNING]  
+>已停止维护，可能存在的 BUG 将不再修复。
 
 
 ## 主要功能

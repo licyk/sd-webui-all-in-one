@@ -6,6 +6,8 @@
 - InvokeAI
 - Fooocus
 - SD Script
+- SD Trainer
+- Kohya GUI
 """
 
 import os
@@ -38,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.10"
+VERSION = "1.1.11"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -5574,6 +5576,7 @@ class FooocusManager(BaseManager):
                 {"link_dir": "extra_model_paths.yaml", "is_file": True},
             ]
             ```
+            默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
         """
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
@@ -5608,10 +5611,7 @@ class FooocusManager(BaseManager):
             src_path=drive_fooocus_wildcards_path,
             link_path=fooocus_wildcards_path,
         )
-        if (
-            fooocus_config.exists()
-            or drive_fooocus_config.exists()
-        ):
+        if fooocus_config.exists() or drive_fooocus_config.exists():
             self.utils.sync_files_and_create_symlink(
                 src_path=drive_fooocus_config,
                 link_path=fooocus_config,
@@ -5648,6 +5648,7 @@ class FooocusManager(BaseManager):
         :param url`(str)`: 模型的下载链接
         :param filename`(str|None)`: 模型下载后保存的名称
         :param model_type`(str|None)`: 模型的类型
+        :return `Path|None`: 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -5988,6 +5989,7 @@ class ComfyUIManager(BaseManager):
                 {"link_dir": "extra_model_paths.yaml", "is_file": True},
             ]
             ```
+            默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
         """
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
@@ -6056,6 +6058,7 @@ class ComfyUIManager(BaseManager):
         :param url`(str)`: 模型的下载链接
         :param filename`(str|None)`: 模型下载后保存的名称
         :param model_type`(str|None)`: 模型的类型
+        :return `Path|None`: 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -6291,7 +6294,9 @@ class SDWebUIManager(BaseManager):
                 {"link_dir": "custom_nodes"},
                 {"link_dir": "extra_model_paths.yaml", "is_file": True},
             ]
-            ```"""
+            ```
+            默认挂载的目录和文件: `outputs`, `config_states`, `params.txt`, `config.json`, `ui-config.json`, `styles.csv`
+        """
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -6374,6 +6379,7 @@ class SDWebUIManager(BaseManager):
         :param url`(str)`: 模型的下载链接
         :param filename`(str|None)`: 模型下载后保存的名称
         :param model_type`(str|None)`: 模型的类型
+        :return `Path|None`: 模型保存路径
         """
         if model_type == "embeddings":
             path = self.workspace / self.workfolder / model_type
@@ -7161,6 +7167,7 @@ class InvokeAIManager(BaseManager):
         :param url`(str)`: 模型的下载链接
         :param filename`(str|None)`: 模型下载后保存的名称
         :param model_type`(str|None)`: 模型的类型
+        :return `Path|None`: 模型保存路径
         """
         path = self.workspace / self.workfolder / "sd-models"
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -7260,3 +7267,256 @@ class InvokeAIManager(BaseManager):
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("InvokeAI 安装完成")
+
+
+class SDTrainerManager(BaseManager):
+    """SD Trainer 管理工具"""
+
+    def mount_drive(
+        self,
+        extras: list[dict[str, str | bool]] = None,
+    ) -> None:
+        """挂载 Google Drive 并创建 SD Trainer 输出文件夹
+
+        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+
+        :notes
+            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+
+            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+
+            若额外链接路径为文件, 需指定`is_file`属性为`True`
+
+            例如:
+            ```python
+            extras = [
+                {"link_dir": "models/loras"},
+                {"link_dir": "custom_nodes"},
+                {"link_dir": "extra_model_paths.yaml", "is_file": True},
+            ]
+
+            ```
+            默认挂载的目录和文件: `outputs`, `output`, `config`, `train`, `logs`
+        """
+        drive_path = Path("/content/drive")
+        if not (drive_path / "MyDrive").exists():
+            if not self.utils.mount_google_drive(drive_path):
+                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+
+        drive_output = drive_path / "MyDrive" / "sd_trainer_output"
+        sd_trainer_path = self.workspace / self.workfolder
+        drive_sd_trainer_outputs_path = drive_output / "outputs"
+        sd_trainer_outputs_path = sd_trainer_path / "outputs"
+        drive_sd_trainer_output_path = drive_output / "output"
+        sd_trainer_output_path = sd_trainer_path / "output"
+        drive_sd_trainer_config_path = drive_output / "config"
+        sd_trainer_config_path = sd_trainer_path / "config"
+        drive_sd_trainer_train_path = drive_output / "train"
+        sd_trainer_train_path = sd_trainer_path / "train"
+        drive_sd_trainer_logs_path = drive_output / "logs"
+        sd_trainer_logs_path = sd_trainer_path / "logs"
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_sd_trainer_outputs_path,
+            link_path=sd_trainer_outputs_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_sd_trainer_output_path,
+            link_path=sd_trainer_output_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_sd_trainer_config_path,
+            link_path=sd_trainer_config_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_sd_trainer_train_path,
+            link_path=sd_trainer_train_path,
+        )
+        self.utils.sync_files_and_create_symlink(
+            src_path=drive_sd_trainer_logs_path,
+            link_path=sd_trainer_logs_path,
+        )
+        if extras is None:
+            return
+        for extra in extras:
+            link_dir = extra.get("link_dir")
+            is_file = extra.get("is_file", False)
+            if link_dir is None:
+                continue
+            full_link_path = sd_trainer_path / link_dir
+            full_drive_path = drive_output / link_dir
+            if is_file and (
+                not full_link_path.exists() and not full_drive_path.exists()
+            ):
+                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
+                continue
+            self.utils.sync_files_and_create_symlink(
+                src_path=full_drive_path,
+                link_path=full_link_path,
+                src_is_file=is_file,
+            )
+
+    def get_sd_model(
+        self,
+        url: str,
+        filename: str = None,
+    ) -> Path | None:
+        """下载模型
+
+        :param url`(str)`: 模型的下载链接
+        :param filename`(str|None)`: 模型下载后保存的名称
+        :return `Path|None`: 模型保存路径
+        """
+        path = self.workspace / self.workfolder / "sd-models"
+        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+
+    def get_sd_model_from_list(
+        self,
+        model_list: list[dict[str]],
+    ) -> None:
+        """从模型列表下载模型
+
+        :param model_list`(list[str|int])`: 模型列表
+
+        :notes
+            `model_list`需要指定`url`(模型下载链接), 可选参数为`filename`(模型保存名称), 例如
+            ```python
+            model_list = [
+                {"url": "url1", "type": "checkpoints"},
+                {"url": "url2", "filename": "file.safetensors"},
+                {"url": "url4"},
+            ]
+            ```
+        """
+        for model in model_list:
+            url = model.get("url")
+            filename = model.get("filename")
+            self.get_sd_model(url=url, filename=filename)
+
+    def check_protobuf(
+        self,
+        use_uv: bool | None = True,
+    ) -> None:
+        """检查 protobuf 版本问题
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        """
+        logger.info("检查 protobuf 版本问题中")
+        try:
+            ver = importlib.metadata.version("protobuf")
+            if not self.env_check.is_v1_eq_v2(ver, "3.20.0"):
+                logger.info("重新安装 protobuf 中")
+                self.env.pip_install("protobuf==3.20.0", use_uv=use_uv)
+                logger.info("重新安装 protobuf 成功")
+                return
+            logger.info("protobuf 检查完成")
+        except Exception as e:
+            traceback.print_exc()
+            logger.error("检查 protobuf 时发送错误: %s", e)
+
+    def check_env(
+        self,
+        use_uv: bool | None = True,
+        requirements_file: str | None = "requirements.txt",
+    ) -> None:
+        """检查 SD Trainer 运行环境
+
+        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        :param requirements_file`(str|None)`: 依赖文件名
+        """
+        sd_trainer_path = self.workspace / self.workfolder
+        requirement_path = sd_trainer_path / requirements_file
+        self.env_check.check_env(
+            requirement_path=requirement_path, name="SD Trainer", use_uv=use_uv
+        )
+        self.env_check.fix_torch()
+        self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=False)
+        self.check_protobuf(use_uv=use_uv)
+        self.env_check.check_numpy(use_uv=use_uv)
+
+    def install(
+        self,
+        torch_ver: str | list | None = None,
+        xformers_ver: str | list | None = None,
+        use_uv: bool | None = True,
+        pypi_index_mirror: str | None = None,
+        pypi_extra_index_mirror: str | None = None,
+        pypi_find_links_mirror: str | None = None,
+        github_mirror: str | list | None = None,
+        huggingface_mirror: str | None = None,
+        pytorch_mirror: str | None = None,
+        sd_trainer_repo: str | None = None,
+        sd_trainer_requirements: str | None = None,
+        model_list: list[dict[str, str]] | None = None,
+        check_avaliable_gpu: bool | None = False,
+        enable_tcmalloc: bool | None = True,
+        enable_cuda_malloc: bool | None = True,
+        *args,
+        **kwargs,
+    ) -> None:
+        """安装 SD Trainer
+
+        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
+        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
+        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
+        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
+        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
+        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
+        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
+        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
+        :param sd_trainer_repo`(str|None)`: SD Trainer 仓库地址
+        :param sd_trainer_requirements`(str|None)`: SD Trainer 依赖文件名
+        :param model_list`(list[dict[str,str]])`: 模型下载列表
+        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
+        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        """
+        self.utils.warning_unexpected_params(
+            message="SDTrainerManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            args=args,
+            kwargs=kwargs,
+        )
+        logger.info("开始安装 SD Trainer")
+        os.chdir(self.workspace)
+        comfyui_path = self.workspace / self.workfolder
+        sd_trainer_repo = (
+            "https://github.com/Akegarasu/lora-scripts"
+            if sd_trainer_repo is None
+            else sd_trainer_repo
+        )
+        requirements_path = comfyui_path / (
+            "requirements.txt"
+            if sd_trainer_requirements is None
+            else sd_trainer_requirements
+        )
+        if check_avaliable_gpu and not self.utils.check_gpu():
+            raise Exception(
+                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
+            )
+        self.mirror.set_mirror(
+            pypi_index_mirror=pypi_index_mirror,
+            pypi_extra_index_mirror=pypi_extra_index_mirror,
+            pypi_find_links_mirror=pypi_find_links_mirror,
+            github_mirror=github_mirror,
+            huggingface_mirror=huggingface_mirror,
+        )
+        self.mirror.configure_pip()
+        self.env.install_manager_depend(use_uv)
+        self.git.clone(sd_trainer_repo, comfyui_path)
+        self.git.update(comfyui_path)
+        self.env.install_pytorch(
+            torch_package=torch_ver,
+            xformers_package=xformers_ver,
+            pytorch_mirror=pytorch_mirror,
+            use_uv=use_uv,
+        )
+        os.chdir(comfyui_path)
+        self.env.install_requirements(requirements_path, use_uv)
+        os.chdir(self.workspace)
+        if model_list is not None:
+            self.get_sd_model_from_list(model_list)
+        if enable_tcmalloc:
+            self.tcmalloc_colab()
+        if enable_cuda_malloc:
+            self.cuda_malloc.set_cuda_malloc()
+        logger.info("SD Trainer 安装完成")
