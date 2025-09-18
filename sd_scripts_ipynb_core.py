@@ -40,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.11"
+VERSION = "1.1.12"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -6122,13 +6122,8 @@ class ComfyUIManager(BaseManager):
         p = self.git.clone(repo=custom_node, path=install_path)
         if p is not None:
             logger.info("安装 %s 自定义节点完成", name)
-        else:
-            logger.error("安装 %s 自定义节点失败", name)
-        u = self.git.update(install_path)
-        if u:
-            logger.info("更新 %s 自定义节点完成", name)
             return p
-        logger.info("更新 %s 自定义节点失败", name)
+        logger.error("安装 %s 自定义节点失败", name)
         return None
 
     def install_custom_nodes_from_list(
@@ -6143,6 +6138,23 @@ class ComfyUIManager(BaseManager):
         for node in custom_node_list:
             self.install_custom_node(node)
         logger.info("安装 ComfyUI 自定义节点完成")
+
+    def update_custom_nodes(self) -> None:
+        """更新 ComfyUI 自定义节点"""
+        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
+        custom_node_list = [
+            x
+            for x in custom_node_path.iterdir()
+            if x.is_dir()
+            and (x / ".git").is_dir()
+        ]
+        for i in custom_node_list:
+            logger.info("更新 %s 自定义节点中", i.name)
+            if self.git.update(i):
+                logger.info("更新 %s 自定义节点成功", i.name)
+            else:
+                logger.info("更新 %s 自定义节点失败", i.name)
+
 
     def check_env(
         self,
@@ -6250,6 +6262,7 @@ class ComfyUIManager(BaseManager):
         if custom_node_list is not None:
             self.install_custom_nodes_from_list(custom_node_list)
         self.git.update(comfyui_path)
+        self.update_custom_nodes()
         self.env.install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
@@ -6458,13 +6471,8 @@ class SDWebUIManager(BaseManager):
         p = self.git.clone(repo=extension, path=install_path)
         if p is not None:
             logger.info("安装 %s 扩展完成", name)
-        else:
-            logger.error("安装 %s 扩展失败", name)
-        u = self.git.update(install_path)
-        if u:
-            logger.info("更新 %s 扩展完成", name)
             return p
-        logger.info("更新 %s 扩展失败", name)
+        logger.error("安装 %s 扩展失败", name)
         return None
 
     def install_extensions_from_list(
@@ -6594,6 +6602,23 @@ class SDWebUIManager(BaseManager):
             "[%s/%s] 安装 Stable Diffusion WebUI 扩展依赖结束", count, extension_count
         )
 
+    def update_extensions(self) -> None:
+        """更新 Stable Diffusion WebUI 扩展"""
+        extension_path = self.workspace / self.workfolder / "extensions"
+        extension_list = [
+            x
+            for x in extension_path.iterdir()
+            if x.is_dir()
+            and (x / ".git").is_dir()
+        ]
+        for i in extension_list:
+            logger.info("更新 %s 扩展中", i.name)
+            if self.git.update(i):
+                logger.info("更新 %s 扩展成功", i.name)
+            else:
+                logger.info("更新 %s 扩展失败", i.name)
+
+
     def check_env(
         self,
         use_uv: bool | None = True,
@@ -6702,6 +6727,7 @@ class SDWebUIManager(BaseManager):
         if extension_list is not None:
             self.install_extensions_from_list(extension_list)
         self.git.update(sd_webui_path)
+        self.update_extensions()
         if sd_webui_branch is not None:
             self.git.switch_branch(
                 path=sd_webui_path,
