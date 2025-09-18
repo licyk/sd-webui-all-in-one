@@ -160,6 +160,8 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 |[licyk/ComfyUI-Restart-Sampler](https://github.com/licyk/ComfyUI-Restart-Sampler)|
 |[weilin9999/WeiLin-ComfyUI-prompt-all-in-one](https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one)|
 |[licyk/ComfyUI-HakuImg](https://github.com/licyk/ComfyUI-HakuImg)|
+|[yolain/ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use)|
+|[rgthree/rgthree-comfy](https://github.com/rgthree/rgthree-comfy)|
 
 </details>
 
