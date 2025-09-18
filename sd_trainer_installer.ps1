@@ -63,7 +63,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 308
+$SD_TRAINER_INSTALLER_VERSION = 309
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -3518,6 +3518,57 @@ function Check-MS-VCPP-Redistributable {
 }
 
 
+# 检查 accelerate 可执行文件可用性
+function Check-Accelerate-Executable-File {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (((`$branch -ne `"bmaltais/kohya_ss`") -and (`$branch -ne `"bmaltais/kohya_ss.git`"))) {
+            return
+        }
+    }
+
+    if (!(Get-Command accelerate -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    Print-Msg `"检查 accelerate 可执行文件可用性`"
+    accelerate --help > `$null 2>&1
+    if (`$?) {
+        Print-Msg `"accelerate 可执行文件可用`"
+        return
+    }
+
+    Print-Msg `"accelerate 不可用, 尝试重新安装中`"
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print('accelerate==' + version('accelerate'))
+except Exception as _:
+    print('accelerate')
+    `".Trim()
+    `$accelerate_package = `$(python -c `"`$content`")
+    python -m pip uninstall accelerate -y
+    if (`$USE_UV) {
+        uv pip install `$accelerate_package
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install `$accelerate_package
+        }
+    } else {
+        python -m pip install `$accelerate_package
+    }
+
+    if (`$?) {
+        Print-Msg `"accelerate 重新安装成功`"
+    } else {
+        Print-Msg `"accelerate 重新安装失败, 这可能导致部分功能异常`"
+    }
+}
+
+
 # 检查 SD-Trainer 运行环境
 function Check-SD-Trainer-Env {
     if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
@@ -3527,6 +3578,7 @@ function Check-SD-Trainer-Env {
         Print-Msg `"检查 SD-Trainer 运行环境中`"
     }
 
+    Check-Accelerate-Executable-File
     Check-SD-Trainer-Requirements
     Fix-PyTorch
     Check-Onnxruntime-GPU
