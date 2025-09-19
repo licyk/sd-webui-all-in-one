@@ -40,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.12"
+VERSION = "1.1.13"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -282,7 +282,7 @@ class GitWarpper:
 
         try:
             logger.info("下载 %s 到 %s 中", repo, path)
-            run_cmd(["git", "clone", "--recurse-submodules", repo, str(path)])
+            run_cmd(["git", "clone", "--recurse-submodules", repo, path.as_posix()])
             return path
         except Exception as e:
             logger.error("下载 %s 失败: %s", repo, e)
@@ -307,18 +307,20 @@ class GitWarpper:
             if (
                 len(
                     run_cmd(
-                        ["git", "-C", str(path), "submodule", "status"], live=False
+                        ["git", "-C", path.as_posix(), "submodule", "status"],
+                        live=False,
                     ).strip()
                 )
                 != 0
             ):
                 use_submodule = ["--recurse-submodules"]
-                run_cmd(["git", "-C", str(path), "submodule", "init"])
+                run_cmd(["git", "-C", path.as_posix(), "submodule", "init"])
 
-            run_cmd(["git", "-C", str(path), "fetch", "--all"] + use_submodule)
+            run_cmd(["git", "-C", path.as_posix(), "fetch", "--all"] + use_submodule)
             branch = GitWarpper.get_current_branch(path)
             ref = run_cmd(
-                ["git", "-C", str(path), "symbolic-ref", "--quiet", "HEAD"], live=False
+                ["git", "-C", path.as_posix(), "symbolic-ref", "--quiet", "HEAD"],
+                live=False,
             )
 
             if GitWarpper.check_repo_on_origin_remote(path):
@@ -330,7 +332,7 @@ class GitWarpper:
                         [
                             "git",
                             "-C",
-                            str(path),
+                            path.as_posix(),
                             "config",
                             "--get",
                             f"branch.{origin_branch}.remote",
@@ -341,7 +343,7 @@ class GitWarpper:
                         [
                             "git",
                             "-C",
-                            str(path),
+                            path.as_posix(),
                             "rev-parse",
                             "--abbrev-ref",
                             f"{origin_branch}@{{upstream}}",
@@ -351,13 +353,13 @@ class GitWarpper:
                 except Exception as _:
                     pass
             run_cmd(
-                ["git", "-C", str(path), "reset", "--hard", origin_branch]
+                ["git", "-C", path.as_posix(), "reset", "--hard", origin_branch]
                 + use_submodule
             )
             logger.info("更新 %s 完成", path)
             return True
         except Exception as e:
-            logger.error("更新 %s 时发生错误: %s", str(path), e)
+            logger.error("更新 %s 时发生错误: %s", path.as_posix(), e)
             return False
 
     @staticmethod
@@ -369,7 +371,7 @@ class GitWarpper:
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
-            run_cmd(["git", "-C", str(path), "symbolic-ref", "HEAD"], live=False)
+            run_cmd(["git", "-C", path.as_posix(), "symbolic-ref", "HEAD"], live=False)
             return False
         except Exception as _:
             return True
@@ -384,9 +386,11 @@ class GitWarpper:
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
             logger.info("修复 %s 的 Git 指针游离中", path)
-            # run_cmd(["git", "-C", str(path), "remote", "prune", "origin"])
-            run_cmd(["git", "-C", str(path), "submodule", "init"])
-            branch_info = run_cmd(["git", "-C", str(path), "branch", "-a"], live=False)
+            # run_cmd(["git", "-C", path.as_posix(), "remote", "prune", "origin"])
+            run_cmd(["git", "-C", path.as_posix(), "submodule", "init"])
+            branch_info = run_cmd(
+                ["git", "-C", path.as_posix(), "branch", "-a"], live=False
+            )
             main_branch = None
             for info in branch_info.split("\n"):
                 if "/HEAD" in info:
@@ -395,13 +399,13 @@ class GitWarpper:
             if main_branch is None:
                 logger.error("未找到 %s 主分支, 无法修复 Git 指针游离", path)
                 return False
-            logger.info("%s 主分支: %s", str(path), main_branch)
-            run_cmd(["git", "-C", str(path), "checkout", main_branch])
+            logger.info("%s 主分支: %s", path.as_posix(), main_branch)
+            run_cmd(["git", "-C", path.as_posix(), "checkout", main_branch])
             run_cmd(
                 [
                     "git",
                     "-C",
-                    str(path),
+                    path.as_posix(),
                     "reset",
                     "--recurse-submodules",
                     "--hard",
@@ -425,7 +429,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
             return run_cmd(
-                ["git", "-C", str(path), "branch", "--show-current"], live=False
+                ["git", "-C", path.as_posix(), "branch", "--show-current"], live=False
             ).strip()
         except Exception as e:
             logger.error("获取 %s 当前分支失败: %s", path, e)
@@ -445,7 +449,7 @@ class GitWarpper:
                 [
                     "git",
                     "-C",
-                    str(path),
+                    path.as_posix(),
                     "show-ref",
                     "--verify",
                     "--quiet",
@@ -474,7 +478,7 @@ class GitWarpper:
                 [
                     "git",
                     "-C",
-                    str(path),
+                    path.as_posix(),
                     "show-ref",
                     "--verify",
                     "--quiet",
@@ -506,7 +510,7 @@ class GitWarpper:
         custom_env.pop("GIT_CONFIG_GLOBAL", None)
         try:
             current_url = run_cmd(
-                ["git", "-C", str(path), "remote", "get-url", "origin"],
+                ["git", "-C", path.as_posix(), "remote", "get-url", "origin"],
                 custom_env=custom_env,
                 live=False,
             )
@@ -519,7 +523,15 @@ class GitWarpper:
             logger.info("替换 %s 远程源: %s -> %s", path, current_url, new_url)
             try:
                 run_cmd(
-                    ["git", "-C", str(path), "remote", "set-url", "origin", new_url]
+                    [
+                        "git",
+                        "-C",
+                        path.as_posix(),
+                        "remote",
+                        "set-url",
+                        "origin",
+                        new_url,
+                    ]
                 )
             except Exception as e:
                 logger.error("替换 %s 远程源失败: %s", path, e)
@@ -531,7 +543,7 @@ class GitWarpper:
                     [
                         "git",
                         "-C",
-                        str(path),
+                        path.as_posix(),
                         "submodule",
                         "update",
                         "--init",
@@ -542,27 +554,42 @@ class GitWarpper:
                 logger.warning("更新 %s 的 Git 子模块信息发生错误: %s", path, e)
         else:
             try:
-                run_cmd(["git", "-C", str(path), "submodule", "deinit", "--all", "-f"])
+                run_cmd(
+                    ["git", "-C", path.as_posix(), "submodule", "deinit", "--all", "-f"]
+                )
             except Exception as e:
                 logger.warning("更新 %s 的 Git 子模块信息发生错误: %s", path, e)
 
         logger.info("拉取 %s 远程源更新中", path)
         try:
-            run_cmd(["git", "-C", str(path), "fetch"])
-            run_cmd(["git", "-C", str(path), "submodule", "deinit", "--all", "-f"])
+            run_cmd(["git", "-C", path.as_posix(), "fetch"])
+            run_cmd(
+                ["git", "-C", path.as_posix(), "submodule", "deinit", "--all", "-f"]
+            )
             if not GitWarpper.check_local_branch_exists(path, branch):
-                run_cmd(["git", "-C", str(path), "branch", branch])
+                run_cmd(["git", "-C", path.as_posix(), "branch", branch])
 
-            run_cmd(["git", "-C", str(path), "checkout", branch, "--force"])
+            run_cmd(["git", "-C", path.as_posix(), "checkout", branch, "--force"])
             logger.info("应用 %s 的远程源最新内容中", path)
             if recurse_submodules:
-                run_cmd(["git", "-C", str(path), "reset", "--hard", f"origin/{branch}"])
-                run_cmd(["git", "-C", str(path), "submodule", "deinit", "--all", "-f"])
                 run_cmd(
                     [
                         "git",
                         "-C",
-                        str(path),
+                        path.as_posix(),
+                        "reset",
+                        "--hard",
+                        f"origin/{branch}",
+                    ]
+                )
+                run_cmd(
+                    ["git", "-C", path.as_posix(), "submodule", "deinit", "--all", "-f"]
+                )
+                run_cmd(
+                    [
+                        "git",
+                        "-C",
+                        path.as_posix(),
                         "submodule",
                         "update",
                         "--init",
@@ -571,7 +598,7 @@ class GitWarpper:
                 )
 
             run_cmd(
-                ["git", "-C", str(path), "reset", "--hard", f"origin/{branch}"]
+                ["git", "-C", path.as_posix(), "reset", "--hard", f"origin/{branch}"]
                 + use_submodules
             )
             logger.info("切换 %s 分支到 %s 完成", path, branch)
@@ -581,11 +608,27 @@ class GitWarpper:
             logger.warning("回退分支切换")
             try:
                 run_cmd(
-                    ["git", "-C", str(path), "remote", "set-url", "origin", current_url]
+                    [
+                        "git",
+                        "-C",
+                        path.as_posix(),
+                        "remote",
+                        "set-url",
+                        "origin",
+                        current_url,
+                    ]
                 )
                 if recurse_submodules:
                     run_cmd(
-                        ["git", "-C", str(path), "submodule", "deinit", "--all", "-f"]
+                        [
+                            "git",
+                            "-C",
+                            path.as_posix(),
+                            "submodule",
+                            "deinit",
+                            "--all",
+                            "-f",
+                        ]
                     )
 
                 else:
@@ -593,7 +636,7 @@ class GitWarpper:
                         [
                             "git",
                             "-C",
-                            str(path),
+                            path.as_posix(),
                             "submodule",
                             "update",
                             "--init",
@@ -618,7 +661,7 @@ class GitWarpper:
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         logger.info("切换 %s 的 Git 指针到 %s 版本", path, commit)
         try:
-            run_cmd(["git", "-C", str(path), "reset", "--hard", commit])
+            run_cmd(["git", "-C", path.as_posix(), "reset", "--hard", commit])
             return True
         except Exception as e:
             logger.error("切换 %s 的 Git 指针到 %s 版本时失败: %s", path, commit, e)
@@ -633,7 +676,9 @@ class GitWarpper:
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
-            run_cmd(["git", "-C", str(path), "rev-parse", "--git-dir"], live=False)
+            run_cmd(
+                ["git", "-C", path.as_posix(), "rev-parse", "--git-dir"], live=False
+            )
             return True
         except Exception as _:
             return False
@@ -701,7 +746,7 @@ class Downloader:
                     "1M",
                     url,
                     "-d",
-                    str(path),
+                    path.as_posix(),
                     "-o",
                     save_name,
                 ]
@@ -872,7 +917,7 @@ class EnvManager:
             except Exception as _:
                 logger.info("安装 uv 中")
                 run_cmd(
-                    [sys.executable, "-m", "pip", "install", "uv"],
+                    [Path(sys.executable).as_posix(), "-m", "pip", "install", "uv"],
                     custom_env=custom_env,
                 )
 
@@ -884,12 +929,13 @@ class EnvManager:
                     e,
                 )
                 return run_cmd(
-                    [sys.executable, "-m", "pip", "install", *args],
+                    [Path(sys.executable).as_posix(), "-m", "pip", "install", *args],
                     custom_env=custom_env,
                 )
         else:
             return run_cmd(
-                [sys.executable, "-m", "pip", "install", *args], custom_env=custom_env
+                [Path(sys.executable).as_posix(), "-m", "pip", "install", *args],
+                custom_env=custom_env,
             )
 
     @staticmethod
@@ -1035,7 +1081,7 @@ class EnvManager:
         try:
             logger.info("从 %s 安装 Python 软件包中", path)
             EnvManager.pip_install(
-                "-r", str(path), use_uv=use_uv, custom_env=custom_env
+                "-r", path.as_posix(), use_uv=use_uv, custom_env=custom_env
             )
             logger.info("从 %s 安装 Python 软件包成功", path)
             return True
@@ -1124,6 +1170,11 @@ class Utils:
         :return `Path|None`: 下载成功并解压成功时返回路径
         """
         path = Path("/tmp")
+        local_dir = (
+            Path(local_dir)
+            if not isinstance(local_dir, Path) and local_dir is not None
+            else local_dir
+        )
         if name is None:
             parts = urlparse(url)
             name = os.path.basename(parts.path)
@@ -1138,16 +1189,36 @@ class Utils:
             logger.info("解压 %s 到 %s 中", name, local_dir)
             try:
                 if archive_format == ".7z":
-                    run_cmd(["7z", "x", str(origin_file_path), f"-o{local_dir}"])
+                    run_cmd(
+                        [
+                            "7z",
+                            "x",
+                            origin_file_path.as_posix(),
+                            f"-o{local_dir.as_posix()}",
+                        ]
+                    )
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".zip":
-                    run_cmd(["unzip", str(origin_file_path), "-d", str(local_dir)])
+                    run_cmd(
+                        [
+                            "unzip",
+                            origin_file_path.as_posix(),
+                            "-d",
+                            local_dir.as_posix(),
+                        ]
+                    )
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
                 elif archive_format == ".tar":
                     run_cmd(
-                        ["tar", "-xvf", str(origin_file_path), "-C", str(local_dir)]
+                        [
+                            "tar",
+                            "-xvf",
+                            origin_file_path.as_posix(),
+                            "-C",
+                            local_dir.as_posix(),
+                        ]
                     )
                     logger.info("%s 解压完成, 路径: %s", name, local_dir)
                     return local_dir
@@ -2771,7 +2842,7 @@ class MirrorConfigManager:
             else config_path
         )
         git_config_path = config_path / ".gitconfig"
-        os.environ["GIT_CONFIG_GLOBAL"] = str(git_config_path)
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
 
         if isinstance(mirror, str):
             logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
@@ -2798,7 +2869,7 @@ class MirrorConfigManager:
                     remove_files(mirror_test_path)
                 try:
                     run_cmd(
-                        ["git", "clone", test_repo, str(mirror_test_path)],
+                        ["git", "clone", test_repo, mirror_test_path.as_posix()],
                         custom_env=custon_env,
                         live=False,
                     )
@@ -5041,7 +5112,14 @@ class OnnxRuntimeGPUCheck:
                     "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
                 )
                 run_cmd(
-                    [sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"]
+                    [
+                        Path(sys.executable).as_posix(),
+                        "-m",
+                        "pip",
+                        "uninstall",
+                        "onnxruntime-gpu",
+                        "-y",
+                    ]
                 )
                 EnvManager.pip_install(
                     "onnxruntime-gpu>=1.18.1",
@@ -5051,7 +5129,14 @@ class OnnxRuntimeGPUCheck:
                 )
             elif ver == OrtType.CU121CUDNN9:
                 run_cmd(
-                    [sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"]
+                    [
+                        Path(sys.executable).as_posix(),
+                        "-m",
+                        "pip",
+                        "uninstall",
+                        "onnxruntime-gpu",
+                        "-y",
+                    ]
                 )
                 EnvManager.pip_install(
                     "onnxruntime-gpu>=1.19.0", "--no-cache-dir", use_uv=use_uv
@@ -5064,7 +5149,14 @@ class OnnxRuntimeGPUCheck:
                     "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
                 )
                 run_cmd(
-                    [sys.executable, "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"]
+                    [
+                        Path(sys.executable).as_posix(),
+                        "-m",
+                        "pip",
+                        "uninstall",
+                        "onnxruntime-gpu",
+                        "-y",
+                    ]
                 )
                 EnvManager.pip_install(
                     "onnxruntime-gpu==1.17.1",
@@ -5365,7 +5457,7 @@ class BaseManager:
         self.downloader.download_file(
             url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4"
         )
-        os.environ["LD_PRELOAD"] = str(libtcmalloc_path)
+        os.environ["LD_PRELOAD"] = libtcmalloc_path.as_posix()
 
 
 class SDScriptsManager(BaseManager):
@@ -6145,8 +6237,7 @@ class ComfyUIManager(BaseManager):
         custom_node_list = [
             x
             for x in custom_node_path.iterdir()
-            if x.is_dir()
-            and (x / ".git").is_dir()
+            if x.is_dir() and (x / ".git").is_dir()
         ]
         for i in custom_node_list:
             logger.info("更新 %s 自定义节点中", i.name)
@@ -6154,7 +6245,6 @@ class ComfyUIManager(BaseManager):
                 logger.info("更新 %s 自定义节点成功", i.name)
             else:
                 logger.info("更新 %s 自定义节点失败", i.name)
-
 
     def check_env(
         self,
@@ -6507,7 +6597,7 @@ class SDWebUIManager(BaseManager):
             env["PYTHONPATH"] = f"{sd_webui_base_path}{os.pathsep}{py_path}"
             env["WEBUI_LAUNCH_LIVE_OUTPUT"] = "1"
             run_cmd(
-                command=[sys.executable, str(path_installer)],
+                command=[Path(sys.executable).as_posix(), path_installer.as_posix()],
                 custom_env=env,
             )
             return True
@@ -6606,10 +6696,7 @@ class SDWebUIManager(BaseManager):
         """更新 Stable Diffusion WebUI 扩展"""
         extension_path = self.workspace / self.workfolder / "extensions"
         extension_list = [
-            x
-            for x in extension_path.iterdir()
-            if x.is_dir()
-            and (x / ".git").is_dir()
+            x for x in extension_path.iterdir() if x.is_dir() and (x / ".git").is_dir()
         ]
         for i in extension_list:
             logger.info("更新 %s 扩展中", i.name)
@@ -6617,7 +6704,6 @@ class SDWebUIManager(BaseManager):
                 logger.info("更新 %s 扩展成功", i.name)
             else:
                 logger.info("更新 %s 扩展失败", i.name)
-
 
     def check_env(
         self,
@@ -7029,7 +7115,7 @@ class InvokeAIManager(BaseManager):
 
         invokeai_output = drive_path / "MyDrive" / "invokeai_output"
         invokeai_output.mkdir(parents=True, exist_ok=True)
-        os.environ["INVOKEAI_ROOT"] = str(invokeai_output)
+        os.environ["INVOKEAI_ROOT"] = invokeai_output.as_posix()
 
     def import_model_to_invokeai(
         self,
@@ -7092,11 +7178,12 @@ class InvokeAIManager(BaseManager):
         def _import_model(
             model_manager: ModelManagerService, inplace: bool, model_path: str | Path
         ) -> bool:
-            file_name = os.path.basename(model_path)
+            model_path = Path(model_path)
+            file_name = model_path.name
             try:
                 logger.info(f"导入 {file_name} 模型到 InvokeAI 中")
                 job = model_manager.install.heuristic_import(
-                    source=str(model_path), inplace=inplace
+                    source=model_path.as_posix(), inplace=inplace
                 )
                 result = model_manager.install.wait_for_job(job)
                 if result.status == InstallStatus.COMPLETED:
