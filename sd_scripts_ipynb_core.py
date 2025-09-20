@@ -40,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.13"
+VERSION = "1.1.14"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1858,6 +1858,32 @@ class Utils:
         except Exception as e:
             logger.error("创建 %s -> %s 的路径链接失败: %s", src_path, link_path, e)
 
+    @staticmethod
+    def configure_env_var() -> None:
+        """通过环境变量配置部分环境功能"""
+        logger.info("使用环境变量配置部分设置")
+        env = [
+            ["TF_CPP_MIN_LOG_LEVEL", "3"],
+            ["BITSANDBYTES_NOWELCOME", "1"],
+            ["GRADIO_ANALYTICS_ENABLED", "False"],
+            ["ClDeviceGlobalMemSizeAvailablePercent", "100"],
+            ["CUDA_MODULE_LOADING", "LAZY"],
+            ["TORCH_CUDNN_V8_API_ENABLED", "1"],
+            ["SAFETENSORS_FAST_GPU", "1"],
+            ["SYCL_CACHE_PERSISTENT", "1"],
+            ["PYTHONUTF8", "1"],
+            ["PYTHONIOENCODING", "utf-8"],
+            ["PYTHONUNBUFFERED", "1"],
+            ["PYTHONFAULTHANDLER", "1"],
+            [
+                "PYTHONWARNINGS",
+                "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning",
+            ],
+        ]
+        for e, v in env:
+            logger.info("- Env:%s = %s", e, v)
+            os.environ[e] = v
+
 
 class MultiThreadDownloader:
     """通用多线程下载器"""
@@ -2947,8 +2973,8 @@ class MirrorConfigManager:
         os.environ["PIP_NO_WARN_SCRIPT_LOCATION"] = "0"
         os.environ["PIP_TIMEOUT"] = "30"
         os.environ["PIP_RETRIES"] = "5"
-        os.environ["PYTHONUTF8"] = "1"
-        os.environ["PYTHONIOENCODING"] = "utf8"
+        os.environ["PIP_PREFER_BINARY"] = "1"
+        os.environ["PIP_YES"] = "1"
 
 
 class TunnelManager:
@@ -5587,6 +5613,7 @@ class SDScriptsManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()  # 配置 Pip / uv
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv=use_uv)  # 准备 Notebook 的运行依赖
         # 下载 sd-scripts
         self.git.clone(
@@ -6002,6 +6029,7 @@ class FooocusManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv)
         self.git.clone(fooocus_repo, fooocus_path)
         self.git.update(fooocus_path)
@@ -6347,6 +6375,7 @@ class ComfyUIManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv)
         self.git.clone(comfyui_repo, comfyui_path)
         if custom_node_list is not None:
@@ -6808,6 +6837,7 @@ class SDWebUIManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv)
         self.git.clone(sd_webui_repo, sd_webui_path)
         if extension_list is not None:
@@ -7365,6 +7395,7 @@ class InvokeAIManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv)
         if pytorch_mirror_dict is not None:
             self.component.update_pytorch_mirror_dict(pytorch_mirror_dict)
@@ -7614,6 +7645,7 @@ class SDTrainerManager(BaseManager):
             huggingface_mirror=huggingface_mirror,
         )
         self.mirror.configure_pip()
+        self.utils.configure_env_var()
         self.env.install_manager_depend(use_uv)
         self.git.clone(sd_trainer_repo, comfyui_path)
         self.git.update(comfyui_path)
