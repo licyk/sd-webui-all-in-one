@@ -2254,7 +2254,7 @@ class RepoManager:
 
         :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
         :param repo_id`(str)`: 仓库 ID
-        :param repo_type`(str)`: 仓库类型
+        :param repo_type`(Literal["model","dataset","space"])`: 仓库类型
         :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
         """
         if api_type == "huggingface":
