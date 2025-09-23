@@ -40,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.14"
+VERSION = "1.1.15"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -111,7 +111,7 @@ logger = get_logger("Manager", color=False)
 
 
 def run_cmd(
-    command: str | list,
+    command: str | list[str],
     desc: str | None = None,
     errdesc: str | None = None,
     custom_env: dict[str, str] | None = None,
@@ -120,7 +120,7 @@ def run_cmd(
 ) -> str | None:
     """执行 Shell 命令
 
-    :param command`(str|list)`: 要执行的命令
+    :param command`(str|list[str])`: 要执行的命令
     :param desc`(str|None)`: 执行命令的描述
     :param errdesc`(str|None)`: 执行命令报错时的描述
     :param custom_env`(dict[str,str]|None)`: 自定义环境变量
@@ -139,12 +139,17 @@ def run_cmd(
     if custom_env is None:
         custom_env = os.environ
 
-    command_str = shlex.join(command) if isinstance(command, list) else command
+    if sys.platform == "win32":
+        # 在 Windows 平台上不使用 shlex 处理成字符串
+        command_to_exec = command
+    else:
+        # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
+        command_to_exec = shlex.join(command) if isinstance(command, list) else command
 
     if live:
         process_output = []
         process = subprocess.Popen(
-            command_str,
+            command_to_exec,
             shell=shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -163,13 +168,13 @@ def run_cmd(
         process.wait()
         if process.returncode != 0:
             raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
-命令: {command_str}
+命令: {command_to_exec}
 错误代码: {process.returncode}""")
 
         return "".join(process_output)
 
     result: subprocess.CompletedProcess[bytes] = subprocess.run(
-        command_str,
+        command_to_exec,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell,
@@ -178,7 +183,7 @@ def run_cmd(
 
     if result.returncode != 0:
         message = f"""{errdesc or "执行命令时发生错误"}
-命令: {command_str}
+命令: {command_to_exec}
 错误代码: {result.returncode}
 标准输出: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout) > 0 else ""}
 错误输出: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr) > 0 else ""}
