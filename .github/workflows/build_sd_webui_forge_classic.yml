@@ -95,7 +95,7 @@ jobs:
           UV_SYSTEM_PYTHON: 1
           UV_LINK_MODE: copy
         run: |
-          uv pip install huggingface_hub modelscope
+          uv pip install "huggingface_hub[hf_xet]" modelscope --upgrade
 
       - name: Upload to HuggingFace repo
         shell: pwsh

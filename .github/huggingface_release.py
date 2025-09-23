@@ -1,7 +1,9 @@
 import os
-from huggingface_hub import upload_large_folder
+from huggingface_hub import HfApi
 
-upload_large_folder(
+api = HfApi()
+
+api.upload_folder(
     repo_id="licyk/sdnote",
     repo_type="model",
     folder_path=os.path.join(os.environ.get("WORKSPACE"), "sdnote")
