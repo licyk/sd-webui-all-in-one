@@ -2282,7 +2282,7 @@ class RepoManager:
             try:
                 if not self.hf_api.repo_exists(repo_id=repo_id, repo_type=repo_type):
                     self.hf_api.create_repo(
-                        repo_id=repo_id, repo_type=repo_type, private=visibility
+                        repo_id=repo_id, repo_type=repo_type, private=not visibility
                     )
                 return True
             except Exception as e:
