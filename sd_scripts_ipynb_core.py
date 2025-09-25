@@ -40,7 +40,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.15"
+VERSION = "1.1.16"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -2436,6 +2436,7 @@ class RepoManager:
             )
             retry_num = 0
             while retry_num < retry:
+                retry_num += 1
                 try:
                     self.hf_api.upload_file(
                         repo_id=repo_id,
@@ -2516,6 +2517,7 @@ class RepoManager:
             )
             retry_num = 0
             while retry_num < retry:
+                retry_num += 1
                 try:
                     self.ms_api.upload_file(
                         repo_id=repo_id,
