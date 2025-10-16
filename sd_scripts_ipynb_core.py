@@ -12,6 +12,8 @@
 如果需要显示所有等级的日志, 可设置环境变量`MANAGER_LOGGER_LEVEL=10`
 
 使用彩色日志可设置环境变量`MANAGER_LOGGER_COLOR=1`
+
+设置日志器的名称可通过环境变量`MANAGER_LOGGER_NAME=<日志器名称>`进行设置
 """
 
 import os
@@ -112,9 +114,9 @@ def get_logger(
 
 
 logger = get_logger(
-    name="Manager",
+    name=os.getenv("MANAGER_LOGGER_NAME", "Manager"),
     level=int(os.getenv("MANAGER_LOGGER_LEVEL", str(logging.INFO))),
-    color=os.getenv("MANAGER_LOGGER_COLOR") == "1"
+    color=os.getenv("MANAGER_LOGGER_COLOR") == "1",
 )
 
 
