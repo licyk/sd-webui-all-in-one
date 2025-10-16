@@ -8,6 +8,10 @@
 - SD Script
 - SD Trainer
 - Kohya GUI
+
+如果需要显示所有等级的日志, 可设置环境变量`MANAGER_LOGGER_LEVEL=10`
+
+使用彩色日志可设置环境变量`MANAGER_LOGGER_COLOR=1`
 """
 
 import os
@@ -40,7 +44,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-VERSION = "1.1.16"
+VERSION = "1.1.17"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -107,7 +111,11 @@ def get_logger(
     return _logger
 
 
-logger = get_logger("Manager", color=False)
+logger = get_logger(
+    name="Manager",
+    level=int(os.getenv("MANAGER_LOGGER_LEVEL", str(logging.INFO))),
+    color=os.getenv("MANAGER_LOGGER_COLOR") == "1"
+)
 
 
 def run_cmd(
