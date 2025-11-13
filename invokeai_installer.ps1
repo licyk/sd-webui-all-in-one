@@ -2199,7 +2199,7 @@ if __name__ == '__main__':
             `$ort_version = `"onnxruntime-gpu==1.17.1`"
             `$need_switch_mirror = `$true
         }
-        cu118 {
+        cu130 {
             `$need_reinstall_ort = `$true
             `$ort_version = `"onnxruntime-gpu>=1.23.2`"
         }
