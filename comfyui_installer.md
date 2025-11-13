@@ -710,7 +710,7 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
 |`-LaunchArg` <ComfyUI 启动参数>|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 设置 ComfyUI 自定义启动参数，如启用 --fast 和 --auto-launch，则使用`-LaunchArg "--fast --auto-launch"`进行启用。|
 |`-EnableShortcut`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 创建 ComfyUI 启动快捷方式。|
-|`-DisableCUDAMalloc`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器。|
+|`-DisableCUDAMalloc`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`/`PYTORCH_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 ComfyUI Installer 构建模式下生效，并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题，禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复。|
 |`-DisableAutoApplyUpdate`|(仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 自动应用新版本更新。|
 |`-Help`|显示 ComfyUI Installer 可用的命令行参数。|

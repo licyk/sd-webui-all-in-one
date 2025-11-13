@@ -845,7 +845,7 @@ SD WebUI Installer 支持使用命令参数设置安装 Stable Diffusion WebUI �
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
 |`-LaunchArg` <Stable Diffusion WebUI 启动参数>|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI  自定义启动参数，如启用 --autolaunch 和 --xformers，则使用`-LaunchArg "--autolaunch --xformers"`进行启用。|
 |`-EnableShortcut`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI  启动快捷方式。|
-|`-DisableCUDAMalloc`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
+|`-DisableCUDAMalloc`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`/`PYTORCH_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 SD WebUI Installer 构建模式下生效，并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题，禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复。|
 |`-DisableAutoApplyUpdate`|(仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 自动应用新版本更新。|
 |`-Help`|显示 SD WebUI Installer 可用的命令行参数。|

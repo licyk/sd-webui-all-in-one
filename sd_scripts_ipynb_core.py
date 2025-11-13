@@ -5779,10 +5779,16 @@ class CUDAMalloc:
 
         if malloc_type == "cuda_malloc":
             logger.info("设置 CUDA 内存分配器为 CUDA 内置异步分配器")
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:cudaMallocAsync"
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (
+                "backend:cudaMallocAsync"  # PyTorch 将弃用该参数
+            )
+            os.environ["PYTORCH_ALLOC_CONF"] = "backend:cudaMallocAsync"
         elif malloc_type == "pytorch_malloc":
             logger.info("设置 CUDA 内存分配器为 PyTorch 原生分配器")
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (  # PyTorch 将弃用该参数
+                "garbage_collection_threshold:0.9,max_split_size_mb:512"
+            )
+            os.environ["PYTORCH_ALLOC_CONF"] = (
                 "garbage_collection_threshold:0.9,max_split_size_mb:512"
             )
         else:

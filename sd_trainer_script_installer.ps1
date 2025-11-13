@@ -1637,7 +1637,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableCUDAMalloc
-        禁用 SD-Trainer-Script Installer通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        禁用 SD-Trainer-Script Installer通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
         禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
@@ -2099,11 +2099,13 @@ if __name__ == '__main__':
     switch (`$status) {
         cuda_malloc {
             Print-Msg `"设置 CUDA 内存分配器为 CUDA 内置异步分配器`"
-            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"backend:cudaMallocAsync`"
+            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"backend:cudaMallocAsync`" # PyTorch 将弃用该参数
+            `$Env:PYTORCH_ALLOC_CONF = `"backend:cudaMallocAsync`"
         }
         pytorch_malloc {
             Print-Msg `"设置 CUDA 内存分配器为 PyTorch 原生分配器`"
-            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`"
+            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`" # PyTorch 将弃用该参数
+            `$Env:PYTORCH_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`"
         }
         Default {
             Print-Msg `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`"
@@ -9806,7 +9808,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
     -DisableCUDAMalloc
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
         (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复

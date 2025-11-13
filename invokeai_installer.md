@@ -578,7 +578,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |`-DisableHuggingFaceMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
 |`-EnableShortcut`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式。|
-|`-DisableCUDAMalloc`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF 环境变量设置 CUDA 内存分配器。|
+|`-DisableCUDAMalloc`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`/`PYTORCH_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题，禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复。|
 |`-DisableGithubMirror`|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 禁用 Fooocus Installer 自动设置 Github 镜像源。|
 |`-UseCustomGithubMirror` <Github 镜像站地址>|(仅在 InvokeAI Installer 构建模式下生效，并且只作用于 InvokeAI Installer 管理脚本) 使用自定义的 Github 镜像站地址。<br>可用的 Github 镜像站地址:<br>`https://ghfast.top/https://github.com`<br>`https://mirror.ghproxy.com/https://github.com`<br>`https://ghproxy.net/https://github.com`<br>`https://gh.api.99988866.xyz/https://github.com`<br>`https://gitclone.com/github.com`<br>`https://gh-proxy.com/https://github.com`<br>`https://ghps.cc/https://github.com`<br>`https://gh.idayer.com/https://github.com`|
