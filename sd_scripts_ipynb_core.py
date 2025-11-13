@@ -25,28 +25,30 @@ import json
 import uuid
 import time
 import shlex
+import queue
 import ctypes
 import shutil
+import tarfile
 import secrets
 import inspect
 import logging
 import hashlib
+import platform
 import datetime
 import threading
 import traceback
 import subprocess
-import queue
-import importlib.metadata
 import importlib.util
+import importlib.metadata
+from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
+from collections import namedtuple
 from tempfile import TemporaryDirectory
 from typing import Callable, Literal, Any, TypedDict
-from collections import namedtuple
-from enum import Enum
 
 
-VERSION = "1.1.17"
+VERSION = "1.1.18"
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -1007,7 +1009,8 @@ class EnvManager:
             )
             EnvManager.pip_install(
                 "modelscope",
-                "huggingface_hub[hf_xet]",
+                "huggingface_hub",
+                "hf-xet",
                 "requests",
                 "tqdm",
                 "wandb",
@@ -1249,7 +1252,7 @@ class Utils:
             return None
 
     @staticmethod
-    def config_tcmalloc() -> bool:
+    def configure_tcmalloc_common() -> bool:
         """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
 
         :return `bool`: 配置成功时返回`True`
@@ -1464,6 +1467,16 @@ class Utils:
             return True
 
     @staticmethod
+    def is_colab_environment() -> bool:
+        """检测当前运行环境是否为 Colab
+
+        参考: https://github.com/googlecolab/colabtools/blob/be426fedb0bf192ea3b4f208e2c8d956caf94d65/google/colab/drive.py#L114
+
+        :return `bool`: 检测结果
+        """
+        return os.path.exists("/var/colab/hostname")
+
+    @staticmethod
     def get_cuda_comp_cap() -> float:
         """
         Returns float of CUDA Compute Capability using nvidia-smi
@@ -1520,22 +1533,23 @@ class Utils:
         # cu124: 2.4.0 ~ 2.6.0
         # cu126: 2.6.0 ~ 2.7.1
         # cu128: 2.7.0 ~ 2.7.1
-        # cu129: 2.8.0 ~
+        # cu129: 2.8.0
+        # cu130: 2.9.0 ~
         cuda_comp_cap = Utils.get_cuda_comp_cap()
         cuda_support_ver = Utils.get_cuda_version()
 
-        if Utils.compare_versions(torch_ver, "2.0.0") == -1:
+        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
             # torch < 2.0.0: default cu11x
             return "other"
         if (
             Utils.compare_versions(torch_ver, "2.0.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.3.1") == -1
+            and Utils.compare_versions(torch_ver, "2.3.1") < 0
         ):
             # 2.0.0 <= torch < 2.3.1: default cu118
             return "cu118"
         if (
             Utils.compare_versions(torch_ver, "2.3.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.4.1") == -1
+            and Utils.compare_versions(torch_ver, "2.4.1") < 0
         ):
             # 2.3.0 <= torch < 2.4.1: default cu121
             if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121") < 0:
@@ -1547,7 +1561,7 @@ class Utils:
             return "cu121"
         if (
             Utils.compare_versions(torch_ver, "2.4.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.6.0") == -1
+            and Utils.compare_versions(torch_ver, "2.6.0") < 0
         ):
             # 2.4.0 <= torch < 2.6.0: default cu124
             if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124") < 0:
@@ -1564,7 +1578,7 @@ class Utils:
             return "cu124"
         if (
             Utils.compare_versions(torch_ver, "2.6.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.7.0") == -1
+            and Utils.compare_versions(torch_ver, "2.7.0") < 0
         ):
             # 2.6.0 <= torch < 2.7.0: default cu126
             if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126") < 0:
@@ -1582,7 +1596,7 @@ class Utils:
             return "cu126"
         if (
             Utils.compare_versions(torch_ver, "2.7.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.8.0") == -1
+            and Utils.compare_versions(torch_ver, "2.8.0") < 0
         ):
             # 2.7.0 <= torch < 2.8.0: default cu128
             if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128") < 0:
@@ -1592,9 +1606,37 @@ class Utils:
                 ):
                     return "cu126"
             return "cu128"
-        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
-            # torch >= 2.8.0: default cu129
+        if (
+            Utils.compare_versions(torch_ver, "2.8.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.9.0") < 0
+        ):
+            # torch ~= 2.8.0: default cu129
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu129") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
             return "cu129"
+        if Utils.compare_versions(torch_ver, "2.9.0") >= 0:
+            # torch >= 2.9.0: default cu130
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu130") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
+            return "cu130"
 
         return "cu129"
 
@@ -1626,9 +1668,15 @@ class Utils:
         ):
             # 2.6.0 < torch < 2.7.0
             return "rocm624"
-        if Utils.compare_versions(torch_ver, "2.7.0") >= 0:
-            # torch >= 2.7.0
+        if (
+            Utils.compare_versions(torch_ver, "2.7.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.8.0") < 0
+        ):
+            # 2.7.0 < torch < 2.8.0
             return "rocm63"
+        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
+            # torch >= 2.8.0
+            return "rocm64"
 
         return "rocm63"
 
@@ -1739,7 +1787,12 @@ class Utils:
         args: tuple,
         kwargs: dict,
     ) -> None:
-        """显示多余参数警告"""
+        """显示多余参数警告
+
+        :param message`(str)`: 提示信息
+        :param args`(tuple)`: 额外的位置参数
+        :param kwargs`(dict)`: 额外的关键字参数
+        """
         if args or kwargs:
             logger.warning(message)
             if args:
@@ -1829,7 +1882,7 @@ class Utils:
 
         :param src_path`(Path|str)`: 源路径
         :param link_path`(Path|str)`: 软链接路径
-        :parma src_is_file`(bool|None)`: 源路径是否为文件
+        :param src_is_file`(bool|None)`: 源路径是否为文件
         :notes
             当源路径不存在时, 则尝试创建源路径, 并检查链接路径状态
 
@@ -1892,12 +1945,107 @@ class Utils:
             ["PYTHONFAULTHANDLER", "1"],
             [
                 "PYTHONWARNINGS",
-                "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning",
+                "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning",
             ],
         ]
         for e, v in env:
             logger.info("- Env:%s = %s", e, v)
             os.environ[e] = v
+
+    @staticmethod
+    def generate_dir_tree(
+        start_path: str | Path,
+        max_depth: int | None = None,
+        show_hidden: bool | None = False,
+    ) -> None:
+        """
+        生成并打印目录树
+
+        :param start_path`(str|Path)`: 要开始遍历的根目录路径
+        :param max_depth`(int|None)`: 要遍历的最大深度
+        :param show_hidden`(bool|None)`: 是否显示隐藏文件
+        """
+        start_path = (
+            Path(start_path)
+            if not isinstance(start_path, Path) and start_path is not None
+            else start_path
+        )
+        if not start_path.is_dir():
+            logger.error("目录 %s 不存在", start_path)
+            return
+
+        print(start_path)
+        # 使用一个列表来传递计数, 因为列表是可变对象, 可以在递归中被修改
+        counts = [0, 0]  # [目录数, 文件数]
+        Utils.recursive_tree_builder(start_path, "", counts, 0, max_depth, show_hidden)
+        print(f"\n{counts[0]} 个目录, {counts[1]} 个文件")
+
+    @staticmethod
+    def recursive_tree_builder(
+        dir_path: Path,
+        prefix: str,
+        counts: list[int],
+        current_depth: int,
+        max_depth: int | None,
+        show_hidden: bool | None,
+    ) -> None:
+        """
+        递归地构建和打印目录树
+
+        :param dir_path`(Path)`: 当前正在遍历的目录路径
+        :param prefix`(str)`: 用于当前行打印的前缀字符串 (包含树状连接符)
+        :param counts`(list[int])`: 包含目录和文件计数的列表
+        :param current_depth`(int)`: 当前的递归深度
+        :param max_depth`(int|None)`: 允许的最大递归深度
+        :param show_hidden`(bool|None)`: 是否显示隐藏文件
+        """
+        connectors_dict = {
+            "T": "├── ",
+            "L": "└── ",
+            "I": "│   ",
+            "S": "    ",
+        }
+        if max_depth is not None and current_depth >= max_depth:
+            return
+
+        try:
+            # 获取目录下所有条目
+            all_entries = dir_path.iterdir()
+
+            # 如果不显示隐藏文件, 则过滤掉它们
+            if not show_hidden:
+                entries_to_process = [
+                    e for e in all_entries if not e.name.startswith(".")
+                ]
+            else:
+                entries_to_process = list(all_entries)
+
+            # 按名称排序
+            entries = sorted(entries_to_process, key=lambda p: p.name)
+
+        except PermissionError:
+            print(f"{prefix}└── [权限错误，无法访问]")
+            return
+
+        num_entries = len(entries)
+
+        for i, entry in enumerate(entries):
+            is_last = i == num_entries - 1
+            connector = connectors_dict["L"] if is_last else connectors_dict["T"]
+
+            print(f"{prefix}{connector}{entry.name}")
+
+            if entry.is_dir():
+                counts[0] += 1
+                # 递归调用的前缀: 如果当前是最后一个条目, 则下一级不再需要垂直线
+                new_prefix = prefix + (
+                    connectors_dict["S"] if is_last else connectors_dict["I"]
+                )
+                Utils.recursive_tree_builder(
+                    entry, new_prefix, counts, current_depth + 1, max_depth, show_hidden
+                )
+            else:
+                counts[1] += 1
 
 
 class MultiThreadDownloader:
@@ -2045,7 +2193,7 @@ class MultiThreadDownloader:
         # 将重试次数作为属性传递给下载函数
         self.retry = retry
 
-        threads = []
+        threads: list[threading.Thread] = []
         self.start_time = datetime.datetime.now()
         time.sleep(0.1)  # 避免 print_progress() 计算时间时出现 division by zero
 
@@ -2815,8 +2963,13 @@ class MirrorConfigManager:
             logger.info(
                 "使用 PIP_FIND_LINKS, UV_FIND_LINKS 环境变量设置 PyPI Find Links 镜像源"
             )
-            os.environ["PIP_FIND_LINKS"] = mirror
-            os.environ["UV_FIND_LINKS"] = mirror
+            os.environ["PIP_FIND_LINKS"] = " ".join(
+                [x.strip() for x in mirror.strip().split()]
+            )
+            # UV_FIND_LINKS 使用 `,` 分割镜像源: https://github.com/astral-sh/uv/pull/10477
+            os.environ["UV_FIND_LINKS"] = ",".join(
+                [x.strip() for x in mirror.strip().split()]
+            )
         else:
             logger.info(
                 "清除 PIP_FIND_LINKS, UV_FIND_LINKS 环境变量, 取消使用 PyPI Find Links 镜像源"
@@ -2902,40 +3055,41 @@ class MirrorConfigManager:
             except Exception as e:
                 logger.error("设置 Github 镜像源时发生错误: %s", e)
         elif isinstance(mirror, list):
-            mirror_test_path = config_path / "__github_mirror_test__"
-            custon_env = os.environ.copy()
-            custon_env.pop("GIT_CONFIG_GLOBAL", None)
-            for gh in mirror:
-                logger.info("测试 Github 镜像源: %s", gh)
-                test_repo = f"{gh}/licyk/empty"
-                if mirror_test_path.exists():
-                    remove_files(mirror_test_path)
-                try:
-                    run_cmd(
-                        ["git", "clone", test_repo, mirror_test_path.as_posix()],
-                        custom_env=custon_env,
-                        live=False,
-                    )
+            with TemporaryDirectory() as tmp_dir:
+                mirror_test_path = tmp_dir / "__github_mirror_test__"
+                custon_env = os.environ.copy()
+                custon_env.pop("GIT_CONFIG_GLOBAL", None)
+                for gh in mirror:
+                    logger.info("测试 Github 镜像源: %s", gh)
+                    test_repo = f"{gh}/licyk/empty"
                     if mirror_test_path.exists():
                         remove_files(mirror_test_path)
-                    run_cmd(
-                        [
-                            "git",
-                            "config",
-                            "--global",
-                            f"url.{gh}.insteadOf",
-                            "https://github.com",
-                        ]
-                    )
-                    logger.info("该镜像源可用")
-                    return
-                except Exception as _:
-                    logger.info("镜像源不可用")
+                    try:
+                        run_cmd(
+                            ["git", "clone", test_repo, mirror_test_path.as_posix()],
+                            custom_env=custon_env,
+                            live=False,
+                        )
+                        if mirror_test_path.exists():
+                            remove_files(mirror_test_path)
+                        run_cmd(
+                            [
+                                "git",
+                                "config",
+                                "--global",
+                                f"url.{gh}.insteadOf",
+                                "https://github.com",
+                            ]
+                        )
+                        logger.info("该镜像源可用")
+                        return
+                    except Exception as _:
+                        logger.info("镜像源不可用")
 
-            logger.info("无可用的 Github 镜像源, 取消使用 Github 镜像源")
-            if git_config_path.exists():
-                git_config_path.unlink()
-            os.environ.pop("GIT_CONFIG_GLOBAL", None)
+                logger.info("无可用的 Github 镜像源, 取消使用 Github 镜像源")
+                if git_config_path.exists():
+                    git_config_path.unlink()
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
         else:
             logger.info("未知镜像源参数类型: %s", type(mirror))
             return
@@ -3137,9 +3291,17 @@ class TunnelManager:
             "-i",
             ssh_path.as_posix(),
         ] + launch_args
-        command_str = shlex.join(command) if isinstance(command, list) else command
+        if sys.platform == "win32":
+            # 在 Windows 平台上不使用 shlex 处理成字符串
+            command_to_exec = command
+        else:
+            # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
+            command_to_exec = (
+                shlex.join(command) if isinstance(command, list) else command
+            )
+
         tunnel = subprocess.Popen(
-            command_str,
+            command_to_exec,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -3223,6 +3385,222 @@ class TunnelManager:
         logger.error("启动 pinggy.io 内网穿透失败")
         return None
 
+    def get_latest_zrok_release(self) -> list[str] | None:
+        """获取最新的 Zrok 发行内容下载列表
+
+        :return `list[str]|None`: 获取到的发行版下载列表 (`[<文件名>, <下载链接>]`)
+        """
+        import requests
+
+        url = "https://api.github.com/repos/openziti/zrok/releases/latest"
+        data = {
+            "Accept": "application/vnd.github+json",
+        }
+        logger.info("获取 Zrok 发行版本列表")
+        response = requests.get(url=url, data=data)
+        res = response.json()
+        if response.status_code < 200 or response.status_code > 300:
+            logger.info("获取 Zrok 发行版本列表失败")
+            return None
+
+        file_list = []
+        for i in res.get("assets"):
+            file_list.append([i.get("name"), i.get("browser_download_url")])
+        return file_list
+
+    def get_appropriate_zrok_package(
+        self, packages: list[str]
+    ) -> tuple[str, str] | None:
+        """获取适合当前平台的 Zrok 版本
+
+        :param packages`(list[str])`: 发行版下载列表
+        :return `tuple[str,str]|None`: 文件名和下载链接
+        """
+
+        def _get_current_platform_and_arch() -> tuple[str, str]:
+            _arch = platform.machine()
+            _platform = sys.platform
+            _platform = (
+                _platform.replace("win32", "windows")
+                .replace("cygwin", "windows")
+                .replace("linux2", "linux")
+            )
+            _arch = (
+                _arch.replace("x86_64", "amd64")
+                .replace("AMD64", "amd64")
+                .replace("aarch64", "arm64")
+                .replace("armv7l", "armv7")
+            )
+            return _platform, _arch
+
+        zrok_package_name_pattern = r"""
+            ^
+            (?P<software>[\w]+?)                        # 软件名
+            _
+            (?P<version>[\d.]+)                         # 版本号 (数字和点)
+            _
+            (?P<platform>[\w]+?)                        # 系统类型
+            _
+            (?P<arch>[\w]+?)                            # 架构
+            \.
+            (?P<extension>[a-z0-9]+(?:\.[a-z0-9]+)?)    # 扩展名 (支持多级扩展)
+            $
+        """
+
+        # 编译正则表达式 (忽略大小写, 详细模式)
+        zrok_name_parse_regex = re.compile(
+            zrok_package_name_pattern, re.VERBOSE | re.IGNORECASE
+        )
+
+        current_platform, current_arch = _get_current_platform_and_arch()
+
+        for p, url in packages:
+            match = zrok_name_parse_regex.match(p)
+            if match:
+                groups = match.groupdict()
+                support_arch = groups.get("arch")
+                support_platform = groups.get("platform")
+                if (
+                    current_platform == support_platform
+                    and support_arch == current_arch
+                ):
+                    logger.info("找到合适 Zrok 版本: %s", p)
+                    return p, url
+
+        logger.error("未找到适合当前平台的 Zrok")
+        return None, None
+
+    def install_zrok(self) -> Path | None:
+        """安装 Zrok
+
+        :return `Path|None`: Zrok 可执行文件路径, 安装失败时则返回`None`
+        """
+        if sys.platform == "win32":
+            bin_extension_name = ".exe"
+        else:
+            bin_extension_name = ""
+
+        zrok_bin = self.workspace / f"zrok{bin_extension_name}"
+        if zrok_bin.is_file():
+            try:
+                run_cmd([zrok_bin.as_posix(), "version"], live=False)
+                logger.info("Zrok 已安装")
+                return zrok_bin
+            except Exception as _:
+                pass
+
+        logger.info("安装 Zrok 中")
+        if zrok_bin.exists():
+            shutil.move(zrok_bin, zrok_bin.parent / f"zrok_{uuid.uuid4()}")
+
+        release = self.get_latest_zrok_release()
+        if release is None:
+            logger.error("获取 Zrok 发行版信息失败, 无法安装 Zrok")
+            return None
+
+        package_name, download_url = self.get_appropriate_zrok_package(release)
+        if package_name is None:
+            return None
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+            zrok_archive_file = Downloader.download_file(
+                url=download_url,
+                path=tmp_dir,
+                save_name=package_name,
+            )
+            if zrok_archive_file is None:
+                logger.error("Zrok 安装包下载失败")
+                return None
+            try:
+                with tarfile.open(zrok_archive_file, "r:gz") as tar:
+                    tar.extractall(path=tmp_dir)
+                zrok_bin_in_tmp_dir = tmp_dir / f"zrok{bin_extension_name}"
+                shutil.move(zrok_bin_in_tmp_dir, zrok_bin)
+                logger.info("Zrok 安装成功")
+                return zrok_bin
+            except Exception as e:
+                traceback.print_exc()
+                logger.error("Zrok 安装失败: %s", e)
+                return None
+
+    def zrok(self, zrok_token: str | None = None) -> str | None:
+        """启动 Zrok 内网穿透
+
+        :param zrok_token`(str|None)`: Zrok Token
+        :return `str|None`: Zrok 内网穿透地址
+        """
+        if zrok_token is None:
+            return None
+
+        logger.info("启动 Zrok 内网穿透中")
+        zrok_bin = self.install_zrok()
+        if zrok_bin is None:
+            return None
+
+        logger.info("初始化 Zrok 配置")
+        try:
+            run_cmd([zrok_bin.as_posix(), "disable"], live=False)
+        except Exception as _:
+            pass
+
+        try:
+            run_cmd([zrok_bin.as_posix(), "enable", zrok_token])
+            logger.info("Zrok 配置初始化完成")
+        except Exception as e:
+            logger.error("初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: %s", e)
+            return None
+
+        line_limit = 10
+        host_pattern = re.compile(r"(?P<url>https?://\S+\.share\.zrok\.io)")
+
+        command = [zrok_bin.as_posix(), "share", "public", str(self.port), "--headless"]
+        if sys.platform == "win32":
+            # 在 Windows 平台上不使用 shlex 处理成字符串
+            command_to_exec = command
+        else:
+            # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
+            command_to_exec = (
+                shlex.join(command) if isinstance(command, list) else command
+            )
+
+        tunnel = subprocess.Popen(
+            command_to_exec,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            encoding="utf-8",
+        )
+
+        output_queue = queue.Queue()
+        lines = []
+
+        def _read_output():
+            for line in iter(tunnel.stdout.readline, ""):
+                output_queue.put(line)
+            tunnel.stdout.close()
+
+        thread = threading.Thread(target=_read_output)
+        thread.daemon = True
+        thread.start()
+
+        for _ in range(line_limit):
+            try:
+                line = output_queue.get(timeout=10)
+                lines.append(line)
+                url_match = host_pattern.search(line)
+                if url_match:
+                    return url_match.group("url")
+            except queue.Empty:
+                logger.warning("Empty Queue.")
+                logger.warning(f"lines: {lines}")
+                break
+
+        logger.error("启动 Zrok 内网穿透失败")
+        return None
+
     def start_tunnel(
         self,
         use_ngrok: bool | None = False,
@@ -3232,8 +3610,10 @@ class TunnelManager:
         use_localhost_run: bool | None = False,
         use_gradio: bool | None = False,
         use_pinggy_io: bool | None = False,
+        use_zrok: bool | None = False,
+        zrok_token: str | None = None,
         message: str | None = None,
-    ) -> tuple[str]:
+    ) -> dict[str, str]:
         """启动内网穿透
 
         :param use_ngrok`(bool|None)`: 启用 Ngrok 内网穿透
@@ -3243,8 +3623,10 @@ class TunnelManager:
         :param use_localhost_run`(bool|None)`: 使用 localhost.run 内网穿透
         :param use_gradio`(bool|None)`: 使用 Gradio 内网穿透
         :param use_pinggy_io`(bool|None)`: 使用 pinggy.io 内网穿透
+        :param use_zrok`(bool|None)`: 使用 Zrok 内网穿透
+        :param zrok_token`(str|None)`: Zrok 账号 Token
         :param message`(str|None)`: 描述信息
-        :return `tuple[str]`: 内网穿透地址
+        :return `dict[str,str]`: 内网穿透地址
         """
 
         if any(
@@ -3255,6 +3637,7 @@ class TunnelManager:
                 use_localhost_run,
                 use_gradio,
                 use_pinggy_io,
+                use_zrok,
             ]
         ):
             logger.info("启动内网穿透")
@@ -3267,6 +3650,7 @@ class TunnelManager:
         localhost_run_url = self.localhost_run() if use_localhost_run else None
         gradio_url = self.gradio() if use_gradio else None
         pinggy_io_url = self.pinggy_io() if use_pinggy_io else None
+        zrok_url = self.zrok(zrok_token) if use_zrok and zrok_token else None
 
         logger.info("http://127.0.0.1:%s 的内网穿透地址", self.port)
         print(
@@ -3280,17 +3664,19 @@ class TunnelManager:
         print(f":: localhost_run: {localhost_run_url}")
         print(f":: Gradio: {gradio_url}")
         print(f":: pinggy.io: {pinggy_io_url}")
+        print(f":: Zrok: {zrok_url}")
         print(
             "=================================================================================="
         )
-        return (
-            cloudflare_url,
-            ngrok_url,
-            remote_moe_url,
-            localhost_run_url,
-            gradio_url,
-            pinggy_io_url,
-        )
+        return {
+            "cloudflare": cloudflare_url,
+            "ngrok": ngrok_url,
+            "remote_moe": remote_moe_url,
+            "localhost_run": localhost_run_url,
+            "gradio": gradio_url,
+            "pinggy_io": pinggy_io_url,
+            "zrok": zrok_url,
+        }
 
 
 class RequirementCheck:
@@ -4963,11 +5349,15 @@ class OrtType(str, Enum):
     """onnxruntime-gpu 的类型
 
     版本说明:
+    - CU130: CU13.x
     - CU121CUDNN8: CUDA 12.1 + cuDNN8
     - CU121CUDNN9: CUDA 12.1 + cuDNN9
     - CU118: CUDA 11.8
+
+    PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的
     """
 
+    CU130 = "cu130"
     CU121CUDNN8 = "cu121cudnn8"
     CU121CUDNN9 = "cu121cudnn9"
     CU118 = "cu118"
@@ -5085,11 +5475,23 @@ class OnnxRuntimeGPUCheck:
             # 当 onnxruntime 已安装
 
             # 判断 Torch 中的 CUDA 版本
-            if Utils.compare_versions(cuda_ver, "12.0") >= 0:
-                # CUDA >= 12.0
+            if Utils.compare_versions(cuda_ver, "13.0") >= 0:
+                # CUDA > 13.0
+                if Utils.compare_versions(ort_support_cuda_ver, "13.0") <= 0:
+                    return OrtType.CU130
+                else:
+                    return None
+            elif (
+                Utils.compare_versions(cuda_ver, "12.0") >= 0
+                and Utils.compare_versions(cuda_ver, "13.0") < 0
+            ):
+                # 12.0 =< CUDA < 13.0
 
                 # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
-                if Utils.compare_versions(ort_support_cuda_ver, "12.0") >= 0:
+                if (
+                    Utils.compare_versions(ort_support_cuda_ver, "12.0") >= 0
+                    and Utils.compare_versions(ort_support_cuda_ver, "13.0") < 0
+                ):
                     # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
 
                     # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
@@ -5118,12 +5520,30 @@ class OnnxRuntimeGPUCheck:
             if ignore_ort_install:
                 return None
 
-            if Utils.compare_versions(cuda_ver, "12.0") >= 0:
+            if sys.platform != "win32":
+                # 非 Windows 平台未在 Onnxruntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
+                # 所以需要跳过检查, 直接给出版本
+                try:
+                    _ = importlib.metadata.version("onnxruntime-gpu")
+                    return None
+                except Exception as _:
+                    # onnxruntime-gpu 没有安装时
+                    return OrtType.CU130
+
+            if Utils.compare_versions(cuda_ver, "13.0") >= 0:
+                # CUDA >= 13.x
+                return OrtType.CU130
+            elif (
+                Utils.compare_versions(cuda_ver, "12.0") >= 0
+                and Utils.compare_versions(cuda_ver, "13.0") < 0
+            ):
+                # 12.0 <= CUDA < 13.0
                 if Utils.compare_versions(cuddn_ver, "8") > 0:
                     return OrtType.CU121CUDNN9
                 else:
                     return OrtType.CU121CUDNN8
             else:
+                # CUDA <= 11.8
                 return OrtType.CU118
 
     @staticmethod
@@ -5146,7 +5566,20 @@ class OnnxRuntimeGPUCheck:
         custom_env.pop("PIP_FIND_LINKS", None)
         custom_env.pop("UV_FIND_LINKS", None)
 
+        def _uninstall_onnxruntime_gpu():
+            run_cmd(
+                [
+                    Path(sys.executable).as_posix(),
+                    "-m",
+                    "pip",
+                    "uninstall",
+                    "onnxruntime-gpu",
+                    "-y",
+                ]
+            )
+
         try:
+            # TODO: 将 onnxruntime-gpu 的 1.23.2 版本替换成实际属于 CU130 的版本
             if ver == OrtType.CU118:
                 custom_env["PIP_INDEX_URL"] = (
                     "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
@@ -5154,16 +5587,7 @@ class OnnxRuntimeGPUCheck:
                 custom_env["UV_DEFAULT_INDEX"] = (
                     "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
                 )
-                run_cmd(
-                    [
-                        Path(sys.executable).as_posix(),
-                        "-m",
-                        "pip",
-                        "uninstall",
-                        "onnxruntime-gpu",
-                        "-y",
-                    ]
-                )
+                _uninstall_onnxruntime_gpu()
                 EnvManager.pip_install(
                     "onnxruntime-gpu>=1.18.1",
                     "--no-cache-dir",
@@ -5171,18 +5595,9 @@ class OnnxRuntimeGPUCheck:
                     custom_env=custom_env,
                 )
             elif ver == OrtType.CU121CUDNN9:
-                run_cmd(
-                    [
-                        Path(sys.executable).as_posix(),
-                        "-m",
-                        "pip",
-                        "uninstall",
-                        "onnxruntime-gpu",
-                        "-y",
-                    ]
-                )
+                _uninstall_onnxruntime_gpu()
                 EnvManager.pip_install(
-                    "onnxruntime-gpu>=1.19.0", "--no-cache-dir", use_uv=use_uv
+                    "onnxruntime-gpu>=1.19.0,<1.23.2", "--no-cache-dir", use_uv=use_uv
                 )
             elif ver == OrtType.CU121CUDNN8:
                 custom_env["PIP_INDEX_URL"] = (
@@ -5191,21 +5606,17 @@ class OnnxRuntimeGPUCheck:
                 custom_env["UV_DEFAULT_INDEX"] = (
                     "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
                 )
-                run_cmd(
-                    [
-                        Path(sys.executable).as_posix(),
-                        "-m",
-                        "pip",
-                        "uninstall",
-                        "onnxruntime-gpu",
-                        "-y",
-                    ]
-                )
+                _uninstall_onnxruntime_gpu()
                 EnvManager.pip_install(
                     "onnxruntime-gpu==1.17.1",
                     "--no-cache-dir",
                     use_uv=use_uv,
                     custom_env=custom_env,
+                )
+            elif ver == OrtType.CU130:
+                _uninstall_onnxruntime_gpu()
+                EnvManager.pip_install(
+                    "onnxruntime-gpu>=1.23.2", "--no-cache-dir", use_uv=use_uv
                 )
         except Exception as e:
             logger.error(f"修复 Onnxruntime GPU 版本问题时出现错误: {e}")
@@ -5415,6 +5826,7 @@ class BaseManager:
         self.copy_files = copy_files
         self.get_logger = get_logger
         self.multi_thread_downloader_class = MultiThreadDownloader
+        self.tcmalloc_has_configure = False
 
     def restart_repo_manager(
         self,
@@ -5492,19 +5904,152 @@ class BaseManager:
                 else:
                     self.get_model(url=url, path=path, filename=filename, retry=retry)
 
-    def tcmalloc_colab(self) -> None:
-        """配置 TCMalloc (Colab)"""
+    def configure_tcmalloc_colab(self) -> bool:
+        """配置 TCMalloc (Colab)
+
+        :return `bool`: 配置结果
+        """
         logger.info("配置 TCMalloc 内存优化")
         url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
         libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
-        self.downloader.download_file(
+        status = self.downloader.download_file(
             url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4"
         )
-        os.environ["LD_PRELOAD"] = libtcmalloc_path.as_posix()
+        if status is None:
+            logger.error("下载 TCMalloc 库失败, 无法配置 TCMalloc")
+            return False
+
+        if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
+            os.environ["LD_PRELOAD"] = (
+                os.environ["LD_PRELOAD"] + ":" + libtcmalloc_path.as_posix()
+            )
+        else:
+            os.environ["LD_PRELOAD"] = libtcmalloc_path.as_posix()
+
+        return True
+
+    def configure_tcmalloc(self) -> bool:
+        """配置 TCMalloc
+
+        :return `bool`: TCMalloc 配置结果
+        """
+        if self.tcmalloc_has_configure:
+            logger.info("TCMalloc 内存优化已配置")
+            return True
+
+        if self.utils.is_colab_environment():
+            status = self.configure_tcmalloc_colab()
+        else:
+            status = self.utils.configure_tcmalloc_common()
+
+        if not status:
+            logger.error("配置 TCMalloc 内存优化失败")
+            return False
+
+        logger.info("TCMalloc 内存优化配置完成")
+        self.tcmalloc_has_configure = True
+        return True
+
+    def check_avaliable_gpu(self) -> bool:
+        """检测当前环境是否有 GPU
+
+        :return `bool`: 环境有可用 GPU 时返回`True`
+        :raise `Exception`: 环境中无 GPU 时引发错误
+        """
+        if not self.utils.check_gpu():
+            if self.utils.is_colab_environment():
+                notice = "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
+            else:
+                notice = "没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!"
+
+            raise Exception(notice)
+        return True
 
 
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
+
+    def import_kaggle_input(
+        self,
+        kaggle_input_path: Path | str,
+        output_path: Path | str,
+    ) -> None:
+        """从 Kaggle Input 文件夹中导入文件
+
+        :param kaggle_input_path`(Path|str)`: Kaggle Input 路径
+        :param output_path`(Path|str)`: 导出文件的路径
+        """
+        kaggle_input_path = (
+            Path(kaggle_input_path)
+            if not isinstance(kaggle_input_path, Path) and kaggle_input_path is not None
+            else kaggle_input_path
+        )
+        output_path = (
+            Path(output_path)
+            if not isinstance(output_path, Path) and output_path is not None
+            else output_path
+        )
+        logger.info(
+            "从 Kaggle Input 导入文件: %s -> %s", kaggle_input_path, output_path
+        )
+        if kaggle_input_path.is_dir() and any(kaggle_input_path.iterdir()):
+            count = 0
+            task_sum = sum(1 for _ in kaggle_input_path.iterdir())
+            for i in kaggle_input_path.iterdir():
+                count += 1
+                logger.info("[%s/%s] 导入 %s", count, task_sum, i.name)
+                self.copy_files(i, output_path)
+            logger.info("Kaggle Input 导入完成")
+            return
+        logger.info("Kaggle Input 无可导入的文件")
+
+    def display_model_and_dataset_dir(
+        self,
+        model_path: Path | str = None,
+        dataset_path: Path | str = None,
+        recursive: bool | None = False,
+        show_hidden: bool | None = True,
+    ) -> None:
+        """列出模型文件夹和数据集文件夹的文件列表
+
+        :param model_path`(Path|str|None)`: 要展示的路径
+        :param dataset_path`(Path|str|None)`: 要展示的路径
+        :param recursive`(bool|None)`: 递归显示子目录的内容
+        :param show_hidden`(bool|None)`: 显示隐藏文件
+        """
+        model_path = (
+            Path(model_path)
+            if not isinstance(model_path, Path) and model_path is not None
+            else model_path
+        )
+        dataset_path = (
+            Path(dataset_path)
+            if not isinstance(dataset_path, Path) and dataset_path is not None
+            else dataset_path
+        )
+        if model_path is not None and model_path.is_dir():
+            print("=" * 50)
+            logger.info("模型目录中的文件列表")
+            self.utils.generate_dir_tree(
+                start_path=model_path,
+                max_depth=None if recursive else 1,
+                show_hidden=show_hidden,
+            )
+            print("=" * 50)
+        else:
+            logger.info("模型目录不存在")
+
+        if dataset_path is not None and dataset_path.is_dir():
+            print("=" * 50)
+            logger.info("数据集目录中的文件列表")
+            self.utils.generate_dir_tree(
+                start_path=dataset_path,
+                max_depth=None if recursive else 1,
+                show_hidden=show_hidden,
+            )
+            print("=" * 50)
+        else:
+            logger.info("数据集目录不存在")
 
     def check_env(
         self,
@@ -5617,10 +6162,8 @@ class SDScriptsManager(BaseManager):
         )
         model_list = model_list if model_list else []
         # 检查是否有可用的 GPU
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         # 配置镜像源
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
@@ -5665,7 +6208,7 @@ class SDScriptsManager(BaseManager):
             logger.error("安装额外 Python 软件包时发生错误: %s", e)
         # 更新 urllib3
         try:
-            self.env.pip_install("urllib3", "--upgrade", use_uv=False)
+            self.env.pip_install("urllib3", "--upgrade", use_uv=use_uv)
         except Exception as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
         self.env_check.check_numpy(use_uv=use_uv)
@@ -5680,7 +6223,7 @@ class SDScriptsManager(BaseManager):
             email=git_email,
         )
         if enable_tcmalloc:
-            self.utils.config_tcmalloc()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("sd-scripts 环境配置完成")
@@ -5714,6 +6257,10 @@ class FooocusManager(BaseManager):
             ```
             默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
         """
+        if not self.utils.is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return
+
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -5721,43 +6268,18 @@ class FooocusManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "fooocus_output"
         fooocus_path = self.workspace / self.workfolder
-        drive_fooocus_output_path = drive_output / "outputs"
-        fooocus_output_path = fooocus_path / "outputs"
-        drive_fooocus_presets_path = drive_output / "presets"
-        fooocus_presets_path = fooocus_path / "presets"
-        drive_fooocus_language_path = drive_output / "language"
-        fooocus_language_path = fooocus_path / "language"
-        drive_fooocus_wildcards_path = drive_output / "wildcards"
-        fooocus_wildcards_path = fooocus_path / "wildcards"
-        drive_fooocus_config = drive_output / "config.txt"
-        fooocus_config = fooocus_path / "config.txt"
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_fooocus_output_path,
-            link_path=fooocus_output_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_fooocus_presets_path,
-            link_path=fooocus_presets_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_fooocus_language_path,
-            link_path=fooocus_language_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_fooocus_wildcards_path,
-            link_path=fooocus_wildcards_path,
-        )
-        if fooocus_config.exists() or drive_fooocus_config.exists():
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_fooocus_config,
-                link_path=fooocus_config,
-                src_is_file=True,
-            )
-        if extras is None:
-            return
-        for extra in extras:
-            link_dir = extra.get("link_dir")
-            is_file = extra.get("is_file", False)
+        links: list[dict[str, str | bool]] = [
+            {"link_dir": "outputs"},
+            {"link_dir": "presets"},
+            {"link_dir": "language"},
+            {"link_dir": "wildcards"},
+            {"link_dir": "config.txt", "is_file": True},
+        ]
+        if extras is not None:
+            links += extras
+        for link in links:
+            link_dir = link.get("link_dir")
+            is_file = link.get("is_file", False)
             if link_dir is None:
                 continue
             full_link_path = fooocus_path / link_dir
@@ -6031,10 +6553,8 @@ class FooocusManager(BaseManager):
             else fooocus_requirements
         )
         config_file = fooocus_path / "presets" / "custom.json"
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         logger.info("Fooocus 内核分支: %s", fooocus_repo)
         logger.info("Fooocus 预设配置: %s", fooocus_preset)
         logger.info("Fooocus 翻译配置: %s", fooocus_translation)
@@ -6064,7 +6584,7 @@ class FooocusManager(BaseManager):
             translation=fooocus_translation,
         )
         if enable_tcmalloc:
-            self.tcmalloc_colab()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         self.pre_download_model(
@@ -6128,6 +6648,10 @@ class ComfyUIManager(BaseManager):
             ```
             默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
         """
+        if not self.utils.is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return
+
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -6135,40 +6659,17 @@ class ComfyUIManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "comfyui_output"
         comfyui_path = self.workspace / self.workfolder
-        drive_comfyui_output_path = drive_output / "output"
-        comfyui_output_path = comfyui_path / "output"
-        drive_comfyui_user_path = drive_output / "user"
-        comfyui_user_path = comfyui_path / "user"
-        drive_comfyui_input_path = drive_output / "input"
-        comfyui_input_path = comfyui_path / "input"
-        drive_comfyui_model_path_config = drive_output / "extra_model_paths.yaml"
-        comfyui_model_path_config = comfyui_path / "extra_model_paths.yaml"
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_comfyui_output_path,
-            link_path=comfyui_output_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_comfyui_user_path,
-            link_path=comfyui_user_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_comfyui_input_path,
-            link_path=comfyui_input_path,
-        )
-        if (
-            comfyui_model_path_config.exists()
-            or drive_comfyui_model_path_config.exists()
-        ):
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_comfyui_model_path_config,
-                link_path=comfyui_model_path_config,
-                src_is_file=True,
-            )
-        if extras is None:
-            return
-        for extra in extras:
-            link_dir = extra.get("link_dir")
-            is_file = extra.get("is_file", False)
+        links: list[dict[str, str | bool]] = [
+            {"link_dir": "output"},
+            {"link_dir": "user"},
+            {"link_dir": "input"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
+        if extras is not None:
+            links += extras
+        for link in links:
+            link_dir = link.get("link_dir")
+            is_file = link.get("is_file", False)
             if link_dir is None:
                 continue
             full_link_path = comfyui_path / link_dir
@@ -6380,10 +6881,8 @@ class ComfyUIManager(BaseManager):
         requirements_path = comfyui_path / (
             "requirements.txt" if comfyui_requirements is None else comfyui_requirements
         )
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -6412,7 +6911,7 @@ class ComfyUIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.tcmalloc_colab()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("ComfyUI 安装完成")
@@ -6446,6 +6945,10 @@ class SDWebUIManager(BaseManager):
             ```
             默认挂载的目录和文件: `outputs`, `config_states`, `params.txt`, `config.json`, `ui-config.json`, `styles.csv`
         """
+        if not self.utils.is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return
+
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -6453,55 +6956,19 @@ class SDWebUIManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "sd_webui_output"
         sd_webui_path = self.workspace / self.workfolder
-        drive_sd_webui_output_path = drive_output / "outputs"
-        sd_webui_output_path = sd_webui_path / "outputs"
-        drive_sd_webui_config_states_path = drive_output / "config_states"
-        sd_webui_config_states_path = sd_webui_path / "config_states"
-        drive_sd_webui_params = drive_output / "params.txt"
-        sd_webui_params = sd_webui_path / "params.txt"
-        drive_sd_webui_config = drive_output / "config.json"
-        sd_webui_config = sd_webui_path / "config.json"
-        drive_sd_webui_ui_config = drive_output / "ui-config.json"
-        sd_webui_ui_config = sd_webui_path / "ui-config.json"
-        drive_sd_webui_styles = drive_output / "styles.csv"
-        sd_webui_styles = sd_webui_path / "styles.csv"
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_webui_output_path,
-            link_path=sd_webui_output_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_webui_config_states_path,
-            link_path=sd_webui_config_states_path,
-        )
-        if sd_webui_params.exists() or drive_sd_webui_params.exists():
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_sd_webui_params,
-                link_path=sd_webui_params,
-                src_is_file=True,
-            )
-        if sd_webui_config.exists() or drive_sd_webui_config.exists():
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_sd_webui_config,
-                link_path=sd_webui_config,
-                src_is_file=True,
-            )
-        if sd_webui_ui_config.exists() or drive_sd_webui_ui_config.exists():
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_sd_webui_ui_config,
-                link_path=sd_webui_ui_config,
-                src_is_file=True,
-            )
-        if sd_webui_styles.exists() or drive_sd_webui_styles.exists():
-            self.utils.sync_files_and_create_symlink(
-                src_path=drive_sd_webui_styles,
-                link_path=sd_webui_styles,
-                src_is_file=True,
-            )
-        if extras is None:
-            return
-        for extra in extras:
-            link_dir = extra.get("link_dir")
-            is_file = extra.get("is_file", False)
+        links: list[dict[str, str | bool]] = [
+            {"link_dir": "outputs"},
+            {"link_dir": "config_states"},
+            {"link_dir": "params.txt", "is_file": True},
+            {"link_dir": "config.json", "is_file": True},
+            {"link_dir": "ui-config.json", "is_file": True},
+            {"link_dir": "styles.csv", "is_file": True},
+        ]
+        if extras is not None:
+            links += extras
+        for link in links:
+            link_dir = link.get("link_dir")
+            is_file = link.get("is_file", False)
             if link_dir is None:
                 continue
             full_link_path = sd_webui_path / link_dir
@@ -6842,10 +7309,8 @@ class SDWebUIManager(BaseManager):
             if sd_webui_requirements is None
             else sd_webui_requirements
         )
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -6884,7 +7349,7 @@ class SDWebUIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.tcmalloc_colab()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("Stable Diffusion WebUI 安装完成")
@@ -6906,6 +7371,7 @@ PYTORCH_MIRROR_DICT = {
     "cu126": "https://download.pytorch.org/whl/cu126",
     "cu128": "https://download.pytorch.org/whl/cu128",
     "cu129": "https://download.pytorch.org/whl/cu129",
+    "cu130": "https://download.pytorch.org/whl/cu130",
 }
 
 
@@ -7155,6 +7621,10 @@ class InvokeAIManager(BaseManager):
 
     def mount_drive(self) -> None:
         """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录"""
+        if not self.utils.is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return
+
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -7400,10 +7870,8 @@ class InvokeAIManager(BaseManager):
         )
         logger.info("开始安装 InvokeAI")
         os.chdir(self.workspace)
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -7424,7 +7892,7 @@ class InvokeAIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list=model_list)
         if enable_tcmalloc:
-            self.tcmalloc_colab()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("InvokeAI 安装完成")
@@ -7459,6 +7927,10 @@ class SDTrainerManager(BaseManager):
             ```
             默认挂载的目录和文件: `outputs`, `output`, `config`, `train`, `logs`
         """
+        if not self.utils.is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return
+
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
@@ -7466,41 +7938,18 @@ class SDTrainerManager(BaseManager):
 
         drive_output = drive_path / "MyDrive" / "sd_trainer_output"
         sd_trainer_path = self.workspace / self.workfolder
-        drive_sd_trainer_outputs_path = drive_output / "outputs"
-        sd_trainer_outputs_path = sd_trainer_path / "outputs"
-        drive_sd_trainer_output_path = drive_output / "output"
-        sd_trainer_output_path = sd_trainer_path / "output"
-        drive_sd_trainer_config_path = drive_output / "config"
-        sd_trainer_config_path = sd_trainer_path / "config"
-        drive_sd_trainer_train_path = drive_output / "train"
-        sd_trainer_train_path = sd_trainer_path / "train"
-        drive_sd_trainer_logs_path = drive_output / "logs"
-        sd_trainer_logs_path = sd_trainer_path / "logs"
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_trainer_outputs_path,
-            link_path=sd_trainer_outputs_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_trainer_output_path,
-            link_path=sd_trainer_output_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_trainer_config_path,
-            link_path=sd_trainer_config_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_trainer_train_path,
-            link_path=sd_trainer_train_path,
-        )
-        self.utils.sync_files_and_create_symlink(
-            src_path=drive_sd_trainer_logs_path,
-            link_path=sd_trainer_logs_path,
-        )
-        if extras is None:
-            return
-        for extra in extras:
-            link_dir = extra.get("link_dir")
-            is_file = extra.get("is_file", False)
+        links: list[dict[str, str | bool]] = [
+            {"link_dir": "outputs"},
+            {"link_dir": "output"},
+            {"link_dir": "config"},
+            {"link_dir": "train"},
+            {"link_dir": "logs"},
+        ]
+        if extras is not None:
+            links += extras
+        for link in links:
+            link_dir = link.get("link_dir")
+            is_file = link.get("is_file", False)
             if link_dir is None:
                 continue
             full_link_path = sd_trainer_path / link_dir
@@ -7650,10 +8099,8 @@ class SDTrainerManager(BaseManager):
             if sd_trainer_requirements is None
             else sd_trainer_requirements
         )
-        if check_avaliable_gpu and not self.utils.check_gpu():
-            raise Exception(
-                "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
-            )
+        if check_avaliable_gpu:
+            self.check_avaliable_gpu()
         self.mirror.set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -7678,7 +8125,7 @@ class SDTrainerManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.tcmalloc_colab()
+            self.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("SD Trainer 安装完成")

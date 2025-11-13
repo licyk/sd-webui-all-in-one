@@ -82,6 +82,7 @@ $PIP_EXTRA_INDEX_MIRROR_CU124 = "https://download.pytorch.org/whl/cu124"
 $PIP_EXTRA_INDEX_MIRROR_CU126 = "https://download.pytorch.org/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128 = "https://download.pytorch.org/whl/cu128"
 $PIP_EXTRA_INDEX_MIRROR_CU129 = "https://download.pytorch.org/whl/cu129"
+$PIP_EXTRA_INDEX_MIRROR_CU130 = "https://download.pytorch.org/whl/cu130"
 $PIP_EXTRA_INDEX_MIRROR_CPU_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cpu"
 $PIP_EXTRA_INDEX_MIRROR_XPU_NJU = "https://mirror.nju.edu.cn/pytorch/whl/xpu"
 $PIP_EXTRA_INDEX_MIRROR_CU118_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu118"
@@ -90,8 +91,9 @@ $PIP_EXTRA_INDEX_MIRROR_CU124_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu124
 $PIP_EXTRA_INDEX_MIRROR_CU126_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu126"
 $PIP_EXTRA_INDEX_MIRROR_CU128_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
 $PIP_EXTRA_INDEX_MIRROR_CU129_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu129"
+$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu130"
 # uv 最低版本
-$UV_MINIMUM_VER = "0.8"
+$UV_MINIMUM_VER = "0.9.9"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
 # PATH
@@ -123,6 +125,7 @@ $Env:PYTHONIOENCODING = "utf-8"
 $Env:PYTHONUNBUFFERED = 1
 $Env:PYTHONNOUSERSITE = 1
 $Env:PYTHONFAULTHANDLER = 1
+$Env:PYTHONWARNINGS = "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning"
 $Env:GRADIO_ANALYTICS_ENABLED = "False"
 $Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 $Env:BITSANDBYTES_NOWELCOME = 1
@@ -292,7 +295,7 @@ def is_uv_need_update() -> bool:
     except:
         return True
     
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+    if compare_versions(uv_ver, uv_minimum_ver) < 0:
         return True
     else:
         return False
@@ -626,7 +629,8 @@ def get_pytorch_mirror_type(
     # cu124: 2.4.0 ~ 2.6.0
     # cu126: 2.6.0 ~ 2.7.1
     # cu128: 2.7.0 ~ 2.7.1
-    # cu129: 2.8.0 ~
+    # cu129: 2.8.0
+    # cu130: 2.9.0 ~
     torch_ver = get_package_version(torch_version)
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
@@ -647,22 +651,22 @@ def get_pytorch_mirror_type(
         )
     ])
 
-    if compare_versions(torch_ver, '2.0.0') == -1:
+    if compare_versions(torch_ver, '2.0.0') < 0:
         # torch < 2.0.0: default cu11x
         if has_gpus:
             return 'cu11x'
-    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
+    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') < 0:
         # 2.0.0 <= torch < 2.3.1: default cu118
         if has_gpus:
             return 'cu118'
-    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
+    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') < 0:
         # 2.3.0 <= torch < 2.4.1: default cu121
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu118') >= 0:
                 return 'cu118'
         if has_gpus:
             return 'cu121'
-    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
+    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') < 0:
         # 2.4.0 <= torch < 2.6.0: default cu124
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') >= 0:
@@ -671,7 +675,7 @@ def get_pytorch_mirror_type(
                 return 'cu118'
         if has_gpus:
             return 'cu124'
-    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
+    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') < 0:
         # 2.6.0 <= torch < 2.7.0: default cu126
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') >= 0:
@@ -683,7 +687,7 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu126'
-    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
+    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') < 0:
         # 2.7.0 <= torch < 2.8.0: default cu128
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
@@ -692,10 +696,28 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu128'
-    if compare_versions(torch_ver, '2.8.0') >= 0:
-        # torch >= 2.8.0: default cu129
+    if compare_versions(torch_ver, '2.8.0') >= 0 and and compare_versions(torch_ver, '2.9.0') < 0:
+        # torch ~= 2.8.0: default cu129
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu129') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
         if has_gpus:
             return 'cu129'
+    if compare_versions(torch_ver, '2.9.0') >= 0:
+        # torch >= 2.9.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
 
     return 'cpu'
 
@@ -828,6 +850,17 @@ if __name__ == '__main__':
                 $PIP_EXTRA_INDEX_MIRROR_CU129_NJU
             } else {
                 $PIP_EXTRA_INDEX_MIRROR_CU129
+            }
+            $mirror_extra_index_url = ""
+            $mirror_find_links = ""
+        }
+        cu130 {
+            Print-Msg "设置 PyTorch 镜像源类型为 cu130"
+            $pytorch_mirror_type = "cu130"
+            $mirror_index_url = if ($USE_PIP_MIRROR) {
+                $PIP_EXTRA_INDEX_MIRROR_CU130_NJU
+            } else {
+                $PIP_EXTRA_INDEX_MIRROR_CU130
             }
             $mirror_extra_index_url = ""
             $mirror_find_links = ""
@@ -1239,6 +1272,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -1272,6 +1306,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -1596,7 +1631,7 @@ def is_uv_need_update() -> bool:
     except:
         return True
     
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+    if compare_versions(uv_ver, uv_minimum_ver) < 0:
         return True
     else:
         return False
@@ -1890,6 +1925,7 @@ if __name__ == '__main__':
 function Check-Onnxruntime-GPU {
     `$content = `"
 import re
+import sys
 import argparse
 import importlib.metadata
 from pathlib import Path
@@ -2026,11 +2062,14 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
 class OrtType(str, Enum):
     '''onnxruntime-gpu 的类型
 
-    版本说明: 
+    版本说明:
+    - CU130: CU13.x
     - CU121CUDNN8: CUDA 12.1 + cuDNN8
     - CU121CUDNN9: CUDA 12.1 + cuDNN9
     - CU118: CUDA 11.8
     '''
+
+    CU130 = 'cu130'
     CU121CUDNN8 = 'cu121cudnn8'
     CU121CUDNN9 = 'cu121cudnn9'
     CU118 = 'cu118'
@@ -2071,7 +2110,13 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         # 当 onnxruntime 已安装
 
         # 判断 Torch 中的 CUDA 版本
-        if compare_versions(cuda_ver, '12.0') >= 0:
+        if compare_versions(cuda_ver, '13.0') >= 0:
+            # CUDA > 13.0
+            if compare_versions(ort_support_cuda_ver, '13.0') <= 0:
+                return OrtType.CU130
+            else:
+                return None
+        elif compare_versions(cuda_ver, '12.0') >= 0 and compare_versions(ort_support_cuda_ver, '13.0') < 0:
             # CUDA >= 12.0
 
             # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
@@ -2104,12 +2149,27 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         if ignore_ort_install:
             return None
 
-        if compare_versions(cuda_ver, '12.0') >= 0:
+        if sys.platform != 'win32':
+            # 非 Windows 平台未在 Onnxruntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
+            # 所以需要跳过检查, 直接给出版本
+            try:
+                _ = importlib.metadata.version('onnxruntime-gpu')
+                return None
+            except Exception as _:
+                # onnxruntime-gpu 没有安装时
+                return OrtType.CU130
+
+        if compare_versions(cuda_ver, '13.0') >= 0:
+            # CUDA >= 13.x
+            return OrtType.CU130
+        elif compare_versions(cuda_ver, '12.0') >= 0 and compare_versions(cuda_ver, '13.0') < 0:
+            # 12.0 <= CUDA < 13.0
             if compare_versions(cuddn_ver, '8') > 0:
                 return OrtType.CU121CUDNN9
             else:
                 return OrtType.CU121CUDNN8
         else:
+            # CUDA <= 11.8
             return OrtType.CU118
 
 
@@ -2125,18 +2185,23 @@ if __name__ == '__main__':
     `$need_reinstall_ort = `$false
     `$need_switch_mirror = `$false
     switch (`$status) {
+        # TODO: 将 onnxruntime-gpu 的 1.23.2 版本替换成实际属于 CU130 的版本
         cu118 {
             `$need_reinstall_ort = `$true
             `$ort_version = `"onnxruntime-gpu==1.18.1`"
         }
         cu121cudnn9 {
             `$need_reinstall_ort = `$true
-            `$ort_version = `"onnxruntime-gpu>=1.19.0`"
+            `$ort_version = `"onnxruntime-gpu>=1.19.0,<1.23.2`"
         }
         cu121cudnn8 {
             `$need_reinstall_ort = `$true
             `$ort_version = `"onnxruntime-gpu==1.17.1`"
             `$need_switch_mirror = `$true
+        }
+        cu118 {
+            `$need_reinstall_ort = `$true
+            `$ort_version = `"onnxruntime-gpu>=1.23.2`"
         }
         Default {
             `$need_reinstall_ort = `$false
@@ -2462,6 +2527,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -2495,6 +2561,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -2789,7 +2856,7 @@ def is_uv_need_update() -> bool:
     except:
         return True
     
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+    if compare_versions(uv_ver, uv_minimum_ver) < 0:
         return True
     else:
         return False
@@ -2963,7 +3030,8 @@ def get_pytorch_mirror_type(
     # cu124: 2.4.0 ~ 2.6.0
     # cu126: 2.6.0 ~ 2.7.1
     # cu128: 2.7.0 ~ 2.7.1
-    # cu129: 2.8.0 ~
+    # cu129: 2.8.0
+    # cu130: 2.9.0 ~
     torch_ver = get_package_version(torch_version)
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
@@ -2984,22 +3052,22 @@ def get_pytorch_mirror_type(
         )
     ])
 
-    if compare_versions(torch_ver, '2.0.0') == -1:
+    if compare_versions(torch_ver, '2.0.0') < 0:
         # torch < 2.0.0: default cu11x
         if has_gpus:
             return 'cu11x'
-    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
+    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') < 0:
         # 2.0.0 <= torch < 2.3.1: default cu118
         if has_gpus:
             return 'cu118'
-    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
+    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') < 0:
         # 2.3.0 <= torch < 2.4.1: default cu121
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu118') >= 0:
                 return 'cu118'
         if has_gpus:
             return 'cu121'
-    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
+    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') < 0:
         # 2.4.0 <= torch < 2.6.0: default cu124
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') >= 0:
@@ -3008,7 +3076,7 @@ def get_pytorch_mirror_type(
                 return 'cu118'
         if has_gpus:
             return 'cu124'
-    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
+    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') < 0:
         # 2.6.0 <= torch < 2.7.0: default cu126
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') >= 0:
@@ -3020,7 +3088,7 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu126'
-    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
+    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') < 0:
         # 2.7.0 <= torch < 2.8.0: default cu128
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
@@ -3029,10 +3097,28 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu128'
-    if compare_versions(torch_ver, '2.8.0') >= 0:
-        # torch >= 2.8.0: default cu129
+    if compare_versions(torch_ver, '2.8.0') >= 0 and and compare_versions(torch_ver, '2.9.0') < 0:
+        # torch ~= 2.8.0: default cu129
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu129') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
         if has_gpus:
             return 'cu129'
+    if compare_versions(torch_ver, '2.9.0') >= 0:
+        # torch >= 2.9.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
 
     return 'cpu'
 
@@ -3556,6 +3642,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
     `"https://ghfast.top/https://github.com`",
@@ -3608,6 +3695,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -4346,6 +4434,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -4379,6 +4468,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -4682,7 +4772,8 @@ def get_pytorch_mirror_type(
     # cu124: 2.4.0 ~ 2.6.0
     # cu126: 2.6.0 ~ 2.7.1
     # cu128: 2.7.0 ~ 2.7.1
-    # cu129: 2.8.0 ~
+    # cu129: 2.8.0
+    # cu130: 2.9.0 ~
     torch_ver = get_package_version(torch_version)
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
@@ -4703,22 +4794,22 @@ def get_pytorch_mirror_type(
         )
     ])
 
-    if compare_versions(torch_ver, '2.0.0') == -1:
+    if compare_versions(torch_ver, '2.0.0') < 0:
         # torch < 2.0.0: default cu11x
         if has_gpus:
             return 'cu11x'
-    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') == -1:
+    if compare_versions(torch_ver, '2.0.0') >= 0 and compare_versions(torch_ver, '2.3.1') < 0:
         # 2.0.0 <= torch < 2.3.1: default cu118
         if has_gpus:
             return 'cu118'
-    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') == -1:
+    if compare_versions(torch_ver, '2.3.0') >= 0 and compare_versions(torch_ver, '2.4.1') < 0:
         # 2.3.0 <= torch < 2.4.1: default cu121
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu118') >= 0:
                 return 'cu118'
         if has_gpus:
             return 'cu121'
-    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') == -1:
+    if compare_versions(torch_ver, '2.4.0') >= 0 and compare_versions(torch_ver, '2.6.0') < 0:
         # 2.4.0 <= torch < 2.6.0: default cu124
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu121') >= 0:
@@ -4727,7 +4818,7 @@ def get_pytorch_mirror_type(
                 return 'cu118'
         if has_gpus:
             return 'cu124'
-    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') == -1:
+    if compare_versions(torch_ver, '2.6.0') >= 0 and compare_versions(torch_ver, '2.7.0') < 0:
         # 2.6.0 <= torch < 2.7.0: default cu126
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu124') >= 0:
@@ -4739,7 +4830,7 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu126'
-    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') == -1:
+    if compare_versions(torch_ver, '2.7.0') >= 0 and compare_versions(torch_ver, '2.8.0') < 0:
         # 2.7.0 <= torch < 2.8.0: default cu128
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
@@ -4748,10 +4839,28 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu128'
-    if compare_versions(torch_ver, '2.8.0') >= 0:
-        # torch >= 2.8.0: default cu129
+    if compare_versions(torch_ver, '2.8.0') >= 0 and and compare_versions(torch_ver, '2.9.0') < 0:
+        # torch ~= 2.8.0: default cu129
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu129') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
         if has_gpus:
             return 'cu129'
+    if compare_versions(torch_ver, '2.9.0') >= 0:
+        # torch >= 2.9.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
 
     return 'cpu'
 
@@ -5079,7 +5188,7 @@ def is_uv_need_update() -> bool:
     except:
         return True
     
-    if compare_versions(uv_ver, uv_minimum_ver) == -1:
+    if compare_versions(uv_ver, uv_minimum_ver) < 0:
         return True
     else:
         return False
@@ -5348,6 +5457,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -5381,6 +5491,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -5670,7 +5781,7 @@ def aria2_need_update(aria2_min_ver: str) -> bool:
     aria2_ver = get_aria2_ver()
 
     if aria2_ver:
-        if compare_versions(aria2_ver, aria2_min_ver) == -1:
+        if compare_versions(aria2_ver, aria2_min_ver) < 0:
             return True
         else:
             return False
@@ -6618,6 +6729,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -6651,6 +6763,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
@@ -7759,6 +7872,7 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
 # Github 镜像源
 `$GITHUB_MIRROR_LIST = @(
     `"https://ghfast.top/https://github.com`",
@@ -7811,6 +7925,7 @@ param (
 `$Env:PYTHONUNBUFFERED = 1
 `$Env:PYTHONNOUSERSITE = 1
 `$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
 `$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
 `$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
 `$Env:BITSANDBYTES_NOWELCOME = 1
