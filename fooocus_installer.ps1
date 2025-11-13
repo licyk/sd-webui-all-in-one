@@ -4126,7 +4126,7 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         # 判断 Torch 中的 CUDA 版本
         if compare_versions(cuda_ver, '13.0') >= 0:
             # CUDA > 13.0
-            if compare_versions(ort_support_cuda_ver, '13.0') <= 0:
+            if compare_versions(ort_support_cuda_ver, '13.0') < 0:
                 return OrtType.CU130
             else:
                 return None

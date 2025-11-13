@@ -5477,7 +5477,7 @@ class OnnxRuntimeGPUCheck:
             # 判断 Torch 中的 CUDA 版本
             if Utils.compare_versions(cuda_ver, "13.0") >= 0:
                 # CUDA > 13.0
-                if Utils.compare_versions(ort_support_cuda_ver, "13.0") <= 0:
+                if Utils.compare_versions(ort_support_cuda_ver, "13.0") < 0:
                     return OrtType.CU130
                 else:
                     return None
@@ -6028,7 +6028,6 @@ class SDScriptsManager(BaseManager):
             else dataset_path
         )
         if model_path is not None and model_path.is_dir():
-            print("=" * 50)
             logger.info("模型目录中的文件列表")
             self.utils.generate_dir_tree(
                 start_path=model_path,
@@ -6040,7 +6039,6 @@ class SDScriptsManager(BaseManager):
             logger.info("模型目录不存在")
 
         if dataset_path is not None and dataset_path.is_dir():
-            print("=" * 50)
             logger.info("数据集目录中的文件列表")
             self.utils.generate_dir_tree(
                 start_path=dataset_path,
