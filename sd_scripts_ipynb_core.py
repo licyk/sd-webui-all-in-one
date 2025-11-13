@@ -3333,6 +3333,10 @@ class TunnelManager:
                 if url_match:
                     return url_match.group("url")
             except queue.Empty:
+                logger.warning("未捕获到指定输出, 输出内容列表: %s", lines)
+                break
+            except Exception as e:
+                logger.error("启动内网穿透进程时发生错误: %s", e)
                 break
 
         return None
@@ -3551,7 +3555,6 @@ class TunnelManager:
             logger.error("初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: %s", e)
             return None
 
-        line_limit = 10
         host_pattern = re.compile(r"(?P<url>https?://\S+\.share\.zrok\.io)")
 
         command = [zrok_bin.as_posix(), "share", "public", str(self.port), "--headless"]
@@ -3569,34 +3572,40 @@ class TunnelManager:
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=True,
+            text=True,
             bufsize=1,
             encoding="utf-8",
         )
 
         output_queue = queue.Queue()
-        lines = []
+        buffer = ""  # 缓冲不完整的行
 
         def _read_output():
-            for line in iter(tunnel.stdout.readline, ""):
-                output_queue.put(line)
+            nonlocal buffer
+            for char in iter(lambda: tunnel.stdout.read(1), ""):
+                buffer += char
+                # 遇到换行符时处理一行
+                if char in ('\n', '\r'):
+                    output_queue.put(buffer)
+                    url_match = host_pattern.search(buffer)
+                    if url_match:
+                        output_queue.put(("URL", url_match.group("url")))
+                    buffer = ""
             tunnel.stdout.close()
 
         thread = threading.Thread(target=_read_output)
         thread.daemon = True
         thread.start()
 
-        for _ in range(line_limit):
+        start_ts = time.time()
+        while time.time() - start_ts < 60:
             try:
-                line = output_queue.get(timeout=10)
-                lines.append(line)
-                url_match = host_pattern.search(line)
-                if url_match:
-                    return url_match.group("url")
+                item = output_queue.get(timeout=1)
+                if isinstance(item, tuple) and item[0] == "URL":
+                    return item[1]
             except queue.Empty:
-                logger.warning("Empty Queue.")
-                logger.warning(f"lines: {lines}")
-                break
+                if tunnel.poll() is not None:
+                    break
 
         logger.error("启动 Zrok 内网穿透失败")
         return None
