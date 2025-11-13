@@ -817,7 +817,7 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu128'
-    if compare_versions(torch_ver, '2.8.0') >= 0 and and compare_versions(torch_ver, '2.9.0') < 0:
+    if compare_versions(torch_ver, '2.8.0') >= 0 and compare_versions(torch_ver, '2.9.0') < 0:
         # torch ~= 2.8.0: default cu129
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu129') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
