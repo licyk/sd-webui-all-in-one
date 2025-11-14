@@ -1187,178 +1187,70 @@ class Utils:
         :param retry`(int|None)`: 重试下载的次数
         :return `Path|None`: 下载成功并解压成功时返回路径
         """
-        path = Path("/tmp")
-        local_dir = (
-            Path(local_dir)
-            if not isinstance(local_dir, Path) and local_dir is not None
-            else local_dir
-        )
-        if name is None:
-            parts = urlparse(url)
-            name = os.path.basename(parts.path)
+        with TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir)
+            local_dir = (
+                Path(local_dir)
+                if not isinstance(local_dir, Path) and local_dir is not None
+                else local_dir
+            )
+            if name is None:
+                parts = urlparse(url)
+                name = os.path.basename(parts.path)
 
-        archive_format = Path(name).suffix  # 压缩包格式
-        origin_file_path = Downloader.download_file(  # 下载文件
-            url=url, path=path, save_name=name, tool="aria2", retry=retry
-        )
+            archive_format = Path(name).suffix  # 压缩包格式
+            origin_file_path = Downloader.download_file(  # 下载文件
+                url=url, path=path, save_name=name, tool="aria2", retry=retry
+            )
 
-        if origin_file_path is not None:
-            # 解压文件
-            logger.info("解压 %s 到 %s 中", name, local_dir)
-            try:
-                if archive_format == ".7z":
-                    run_cmd(
-                        [
-                            "7z",
-                            "x",
-                            origin_file_path.as_posix(),
-                            f"-o{local_dir.as_posix()}",
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                elif archive_format == ".zip":
-                    run_cmd(
-                        [
-                            "unzip",
-                            origin_file_path.as_posix(),
-                            "-d",
-                            local_dir.as_posix(),
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                elif archive_format == ".tar":
-                    run_cmd(
-                        [
-                            "tar",
-                            "-xvf",
-                            origin_file_path.as_posix(),
-                            "-C",
-                            local_dir.as_posix(),
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                else:
-                    logger.error("%s 的格式不支持解压", name)
+            if origin_file_path is not None:
+                # 解压文件
+                logger.info("解压 %s 到 %s 中", name, local_dir)
+                try:
+                    if archive_format == ".7z":
+                        run_cmd(
+                            [
+                                "7z",
+                                "x",
+                                origin_file_path.as_posix(),
+                                f"-o{local_dir.as_posix()}",
+                            ]
+                        )
+                        logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                        return local_dir
+                    elif archive_format == ".zip":
+                        run_cmd(
+                            [
+                                "unzip",
+                                origin_file_path.as_posix(),
+                                "-d",
+                                local_dir.as_posix(),
+                            ]
+                        )
+                        logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                        return local_dir
+                    elif archive_format == ".tar":
+                        run_cmd(
+                            [
+                                "tar",
+                                "-xvf",
+                                origin_file_path.as_posix(),
+                                "-C",
+                                local_dir.as_posix(),
+                            ]
+                        )
+                        logger.info("%s 解压完成, 路径: %s", name, local_dir)
+                        return local_dir
+                    else:
+                        logger.error("%s 的格式不支持解压", name)
+                        return None
+                except Exception as e:
+                    logger.error("解压 %s 时发生错误: %s", name, e)
+                    traceback.print_exc()
                     return None
-            except Exception as e:
-                logger.error("解压 %s 时发生错误: %s", name, e)
-                traceback.print_exc()
-                return None
-        else:
-            logger.error("%s 下载失败", name)
-            return None
-
-    @staticmethod
-    def configure_tcmalloc_common() -> bool:
-        """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
-
-        :return `bool`: 配置成功时返回`True`
-        """
-        # 检查 glibc 版本
-        try:
-            result = subprocess.run(
-                ["ldd", "--version"], capture_output=True, text=True
-            )
-            libc_ver_line = result.stdout.split("\n")[0]
-            libc_ver = re.search(r"(\d+\.\d+)", libc_ver_line)
-            if libc_ver:
-                libc_ver = libc_ver.group(1)
-                logger.info("glibc 版本: %s", libc_ver)
             else:
-                logger.error("无法确定 glibc 版本")
-                return False
-        except Exception as e:
-            logger.error("检查 glibc 版本时出错: %s", e)
-            return False
-
-        # 从 2.34 开始, libpthread 已经集成到 libc.so 中
-        libc_v234 = "2.34"
-
-        # 定义 Tcmalloc 库数组
-        tcmalloc_libs = [r"libtcmalloc(_minimal|)\.so\.\d+", r"libtcmalloc\.so\.\d+"]
-
-        # 遍历数组
-        for lib_pattern in tcmalloc_libs:
-            try:
-                # 获取系统库缓存信息
-                result = subprocess.run(
-                    ["ldconfig", "-p"],
-                    capture_output=True,
-                    text=True,
-                    env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")),
-                )
-                libraries = result.stdout.split("\n")
-
-                # 查找匹配的 TCMalloc 库
-                for lib in libraries:
-                    if re.search(lib_pattern, lib):
-                        # 解析库信息
-                        match = re.search(r"(.+?)\s+=>\s+(.+)", lib)
-                        if match:
-                            lib_name, lib_path = (
-                                match.group(1).strip(),
-                                match.group(2).strip(),
-                            )
-                            logger.info("检查 TCMalloc: %s => %s", lib_name, lib_path)
-
-                            # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
-                            if Utils.compare_versions(libc_ver, libc_v234) < 0:
-                                # glibc < 2.34，pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
-                                ldd_result = subprocess.run(
-                                    ["ldd", lib_path], capture_output=True, text=True
-                                )
-                                if "libpthread" in ldd_result.stdout:
-                                    logger.info(
-                                        "%s 链接到 libpthread, 执行 LD_PRELOAD=%s",
-                                        lib_name,
-                                        lib_path,
-                                    )
-                                    # 设置完整路径 LD_PRELOAD
-                                    if (
-                                        "LD_PRELOAD" in os.environ
-                                        and os.environ["LD_PRELOAD"]
-                                    ):
-                                        os.environ["LD_PRELOAD"] = (
-                                            os.environ["LD_PRELOAD"] + ":" + lib_path
-                                        )
-                                    else:
-                                        os.environ["LD_PRELOAD"] = lib_path
-                                    return True
-                                else:
-                                    logger.info(
-                                        "%s 没有链接到 libpthread, 将触发未定义符号: pthread_Key_create 错误",
-                                        lib_name,
-                                    )
-                            else:
-                                # libc.so (glibc) 的 2.34 版本已将 pthread 库集成到 glibc 内部
-                                logger.info(
-                                    "%s 链接到 libc.so, 执行 LD_PRELOAD=%s",
-                                    lib_name,
-                                    lib_path,
-                                )
-                                # 设置完整路径 LD_PRELOAD
-                                if (
-                                    "LD_PRELOAD" in os.environ
-                                    and os.environ["LD_PRELOAD"]
-                                ):
-                                    os.environ["LD_PRELOAD"] = (
-                                        os.environ["LD_PRELOAD"] + ":" + lib_path
-                                    )
-                                else:
-                                    os.environ["LD_PRELOAD"] = lib_path
-                                return True
-            except Exception as e:
-                logger.error("检查 TCMalloc 库时出错: %s", e)
-                continue
-
-        if "LD_PRELOAD" not in os.environ:
-            logger.warning(
-                "无法定位 TCMalloc。未在系统上找到 tcmalloc 或 google-perftool, 取消加载内存优化"
-            )
-            return False
+                logger.error("%s 下载失败", name)
+                return None
 
     @staticmethod
     def version_increment(version: str) -> str:
@@ -1475,311 +1367,6 @@ class Utils:
         :return `bool`: 检测结果
         """
         return os.path.exists("/var/colab/hostname")
-
-    @staticmethod
-    def get_cuda_comp_cap() -> float:
-        """
-        Returns float of CUDA Compute Capability using nvidia-smi
-        Returns 0.0 on error
-        CUDA Compute Capability
-        ref https://developer.nvidia.com/cuda-gpus
-        ref https://en.wikipedia.org/wiki/CUDA
-        Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
-
-        :return `float`: Comp Cap 版本
-        """
-        try:
-            return max(
-                map(
-                    float,
-                    subprocess.check_output(
-                        [
-                            "nvidia-smi",
-                            "--query-gpu=compute_cap",
-                            "--format=noheader,csv",
-                        ],
-                        text=True,
-                    ).splitlines(),
-                )
-            )
-        except Exception as _:
-            return 0.0
-
-    @staticmethod
-    def get_cuda_version() -> float:
-        """获取驱动支持的 CUDA 版本
-
-        :return `float`: CUDA 支持的版本
-        """
-        try:
-            # 获取 nvidia-smi 输出
-            output = subprocess.check_output(["nvidia-smi", "-q"], text=True)
-            match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
-            if match:
-                return float(match.group(1))
-            return 0.0
-        except Exception as _:
-            return 0.0
-
-    @staticmethod
-    def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
-        """获取 CUDA 类型的 PyTorch 镜像源类型
-
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: CUDA 类型的 PyTorch 镜像源类型
-        """
-        # cu118: 2.0.0 ~ 2.4.0
-        # cu121: 2.1.1 ~ 2.4.0
-        # cu124: 2.4.0 ~ 2.6.0
-        # cu126: 2.6.0 ~ 2.7.1
-        # cu128: 2.7.0 ~ 2.7.1
-        # cu129: 2.8.0
-        # cu130: 2.9.0 ~
-        cuda_comp_cap = Utils.get_cuda_comp_cap()
-        cuda_support_ver = Utils.get_cuda_version()
-
-        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
-            # torch < 2.0.0: default cu11x
-            return "other"
-        if (
-            Utils.compare_versions(torch_ver, "2.0.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.3.1") < 0
-        ):
-            # 2.0.0 <= torch < 2.3.1: default cu118
-            return "cu118"
-        if (
-            Utils.compare_versions(torch_ver, "2.3.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.4.1") < 0
-        ):
-            # 2.3.0 <= torch < 2.4.1: default cu121
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
-                    >= 0
-                ):
-                    return "cu118"
-            return "cu121"
-        if (
-            Utils.compare_versions(torch_ver, "2.4.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.6.0") < 0
-        ):
-            # 2.4.0 <= torch < 2.6.0: default cu124
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121")
-                    >= 0
-                ):
-                    return "cu121"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
-                    >= 0
-                ):
-                    return "cu118"
-            return "cu124"
-        if (
-            Utils.compare_versions(torch_ver, "2.6.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.7.0") < 0
-        ):
-            # 2.6.0 <= torch < 2.7.0: default cu126
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124")
-                    >= 0
-                ):
-                    return "cu124"
-            if Utils.compare_versions(cuda_comp_cap, "10.0") > 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
-                    return "cu128"
-            return "cu126"
-        if (
-            Utils.compare_versions(torch_ver, "2.7.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.8.0") < 0
-        ):
-            # 2.7.0 <= torch < 2.8.0: default cu128
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
-                    return "cu126"
-            return "cu128"
-        if (
-            Utils.compare_versions(torch_ver, "2.8.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.9.0") < 0
-        ):
-            # torch ~= 2.8.0: default cu129
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu129") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
-                    return "cu128"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
-                    return "cu126"
-            return "cu129"
-        if Utils.compare_versions(torch_ver, "2.9.0") >= 0:
-            # torch >= 2.9.0: default cu130
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu130") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
-                    return "cu128"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
-                    return "cu126"
-            return "cu130"
-
-        return "cu129"
-
-    @staticmethod
-    def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
-        """获取 ROCm 类型的 PyTorch 镜像源类型
-
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: ROCm 类型的 PyTorch 镜像源类型
-        """
-        if Utils.compare_versions(torch_ver, "2.4.0") < 0:
-            # torch < 2.4.0
-            return "other"
-        if (
-            Utils.compare_versions(torch_ver, "2.4.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.5.0") < 0
-        ):
-            # 2.4.0 <= torch < 2.5.0
-            return "rocm61"
-        if (
-            Utils.compare_versions(torch_ver, "2.5.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.6.0") < 0
-        ):
-            # 2.5.0 <= torch < 2.6.0
-            return "rocm62"
-        if (
-            Utils.compare_versions(torch_ver, "2.6.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.7.0") < 0
-        ):
-            # 2.6.0 < torch < 2.7.0
-            return "rocm624"
-        if (
-            Utils.compare_versions(torch_ver, "2.7.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.8.0") < 0
-        ):
-            # 2.7.0 < torch < 2.8.0
-            return "rocm63"
-        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
-            # torch >= 2.8.0
-            return "rocm64"
-
-        return "rocm63"
-
-    @staticmethod
-    def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
-        """获取 IPEX 类型的 PyTorch 镜像源类型
-
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: IPEX 类型的 PyTorch 镜像源类型
-        """
-        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
-            # torch < 2.0.0
-            return "other"
-        if Utils.compare_versions(torch_ver, "2.0.0") == 0:
-            # torch == 2.0.0
-            return "ipex_legacy_arc"
-        if (
-            Utils.compare_versions(torch_ver, "2.0.0") > 0
-            and Utils.compare_versions(torch_ver, "2.1.0") < 0
-        ):
-            # 2.0.0 < torch < 2.1.0
-            return "other"
-        if Utils.compare_versions(torch_ver, "2.1.0") == 0:
-            # torch == 2.1.0
-            return "ipex_legacy_arc"
-        if Utils.compare_versions(torch_ver, "2.6.0") >= 0:
-            # torch >= 2.6.0
-            return "xpu"
-
-        return "xpu"
-
-    @staticmethod
-    def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
-        """获取 CPU 类型的 PyTorch 镜像源类型
-
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: CPU 类型的 PyTorch 镜像源类型
-        """
-        _ = torch_ver
-        return "cpu"
-
-    @staticmethod
-    def get_pytorch_mirror_type(
-        torch_ver: str, device_type: Literal["cuda", "rocm", "xpu", "cpu"]
-    ) -> str:
-        """获取 PyTorch 镜像源类型
-
-        :param torch_ver`(str)`: PyTorch 版本号
-        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡类型
-        :return `str`: PyTorch 镜像源类型
-        """
-        if device_type == "cuda":
-            return Utils.get_pytorch_mirror_type_cuda(torch_ver)
-
-        if device_type == "rocm":
-            return Utils.get_pytorch_mirror_type_rocm(torch_ver)
-
-        if device_type == "xpu":
-            return Utils.get_pytorch_mirror_type_ipex(torch_ver)
-
-        if device_type == "cpu":
-            return Utils.get_pytorch_mirror_type_cpu(torch_ver)
-
-        return "other"
-
-    @staticmethod
-    def get_env_pytorch_type() -> str:
-        """获取当前环境中 PyTorch 版本号对应的类型
-
-        :return `str`: PyTorch 类型 (cuda, rocm, xpu, cpu)
-        """
-        torch_ipex_legacy_ver_list = [
-            "2.0.0a0+gite9ebda2",
-            "2.1.0a0+git7bcf7da",
-            "2.1.0a0+cxx11.abi",
-            "2.0.1a0",
-            "2.1.0.post0",
-        ]
-        try:
-            import torch
-
-            torch_ver = torch.__version__
-        except Exception as _:
-            return "cuda"
-
-        torch_type = torch_ver.split("+").pop()
-
-        if torch_ver in torch_ipex_legacy_ver_list:
-            return "xpu"
-
-        if "cu" in torch_type:
-            return "cuda"
-
-        if "rocm" in torch_type:
-            return "rocm"
-
-        if "xpu" in torch_type:
-            return "xpu"
-
-        if "cpu" in torch_type:
-            return "cpu"
-
-        return "cuda"
 
     @staticmethod
     def warning_unexpected_params(
@@ -2046,6 +1633,346 @@ class Utils:
                 )
             else:
                 counts[1] += 1
+
+
+class PyTorchMirrorManager:
+    """管理 PyTorch 镜像源的工具
+
+    Attributes:
+        PYTORCH_MIRROR_DICT (dict[str, str]): PyTorch 镜像源字典，键为设备类型，值为对应的 PyTorch wheel 下载地址
+    """
+
+    PYTORCH_MIRROR_DICT = {  # PyTorch 镜像源字典
+        "other": "https://download.pytorch.org/whl",
+        "cpu": "https://download.pytorch.org/whl/cpu",
+        "xpu": "https://download.pytorch.org/whl/xpu",
+        "rocm61": "https://download.pytorch.org/whl/rocm6.1",
+        "rocm62": "https://download.pytorch.org/whl/rocm6.2",
+        "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
+        "rocm63": "https://download.pytorch.org/whl/rocm6.3",
+        "rocm64": "https://download.pytorch.org/whl/rocm6.4",
+        "cu118": "https://download.pytorch.org/whl/cu118",
+        "cu121": "https://download.pytorch.org/whl/cu121",
+        "cu124": "https://download.pytorch.org/whl/cu124",
+        "cu126": "https://download.pytorch.org/whl/cu126",
+        "cu128": "https://download.pytorch.org/whl/cu128",
+        "cu129": "https://download.pytorch.org/whl/cu129",
+        "cu130": "https://download.pytorch.org/whl/cu130",
+    }
+
+    @staticmethod
+    def get_pytorch_mirror_dict() -> dict[str, str]:
+        """获取 PyTorch 镜像源字典
+
+        Returns:
+                dict[str, str]: PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm61" 等), 值为对应的 PyTorch wheel 下载地址
+        """
+        return PyTorchMirrorManager.PYTORCH_MIRROR_DICT.copy()
+
+    @staticmethod
+    def get_cuda_comp_cap() -> float:
+        """
+        Returns float of CUDA Compute Capability using nvidia-smi
+        Returns 0.0 on error
+        CUDA Compute Capability
+        ref https://developer.nvidia.com/cuda-gpus
+        ref https://en.wikipedia.org/wiki/CUDA
+        Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+
+        :return `float`: Comp Cap 版本
+        """
+        try:
+            return max(
+                map(
+                    float,
+                    subprocess.check_output(
+                        [
+                            "nvidia-smi",
+                            "--query-gpu=compute_cap",
+                            "--format=noheader,csv",
+                        ],
+                        text=True,
+                    ).splitlines(),
+                )
+            )
+        except Exception as _:
+            return 0.0
+
+    @staticmethod
+    def get_cuda_version() -> float:
+        """获取驱动支持的 CUDA 版本
+
+        :return `float`: CUDA 支持的版本
+        """
+        try:
+            # 获取 nvidia-smi 输出
+            output = subprocess.check_output(["nvidia-smi", "-q"], text=True)
+            match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
+            if match:
+                return float(match.group(1))
+            return 0.0
+        except Exception as _:
+            return 0.0
+
+    @staticmethod
+    def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
+        """获取 CUDA 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: CUDA 类型的 PyTorch 镜像源类型
+        """
+        # cu118: 2.0.0 ~ 2.4.0
+        # cu121: 2.1.1 ~ 2.4.0
+        # cu124: 2.4.0 ~ 2.6.0
+        # cu126: 2.6.0 ~ 2.7.1
+        # cu128: 2.7.0 ~ 2.7.1
+        # cu129: 2.8.0
+        # cu130: 2.9.0 ~
+        cuda_comp_cap = PyTorchMirrorManager.get_cuda_comp_cap()
+        cuda_support_ver = PyTorchMirrorManager.get_cuda_version()
+
+        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
+            # torch < 2.0.0: default cu11x
+            return "other"
+        if (
+            Utils.compare_versions(torch_ver, "2.0.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.3.1") < 0
+        ):
+            # 2.0.0 <= torch < 2.3.1: default cu118
+            return "cu118"
+        if (
+            Utils.compare_versions(torch_ver, "2.3.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.4.1") < 0
+        ):
+            # 2.3.0 <= torch < 2.4.1: default cu121
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
+                    >= 0
+                ):
+                    return "cu118"
+            return "cu121"
+        if (
+            Utils.compare_versions(torch_ver, "2.4.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.6.0") < 0
+        ):
+            # 2.4.0 <= torch < 2.6.0: default cu124
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121")
+                    >= 0
+                ):
+                    return "cu121"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
+                    >= 0
+                ):
+                    return "cu118"
+            return "cu124"
+        if (
+            Utils.compare_versions(torch_ver, "2.6.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.7.0") < 0
+        ):
+            # 2.6.0 <= torch < 2.7.0: default cu126
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124")
+                    >= 0
+                ):
+                    return "cu124"
+            if Utils.compare_versions(cuda_comp_cap, "10.0") > 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+            return "cu126"
+        if (
+            Utils.compare_versions(torch_ver, "2.7.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.8.0") < 0
+        ):
+            # 2.7.0 <= torch < 2.8.0: default cu128
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
+            return "cu128"
+        if (
+            Utils.compare_versions(torch_ver, "2.8.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.9.0") < 0
+        ):
+            # torch ~= 2.8.0: default cu129
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu129") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
+            return "cu129"
+        if Utils.compare_versions(torch_ver, "2.9.0") >= 0:
+            # torch >= 2.9.0: default cu130
+            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu130") < 0:
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
+                    >= 0
+                ):
+                    return "cu128"
+                if (
+                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
+                    >= 0
+                ):
+                    return "cu126"
+            return "cu130"
+
+        return "cu129"
+
+    @staticmethod
+    def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
+        """获取 ROCm 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: ROCm 类型的 PyTorch 镜像源类型
+        """
+        if Utils.compare_versions(torch_ver, "2.4.0") < 0:
+            # torch < 2.4.0
+            return "other"
+        if (
+            Utils.compare_versions(torch_ver, "2.4.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.5.0") < 0
+        ):
+            # 2.4.0 <= torch < 2.5.0
+            return "rocm61"
+        if (
+            Utils.compare_versions(torch_ver, "2.5.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.6.0") < 0
+        ):
+            # 2.5.0 <= torch < 2.6.0
+            return "rocm62"
+        if (
+            Utils.compare_versions(torch_ver, "2.6.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.7.0") < 0
+        ):
+            # 2.6.0 < torch < 2.7.0
+            return "rocm624"
+        if (
+            Utils.compare_versions(torch_ver, "2.7.0") >= 0
+            and Utils.compare_versions(torch_ver, "2.8.0") < 0
+        ):
+            # 2.7.0 < torch < 2.8.0
+            return "rocm63"
+        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
+            # torch >= 2.8.0
+            return "rocm64"
+
+        return "rocm63"
+
+    @staticmethod
+    def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
+        """获取 IPEX 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: IPEX 类型的 PyTorch 镜像源类型
+        """
+        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
+            # torch < 2.0.0
+            return "other"
+        if Utils.compare_versions(torch_ver, "2.0.0") == 0:
+            # torch == 2.0.0
+            return "ipex_legacy_arc"
+        if (
+            Utils.compare_versions(torch_ver, "2.0.0") > 0
+            and Utils.compare_versions(torch_ver, "2.1.0") < 0
+        ):
+            # 2.0.0 < torch < 2.1.0
+            return "other"
+        if Utils.compare_versions(torch_ver, "2.1.0") == 0:
+            # torch == 2.1.0
+            return "ipex_legacy_arc"
+        if Utils.compare_versions(torch_ver, "2.6.0") >= 0:
+            # torch >= 2.6.0
+            return "xpu"
+
+        return "xpu"
+
+    @staticmethod
+    def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
+        """获取 CPU 类型的 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本
+        :return `str`: CPU 类型的 PyTorch 镜像源类型
+        """
+        _ = torch_ver
+        return "cpu"
+
+    @staticmethod
+    def get_pytorch_mirror_type(
+        torch_ver: str, device_type: Literal["cuda", "rocm", "xpu", "cpu"]
+    ) -> str:
+        """获取 PyTorch 镜像源类型
+
+        :param torch_ver`(str)`: PyTorch 版本号
+        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡类型
+        :return `str`: PyTorch 镜像源类型
+        """
+        if device_type == "cuda":
+            return PyTorchMirrorManager.get_pytorch_mirror_type_cuda(torch_ver)
+
+        if device_type == "rocm":
+            return PyTorchMirrorManager.get_pytorch_mirror_type_rocm(torch_ver)
+
+        if device_type == "xpu":
+            return PyTorchMirrorManager.get_pytorch_mirror_type_ipex(torch_ver)
+
+        if device_type == "cpu":
+            return PyTorchMirrorManager.get_pytorch_mirror_type_cpu(torch_ver)
+
+        return "other"
+
+    @staticmethod
+    def get_env_pytorch_type() -> str:
+        """获取当前环境中 PyTorch 版本号对应的类型
+
+        :return `str`: PyTorch 类型 (cuda, rocm, xpu, cpu)
+        """
+        torch_ipex_legacy_ver_list = [
+            "2.0.0a0+gite9ebda2",
+            "2.1.0a0+git7bcf7da",
+            "2.1.0a0+cxx11.abi",
+            "2.0.1a0",
+            "2.1.0.post0",
+        ]
+        try:
+            import torch
+
+            torch_ver = torch.__version__
+        except Exception as _:
+            return "cuda"
+
+        torch_type = torch_ver.split("+").pop()
+
+        if torch_ver in torch_ipex_legacy_ver_list:
+            return "xpu"
+
+        if "cu" in torch_type:
+            return "cuda"
+
+        if "rocm" in torch_type:
+            return "rocm"
+
+        if "xpu" in torch_type:
+            return "xpu"
+
+        if "cpu" in torch_type:
+            return "cpu"
+
+        return "cuda"
 
 
 class MultiThreadDownloader:
@@ -3585,7 +3512,7 @@ class TunnelManager:
             for char in iter(lambda: tunnel.stdout.read(1), ""):
                 buffer += char
                 # 遇到换行符时处理一行
-                if char in ('\n', '\r'):
+                if char in ("\n", "\r"):
                     output_queue.put(buffer)
                     url_match = host_pattern.search(buffer)
                     if url_match:
@@ -5804,6 +5731,172 @@ class CUDAMalloc:
             logger.warning("显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器")
 
 
+class TCMalloc:
+    """TCMalloc 配置工具"""
+
+    def __init__(self, workspace: str | Path) -> None:
+        """TCMalloc 配置工具初始化
+
+        :param workspace`(str|Path)`: 工作区路径
+        """
+        self.workspace = Path(workspace)
+        self.tcmalloc_has_configure = False
+
+    def configure_tcmalloc_common(self) -> bool:
+        """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
+
+        :return `bool`: 配置成功时返回`True`
+        """
+        # 检查 glibc 版本
+        try:
+            result = subprocess.run(
+                ["ldd", "--version"], capture_output=True, text=True
+            )
+            libc_ver_line = result.stdout.split("\n")[0]
+            libc_ver = re.search(r"(\d+\.\d+)", libc_ver_line)
+            if libc_ver:
+                libc_ver = libc_ver.group(1)
+                logger.info("glibc 版本: %s", libc_ver)
+            else:
+                logger.error("无法确定 glibc 版本")
+                return False
+        except Exception as e:
+            logger.error("检查 glibc 版本时出错: %s", e)
+            return False
+
+        # 从 2.34 开始, libpthread 已经集成到 libc.so 中
+        libc_v234 = "2.34"
+
+        # 定义 Tcmalloc 库数组
+        tcmalloc_libs = [r"libtcmalloc(_minimal|)\.so\.\d+", r"libtcmalloc\.so\.\d+"]
+
+        # 遍历数组
+        for lib_pattern in tcmalloc_libs:
+            try:
+                # 获取系统库缓存信息
+                result = subprocess.run(
+                    ["ldconfig", "-p"],
+                    capture_output=True,
+                    text=True,
+                    env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")),
+                )
+                libraries = result.stdout.split("\n")
+
+                # 查找匹配的 TCMalloc 库
+                for lib in libraries:
+                    if re.search(lib_pattern, lib):
+                        # 解析库信息
+                        match = re.search(r"(.+?)\s+=>\s+(.+)", lib)
+                        if match:
+                            lib_name, lib_path = (
+                                match.group(1).strip(),
+                                match.group(2).strip(),
+                            )
+                            logger.info("检查 TCMalloc: %s => %s", lib_name, lib_path)
+
+                            # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
+                            if Utils.compare_versions(libc_ver, libc_v234) < 0:
+                                # glibc < 2.34，pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
+                                ldd_result = subprocess.run(
+                                    ["ldd", lib_path], capture_output=True, text=True
+                                )
+                                if "libpthread" in ldd_result.stdout:
+                                    logger.info(
+                                        "%s 链接到 libpthread, 执行 LD_PRELOAD=%s",
+                                        lib_name,
+                                        lib_path,
+                                    )
+                                    # 设置完整路径 LD_PRELOAD
+                                    if (
+                                        "LD_PRELOAD" in os.environ
+                                        and os.environ["LD_PRELOAD"]
+                                    ):
+                                        os.environ["LD_PRELOAD"] = (
+                                            os.environ["LD_PRELOAD"] + ":" + lib_path
+                                        )
+                                    else:
+                                        os.environ["LD_PRELOAD"] = lib_path
+                                    return True
+                                else:
+                                    logger.info(
+                                        "%s 没有链接到 libpthread, 将触发未定义符号: pthread_Key_create 错误",
+                                        lib_name,
+                                    )
+                            else:
+                                # libc.so (glibc) 的 2.34 版本已将 pthread 库集成到 glibc 内部
+                                logger.info(
+                                    "%s 链接到 libc.so, 执行 LD_PRELOAD=%s",
+                                    lib_name,
+                                    lib_path,
+                                )
+                                # 设置完整路径 LD_PRELOAD
+                                if (
+                                    "LD_PRELOAD" in os.environ
+                                    and os.environ["LD_PRELOAD"]
+                                ):
+                                    os.environ["LD_PRELOAD"] = (
+                                        os.environ["LD_PRELOAD"] + ":" + lib_path
+                                    )
+                                else:
+                                    os.environ["LD_PRELOAD"] = lib_path
+                                return True
+            except Exception as e:
+                logger.error("检查 TCMalloc 库时出错: %s", e)
+                continue
+
+        if "LD_PRELOAD" not in os.environ:
+            logger.warning(
+                "无法定位 TCMalloc。未在系统上找到 tcmalloc 或 google-perftool, 取消加载内存优化"
+            )
+            return False
+
+    def configure_tcmalloc_colab(self) -> bool:
+        """配置 TCMalloc (Colab)
+
+        :return `bool`: 配置结果
+        """
+        logger.info("配置 TCMalloc 内存优化")
+        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
+        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
+        status = Downloader.download_file(
+            url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4"
+        )
+        if status is None:
+            logger.error("下载 TCMalloc 库失败, 无法配置 TCMalloc")
+            return False
+
+        if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
+            os.environ["LD_PRELOAD"] = (
+                os.environ["LD_PRELOAD"] + ":" + libtcmalloc_path.as_posix()
+            )
+        else:
+            os.environ["LD_PRELOAD"] = libtcmalloc_path.as_posix()
+
+        return True
+
+    def configure_tcmalloc(self) -> bool:
+        """配置 TCMalloc
+
+        :return `bool`: TCMalloc 配置结果
+        """
+        if self.tcmalloc_has_configure:
+            logger.info("TCMalloc 内存优化已配置")
+            return True
+
+        if Utils.is_colab_environment():
+            status = self.configure_tcmalloc_colab()
+        else:
+            status = self.configure_tcmalloc_common()
+
+        if not status:
+            logger.error("配置 TCMalloc 内存优化失败")
+            return False
+
+        logger.info("TCMalloc 内存优化配置完成")
+        self.tcmalloc_has_configure = True
+        return True
+
+
 class BaseManager:
     """管理工具基础类"""
 
@@ -5836,12 +5929,12 @@ class BaseManager:
         self.env_check = RequirementCheck()
         self.ort_check = OnnxRuntimeGPUCheck()
         self.cuda_malloc = CUDAMalloc()
+        self.tcmalloc = TCMalloc(workspace)
         self.remove_files = remove_files
         self.run_cmd = run_cmd
         self.copy_files = copy_files
         self.get_logger = get_logger
         self.multi_thread_downloader_class = MultiThreadDownloader
-        self.tcmalloc_has_configure = False
 
     def restart_repo_manager(
         self,
@@ -5918,52 +6011,6 @@ class BaseManager:
                     self.get_model(url=url, path=path, retry=retry)
                 else:
                     self.get_model(url=url, path=path, filename=filename, retry=retry)
-
-    def configure_tcmalloc_colab(self) -> bool:
-        """配置 TCMalloc (Colab)
-
-        :return `bool`: 配置结果
-        """
-        logger.info("配置 TCMalloc 内存优化")
-        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
-        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
-        status = self.downloader.download_file(
-            url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4"
-        )
-        if status is None:
-            logger.error("下载 TCMalloc 库失败, 无法配置 TCMalloc")
-            return False
-
-        if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
-            os.environ["LD_PRELOAD"] = (
-                os.environ["LD_PRELOAD"] + ":" + libtcmalloc_path.as_posix()
-            )
-        else:
-            os.environ["LD_PRELOAD"] = libtcmalloc_path.as_posix()
-
-        return True
-
-    def configure_tcmalloc(self) -> bool:
-        """配置 TCMalloc
-
-        :return `bool`: TCMalloc 配置结果
-        """
-        if self.tcmalloc_has_configure:
-            logger.info("TCMalloc 内存优化已配置")
-            return True
-
-        if self.utils.is_colab_environment():
-            status = self.configure_tcmalloc_colab()
-        else:
-            status = self.utils.configure_tcmalloc_common()
-
-        if not status:
-            logger.error("配置 TCMalloc 内存优化失败")
-            return False
-
-        logger.info("TCMalloc 内存优化配置完成")
-        self.tcmalloc_has_configure = True
-        return True
 
     def check_avaliable_gpu(self) -> bool:
         """检测当前环境是否有 GPU
@@ -6049,7 +6096,6 @@ class SDScriptsManager(BaseManager):
                 max_depth=None if recursive else 1,
                 show_hidden=show_hidden,
             )
-            print("=" * 50)
         else:
             logger.info("模型目录不存在")
 
@@ -6060,7 +6106,6 @@ class SDScriptsManager(BaseManager):
                 max_depth=None if recursive else 1,
                 show_hidden=show_hidden,
             )
-            print("=" * 50)
         else:
             logger.info("数据集目录不存在")
 
@@ -6236,7 +6281,7 @@ class SDScriptsManager(BaseManager):
             email=git_email,
         )
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("sd-scripts 环境配置完成")
@@ -6597,7 +6642,7 @@ class FooocusManager(BaseManager):
             translation=fooocus_translation,
         )
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         self.pre_download_model(
@@ -6924,7 +6969,7 @@ class ComfyUIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("ComfyUI 安装完成")
@@ -7362,30 +7407,10 @@ class SDWebUIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("Stable Diffusion WebUI 安装完成")
-
-
-# PyTorch 镜像源字典
-PYTORCH_MIRROR_DICT = {
-    "other": "https://download.pytorch.org/whl",
-    "cpu": "https://download.pytorch.org/whl/cpu",
-    "xpu": "https://download.pytorch.org/whl/xpu",
-    "rocm61": "https://download.pytorch.org/whl/rocm6.1",
-    "rocm62": "https://download.pytorch.org/whl/rocm6.2",
-    "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
-    "rocm63": "https://download.pytorch.org/whl/rocm6.3",
-    "rocm64": "https://download.pytorch.org/whl/rocm6.4",
-    "cu118": "https://download.pytorch.org/whl/cu118",
-    "cu121": "https://download.pytorch.org/whl/cu121",
-    "cu124": "https://download.pytorch.org/whl/cu124",
-    "cu126": "https://download.pytorch.org/whl/cu126",
-    "cu128": "https://download.pytorch.org/whl/cu128",
-    "cu129": "https://download.pytorch.org/whl/cu129",
-    "cu130": "https://download.pytorch.org/whl/cu130",
-}
 
 
 class InvokeAIComponentManager:
@@ -7397,7 +7422,7 @@ class InvokeAIComponentManager:
         :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
         """
         if pytorch_mirror_dict is None:
-            pytorch_mirror_dict = PYTORCH_MIRROR_DICT
+            pytorch_mirror_dict = PyTorchMirrorManager.get_pytorch_mirror_dict()
         self.pytorch_mirror_dict = pytorch_mirror_dict
 
     def update_pytorch_mirror_dict(self, pytorch_mirror_dict: dict[str, str]) -> None:
@@ -7461,9 +7486,10 @@ class InvokeAIComponentManager:
         """获取 InvokeAI 安装 PyTorch 所需的 PyTorch 镜像源类型
 
         :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡设备类型
+        :return `str`: PyTorch 镜像源类型
         """
         torch_ver = self.get_invokeai_require_torch_version()
-        return Utils.get_pytorch_mirror_type(
+        return PyTorchMirrorManager.get_pytorch_mirror_type(
             torch_ver=torch_ver, device_type=device_type
         )
 
@@ -7537,7 +7563,7 @@ class InvokeAIComponentManager:
         logger.info("获取安装配置")
         invokeai_ver = importlib.metadata.version("invokeai")
         torch_ver = self.get_invokeai_require_torch_version()
-        pytorch_mirror_type = Utils.get_pytorch_mirror_type(
+        pytorch_mirror_type = PyTorchMirrorManager.get_pytorch_mirror_type(
             torch_ver=torch_ver,
             device_type=device_type,
         )
@@ -7905,7 +7931,7 @@ class InvokeAIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list=model_list)
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("InvokeAI 安装完成")
@@ -8138,7 +8164,7 @@ class SDTrainerManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
-            self.configure_tcmalloc()
+            self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
         logger.info("SD Trainer 安装完成")
