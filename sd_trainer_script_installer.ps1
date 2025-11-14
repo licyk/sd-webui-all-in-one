@@ -574,7 +574,7 @@ function Install-SD-Trainer-Script {
     if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "$InstallPath/$Env:CORE_PREFIX" -Recurse
+        $items = Get-ChildItem "$InstallPath/$Env:CORE_PREFIX"
         if ($items.Count -eq 0) {
             $status = 1
         }

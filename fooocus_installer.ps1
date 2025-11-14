@@ -580,7 +580,7 @@ function Git-CLone {
     if (!(Test-Path "$path")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "$path" -Recurse
+        $items = Get-ChildItem "$path"
         if ($items.Count -eq 0) {
             $status = 1
         }
