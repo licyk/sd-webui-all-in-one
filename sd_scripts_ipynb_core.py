@@ -3112,8 +3112,10 @@ class TunnelManager:
             ssh_tunnels = ngrok.get_tunnels(conf.get_default())
             if len(ssh_tunnels) == 0:
                 ssh_tunnel = ngrok.connect(self.port, bind_tls=True)
+                logger.info("Ngrok 内网穿透启动完成")
                 return ssh_tunnel.public_url
             else:
+                logger.info("Ngrok 内网穿透启动完成")
                 return ssh_tunnels[0].public_url
         except Exception as e:
             logger.error("启动 Ngrok 内网穿透时出现了错误: %s", e)
@@ -3136,7 +3138,9 @@ class TunnelManager:
                 return None
 
         try:
-            return try_cloudflare(self.port).tunnel
+            tunnel_url = try_cloudflare(self.port).tunnel
+            logger.info("CloudFlare 内网穿透启动完成")
+            return tunnel_url
         except Exception as e:
             logger.error("启动 CloudFlare 内网穿透时出现了错误: %s", e)
             return None
@@ -3164,6 +3168,7 @@ class TunnelManager:
                 share_token=secrets.token_urlsafe(32),
                 share_server_address=None,
             )
+            logger.info("Gradio 内网穿透启动完成")
             return tunnel_url
         except Exception as e:
             logger.error("启动 Gradio 内网穿透时出现错误: %s", e)
@@ -3260,10 +3265,10 @@ class TunnelManager:
                 if url_match:
                     return url_match.group("url")
             except queue.Empty:
-                logger.warning("未捕获到指定输出, 输出内容列表: %s", lines)
+                logger.error("未捕获到指定输出, 输出内容列表: %s", lines)
                 break
             except Exception as e:
-                logger.error("启动内网穿透进程时发生错误: %s", e)
+                logger.error("运行 SSH 进程时发生错误: %s", e)
                 break
 
         return None
@@ -3280,6 +3285,7 @@ class TunnelManager:
             line_limit=27,
         )
         if urls is not None:
+            logger.info("localhost.run 内网穿透启动完成")
             return urls
         logger.error("启动 localhost.run 内网穿透失败")
         return None
@@ -3296,6 +3302,7 @@ class TunnelManager:
             line_limit=10,
         )
         if urls is not None:
+            logger.info("remote.moe 内网穿透启动完成")
             return urls
         logger.error("启动 remote.moe 内网穿透失败")
         return None
@@ -3312,6 +3319,7 @@ class TunnelManager:
             line_limit=10,
         )
         if urls is not None:
+            logger.info("pinggy.io 内网穿透启动完成")
             return urls
         logger.error("启动 pinggy.io 内网穿透失败")
         return None
@@ -3467,6 +3475,7 @@ class TunnelManager:
         logger.info("启动 Zrok 内网穿透中")
         zrok_bin = self.install_zrok()
         if zrok_bin is None:
+            logger.error("启动 Zrok 内网穿透失败")
             return None
 
         logger.info("初始化 Zrok 配置")
@@ -3529,6 +3538,7 @@ class TunnelManager:
             try:
                 item = output_queue.get(timeout=1)
                 if isinstance(item, tuple) and item[0] == "URL":
+                    logger.info("Zrok 内网穿透启动完成")
                     return item[1]
             except queue.Empty:
                 if tunnel.poll() is not None:
