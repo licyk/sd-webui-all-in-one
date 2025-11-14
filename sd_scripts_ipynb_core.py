@@ -3094,6 +3094,7 @@ class TunnelManager:
         :return `str`: Ngrok 内网穿透生成的访问地址
         """
         if ngrok_token is None:
+            logger.warning("缺少 Ngrok Token, 取消启动 Ngrok 内网穿透")
             return None
         logger.info("启动 Ngrok 内网穿透")
         try:
@@ -3470,6 +3471,7 @@ class TunnelManager:
         :return `str|None`: Zrok 内网穿透地址
         """
         if zrok_token is None:
+            logger.warning("缺少 Zrok Token, 取消启动 Zrok 内网穿透")
             return None
 
         logger.info("启动 Zrok 内网穿透中")
