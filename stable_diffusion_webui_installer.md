@@ -201,6 +201,8 @@ $ tree -L 1
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 |[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
 |---|
@@ -222,6 +224,8 @@ $ tree -L 1
 |[licyk/sd_forge_hypertile_svd_z123](https://github.com/licyk/sd_forge_hypertile_svd_z123)|
 |[lllyasviel/sd-forge-layerdiffuse](https://github.com/lllyasviel/sd-forge-layerdiffuse)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 |[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|
 |---|
@@ -244,6 +248,8 @@ $ tree -L 1
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 |[Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)|
 |---|
@@ -261,6 +267,8 @@ $ tree -L 1
 |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 |[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
 |---|
@@ -287,6 +295,8 @@ $ tree -L 1
 |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 |[vladmandic/SD.Next](https://github.com/vladmandic/sdnext)|
 |---|
@@ -306,6 +316,8 @@ $ tree -L 1
 |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
 |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
 |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+|[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+|[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
 
 >[!NOTE]  
 >由于不同分支对扩展的兼容性不同，部分扩展在某些分支上不会被安装。

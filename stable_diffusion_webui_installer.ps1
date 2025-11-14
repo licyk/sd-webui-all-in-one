@@ -1536,6 +1536,14 @@ function Get-Stable-Diffusion-WebUI-Extension ($branch) {
         @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
         "https://github.com/licyk/sd-webui-licyk-style-image", "$sd_webui_extension_path/sd-webui-licyk-style-image"
     )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/w-e-w/sdwebui-close-confirmation-dialogue", "$sd_webui_extension_path/sdwebui-close-confirmation-dialogue"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/viyiviyi/stable-diffusion-webui-zoomimage", "$sd_webui_extension_path/stable-diffusion-webui-zoomimage"
+    )) | Out-Null
 
     for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
         $branch_type, $repo_url, $path = $sd_webui_extension[$i]
