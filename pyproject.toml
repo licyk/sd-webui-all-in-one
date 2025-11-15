@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools", "pip", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sd_webui_all_in_one"
+description = "支持部署多个 WebUI 的部署工具"
+requires-python = ">=3.10"
+readme = { content-type = "text/markdown", file = "README.md" }
+license = { file = "LICENSE" }
+dynamic = ["version"]
+version = "1.1.18"
+authors = [{name = "licyk"}]
+
+[tool.setuptools]
+py_modules = ["sd_webui_all_in_one"]
+
+[tool.pylint]
+disable = [
+    "W3101", # missing-timeout
+    "C0302", # too-many-lines
+    "C0415" # import-outside-toplevel
+]
+
+[tool.pylint.format]
+max-line-length = 150
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"

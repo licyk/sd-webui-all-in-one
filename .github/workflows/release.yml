@@ -24,6 +24,7 @@ on:
       - sd_webui_forge_classic_requirements_versions.txt
       - sd_scripts_kaggle.ipynb
       - sd_scripts_ipynb_core.py
+      - sd_webui_all_in_one.py
       - sd_scripts_colab.ipynb
       - sd_webui_all_in_one_colab.ipynb
       - sd_webui_all_in_one.ipynb
@@ -146,6 +147,9 @@ jobs:
           gh release delete-asset archive sd_scripts_ipynb_core.py -y || true
           gh release upload archive sd_scripts_ipynb_core.py
 
+          gh release delete-asset archive sd_webui_all_in_one.py -y || true
+          gh release upload archive sd_webui_all_in_one.py
+
           gh release delete-asset archive sd_scripts_colab.ipynb -y || true
           gh release upload archive sd_scripts_colab.ipynb
 
@@ -229,6 +233,7 @@ jobs:
           gitee_files: |
             sd_scripts_kaggle.ipynb
             sd_scripts_ipynb_core.py
+            sd_webui_all_in_one.py
             sd_scripts_colab.ipynb
             sd_webui_all_in_one_colab.ipynb
             sd_webui_all_in_one.ipynb
