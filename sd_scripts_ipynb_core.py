@@ -16,6 +16,7 @@
 设置日志器的名称可通过环境变量`MANAGER_LOGGER_NAME=<日志器名称>`进行设置
 """
 
+from __future__ import annotations
 import os
 import re
 import sys
@@ -43,9 +44,8 @@ import importlib.metadata
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
-from collections import namedtuple
 from tempfile import TemporaryDirectory
-from typing import Callable, Literal, Any, TypedDict
+from typing import Callable, Literal, Any, TypedDict, NamedTuple
 
 
 VERSION = "1.1.18"
@@ -53,7 +53,7 @@ VERSION = "1.1.18"
 
 class LoggingColoredFormatter(logging.Formatter):
     """Logging 格式化类
-    
+
     Attributes:
         color (bool): 是否启用日志颜色
         COLORS (dict[str, str]): 颜色类型字典
@@ -921,7 +921,7 @@ class Downloader:
         url: str,
         path: str | Path = None,
         save_name: str | None = None,
-        tool: Literal["aria2", "request"] = "aria2", # TODO: typo: requests
+        tool: Literal["aria2", "request"] = "aria2",  # TODO: typo: requests
         retry: int | None = 3,
     ) -> Path | None:
         """下载文件工具
@@ -2838,7 +2838,7 @@ class RepoManager:
         Returns:
             Path: 下载路径
 
-        
+
         """
         local_dir = (
             Path(local_dir)
@@ -3792,8 +3792,145 @@ class TunnelManager:
         }
 
 
-class RequirementCheck:
-    """依赖检查工具"""
+class PyWhlVersionComponent(NamedTuple):
+    """Python 版本号组件
+
+    参考: https://peps.python.org/pep-0440
+
+    Attributes:
+        epoch (int): 版本纪元号, 用于处理不兼容的重大更改, 默认为 0
+        release (list[int]): 发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]
+        pre_l (str | None): 预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等
+        pre_n (int | None): 预发布版本编号, 与预发布标签配合使用
+        post_n1 (int | None): 后发布版本编号, 格式如 1.0-1 中的数字
+        post_l (str | None): 后发布标签, 如 'post', 'rev', 'r' 等
+        post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字
+        dev_l (str | None): 开发版本标签, 通常为 'dev'
+        dev_n (int | None): 开发版本编号, 如 dev1 中的数字
+        local (str | None): 本地版本标识符, 加号后面的部分
+        is_wildcard (bool): 标记是否包含通配符, 用于版本范围匹配
+    """
+
+    epoch: int
+    release: list[int]
+    pre_l: str | None
+    pre_n: int | None
+    post_n1: int | None
+    post_l: str | None
+    post_n2: int | None
+    dev_l: str | None
+    dev_n: int | None
+    local: str | None
+    is_wildcard: bool
+
+
+class PyWhlVersionComparison:
+    """Python 版本号比较工具
+
+    使用:
+    ```python
+    # 常规版本匹配
+    PyWhlVersionComparison("2.0.0") < PyWhlVersionComparison("2.3.0+cu118") # True
+    PyWhlVersionComparison("2.0") > PyWhlVersionComparison("0.9") # True
+    PyWhlVersionComparison("1.3") <= PyWhlVersionComparison("1.2.2") # False
+
+    # 通配符版本匹配, 需要在不包含通配符的版本对象中使用 ~ 符号
+    PyWhlVersionComparison("1.0*") == ~PyWhlVersionComparison("1.0a1") # True
+    PyWhlVersionComparison("0.9*") == ~PyWhlVersionComparison("1.0") # False
+    ```
+
+    Attributes:
+        VERSION_PATTERN (str): 提去 Wheel 版本号的正则表达式
+        WHL_VERSION_PARSE_REGEX (re.Pattern): 编译后的用于解析 Wheel 版本号的工具
+    """
+
+    def __init__(self, version: str) -> None:
+        """初始化 Python 版本号比较工具
+
+        Args:
+            version (str): 版本号字符串
+        """
+        self.version = version
+
+    def __lt__(self, other: object) -> bool:
+        """实现 < 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_lt_v2(self.version, other.version)
+
+    def __gt__(self, other: object) -> bool:
+        """实现 > 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_gt_v2(self.version, other.version)
+
+    def __le__(self, other: object) -> bool:
+        """实现 <= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于等于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_le_v2(self.version, other.version)
+
+    def __ge__(self, other: object) -> bool:
+        """实现 >= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于等于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_ge_v2(self.version, other.version)
+
+    def __eq__(self, other: object) -> bool:
+        """实现 == 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本等于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_eq_v2(self.version, other.version)
+
+    def __ne__(self, other: object) -> bool:
+        """实现 != 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        """
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return not self.is_v1_eq_v2(self.version, other.version)
+
+    def __invert__(self) -> "PyWhlVersionMatcher":
+        """使用 ~ 操作符实现兼容性版本匹配 (~= 的语义)
+
+        Returns:
+            PyWhlVersionMatcher: 兼容性版本匹配器
+        """
+        return PyWhlVersionMatcher(self.version)
 
     # 提取版本标识符组件的正则表达式
     # ref:
@@ -3831,38 +3968,19 @@ class RequirementCheck:
     """
 
     # 编译正则表达式
-    package_version_parse_regex = re.compile(
+    WHL_VERSION_PARSE_REGEX = re.compile(
         r"^\s*" + VERSION_PATTERN + r"\s*$",
         re.VERBOSE | re.IGNORECASE,
     )
 
-    # 定义版本组件的命名元组
-    VersionComponent = namedtuple(
-        "VersionComponent",
-        [
-            "epoch",
-            "release",
-            "pre_l",
-            "pre_n",
-            "post_n1",
-            "post_l",
-            "post_n2",
-            "dev_l",
-            "dev_n",
-            "local",
-            "is_wildcard",
-        ],
-    )
-
-    @staticmethod
-    def parse_version(version_str: str) -> VersionComponent:
+    def parse_version(self, version_str: str) -> PyWhlVersionComponent:
         """解释 Python 软件包版本号
 
         Args:
             version_str (str): Python 软件包版本号
 
         Returns:
-            VersionComponent: 版本组件的命名元组
+            PyWhlVersionComponent: 版本组件的命名元组
 
         Raises:
             ValueError: 如果 Python 版本号不符合 PEP440 规范
@@ -3871,9 +3989,9 @@ class RequirementCheck:
         wildcard = version_str.endswith(".*") or version_str.endswith("*")
         clean_str = version_str.rstrip("*").rstrip(".") if wildcard else version_str
 
-        match = RequirementCheck.package_version_parse_regex.match(clean_str)
+        match = self.WHL_VERSION_PARSE_REGEX.match(clean_str)
         if not match:
-            logger.error(f"未知的版本号字符串: {version_str}")
+            logger.error("未知的版本号字符串: %s", version_str)
             raise ValueError(f"Invalid version string: {version_str}")
 
         components = match.groupdict()
@@ -3883,7 +4001,7 @@ class RequirementCheck:
         release_segments = [int(seg) for seg in release_str.split(".")]
 
         # 构建命名元组
-        return RequirementCheck.VersionComponent(
+        return PyWhlVersionComponent(
             epoch=int(components["epoch"] or 0),
             release=release_segments,
             pre_l=components["pre_l"],
@@ -3897,13 +4015,14 @@ class RequirementCheck:
             is_wildcard=wildcard,
         )
 
-    @staticmethod
-    def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
+    def compare_version_objects(
+        self, v1: PyWhlVersionComponent, v2: PyWhlVersionComponent
+    ) -> int:
         """比较两个版本字符串 Python 软件包版本号
 
         Args:
-            v1 (VersionComponent): 第 1 个 Python 版本号标识符组件
-            v2 (VersionComponent): 第 2 个 Python 版本号标识符组件
+            v1 (PyWhlVersionComponent): 第 1 个 Python 版本号标识符组件
+            v2 (PyWhlVersionComponent): 第 2 个 Python 版本号标识符组件
 
         Returns:
             int: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
@@ -3925,7 +4044,7 @@ class RequirementCheck:
         for n1, n2 in zip(v1.release, v2.release):
             if n1 != n2:
                 return n1 - n2
-        # 如果 release 长度不同，较短的版本号视为较小 ?
+        # 如果 release 长度不同, 较短的版本号视为较小 ?
         # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
         # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
         # 但 0.15.0 和 0.15 实际上是一样的版本
@@ -4012,8 +4131,7 @@ class RequirementCheck:
 
         return 0  # 版本相同
 
-    @staticmethod
-    def compare_versions(version1: str, version2: str) -> int:
+    def compare_versions(self, version1: str, version2: str) -> int:
         """比较两个版本字符串 Python 软件包版本号
 
         Args:
@@ -4023,19 +4141,18 @@ class RequirementCheck:
         Returns:
             int: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
         """
-        v1 = RequirementCheck.parse_version(version1)
-        v2 = RequirementCheck.parse_version(version2)
-        return RequirementCheck.compare_version_objects(v1, v2)
+        v1 = self.parse_version(version1)
+        v2 = self.parse_version(version2)
+        return self.compare_version_objects(v1, v2)
 
-    @staticmethod
-    def compatible_version_matcher(spec_version: str) -> Callable[[str], bool]:
+    def compatible_version_matcher(self, spec_version: str) -> Callable[[str], bool]:
         """PEP 440 兼容性版本匹配 (~= 操作符)
 
         Returns:
             (Callable[[str], bool]): 一个接受 version_str (`str`) 参数的判断函数
         """
         # 解析规范版本
-        spec = RequirementCheck.parse_version(spec_version)
+        spec = self.parse_version(spec_version)
 
         # 获取有效 release 段 (去除末尾的零)
         clean_release = []
@@ -4051,15 +4168,15 @@ class RequirementCheck:
         # 生成前缀匹配模板 (忽略后缀)
         prefix_length = len(clean_release) - 1
         if prefix_length == 0:
-            # 处理类似 ~= 2 的情况 (实际 PEP 禁止，但这里做容错)
+            # 处理类似 ~= 2 的情况 (实际 PEP 禁止, 但这里做容错)
             prefix_pattern = [spec.release[0]]
-            min_version = RequirementCheck.parse_version(f"{spec.release[0]}")
+            min_version = self.parse_version(f"{spec.release[0]}")
         else:
             prefix_pattern = list(spec.release[:prefix_length])
             min_version = spec
 
         def _is_compatible(version_str: str) -> bool:
-            target = RequirementCheck.parse_version(version_str)
+            target = self.parse_version(version_str)
 
             # 主版本前缀检查
             target_prefix = target.release[: len(prefix_pattern)]
@@ -4067,12 +4184,11 @@ class RequirementCheck:
                 return False
 
             # 最低版本检查 (自动忽略 pre/post/dev 后缀)
-            return RequirementCheck.compare_version_objects(target, min_version) >= 0
+            return self.compare_version_objects(target, min_version) >= 0
 
         return _is_compatible
 
-    @staticmethod
-    def version_match(spec: str, version: str) -> bool:
+    def version_match(self, spec: str, version: str) -> bool:
         """PEP 440 版本前缀匹配
 
         Args:
@@ -4089,12 +4205,12 @@ class RequirementCheck:
 
         # 解析规范版本 (不带通配符)
         try:
-            spec_ver = RequirementCheck.parse_version(spec_main)
+            spec_ver = self.parse_version(spec_main)
         except ValueError:
             return False
 
         # 解析目标版本 (忽略本地版本)
-        target_ver = RequirementCheck.parse_version(version.split("+", 1)[0])
+        target_ver = self.parse_version(version.split("+", 1)[0])
 
         # 前缀匹配规则
         if has_wildcard:
@@ -4110,10 +4226,9 @@ class RequirementCheck:
             )
         else:
             # 严格匹配时使用原比较函数
-            return RequirementCheck.compare_versions(spec_main, version) == 0
+            return self.compare_versions(spec_main, version) == 0
 
-    @staticmethod
-    def is_v1_ge_v2(v1: str, v2: str) -> bool:
+    def is_v1_ge_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于或等于 v2
 
         例如:
@@ -4131,10 +4246,9 @@ class RequirementCheck:
         Returns:
             bool: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
         """
-        return RequirementCheck.compare_versions(v1, v2) >= 0
+        return self.compare_versions(v1, v2) >= 0
 
-    @staticmethod
-    def is_v1_gt_v2(v1: str, v2: str) -> bool:
+    def is_v1_gt_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于 v2
 
         例如:
@@ -4150,10 +4264,9 @@ class RequirementCheck:
         Returns:
             bool: 如果 v1 版本号大于 v2 版本号则返回`True`
         """
-        return RequirementCheck.compare_versions(v1, v2) > 0
+        return self.compare_versions(v1, v2) > 0
 
-    @staticmethod
-    def is_v1_eq_v2(v1: str, v2: str) -> bool:
+    def is_v1_eq_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否等于 v2
 
         例如:
@@ -4170,10 +4283,9 @@ class RequirementCheck:
         Returns:
             `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
         """
-        return RequirementCheck.compare_versions(v1, v2) == 0
+        return self.compare_versions(v1, v2) == 0
 
-    @staticmethod
-    def is_v1_lt_v2(v1: str, v2: str) -> bool:
+    def is_v1_lt_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否小于 v2
 
         例如:
@@ -4189,10 +4301,9 @@ class RequirementCheck:
         Returns:
             bool: 如果 v1 版本号小于 v2 版本号则返回`True`
         """
-        return RequirementCheck.compare_versions(v1, v2) < 0
+        return self.compare_versions(v1, v2) < 0
 
-    @staticmethod
-    def is_v1_le_v2(v1: str, v2: str) -> bool:
+    def is_v1_le_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否小于或等于 v2
 
         例如:
@@ -4209,10 +4320,9 @@ class RequirementCheck:
         Returns:
             bool: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
         """
-        return RequirementCheck.compare_versions(v1, v2) <= 0
+        return self.compare_versions(v1, v2) <= 0
 
-    @staticmethod
-    def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
+    def is_v1_c_eq_v2(self, v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
 
         例如:
@@ -4228,8 +4338,51 @@ class RequirementCheck:
         Returns:
             bool: 如果 v1 版本号等于 v2 版本号则返回`True`
         """
-        func = RequirementCheck.compatible_version_matcher(v1)
+        func = self.compatible_version_matcher(v1)
         return func(v2)
+
+
+class PyWhlVersionMatcher:
+    """Python 兼容性版本匹配器, 用于实现 ~= 操作符的语义
+
+    Attributes:
+        spec_version (str): 版本号
+        comparison (PyWhlVersionComparison): Python 版本号比较工具
+        _matcher_func (Callable[[str], bool]): 兼容性版本匹配函数
+    """
+
+    def __init__(self, spec_version: str) -> None:
+        """初始化 Python 兼容性版本匹配器
+
+        Args:
+            spec_version (str): 版本号
+        """
+        self.spec_version = spec_version
+        self.comparison = PyWhlVersionComparison(spec_version)
+        self._matcher_func = self.comparison.compatible_version_matcher(spec_version)
+
+    def __eq__(self, other: object) -> bool:
+        """实现 ~version == other_version 的语义
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        """
+        if isinstance(other, str):
+            return self._matcher_func(other)
+        elif isinstance(other, PyWhlVersionComparison):
+            return self._matcher_func(other.version)
+        elif isinstance(other, PyWhlVersionMatcher):
+            # 允许 ~v1 == ~v2 的比较 (比较规范版本)
+            return self.spec_version == other.spec_version
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return f"~{self.spec_version}"
+
+
+class RequirementCheck:
+    """依赖检查工具"""
 
     @staticmethod
     def version_string_is_canonical(version: str) -> bool:
@@ -4597,8 +4750,7 @@ class RequirementCheck:
         """判断 Python 软件包是否已安装在环境中
 
         Args:
-            package (str):
-                Python 软件包名
+            package (str): Python 软件包名
 
         Returns:
             bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
@@ -4638,49 +4790,64 @@ class RequirementCheck:
             # ok = env_pkg_version === / == pkg_version
             if "===" in package or "==" in package:
                 logger.debug("包含条件: === / ==")
-                if RequirementCheck.is_v1_eq_v2(env_pkg_version, pkg_version):
+                logger.debug("%s == %s ?")
+                if PyWhlVersionComparison(env_pkg_version) == PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s == %s", env_pkg_version, pkg_version)
                     return True
 
             # ok = env_pkg_version ~= pkg_version
             if "~=" in package:
                 logger.debug("包含条件: ~=")
-                if RequirementCheck.is_v1_c_eq_v2(pkg_version, env_pkg_version):
+                if PyWhlVersionComparison(pkg_version) == ~PyWhlVersionComparison(
+                    env_pkg_version
+                ):
                     logger.debug("%s ~= %s", pkg_version, env_pkg_version)
                     return True
 
             # ok = env_pkg_version != pkg_version
             if "!=" in package:
                 logger.debug("包含条件: !=")
-                if not RequirementCheck.is_v1_eq_v2(env_pkg_version, pkg_version):
+                if PyWhlVersionComparison(env_pkg_version) != PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s != %s", env_pkg_version, pkg_version)
                     return True
 
             # ok = env_pkg_version <= pkg_version
             if "<=" in package:
                 logger.debug("包含条件: <=")
-                if RequirementCheck.is_v1_le_v2(env_pkg_version, pkg_version):
+                if PyWhlVersionComparison(env_pkg_version) <= PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s <= %s", env_pkg_version, pkg_version)
                     return True
 
             # ok = env_pkg_version >= pkg_version
             if ">=" in package:
                 logger.debug("包含条件: >=")
-                if RequirementCheck.is_v1_ge_v2(env_pkg_version, pkg_version):
+                if PyWhlVersionComparison(env_pkg_version) >= PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s >= %s", env_pkg_version, pkg_version)
                     return True
 
             # ok = env_pkg_version < pkg_version
             if "<" in package:
                 logger.debug("包含条件: <")
-                if RequirementCheck.is_v1_lt_v2(env_pkg_version, pkg_version):
+                if PyWhlVersionComparison(env_pkg_version) < PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s < %s", env_pkg_version, pkg_version)
                     return True
 
             # ok = env_pkg_version > pkg_version
             if ">" in package:
                 logger.debug("包含条件: >")
-                if RequirementCheck.is_v1_gt_v2(env_pkg_version, pkg_version):
+                if PyWhlVersionComparison(env_pkg_version) > PyWhlVersionComparison(
+                    pkg_version
+                ):
                     logger.debug("%s > %s", env_pkg_version, pkg_version)
                     return True
 
@@ -4748,7 +4915,7 @@ class RequirementCheck:
         logger.info("检查 Numpy 是否需要降级")
         try:
             numpy_ver = importlib.metadata.version("numpy")
-            if RequirementCheck.is_v1_gt_v2(numpy_ver, "1.26.4"):
+            if PyWhlVersionComparison(numpy_ver) > PyWhlVersionComparison("1.26.4"):
                 logger.info("降级 Numoy 中")
                 EnvManager.pip_install("numpy==1.26.4", use_uv=use_uv)
                 logger.info("Numpy 降级完成")
@@ -4784,7 +4951,17 @@ class RequirementCheck:
 
 
 class ComponentEnvironmentDetails(TypedDict):
-    """ComfyUI 组件的环境信息结构"""
+    """ComfyUI 组件的环境信息结构
+
+    Attributes:
+        requirement_path (str): 依赖文件路径
+        is_disabled (bool): 组件是否禁用
+        requires (list[str]): 需要的依赖列表
+        has_missing_requires (bool): 是否存在缺失依赖
+        missing_requires (list[str]): 具体缺失的依赖项
+        has_conflict_requires (bool): 是否存在冲突依赖
+        conflict_requires (list[str]): 具体冲突的依赖项
+    """
 
     requirement_path: str  # 依赖文件路径
     is_disabled: bool  # 组件是否禁用
@@ -5128,7 +5305,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >=, <=
             if ">=" in pkg1 and "<=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5136,7 +5313,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >=, <
             if ">=" in pkg1 and "<" in pkg2 and "=" not in pkg2:
-                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5144,7 +5321,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >, <=
             if ">" in pkg1 and "=" not in pkg1 and "<=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5152,7 +5329,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >, <
             if ">" in pkg1 and "=" not in pkg1 and "<" in pkg2 and "=" not in pkg2:
-                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5160,7 +5337,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >, ==
             if ">" in pkg1 and "=" not in pkg1 and "==" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5168,7 +5345,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >=, ==
             if ">=" in pkg1 and "==" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5176,7 +5353,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # <, ==
             if "<" in pkg1 and "=" not in pkg1 and "==" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_le_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s <= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5184,7 +5361,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # <=, ==
             if "<=" in pkg1 and "==" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_lt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s < %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5192,7 +5369,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # !=, ==
             if "!=" in pkg1 and "==" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_eq_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) == PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s == %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5200,7 +5377,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >, ~=
             if ">" in pkg1 and "=" not in pkg1 and "~=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_ge_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5208,7 +5385,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # >=, ~=
             if ">=" in pkg1 and "~=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5216,7 +5393,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # <, ~=
             if "<" in pkg1 and "=" not in pkg1 and "~=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_le_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s <= %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5224,7 +5401,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # <=, ~=
             if "<=" in pkg1 and "~=" in pkg2:
-                if ComfyUIRequirementCheck.is_v1_lt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s < %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5241,7 +5418,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # ~=, == / ~=, ===
             if ("~=" in pkg1 and "==" in pkg2) or ("~=" in pkg1 and "===" in pkg2):
-                if ComfyUIRequirementCheck.is_v1_gt_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5258,7 +5435,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             # ==, == / ===, ===
             if ("==" in pkg1 and "==" in pkg2) or ("===" in pkg1 and "===" in pkg2):
-                if not ComfyUIRequirementCheck.is_v1_eq_v2(ver1, ver2):
+                if PyWhlVersionComparison(ver1) != PyWhlVersionComparison(ver2):
                     logger.debug(
                         "冲突依赖: %s, %s, 版本冲突: %s != %s", pkg1, pkg2, ver1, ver2
                     )
@@ -5314,7 +5491,9 @@ class ComfyUIRequirementCheck(RequirementCheck):
             print()
 
     @staticmethod
-    def display_check_result(requirement_list: list[str], conflict_result: list[str]) -> None:
+    def display_check_result(
+        requirement_list: list[str], conflict_result: list[str]
+    ) -> None:
         """显示 ComfyUI 运行环境检查结果
 
         Args:
@@ -8287,7 +8466,7 @@ class SDTrainerManager(BaseManager):
         logger.info("检查 protobuf 版本问题中")
         try:
             ver = importlib.metadata.version("protobuf")
-            if not self.env_check.is_v1_eq_v2(ver, "3.20.0"):
+            if PyWhlVersionComparison(ver) != PyWhlVersionComparison("3.20.0"):
                 logger.info("重新安装 protobuf 中")
                 self.env.pip_install("protobuf==3.20.0", use_uv=use_uv)
                 logger.info("重新安装 protobuf 成功")
