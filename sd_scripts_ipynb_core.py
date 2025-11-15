@@ -921,7 +921,7 @@ class Downloader:
         url: str,
         path: str | Path = None,
         save_name: str | None = None,
-        tool: Literal["aria2", "request"] = "aria2",  # TODO: typo: requests
+        tool: Literal["aria2", "requests"] = "aria2",
         retry: int | None = 3,
     ) -> Path | None:
         """下载文件工具
@@ -930,7 +930,7 @@ class Downloader:
             url (str): 文件下载链接
             path (Path | str): 文件下载路径
             save_name (str | None): 文件保存名称, 当为`None`时从`url`中解析文件名
-            tool (Literal["aria2", "request"]): 下载工具
+            tool (Literal["aria2", "requests"]): 下载工具
             retry (int | None): 重试下载的次数
         Returns:
             (Path | None): 保存的文件路径
@@ -1281,7 +1281,7 @@ class Utils:
 
             archive_format = Path(name).suffix  # 压缩包格式
             origin_file_path = Downloader.download_file(  # 下载文件
-                url=url, path=path, save_name=name, tool="aria2", retry=retry
+                url=url, path=path, save_name=name, retry=retry
             )
 
             if origin_file_path is not None:
@@ -6036,7 +6036,12 @@ class OnnxRuntimeGPUCheck:
 
 
 class CUDAMalloc:
-    """配置 CUDA Malloc 内存优化"""
+    """配置 CUDA Malloc 内存优化
+
+    Attributes:
+        GPU_BLACKLIST (set[str]): 无法使用 CUDA Malloc 的 Nvidia GPU 列表
+        NVIDIA_GPU_KEYWORD (list[str]): 用于检测 Nvidia GPU 的关键字列表
+    """
 
     @staticmethod
     def get_gpu_names() -> set[str]:
@@ -6085,7 +6090,7 @@ class CUDAMalloc:
                     gpu_names.add(line.decode("utf-8").split(" (UUID")[0])
             return gpu_names
 
-    blacklist = {
+    GPU_BLACKLIST = {
         "GeForce GTX TITAN X",
         "GeForce GTX 980",
         "GeForce GTX 970",
@@ -6129,7 +6134,7 @@ class CUDAMalloc:
         "Tesla M60",
     }
 
-    gpu_keywords = ["NVIDIA", "GeForce", "Tesla", "Quadro"]
+    NVIDIA_GPU_KEYWORD = ["NVIDIA", "GeForce", "Tesla", "Quadro"]
 
     @staticmethod
     def cuda_malloc_supported() -> bool:
@@ -6143,8 +6148,8 @@ class CUDAMalloc:
         except Exception as _:
             names = set()
         for x in names:
-            if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
-                for b in CUDAMalloc.blacklist:
+            if any(keyword in x for keyword in CUDAMalloc.NVIDIA_GPU_KEYWORD):
+                for b in CUDAMalloc.GPU_BLACKLIST:
                     if b in x:
                         return False
         return True
@@ -6161,7 +6166,7 @@ class CUDAMalloc:
         except Exception as _:
             names = set()
         for x in names:
-            if any(keyword in x for keyword in CUDAMalloc.gpu_keywords):
+            if any(keyword in x for keyword in CUDAMalloc.NVIDIA_GPU_KEYWORD):
                 return True
         return False
 
@@ -6965,11 +6970,11 @@ class FooocusManager(BaseManager):
         logger.info("下载配置文件")
         if preset is not None:
             self.downloader.download_file(
-                url=preset, path=preset_path, save_name="custom.json", tool="aria2"
+                url=preset, path=preset_path, save_name="custom.json"
             )
         if translation is not None:
             self.downloader.download_file(
-                url=translation, path=language_path, save_name="zh.json", tool="aria2"
+                url=translation, path=language_path, save_name="zh.json"
             )
 
     def pre_download_model(
@@ -7001,16 +7006,16 @@ class FooocusManager(BaseManager):
             vae_downloader = "aria2"
             embedding_downloader = "aria2"
             lora_downloader = "aria2"
-        elif downloader == "request":
-            sd_model_downloader = "request"
-            vae_downloader = "request"
-            embedding_downloader = "request"
-            lora_downloader = "request"
+        elif downloader == "requests":
+            sd_model_downloader = "requests"
+            vae_downloader = "requests"
+            embedding_downloader = "requests"
+            lora_downloader = "requests"
         elif downloader == "mix":
             sd_model_downloader = "aria2"
             vae_downloader = "aria2"
-            embedding_downloader = "request"
-            lora_downloader = "request"
+            embedding_downloader = "requests"
+            lora_downloader = "requests"
         else:
             sd_model_downloader = "aria2"
             vae_downloader = "aria2"
@@ -7366,7 +7371,6 @@ class ComfyUIManager(BaseManager):
                 url=setting,
                 path=setting_path,
                 save_name="comfy.settings.json",
-                tool="aria2",
             )
 
     def install_custom_node(
@@ -7679,7 +7683,7 @@ class SDWebUIManager(BaseManager):
         logger.info("下载配置文件")
         if setting is not None:
             self.downloader.download_file(
-                url=setting, path=setting_path, save_name="config.json", tool="aria2"
+                url=setting, path=setting_path, save_name="config.json",
             )
         if requirements is not None:
             try:
@@ -7688,7 +7692,6 @@ class SDWebUIManager(BaseManager):
                     url=requirements,
                     path=setting_path,
                     save_name=requirements_file,
-                    tool="aria2",
                 )
             except Exception as e:
                 logger.error("下载 Stable Diffusion WebUI 依赖文件出现错误: %s", e)
