@@ -6573,6 +6573,50 @@ class BaseManager:
             raise Exception(notice)
         return True
 
+    def link_to_google_drive(
+        self,
+        base_dir: Path,
+        drive_path: Path,
+        links: list[dict[str, str | bool]],
+    ) -> None:
+        """将 Colab 中的文件夹 / 文件链接到 Google Drive 中
+
+        挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+
+        若额外链接路径为文件, 需指定`is_file`属性为`True`
+
+        例如:
+        ```python
+        links = [
+            {"link_dir": "models/loras"},
+            {"link_dir": "custom_nodes"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
+        ```
+        
+        Args:
+            base_dir (Path): 链接的根路径
+            drive_path (Path): 链接到的 Google Drive 的路径
+            links (list[dict[str, str | bool]]): 要进行链接文件的路径表
+        """
+        for link in links:
+            link_dir = link.get("link_dir")
+            is_file = link.get("is_file", False)
+            if link_dir is None:
+                continue
+            full_link_path = base_dir / link_dir
+            full_drive_path = drive_path / link_dir
+            if is_file and (
+                not full_link_path.exists() and not full_drive_path.exists()
+            ):
+                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
+                continue
+            self.utils.sync_files_and_create_symlink(
+                src_path=full_drive_path,
+                link_path=full_link_path,
+                src_is_file=is_file,
+            )
+
 
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
@@ -6891,23 +6935,11 @@ class FooocusManager(BaseManager):
         ]
         if extras is not None:
             links += extras
-        for link in links:
-            link_dir = link.get("link_dir")
-            is_file = link.get("is_file", False)
-            if link_dir is None:
-                continue
-            full_link_path = fooocus_path / link_dir
-            full_drive_path = drive_output / link_dir
-            if is_file and (
-                not full_link_path.exists() and not full_drive_path.exists()
-            ):
-                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
-                continue
-            self.utils.sync_files_and_create_symlink(
-                src_path=full_drive_path,
-                link_path=full_link_path,
-                src_is_file=is_file,
-            )
+        self.link_to_google_drive(
+            base_dir=fooocus_path,
+            drive_path=drive_output,
+            links=extras,
+        )
 
     def get_sd_model(
         self,
@@ -7294,23 +7326,11 @@ class ComfyUIManager(BaseManager):
         ]
         if extras is not None:
             links += extras
-        for link in links:
-            link_dir = link.get("link_dir")
-            is_file = link.get("is_file", False)
-            if link_dir is None:
-                continue
-            full_link_path = comfyui_path / link_dir
-            full_drive_path = drive_output / link_dir
-            if is_file and (
-                not full_link_path.exists() and not full_drive_path.exists()
-            ):
-                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
-                continue
-            self.utils.sync_files_and_create_symlink(
-                src_path=full_drive_path,
-                link_path=full_link_path,
-                src_is_file=is_file,
-            )
+        self.link_to_google_drive(
+            base_dir=comfyui_path,
+            drive_path=drive_output,
+            links=extras,
+        )
 
     def get_sd_model(
         self,
@@ -7602,23 +7622,11 @@ class SDWebUIManager(BaseManager):
         ]
         if extras is not None:
             links += extras
-        for link in links:
-            link_dir = link.get("link_dir")
-            is_file = link.get("is_file", False)
-            if link_dir is None:
-                continue
-            full_link_path = sd_webui_path / link_dir
-            full_drive_path = drive_output / link_dir
-            if is_file and (
-                not full_link_path.exists() and not full_drive_path.exists()
-            ):
-                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
-                continue
-            self.utils.sync_files_and_create_symlink(
-                src_path=full_drive_path,
-                link_path=full_link_path,
-                src_is_file=is_file,
-            )
+        self.link_to_google_drive(
+            base_dir=sd_webui_path,
+            drive_path=drive_output,
+            links=extras,
+        )
 
     def get_sd_model(
         self,
@@ -8605,23 +8613,11 @@ class SDTrainerManager(BaseManager):
         ]
         if extras is not None:
             links += extras
-        for link in links:
-            link_dir = link.get("link_dir")
-            is_file = link.get("is_file", False)
-            if link_dir is None:
-                continue
-            full_link_path = sd_trainer_path / link_dir
-            full_drive_path = drive_output / link_dir
-            if is_file and (
-                not full_link_path.exists() and not full_drive_path.exists()
-            ):
-                # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
-                continue
-            self.utils.sync_files_and_create_symlink(
-                src_path=full_drive_path,
-                link_path=full_link_path,
-                src_is_file=is_file,
-            )
+        self.link_to_google_drive(
+            base_dir=sd_trainer_path,
+            drive_path=drive_output,
+            links=extras,
+        )
 
     def get_sd_model(
         self,
