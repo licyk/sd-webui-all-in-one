@@ -277,7 +277,7 @@ def copy_files(src: Path | str, dst: Path | str) -> bool:
             logger.error("源路径不存在: %s", src)
             return False
 
-        # 如果目标是目录，创建完整路径
+        # 如果目标是目录, 创建完整路径
         if dst_path.is_dir():
             dst_file = dst_path / src_path.name
         else:
@@ -290,7 +290,7 @@ def copy_files(src: Path | str, dst: Path | str) -> bool:
         if src_path.is_file():
             shutil.copy2(src, dst_file)
         else:
-            # 如果是目录，使用 copytree
+            # 如果是目录, 使用 copytree
             if dst_file.exists():
                 shutil.rmtree(dst_file)
             shutil.copytree(src, dst_file)
@@ -1094,16 +1094,16 @@ class EnvManager:
 
     @staticmethod
     def install_pytorch(
-        torch_package: str | list | None = None,
-        xformers_package: str | list | None = None,
+        torch_package: str | list[str] | None = None,
+        xformers_package: str | list[str] | None = None,
         pytorch_mirror: str | None = None,
         use_uv: bool | None = True,
     ) -> bool:
         """安装 PyTorch / xFormers
 
         Args:
-            torch_package (str | list | None): PyTorch 软件包名称和版本信息, 如`torch==2.0.0 torchvision==0.15.1` / `["torch==2.0.0", "torchvision==0.15.1"]`
-            xformers_package (str | list | None): xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
+            torch_package (str | list[str] | None): PyTorch 软件包名称和版本信息, 如`torch==2.0.0 torchvision==0.15.1` / `["torch==2.0.0", "torchvision==0.15.1"]`
+            xformers_package (str | list[str] | None): xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
             pytorch_mirror (str | None): 指定安装 PyTorch / xFormers 时使用的镜像源
             use_uv (bool | None): 是否使用 uv 代替 Pip 进行安装
         Returns:
@@ -1660,7 +1660,7 @@ class Utils:
             entries = sorted(entries_to_process, key=lambda p: p.name)
 
         except PermissionError:
-            print(f"{prefix}└── [权限错误，无法访问]")
+            print(f"{prefix}└── [权限错误, 无法访问]")
             return
 
         num_entries = len(entries)
@@ -1688,7 +1688,7 @@ class PyTorchMirrorManager:
     """管理 PyTorch 镜像源的工具
 
     Attributes:
-        PYTORCH_MIRROR_DICT (dict[str, str]): PyTorch 镜像源字典，键为设备类型，值为对应的 PyTorch wheel 下载地址
+        PYTORCH_MIRROR_DICT (dict[str, str]): PyTorch 镜像源字典, 键为设备类型, 值为对应的 PyTorch wheel 下载地址
     """
 
     PYTORCH_MIRROR_DICT = {  # PyTorch 镜像源字典
@@ -2062,7 +2062,19 @@ class PyTorchMirrorManager:
 
 
 class MultiThreadDownloader:
-    """通用多线程下载器"""
+    """通用多线程下载器
+
+    Attributes:
+        download_func (Callable): 执行下载任务的函数
+        download_args_list (list[Any]): 传入下载函数的位置参数列表
+        download_kwargs_list (list[dict[str, Any]]): 传入下载函数的关键字参数列表
+        queue (queue.Queue): 任务队列, 用于存储待执行的下载任务
+        total_tasks (int): 总的下载任务数
+        completed_count (int): 已完成的任务数
+        lock (threading.Lock): 线程锁, 用于保护对计数器的访问
+        retry (int | None): 重试次数
+        start_time (datetime.datetime | None): 下载开始时间
+    """
 
     def __init__(
         self,
@@ -2248,7 +2260,14 @@ class MultiThreadDownloader:
 
 
 class RepoManager:
-    """HuggingFace / ModelScope 仓库管理器"""
+    """HuggingFace / ModelScope 仓库管理器
+
+    Attributes:
+        hf_api (HfApi | None): HuggingFace API 客户端实例, 用于与 HuggingFace 仓库进行交互
+        ms_api (HubApi | None): ModelScope API 客户端实例, 用于与 ModelScope 仓库进行交互
+        hf_token (str | None): HuggingFace认 证令牌, 用于访问私有仓库
+        ms_token (str | None): ModelScope 认证令牌, 用于访问私有仓库
+    """
 
     def __init__(
         self,
@@ -3152,7 +3171,7 @@ class MirrorConfigManager:
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
     ) -> None:
         """镜像源设置
@@ -3161,7 +3180,7 @@ class MirrorConfigManager:
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
         """
         logger.info("配置镜像源中")
@@ -3190,7 +3209,12 @@ class MirrorConfigManager:
 
 
 class TunnelManager:
-    """内网穿透工具"""
+    """内网穿透工具
+
+    Attributes:
+        workspace (Path | str): 工作区路径
+        port (int): 要进行端口映射的端口
+    """
 
     def __init__(self, workspace: Path | str, port: int) -> None:
         """内网穿透工具初始化
@@ -3769,6 +3793,9 @@ class CommonVersionComparison:
     CommonVersionComparison("1.0.1") > CommonVersionComparison("1.0") # True
     CommonVersionComparison("1.0a") < CommonVersionComparison("1.0") # True
     ```
+
+    Attributes:
+        version (str | int | float): 版本号字符串
     """
 
     def __init__(self, version: str | int | float) -> None:
@@ -3890,7 +3917,7 @@ class CommonVersionComparison:
             elif nums1[i] < nums2[i]:
                 return -1
 
-        # 如果主版本号相同，比较预发布版本
+        # 如果主版本号相同, 比较预发布版本
         if v1_pre and not v2_pre:
             return -1  # 预发布版本 < 正式版本
         elif not v1_pre and v2_pre:
@@ -3956,6 +3983,7 @@ class PyWhlVersionComparison:
     Attributes:
         VERSION_PATTERN (str): 提去 Wheel 版本号的正则表达式
         WHL_VERSION_PARSE_REGEX (re.Pattern): 编译后的用于解析 Wheel 版本号的工具
+        version (str): 版本号字符串
     """
 
     def __init__(self, version: str) -> None:
@@ -5710,6 +5738,12 @@ class OrtType(str, Enum):
     - CU118: CUDA 11.8
 
     PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的
+
+    Attributes:
+        CU130 (str): CUDA 13.x 版本的 onnxruntime-gpu
+        CU121CUDNN8 (str): CUDA 12.1 + cuDNN 8 版本的 onnxruntime-gpu
+        CU121CUDNN9 (str): CUDA 12.1 + cuDNN 9 版本的 onnxruntime-gpu
+        CU118 (str): CUDA 11.8 版本的 onnxruntime-gpu
     """
 
     CU130 = "cu130"
@@ -6196,7 +6230,12 @@ class CUDAMalloc:
 
 
 class TCMalloc:
-    """TCMalloc 配置工具"""
+    """TCMalloc 配置工具
+
+    Attributes:
+        workspace (str | Path): 工作区路径
+        tcmalloc_has_configure (bool): TCMalloc 配置状态
+    """
 
     def __init__(self, workspace: str | Path) -> None:
         """TCMalloc 配置工具初始化
@@ -6264,7 +6303,7 @@ class TCMalloc:
                             if CommonVersionComparison(
                                 libc_ver
                             ) < CommonVersionComparison(libc_v234):
-                                # glibc < 2.34，pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
+                                # glibc < 2.34, pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
                                 ldd_result = subprocess.run(
                                     ["ldd", lib_path], capture_output=True, text=True
                                 )
@@ -6368,7 +6407,30 @@ class TCMalloc:
 
 
 class BaseManager:
-    """管理工具基础类"""
+    """管理工具基础类
+
+    Attributes:
+        workspace (Path): 工作区路径
+        workfolder (str): 工作区的文件夹名称
+        git (GitWarpper): Git工具实例, 用于 Git 相关操作
+        downloader (Downloader): 下载器实例, 用于文件下载
+        env (EnvManager): 环境管理器实例，用于环境依赖管理
+        utils (Utils): 工具集合实例, 提供各种辅助功能
+        repo (RepoManager): 仓库管理器实例, 用于 HuggingFace / ModelScope 仓库操作
+        mirror (MirrorConfigManager): 镜像配置管理器实例
+        tun (TunnelManager): 隧道管理器实例, 用于内网穿透
+        env_check (RequirementCheck): 环境要求检查器实例
+        ort_check (OnnxRuntimeGPUCheck): ONNX Runtime GPU 检查器实例
+        cuda_malloc (CUDAMalloc): CUDA 内存分配器实例
+        tcmalloc (TCMalloc): TCMalloc 内存分配器实例
+        remove_files (Callable): 文件删除函数引用
+        run_cmd (Callable): 命令执行函数引用
+        copy_files (Callable): 文件复制函数引用
+        get_logger (Callable): 日志获取函数引用
+        multi_thread_downloader_class (type): 多线程下载器类引用
+        common_version_comparison (type): 通用版本比较类引用
+        py_whl_version_comparison (type): Python Wheel版本比较类引用
+    """
 
     def __init__(
         self,
@@ -6406,6 +6468,8 @@ class BaseManager:
         self.copy_files = copy_files
         self.get_logger = get_logger
         self.multi_thread_downloader_class = MultiThreadDownloader
+        self.common_version_comparison = CommonVersionComparison
+        self.py_whl_version_comparison = PyWhlVersionComparison
 
     def restart_repo_manager(
         self,
@@ -6612,8 +6676,8 @@ class SDScriptsManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list | None = None,
-        xformers_ver: str | list | None = None,
+        torch_ver: str | list[str] | None = None,
+        xformers_ver: str | list[str] | None = None,
         git_branch: str | None = None,
         git_commit: str | None = None,
         model_path: str | Path = None,
@@ -6622,7 +6686,7 @@ class SDScriptsManager(BaseManager):
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         sd_scripts_repo: str | None = None,
@@ -6657,8 +6721,8 @@ class SDScriptsManager(BaseManager):
         ```
 
         Args:
-            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             git_branch (str | None): 指定要切换 sd-scripts 的分支
             git_commit (str | None): 指定要切换到 sd-scripts 的提交记录
             model_path (str | Path | None): 指定模型下载的路径
@@ -6667,7 +6731,7 @@ class SDScriptsManager(BaseManager):
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
             sd_scripts_repo (str | None): sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
@@ -6860,7 +6924,7 @@ class FooocusManager(BaseManager):
 
     def get_sd_model_from_list(
         self,
-        model_list: list[dict[str]],
+        model_list: list[dict[str, str]],
     ) -> None:
         """从模型列表下载模型
 
@@ -6875,7 +6939,7 @@ class FooocusManager(BaseManager):
         ```
 
         Args:
-            model_list (list[str|int]): 模型列表
+            model_list (list[dict[str, str]]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -6953,10 +7017,10 @@ class FooocusManager(BaseManager):
             embedding_downloader = "aria2"
             lora_downloader = "aria2"
 
-        sd_model_list: dict = data.get("checkpoint_downloads", {})
-        lora_list: dict = data.get("lora_downloads", {})
-        vae_list: dict = data.get("vae_downloads", {})
-        embedding_list: dict = data.get("embeddings_downloads", {})
+        sd_model_list: dict[str, str] = data.get("checkpoint_downloads", {})
+        lora_list: dict[str, str] = data.get("lora_downloads", {})
+        vae_list: dict[str, str] = data.get("vae_downloads", {})
+        embedding_list: dict[str, str] = data.get("embeddings_downloads", {})
         fooocus_path = self.workspace / self.workfolder
         sd_model_path = fooocus_path / "models" / "checkpoints"
         lora_path = fooocus_path / "models" / "loras"
@@ -7032,13 +7096,13 @@ class FooocusManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list | None = None,
-        xformers_ver: str | list | None = None,
+        torch_ver: str | list[str] | None = None,
+        xformers_ver: str | list[str] | None = None,
         use_uv: bool | None = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         fooocus_repo: str | None = None,
@@ -7056,13 +7120,13 @@ class FooocusManager(BaseManager):
         """安装 Fooocus
 
         Args:
-            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
             fooocus_repo (str | None): Fooocus 仓库地址
@@ -7149,7 +7213,11 @@ class FooocusManager(BaseManager):
 
 
 class ComfyUIManager(BaseManager):
-    """ComfyUI 管理工具"""
+    """ComfyUI 管理工具
+
+    Attributes:
+        env_check (ComfyUIRequirementCheck): ComfyUI 环境要求检查器实例, 用于检查 ComfyUI 运行所需的环境依赖
+    """
 
     def __init__(
         self,
@@ -7259,7 +7327,7 @@ class ComfyUIManager(BaseManager):
 
     def get_sd_model_from_list(
         self,
-        model_list: list[dict[str]],
+        model_list: list[dict[str, str]],
     ) -> None:
         """从模型列表下载模型
 
@@ -7274,7 +7342,7 @@ class ComfyUIManager(BaseManager):
         ```
 
         Args:
-            model_list (list[dict[str]]): 模型列表
+            model_list (list[dict[str, str]]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -7381,13 +7449,13 @@ class ComfyUIManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list | None = None,
-        xformers_ver: str | list | None = None,
+        torch_ver: str | list[str] | None = None,
+        xformers_ver: str | list[str] | None = None,
         use_uv: bool | None = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         comfyui_repo: str | None = None,
@@ -7404,13 +7472,13 @@ class ComfyUIManager(BaseManager):
         """安装 ComfyUI
 
         Args:
-            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
             comfyui_repo (str | None): ComfyUI 仓库地址
@@ -7571,22 +7639,22 @@ class SDWebUIManager(BaseManager):
 
     def get_sd_model_from_list(
         self,
-        model_list: list[dict[str]],
+        model_list: list[dict[str, str]],
     ) -> None:
         """从模型列表下载模型
 
-        :param model_list`(list[str|int])`: 模型列表
+        `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
+        ```python
+        model_list = [
+            {"url": "url1", "type": "Stable-diffusion"},
+            {"url": "url2", "filename": "file.safetensors"},
+            {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
+            {"url": "url4"},
+        ]
+        ```
 
-        :notes
-            `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
-            ```python
-            model_list = [
-                {"url": "url1", "type": "Stable-diffusion"},
-                {"url": "url2", "filename": "file.safetensors"},
-                {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
-                {"url": "url4"},
-            ]
-            ```
+        Args:
+            model_list (list[dict[str, str]]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -7816,13 +7884,13 @@ class SDWebUIManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list | None = None,
-        xformers_ver: str | list | None = None,
+        torch_ver: str | list[str] | None = None,
+        xformers_ver: str | list[str] | None = None,
         use_uv: bool | None = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         sd_webui_repo: str | None = None,
@@ -7841,13 +7909,13 @@ class SDWebUIManager(BaseManager):
         """安装 Stable Diffusion WebUI
 
         Args:
-            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
             sd_webui_repo (str | None): Stable Diffusion WebUI 仓库地址
@@ -7933,7 +8001,11 @@ class SDWebUIManager(BaseManager):
 
 
 class InvokeAIComponentManager:
-    """InvokeAI 组件管理器"""
+    """InvokeAI 组件管理器
+
+    Attributes:
+        pytorch_mirror_dict (dict[str, str] | None): PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
+    """
 
     def __init__(self, pytorch_mirror_dict: dict[str, str] = None) -> None:
         """InvokeAI 组件管理器初始化
@@ -8162,7 +8234,11 @@ class InvokeAIComponentManager:
 
 
 class InvokeAIManager(BaseManager):
-    """InvokeAI 管理模块"""
+    """InvokeAI 管理模块
+
+    Attributes:
+        component (InvokeAIComponentManager): InvokeAI 组件管理器
+    """
 
     def __init__(
         self,
@@ -8414,7 +8490,7 @@ class InvokeAIManager(BaseManager):
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror_dict: dict[str, str] | None = None,
         model_list: list[str] | None = None,
@@ -8562,21 +8638,21 @@ class SDTrainerManager(BaseManager):
 
     def get_sd_model_from_list(
         self,
-        model_list: list[dict[str]],
+        model_list: list[dict[str, str]],
     ) -> None:
         """从模型列表下载模型
 
-        :param model_list`(list[str|int])`: 模型列表
+        `model_list`需要指定`url`(模型下载链接), 可选参数为`filename`(模型保存名称), 例如
+        ```python
+        model_list = [
+            {"url": "url1", "type": "checkpoints"},
+            {"url": "url2", "filename": "file.safetensors"},
+            {"url": "url4"},
+        ]
+        ```
 
-        :notes
-            `model_list`需要指定`url`(模型下载链接), 可选参数为`filename`(模型保存名称), 例如
-            ```python
-            model_list = [
-                {"url": "url1", "type": "checkpoints"},
-                {"url": "url2", "filename": "file.safetensors"},
-                {"url": "url4"},
-            ]
-            ```
+        Args:
+            model_list (list[dict[str, str]]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -8628,13 +8704,13 @@ class SDTrainerManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list | None = None,
-        xformers_ver: str | list | None = None,
+        torch_ver: str | list[str] | None = None,
+        xformers_ver: str | list[str] | None = None,
         use_uv: bool | None = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
-        github_mirror: str | list | None = None,
+        github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
         sd_trainer_repo: str | None = None,
@@ -8649,13 +8725,13 @@ class SDTrainerManager(BaseManager):
         """安装 SD Trainer
 
         Args:
-            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
             sd_trainer_repo (str | None): SD Trainer 仓库地址
