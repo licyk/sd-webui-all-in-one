@@ -90,9 +90,7 @@ class LoggingColoredFormatter(logging.Formatter):
 
         if self.color:
             seq = self.COLORS.get(levelname, self.COLORS["RESET"])
-            colored_record.levelname = "{}{}{}".format(
-                seq, levelname, self.COLORS["RESET"]
-            )
+            colored_record.levelname = f'{seq}{levelname}{self.COLORS["RESET"]}'
 
         return super().format(colored_record)
 
@@ -6073,8 +6071,8 @@ class CUDAMalloc:
             set[str]: GPU 名称列表
         """
         if os.name == "nt":
-            # Define necessary C structures and types
-            class DISPLAY_DEVICEA(ctypes.Structure):
+            class DisplayDevicea(ctypes.Structure):
+                """显示设备信息结构类型"""
                 _fields_ = [
                     ("cb", ctypes.c_ulong),
                     ("DeviceName", ctypes.c_char * 32),
@@ -6083,13 +6081,14 @@ class CUDAMalloc:
                     ("DeviceID", ctypes.c_char * 128),
                     ("DeviceKey", ctypes.c_char * 128),
                 ]
+                cb = None
 
             # Load user32.dll
             user32 = ctypes.windll.user32
 
             # Call EnumDisplayDevicesA
             def enum_display_devices():
-                device_info = DISPLAY_DEVICEA()
+                device_info = DisplayDevicea()
                 device_info.cb = ctypes.sizeof(device_info)
                 device_index = 0
                 gpu_names = set()

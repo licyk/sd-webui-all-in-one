@@ -17,11 +17,16 @@ py_modules = ["sd_webui_all_in_one"]
 
 [tool.pylint]
 disable = [
-    "W3101", # missing-timeout
-    "C0302", # too-many-lines
-    "C0415" # import-outside-toplevel
+    "missing-timeout",
+    "too-many-lines",
+    "import-outside-toplevel",
+    "broad-exception-caught",
+    "broad-exception-raised",
+    "subprocess-run-check",
+    "keyword-arg-before-vararg",
+    "fixme"
 ]
 
 [tool.pylint.format]
-max-line-length = 150
+max-line-length = 180
 ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
