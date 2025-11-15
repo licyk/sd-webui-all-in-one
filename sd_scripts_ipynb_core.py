@@ -52,7 +52,12 @@ VERSION = "1.1.18"
 
 
 class LoggingColoredFormatter(logging.Formatter):
-    """Logging 格式化类"""
+    """Logging 格式化类
+    
+    Attributes:
+        color (bool): 是否启用日志颜色
+        COLORS (dict[str, str]): 颜色类型字典
+    """
 
     COLORS = {
         "DEBUG": "\033[0;36m",  # CYAN
@@ -63,11 +68,23 @@ class LoggingColoredFormatter(logging.Formatter):
         "RESET": "\033[0m",  # RESET COLOR
     }
 
-    def __init__(self, fmt, datefmt=None, color=True):
+    def __init__(
+        self,
+        fmt: str | None = None,
+        datefmt: str | None = None,
+        color: bool | None = True,
+    ) -> None:
+        """Logging 初始化
+
+        Args:
+            fmt (str | None): 日志消息的格式字符串
+            datefmt (str | None): 日期 / 时间的显示格式
+            color (bool | None): 是否启用彩色日志输出. 默认为 True
+        """
         super().__init__(fmt, datefmt)
         self.color = color
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         colored_record = copy.copy(record)
         levelname = colored_record.levelname
 
@@ -85,10 +102,12 @@ def get_logger(
 ) -> logging.Logger:
     """获取 Loging 对象
 
-    :param name`(str|None)`: Logging 名称
-    :param level`(int|None)`: 日志级别
-    :param color`(bool|None)`: 是否启用彩色日志
-    :return `logging.Logger`: Logging 对象
+    Args:
+        name (str | None): Logging 名称
+        level (int | None): 日志级别
+        color (bool | None): 是否启用彩色日志
+    Returns:
+        logging.Logger: Logging 对象
     """
     stack = inspect.stack()
     calling_filename = os.path.basename(stack[1].filename)
@@ -132,14 +151,17 @@ def run_cmd(
 ) -> str | None:
     """执行 Shell 命令
 
-    :param command`(str|list[str])`: 要执行的命令
-    :param desc`(str|None)`: 执行命令的描述
-    :param errdesc`(str|None)`: 执行命令报错时的描述
-    :param custom_env`(dict[str,str]|None)`: 自定义环境变量
-    :param live`(bool|None)`: 是否实时输出命令执行日志
-    :param shell`(bool|None)`: 是否使用内置 Shell 执行命令
-    :return `str|None`: 命令执行时输出的内容
-    :raises RuntimeError: 当命令执行失败时
+    Args:
+        command (str | list[str]): 要执行的命令
+        desc (str | None): 执行命令的描述
+        errdesc (str | None): 执行命令报错时的描述
+        custom_env (dict[str, str] | None): 自定义环境变量
+        live (bool | None): 是否实时输出命令执行日志
+        shell (bool | None): 是否使用内置 Shell 执行命令
+    Returns:
+        (str | None): 命令执行时输出的内容
+    Raises:
+        RuntimeError: 当命令执行失败时
     """
 
     if shell is None:
@@ -208,8 +230,10 @@ def run_cmd(
 def remove_files(path: str | Path) -> bool:
     """文件删除工具
 
-    :param path`(str|Path)`: 要删除的文件路径
-    :return `bool`: 删除结果
+    Args:
+        path (str | Path): 要删除的文件路径
+    Returns:
+        bool: 删除结果
     """
 
     def _handle_remove_readonly(_func, _path, _):
@@ -238,9 +262,11 @@ def remove_files(path: str | Path) -> bool:
 def copy_files(src: Path | str, dst: Path | str) -> bool:
     """复制文件或目录
 
-    :param src`(Path|str)`: 源文件路径
-    :param dst`(Path|str)`: 复制文件到指定的路径
-    :return `bool`: 复制结果
+    Args:
+        src (Path | str): 源文件路径
+        dst (Path | str): 复制文件到指定的路径
+    Returns:
+        bool: 复制结果
     """
     try:
         src_path = Path(src)
@@ -288,9 +314,11 @@ class GitWarpper:
     ) -> Path | None:
         """下载 Git 仓库到本地
 
-        :param repo`(str)`: Git 仓库链接
-        :param path`(Path|str|None)`: 下载到本地的路径
-        :return `Path|None`: 下载成功时返回路径, 否则返回`None`
+        Args:
+            repo (str): Git 仓库链接
+            path (Path | str | None): 下载到本地的路径
+        Returns:
+            (Path | None): 下载成功时返回路径, 否则返回`None`
         """
         if path is None:
             path = os.getcwd()
@@ -309,8 +337,10 @@ class GitWarpper:
     def update(path: Path | str) -> bool:
         """更新 Git 仓库
 
-        :param path`(Path|str)`: Git 仓库路径
-        :return `bool`: 更新 Git 仓库结果
+        Args:
+            path (Path | str): Git 仓库路径
+        Returns:
+            bool: 更新 Git 仓库结果
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         use_submodule = []
@@ -383,8 +413,10 @@ class GitWarpper:
     def check_point_offset(path: Path | str) -> bool:
         """检查 Git 仓库的指针是否游离
 
-        :param path`(Path|str)`: Git 仓库路径
-        :return `bool`: 当 Git 指针游离时返回`True`
+        Args:
+            path (Path | str): Git 仓库路径
+        Returns:
+            bool: 当 Git 指针游离时返回`True`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -397,8 +429,10 @@ class GitWarpper:
     def fix_point_offset(path: Path | str) -> bool:
         """修复 Git 仓库的 Git 指针游离
 
-        :param path`(Path|str)`: Git 仓库路径
-        :return `bool`: 修复结果
+        Args:
+            path (Path | str): Git 仓库路径
+        Returns:
+            bool: 修复结果
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -440,8 +474,10 @@ class GitWarpper:
     def get_current_branch(path: Path | str) -> str | None:
         """获取 Git 仓库的当前所处分支
 
-        :param path`(Path|str)`: Git 仓库路径
-        :return `str`: 仓库所处分支, 获取失败时返回`None`
+        Args:
+            path (Path | str): Git 仓库路径
+        Returns:
+            (str | None): 仓库所处分支, 获取失败时返回`None`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -456,8 +492,10 @@ class GitWarpper:
     def check_repo_on_origin_remote(path: Path | str) -> bool:
         """检查 Git 仓库的远程源是否在 origin
 
-        :param path`(Path|str)`: Git 仓库路径
-        :return `bool`: 远程源在 origin 时返回`True`
+        Args:
+            path (Path | str): Git 仓库路径
+        Returns:
+            bool: 远程源在 origin 时返回`True`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -485,9 +523,11 @@ class GitWarpper:
     ) -> bool:
         """检查 Git 仓库是否存在某个本地分支
 
-        :param path`(Path|str)`: Git 仓库路径
-        :param branch`(str)`: 要检查的本地分支
-        :return `bool`: 分支存在时返回`True`
+        Args:
+            path (Path | str): Git 仓库路径
+            branch (str): 要检查的本地分支
+        Returns:
+            bool: 分支存在时返回`True`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -516,11 +556,13 @@ class GitWarpper:
     ) -> bool:
         """切换 Git 仓库的分支和远程源
 
-        :param path`(Path|str)`: Git 仓库路径
-        :param branch`(str)`: 要切换的分支
-        :param new_url`(str|None)`: 要切换的远程源
-        :param recurse_submodules`(bool|None)`: 是否启用 Git 子模块
-        :return `bool`: 切换分支结果
+        Args:
+            path (Path | str): Git 仓库路径
+            branch (str): 要切换的分支
+            new_url (str | None): 要切换的远程源
+            recurse_submodules (bool | None): 是否启用 Git 子模块
+        Returns:
+            bool: 切换分支结果
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         custom_env = os.environ.copy()
@@ -671,9 +713,11 @@ class GitWarpper:
     ) -> bool:
         """切换 Git 仓库到指定提交记录上
 
-        :param path`(Path|str)`: Git 仓库路径
-        :param commit`(str)`: Git 仓库提交记录
-        :return `bool`: 切换结果
+        Args:
+            path (Path | str): Git 仓库路径
+            commit (str): Git 仓库提交记录
+        Returns:
+            bool: 切换结果
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         logger.info("切换 %s 的 Git 指针到 %s 版本", path, commit)
@@ -688,8 +732,10 @@ class GitWarpper:
     def is_git_repo(path: Path | str) -> bool:
         """检查该路径是否为 Git 仓库路径
 
-        :param path`(Path|str)`: 要检查的路径
-        :return `bool`: 当该路径为 Git 仓库时返回`True`
+        Args:
+            path (Path | str): 要检查的路径
+        Returns:
+            bool: 当该路径为 Git 仓库时返回`True`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -707,9 +753,11 @@ class GitWarpper:
     ) -> bool:
         """配置 Git 信息
 
-        :param username`(str|None)`: 用户名
-        :param email`(str|None)`: 邮箱地址
-        :return `bool`: 配置成功时返回`True`
+        Args:
+            username (str | None): 用户名
+            email (str | None): 邮箱地址
+        Returns:
+            bool: 配置成功时返回`True`
         """
         logger.info("配置 Git 信息中")
         try:
@@ -731,13 +779,17 @@ class Downloader:
         url: str,
         path: Path | str | None = None,
         save_name: str | None = None,
-    ) -> Path | None:
+    ) -> Path:
         """Aria2 下载工具
 
-        :param url`(str)`: 文件下载链接
-        :param path`(Path|str|None)`: 下载文件的路径, 为`None`时使用当前路径
-        :param save_name`(str|None)`: 保存的文件名, 为`None`时使用`url`提取保存的文件名
-        :return `Path|None`: 下载成功时返回文件路径, 否则返回`None`
+        Args:
+            url (str): 文件下载链接
+            path (Path | str | None): 下载文件的路径, 为`None`时使用当前路径
+            save_name (str | None): 保存的文件名, 为`None`时使用`url`提取保存的文件名
+        Returns:
+            Path: 下载成功时返回文件路径, 否则返回`None`
+        Raises:
+            Exception: 下载出现错误
         """
         if path is None:
             path = os.getcwd()
@@ -783,15 +835,19 @@ class Downloader:
         hash_prefix: str | None = None,
         re_download: bool | None = False,
     ):
-        """使用 requrest 库下载文件
+        """使用 requrests 库下载文件
 
-        :param url`(str)`: 下载链接
-        :param model`(Path|str|None)`: 下载路径
-        :param progress`(bool|None)`: 是否启用下载进度条
-        :param file_name`(str|None)`: 保存的文件名, 如果为`None`则从`url`中提取文件
-        :param hash_prefix`(str|None)`: sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
-        :param re_download`(bool)`: 强制重新下载文件
-        :return `Path`: 下载的文件路径
+        Args:
+            url (str): 下载链接
+            model_dir (Path | str | None): 下载路径
+            progress (bool | None): 是否启用下载进度条
+            file_name (str | None): 保存的文件名, 如果为`None`则从`url`中提取文件
+            hash_prefix (str | None): sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
+            re_download (bool): 强制重新下载文件
+        Returns:
+            Path: 下载的文件路径
+        Raises:
+            ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
         """
         import requests
         from tqdm import tqdm
@@ -846,9 +902,11 @@ class Downloader:
     def compare_sha256(file_path: str | Path, hash_prefix: str) -> bool:
         """检查文件的 sha256 哈希值是否与给定的前缀匹配
 
-        :param file_path`(str|Path)`: 文件路径
-        :param hash_prefix`(str)`: 哈希前缀
-        :return `bool`: 匹配结果
+        Args:
+            file_path (str | Path): 文件路径
+            hash_prefix (str): 哈希前缀
+        Returns:
+            bool: 匹配结果
         """
         hash_sha256 = hashlib.sha256()
         blksize = 1024 * 1024
@@ -863,17 +921,19 @@ class Downloader:
         url: str,
         path: str | Path = None,
         save_name: str | None = None,
-        tool: Literal["aria2", "request"] = "aria2",
+        tool: Literal["aria2", "request"] = "aria2", # TODO: typo: requests
         retry: int | None = 3,
     ) -> Path | None:
         """下载文件工具
 
-        :param url`(str)`: 文件下载链接
-        :param path`(Path|str)`: 文件下载路径
-        :param save_name`(str)`: 文件保存名称, 当为`None`时从`url`中解析文件名
-        :param tools`(Literal["aria2","request"])`: 下载工具
-        :param retry`(int)`: 重试下载的次数
-        :return `Path|None`: 保存的文件路径
+        Args:
+            url (str): 文件下载链接
+            path (Path | str): 文件下载路径
+            save_name (str | None): 文件保存名称, 当为`None`时从`url`中解析文件名
+            tool (Literal["aria2", "request"]): 下载工具
+            retry (int | None): 重试下载的次数
+        Returns:
+            (Path | None): 保存的文件路径
         """
         count = 0
         while count < retry:
@@ -920,11 +980,14 @@ class EnvManager:
     ) -> str:
         """使用 Pip / uv 安装 Python 软件包
 
-        :param *args`(Any)`: 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
-        :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
-        :param custom_env`(dict[str,str]|None)`: 自定义环境变量
-        :return `str`: 命令的执行输出
-        :raises RuntimeError: 当 uv 和 pip 都无法安装软件包时抛出异常
+        Args:
+            *args (Any): 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
+            use_uv (bool | None): 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+            custom_env (dict[str, str] | None): 自定义环境变量
+        Returns:
+            str: 命令的执行输出
+        Raises:
+            RuntimeError: 当 uv 和 pip 都无法安装软件包时抛出异常
         """
         if custom_env is None:
             custom_env = os.environ.copy()
@@ -963,26 +1026,30 @@ class EnvManager:
     ) -> bool:
         """安装自身组件依赖
 
-        :param use_uv`(bool|None)`: 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
-        :param custom_env`(dict[str,str]|None)`: 自定义环境变量
-        :param custom_sys_pkg_cmd`(list[list[str]]|list[str]|None)`: 自定义调用系统包管理器命令
-        :return `bool`: 组件安装结果
-        :notes
-            自定义命令的例子:
-            ```python
-            custom_sys_pkg_cmd = [
-                ["apt", "update"],
-                ["apt", "install", "aria2", "google-perftools", "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"]
-            ]
-            # 另一种等效形式
-            custom_sys_pkg_cmd = [
-                "apt update",
-                "apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y",
-            ]
-            ```
-            这将分别执行两条命令:
-            `apt update`
-            `apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y`
+        自定义命令的例子:
+        ```python
+        custom_sys_pkg_cmd = [
+            ["apt", "update"],
+            ["apt", "install", "aria2", "google-perftools", "p7zip-full", "unzip", "tree", "git", "git-lfs", "-y"]
+        ]
+        # 另一种等效形式
+        custom_sys_pkg_cmd = [
+            "apt update",
+            "apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y",
+        ]
+        ```
+        这将分别执行两条命令:
+        ```
+        1. apt update
+        2. apt install aria2 google-perftools p7zip-full unzip tree git git-lfs -y
+        ```
+
+        Args:
+            use_uv (bool | None): 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+            custom_env (dict[str, str] | None): 自定义环境变量
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | None): 自定义调用系统包管理器命令
+        Returns:
+            bool: 组件安装结果
         """
         if custom_env is None:
             custom_env = os.environ.copy()
@@ -1034,11 +1101,13 @@ class EnvManager:
     ) -> bool:
         """安装 PyTorch / xFormers
 
-        :param torch_package`(str|list|None)`: PyTorch 软件包名称和版本信息, 如`torch==2.0.0 torchvision==0.15.1` / `["torch==2.0.0", "torchvision==0.15.1"]`
-        :param xformers_package`(str|list|None)`: xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
-        :param pytorch_mirror`(str|None)`: 指定安装 PyTorch / xFormers 时使用的镜像源
-        :param use_uv`(bool|None)`: 是否使用 uv 代替 Pip 进行安装
-        :return `bool`: 安装 PyTorch / xFormers 成功时返回`True`
+        Args:
+            torch_package (str | list | None): PyTorch 软件包名称和版本信息, 如`torch==2.0.0 torchvision==0.15.1` / `["torch==2.0.0", "torchvision==0.15.1"]`
+            xformers_package (str | list | None): xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
+            pytorch_mirror (str | None): 指定安装 PyTorch / xFormers 时使用的镜像源
+            use_uv (bool | None): 是否使用 uv 代替 Pip 进行安装
+        Returns:
+            bool: 安装 PyTorch / xFormers 成功时返回`True`
         """
         custom_env = os.environ.copy()
         if pytorch_mirror is not None:
@@ -1088,9 +1157,11 @@ class EnvManager:
     ) -> bool:
         """从 requirements.txt 文件指定安装的依赖
 
-        :param path`(Path|str)`: requirements.txt 文件路径
-        :param use_uv`(bool|None)`: 是否使用 uv 代替 Pip 进行安装
-        :return `bool`: 安装依赖成功时返回`True`
+        Args:
+            path (Path | str): requirements.txt 文件路径
+            use_uv (bool | None): 是否使用 uv 代替 Pip 进行安装
+        Returns:
+            bool: 安装依赖成功时返回`True`
         """
         if custom_env is None:
             custom_env = os.environ.copy()
@@ -1115,7 +1186,8 @@ class Utils:
     def clear_up() -> bool:
         """清理 Jupyter Notebook 输出内容
 
-        :return `bool`: 清理输出结果
+        Returns:
+            bool: 清理输出结果
         """
         try:
             from IPython.display import clear_output
@@ -1130,7 +1202,8 @@ class Utils:
     def check_gpu() -> bool:
         """检查环境中是否有可用的 GPU
 
-        :return `bool`: 当有可用 GPU 时返回`True`
+        Returns:
+            bool: 当有可用 GPU 时返回`True`
         """
         logger.info("检查当前环境是否有 GPU 可用")
         import tensorflow as tf
@@ -1146,9 +1219,11 @@ class Utils:
     def get_file_list(path: Path | str, resolve: bool | None = False) -> list[Path]:
         """获取当前路径下的所有文件的绝对路径
 
-        :param path`(Path|str)`: 要获取文件列表的目录
-        :param resolve`(bool|None)`: 将路径进行完全解析, 包括链接路径
-        :return `list[Path]`: 文件列表的绝对路径
+        Args:
+            path (Path | str): 要获取文件列表的目录
+            resolve (bool | None): 将路径进行完全解析, 包括链接路径
+        Returns:
+            list[Path]: 文件列表的绝对路径
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
 
@@ -1170,7 +1245,11 @@ class Utils:
 
     @staticmethod
     def config_wandb_token(token: str | None = None) -> None:
-        """配置 WandB 所需 Token"""
+        """配置 WandB 所需 Token, 配置时将设置`WANDB_API_KEY`环境变量
+
+        Args:
+            token (str | None): WandB Token
+        """
         if token is not None:
             logger.info("配置 WandB Token")
             os.environ["WANDB_API_KEY"] = token
@@ -1181,11 +1260,13 @@ class Utils:
     ) -> Path | None:
         """下载压缩包并解压到指定路径
 
-        :param url`(str)`: 压缩包下载链接, 压缩包只支持`zip`,`7z`,`tar`格式
-        :param local_dir`(Path|str)`: 下载路径
-        :param name`(str|None)`: 下载文件保存的名称, 为`None`时从`url`解析文件名
-        :param retry`(int|None)`: 重试下载的次数
-        :return `Path|None`: 下载成功并解压成功时返回路径
+        Args:
+            url (str): 压缩包下载链接, 压缩包只支持`zip`,`7z`,`tar`格式
+            local_dir (Path | str): 下载路径
+            name (str | None): 下载文件保存的名称, 为`None`时从`url`解析文件名
+            retry (int | None): 重试下载的次数
+        Returns:
+            (Path | None): 下载成功并解压成功时返回路径
         """
         with TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir)
@@ -1256,8 +1337,10 @@ class Utils:
     def version_increment(version: str) -> str:
         """增加版本号大小
 
-        :param version`(str)`: 初始版本号
-        :return `str`: 增加后的版本号
+        Args:
+            version (str): 初始版本号
+        Returns:
+            str: 增加后的版本号
         """
         version = "".join(re.findall(r"\d|\.", version))
         ver_parts = list(map(int, version.split(".")))
@@ -1274,8 +1357,10 @@ class Utils:
     def version_decrement(version: str) -> str:
         """减小版本号大小
 
-        :param version`(str)`: 初始版本号
-        :return `str`: 减小后的版本号
+        Args:
+            version (str): 初始版本号
+        Returns:
+            str: 减小后的版本号
         """
         version = "".join(re.findall(r"\d|\.", version))
         ver_parts = list(map(int, version.split(".")))
@@ -1297,9 +1382,11 @@ class Utils:
     ) -> int:
         """对比两个版本号大小
 
-        :param version1(str|int|float): 第一个版本号
-        :param version2(str|int|float): 第二个版本号
-        :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+        Args:
+            version1 (str | int | float): 第一个版本号
+            version2 (str | int | float): 第二个版本号
+        Returns:
+            int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
         """
         version1 = str(version1)
         version2 = str(version2)
@@ -1341,7 +1428,13 @@ class Utils:
 
     @staticmethod
     def mount_google_drive(path: Path | str) -> bool:
-        """挂载 Google Drive"""
+        """挂载 Google Drive
+
+        Args:
+            path (Path | str): 要挂在的路径
+        Returns:
+            bool: 挂载 Google Drive 的结果
+        """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         if not path.exists():
             logger.info("挂载 Google Drive 中, 请根据提示进行操作")
@@ -1364,21 +1457,23 @@ class Utils:
 
         参考: https://github.com/googlecolab/colabtools/blob/be426fedb0bf192ea3b4f208e2c8d956caf94d65/google/colab/drive.py#L114
 
-        :return `bool`: 检测结果
+        Returns:
+            bool: 检测结果
         """
         return os.path.exists("/var/colab/hostname")
 
     @staticmethod
     def warning_unexpected_params(
         message: str,
-        args: tuple,
-        kwargs: dict,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
     ) -> None:
         """显示多余参数警告
 
-        :param message`(str)`: 提示信息
-        :param args`(tuple)`: 额外的位置参数
-        :param kwargs`(dict)`: 额外的关键字参数
+        Args:
+            message (str): 提示信息
+            args (tuple[Any, ...]): 额外的位置参数
+            kwargs (dict[str, Any]): 额外的关键字参数
         """
         if args or kwargs:
             logger.warning(message)
@@ -1394,9 +1489,11 @@ class Utils:
     def get_sync_files(src_path: Path | str, dst_path: Path | str) -> list[Path]:
         """获取需要进行同步的文件列表 (增量同步)
 
-        :param src_path`(Path|str)`: 同步文件的源路径
-        :param dst_path`(Path|str)`: 同步文件到的路径
-        :return `list[Path]`: 要进行同步的文件
+        Args:
+            src_path (Path | str): 同步文件的源路径
+            dst_path (Path | str): 同步文件到的路径
+        Returns:
+            list[Path]: 要进行同步的文件
         """
         from tqdm import tqdm
 
@@ -1432,8 +1529,9 @@ class Utils:
     def sync_files(src_path: Path, dst_path: Path) -> None:
         """同步文件 (增量同步)
 
-        :param src_path`(Path|str)`: 同步文件的源路径
-        :param dst_path`(Path|str)`: 同步文件到的路径
+        Args:
+            src_path (Path): 同步文件的源路径
+            dst_path (Path): 同步文件到的路径
         """
         from tqdm import tqdm
 
@@ -1467,19 +1565,20 @@ class Utils:
     ) -> None:
         """同步文件并创建软链接
 
-        :param src_path`(Path|str)`: 源路径
-        :param link_path`(Path|str)`: 软链接路径
-        :param src_is_file`(bool|None)`: 源路径是否为文件
-        :notes
-            当源路径不存在时, 则尝试创建源路径, 并检查链接路径状态
+        当源路径不存在时, 则尝试创建源路径, 并检查链接路径状态
 
-            链接路径若已存在, 并且存在文件, 将检查链接路径中的文件是否存在于源路径中
+        链接路径若已存在, 并且存在文件, 将检查链接路径中的文件是否存在于源路径中
 
-            在链接路径存在但在源路径不存在的文件将被复制 (增量同步)
+        在链接路径存在但在源路径不存在的文件将被复制 (增量同步)
 
-            完成增量同步后将链接路径属性, 若为实际路径则对该路径进行重命名; 如果为链接路径则删除链接
+        完成增量同步后将链接路径属性, 若为实际路径则对该路径进行重命名; 如果为链接路径则删除链接
 
-            链接路径清理完成后, 在链接路径为源路径创建软链接
+        链接路径清理完成后, 在链接路径为源路径创建软链接
+
+        Args:
+            src_path (Path | str): 源路径
+            link_path (Path | str): 软链接路径
+            src_is_file (bool | None): 源路径是否为文件
         """
         src_path = (
             Path(src_path)
@@ -1545,12 +1644,12 @@ class Utils:
         max_depth: int | None = None,
         show_hidden: bool | None = False,
     ) -> None:
-        """
-        生成并打印目录树
+        """生成并打印目录树
 
-        :param start_path`(str|Path)`: 要开始遍历的根目录路径
-        :param max_depth`(int|None)`: 要遍历的最大深度
-        :param show_hidden`(bool|None)`: 是否显示隐藏文件
+        Args:
+            start_path (str | Path): 要开始遍历的根目录路径
+            max_depth (int | None): 要遍历的最大深度
+            show_hidden (bool | None): 是否显示隐藏文件
         """
         start_path = (
             Path(start_path)
@@ -1576,15 +1675,15 @@ class Utils:
         max_depth: int | None,
         show_hidden: bool | None,
     ) -> None:
-        """
-        递归地构建和打印目录树
+        """递归地构建和打印目录树
 
-        :param dir_path`(Path)`: 当前正在遍历的目录路径
-        :param prefix`(str)`: 用于当前行打印的前缀字符串 (包含树状连接符)
-        :param counts`(list[int])`: 包含目录和文件计数的列表
-        :param current_depth`(int)`: 当前的递归深度
-        :param max_depth`(int|None)`: 允许的最大递归深度
-        :param show_hidden`(bool|None)`: 是否显示隐藏文件
+        Args:
+            dir_path (Path): 当前正在遍历的目录路径
+            prefix (str): 用于当前行打印的前缀字符串 (包含树状连接符)
+            counts (list[int]): 包含目录和文件计数的列表
+            current_depth (int): 当前的递归深度
+            max_depth (int | None): 允许的最大递归深度
+            show_hidden (bool | None): 是否显示隐藏文件
         """
         connectors_dict = {
             "T": "├── ",
@@ -1665,21 +1764,28 @@ class PyTorchMirrorManager:
         """获取 PyTorch 镜像源字典
 
         Returns:
-                dict[str, str]: PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm61" 等), 值为对应的 PyTorch wheel 下载地址
+            (dict[str, str]): PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm61" 等), 值为对应的 PyTorch wheel 下载地址
         """
         return PyTorchMirrorManager.PYTORCH_MIRROR_DICT.copy()
 
     @staticmethod
     def get_cuda_comp_cap() -> float:
-        """
-        Returns float of CUDA Compute Capability using nvidia-smi
-        Returns 0.0 on error
-        CUDA Compute Capability
-        ref https://developer.nvidia.com/cuda-gpus
-        ref https://en.wikipedia.org/wiki/CUDA
-        Blackwell consumer GPUs should return 12.0 data-center GPUs should return 10.0
+        """获取 CUDA 的计算能力
 
-        :return `float`: Comp Cap 版本
+        当获取值失败时则返回 0.0
+
+        Blackwell 消费级 GPU 应得到 12.0
+
+        数据中心级 GPU 应得到 10.0
+
+        参考:
+        ```
+        https://developer.nvidia.com/cuda-gpus
+        https://en.wikipedia.org/wiki/CUDA
+        ```
+
+        Returns:
+            float: CUDA 计算能力值
         """
         try:
             return max(
@@ -1702,7 +1808,8 @@ class PyTorchMirrorManager:
     def get_cuda_version() -> float:
         """获取驱动支持的 CUDA 版本
 
-        :return `float`: CUDA 支持的版本
+        Returns:
+            float: CUDA 支持的版本
         """
         try:
             # 获取 nvidia-smi 输出
@@ -1718,8 +1825,10 @@ class PyTorchMirrorManager:
     def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
         """获取 CUDA 类型的 PyTorch 镜像源类型
 
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: CUDA 类型的 PyTorch 镜像源类型
+        Args:
+            torch_ver (str): PyTorch 版本
+        Returns:
+            str: CUDA 类型的 PyTorch 镜像源类型
         """
         # cu118: 2.0.0 ~ 2.4.0
         # cu121: 2.1.1 ~ 2.4.0
@@ -1803,7 +1912,7 @@ class PyTorchMirrorManager:
             Utils.compare_versions(torch_ver, "2.8.0") >= 0
             and Utils.compare_versions(torch_ver, "2.9.0") < 0
         ):
-            # torch ~= 2.8.0: default cu129
+            # 2.8.0 <= torch < 2.9.0: default cu129
             if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu129") < 0:
                 if (
                     Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
@@ -1837,8 +1946,10 @@ class PyTorchMirrorManager:
     def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
         """获取 ROCm 类型的 PyTorch 镜像源类型
 
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: ROCm 类型的 PyTorch 镜像源类型
+        Args:
+            torch_ver (str): PyTorch 版本
+        Returns:
+            str: ROCm 类型的 PyTorch 镜像源类型
         """
         if Utils.compare_versions(torch_ver, "2.4.0") < 0:
             # torch < 2.4.0
@@ -1877,8 +1988,10 @@ class PyTorchMirrorManager:
     def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
         """获取 IPEX 类型的 PyTorch 镜像源类型
 
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: IPEX 类型的 PyTorch 镜像源类型
+        Args:
+            torch_ver (str): PyTorch 版本
+        Returns:
+            str: IPEX 类型的 PyTorch 镜像源类型
         """
         if Utils.compare_versions(torch_ver, "2.0.0") < 0:
             # torch < 2.0.0
@@ -1905,8 +2018,10 @@ class PyTorchMirrorManager:
     def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
         """获取 CPU 类型的 PyTorch 镜像源类型
 
-        :param torch_ver`(str)`: PyTorch 版本
-        :return `str`: CPU 类型的 PyTorch 镜像源类型
+        Args:
+            torch_ver (str): PyTorch 版本
+        Returns:
+            str: CPU 类型的 PyTorch 镜像源类型
         """
         _ = torch_ver
         return "cpu"
@@ -1917,9 +2032,11 @@ class PyTorchMirrorManager:
     ) -> str:
         """获取 PyTorch 镜像源类型
 
-        :param torch_ver`(str)`: PyTorch 版本号
-        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡类型
-        :return `str`: PyTorch 镜像源类型
+        Args:
+            torch_ver (str): PyTorch 版本号
+            device_type (Literal["cuda", "rocm", "xpu", "cpu"]): 显卡类型
+        Returns:
+            str: PyTorch 镜像源类型
         """
         if device_type == "cuda":
             return PyTorchMirrorManager.get_pytorch_mirror_type_cuda(torch_ver)
@@ -1939,7 +2056,8 @@ class PyTorchMirrorManager:
     def get_env_pytorch_type() -> str:
         """获取当前环境中 PyTorch 版本号对应的类型
 
-        :return `str`: PyTorch 类型 (cuda, rocm, xpu, cpu)
+        Returns:
+            str: PyTorch 类型 (cuda, rocm, xpu, cpu)
         """
         torch_ipex_legacy_ver_list = [
             "2.0.0a0+gite9ebda2",
@@ -1986,41 +2104,40 @@ class MultiThreadDownloader:
     ) -> None:
         """多线程下载器初始化
 
-        :param download_func`(Callable)`: 执行下载任务的函数
-        :param download_args_list`(list[Any])`: 传入下载函数的参数列表
-        :param download_kwargs_list`(list[dict[str,Any]])`: 传入下载函数的参数字典列表
+        下载参数列表, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
 
-        :notes
-            下载参数列表, 每个元素是一个子列表或字典, 包含传递给下载函数的参数
+        格式示例:
+        ```python
+        # 仅使用位置参数
+        download_args_list = [
+            [arg1, arg2, arg3, ...],  # 第一个下载任务的参数
+            [arg1, arg2, arg3, ...],  # 第二个下载任务的参数
+            [arg1, arg2, arg3, ...],  # 第三个下载任务的参数
+        ]
 
-            格式示例:
-            ```python
-            # 仅使用位置参数
-            download_args_list = [
-                [arg1, arg2, arg3, ...],  # 第一个下载任务的参数
-                [arg1, arg2, arg3, ...],  # 第二个下载任务的参数
-                [arg1, arg2, arg3, ...],  # 第三个下载任务的参数
-            ]
+        # 仅使用关键字参数
+        download_kwargs_list = [
+            {"param1": value1, "param2": value2},  # 第一个下载任务的参数
+            {"param1": value3, "param2": value4},  # 第二个下载任务的参数
+            {"param1": value5, "param2": value6},  # 第三个下载任务的参数
+        ]
 
-            # 仅使用关键字参数
-            download_kwargs_list = [
-                {"param1": value1, "param2": value2},  # 第一个下载任务的参数
-                {"param1": value3, "param2": value4},  # 第二个下载任务的参数
-                {"param1": value5, "param2": value6},  # 第三个下载任务的参数
-            ]
-
-            # 混合使用位置参数和关键字参数
-            download_args_list = [
-                [arg1, arg2],
-                [arg3, arg4],
-                [arg5, arg6],
-            ]
-            download_kwargs_list = [
-                {"param1": value1, "param2": value2},
-                {"param1": value3, "param2": value4},
-                {"param1": value5, "param2": value6},
-            ]
-            ```
+        # 混合使用位置参数和关键字参数
+        download_args_list = [
+            [arg1, arg2],
+            [arg3, arg4],
+            [arg5, arg6],
+        ]
+        download_kwargs_list = [
+            {"param1": value1, "param2": value2},
+            {"param1": value3, "param2": value4},
+            {"param1": value5, "param2": value6},
+        ]
+        ```
+        Args:
+            download_func (Callable): 执行下载任务的函数
+            download_args_list (list[Any]): 传入下载函数的参数列表
+            download_kwargs_list (list[dict[str, Any]]): 传入下载函数的参数字典列表
         """
         self.download_func = download_func
         self.download_args_list = download_args_list or []
@@ -2113,8 +2230,9 @@ class MultiThreadDownloader:
     ) -> None:
         """启动多线程下载器
 
-        :param num_threads`(int)`: 下载线程数, 默认为 16
-        :param retry`(int)`: 重试次数, 默认为 3
+        Args:
+            num_threads (int): 下载线程数, 默认为 16
+            retry (int): 重试次数, 默认为 3
         """
 
         # 将重试次数作为属性传递给下载函数
@@ -2171,8 +2289,9 @@ class RepoManager:
     ) -> None:
         """HuggingFace / ModelScope 仓库管理器初始化
 
-        :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
-        :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
+        Args:
+            hf_token (str | None): HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
+            ms_token (str | None): ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
         try:
             from huggingface_hub import HfApi
@@ -2203,11 +2322,13 @@ class RepoManager:
     ) -> list[str]:
         """获取 HuggingFace / ModelScope 仓库文件列表
 
-        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
-        :param repo_id`(str)`: HuggingFace / ModelScope 仓库 ID
-        :param repo_type`(str)`: HuggingFace / ModelScope 仓库类型
-        :param retry`(int|None)`: 重试次数
-        :return `list[str]`: 仓库文件列表
+        Args:
+            api_type (Literal["huggingface", "modelscope"]): Api 类型
+            repo_id (str): HuggingFace / ModelScope 仓库 ID
+            repo_type (str): HuggingFace / ModelScope 仓库类型
+            retry (int | None): 重试次数
+        Returns:
+            list[str]: 仓库文件列表
         """
         if api_type == "huggingface":
             logger.info(
@@ -2231,10 +2352,12 @@ class RepoManager:
     ) -> list[str]:
         """获取 HuggingFace 仓库文件列表
 
-        :param repo_id`(str)`: HuggingFace 仓库 ID
-        :param repo_type`(str)`: HuggingFace 仓库类型
-        :param retry`(int|None)`: 重试次数
-        :return `list[str]`: 仓库文件列表
+        Args:
+            repo_id (str): HuggingFace 仓库 ID
+            repo_type (str): HuggingFace 仓库类型
+            retry (int | None): 重试次数
+        Returns:
+            list[str]: 仓库文件列表
         """
         count = 0
         while count < retry:
@@ -2266,10 +2389,12 @@ class RepoManager:
     ) -> list[str]:
         """获取 ModelScope 仓库文件列表
 
-        :param repo_id`(str)`: ModelScope 仓库 ID
-        :param repo_type`(str)`: ModelScope 仓库类型
-        :param retry`(int|None)`: 重试次数
-        :return `list[str]`: 仓库文件列表
+        Args:
+            repo_id (str): ModelScope 仓库 ID
+            repo_type (str): ModelScope 仓库类型
+            retry (int | None): 重试次数
+        Returns:
+            list[str]: 仓库文件列表
         """
         file_list = []
         count = 0
@@ -2337,10 +2462,12 @@ class RepoManager:
     ) -> bool:
         """检查 HuggingFace / ModelScope 仓库是否存在, 当不存在时则自动创建
 
-        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
-        :param repo_id`(str)`: 仓库 ID
-        :param repo_type`(Literal["model","dataset","space"])`: 仓库类型
-        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        Args:
+            api_type (Literal["huggingface", "modelscope"]): Api 类型
+            repo_id (str): 仓库 ID
+            repo_type (Literal["model", "dataset", "space"]): 仓库类型
+        Returns:
+            bool: 检查成功时 / 创建仓库成功时返回`True`
         """
         if api_type == "huggingface":
             return self.check_hf_repo(repo_id, repo_type, visibility)
@@ -2358,10 +2485,12 @@ class RepoManager:
     ) -> bool:
         """检查 HuggingFace 仓库是否存在, 当不存在时则自动创建
 
-        :param repo_id`(str)`: HuggingFace 仓库 ID
-        :param repo_type`(str)`: HuggingFace 仓库类型
-        :param visibility`(bool|None)`: HuggingFace 仓库可见性
-        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        Args:
+            repo_id (str): HuggingFace 仓库 ID
+            repo_type (str): HuggingFace 仓库类型
+            visibility (bool | None): HuggingFace 仓库可见性
+        Returns:
+            bool: 检查成功时 / 创建仓库成功时返回`True`
         """
         if repo_type in ["model", "dataset", "space"]:
             try:
@@ -2386,10 +2515,12 @@ class RepoManager:
     ) -> bool:
         """检查 ModelScope 仓库是否存在, 当不存在时则自动创建
 
-        :param repo_id`(str)`: ModelScope 仓库 ID
-        :param repo_type`(str)`: ModelScope 仓库类型
-        :param visibility`(bool|None)`: HuggingFace 仓库可见性
-        :return `bool`: 检查成功时 / 创建仓库成功时返回`True`
+        Args:
+            repo_id (str): ModelScope 仓库 ID
+            repo_type (str): ModelScope 仓库类型
+            visibility (bool | None): HuggingFace 仓库可见性
+        Returns:
+            bool: 检查成功时 / 创建仓库成功时返回`True`
         """
         from modelscope.hub.constants import Visibility
 
@@ -2431,12 +2562,13 @@ class RepoManager:
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
-        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
-        :param repo_id`(str)`: 仓库 ID
-        :param repo_type`(str)`: 仓库类型
-        :param upload_path`(Path|str)`: 要上传的文件夹
-        :param visibility`(bool|None)`: 当仓库不存在时自动创建的仓库的可见性
-        :param retry`(int|None)`: 上传重试次数
+        Args:
+            api_type (Literal["huggingface", "modelscope"]): Api 类型
+            repo_id (str): 仓库 ID
+            repo_type (str): 仓库类型
+            upload_path (Path | str): 要上传的文件夹
+            visibility (bool | None): 当仓库不存在时自动创建的仓库的可见性
+            retry (int | None): 上传重试次数
         """
         if api_type in ["huggingface", "modelscope"]:
             if not self.check_repo(
@@ -2480,10 +2612,11 @@ class RepoManager:
     ) -> None:
         """上传文件夹中的内容到 HuggingFace 仓库中
 
-        :param repo_id`(str)`: HuggingFace 仓库 ID
-        :param repo_type`(str)`: HuggingFace 仓库类型
-        :param upload_path`(Path|str)`: 要上传到 HuggingFace 仓库的文件夹
-        :param retry`(int|None)`: 上传重试次数
+        Args:
+            repo_id (str): HuggingFace 仓库 ID
+            repo_type (str): HuggingFace 仓库类型
+            upload_path (Path | str): 要上传到 HuggingFace 仓库的文件夹
+            retry (int | None): 上传重试次数
         """
         upload_files = Utils.get_file_list(upload_path)
         repo_files = set(
@@ -2563,10 +2696,11 @@ class RepoManager:
     ) -> None:
         """上传文件夹中的内容到 ModelScope 仓库中
 
-        :param repo_id`(str)`: ModelScope 仓库 ID
-        :param repo_type`(str)`: ModelScope 仓库类型
-        :param upload_path`(Path|str)`: 要上传到 ModelScope 仓库的文件夹
-        :param retry`(int|None)`: 上传重试次数
+        Args:
+            repo_id (str): ModelScope 仓库 ID
+            repo_type (str): ModelScope 仓库类型
+            upload_path (Path | str): 要上传到 ModelScope 仓库的文件夹
+            retry (int | None): 上传重试次数
         """
         upload_files = Utils.get_file_list(upload_path)
         repo_files = set(
@@ -2648,59 +2782,63 @@ class RepoManager:
     ) -> Path:
         """从 HuggingFace / ModelScope 仓库下载文文件
 
-        :param api_type`(Literal["huggingface","modelscope"])`: Api 类型
-        :param repo_id`(str)`: 仓库 ID
-        :param repo_type`(Literal["model","dataset","space"])`: 仓库类型
-        :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
-        :param retry`(int|None)`: 重试下载的次数
-        :param num_threads`(int|None)`: 下载线程
-        :return `Path`: 下载路径
-        :notes
-            `folder`参数未指定时, 则下载 HuggingFace / ModelScope 仓库中的所有文件, 如果`folder`参数指定了, 例如指定的是`aaaki`
+        `folder`参数未指定时, 则下载 HuggingFace / ModelScope 仓库中的所有文件, 如果`folder`参数指定了, 例如指定的是`aaaki`
 
-            而仓库的文件结构如下:
+        而仓库的文件结构如下:
 
-            ```markdown
-            HuggingFace / ModelScope Repositories
-            ├── Nachoneko
-            │   ├── 1_nachoneko
-            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.png
-            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.txt
-            │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).png
-            │   │       └── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).txt
-            │   ├── 2_nachoneko
-            │   │       ├── 0(8).txt
-            │   │       ├── 0(8).webp
-            │   │       ├── 001_2.png
-            │   │       └── 001_2.txt
-            │   └── 4_nachoneko
-            │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.png
-            │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.txt
-            │           ├── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.png
-            │           └── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.txt
-            └ aaaki
-                ├── 1_aaaki
-                │   ├── 1.png
-                │   ├── 1.txt
-                │   ├── 11.png
-                │   ├── 11.txt
-                │   ├── 12.png
-                │   └── 12.txt
-                └── 3_aaaki
-                    ├── 14.png
-                    ├── 14.txt
-                    ├── 16.png
-                    └── 16.txt
-            ```
+        ```markdown
+        HuggingFace / ModelScope Repositories
+        ├── Nachoneko
+        │   ├── 1_nachoneko
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.png
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.txt
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).png
+        │   │       └── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).txt
+        │   ├── 2_nachoneko
+        │   │       ├── 0(8).txt
+        │   │       ├── 0(8).webp
+        │   │       ├── 001_2.png
+        │   │       └── 001_2.txt
+        │   └── 4_nachoneko
+        │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.png
+        │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.txt
+        │           ├── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.png
+        │           └── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.txt
+        └ aaaki
+            ├── 1_aaaki
+            │   ├── 1.png
+            │   ├── 1.txt
+            │   ├── 11.png
+            │   ├── 11.txt
+            │   ├── 12.png
+            │   └── 12.txt
+            └── 3_aaaki
+                ├── 14.png
+                ├── 14.txt
+                ├── 16.png
+                └── 16.txt
+        ```
 
-            则使用该函数下载 HuggingFace / ModelScope 仓库的文件时将下载`aaaki`文件夹中的所有文件, 而`Nachoneko`文件夹中的文件不会被下载
+        则使用该函数下载 HuggingFace / ModelScope 仓库的文件时将下载`aaaki`文件夹中的所有文件, 而`Nachoneko`文件夹中的文件不会被下载
 
-            `folder`参数使用的是前缀匹配方式, 从路径的开头的字符串进行匹配, 匹配成功则进行下载
+        `folder`参数使用的是前缀匹配方式, 从路径的开头的字符串进行匹配, 匹配成功则进行下载
 
-            如果要指定下载某个文件, 则`folder`参数需要指定该文件在仓库中的完整路径, 比如`aaaki/1_aaaki/1.png`, 此时只会下载该文件, 其他文件不会被下载
+        如果要指定下载某个文件, 则`folder`参数需要指定该文件在仓库中的完整路径, 比如`aaaki/1_aaaki/1.png`, 此时只会下载该文件, 其他文件不会被下载
 
-            文件下载下来后, 保存路径为`local_dir/<文件在仓库中的路径>`, 比如`local_dir`为`/kaggle/dataset`, 上面下载单个文件的例子下载下载下来的文件就会保存在`/kaggle/dataset/aaaki/1_aaaki/1.png`
+        文件下载下来后, 保存路径为`local_dir/<文件在仓库中的路径>`, 比如`local_dir`为`/kaggle/dataset`, 上面下载单个文件的例子下载下载下来的文件就会保存在`/kaggle/dataset/aaaki/1_aaaki/1.png`
+
+        Args:
+            api_type (Literal["huggingface", "modelscope"]): Api 类型
+            repo_id (str): 仓库 ID
+            repo_type (Literal["model", "dataset", "space"]): 仓库类型
+            local_dir (Path | str): 下载路径
+            folder (str | None): 指定下载某个文件夹, 未指定时则下载整个文件夹
+            retry (int | None): 重试下载的次数
+            num_threads (int | None): 下载线程
+        Returns:
+            Path: 下载路径
+
+        
         """
         local_dir = (
             Path(local_dir)
@@ -2745,12 +2883,13 @@ class RepoManager:
     ) -> None:
         """从 HuggingFace 仓库下载文文件
 
-        :param repo_id`(str)`: HuggingFace 仓库 ID
-        :param repo_type`(Literal["model","dataset","space"])`: HuggingFace 仓库类型
-        :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
-        :param retry`(int|None)`: 重试下载的次数
-        :param num_threads`(int|None)`: 下载线程
+        Args:
+            repo_id (str): HuggingFace 仓库 ID
+            repo_type (Literal["model", "dataset", "space"]): HuggingFace 仓库类型
+            local_dir (Path | str): 下载路径
+            folder (str | None): 指定下载某个文件夹, 未指定时则下载整个文件夹
+            retry (int | None): 重试下载的次数
+            num_threads (int | None): 下载线程
         """
         from huggingface_hub import hf_hub_download
 
@@ -2760,7 +2899,7 @@ class RepoManager:
             repo_type=repo_type,
             retry=retry,
         )
-        download_task = []
+        download_task: list[dict[str, Any]] = []
 
         for repo_file in repo_files:
             if folder is not None and not repo_file.startswith(folder):
@@ -2797,12 +2936,13 @@ class RepoManager:
     ) -> None:
         """从 ModelScope 仓库下载文文件
 
-        :param repo_id`(str)`: ModelScope 仓库 ID
-        :param repo_type`(Literal["model","dataset","space"])`: ModelScope 仓库类型
-        :param local_dir`(Path|str)`: 下载路径
-        :param folder`(str|None)`: 指定下载某个文件夹, 未指定时则下载整个文件夹
-        :param retry`(int|None)`: 重试下载的次数
-        :param num_threads`(int|None)`: 下载线程
+        Args:
+            repo_id (str): ModelScope 仓库 ID
+            repo_type (Literal["model", "dataset", "space"]): ModelScope 仓库类型
+            local_dir (Path | str): 下载路径
+            folder (str | None): 指定下载某个文件夹, 未指定时则下载整个文件夹
+            retry (int | None): 重试下载的次数
+            num_threads (int | None): 下载线程
         """
         from modelscope import snapshot_download
 
@@ -2812,7 +2952,7 @@ class RepoManager:
             repo_type=repo_type,
             retry=retry,
         )
-        download_task = []
+        download_task: list[dict[str, Any]] = []
 
         for repo_file in repo_files:
             if folder is not None and not repo_file.startswith(folder):
@@ -2846,7 +2986,8 @@ class MirrorConfigManager:
     def set_pypi_index_mirror(mirror: str | None = None) -> None:
         """设置 PyPI Index 镜像源
 
-        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        Args:
+            mirror (str | None): PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
         """
         if mirror is not None:
             logger.info(
@@ -2865,7 +3006,8 @@ class MirrorConfigManager:
     def set_pypi_extra_index_mirror(mirror: str | None = None) -> None:
         """设置 PyPI Extra Index 镜像源
 
-        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        Args:
+            mirror (str | None): PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
         """
         if mirror is not None:
             logger.info(
@@ -2884,7 +3026,8 @@ class MirrorConfigManager:
     def set_pypi_find_links_mirror(mirror: str | None = None) -> None:
         """设置 PyPI Find Links 镜像源
 
-        :param mirror`(str|None)`: PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        Args:
+            mirror (str | None): PyPI 镜像源链接, 当不传入镜像源链接时则清除镜像源
         """
         if mirror is not None:
             logger.info(
@@ -2906,46 +3049,47 @@ class MirrorConfigManager:
 
     @staticmethod
     def set_github_mirror(
-        mirror: str | list | None = None, config_path: Path | str = None
+        mirror: str | list[str] | None = None, config_path: Path | str = None
     ) -> None:
         """设置 Github 镜像源
 
-        :param mirror`(str|list|None)`: Github 镜像源地址
+        当`mirror`传入的是 Github 镜像源地址, 则直接设置 GIT_CONFIG_GLOBAL 环境变量并直接使用该镜像源地址
 
-        :notes
-            当`mirror`传入的是 Github 镜像源地址, 则直接设置 GIT_CONFIG_GLOBAL 环境变量并直接使用该镜像源地址
+        如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 GIT_CONFIG_GLOBAL 环境变量
 
-            如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 GIT_CONFIG_GLOBAL 环境变量
+        当不传入参数时则清除 GIT_CONFIG_GLOBAL 环境变量并删除 GIT_CONFIG_GLOBAL 环境变量对应的 Git 配置文件
 
-            当不传入参数时则清除 GIT_CONFIG_GLOBAL 环境变量并删除 GIT_CONFIG_GLOBAL 环境变量对应的 Git 配置文件
+        使用:
+        ```python
+        set_github_mirror() # 不传入参数时则清除 Github 镜像源
 
-            使用:
-            ```python
-            set_github_mirror() # 不传入参数时则清除 Github 镜像源
+        set_github_mirror("https://ghfast.top/https://github.com") # 只设置一个 Github 镜像源时将直接使用该 Github 镜像源
 
-            set_github_mirror("https://ghfast.top/https://github.com") # 只设置一个 Github 镜像源时将直接使用该 Github 镜像源
+        set_github_mirror( # 传入 Github 镜像源列表时将自动测试可用的 Github 镜像源并设置
+            [
+                "https://ghfast.top/https://github.com",
+                "https://mirror.ghproxy.com/https://github.com",
+                "https://ghproxy.net/https://github.com",
+                "https://gh.api.99988866.xyz/https://github.com",
+                "https://gh-proxy.com/https://github.com",
+                "https://ghps.cc/https://github.com",
+                "https://gh.idayer.com/https://github.com",
+                "https://ghproxy.1888866.xyz/github.com",
+                "https://slink.ltd/https://github.com",
+                "https://github.boki.moe/github.com",
+                "https://github.moeyy.xyz/https://github.com",
+                "https://gh-proxy.net/https://github.com",
+                "https://gh-proxy.ygxz.in/https://github.com",
+                "https://wget.la/https://github.com",
+                "https://kkgithub.com",
+                "https://gitclone.com/github.com",
+            ]
+        )
+        ```
 
-            set_github_mirror( # 传入 Github 镜像源列表时将自动测试可用的 Github 镜像源并设置
-                [
-                    "https://ghfast.top/https://github.com",
-                    "https://mirror.ghproxy.com/https://github.com",
-                    "https://ghproxy.net/https://github.com",
-                    "https://gh.api.99988866.xyz/https://github.com",
-                    "https://gh-proxy.com/https://github.com",
-                    "https://ghps.cc/https://github.com",
-                    "https://gh.idayer.com/https://github.com",
-                    "https://ghproxy.1888866.xyz/github.com",
-                    "https://slink.ltd/https://github.com",
-                    "https://github.boki.moe/github.com",
-                    "https://github.moeyy.xyz/https://github.com",
-                    "https://gh-proxy.net/https://github.com",
-                    "https://gh-proxy.ygxz.in/https://github.com",
-                    "https://wget.la/https://github.com",
-                    "https://kkgithub.com",
-                    "https://gitclone.com/github.com",
-                ]
-            )
-            ```
+        Args:
+            mirror (str | list[str] | None): Github 镜像源地址
+            config_path (Path | str): Git 配置文件路径
         """
         if mirror is None:
             logger.info("清除 GIT_CONFIG_GLOBAL 环境变量, 取消使用 Github 镜像源")
@@ -3025,7 +3169,8 @@ class MirrorConfigManager:
     def set_huggingface_mirror(mirror: str | None = None) -> None:
         """设置 HuggingFace 镜像源
 
-        :param mirror`(str|None)`: HuggingFace 镜像源链接, 当不传入镜像源链接时则清除镜像源
+        Args:
+            mirror (str | None): HuggingFace 镜像源链接, 当不传入镜像源链接时则清除镜像源
         """
         if mirror is not None:
             logger.info("使用 HF_ENDPOINT 环境变量设置 HuggingFace 镜像源")
@@ -3044,11 +3189,12 @@ class MirrorConfigManager:
     ) -> None:
         """镜像源设置
 
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
+        Args:
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
         """
         logger.info("配置镜像源中")
         MirrorConfigManager.set_pypi_index_mirror(pypi_index_mirror)
@@ -3081,8 +3227,9 @@ class TunnelManager:
     def __init__(self, workspace: Path | str, port: int) -> None:
         """内网穿透工具初始化
 
-        :param workspace`(Path|str)`: 工作区路径
-        :param port`(int)`: 要进行端口映射的端口
+        Args:
+            workspace (Path | str): 工作区路径
+            port (int): 要进行端口映射的端口
         """
         self.workspace = Path(workspace)
         self.port = port
@@ -3090,8 +3237,10 @@ class TunnelManager:
     def ngrok(self, ngrok_token: str | None = None) -> str | None:
         """使用 Ngrok 内网穿透
 
-        :param ngrok_token`(str)`: Ngrok 账号 Token
-        :return `str`: Ngrok 内网穿透生成的访问地址
+        Args:
+            ngrok_token (str | None): Ngrok 账号 Token
+        Returns:
+            (str | None): Ngrok 内网穿透生成的访问地址
         """
         if ngrok_token is None:
             logger.warning("缺少 Ngrok Token, 取消启动 Ngrok 内网穿透")
@@ -3125,7 +3274,8 @@ class TunnelManager:
     def cloudflare(self) -> str | None:
         """使用 CloudFlare 内网穿透
 
-        :return `str`: CloudFlare 内网穿透生成的访问地址
+        Returns:
+            (str | None): CloudFlare 内网穿透生成的访问地址
         """
         logger.info("启动 CloudFlare 内网穿透")
         try:
@@ -3149,7 +3299,8 @@ class TunnelManager:
     def gradio(self) -> str | None:
         """使用 Gradio 进行内网穿透
 
-        :return `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        Returns:
+            (str | None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 Gradio 内网穿透")
         try:
@@ -3178,8 +3329,10 @@ class TunnelManager:
     def gen_key(self, path: Path | str) -> bool:
         """生成 SSH 密钥
 
-        :param path`(str|Path)`: 生成 SSH 密钥的路径
-        :return `bool`: 生成成功时返回`True`
+        Args:
+            path (str | Path): 生成 SSH 密钥的路径
+        Returns:
+            bool: 生成成功时返回`True`
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         try:
@@ -3200,17 +3353,18 @@ class TunnelManager:
     ) -> str | None:
         """使用 SSH 进行内网穿透
 
-        :param launch_args`(list)`: 启动 SSH 内网穿透的参数
-        :param host_pattern`(re.Pattern[str])`: 用于匹配内网穿透地址的正则表达式
-        :param line_limit`(int)`: 内网穿透地址所在的输出行数
-        :return `str|None`: 内网穿透地址
-        :notes
-            基础 SSH 命令为: `ssh -o StrictHostKeyChecking=no -i <ssh_path>`
+        基础 SSH 命令为: `ssh -o StrictHostKeyChecking=no -i <ssh_path>`
+
+        Args:
+            launch_args (list): 启动 SSH 内网穿透的参数
+            host_pattern (re.Pattern[str]): 用于匹配内网穿透地址的正则表达式
+            line_limit (int): 内网穿透地址所在的输出行数
+        Returns:
+            (str | None): 内网穿透地址
         """
         ssh_name = "id_rsa"
         ssh_path = self.workspace / ssh_name
 
-        tmp = None
         if not ssh_path.exists():
             if not self.gen_key(ssh_path):
                 tmp = TemporaryDirectory()
@@ -3277,7 +3431,8 @@ class TunnelManager:
     def localhost_run(self) -> str | None:
         """使用 localhost.run 进行内网穿透
 
-        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        Returns:
+            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 localhost.run 内网穿透")
         urls = self.ssh_tunnel(
@@ -3294,7 +3449,8 @@ class TunnelManager:
     def remote_moe(self) -> str | None:
         """使用 remote.moe 进行内网穿透
 
-        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        Returns:
+            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 remote.moe 内网穿透")
         urls = self.ssh_tunnel(
@@ -3311,7 +3467,8 @@ class TunnelManager:
     def pinggy_io(self) -> str | None:
         """使用 pinggy.io 进行内网穿透
 
-        :param `(str|None)`: 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+        Returns:
+            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 pinggy.io 内网穿透")
         urls = self.ssh_tunnel(
@@ -3328,7 +3485,8 @@ class TunnelManager:
     def get_latest_zrok_release(self) -> list[str] | None:
         """获取最新的 Zrok 发行内容下载列表
 
-        :return `list[str]|None`: 获取到的发行版下载列表 (`[<文件名>, <下载链接>]`)
+        Returns:
+            (list[str] | None): 获取到的发行版下载列表 (`[<文件名>, <下载链接>]`)
         """
         import requests
 
@@ -3353,8 +3511,10 @@ class TunnelManager:
     ) -> tuple[str, str] | None:
         """获取适合当前平台的 Zrok 版本
 
-        :param packages`(list[str])`: 发行版下载列表
-        :return `tuple[str,str]|None`: 文件名和下载链接
+        Args:
+            packages (list[str]): 发行版下载列表
+        Returns:
+            (tuple[str, str] | None): 文件名和下载链接
         """
 
         def _get_current_platform_and_arch() -> tuple[str, str]:
@@ -3413,7 +3573,8 @@ class TunnelManager:
     def install_zrok(self) -> Path | None:
         """安装 Zrok
 
-        :return `Path|None`: Zrok 可执行文件路径, 安装失败时则返回`None`
+        Returns:
+            (Path | None): Zrok 可执行文件路径, 安装失败时则返回`None`
         """
         if sys.platform == "win32":
             bin_extension_name = ".exe"
@@ -3467,8 +3628,10 @@ class TunnelManager:
     def zrok(self, zrok_token: str | None = None) -> str | None:
         """启动 Zrok 内网穿透
 
-        :param zrok_token`(str|None)`: Zrok Token
-        :return `str|None`: Zrok 内网穿透地址
+        Args:
+            zrok_token (str | None): Zrok Token
+        Returns:
+            (str | None): Zrok 内网穿透地址
         """
         if zrok_token is None:
             logger.warning("缺少 Zrok Token, 取消启动 Zrok 内网穿透")
@@ -3564,17 +3727,19 @@ class TunnelManager:
     ) -> dict[str, str]:
         """启动内网穿透
 
-        :param use_ngrok`(bool|None)`: 启用 Ngrok 内网穿透
-        :param ngrok_token`(str|None)`: Ngrok 账号 Token
-        :param use_cloudflare`(bool|None)`: 启用 CloudFlare 内网穿透
-        :param use_remote_moe`(bool|None)`: 启用 remote.moe 内网穿透
-        :param use_localhost_run`(bool|None)`: 使用 localhost.run 内网穿透
-        :param use_gradio`(bool|None)`: 使用 Gradio 内网穿透
-        :param use_pinggy_io`(bool|None)`: 使用 pinggy.io 内网穿透
-        :param use_zrok`(bool|None)`: 使用 Zrok 内网穿透
-        :param zrok_token`(str|None)`: Zrok 账号 Token
-        :param message`(str|None)`: 描述信息
-        :return `dict[str,str]`: 内网穿透地址
+        Args:
+            use_ngrok (bool | None): 启用 Ngrok 内网穿透
+            ngrok_token (str | None): Ngrok 账号 Token
+            use_cloudflare (bool | None): 启用 CloudFlare 内网穿透
+            use_remote_moe (bool | None): 启用 remote.moe 内网穿透
+            use_localhost_run (bool | None): 使用 localhost.run 内网穿透
+            use_gradio (bool | None): 使用 Gradio 内网穿透
+            use_pinggy_io (bool | None): 使用 pinggy.io 内网穿透
+            use_zrok (bool | None): 使用 Zrok 内网穿透
+            zrok_token (str | None): Zrok 账号 Token
+            message (str | None): 描述信息
+        Returns:
+            (dict[str, str]): 内网穿透地址
         """
 
         if any(
@@ -3693,15 +3858,14 @@ class RequirementCheck:
     def parse_version(version_str: str) -> VersionComponent:
         """解释 Python 软件包版本号
 
-        参数:
-            version_str (`str`):
-                Python 软件包版本号
+        Args:
+            version_str (str): Python 软件包版本号
 
-        返回值:
-            `VersionComponent`: 版本组件的命名元组
+        Returns:
+            VersionComponent: 版本组件的命名元组
 
-        异常:
-            `ValueError`: 如果 Python 版本号不符合 PEP440 规范
+        Raises:
+            ValueError: 如果 Python 版本号不符合 PEP440 规范
         """
         # 检测并剥离通配符
         wildcard = version_str.endswith(".*") or version_str.endswith("*")
@@ -3737,14 +3901,12 @@ class RequirementCheck:
     def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
         """比较两个版本字符串 Python 软件包版本号
 
-        参数:
-            v1 (`VersionComponent`):
-                第 1 个 Python 版本号标识符组件
-            v2 (`VersionComponent`):
-                第 2 个 Python 版本号标识符组件
+        Args:
+            v1 (VersionComponent): 第 1 个 Python 版本号标识符组件
+            v2 (VersionComponent): 第 2 个 Python 版本号标识符组件
 
-        返回值:
-            `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
         """
 
         # 比较 epoch
@@ -3854,25 +4016,23 @@ class RequirementCheck:
     def compare_versions(version1: str, version2: str) -> int:
         """比较两个版本字符串 Python 软件包版本号
 
-        参数:
-            version1 (`str`):
-                版本号 1
-            version2 (`str`):
-                版本号 2
+        Args:
+            version1 (str): 版本号 1
+            version2 (str): 版本号 2
 
-        返回值:
-            `int`: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回`1`, 小于则返回`-1`, 如果相等则返回`0`
         """
         v1 = RequirementCheck.parse_version(version1)
         v2 = RequirementCheck.parse_version(version2)
         return RequirementCheck.compare_version_objects(v1, v2)
 
     @staticmethod
-    def compatible_version_matcher(spec_version: str):
+    def compatible_version_matcher(spec_version: str) -> Callable[[str], bool]:
         """PEP 440 兼容性版本匹配 (~= 操作符)
 
-        返回值:
-            `_is_compatible(version_str: str) -> bool`: 一个接受 version_str (`str`) 参数的判断函数
+        Returns:
+            (Callable[[str], bool]): 一个接受 version_str (`str`) 参数的判断函数
         """
         # 解析规范版本
         spec = RequirementCheck.parse_version(spec_version)
@@ -3915,12 +4075,12 @@ class RequirementCheck:
     def version_match(spec: str, version: str) -> bool:
         """PEP 440 版本前缀匹配
 
-        参数:
-            spec (`str`): 版本匹配表达式 (e.g. '1.1.*')
-            version (`str`): 需要检测的实际版本号 (e.g. '1.1a1')
+        Args:
+            spec (str): 版本匹配表达式 (e.g. '1.1.*')
+            version (str): 需要检测的实际版本号 (e.g. '1.1a1')
 
-        返回值:
-            `bool`: 是否匹配
+        Returns:
+            bool: 是否匹配
         """
         # 分离通配符和本地版本
         spec_parts = spec.split("+", 1)
@@ -3956,19 +4116,20 @@ class RequirementCheck:
     def is_v1_ge_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于或等于 v2
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号
+        例如:
+        ```
+        1.1, 1.0 -> True
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
 
-        返回值:
-            `bool`: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
-            e.g.:
-                1.1, 1.0 -> True
-                1.0, 1.0 -> True
-                0.9, 1.0 -> False
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号大于或等于 v2 版本号则返回`True`
         """
         return RequirementCheck.compare_versions(v1, v2) >= 0
 
@@ -3976,18 +4137,18 @@ class RequirementCheck:
     def is_v1_gt_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于 v2
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号
+        例如:
+        ```
+        1.1, 1.0 -> True
+        1.0, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
 
-        返回值:
-            `bool`: 如果 v1 版本号大于 v2 版本号则返回`True`
-            e.g.:
-                1.1, 1.0 -> True
-                1.0, 1.0 -> False
+        Returns:
+            bool: 如果 v1 版本号大于 v2 版本号则返回`True`
         """
         return RequirementCheck.compare_versions(v1, v2) > 0
 
@@ -3995,19 +4156,19 @@ class RequirementCheck:
     def is_v1_eq_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否等于 v2
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号
+        例如:
+        ```
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        1.1, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
 
-        返回值:
+        Returns:
             `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
-            e.g.:
-                1.0, 1.0 -> True
-                0.9, 1.0 -> False
-                1.1, 1.0 -> False
         """
         return RequirementCheck.compare_versions(v1, v2) == 0
 
@@ -4015,18 +4176,18 @@ class RequirementCheck:
     def is_v1_lt_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否小于 v2
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号
+        例如:
+        ```
+        0.9, 1.0 -> True
+        1.0, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
 
-        返回值:
-            `bool`: 如果 v1 版本号小于 v2 版本号则返回`True`
-            e.g.:
-                0.9, 1.0 -> True
-                1.0, 1.0 -> False
+        Returns:
+            bool: 如果 v1 版本号小于 v2 版本号则返回`True`
         """
         return RequirementCheck.compare_versions(v1, v2) < 0
 
@@ -4034,19 +4195,19 @@ class RequirementCheck:
     def is_v1_le_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否小于或等于 v2
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号
+        例如:
+        ```
+        0.9, 1.0 -> True
+        1.0, 1.0 -> True
+        1.1, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
 
-        返回值:
-            `bool`: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
-            e.g.:
-                0.9, 1.0 -> True
-                1.0, 1.0 -> True
-                1.1, 1.0 -> False
+        Returns:
+            bool: 如果 v1 版本号小于或等于 v2 版本号则返回`True`
         """
         return RequirementCheck.compare_versions(v1, v2) <= 0
 
@@ -4054,18 +4215,18 @@ class RequirementCheck:
     def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
         """查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
 
-        参数:
-            v1 (`str`):
-                第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
+        例如:
+        ```
+        1.0*, 1.0a1 -> True
+        0.9*, 1.0 -> False
+        ```
 
-            v2 (`str`):
-                第 2 个 Python 软件包版本号
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
+            v2 (str): 第 2 个 Python 软件包版本号
 
-        返回值:
-            `bool`: 如果 v1 版本号等于 v2 版本号则返回`True`
-            e.g.:
-                1.0*, 1.0a1 -> True
-                0.9*, 1.0 -> False
+        Returns:
+            bool: 如果 v1 版本号等于 v2 版本号则返回`True`
         """
         func = RequirementCheck.compatible_version_matcher(v1)
         return func(v2)
@@ -4074,13 +4235,10 @@ class RequirementCheck:
     def version_string_is_canonical(version: str) -> bool:
         """判断版本号标识符是否符合标准
 
-        参数:
-            version (`str`):
-                版本号字符串
-
-        返回值:
-            `bool`: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
-
+        Args:
+            version (str): 版本号字符串
+        Returns:
+            bool: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
         """
         return (
             re.match(
@@ -4094,12 +4252,11 @@ class RequirementCheck:
     def is_package_has_version(package: str) -> bool:
         """检查 Python 软件包是否指定版本号
 
-        参数:
-            package (`str`):
-                Python 软件包名
+        Args:
+            package (str): Python 软件包名
 
-        返回值:
-            `bool`: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
+        Returns:
+            bool: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
         """
         return package != (
             package.replace("===", "")
@@ -4116,12 +4273,11 @@ class RequirementCheck:
     def get_package_name(package: str) -> str:
         """获取 Python 软件包的包名, 去除末尾的版本声明
 
-        参数:
-            package (`str`):
-                Python 软件包名
+        Args:
+            package (str): Python 软件包名
 
-        返回值:
-            `str`: 返回去除版本声明后的 Python 软件包名
+        Returns:
+            str: 返回去除版本声明后的 Python 软件包名
         """
         return (
             package.split("===")[0]
@@ -4139,12 +4295,11 @@ class RequirementCheck:
     def get_package_version(package: str) -> str:
         """获取 Python 软件包的包版本号
 
-        参数:
-            package (`str`):
-                Python 软件包名
+        Args:
+            package (str): Python 软件包名
 
         返回值:
-            `str`: 返回 Python 软件包的包版本号
+            str: 返回 Python 软件包的包版本号
         """
         return (
             package.split("===")
@@ -4187,15 +4342,12 @@ class RequirementCheck:
     def parse_wheel_filename(filename: str) -> str:
         """解析 Python wheel 文件名并返回 distribution 名称
 
-        参数:
-            filename (`str`):
-                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-        返回值:
-            `str`: distribution 名称, 例如 pydantic
-
-        异常:
-            `ValueError`: 如果文件名不符合 PEP491 规范
+        Args:
+            filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        Returns:
+            str: distribution 名称, 例如 pydantic
+        Raises:
+            ValueError: 如果文件名不符合 PEP491 规范
         """
         match = re.fullmatch(RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
         if not match:
@@ -4207,15 +4359,12 @@ class RequirementCheck:
     def parse_wheel_version(filename: str) -> str:
         """解析 Python wheel 文件名并返回 version 名称
 
-        参数:
-            filename (`str`):
-                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-        返回值:
-            `str`: version 名称, 例如 1.10.15
-
-        异常:
-            `ValueError`: 如果文件名不符合 PEP491 规范
+        Args:
+            filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        Returns:
+            str: version 名称, 例如 1.10.15
+        Raises:
+            ValueError: 如果文件名不符合 PEP491 规范
         """
         match = re.fullmatch(RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
         if not match:
@@ -4227,12 +4376,11 @@ class RequirementCheck:
     def parse_wheel_to_package_name(filename: str) -> str:
         """解析 Python wheel 文件名并返回 <distribution>==<version>
 
-        参数:
-            filename (`str`):
-                wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        Args:
+            filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
-        返回值:
-            `str`: <distribution>==<version> 名称, 例如 pydantic==1.10.15
+        Returns:
+            str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
         """
         distribution = RequirementCheck.parse_wheel_filename(filename)
         version = RequirementCheck.parse_wheel_version(filename)
@@ -4242,60 +4390,59 @@ class RequirementCheck:
     def remove_optional_dependence_from_package(filename: str) -> str:
         """移除 Python 软件包声明中可选依赖
 
-        参数:
-            filename (`str`):
-                Python 软件包名
+        Args:
+            filename (str): Python 软件包名
 
-        返回值:
-            `str`: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
+        Returns:
+            str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
         """
         return re.sub(r"\[.*?\]", "", filename)
 
     @staticmethod
-    def parse_requirement_list(requirements: list) -> list:
+    def parse_requirement_list(requirements: list[str]) -> list[str]:
         """将 Python 软件包声明列表解析成标准 Python 软件包名列表
 
-        参数:
-            requirements (`list`):
-                Python 软件包名声明列表
-                e.g:
-                ```python
-                requirements = [
-                    'torch==2.3.0',
-                    'diffusers[torch]==0.10.2',
-                    'NUMPY',
-                    '-e .',
-                    '--index-url https://pypi.python.org/simple',
-                    '--extra-index-url https://download.pytorch.org/whl/cu124',
-                    '--find-links https://download.pytorch.org/whl/torch_stable.html',
-                    '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
-                    'git+https://github.com/WASasquatch/img2texture.git',
-                    'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
-                    'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
-                    'protobuf<5,>=4.25.3',
-                ]
-                ```
+        例如有以下的 Python 软件包声明列表:
+        ```python
+        requirements = [
+            'torch==2.3.0',
+            'diffusers[torch]==0.10.2',
+            'NUMPY',
+            '-e .',
+            '--index-url https://pypi.python.org/simple',
+            '--extra-index-url https://download.pytorch.org/whl/cu124',
+            '--find-links https://download.pytorch.org/whl/torch_stable.html',
+            '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
+            'git+https://github.com/WASasquatch/img2texture.git',
+            'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
+            'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
+            'protobuf<5,>=4.25.3',
+        ]
+        ```
 
-        返回值:
-            `list`: 将 Python 软件包名声明列表解析成标准声明列表
-            e.g. 上述例子中的软件包名声明列表将解析成:
-            ```python
-                requirements = [
-                    'torch==2.3.0',
-                    'diffusers==0.10.2',
-                    'numpy',
-                    'mgds',
-                    'img2texture',
-                    'pydantic==1.10.15',
-                    'prodigy-plus-schedule-free==1.9.1',
-                    'protobuf<5',
-                    'protobuf>=4.25.3',
-                ]
-                ```
+        上述例子中的软件包名声明列表将解析成:
+        ```python
+            requirements = [
+                'torch==2.3.0',
+                'diffusers==0.10.2',
+                'numpy',
+                'mgds',
+                'img2texture',
+                'pydantic==1.10.15',
+                'prodigy-plus-schedule-free==1.9.1',
+                'protobuf<5',
+                'protobuf>=4.25.3',
+            ]
+        ```
+
+        Args:
+            requirements (list[str]): Python 软件包名声明列表
+
+        Returns:
+            list[str]: 将 Python 软件包名声明列表解析成标准声明列表
         """
-        package_list = []
-        canonical_package_list = []
-        requirement: str
+        package_list: list[str] = []
+        canonical_package_list: list[str] = []
         for requirement in requirements:
             requirement = requirement.strip()
             logger.debug("原始 Python 软件包名: %s", requirement)
@@ -4369,7 +4516,7 @@ class RequirementCheck:
 
         # 处理包名大小写并统一成小写
         for p in package_list:
-            p: str = p.lower().strip()
+            p = p.lower().strip()
             logger.debug("预处理后的 Python 软件包名: %s", p)
             if not RequirementCheck.is_package_has_version(p):
                 logger.debug("%s 无版本声明", p)
@@ -4386,28 +4533,28 @@ class RequirementCheck:
         return canonical_package_list
 
     @staticmethod
-    def remove_duplicate_object_from_list(origin: list) -> list:
+    def remove_duplicate_object_from_list(origin: list[Any]) -> list[Any]:
         """对`list`进行去重
 
-        参数:
-            origin (`list`):
-                原始的`list`
+        例如: [1, 2, 3, 2] -> [1, 2, 3]
 
-        返回值:
-            `list`: 去重后的`list`, e.g. [1, 2, 3, 2] -> [1, 2, 3]
+        Args:
+            origin (list[Any]): 原始的`list`
+
+        Returns:
+            list[Any]: 去重后的`list`
         """
         return list(set(origin))
 
     @staticmethod
-    def read_packages_from_requirements_file(file_path: str | Path) -> list:
+    def read_packages_from_requirements_file(file_path: str | Path) -> list[str]:
         """从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
-        参数:
-            file_path (`str`, `Path`):
-                requirements.txt 文件路径
+        Args:
+            file_path (str | Path): requirements.txt 文件路径
 
-        返回值:
-            `list`: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+        Returns:
+            list[str]: 从 requirements.txt 文件中读取的 Python 软件包声明列表
         """
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -4420,11 +4567,11 @@ class RequirementCheck:
     def get_package_version_from_library(package_name: str) -> str | None:
         """获取已安装的 Python 软件包版本号
 
-        参数:
-            package_name (`str`):
+        Args:
+            package_name (str): Python 软件包名
 
-        返回值:
-            (`str` | `None`): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
+        Returns:
+            (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
         """
         try:
             ver = importlib.metadata.version(package_name)
@@ -4449,12 +4596,12 @@ class RequirementCheck:
     def is_package_installed(package: str) -> bool:
         """判断 Python 软件包是否已安装在环境中
 
-        参数:
-            package (`str`):
+        Args:
+            package (str):
                 Python 软件包名
 
-        返回值:
-            `bool`: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
+        Returns:
+            bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
         """
         # 分割 Python 软件包名和版本号
         if "===" in package:
@@ -4546,12 +4693,11 @@ class RequirementCheck:
     def validate_requirements(requirement_path: str | Path) -> bool:
         """检测环境依赖是否完整
 
-        参数:
-            requirement_path (`str`, `Path`):
-                依赖文件路径
+        Args:
+            requirement_path (str | Path): 依赖文件路径
 
-        返回值:
-            `bool`: 如果有缺失依赖则返回`False`
+        Returns:
+            bool: 如果有缺失依赖则返回`False`
         """
         origin_requires = RequirementCheck.read_packages_from_requirements_file(
             requirement_path
@@ -4571,9 +4717,10 @@ class RequirementCheck:
     ) -> None:
         """检测依赖完整性并安装缺失依赖
 
-        :param requirement_path`(Path|str)`: 依赖文件路径
-        :param name`(str|None)`: 显示的名称
-        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        Args:
+            requirement_path (Path | str): 依赖文件路径
+            name (str | None): 显示的名称
+            use_uv (bool | None): 是否使用 uv 安装依赖
         """
         if not os.path.exists(requirement_path):
             logger.error(f"未找到 {requirement_path} 文件, 无法检查依赖完整性")
@@ -4595,7 +4742,8 @@ class RequirementCheck:
     def check_numpy(use_uv: bool | None = True) -> None:
         """检查 Numpy 是否需要降级
 
-        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
+        Args:
+            use_uv (bool| None): 是否使用 uv 安装依赖
         """
         logger.info("检查 Numpy 是否需要降级")
         try:
@@ -4661,12 +4809,11 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> ComfyUIEnvironmentComponent:
         """创建 ComfyUI 环境组件表字典
 
-        参数:
-            comfyui_path (`str`, `Path`):
-                ComfyUI 根路径
+        Args:
+            comfyui_path (str | Path): ComfyUI 根路径
 
-        返回值:
-            `ComfyUIEnvironmentComponent`: ComfyUI 环境组件表字典
+        Returns:
+            ComfyUIEnvironmentComponent: ComfyUI 环境组件表字典
         """
         comfyui_env_data: ComfyUIEnvironmentComponent = {
             "ComfyUI": {
@@ -4721,33 +4868,16 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> None:
         """更新 ComfyUI 环境组件表字典
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
-
-            component_name (`str`):
-                ComfyUI 组件名称
-
-            requirement_path (`str`, `None`):
-                ComfyUI 组件依赖文件路径
-
-            is_disabled (`bool`, `None`):
-                ComfyUI 组件是否被禁用
-
-            requires (`list[str]`, `None`):
-                ComfyUI 组件需要的依赖列表
-
-            has_missing_requires (`bool`, `None`):
-                ComfyUI 组件是否存在缺失依赖
-
-            missing_requires (`list[str]`, `None`):
-                ComfyUI 组件缺失依赖列表
-
-            has_conflict_requires (`bool`, `None`):
-                ComfyUI 组件是否存在冲突依赖
-
-            conflict_requires (`list[str]`, `None`):
-                ComfyUI 组件冲突依赖列表
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+            component_name (str): ComfyUI 组件名称
+            requirement_path (str | None): ComfyUI 组件依赖文件路径
+            is_disabled (bool | None): ComfyUI 组件是否被禁用
+            requires (list[str] | None): ComfyUI 组件需要的依赖列表
+            has_missing_requires (bool | None): ComfyUI 组件是否存在缺失依赖
+            missing_requires (list[str] | None): ComfyUI 组件缺失依赖列表
+            has_conflict_requires (bool | None): ComfyUI 组件是否存在冲突依赖
+            conflict_requires (list[str] | None): ComfyUI 组件冲突依赖列表
         """
         env_data[component_name] = {
             "requirement_path": (
@@ -4791,9 +4921,8 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> None:
         """更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
         """
         for component_name, details in env_data.items():
             if details.get("is_disabled"):
@@ -4821,9 +4950,8 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> None:
         """更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
         """
         for component_name, details in env_data.items():
             if details.get("is_disabled"):
@@ -4847,16 +4975,13 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
     @staticmethod
     def update_comfyui_component_conflict_requires_list(
-        env_data: ComfyUIEnvironmentComponent, conflict_package_list: list
+        env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]
     ) -> None:
         """更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
-
-            conflict_package_list (`list`):
-                冲突的 Python 软件包列表
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+            conflict_package_list (list[str]): 冲突的 Python 软件包列表
         """
         for component_name, details in env_data.items():
             if details.get("is_disabled"):
@@ -4864,7 +4989,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
             requires = details.get("requires")
             has_conflict_requires = False
-            conflict_requires = []
+            conflict_requires: list[str] = []
 
             for conflict_package in conflict_package_list:
                 for package in requires:
@@ -4886,15 +5011,14 @@ class ComfyUIRequirementCheck(RequirementCheck):
     @staticmethod
     def get_comfyui_component_requires_list(
         env_data: ComfyUIEnvironmentComponent,
-    ) -> list:
+    ) -> list[str]:
         """从 ComfyUI 环境组件表字典读取所有组件的 requires
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-        返回值:
-            `list`: ComfyUI 环境组件的 Python 软件包列表
+        Returns:
+            list[str]: ComfyUI 环境组件的 Python 软件包列表
         """
         package_list = []
         for _, details in env_data.items():
@@ -4908,15 +5032,14 @@ class ComfyUIRequirementCheck(RequirementCheck):
     @staticmethod
     def statistical_need_install_require_component(
         env_data: ComfyUIEnvironmentComponent,
-    ) -> list:
+    ) -> list[str]:
         """根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-        返回值:
-            `list`: ComfyUI 环境组件的依赖文件路径列表
+        Returns:
+            list[str]: ComfyUI 环境组件的依赖文件路径列表
         """
         requirement_list = []
         for _, details in env_data.items():
@@ -4931,16 +5054,15 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
     @staticmethod
     def statistical_has_conflict_component(
-        env_data: ComfyUIEnvironmentComponent, conflict_package_list: list
-    ) -> list:
+        env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]
+    ) -> list[str]:
         """根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-        返回值:
-            `list`: ComfyUI 环境组件的依赖文件路径列表
+        Returns:
+            list[str]: ComfyUI 环境组件的依赖文件路径列表
         """
         content = []
         for conflict_package in conflict_package_list:
@@ -4962,15 +5084,14 @@ class ComfyUIRequirementCheck(RequirementCheck):
         return content[:-1] if len(content) > 0 and content[-1] == "" else content
 
     @staticmethod
-    def fitter_has_version_package(package_list: list) -> list:
+    def fitter_has_version_package(package_list: list[str]) -> list[str]:
         """过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
 
-        参数:
-            package_list (`list`):
-                Python 软件包列表
+        Args:
+            package_list (list[str]): Python 软件包列表
 
-        返回值:
-            `list`: 仅包含版本号的 Python 软件包列表
+        Returns:
+            list[str]: 仅包含版本号的 Python 软件包列表
         """
         return [
             p for p in package_list if ComfyUIRequirementCheck.is_package_has_version(p)
@@ -4980,15 +5101,12 @@ class ComfyUIRequirementCheck(RequirementCheck):
     def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
         """检测 Python 软件包版本号声明是否存在冲突
 
-        参数:
-            pkg1 (`str`):
-                第 1 个 Python 软件包名称
+        Args:
+            pkg1 (str): 第 1 个 Python 软件包名称
+            pkg2 (str): 第 2 个 Python 软件包名称
 
-            pkg2 (`str`):
-                第 2 个 Python 软件包名称
-
-        返回值:
-            `bool`: 如果 Python 软件包版本声明出现冲突则返回`True`
+        Returns:
+            bool: 如果 Python 软件包版本声明出现冲突则返回`True`
         """
         # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
         for i in range(2):
@@ -5149,15 +5267,14 @@ class ComfyUIRequirementCheck(RequirementCheck):
         return False
 
     @staticmethod
-    def detect_conflict_package_from_list(package_list: list) -> list:
+    def detect_conflict_package_from_list(package_list: list[str]) -> list[str]:
         """检测 Python 软件包版本声明列表中存在冲突的软件包
 
-        参数:
-            package_list (`list`):
-                Python 软件包版本声明列表
+        Args:
+            package_list (list[str]): Python 软件包版本声明列表
 
-        返回值:
-            `list`: 冲突的 Python 软件包列表
+        Returns:
+            list[str]: 冲突的 Python 软件包列表
         """
         conflict_package = []
         for i in package_list:
@@ -5179,9 +5296,8 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> None:
         """列出 ComfyUI 环境组件字典内容
 
-        参数:
-            env_data (`ComfyUIEnvironmentComponent`):
-                ComfyUI 环境组件表字典
+        Args:
+            env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
         """
         logger.debug("ComfyUI 环境组件表")
         for component_name, details in env_data.items():
@@ -5198,15 +5314,12 @@ class ComfyUIRequirementCheck(RequirementCheck):
             print()
 
     @staticmethod
-    def display_check_result(requirement_list: list, conflict_result: list) -> None:
+    def display_check_result(requirement_list: list[str], conflict_result: list[str]) -> None:
         """显示 ComfyUI 运行环境检查结果
 
-        参数:
-            requirement_list (`list`):
-                ComfyUI 组件依赖文件路径列表
-
-            conflict_result (`list`):
-                冲突组件统计信息
+        Args:
+            requirement_list (list[str]): ComfyUI 组件依赖文件路径列表
+            conflict_result (list[str]): 冲突组件统计信息
         """
         if len(requirement_list) > 0:
             logger.debug("需要安装 ComfyUI 组件列表")
@@ -5231,10 +5344,11 @@ class ComfyUIRequirementCheck(RequirementCheck):
     ) -> None:
         """检查并安装 ComfyUI 的依赖环境
 
-        :param comfyui_root_path`(Path|str)`: ComfyUI 根目录
-        :param install_conflict_component_requirement`(bool|None)`: 检测到冲突依赖时是否按顺序安装组件依赖
-        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
-        :param debug_mode`(bool|None)`: 显示调试信息
+        Args:
+            comfyui_root_path (Path | str): ComfyUI 根目录
+            install_conflict_component_requirement (bool | None): 检测到冲突依赖时是否按顺序安装组件依赖
+            use_uv (bool | None): 是否使用 uv 安装依赖
+            debug_mode (bool | None): 显示调试信息
         """
         if not os.path.exists(os.path.join(comfyui_root_path, "requirements.txt")):
             logger.error("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
@@ -5321,7 +5435,8 @@ class OnnxRuntimeGPUCheck:
     def get_onnxruntime_version_file() -> Path | None:
         """获取记录 onnxruntime 版本的文件路径
 
-        :return Path | None: 记录 onnxruntime 版本的文件路径
+        Returns:
+            (Path | None): 记录 onnxruntime 版本的文件路径
         """
         package = "onnxruntime-gpu"
         version_file = "onnxruntime/capi/version_info.py"
@@ -5339,7 +5454,8 @@ class OnnxRuntimeGPUCheck:
     def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
         """获取 onnxruntime 支持的 CUDA, cuDNN 版本
 
-        :return tuple[str | None, str | None]: onnxruntime 支持的 CUDA, cuDNN 版本
+        Returns:
+            (tuple[str | None, str | None]): onnxruntime 支持的 CUDA, cuDNN 版本
         """
         ver_path = OnnxRuntimeGPUCheck.get_onnxruntime_version_file()
         cuda_ver = None
@@ -5364,9 +5480,11 @@ class OnnxRuntimeGPUCheck:
     def get_value_from_variable(content: str, var_name: str) -> str | None:
         """从字符串 (Python 代码片段) 中找出指定字符串变量的值
 
-        :param content(str): 待查找的内容
-        :param var_name(str): 待查找的字符串变量
-        :return str | None: 返回字符串变量的值
+        Args:
+            content (str): 待查找的内容
+            var_name (str): 待查找的字符串变量
+        Returns:
+            (str | None): 返回字符串变量的值
         """
         pattern = rf'{var_name}\s*=\s*"([^"]+)"'
         match = re.search(pattern, content)
@@ -5376,7 +5494,8 @@ class OnnxRuntimeGPUCheck:
     def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         """获取 Torch 的本体, CUDA, cuDNN 版本
 
-        :return tuple[str | None, str | None, str | None]: Torch, CUDA, cuDNN 版本
+        Returns:
+            (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
         """
         try:
             import torch
@@ -5396,8 +5515,10 @@ class OnnxRuntimeGPUCheck:
     def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         """判断需要安装的 onnxruntime 版本
 
-        :param ignore_ort_install(bool): 当 onnxruntime 未安装时跳过检查
-        :return OrtType: 需要安装的 onnxruntime-gpu 类型
+        Args:
+            ignore_ort_install (bool): 当 onnxruntime 未安装时跳过检查
+        Returns:
+            OrtType: 需要安装的 onnxruntime-gpu 类型
         """
         # 检测是否安装了 Torch
         torch_ver, cuda_ver, cuddn_ver = OnnxRuntimeGPUCheck.get_torch_cuda_ver()
@@ -5500,8 +5621,9 @@ class OnnxRuntimeGPUCheck:
     ):
         """检查并修复 Onnxruntime GPU 版本问题
 
-        :param use_uv`(bool|None)`: 是否使用 uv 安装依赖
-        :param ignore_ort_install`(bool|None)`: 当 onnxruntime 未安装时跳过检查
+        Args:
+            use_uv (bool | None): 是否使用 uv 安装依赖
+            ignore_ort_install (bool | None): 当 onnxruntime 未安装时跳过检查
         """
         logger.info("检查 Onnxruntime GPU 版本问题中")
         ver = OnnxRuntimeGPUCheck.need_install_ort_ver(ignore_ort_install)
@@ -5577,7 +5699,12 @@ class CUDAMalloc:
     """配置 CUDA Malloc 内存优化"""
 
     @staticmethod
-    def get_gpu_names():
+    def get_gpu_names() -> set[str]:
+        """获取 GPU 的列表
+
+        Returns:
+            set[str]: GPU 名称列表
+        """
         if os.name == "nt":
             import ctypes
 
@@ -5665,7 +5792,12 @@ class CUDAMalloc:
     gpu_keywords = ["NVIDIA", "GeForce", "Tesla", "Quadro"]
 
     @staticmethod
-    def cuda_malloc_supported():
+    def cuda_malloc_supported() -> bool:
+        """检查是否有支持 CUDA Malloc 的 GPU
+
+        Returns:
+            bool: 有支持 CUDA Malloc 的 GPU 时返回 True
+        """
         try:
             names = CUDAMalloc.get_gpu_names()
         except Exception as _:
@@ -5679,6 +5811,11 @@ class CUDAMalloc:
 
     @staticmethod
     def is_nvidia_device():
+        """检查 GPU 是否为 Nvidia 的 GPU
+
+        Returns:
+            bool: 当 GPU 为 Nvidia 的 GPU 时返回 True
+        """
         try:
             names = CUDAMalloc.get_gpu_names()
         except Exception as _:
@@ -5689,7 +5826,15 @@ class CUDAMalloc:
         return False
 
     @staticmethod
-    def get_pytorch_cuda_alloc_conf(is_cuda=True):
+    def get_pytorch_cuda_alloc_conf(is_cuda: bool | None = True) -> str | None:
+        """获取用于配置 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量的配置
+
+        Args:
+            is_cuda (bool | None): 是否为 CUDA 设备
+
+        Returns:
+            (str | None): CUDA Malloc 配置
+        """
         if CUDAMalloc.is_nvidia_device():
             if CUDAMalloc.cuda_malloc_supported():
                 if is_cuda:
@@ -5702,7 +5847,8 @@ class CUDAMalloc:
             return None
 
     @staticmethod
-    def set_cuda_malloc():
+    def set_cuda_malloc() -> None:
+        """配置 CUDA Malloc 内存优化, 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量进行配置"""
         try:
             version = ""
             torch_spec = importlib.util.find_spec("torch")
@@ -5749,7 +5895,8 @@ class TCMalloc:
     def __init__(self, workspace: str | Path) -> None:
         """TCMalloc 配置工具初始化
 
-        :param workspace`(str|Path)`: 工作区路径
+        Args:
+            workspace (str | Path): 工作区路径
         """
         self.workspace = Path(workspace)
         self.tcmalloc_has_configure = False
@@ -5757,7 +5904,8 @@ class TCMalloc:
     def configure_tcmalloc_common(self) -> bool:
         """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
 
-        :return `bool`: 配置成功时返回`True`
+        Args:
+            bool: 配置成功时返回`True`
         """
         # 检查 glibc 版本
         try:
@@ -5865,7 +6013,8 @@ class TCMalloc:
     def configure_tcmalloc_colab(self) -> bool:
         """配置 TCMalloc (Colab)
 
-        :return `bool`: 配置结果
+        Returns:
+            bool: TCMalloc (Colab) 配置结果
         """
         logger.info("配置 TCMalloc 内存优化")
         url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
@@ -5889,7 +6038,8 @@ class TCMalloc:
     def configure_tcmalloc(self) -> bool:
         """配置 TCMalloc
 
-        :return `bool`: TCMalloc 配置结果
+        Returns:
+            bool: TCMalloc 配置结果
         """
         if self.tcmalloc_has_configure:
             logger.info("TCMalloc 内存优化已配置")
@@ -5922,11 +6072,12 @@ class BaseManager:
     ) -> None:
         """管理工具初始化
 
-        :param workspace`(str|Path)`: 工作区路径
-        :param workfolder`(str)`: 工作区的文件夹名称
-        :param hf_token`(str|None)`: HuggingFace Token
-        :param ms_token`(str|None)`: ModelScope Token
-        :param port`(int|None)`: 内网穿透端口
+        Args:
+            workspace (str | Path): 工作区路径
+            workfolder (str): 工作区的文件夹名称
+            hf_token (str | None): HuggingFace Token
+            ms_token (str | None): ModelScope Token
+            port (int | None): 内网穿透端口
         """
         self.workspace = Path(workspace)
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -5955,8 +6106,9 @@ class BaseManager:
     ) -> None:
         """重新初始化 HuggingFace / ModelScope 仓库管理工具
 
-        :param hf_token`(str|None)`: HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
-        :param ms_token`(str|None)`: ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
+        Args:
+            hf_token (str | None): HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
+            ms_token (str | None): ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
         logger.info("重启 HuggingFace / ModelScope 仓库管理模块")
         self.repo = RepoManager(
@@ -5974,11 +6126,14 @@ class BaseManager:
     ) -> Path | None:
         """下载模型文件到本地中
 
-        :param url`(str)`: 模型文件的下载链接
-        :param path`(str|Path)`: 模型文件下载到本地的路径
-        :param filename`(str)`: 指定下载的模型文件名称
-        :param retry`(int)`: 重试下载的次数, 默认为 3
-        :return `Path`: 文件保存路径
+        Args:
+            url (str): 模型文件的下载链接
+            path (str | Path): 模型文件下载到本地的路径
+            filename (str | None): 指定下载的模型文件名称
+            tool (Literal["aria2", "request"]): 下载工具
+            retry (int | None): 重试下载的次数, 默认为 3
+        Returns:
+            (Path | None): 文件保存路径
         """
         return self.downloader.download_file(
             url=url, path=path, save_name=filename, tool=tool, retry=retry
@@ -5989,26 +6144,26 @@ class BaseManager:
     ) -> None:
         """从模型列表下载模型
 
-        :param path`(str|Path)`: 将模型下载到的本地路径
-        :param model_list`(list[str|int])`: 模型列表
-        :param retry`(int|None)`: 重试下载的次数, 默认为 3
+        `model_list`需要指定模型下载的链接和下载状态, 例如
+        ```python
+        model_list = [
+            ["url1", 0],
+            ["url2", 1],
+            ["url3", 0],
+            ["url4", 1, "file.safetensors"]
+        ]
+        ```
 
-        :notes
-            `model_list`需要指定模型下载的链接和下载状态, 例如
-            ```python
-            model_list = [
-                ["url1", 0],
-                ["url2", 1],
-                ["url3", 0],
-                ["url4", 1, "file.safetensors"]
-            ]
-            ```
+        在这个例子中, 第一个参数指定了模型的下载链接, 第二个参数设置了是否要下载这个模型, 当这个值为 1 时则下载该模型
 
-            在这个例子中, 第一个参数指定了模型的下载链接, 第二个参数设置了是否要下载这个模型, 当这个值为 1 时则下载该模型
+        第三个参数是可选参数, 用于指定下载到本地后的文件名称
 
-            第三个参数是可选参数, 用于指定下载到本地后的文件名称
+        则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
 
-            则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
+        Args:
+            path (str | Path): 将模型下载到的本地路径
+            model_list (list[str | int]): 模型列表
+            retry (int | None): 重试下载的次数, 默认为 3
         """
         for model in model_list:
             try:
@@ -6027,8 +6182,10 @@ class BaseManager:
     def check_avaliable_gpu(self) -> bool:
         """检测当前环境是否有 GPU
 
-        :return `bool`: 环境有可用 GPU 时返回`True`
-        :raise `Exception`: 环境中无 GPU 时引发错误
+        Returns:
+            bool: 环境有可用 GPU 时返回`True`
+        Raises:
+            Exception: 环境中无 GPU 时引发错误
         """
         if not self.utils.check_gpu():
             if self.utils.is_colab_environment():
@@ -6050,8 +6207,9 @@ class SDScriptsManager(BaseManager):
     ) -> None:
         """从 Kaggle Input 文件夹中导入文件
 
-        :param kaggle_input_path`(Path|str)`: Kaggle Input 路径
-        :param output_path`(Path|str)`: 导出文件的路径
+        Args:
+            kaggle_input_path (Path | str): Kaggle Input 路径
+            output_path (Path|str): 导出文件的路径
         """
         kaggle_input_path = (
             Path(kaggle_input_path)
@@ -6086,10 +6244,11 @@ class SDScriptsManager(BaseManager):
     ) -> None:
         """列出模型文件夹和数据集文件夹的文件列表
 
-        :param model_path`(Path|str|None)`: 要展示的路径
-        :param dataset_path`(Path|str|None)`: 要展示的路径
-        :param recursive`(bool|None)`: 递归显示子目录的内容
-        :param show_hidden`(bool|None)`: 显示隐藏文件
+        Args:
+            model_path (Path | str | None): 要展示的路径
+            dataset_path (Path | str | None): 要展示的路径
+            recursive (bool | None): 递归显示子目录的内容
+            show_hidden (bool | None)`: 显示隐藏文件
         """
         model_path = (
             Path(model_path)
@@ -6128,8 +6287,9 @@ class SDScriptsManager(BaseManager):
     ) -> None:
         """检查 sd-scripts 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
-        :param requirements_file`(str|None)`: 依赖文件名
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
+            requirements_file (str | None): 依赖文件名
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
@@ -6173,41 +6333,48 @@ class SDScriptsManager(BaseManager):
     ) -> None:
         """安装 sd-scripts 和其余环境
 
-        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
-        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
-        :param git_branch`(str|None)`: 指定要切换 sd-scripts 的分支
-        :param git_commit`(str|None)`: 指定要切换到 sd-scripts 的提交记录
-        :param model_path`(str|Path|None)`: 指定模型下载的路径
-        :param model_list`(list[str|int]|None)`: 模型下载列表
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
-        :param sd_scripts_repo`(str|None)`: sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
-        :param sd_scripts_requirements`(str|None)`: sd-scripts 的依赖文件名, 未指定时默认为`requirements.txt`
-        :param retry`(int|None)`: 设置下载模型失败时重试次数
-        :param huggingface_token`(str|None)`: 配置 HuggingFace Token
-        :param modelscope_tokenn`(str|None)`: 配置 ModelScope Token
-        :param wandb_token`(str|None)`: 配置 WandB Token
-        :param git_username`(str|None)`: Git 用户名
-        :param git_email`(str|None)`: Git 邮箱
-        :param check_avaliable_gpu`(bool|None)`: 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
-        :notes
-            self.install() 将会以下几件事
-            1. 配置 PyPI / Github / HuggingFace 镜像源
-            2. 配置 Pip / uv
-            3. 安装管理工具自身依赖
-            4. 安装 sd-scripts
-            5. 安装 PyTorch / xFormers
-            6. 安装 sd-scripts 的依赖
-            7. 下载模型
-            8. 配置 HuggingFace / ModelScope / WandB Token 环境变量
-            9. 配置其他工具
+        配置并安装 sd-scripts 及其相关依赖环境, 包括 PyTorch、xFormers 等, 并可选择性下载模型文件.
+
+        SDScriptsManager.install() 将会以下几件事
+        ```
+        1. 配置 PyPI / Github / HuggingFace 镜像源
+        2. 配置 Pip / uv
+        3. 安装管理工具自身依赖
+        4. 安装 sd-scripts
+        5. 安装 PyTorch / xFormers
+        6. 安装 sd-scripts 的依赖
+        7. 下载模型
+        8. 配置 HuggingFace / ModelScope / WandB Token 环境变量
+        9. 配置其他工具
+        ```
+
+        Args:
+            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            git_branch (str | None): 指定要切换 sd-scripts 的分支
+            git_commit (str | None): 指定要切换到 sd-scripts 的提交记录
+            model_path (str | Path | None): 指定模型下载的路径
+            model_list (list[str, int] | None): 模型下载列表
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror (str | None): PyTorch 镜像源链接
+            sd_scripts_repo (str | None): sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
+            sd_scripts_requirements (str | None): sd-scripts 的依赖文件名, 未指定时默认为 requirements.txt
+            retry (int | None): 设置下载模型失败时重试次数
+            huggingface_token (str | None): 配置 HuggingFace Token
+            modelscope_token (str | None): 配置 ModelScope Token
+            wandb_token (str | None): 配置 WandB Token
+            git_username (str | None): Git 用户名
+            git_email (str | None): Git 邮箱
+            check_avaliable_gpu (bool | None): 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
+            enable_tcmalloc (bool | None): 启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="SDScriptsManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -6308,24 +6475,24 @@ class FooocusManager(BaseManager):
     ) -> None:
         """挂载 Google Drive 并创建 Fooocus 输出文件夹
 
-        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+        挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
 
-        :notes
-            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+        相对路径的起始位置为`{self.workspace}/{self.workfolder}`
 
-            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+        若额外链接路径为文件, 需指定`is_file`属性为`True`
 
-            若额外链接路径为文件, 需指定`is_file`属性为`True`
+        例如:
+        ```python
+        extras = [
+            {"link_dir": "models/loras"},
+            {"link_dir": "custom_nodes"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
+        ```
+        默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
 
-            例如:
-            ```python
-            extras = [
-                {"link_dir": "models/loras"},
-                {"link_dir": "custom_nodes"},
-                {"link_dir": "extra_model_paths.yaml", "is_file": True},
-            ]
-            ```
-            默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
+        Args:
+            extras (list[dict[str, str | bool]]): 挂载额外目录
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -6373,10 +6540,12 @@ class FooocusManager(BaseManager):
     ) -> Path | None:
         """下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        :param model_type`(str|None)`: 模型的类型
-        :return `Path|None`: 模型保存路径
+        Args:
+            url (str): 模型的下载链接
+            filename (str | None): 模型下载后保存的名称
+            model_type (str | None): 模型的类型
+        Returns:
+            (Path | None): 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -6387,18 +6556,18 @@ class FooocusManager(BaseManager):
     ) -> None:
         """从模型列表下载模型
 
-        :param model_list`(list[str|int])`: 模型列表
+        `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
+        ```python
+        model_list = [
+            {"url": "url1", "type": "checkpoints"},
+            {"url": "url2", "filename": "file.safetensors"},
+            {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
+            {"url": "url4"},
+        ]
+        ```
 
-        :notes
-            `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
-            ```python
-            model_list = [
-                {"url": "url1", "type": "checkpoints"},
-                {"url": "url2", "filename": "file.safetensors"},
-                {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
-                {"url": "url4"},
-            ]
-            ```
+        Args:
+            model_list (list[str|int]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -6413,9 +6582,10 @@ class FooocusManager(BaseManager):
     ) -> None:
         """下载 Fooocus 配置文件
 
-        :param preset`(str|None)`: Fooocus 预设文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/presets/custom.json`
-        :param path_config`(str|None)`: Fooocus 路径配置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.txt`
-        :param translation`(str|None)`: Fooocus 翻译文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/language/zh.json`
+        Args:
+            preset (str | None): Fooocus 预设文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/presets/custom.json`
+            path_config (str | None): Fooocus 路径配置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.txt`
+            translation (str | None): Fooocus 翻译文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/language/zh.json`
         """
         path = self.workspace / self.workfolder
         preset_path = path / "presets"
@@ -6438,9 +6608,10 @@ class FooocusManager(BaseManager):
     ) -> None:
         """根据 Fooocus 配置文件预下载模型
 
-        :param path`(str|Path)`: Fooocus 配置文件路径
-        :param thread_num`(int|None)`: 下载模型的线程数
-        :param downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的下载器 (`aria2`, `request`, `mix`)
+        Args:
+            path (str | Path): Fooocus 配置文件路径
+            thread_num (int | None): 下载模型的线程数
+            downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的下载器 (`aria2`, `request`, `mix`)
         """
         path = Path(path) if not isinstance(path, Path) and path is not None else path
         if path.exists():
@@ -6484,7 +6655,7 @@ class FooocusManager(BaseManager):
         vae_path = fooocus_path / "models" / "vae"
         embedding_path = fooocus_path / "models" / "embeddings"
 
-        downloader_params = []
+        downloader_params: list[dict[str, Any]] = []
         downloader_params += [
             {
                 "url": sd_model_list.get(i),
@@ -6536,8 +6707,9 @@ class FooocusManager(BaseManager):
     ) -> None:
         """检查 Fooocus 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
-        :param requirements_file`(str|None)`: 依赖文件名
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
+            requirements_file (str | None): 依赖文件名
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
@@ -6575,24 +6747,27 @@ class FooocusManager(BaseManager):
     ) -> None:
         """安装 Fooocus
 
-        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
-        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
-        :param fooocus_repo`(str|None)`: Fooocus 仓库地址
-        :param fooocus_requirements`(str|None)`: Fooocus 依赖文件名
-        :param fooocus_preset`(str|None)`: Fooocus 预设文件下载链接
-        :param fooocus_translation`(str|None)`: Fooocus 翻译文件下载地址
-        :param model_downloader`(Literal["aria2","request","mix"])`: 预下载模型时使用的模型下载器
-        :param download_model_thread`(int|None)`: 预下载模型的线程
-        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        Args:
+            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror (str | None): PyTorch 镜像源链接
+            fooocus_repo (str | None): Fooocus 仓库地址
+            fooocus_requirements (str | None): Fooocus 依赖文件名
+            fooocus_preset (str | None): Fooocus 预设文件下载链接
+            fooocus_translation (str | None): Fooocus 翻译文件下载地址
+            model_downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的模型下载器
+            download_model_thread (int | None): 预下载模型的线程
+            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="FooocusManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -6678,11 +6853,12 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """管理工具初始化
 
-        :param workspace`(str|Path)`: 工作区路径
-        :param workfolder`(str)`: 工作区的文件夹名称
-        :param hf_token`(str|None)`: HuggingFace Token
-        :param ms_token`(str|None)`: ModelScope Token
-        :param port`(int|None)`: 内网穿透端口
+        Args:
+            workspace (str | Path): 工作区路径
+            workfolder (str): 工作区的文件夹名称
+            hf_token (str | None): HuggingFace Token
+            ms_token (str | None): ModelScope Token
+            port (int | None): 内网穿透端口
         """
         super().__init__(
             workspace=workspace,
@@ -6699,24 +6875,24 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """挂载 Google Drive 并创建 ComfyUI 输出文件夹
 
-        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+        挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
 
-        :notes
-            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+        相对路径的起始位置为`{self.workspace}/{self.workfolder}`
 
-            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+        若额外链接路径为文件, 需指定`is_file`属性为`True`
 
-            若额外链接路径为文件, 需指定`is_file`属性为`True`
+        例如:
+        ```python
+        extras = [
+            {"link_dir": "models/loras"},
+            {"link_dir": "custom_nodes"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
+        ```
+        默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
 
-            例如:
-            ```python
-            extras = [
-                {"link_dir": "models/loras"},
-                {"link_dir": "custom_nodes"},
-                {"link_dir": "extra_model_paths.yaml", "is_file": True},
-            ]
-            ```
-            默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
+        Args:
+            extras (list[dict[str, str | bool]]): 挂载额外目录
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -6763,10 +6939,12 @@ class ComfyUIManager(BaseManager):
     ) -> Path | None:
         """下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        :param model_type`(str|None)`: 模型的类型
-        :return `Path|None`: 模型保存路径
+        Args:
+            url (str): 模型的下载链接
+            filename (str | None): 模型下载后保存的名称
+            model_type (str | None): 模型的类型
+        Returns:
+            Path | None: 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -6777,18 +6955,18 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """从模型列表下载模型
 
-        :param model_list`(list[str|int])`: 模型列表
+        `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
+        ```python
+        model_list = [
+            {"url": "url1", "type": "checkpoints"},
+            {"url": "url2", "filename": "file.safetensors"},
+            {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
+            {"url": "url4"},
+        ]
+        ```
 
-        :notes
-            `model_list`需要指定`url`(模型下载链接), 可选参数为`type`(模型类型), `filename`(模型保存名称), 例如
-            ```python
-            model_list = [
-                {"url": "url1", "type": "checkpoints"},
-                {"url": "url2", "filename": "file.safetensors"},
-                {"url": "url3", "type": "loras", "filename": "lora1.safetensors"},
-                {"url": "url4"},
-            ]
-            ```
+        Args:
+            model_list (list[dict[str]]): 模型列表
         """
         for model in model_list:
             url = model.get("url")
@@ -6802,7 +6980,8 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """下载 ComfyUI 配置文件
 
-        :param setting`(str|None)`: ComfyUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/user/default/comfy.settings.json`
+        Args:
+            setting ( str| None): ComfyUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/user/default/comfy.settings.json`
         """
         setting_path = self.workspace / self.workfolder / "user" / "default"
         logger.info("下载配置文件")
@@ -6820,8 +6999,10 @@ class ComfyUIManager(BaseManager):
     ) -> Path | None:
         """安装 ComfyUI 自定义节点
 
-        :param custom_node`(str)`: 自定义节点下载地址
-        :return `Path|None`: 自定义节点安装路径
+        Args:
+            custom_node (str): 自定义节点下载地址
+        Returns:
+            (Path | None): 自定义节点安装路径
         """
         custom_node_path = self.workspace / self.workfolder / "custom_nodes"
         name = os.path.basename(custom_node)
@@ -6840,7 +7021,8 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """安装 ComfyUI 自定义节点
 
-        :param custom_node_list`(list[str])`: 自定义节点列表
+        Args:
+            custom_node_list (list[str]): 自定义节点列表
         """
         logger.info("安装 ComfyUI 自定义节点中")
         for node in custom_node_list:
@@ -6870,9 +7052,10 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """检查 ComfyUI 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
-        :param install_conflict_component_requirement`(bool|None)`: 检测到冲突依赖时是否按顺序安装组件依赖
-        :param requirements_file`(str|None)`: 依赖文件名
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
+            install_conflict_component_requirement (bool | None): 检测到冲突依赖时是否按顺序安装组件依赖
+            requirements_file (str | None): 依赖文件名
         """
         comfyui_path = self.workspace / self.workfolder
         requirement_path = comfyui_path / requirements_file
@@ -6912,23 +7095,26 @@ class ComfyUIManager(BaseManager):
     ) -> None:
         """安装 ComfyUI
 
-        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
-        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
-        :param comfyui_repo`(str|None)`: ComfyUI 仓库地址
-        :param comfyui_requirements`(str|None)`: ComfyUI 依赖文件名
-        :param comfyui_setting`(str|None)`: ComfyUI 设置文件下载链接
-        :param custom_node_list`(list[str])`: 自定义节点列表
-        :param model_list`(list[dict[str,str]])`: 模型下载列表
-        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        Args:
+            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror (str | None): PyTorch 镜像源链接
+            comfyui_repo (str | None): ComfyUI 仓库地址
+            comfyui_requirements (str | None): ComfyUI 依赖文件名
+            comfyui_setting (str | None): ComfyUI 设置文件下载链接
+            custom_node_list (list[str] | None): 自定义节点列表
+            model_list (list[dict[str, str]] | None): 模型下载列表
+            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="ComfyUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -6996,24 +7182,24 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """挂载 Google Drive 并创建 Stable Diffusion WebUI 输出文件夹
 
-        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+        挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
 
-        :notes
-            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+        相对路径的起始位置为`{self.workspace}/{self.workfolder}`
 
-            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+        若额外链接路径为文件, 需指定`is_file`属性为`True`
 
-            若额外链接路径为文件, 需指定`is_file`属性为`True`
+        例如:
+        ```python
+        extras = [
+            {"link_dir": "models/loras"},
+            {"link_dir": "custom_nodes"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
+        ```
+        默认挂载的目录和文件: `outputs`, `config_states`, `params.txt`, `config.json`, `ui-config.json`, `styles.csv`
 
-            例如:
-            ```python
-            extras = [
-                {"link_dir": "models/loras"},
-                {"link_dir": "custom_nodes"},
-                {"link_dir": "extra_model_paths.yaml", "is_file": True},
-            ]
-            ```
-            默认挂载的目录和文件: `outputs`, `config_states`, `params.txt`, `config.json`, `ui-config.json`, `styles.csv`
+        Args:
+            extras (list[dict[str, str | bool]]): 挂载额外目录
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -7062,10 +7248,12 @@ class SDWebUIManager(BaseManager):
     ) -> Path | None:
         """下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        :param model_type`(str|None)`: 模型的类型
-        :return `Path|None`: 模型保存路径
+        Args:
+            url (str): 模型的下载链接
+            filename (str | None): 模型下载后保存的名称
+            model_type (str | None): 模型的类型
+        Returns:
+            (Path | None): 模型保存路径
         """
         if model_type == "embeddings":
             path = self.workspace / self.workfolder / model_type
@@ -7106,9 +7294,10 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """下载 Stable Diffusion WebUI 配置文件
 
-        :param setting`(str|None)`: Stable Diffusion WebUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.json`
-        :param requirements`(str|None)`: Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/{requirements_file}`
-        :param requirements_file`(str|None)`: Stable Diffusion WebUI 依赖表文件名
+        Args:
+            setting (str | None): Stable Diffusion WebUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.json`
+            requirements (str | None): Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/{requirements_file}`
+            requirements_file (str | None): Stable Diffusion WebUI 依赖表文件名
         """
         setting_path = self.workspace / self.workfolder
         logger.info("下载配置文件")
@@ -7134,8 +7323,10 @@ class SDWebUIManager(BaseManager):
     ) -> Path | None:
         """安装 Stable Diffusion WebUI 扩展
 
-        :param extension`(str)`: 扩展下载地址
-        :return `Path|None`: 扩展安装路径
+        Args:
+            extension (str): 扩展下载地址
+        Returns:
+            (Path | None): 扩展安装路径
         """
         extension_path = self.workspace / self.workfolder / "extensions"
         name = os.path.basename(extension)
@@ -7154,7 +7345,8 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """安装 Stable Diffusion WebUI 扩展
 
-        :param extension_list`(list[str])`: 扩展列表
+        Args:
+            extension_list (list[str]): 扩展列表
         """
         logger.info("安装 Stable Diffusion WebUI 扩展中")
         for extension in extension_list:
@@ -7166,9 +7358,11 @@ class SDWebUIManager(BaseManager):
     ) -> bool:
         """执行扩展依赖安装脚本
 
-        :param sd_webui_base_path`(Path)`: SD WebUI 跟目录, 用于导入自身模块
-        :param extension_dir`(Path)`: 要执行安装脚本的扩展路径
-        :return `bool`: 扩展依赖安装结果
+        Args:
+            sd_webui_base_path (Path): SD WebUI 跟目录, 用于导入自身模块
+            extension_dir (Path): 要执行安装脚本的扩展路径
+        Returns:
+            bool: 扩展依赖安装结果
         """
         path_installer = extension_dir / "install.py"
         if not path_installer.is_file():
@@ -7197,9 +7391,10 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """安装 SD WebUI 扩展依赖
 
-        :param sd_webui_base_path`(Path)`: SD WebUI 根目录
-        :param arg_disable_extra_extensions`(bool)`: 是否禁用 SD WebUI 额外扩展
-        :param arg_disable_all_extensions`(bool)`: 是否禁用 SD WebUI 所有扩展
+        Args:
+            sd_webui_base_path (Path): SD WebUI 根目录
+            arg_disable_extra_extensions (bool): 是否禁用 SD WebUI 额外扩展
+            arg_disable_all_extensions (bool): 是否禁用 SD WebUI 所有扩展
         """
         settings_file = sd_webui_base_path / "config.json"
         extensions_dir = sd_webui_base_path / "extensions"
@@ -7295,8 +7490,9 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """检查 Stable Diffusion WebUI 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
-        :param requirements_file`(str|None)`: 依赖文件名
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
+            requirements_file (str | None): 依赖文件名
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
@@ -7336,25 +7532,28 @@ class SDWebUIManager(BaseManager):
     ) -> None:
         """安装 Stable Diffusion WebUI
 
-        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
-        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
-        :param sd_webui_repo`(str|None)`: Stable Diffusion WebUI 仓库地址
-        :param sd_webui_branch`(str|None)`: Stable Diffusion WebUI 分支
-        :param sd_webui_requirements`(str|None)`: Stable Diffusion WebUI 依赖文件名
-        :param sd_webui_requirements_url`(str|None)`: Stable Diffusion WebUI 依赖文件下载地址
-        :param sd_webui_setting`(str|None)`: Stable Diffusion WebUI 预设文件下载链接
-        :param extension_list`(list[str])`: 扩展列表
-        :param model_list`(list[dict[str,str]])`: 模型下载列表
-        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        Args:
+            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror (str | None): PyTorch 镜像源链接
+            sd_webui_repo (str | None): Stable Diffusion WebUI 仓库地址
+            sd_webui_branch (str | None): Stable Diffusion WebUI 分支
+            sd_webui_requirements (str | None): Stable Diffusion WebUI 依赖文件名
+            sd_webui_requirements_url (str | None): Stable Diffusion WebUI 依赖文件下载地址
+            sd_webui_setting (str | None): Stable Diffusion WebUI 预设文件下载链接
+            extension_list (list[str] | None): 扩展列表
+            model_list (list[dict[str, str]] | None): 模型下载列表
+            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="SDWebUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -7431,7 +7630,8 @@ class InvokeAIComponentManager:
     def __init__(self, pytorch_mirror_dict: dict[str, str] = None) -> None:
         """InvokeAI 组件管理器初始化
 
-        :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
+        Args:
+            pytorch_mirror_dict (dict[str, str] | None): PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
         """
         if pytorch_mirror_dict is None:
             pytorch_mirror_dict = PyTorchMirrorManager.get_pytorch_mirror_dict()
@@ -7440,7 +7640,8 @@ class InvokeAIComponentManager:
     def update_pytorch_mirror_dict(self, pytorch_mirror_dict: dict[str, str]) -> None:
         """更新 PyTorch 镜像源字典
 
-        :param pytorch_mirror_dict`(dict[str,str])`: PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
+        Args:
+            pytorch_mirror_dict (dict[str, str]): PyTorch 镜像源字典, 需包含不同镜像源类型对应的镜像地址
         """
         logger.info("更新 PyTorch 镜像源信息")
         self.pytorch_mirror_dict = pytorch_mirror_dict
@@ -7448,15 +7649,18 @@ class InvokeAIComponentManager:
     def get_pytorch_mirror_url(self, mirror_type: str) -> str | None:
         """获取 PyTorch 类型对应的镜像源
 
-        :param mirror_type`(str)`: PyTorch 类型
-        :return `str|None`: 对应的 PyTorch 镜像源
+        Args:
+            mirror_type (str): PyTorch 类型
+        Returns:
+            (str | None): 对应的 PyTorch 镜像源
         """
         return self.pytorch_mirror_dict.get(mirror_type)
 
     def get_invokeai_require_torch_version(self) -> str:
         """获取 InvokeAI 依赖的 PyTorch 版本
 
-        :return `str`: PyTorch 版本
+        Returns:
+            str: PyTorch 版本
         """
         try:
             invokeai_requires = importlib.metadata.requires("invokeai")
@@ -7497,8 +7701,10 @@ class InvokeAIComponentManager:
     ) -> str:
         """获取 InvokeAI 安装 PyTorch 所需的 PyTorch 镜像源类型
 
-        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡设备类型
-        :return `str`: PyTorch 镜像源类型
+        Args:
+            device_type (Literal["cuda", "rocm", "xpu", "cpu"]): 显卡设备类型
+        Returns:
+            str: PyTorch 镜像源类型
         """
         torch_ver = self.get_invokeai_require_torch_version()
         return PyTorchMirrorManager.get_pytorch_mirror_type(
@@ -7508,7 +7714,8 @@ class InvokeAIComponentManager:
     def get_pytorch_for_invokeai(self) -> str:
         """获取 InvokeAI 所依赖的 PyTorch 包版本声明
 
-        :param `str`: PyTorch 包版本声明
+        Returns:
+            str: PyTorch 包版本声明
         """
         pytorch_ver = []
         try:
@@ -7541,7 +7748,8 @@ class InvokeAIComponentManager:
     def get_xformers_for_invokeai(self) -> str:
         """获取 InvokeAI 所依赖的 xFormers 包版本声明
 
-        :param `str`: xFormers 包版本声明
+        Returns:
+            str: xFormers 包版本声明
         """
         pytorch_ver = []
         try:
@@ -7568,9 +7776,11 @@ class InvokeAIComponentManager:
     ) -> None:
         """同步 InvokeAI 组件
 
-        :param device_type`(str)`: 显卡设备类型
-        :param use_uv`(bool|None)`: 是否使用 uv 安装 Python 软件包
-        :return `bool`: 同步组件结果
+        Args:
+            device_type (str): 显卡设备类型
+            use_uv (bool | None): 是否使用 uv 安装 Python 软件包
+        Returns:
+            bool: 同步组件结果
         """
         logger.info("获取安装配置")
         invokeai_ver = importlib.metadata.version("invokeai")
@@ -7621,9 +7831,10 @@ class InvokeAIComponentManager:
     ) -> None:
         """安装 InvokeAI
 
-        :param device_type`(str)`: 显卡设备类型
-        :param upgrade`(bool|None)`: 更新 InvokeAI
-        :param use_uv`(bool|None)`: 是否使用 uv 安装 Python 软件包
+        Args:
+            device_type (str): 显卡设备类型
+            upgrade (bool | None): 更新 InvokeAI
+            use_uv (bool | None): 是否使用 uv 安装 Python 软件包
         """
         logger.info("安装 InvokeAI 核心中")
         try:
@@ -7655,11 +7866,12 @@ class InvokeAIManager(BaseManager):
     ) -> None:
         """管理工具初始化
 
-        :param workspace`(str|Path)`: 工作区路径
-        :param workfolder`(str)`: 工作区的文件夹名称
-        :param hf_token`(str|None)`: HuggingFace Token
-        :param ms_token`(str|None)`: ModelScope Token
-        :param port`(int|None)`: 内网穿透端口
+        Args:
+            workspace (str | Path): 工作区路径
+            workfolder (str): 工作区的文件夹名称
+            hf_token (str | None): HuggingFace Token
+            ms_token (str | None): ModelScope Token
+            port (int | None): 内网穿透端口
         """
         super().__init__(
             workspace=workspace,
@@ -7691,7 +7903,8 @@ class InvokeAIManager(BaseManager):
     ) -> None:
         """将模型列表导入到 InvokeAI 中
 
-        :param model_list`(list[str])`: 模型路径列表
+        Args:
+            model_list (list[str]): 模型路径列表
         """
         try:
             logger.info("导入 InvokeAI 模块中")
@@ -7845,10 +8058,12 @@ class InvokeAIManager(BaseManager):
     ) -> Path | None:
         """下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        :param model_type`(str|None)`: 模型的类型
-        :return `Path|None`: 模型保存路径
+        Args:
+            url (str): 模型的下载链接
+            filename (str | None): 模型下载后保存的名称
+            model_type (str | None): 模型的类型
+        Returns:
+            (Path | None): 模型保存路径
         """
         path = self.workspace / self.workfolder / "sd-models"
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -7860,8 +8075,9 @@ class InvokeAIManager(BaseManager):
     ) -> None:
         """从模型列表下载模型
 
-        :param model_list`(list[str])`: 模型列表
-        :param retry`(int|None)`: 重试下载的次数, 默认为 3
+        Args:
+            model_list (list[str]): 模型列表
+            retry (int | None): 重试下载的次数, 默认为 3
         """
         new_model_list = [[model, 1] for model in model_list]
         self.get_model_from_list(
@@ -7876,7 +8092,8 @@ class InvokeAIManager(BaseManager):
     ) -> None:
         """检查 InvokeAI 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
         """
         self.env_check.fix_torch()
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
@@ -7901,18 +8118,21 @@ class InvokeAIManager(BaseManager):
     ) -> None:
         """安装 InvokeAI
 
-        :param device_type`(Literal["cuda","rocm","xpu","cpu"])`: 显卡设备类型
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror_dict`(dict[str,str]|None)`: PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
-        :param model_list`(list[str])`: 模型下载列表
-        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        Args:
+            device_type (Literal["cuda", "rocm", "xpu", "cpu"]): 显卡设备类型
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror_dict (dict[str, str] | None): PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
+            model_list (list[str] | None): 模型下载列表
+            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="InvokeAIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -7958,25 +8178,25 @@ class SDTrainerManager(BaseManager):
     ) -> None:
         """挂载 Google Drive 并创建 SD Trainer 输出文件夹
 
-        :param extras`(list[dict[str,str|bool]])`: 挂载额外目录
+        挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
 
-        :notes
-            挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
+        相对路径的起始位置为`{self.workspace}/{self.workfolder}`
 
-            相对路径的起始位置为`{self.workspace}/{self.workfolder}`
+        若额外链接路径为文件, 需指定`is_file`属性为`True`
 
-            若额外链接路径为文件, 需指定`is_file`属性为`True`
+        例如:
+        ```python
+        extras = [
+            {"link_dir": "models/loras"},
+            {"link_dir": "custom_nodes"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
+        ]
 
-            例如:
-            ```python
-            extras = [
-                {"link_dir": "models/loras"},
-                {"link_dir": "custom_nodes"},
-                {"link_dir": "extra_model_paths.yaml", "is_file": True},
-            ]
+        ```
+        默认挂载的目录和文件: `outputs`, `output`, `config`, `train`, `logs`
 
-            ```
-            默认挂载的目录和文件: `outputs`, `output`, `config`, `train`, `logs`
+        Args:
+            extras (list[dict[str, str | bool]]): 挂载额外目录
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -8023,9 +8243,11 @@ class SDTrainerManager(BaseManager):
     ) -> Path | None:
         """下载模型
 
-        :param url`(str)`: 模型的下载链接
-        :param filename`(str|None)`: 模型下载后保存的名称
-        :return `Path|None`: 模型保存路径
+        Args:
+            url (str): 模型的下载链接
+            filename (str | None): 模型下载后保存的名称
+        Returns:
+            (Path | None): 模型保存路径
         """
         path = self.workspace / self.workfolder / "sd-models"
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -8059,7 +8281,8 @@ class SDTrainerManager(BaseManager):
     ) -> None:
         """检查 protobuf 版本问题
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
         """
         logger.info("检查 protobuf 版本问题中")
         try:
@@ -8081,8 +8304,9 @@ class SDTrainerManager(BaseManager):
     ) -> None:
         """检查 SD Trainer 运行环境
 
-        :param use_uv`(bool|None)`: 使用 uv 安装依赖
-        :param requirements_file`(str|None)`: 依赖文件名
+        Args:
+            use_uv (bool | None): 使用 uv 安装依赖
+            requirements_file (str | None): 依赖文件名
         """
         sd_trainer_path = self.workspace / self.workfolder
         requirement_path = sd_trainer_path / requirements_file
@@ -8116,21 +8340,24 @@ class SDTrainerManager(BaseManager):
     ) -> None:
         """安装 SD Trainer
 
-        :param torch_ver`(str|None)`: 指定的 PyTorch 软件包包名, 并包括版本号
-        :param xformers_ver`(str|None)`: 指定的 xFormers 软件包包名, 并包括版本号
-        :param use_uv`(bool|None)`: 使用 uv 替代 Pip 进行 Python 软件包的安装
-        :param pypi_index_mirror`(str|None)`: PyPI Index 镜像源链接
-        :param pypi_extra_index_mirror`(str|None)`: PyPI Extra Index 镜像源链接
-        :param pypi_find_links_mirror`(str|None)`: PyPI Find Links 镜像源链接
-        :param github_mirror`(str|list|None)`: Github 镜像源链接或者镜像源链接列表
-        :param huggingface_mirror`(str|None)`: HuggingFace 镜像源链接
-        :param pytorch_mirror`(str|None)`: PyTorch 镜像源链接
-        :param sd_trainer_repo`(str|None)`: SD Trainer 仓库地址
-        :param sd_trainer_requirements`(str|None)`: SD Trainer 依赖文件名
-        :param model_list`(list[dict[str,str]])`: 模型下载列表
-        :param check_avaliable_gpu`(bool|None)`: 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-        :param enable_tcmalloc`(bool|None)`: 是否启用 TCMalloc 内存优化
-        :param enable_cuda_malloc`(bool|None)`: 启用 CUDA 显存优化
+        Args:
+            torch_ver (str | list | None): 指定的 PyTorch 软件包包名, 并包括版本号
+            xformers_ver (str | list | None): 指定的 xFormers 软件包包名, 并包括版本号
+            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            pypi_index_mirror (str | None): PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
+            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None): HuggingFace 镜像源链接
+            pytorch_mirror (str | None): PyTorch 镜像源链接
+            sd_trainer_repo (str | None): SD Trainer 仓库地址
+            sd_trainer_requirements (str | None): SD Trainer 依赖文件名
+            model_list (list[dict[str, str]] | None): 模型下载列表
+            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+        Raises:
+            Exception: GPU 不可用
         """
         self.utils.warning_unexpected_params(
             message="SDTrainerManager.install() 接收到不期望参数, 请检查参数输入是否正确",
