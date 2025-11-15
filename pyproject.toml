@@ -12,8 +12,8 @@ dynamic = ["version"]
 version = "1.1.18"
 authors = [{name = "licyk"}]
 
-[tool.setuptools]
-py_modules = ["sd_webui_all_in_one"]
+[tool.setuptools.py-modules]
+sd_webui_all_in_one = "sd_webui_all_in_one.py"
 
 [tool.pylint]
 disable = [
