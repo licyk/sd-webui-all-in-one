@@ -702,8 +702,8 @@ class GitWarpper:
                             "--recursive",
                         ]
                     )
-            except Exception as e:
-                logger.error("回退分支切换失败: %s", e)
+            except Exception as e1:
+                logger.error("回退分支切换失败: %s", e1)
             return False
 
     @staticmethod
@@ -823,7 +823,7 @@ class Downloader:
             return save_path
         except Exception as e:
             logger.error("下载 %s 时发生错误: %s", url, e)
-            raise Exception(e)
+            raise Exception(e) from e
 
     @staticmethod
     def load_file_from_url(
@@ -1502,8 +1502,8 @@ class Utils:
                     logger.warning("删除未复制完成的文件: %s", dst)
                     try:
                         os.remove(dst)
-                    except Exception as e:
-                        logger.error("删除未复制完成的文件失败: %s", e)
+                    except Exception as e1:
+                        logger.error("删除未复制完成的文件失败: %s", e1)
 
         logger.info("同步文件完成")
 
@@ -4524,7 +4524,12 @@ class PyWhlVersionMatcher:
 
 
 class RequirementCheck:
-    """依赖检查工具"""
+    """依赖检查工具
+
+    Attributes:
+        WHEEL_PATTERN (dict[str, str]): 解析 Python Wheel 名的的正则表达式
+        REPLACE_PACKAGE_NAME_DICT (str): Python 软件包名替换表
+    """
 
     @staticmethod
     def version_string_is_canonical(version: str) -> bool:
@@ -4633,6 +4638,10 @@ class RequirementCheck:
         \.whl$                      # 固定后缀
     """
 
+    REPLACE_PACKAGE_NAME_DICT = {
+        "sam2": "SAM-2",
+    }
+
     @staticmethod
     def parse_wheel_filename(filename: str) -> str:
         """解析 Python wheel 文件名并返回 distribution 名称
@@ -4692,6 +4701,17 @@ class RequirementCheck:
             str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
         """
         return re.sub(r"\[.*?\]", "", filename)
+
+    @staticmethod
+    def get_correct_package_name(name: str) -> str:
+        """将原 Python 软件包名替换成正确的 Python 软件包名
+
+        Args:
+            name (str): 原 Python 软件包名
+        Returns:
+            str: 替换成正确的软件包名, 如果原有包名正确则返回原包名
+        """
+        return RequirementCheck.REPLACE_PACKAGE_NAME_DICT.get(name, name)
 
     @staticmethod
     def parse_requirement_list(requirements: list[str]) -> list[str]:
@@ -4815,7 +4835,9 @@ class RequirementCheck:
             logger.debug("预处理后的 Python 软件包名: %s", p)
             if not RequirementCheck.is_package_has_version(p):
                 logger.debug("%s 无版本声明", p)
-                canonical_package_list.append(p)
+                new_p = RequirementCheck.get_correct_package_name(p)
+                logger.debug("包名处理: %s -> %s", p, new_p)
+                canonical_package_list.append(new_p)
                 continue
 
             if RequirementCheck.version_string_is_canonical(
@@ -5032,20 +5054,20 @@ class RequirementCheck:
             use_uv (bool | None): 是否使用 uv 安装依赖
         """
         if not os.path.exists(requirement_path):
-            logger.error(f"未找到 {requirement_path} 文件, 无法检查依赖完整性")
+            logger.error("未找到 %s 文件, 无法检查依赖完整性", requirement_path)
             return
         if name is None:
             name = str(requirement_path).split("/")[-2]
-        logger.info(f"检查 {name} 依赖完整性中")
+        logger.info("检查 %s 依赖完整性中", name)
         if not RequirementCheck.validate_requirements(requirement_path):
-            logger.info(f"安装 {name} 依赖中")
+            logger.info("安装 %s 依赖中", name)
             try:
                 EnvManager.install_requirements(requirement_path, use_uv)
-                logger.info(f"安装 {name} 依赖完成")
+                logger.info("安装 %s 依赖完成", name)
             except Exception as e:
-                logger.error(f"安装 {name} 依赖出现错误: {e}")
+                logger.error("安装 %s 依赖出现错误: %s", name, e)
                 return
-        logger.info(f"{name} 依赖完整性检查完成")
+        logger.info("%s 依赖完整性检查完成", name)
 
     @staticmethod
     def check_numpy(use_uv: bool | None = True) -> None:
@@ -5064,7 +5086,7 @@ class RequirementCheck:
             else:
                 logger.info("Numpy 无需降级")
         except Exception as e:
-            logger.error(f"检查 Numpy 时出现错误: {e}")
+            logger.error("检查 Numpy 时出现错误: %s", e)
 
     @staticmethod
     def fix_torch() -> None:
@@ -5719,11 +5741,11 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
         for req in req_list:
             name = req.split("/")[-2]
-            logger.info(f"安装 {name} 的依赖中")
+            logger.info("安装 %s 的依赖中", name)
             try:
                 EnvManager.install_requirements(req, use_uv)
             except Exception as e:
-                logger.error(f"安装 {name} 的依赖失败: {e}")
+                logger.error("安装 %s 的依赖失败: %s", name, e)
 
         logger.info("ComfyUI 环境检查完成")
 
@@ -6029,7 +6051,7 @@ class OnnxRuntimeGPUCheck:
                     "onnxruntime-gpu>=1.23.2", "--no-cache-dir", use_uv=use_uv
                 )
         except Exception as e:
-            logger.error(f"修复 Onnxruntime GPU 版本问题时出现错误: {e}")
+            logger.error("修复 Onnxruntime GPU 版本问题时出现错误: %s", e)
             return
 
         logger.info("Onnxruntime GPU 版本问题修复完成")
@@ -6051,8 +6073,6 @@ class CUDAMalloc:
             set[str]: GPU 名称列表
         """
         if os.name == "nt":
-            import ctypes
-
             # Define necessary C structures and types
             class DISPLAY_DEVICEA(ctypes.Structure):
                 _fields_ = [
@@ -8357,21 +8377,21 @@ class InvokeAIManager(BaseManager):
             model_path = Path(model_path)
             file_name = model_path.name
             try:
-                logger.info(f"导入 {file_name} 模型到 InvokeAI 中")
+                logger.info("导入 %s 模型到 InvokeAI 中", file_name)
                 job = model_manager.install.heuristic_import(
                     source=model_path.as_posix(), inplace=inplace
                 )
                 result = model_manager.install.wait_for_job(job)
                 if result.status == InstallStatus.COMPLETED:
-                    logger.info(f"导入 {file_name} 模型到 InvokeAI 成功")
+                    logger.info("导入 %s 模型到 InvokeAI 成功", file_name)
                     return True
                 else:
                     logger.error(
-                        f"导入 {file_name} 模型到 InvokeAI 时出现了错误: {result.error}"
+                        "导入 %s 模型到 InvokeAI 时出现了错误: %s", file_name, result.error
                     )
                     return False
             except Exception as e:
-                logger.error(f"导入 {file_name} 模型到 InvokeAI 时出现了错误: {e}")
+                logger.error("导入 %s 模型到 InvokeAI 时出现了错误: %s", file_name, e)
                 return False
 
         install_model_to_local = False
@@ -8381,7 +8401,7 @@ class InvokeAIManager(BaseManager):
         if task_sum == 0:
             logger.info("无需要导入的模型")
             return
-        logger.info("InvokeAI 根目录: {}".format(os.environ.get("INVOKEAI_ROOT")))
+        logger.info("InvokeAI 根目录: %s", os.environ.get("INVOKEAI_ROOT"))
         try:
             model_manager = _get_invokeai_model_manager()
             logger.info("启动 InvokeAI 模型管理服务")
@@ -8390,14 +8410,14 @@ class InvokeAIManager(BaseManager):
             logger.error("启动 InvokeAI 模型管理服务失败, 无法导入模型: %s", e)
             return
         logger.info(
-            "就地安装 (仅本地) 模式: {}".format(
+            "就地安装 (仅本地) 模式: %s", (
                 "禁用" if install_model_to_local else "启用"
             )
         )
         for model in model_list:
             count += 1
             file_name = os.path.basename(model)
-            logger.info(f"[{count}/{task_sum}] 添加模型: {file_name}")
+            logger.info("[%s/%s] 添加模型: %s", count, task_sum, file_name)
             result = _import_model(
                 model_manager=model_manager,
                 inplace=not install_model_to_local,
