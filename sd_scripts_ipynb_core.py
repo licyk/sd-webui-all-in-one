@@ -1377,56 +1377,6 @@ class Utils:
         return ".".join(map(str, ver_parts))
 
     @staticmethod
-    def compare_versions(
-        version1: str | int | float, version2: str | int | float
-    ) -> int:
-        """对比两个版本号大小
-
-        Args:
-            version1 (str | int | float): 第一个版本号
-            version2 (str | int | float): 第二个版本号
-        Returns:
-            int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
-        """
-        version1 = str(version1)
-        version2 = str(version2)
-        # 将版本号拆分成数字列表
-        try:
-            nums1 = (
-                re.sub(r"[a-zA-Z]+", "", version1)
-                .replace("-", ".")
-                .replace("_", ".")
-                .replace("+", ".")
-                .split(".")
-            )
-            nums2 = (
-                re.sub(r"[a-zA-Z]+", "", version2)
-                .replace("-", ".")
-                .replace("_", ".")
-                .replace("+", ".")
-                .split(".")
-            )
-        except Exception as _:
-            return 0
-
-        for i in range(max(len(nums1), len(nums2))):
-            num1 = (
-                int(nums1[i]) if i < len(nums1) else 0
-            )  # 如果版本号 1 的位数不够, 则补 0
-            num2 = (
-                int(nums2[i]) if i < len(nums2) else 0
-            )  # 如果版本号 2 的位数不够, 则补 0
-
-            if num1 == num2:
-                continue
-            elif num1 > num2:
-                return 1  # 版本号 1 更大
-            else:
-                return -1  # 版本号 2 更大
-
-        return 0  # 版本号相同
-
-    @staticmethod
     def mount_google_drive(path: Path | str) -> bool:
         """挂载 Google Drive
 
@@ -1840,103 +1790,114 @@ class PyTorchMirrorManager:
         cuda_comp_cap = PyTorchMirrorManager.get_cuda_comp_cap()
         cuda_support_ver = PyTorchMirrorManager.get_cuda_version()
 
-        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
+        torch_version = CommonVersionComparison(torch_ver)
+        cuda_support_version = CommonVersionComparison(str(int(cuda_support_ver * 10)))
+
+        if torch_version < CommonVersionComparison("2.0.0"):
             # torch < 2.0.0: default cu11x
             return "other"
         if (
-            Utils.compare_versions(torch_ver, "2.0.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.3.1") < 0
+            CommonVersionComparison("2.0.0")
+            <= torch_version
+            < CommonVersionComparison("2.3.1")
         ):
             # 2.0.0 <= torch < 2.3.1: default cu118
             return "cu118"
         if (
-            Utils.compare_versions(torch_ver, "2.3.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.4.1") < 0
+            CommonVersionComparison("2.3.0")
+            <= torch_version
+            < CommonVersionComparison("2.4.1")
         ):
             # 2.3.0 <= torch < 2.4.1: default cu121
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "121"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("118"):
                     return "cu118"
             return "cu121"
         if (
-            Utils.compare_versions(torch_ver, "2.4.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.6.0") < 0
+            CommonVersionComparison("2.4.0")
+            <= torch_version
+            < CommonVersionComparison("2.6.0")
         ):
             # 2.4.0 <= torch < 2.6.0: default cu124
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu121")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "124"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("121"):
                     return "cu121"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu118")
-                    >= 0
-                ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("118"):
                     return "cu118"
             return "cu124"
         if (
-            Utils.compare_versions(torch_ver, "2.6.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.7.0") < 0
+            CommonVersionComparison("2.6.0")
+            <= torch_version
+            < CommonVersionComparison("2.7.0")
         ):
             # 2.6.0 <= torch < 2.7.0: default cu126
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu124")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "126"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("124"):
                     return "cu124"
-            if Utils.compare_versions(cuda_comp_cap, "10.0") > 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_comp_cap) > CommonVersionComparison("10.0"):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("128"):
                     return "cu128"
             return "cu126"
         if (
-            Utils.compare_versions(torch_ver, "2.7.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.8.0") < 0
+            CommonVersionComparison("2.7.0")
+            <= torch_version
+            < CommonVersionComparison("2.8.0")
         ):
             # 2.7.0 <= torch < 2.8.0: default cu128
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "128"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) > CommonVersionComparison("126"):
                     return "cu126"
             return "cu128"
         if (
-            Utils.compare_versions(torch_ver, "2.8.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.9.0") < 0
+            CommonVersionComparison("2.8.0")
+            <= torch_version
+            < CommonVersionComparison("2.9.0")
         ):
             # 2.8.0 <= torch < 2.9.0: default cu129
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu129") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "129"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("128"):
                     return "cu128"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("126"):
                     return "cu126"
             return "cu129"
-        if Utils.compare_versions(torch_ver, "2.9.0") >= 0:
+        if torch_version >= CommonVersionComparison("2.9.0"):
             # torch >= 2.9.0: default cu130
-            if Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu130") < 0:
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu128")
-                    >= 0
-                ):
+            if CommonVersionComparison(cuda_support_version) < CommonVersionComparison(
+                "130"
+            ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("128"):
                     return "cu128"
-                if (
-                    Utils.compare_versions(str(int(cuda_support_ver * 10)), "cu126")
-                    >= 0
-                ):
+                if CommonVersionComparison(
+                    cuda_support_version
+                ) >= CommonVersionComparison("126"):
                     return "cu126"
             return "cu130"
 
@@ -1951,38 +1912,43 @@ class PyTorchMirrorManager:
         Returns:
             str: ROCm 类型的 PyTorch 镜像源类型
         """
-        if Utils.compare_versions(torch_ver, "2.4.0") < 0:
+        torch_version = CommonVersionComparison(torch_ver)
+        if torch_version < CommonVersionComparison("2.4.0"):
             # torch < 2.4.0
             return "other"
         if (
-            Utils.compare_versions(torch_ver, "2.4.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.5.0") < 0
+            CommonVersionComparison("2.4.0")
+            <= torch_version
+            < CommonVersionComparison("2.5.0")
         ):
             # 2.4.0 <= torch < 2.5.0
             return "rocm61"
         if (
-            Utils.compare_versions(torch_ver, "2.5.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.6.0") < 0
+            CommonVersionComparison("2.5.0")
+            <= torch_version
+            < CommonVersionComparison("2.6.0")
         ):
             # 2.5.0 <= torch < 2.6.0
             return "rocm62"
         if (
-            Utils.compare_versions(torch_ver, "2.6.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.7.0") < 0
+            CommonVersionComparison("2.6.0")
+            <= torch_version
+            < CommonVersionComparison("2.7.0")
         ):
-            # 2.6.0 < torch < 2.7.0
+            # 2.6.0 <= torch < 2.7.0
             return "rocm624"
         if (
-            Utils.compare_versions(torch_ver, "2.7.0") >= 0
-            and Utils.compare_versions(torch_ver, "2.8.0") < 0
+            CommonVersionComparison("2.7.0")
+            <= torch_version
+            < CommonVersionComparison("2.8.0")
         ):
-            # 2.7.0 < torch < 2.8.0
+            # 2.7.0 <= torch < 2.8.0
             return "rocm63"
-        if Utils.compare_versions(torch_ver, "2.8.0") >= 0:
+        if torch_version >= CommonVersionComparison("2.8.0"):
             # torch >= 2.8.0
             return "rocm64"
 
-        return "rocm63"
+        return "rocm64"
 
     @staticmethod
     def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
@@ -1993,22 +1959,24 @@ class PyTorchMirrorManager:
         Returns:
             str: IPEX 类型的 PyTorch 镜像源类型
         """
-        if Utils.compare_versions(torch_ver, "2.0.0") < 0:
+        torch_version = CommonVersionComparison(torch_ver)
+        if torch_version < CommonVersionComparison("2.0.0"):
             # torch < 2.0.0
             return "other"
-        if Utils.compare_versions(torch_ver, "2.0.0") == 0:
+        if torch_version == CommonVersionComparison("2.0.0"):
             # torch == 2.0.0
             return "ipex_legacy_arc"
         if (
-            Utils.compare_versions(torch_ver, "2.0.0") > 0
-            and Utils.compare_versions(torch_ver, "2.1.0") < 0
+            CommonVersionComparison("2.0.0")
+            < torch_version
+            < CommonVersionComparison("2.1.0")
         ):
             # 2.0.0 < torch < 2.1.0
             return "other"
-        if Utils.compare_versions(torch_ver, "2.1.0") == 0:
+        if torch_version == CommonVersionComparison("2.1.0"):
             # torch == 2.1.0
             return "ipex_legacy_arc"
-        if Utils.compare_versions(torch_ver, "2.6.0") >= 0:
+        if torch_version >= CommonVersionComparison("2.6.0"):
             # torch >= 2.6.0
             return "xpu"
 
@@ -3790,6 +3758,152 @@ class TunnelManager:
             "pinggy_io": pinggy_io_url,
             "zrok": zrok_url,
         }
+
+
+class CommonVersionComparison:
+    """常规版本号比较工具
+
+    使用:
+    ```python
+    CommonVersionComparison("1.0") != CommonVersionComparison("1.0") # False
+    CommonVersionComparison("1.0.1") > CommonVersionComparison("1.0") # True
+    CommonVersionComparison("1.0a") < CommonVersionComparison("1.0") # True
+    ```
+    """
+
+    def __init__(self, version: str | int | float) -> None:
+        """常规版本号比较工具初始化
+
+        Args:
+            version (str | int | float): 版本号字符串
+        """
+        self.version = version
+
+    def __lt__(self, other: object) -> bool:
+        """实现 < 符号的版本比较
+
+        Returns:
+            bool: 如果此版本小于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) < 0
+
+    def __gt__(self, other: object) -> bool:
+        """实现 > 符号的版本比较
+
+        Returns:
+            bool: 如果此版本大于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) > 0
+
+    def __le__(self, other: object) -> bool:
+        """实现 <= 符号的版本比较
+
+        Returns:
+            bool: 如果此版本小于等于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) <= 0
+
+    def __ge__(self, other: object) -> bool:
+        """实现 >= 符号的版本比较
+
+        Returns:
+            bool: 如果此版本大于等于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) >= 0
+
+    def __eq__(self, other: object) -> bool:
+        """实现 == 符号的版本比较
+
+        Returns:
+            bool: 如果此版本等于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) == 0
+
+    def __ne__(self, other: object) -> bool:
+        """实现 != 符号的版本比较
+
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        """
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) != 0
+
+    def compare_versions(
+        self, version1: str | int | float, version2: str | int | float
+    ) -> int:
+        """对比两个版本号大小
+
+        Args:
+            version1 (str | int | float): 第一个版本号
+            version2 (str | int | float): 第二个版本号
+        Returns:
+            int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+        """
+        version1 = str(version1)
+        version2 = str(version2)
+
+        # 移除构建元数据（+之后的部分）
+        v1_main = version1.split("+")[0]
+        v2_main = version2.split("+")[0]
+
+        # 分离主版本号和预发布版本（支持多种分隔符）
+        def _split_version(v):
+            # 先尝试用 -, _, . 分割预发布版本
+            # 匹配主版本号部分和预发布部分
+            match = re.match(r"^([0-9]+(?:\.[0-9]+)*)([-_.].*)?$", v)
+            if match:
+                release = match.group(1)
+                pre = match.group(2)[1:] if match.group(2) else ""  # 去掉分隔符
+                return release, pre
+            return v, ""
+
+        v1_release, v1_pre = _split_version(v1_main)
+        v2_release, v2_pre = _split_version(v2_main)
+
+        # 将版本号拆分成数字列表
+        try:
+            nums1 = [int(x) for x in v1_release.split(".") if x]
+            nums2 = [int(x) for x in v2_release.split(".") if x]
+        except Exception as _:
+            return 0
+
+        # 补齐版本号长度
+        max_len = max(len(nums1), len(nums2))
+        nums1 += [0] * (max_len - len(nums1))
+        nums2 += [0] * (max_len - len(nums2))
+
+        # 比较版本号
+        for i in range(max_len):
+            if nums1[i] > nums2[i]:
+                return 1
+            elif nums1[i] < nums2[i]:
+                return -1
+
+        # 如果主版本号相同，比较预发布版本
+        if v1_pre and not v2_pre:
+            return -1  # 预发布版本 < 正式版本
+        elif not v1_pre and v2_pre:
+            return 1  # 正式版本 > 预发布版本
+        elif v1_pre and v2_pre:
+            if v1_pre > v2_pre:
+                return 1
+            elif v1_pre < v2_pre:
+                return -1
+            else:
+                return 0
+        else:
+            return 0  # 版本号相同
 
 
 class PyWhlVersionComponent(NamedTuple):
@@ -5723,30 +5837,38 @@ class OnnxRuntimeGPUCheck:
             # 当 onnxruntime 已安装
 
             # 判断 Torch 中的 CUDA 版本
-            if Utils.compare_versions(cuda_ver, "13.0") >= 0:
-                # CUDA > 13.0
-                if Utils.compare_versions(ort_support_cuda_ver, "13.0") < 0:
+            if CommonVersionComparison(cuda_ver) >= CommonVersionComparison("13.0"):
+                # CUDA >= 13.0
+                if CommonVersionComparison(
+                    ort_support_cuda_ver
+                ) < CommonVersionComparison("13.0"):
                     return OrtType.CU130
                 else:
                     return None
             elif (
-                Utils.compare_versions(cuda_ver, "12.0") >= 0
-                and Utils.compare_versions(cuda_ver, "13.0") < 0
+                CommonVersionComparison("12.0")
+                <= CommonVersionComparison(cuda_ver)
+                < CommonVersionComparison("13.0")
             ):
                 # 12.0 =< CUDA < 13.0
 
                 # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
                 if (
-                    Utils.compare_versions(ort_support_cuda_ver, "12.0") >= 0
-                    and Utils.compare_versions(ort_support_cuda_ver, "13.0") < 0
+                    CommonVersionComparison("12.0")
+                    <= CommonVersionComparison(ort_support_cuda_ver)
+                    < CommonVersionComparison("13.0")
                 ):
                     # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
 
                     # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
-                    if Utils.compare_versions(ort_support_cudnn_ver, cuddn_ver) > 0:
+                    if CommonVersionComparison(
+                        ort_support_cudnn_ver
+                    ) > CommonVersionComparison(cuddn_ver):
                         # ort cuDNN 版本 > torch cuDNN 版本
                         return OrtType.CU121CUDNN8
-                    elif Utils.compare_versions(ort_support_cudnn_ver, cuddn_ver) < 0:
+                    elif CommonVersionComparison(
+                        ort_support_cudnn_ver
+                    ) < CommonVersionComparison(cuddn_ver):
                         # ort cuDNN 版本 < torch cuDNN 版本
                         return OrtType.CU121CUDNN9
                     else:
@@ -5754,13 +5876,17 @@ class OnnxRuntimeGPUCheck:
                         return None
                 else:
                     # CUDA 版本非 12.x, 不匹配
-                    if Utils.compare_versions(cuddn_ver, "8") > 0:
+                    if CommonVersionComparison(cuddn_ver) > CommonVersionComparison(
+                        "8"
+                    ):
                         return OrtType.CU121CUDNN9
                     else:
                         return OrtType.CU121CUDNN8
             else:
                 # CUDA <= 11.8
-                if Utils.compare_versions(ort_support_cuda_ver, "12.0") < 0:
+                if CommonVersionComparison(
+                    ort_support_cuda_ver
+                ) < CommonVersionComparison("12.0"):
                     return None
                 else:
                     return OrtType.CU118
@@ -5778,15 +5904,16 @@ class OnnxRuntimeGPUCheck:
                     # onnxruntime-gpu 没有安装时
                     return OrtType.CU130
 
-            if Utils.compare_versions(cuda_ver, "13.0") >= 0:
+            if CommonVersionComparison(cuda_ver) >= CommonVersionComparison("13.0"):
                 # CUDA >= 13.x
                 return OrtType.CU130
             elif (
-                Utils.compare_versions(cuda_ver, "12.0") >= 0
-                and Utils.compare_versions(cuda_ver, "13.0") < 0
+                CommonVersionComparison("12.0")
+                <= CommonVersionComparison(cuda_ver)
+                < CommonVersionComparison("13.0")
             ):
                 # 12.0 <= CUDA < 13.0
-                if Utils.compare_versions(cuddn_ver, "8") > 0:
+                if CommonVersionComparison(cuddn_ver) > CommonVersionComparison("8"):
                     return OrtType.CU121CUDNN9
                 else:
                     return OrtType.CU121CUDNN8
@@ -6134,7 +6261,9 @@ class TCMalloc:
                             logger.info("检查 TCMalloc: %s => %s", lib_name, lib_path)
 
                             # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
-                            if Utils.compare_versions(libc_ver, libc_v234) < 0:
+                            if CommonVersionComparison(
+                                libc_ver
+                            ) < CommonVersionComparison(libc_v234):
                                 # glibc < 2.34，pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
                                 ldd_result = subprocess.run(
                                     ["ldd", lib_path], capture_output=True, text=True
