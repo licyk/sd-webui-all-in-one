@@ -3896,7 +3896,7 @@ class PyWhlVersionComparison:
         match = self.WHL_VERSION_PARSE_REGEX.match(clean_str)
         if not match:
             logger.debug("未知的版本号字符串: %s", version_str)
-            raise ValueError(f"Invalid version string: {version_str}")
+            raise ValueError(f"未知的版本号字符串: {version_str}")
 
         components = match.groupdict()
 
@@ -4065,7 +4065,7 @@ class PyWhlVersionComparison:
         # 确定最低版本和前缀匹配规则
         if len(clean_release) == 0:
             logger.debug("解析到错误的兼容性发行版本号")
-            raise ValueError("Invalid version for compatible release clause")
+            raise ValueError("解析到错误的兼容性发行版本号")
 
         # 生成前缀匹配模板 (忽略后缀)
         prefix_length = len(clean_release) - 1
@@ -4471,7 +4471,7 @@ class RequirementParser(Parser):
 
         result = self.read_while(is_identifier_char)
         if not result:
-            raise ValueError("Expected identifier")
+            raise ValueError("应为预期标识符")
         return result
 
     def parse_extras(self) -> list[str]:
@@ -4568,7 +4568,7 @@ class RequirementParser(Parser):
 
         version = self.read_while(is_version_char)
         if not version:
-            raise ValueError("Expected version string")
+            raise ValueError("期望为版本字符串")
         return version
 
     def parse_url(self) -> str:
@@ -4587,7 +4587,7 @@ class RequirementParser(Parser):
         url = self.text[start : self.pos]
 
         if not url:
-            raise ValueError("Expected URL after @")
+            raise ValueError("@ 后的预期 URL")
 
         return url
 
@@ -4712,9 +4712,9 @@ class RequirementParser(Parser):
             self.skip_whitespace()
             if self.match("in"):
                 return "not in"
-            raise ValueError("Expected 'in' after 'not'")
+            raise ValueError("预期在 'not' 之后出现 'in'")
 
-        raise ValueError(f"Expected marker operator at position {self.pos}")
+        raise ValueError(f"在位置 {self.pos} 处应出现标记运算符")
 
     def parse_python_str(self) -> str:
         """解析 Python 字符串
@@ -4906,7 +4906,7 @@ class RequirementCheck:
         match = re.fullmatch(RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
         if not match:
             logger.debug("未知的 Wheel 文件名: %s", filename)
-            raise ValueError(f"Invalid wheel filename: {filename}")
+            raise ValueError(f"未知的 Wheel 文件名: {filename}")
         return match.group("distribution")
 
     @staticmethod
@@ -4923,7 +4923,7 @@ class RequirementCheck:
         match = re.fullmatch(RequirementCheck.WHEEL_PATTERN, filename, re.VERBOSE)
         if not match:
             logger.debug("未知的 Wheel 文件名: %s", filename)
-            raise ValueError(f"Invalid wheel filename: {filename}")
+            raise ValueError(f"未知的 Wheel 文件名: {filename}")
         return match.group("version")
 
     @staticmethod
@@ -5226,6 +5226,10 @@ class RequirementCheck:
                 package_list.append(package_name)
                 continue
 
+            # 常规 Python 软件包声明
+            # 清理注释内容
+            requirement = re.sub(r"\s*#.*$", "", requirement).strip()
+
             # 解析版本列表
             possble_requirement = RequirementCheck.parse_requirement_to_list(requirement)
             if len(possble_requirement) == 0:
@@ -5237,17 +5241,16 @@ class RequirementCheck:
                 package_list += requirements_list
                 continue
 
-            # 常规 Python 软件包声明
             # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
-            cleaned_requirements = re.sub(r"\s*#.*$", "", requirement).strip().split(",")
-            if len(cleaned_requirements) > 1:
-                package_name = RequirementCheck.get_package_name(cleaned_requirements[0].strip())
-                for package_name_with_version_marked in cleaned_requirements:
+            multi_requirements = requirement.split(",")
+            if len(multi_requirements) > 1:
+                package_name = RequirementCheck.get_package_name(multi_requirements[0].strip())
+                for package_name_with_version_marked in multi_requirements:
                     version_symbol = str.replace(package_name_with_version_marked, package_name, "", 1)
                     format_package_name = RequirementCheck.remove_optional_dependence_from_package(f"{package_name}{version_symbol}".strip())
                     package_list.append(format_package_name)
             else:
-                format_package_name = RequirementCheck.remove_optional_dependence_from_package(cleaned_requirements[0].strip())
+                format_package_name = RequirementCheck.remove_optional_dependence_from_package(multi_requirements[0].strip())
                 package_list.append(format_package_name)
 
         # 处理包名大小写并统一成小写
@@ -6004,7 +6007,6 @@ class ComfyUIRequirementCheck(RequirementCheck):
             logger.error("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
             return None, None, None
 
-        logger.info("检测 ComfyUI 环境中")
         env_data = ComfyUIRequirementCheck.create_comfyui_environment_dict(comfyui_root_path)
         ComfyUIRequirementCheck.update_comfyui_component_requires_list(env_data)
         ComfyUIRequirementCheck.update_comfyui_component_missing_requires_list(env_data)
@@ -6031,6 +6033,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
             use_uv (bool | None): 是否使用 uv 安装依赖
             debug_mode (bool | None): 显示调试信息
         """
+        logger.info("检测 ComfyUI 环境中")
         env_data, req_list, conflict_info = ComfyUIRequirementCheck.process_comfyui_env_analysis(comfyui_root_path)
 
         if debug_mode:
