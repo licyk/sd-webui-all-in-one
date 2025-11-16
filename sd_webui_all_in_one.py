@@ -5071,14 +5071,14 @@ class ComfyUIRequirementCheck(RequirementCheck):
         return requirement_list
 
     @staticmethod
-    def statistical_has_conflict_component(env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]) -> list[str]:
-        """根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
+    def statistical_has_conflict_component(env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]) -> str:
+        """根据 ComfyUI 环境组件表字典中的 conflict_requires 字段统计冲突的组件信息
 
         Args:
             env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
         Returns:
-            list[str]: ComfyUI 环境组件的依赖文件路径列表
+            str: ComfyUI 环境冲突的组件信息列表
         """
         content = []
         for conflict_package in conflict_package_list:
@@ -5088,7 +5088,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
                     if ComfyUIRequirementCheck.get_package_name(conflict_component_package) == conflict_package:
                         content.append(f" - {component_name}: {conflict_component_package}")
 
-        return content[:-1] if len(content) > 0 and content[-1] == "" else content
+        return "\n".join([str(x) for x in (content[:-1] if len(content) > 0 and content[-1] == "" else content)])
 
     @staticmethod
     def fitter_has_version_package(package_list: list[str]) -> list[str]:
@@ -5303,6 +5303,38 @@ class ComfyUIRequirementCheck(RequirementCheck):
             print()
 
     @staticmethod
+    def process_comfyui_env_analysis(
+        comfyui_root_path: Path | str
+    ) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]:
+        """分析 ComfyUI 环境
+
+        Args:
+            comfyui_root_path (Path | str): ComfyUI 根目录
+        Returns:
+            (tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]):
+                ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
+        """
+        if not os.path.exists(os.path.join(comfyui_root_path, "requirements.txt")):
+            logger.error("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
+            return None, None, None
+
+        if not os.path.exists(os.path.join(comfyui_root_path, "custom_nodes")):
+            logger.error("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
+            return None, None, None
+
+        logger.info("检测 ComfyUI 环境中")
+        env_data = ComfyUIRequirementCheck.create_comfyui_environment_dict(comfyui_root_path)
+        ComfyUIRequirementCheck.update_comfyui_component_requires_list(env_data)
+        ComfyUIRequirementCheck.update_comfyui_component_missing_requires_list(env_data)
+        pkg_list = ComfyUIRequirementCheck.get_comfyui_component_requires_list(env_data)
+        has_version_pkg = ComfyUIRequirementCheck.fitter_has_version_package(pkg_list)
+        conflict_pkg = ComfyUIRequirementCheck.detect_conflict_package_from_list(has_version_pkg)
+        ComfyUIRequirementCheck.update_comfyui_component_conflict_requires_list(env_data, conflict_pkg)
+        req_list = ComfyUIRequirementCheck.statistical_need_install_require_component(env_data)
+        conflict_info = ComfyUIRequirementCheck.statistical_has_conflict_component(env_data, conflict_pkg)
+        return env_data,  req_list, conflict_info
+
+    @staticmethod
     def check_comfyui_env(
         comfyui_root_path: Path | str,
         install_conflict_component_requirement: bool | None = False,
@@ -5317,34 +5349,17 @@ class ComfyUIRequirementCheck(RequirementCheck):
             use_uv (bool | None): 是否使用 uv 安装依赖
             debug_mode (bool | None): 显示调试信息
         """
-        if not os.path.exists(os.path.join(comfyui_root_path, "requirements.txt")):
-            logger.error("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
-            return
-
-        if not os.path.exists(os.path.join(comfyui_root_path, "custom_nodes")):
-            logger.error("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
-            return
-
-        logger.info("检测 ComfyUI 环境中")
-        env_data = ComfyUIRequirementCheck.create_comfyui_environment_dict(comfyui_root_path)
-        ComfyUIRequirementCheck.update_comfyui_component_requires_list(env_data)
-        ComfyUIRequirementCheck.update_comfyui_component_missing_requires_list(env_data)
-        pkg_list = ComfyUIRequirementCheck.get_comfyui_component_requires_list(env_data)
-        has_version_pkg = ComfyUIRequirementCheck.fitter_has_version_package(pkg_list)
-        conflict_pkg = ComfyUIRequirementCheck.detect_conflict_package_from_list(has_version_pkg)
-        ComfyUIRequirementCheck.update_comfyui_component_conflict_requires_list(env_data, conflict_pkg)
-        req_list = ComfyUIRequirementCheck.statistical_need_install_require_component(env_data)
-        conflict_info = ComfyUIRequirementCheck.statistical_has_conflict_component(env_data, conflict_pkg)
+        env_data, req_list, conflict_info = ComfyUIRequirementCheck.process_comfyui_env_analysis(comfyui_root_path)
 
         if debug_mode:
             ComfyUIRequirementCheck.display_comfyui_environment_dict(env_data)
             ComfyUIRequirementCheck.display_check_result(req_list, conflict_info)
 
-        if len("".join(conflict_info)) > 0:
+        if len(conflict_info) > 0:
             logger.warning("检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用")
             logger.warning("您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况")
             logger.warning("检测到冲突的依赖:")
-            print("".join(conflict_info))
+            print(conflict_info)
             if not install_conflict_component_requirement:
                 logger.info("忽略警告并继续启动 ComfyUI")
                 return
