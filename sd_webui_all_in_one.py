@@ -145,6 +145,7 @@ def run_cmd(
     live: bool | None = True,
     shell: bool | None = None,
     cwd: Path | str | None = None,
+    display_mode: Literal["terminal", "jupyter"] | None = None,
 ) -> str | None:
     """执行 Shell 命令
 
@@ -156,6 +157,7 @@ def run_cmd(
         live (bool | None): 是否实时输出命令执行日志
         shell (bool | None): 是否使用内置 Shell 执行命令
         cwd (Path | str | None): 执行进程时的起始路径
+        display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
     Returns:
         (str | None): 命令执行时输出的内容
     Raises:
@@ -178,41 +180,67 @@ def run_cmd(
         # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
         command_to_exec = shlex.join(command) if isinstance(command, list) else command
 
+    if display_mode is None:
+        if Utils.in_jupyter():
+            display_mode = "jupyter"
+        else:
+            display_mode = "terminal"
+
     cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
 
     if live:
-        process_output = []
-        process = subprocess.Popen(
-            command_to_exec,
-            shell=shell,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            bufsize=1,
-            encoding="utf-8",
-            env=custom_env,
-        )
+        if display_mode == "jupyter":
+            process_output = []
+            process = subprocess.Popen(
+                command_to_exec,
+                shell=shell,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                bufsize=1,
+                encoding="utf-8",
+                env=custom_env,
+                cwd=cwd,
+            )
 
-        for line in process.stdout:
-            process_output.append(line)
-            print(line, end="", flush=True)
-            if sys.stdout and hasattr(sys.stdout, "flush"):
-                sys.stdout.flush()
+            for line in process.stdout:
+                process_output.append(line)
+                print(line, end="", flush=True)
+                if sys.stdout and hasattr(sys.stdout, "flush"):
+                    sys.stdout.flush()
 
-        process.wait()
-        if process.returncode != 0:
-            raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
+            process.wait()
+            if process.returncode != 0:
+                raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
 命令: {command_to_exec}
 错误代码: {process.returncode}""")
 
-        return "".join(process_output)
+            return "".join(process_output)
 
+        if display_mode == "terminal":
+            result: subprocess.CompletedProcess[bytes] = subprocess.run(
+                command_to_exec,
+                shell=shell,
+                env=custom_env,
+                cwd=cwd,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
+命令: {command_to_exec}
+错误代码: {result.returncode}""")
+
+            return result.stdout.decode(encoding="utf8", errors="ignore")
+
+        logger.warning("未知的显示模式: %s, 将切换到非实时输出模式", display_mode)
+
+    # 非实时输出模式
     result: subprocess.CompletedProcess[bytes] = subprocess.run(
         command_to_exec,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell,
         env=custom_env,
+        cwd=cwd,
     )
 
     if result.returncode != 0:
@@ -929,7 +957,7 @@ class Downloader:
                     if output is None:
                         continue
                     return output
-                elif tool == "request":
+                elif tool == "requests":
                     output = Downloader.load_file_from_url(
                         url=url,
                         model_dir=path,
@@ -1628,6 +1656,30 @@ class Utils:
                 Utils.recursive_tree_builder(entry, new_prefix, counts, current_depth + 1, max_depth, show_hidden)
             else:
                 counts[1] += 1
+
+
+    @staticmethod
+    def in_jupyter() -> bool:
+        """检测当前环境是否在 Jupyter 中
+
+        Returns:
+            bool: 是否在 Jupyter 中
+        """
+        try:
+            shell = get_ipython() # type: ignore
+            if shell is None:
+                return False
+            # Jupyter Notebook 或 JupyterLab
+            if shell.__class__.__name__ == "ZMQInteractiveShell":
+                return True
+            # IPython 终端
+            elif shell.__class__.__name__ == "TerminalInteractiveShell":
+                return False
+            else:
+                return False
+        except NameError:
+            # 没有 get_ipython, 不是 Jupyter
+            return False
 
 
 class PyTorchMirrorManager:
@@ -6124,6 +6176,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
         for req in req_list:
             req_path = Path(req)
             name = req_path.parent.name
+            installer_script = req_path / "install.py"
             logger.info("安装 %s 的依赖中", name)
             try:
                 EnvManager.install_requirements(
@@ -6133,6 +6186,16 @@ class ComfyUIRequirementCheck(RequirementCheck):
                 )
             except Exception as e:
                 logger.error("安装 %s 的依赖失败: %s", name, e)
+
+            if installer_script.is_file():
+                logger.info("执行 %s 的安装脚本中", name)
+                try:
+                    run_cmd(
+                        [Path(sys.executable).as_posix(), installer_script.as_posix()],
+                        cwd=req_path.parent,
+                    )
+                except Exception as e:
+                    logger.info("执行 %s 的安装脚本时发生错误: %s", name, e)
 
         logger.info("ComfyUI 环境检查完成")
 
@@ -6947,6 +7010,80 @@ class BaseManager:
                 src_is_file=is_file,
             )
 
+    def parse_arguments(self, launch_args: str) -> list[str]:
+        """解析命令行参数字符串，返回参数列表
+
+        Args:
+            launch_args (str): 命令行参数字符串
+
+        Returns:
+            list[str]: 解析后的参数列表
+        """
+        if not launch_args:
+            return []
+
+        # 去除首尾空格
+        trimmed_args = launch_args.strip()
+
+        # 如果参数数量 <= 1, 使用简单分割
+        if len(trimmed_args.split()) <= 1:
+            arguments = trimmed_args.split()
+        else:
+            # 使用正则表达式处理复杂情况 (包含引号的参数)
+            pattern = r'("[^"]*"|\'[^\']*\'|\S+)'
+            matches = re.findall(pattern, trimmed_args)
+
+            # 去除参数两端的引号
+            arguments = [match.strip("\"'") for match in matches]
+
+        return arguments
+
+    def launch(
+        self,
+        name: str,
+        base_path: Path | str,
+        cmd: list[str],
+        display_mode: Literal["terminal", "jupyter"] | None = None,
+    ) -> None:
+        """启动 WebUI
+
+        Args:
+            name (str): 启动的名称
+            base_path (Path | str): 启动时得的根目录
+            params (list[str] | str | None): 启动 WebUI 的参数
+            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        """
+
+        if display_mode is None:
+            if Utils.in_jupyter():
+                display_mode = "jupyter"
+            else:
+                display_mode = "terminal"
+        logger.info("启动 %s 中", name)
+        try:
+            if display_mode == "jupyter":
+                with subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    bufsize=1,
+                    text=True,
+                    shell=True,
+                    cwd=base_path,
+                ) as p:
+                    for line in p.stdout:
+                        print(line, end="", flush=True)
+            elif display_mode == "terminal":
+                subprocess.run(
+                    cmd,
+                    shell=True,
+                    cwd=base_path,
+                )
+            else:
+                logger.error("未知的显示模式: %s", display_mode)
+        except KeyboardInterrupt:
+            logger.info("关闭 %s", name)
+
 
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
@@ -7440,6 +7577,31 @@ class FooocusManager(BaseManager):
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         self.env_check.check_numpy(use_uv=use_uv)
 
+    def run(
+        self,
+        params: list[str] | str | None = None,
+        display_mode: Literal["terminal", "jupyter"] | None = None,
+    ) -> None:
+        """启动 Fooocus
+
+        Args:
+            params (list[str] | str | None): Fooocus 启动参数
+            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        """
+        fooocus_path = self.workspace / self.workfolder
+        cmd = [Path(sys.executable).as_posix(), (fooocus_path / "launch.py").as_posix()]
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_arguments(params)
+            else:
+                cmd += params
+        self.launch(
+            name="Fooocus",
+            base_path=fooocus_path.parent,
+            cmd=cmd,
+            display_mode=display_mode,
+        )
+
     def install(
         self,
         torch_ver: str | list[str] | None = None,
@@ -7770,6 +7932,31 @@ class ComfyUIManager(BaseManager):
         self.env_check.fix_torch()
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         self.env_check.check_numpy(use_uv=use_uv)
+
+    def run(
+        self,
+        params: list[str] | str | None = None,
+        display_mode: Literal["terminal", "jupyter"] | None = None,
+    ) -> None:
+        """启动 ComfyUI
+
+        Args:
+            params (list[str] | str | None): 启动 ComfyUI 的参数
+            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        """
+        comfyui_path = self.workspace / self.workfolder
+        cmd = [Path(sys.executable).as_posix(), (comfyui_path / "main.py").as_posix()]
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_arguments(params)
+            else:
+                cmd += params
+        self.launch(
+            name="ComfyUI",
+            base_path=comfyui_path.parent,
+            cmd=cmd,
+            display_mode=display_mode,
+        )
 
     def install(
         self,
@@ -8177,6 +8364,31 @@ class SDWebUIManager(BaseManager):
         self.env_check.fix_torch()
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         self.env_check.check_numpy(use_uv=use_uv)
+
+    def run(
+        self,
+        params: list[str] | str | None = None,
+        display_mode: Literal["terminal", "jupyter"] | None = None,
+    ) -> None:
+        """启动 Stable Diffusion WebUI
+
+        Args:
+            params (list[str] | str | None): 启动 Stable Diffusion WebUI 的参数
+            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        """
+        sd_webui_path = self.workspace / self.workfolder
+        cmd = [Path(sys.executable).as_posix() , (sd_webui_path / "launch.py").as_posix()]
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_arguments(params)
+            else:
+                cmd += params
+        self.launch(
+            name="Stable Diffusion WebUI",
+            base_path=sd_webui_path.parent,
+            cmd=cmd,
+            display_mode=display_mode,
+        )
 
     def install(
         self,
@@ -8756,6 +8968,15 @@ class InvokeAIManager(BaseManager):
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         self.env_check.check_numpy(use_uv=use_uv)
 
+    def run(self) -> None:
+        """启动 InvokeAI"""
+        from invokeai.app.run_app import run_app
+        logger.info("启动 InvokeAI 中")
+        try:
+            run_app()
+        except KeyboardInterrupt:
+            logger.info("关闭 InvokeAI")
+
     def install(
         self,
         device_type: Literal["cuda", "rocm", "xpu", "cpu"] = "cuda",
@@ -8971,6 +9192,37 @@ class SDTrainerManager(BaseManager):
         self.ort_check.check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=False)
         self.check_protobuf(use_uv=use_uv)
         self.env_check.check_numpy(use_uv=use_uv)
+
+    def run(
+        self,
+        params: list[str] | str | None = None,
+        display_mode: Literal["terminal", "jupyter"] | None = None,
+    ) -> None:
+        """启动 SD Trainer
+
+        Args:
+            params (list[str] | str | None): 启动 SD Trainer 的参数
+            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        """
+        sd_trainer_path = self.workspace / self.workfolder
+        if (sd_trainer_path / "gui.py").exists():
+            scripts_name = "gui.py"
+        elif (sd_trainer_path / "kohya_gui.py").exists():
+            scripts_name = "kohya_gui.py"
+        else:
+            scripts_name = "kohya_gui.py"
+        cmd = [Path(sys.executable).as_posix(), (sd_trainer_path / scripts_name).as_posix()]
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_arguments(params)
+            else:
+                cmd += params
+        self.launch(
+            name="SD Trainer",
+            base_path=sd_trainer_path.parent,
+            cmd=cmd,
+            display_mode=display_mode,
+        )
 
     def install(
         self,
