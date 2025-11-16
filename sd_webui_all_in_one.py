@@ -5968,12 +5968,12 @@ class ComfyUIRequirementCheck(RequirementCheck):
             print()
 
     @staticmethod
-    def display_check_result(requirement_list: list[str], conflict_result: list[str]) -> None:
+    def display_check_result(requirement_list: list[str], conflict_result: str) -> None:
         """显示 ComfyUI 运行环境检查结果
 
         Args:
             requirement_list (list[str]): ComfyUI 组件依赖文件路径列表
-            conflict_result (list[str]): 冲突组件统计信息
+            conflict_result (str): 冲突组件统计信息
         """
         if len(requirement_list) > 0:
             logger.debug("需要安装 ComfyUI 组件列表")
@@ -5985,8 +5985,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
 
         if len(conflict_result) > 0:
             logger.debug("ComfyUI 冲突组件")
-            for text in conflict_result:
-                logger.debug(text)
+            logger.debug(conflict_result)
             print()
 
     @staticmethod
