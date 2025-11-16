@@ -5180,7 +5180,9 @@ class RequirementCheck:
         package_list: list[str] = []
         canonical_package_list: list[str] = []
         for requirement in requirements:
-            requirement = requirement.strip()
+            # 清理注释内容
+            # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
+            requirement = re.sub(r"\s*#.*$", "", requirement).strip()
             logger.debug("原始 Python 软件包名: %s", requirement)
 
             if (
@@ -5192,6 +5194,7 @@ class RequirementCheck:
                 or requirement.startswith("--extra-index-url")
                 or requirement.startswith("--find-links")
                 or requirement.startswith("-e .")
+                or requirement.startswith("-r ")
             ):
                 continue
 
@@ -5227,9 +5230,6 @@ class RequirementCheck:
                 continue
 
             # 常规 Python 软件包声明
-            # 清理注释内容
-            requirement = re.sub(r"\s*#.*$", "", requirement).strip()
-
             # 解析版本列表
             possble_requirement = RequirementCheck.parse_requirement_to_list(requirement)
             if len(possble_requirement) == 0:
@@ -5241,7 +5241,6 @@ class RequirementCheck:
                 package_list += requirements_list
                 continue
 
-            # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
             multi_requirements = requirement.split(",")
             if len(multi_requirements) > 1:
                 package_name = RequirementCheck.get_package_name(multi_requirements[0].strip())
@@ -5768,13 +5767,18 @@ class ComfyUIRequirementCheck(RequirementCheck):
             str: ComfyUI 环境冲突的组件信息列表
         """
         content = []
+        # 统一成下划线
+        conflict_package_list = RequirementCheck.remove_duplicate_object_from_list([x.replace("-", "_") for x in conflict_package_list])
         for conflict_package in conflict_package_list:
             content.append(ComfyUIRequirementCheck.get_package_name(f"{conflict_package}:"))
             for component_name, details in env_data.items():
                 for conflict_component_package in details.get("conflict_requires"):
-                    if ComfyUIRequirementCheck.get_package_name(conflict_component_package) == conflict_package:
+                    # 将中划线统一成下划线再对比
+                    conflict_component_package_format = ComfyUIRequirementCheck.get_package_name(conflict_component_package).replace("-", "_")
+                    conflict_package_format = conflict_package.replace("-", "_")
+                    if conflict_component_package_format == conflict_package_format:
                         content.append(f" - {component_name}: {conflict_component_package}")
-
+            content.append("")
         return "\n".join([str(x) for x in (content[:-1] if len(content) > 0 and content[-1] == "" else content)])
 
     @staticmethod
@@ -5941,7 +5945,10 @@ class ComfyUIRequirementCheck(RequirementCheck):
         conflict_package = []
         for i in package_list:
             for j in package_list:
-                if ComfyUIRequirementCheck.get_package_name(i) == ComfyUIRequirementCheck.get_package_name(j) and ComfyUIRequirementCheck.detect_conflict_package(i, j):
+                # 截取包名并将包名中的中划线统一成下划线
+                pkg1 = ComfyUIRequirementCheck.get_package_name(i).replace("-", "_")
+                pkg2 = ComfyUIRequirementCheck.get_package_name(j).replace("-", "_")
+                if pkg1 == pkg2 and ComfyUIRequirementCheck.detect_conflict_package(i, j):
                     conflict_package.append(ComfyUIRequirementCheck.get_package_name(i))
 
         return ComfyUIRequirementCheck.remove_duplicate_object_from_list(conflict_package)
@@ -5984,9 +5991,7 @@ class ComfyUIRequirementCheck(RequirementCheck):
             print()
 
         if len(conflict_result) > 0:
-            logger.debug("ComfyUI 冲突组件")
-            logger.debug(conflict_result)
-            print()
+            logger.debug("ComfyUI 冲突组件: \n%s", conflict_result)
 
     @staticmethod
     def process_comfyui_env_analysis(comfyui_root_path: Path | str) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]:
