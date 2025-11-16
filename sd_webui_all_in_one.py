@@ -767,7 +767,7 @@ class Downloader:
         Returns:
             Path: 下载成功时返回文件路径, 否则返回`None`
         Raises:
-            Exception: 下载出现错误
+            RuntimeError: 下载出现错误
         """
         if path is None:
             path = os.getcwd()
@@ -801,7 +801,7 @@ class Downloader:
             return save_path
         except Exception as e:
             logger.error("下载 %s 时发生错误: %s", url, e)
-            raise Exception(e) from e
+            raise RuntimeError(e) from e
 
     @staticmethod
     def load_file_from_url(
@@ -909,6 +909,9 @@ class Downloader:
         Returns:
             (Path | None): 保存的文件路径
         """
+        if tool == "aria2" and shutil.which("aria2c") is None:
+            logger.warning("未安装 Aria2, 无法使用 Aria2 进行下载, 将切换到 requests 进行下载任务")
+            tool = "requests"
         count = 0
         while count < retry:
             count += 1
@@ -3715,16 +3718,37 @@ class PyWhlVersionComponent(NamedTuple):
     """
 
     epoch: int
+    """版本纪元号, 用于处理不兼容的重大更改, 默认为 0"""
+
     release: list[int]
+    """发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]"""
+
     pre_l: str | None
+    """预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等"""
+
     pre_n: int | None
+    """预发布版本编号, 与预发布标签配合使用"""
+
     post_n1: int | None
+    """后发布版本编号, 格式如 1.0-1 中的数字"""
+
     post_l: str | None
+    """后发布标签, 如 'post', 'rev', 'r' 等"""
+
     post_n2: int | None
+    """post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字"""
+
     dev_l: str | None
+    """开发版本标签, 通常为 'dev'"""
+
     dev_n: int | None
+    """开发版本编号, 如 dev1 中的数字"""
+
     local: str | None
+    """本地版本标识符, 加号后面的部分"""
+
     is_wildcard: bool
+    """标记是否包含通配符, 用于版本范围匹配"""
 
 
 class PyWhlVersionComparison:
@@ -4402,6 +4426,12 @@ class Parser:
 
 
 class RequirementParser(Parser):
+    """Python 软件包解析工具
+
+    Attributes:
+        bindings (dict[str, str] | None): 解析语法
+    """
+
     def __init__(self, text: str, bindings: dict[str, str] | None = None):
         """初始化依赖声明解析器
 
@@ -4887,10 +4917,12 @@ class RequirementCheck:
         (?P<platform>[^-]+)         # 平台标签
         \.whl$                      # 固定后缀
     """
+    """解析 Python Wheel 名的的正则表达式"""
 
     REPLACE_PACKAGE_NAME_DICT = {
         "sam2": "SAM-2",
     }
+    """Python 软件包名替换表"""
 
     @staticmethod
     def parse_wheel_filename(filename: str) -> str:
@@ -5538,16 +5570,30 @@ class ComponentEnvironmentDetails(TypedDict):
         conflict_requires (list[str]): 具体冲突的依赖项
     """
 
-    requirement_path: str  # 依赖文件路径
-    is_disabled: bool  # 组件是否禁用
-    requires: list[str]  # 需要的依赖列表
-    has_missing_requires: bool  # 是否存在缺失依赖
-    missing_requires: list[str]  # 具体缺失的依赖项
-    has_conflict_requires: bool  # 是否存在冲突依赖
-    conflict_requires: list[str]  # 具体冲突的依赖项
+    requirement_path: str
+    """依赖文件路径"""
+
+    is_disabled: bool
+    """组件是否禁用"""
+
+    requires: list[str]
+    """需要的依赖列表"""
+
+    has_missing_requires: bool
+    """是否存在缺失依赖"""
+
+    missing_requires: list[str]
+    """具体缺失的依赖项"""
+
+    has_conflict_requires: bool
+    """是否存在冲突依赖"""
+
+    conflict_requires: list[str]
+    """具体冲突的依赖项"""
 
 
-ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]  # ComfyUI 环境组件表字典
+ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
+"""ComfyUI 环境组件表字典"""
 
 
 class ComfyUIRequirementCheck(RequirementCheck):
@@ -6821,7 +6867,7 @@ class BaseManager:
         Returns:
             bool: 环境有可用 GPU 时返回`True`
         Raises:
-            Exception: 环境中无 GPU 时引发错误
+            RuntimeError: 环境中无 GPU 时引发错误
         """
         if not self.utils.check_gpu():
             if self.utils.is_colab_environment():
@@ -6829,7 +6875,7 @@ class BaseManager:
             else:
                 notice = "没有可用的 GPU, 请在 kaggle -> Notebook -> Session options -> ACCELERATOR 选择 GPU T4 x 2\n如果不能使用 GPU, 请检查 Kaggle 账号是否绑定了手机号或者尝试更换账号!"
 
-            raise Exception(notice)
+            raise RuntimeError(notice)
         return True
 
     def link_to_google_drive(
@@ -6988,6 +7034,7 @@ class SDScriptsManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -7033,6 +7080,7 @@ class SDScriptsManager(BaseManager):
             check_avaliable_gpu (bool | None): 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
             enable_tcmalloc (bool | None): 启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -7042,6 +7090,10 @@ class SDScriptsManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("配置 sd-scripts 环境中")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         sd_scripts_path = self.workspace / self.workfolder
         requirement_path = sd_scripts_path / (sd_scripts_requirements if sd_scripts_requirements is not None else "requirements.txt")
@@ -7061,7 +7113,10 @@ class SDScriptsManager(BaseManager):
         )
         self.mirror.configure_pip()  # 配置 Pip / uv
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv=use_uv)  # 准备 Notebook 的运行依赖
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )  # 准备 Notebook 的运行依赖
         # 下载 sd-scripts
         self.git.clone(
             repo=sd_scripts_repo,
@@ -7141,6 +7196,8 @@ class FooocusManager(BaseManager):
 
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
+        Raises:
+            RuntimeError: 挂载 Google Drive 失败
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -7149,7 +7206,7 @@ class FooocusManager(BaseManager):
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
-                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         drive_output = drive_path / "MyDrive" / "fooocus_output"
         fooocus_path = self.workspace / self.workfolder
@@ -7374,6 +7431,7 @@ class FooocusManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -7398,6 +7456,7 @@ class FooocusManager(BaseManager):
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -7407,6 +7466,10 @@ class FooocusManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("开始安装 Fooocus")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         fooocus_path = self.workspace / self.workfolder
         fooocus_repo = "https://github.com/lllyasviel/Fooocus" if fooocus_repo is None else fooocus_repo
@@ -7428,7 +7491,10 @@ class FooocusManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv)
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )
         self.git.clone(fooocus_repo, fooocus_path)
         self.git.update(fooocus_path)
         self.env.install_pytorch(
@@ -7513,6 +7579,8 @@ class ComfyUIManager(BaseManager):
 
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
+        Raises:
+            RuntimeError: 挂载 Google Drive 失败
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -7521,7 +7589,7 @@ class ComfyUIManager(BaseManager):
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
-                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         drive_output = drive_path / "MyDrive" / "comfyui_output"
         comfyui_path = self.workspace / self.workfolder
@@ -7691,6 +7759,7 @@ class ComfyUIManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -7714,6 +7783,7 @@ class ComfyUIManager(BaseManager):
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -7723,6 +7793,10 @@ class ComfyUIManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("开始安装 ComfyUI")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         comfyui_path = self.workspace / self.workfolder
         comfyui_repo = "https://github.com/comfyanonymous/ComfyUI" if comfyui_repo is None else comfyui_repo
@@ -7739,7 +7813,10 @@ class ComfyUIManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv)
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )
         self.git.clone(comfyui_repo, comfyui_path)
         if custom_node_list is not None:
             self.install_custom_nodes_from_list(custom_node_list)
@@ -7792,7 +7869,7 @@ class SDWebUIManager(BaseManager):
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
         Raises:
-            Exception: 挂载 Google Drive 失败
+            RuntimeError: 挂载 Google Drive 失败
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -7801,7 +7878,7 @@ class SDWebUIManager(BaseManager):
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
-                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         drive_output = drive_path / "MyDrive" / "sd_webui_output"
         sd_webui_path = self.workspace / self.workfolder
@@ -8089,6 +8166,7 @@ class SDWebUIManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -8114,6 +8192,7 @@ class SDWebUIManager(BaseManager):
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -8123,6 +8202,10 @@ class SDWebUIManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("开始安装 Stable Diffusion WebUI")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         sd_webui_path = self.workspace / self.workfolder
         sd_webui_repo = "https://github.com/AUTOMATIC1111/stable-diffusion-webui" if sd_webui_repo is None else sd_webui_repo
@@ -8139,7 +8222,10 @@ class SDWebUIManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv)
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )
         self.git.clone(sd_webui_repo, sd_webui_path)
         if extension_list is not None:
             self.install_extensions_from_list(extension_list)
@@ -8425,7 +8511,11 @@ class InvokeAIManager(BaseManager):
         self.component = InvokeAIComponentManager()
 
     def mount_drive(self) -> None:
-        """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录"""
+        """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录
+
+        Raises:
+            RuntimeError: 挂载 Google Drive 失败
+        """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
             return
@@ -8433,7 +8523,7 @@ class InvokeAIManager(BaseManager):
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
-                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         invokeai_output = drive_path / "MyDrive" / "invokeai_output"
         invokeai_output.mkdir(parents=True, exist_ok=True)
@@ -8645,6 +8735,7 @@ class InvokeAIManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -8663,6 +8754,7 @@ class InvokeAIManager(BaseManager):
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -8672,6 +8764,10 @@ class InvokeAIManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("开始安装 InvokeAI")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
@@ -8684,7 +8780,10 @@ class InvokeAIManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv)
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )
         if pytorch_mirror_dict is not None:
             self.component.update_pytorch_mirror_dict(pytorch_mirror_dict)
         self.component.install_invokeai(
@@ -8729,6 +8828,8 @@ class SDTrainerManager(BaseManager):
 
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
+        Raises:
+            RuntimeError: 挂载 Google Drive 失败
         """
         if not self.utils.is_colab_environment():
             logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
@@ -8737,7 +8838,7 @@ class SDTrainerManager(BaseManager):
         drive_path = Path("/content/drive")
         if not (drive_path / "MyDrive").exists():
             if not self.utils.mount_google_drive(drive_path):
-                raise Exception("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
+                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
         drive_output = drive_path / "MyDrive" / "sd_trainer_output"
         sd_trainer_path = self.workspace / self.workfolder
@@ -8853,6 +8954,7 @@ class SDTrainerManager(BaseManager):
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
+        custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -8874,6 +8976,7 @@ class SDTrainerManager(BaseManager):
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
         Raises:
             Exception: GPU 不可用
         """
@@ -8883,6 +8986,10 @@ class SDTrainerManager(BaseManager):
             kwargs=kwargs,
         )
         logger.info("开始安装 SD Trainer")
+        if custom_sys_pkg_cmd is False:
+            custom_sys_pkg_cmd = []
+        elif custom_sys_pkg_cmd is True:
+            custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         comfyui_path = self.workspace / self.workfolder
         sd_trainer_repo = "https://github.com/Akegarasu/lora-scripts" if sd_trainer_repo is None else sd_trainer_repo
@@ -8898,7 +9005,10 @@ class SDTrainerManager(BaseManager):
         )
         self.mirror.configure_pip()
         self.utils.configure_env_var()
-        self.env.install_manager_depend(use_uv)
+        self.env.install_manager_depend(
+            use_uv=use_uv,
+            custom_sys_pkg_cmd=custom_sys_pkg_cmd,
+        )
         self.git.clone(sd_trainer_repo, comfyui_path)
         self.git.update(comfyui_path)
         self.env.install_pytorch(
