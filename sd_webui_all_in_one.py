@@ -4754,6 +4754,36 @@ class RequirementCheck:
         Returns:
             list[str]: 将 Python 软件包名声明列表解析成标准声明列表
         """
+
+        def _extract_repo_name(url_string: str) -> str | None:
+            """从包含 Git 仓库 URL 的字符串中提取仓库名称
+            
+            Args:
+                url_string (str): 包含 Git 仓库 URL 的字符串
+                
+            Returns:
+                (str | None): 提取到的仓库名称, 如果未找到则返回 None
+            """
+            # 模式1: 匹配 git+https:// 或 git+ssh:// 开头的 URL
+            # 模式2: 匹配直接以 git+ 开头的 URL
+            patterns = [
+                # 匹配 git+protocol://host/path/to/repo.git 格式
+                r'git\+[a-z]+://[^/]+/(?:[^/]+/)*([^/@]+?)(?:\.git)?(?:@|$)',
+                # 匹配 git+https://host/owner/repo.git 格式  
+                r'git\+https://[^/]+/[^/]+/([^/@]+?)(?:\.git)?(?:@|$)',
+                # 匹配 git+ssh://git@host:owner/repo.git 格式
+                r'git\+ssh://git@[^:]+:[^/]+/([^/@]+?)(?:\.git)?(?:@|$)',
+                # 通用模式: 匹配最后一个斜杠后的内容, 直到遇到 @ 或 .git 或字符串结束
+                r'/([^/@]+?)(?:\.git)?(?:@|$)'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, url_string)
+                if match:
+                    return match.group(1)
+            
+            return None
+
         package_list: list[str] = []
         canonical_package_list: list[str] = []
         for requirement in requirements:
@@ -4772,15 +4802,33 @@ class RequirementCheck:
             ):
                 continue
 
+            # bitsandbytes; sys_platform!='darwin' -> bitsandbytes
+            # xformers==0.0.14; sys_platform!='linux' -> xformers
+            requirement = requirement.split(";")[0]
+
             # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
             # git+https://github.com/WASasquatch/img2texture.git -> img2texture
             # git+https://github.com/deepghs/waifuc -> waifuc
-            if requirement.startswith("-e git+http") or requirement.startswith(
-                "git+http"
+            # -e git+https://github.com/Nerogar/mgds.git@2c67a5a -> mgds
+            # git+ssh://git@github.com:licyk/sd-webui-all-in-one@dev -> sd-webui-all-in-one
+            # git+https://gitlab.com/user/my-project.git@main -> my-project
+            # git+ssh://git@bitbucket.org:team/repo-name.git@develop -> repo-name
+            # https://github.com/another/repo.git -> repo
+            # git@github.com:user/repository.git -> repository
+            if (
+                requirement.startswith("-e git+http")
+                or requirement.startswith("git+http")
+                or requirement.startswith("-e git+ssh://")
+                or requirement.startswith("git+ssh://")
             ):
                 egg_match = re.search(r"egg=([^#&]+)", requirement)
                 if egg_match:
                     package_list.append(egg_match.group(1).split("-")[0])
+                    continue
+
+                repo_name_match = _extract_repo_name(requirement)
+                if repo_name_match is not None:
+                    package_list.append(repo_name_match)
                     continue
 
                 package_name = os.path.basename(requirement)
