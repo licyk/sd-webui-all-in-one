@@ -144,6 +144,7 @@ def run_cmd(
     custom_env: dict[str, str] | None = None,
     live: bool | None = True,
     shell: bool | None = None,
+    cwd: Path | str | None = None,
 ) -> str | None:
     """执行 Shell 命令
 
@@ -154,6 +155,7 @@ def run_cmd(
         custom_env (dict[str, str] | None): 自定义环境变量
         live (bool | None): 是否实时输出命令执行日志
         shell (bool | None): 是否使用内置 Shell 执行命令
+        cwd (Path | str | None): 执行进程时的起始路径
     Returns:
         (str | None): 命令执行时输出的内容
     Raises:
@@ -175,6 +177,8 @@ def run_cmd(
     else:
         # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
         command_to_exec = shlex.join(command) if isinstance(command, list) else command
+
+    cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
 
     if live:
         process_output = []
@@ -954,6 +958,7 @@ class EnvManager:
         *args: Any,
         use_uv: bool | None = True,
         custom_env: dict[str, str] | None = None,
+        cwd: Path | str | None = None,
     ) -> str:
         """使用 Pip / uv 安装 Python 软件包
 
@@ -961,6 +966,7 @@ class EnvManager:
             *args (Any): 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
             use_uv (bool | None): 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
             custom_env (dict[str, str] | None): 自定义环境变量
+            cwd (Path | str | None): 执行 Pip / uv 时的起始路径
         Returns:
             str: 命令的执行输出
         Raises:
@@ -968,6 +974,7 @@ class EnvManager:
         """
         if custom_env is None:
             custom_env = os.environ.copy()
+        cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
         if use_uv:
             try:
                 run_cmd(["uv", "--version"], live=False, custom_env=custom_env)
@@ -979,7 +986,7 @@ class EnvManager:
                 )
 
             try:
-                return run_cmd(["uv", "pip", "install", *args], custom_env=custom_env)
+                return run_cmd(["uv", "pip", "install", *args], custom_env=custom_env, cwd=cwd)
             except Exception as e:
                 logger.warning(
                     "检测到 uv 安装 Python 软件包失败, 尝试回退到 Pip 重试 Python 软件包安装: %s",
@@ -988,11 +995,13 @@ class EnvManager:
                 return run_cmd(
                     [Path(sys.executable).as_posix(), "-m", "pip", "install", *args],
                     custom_env=custom_env,
+                    cwd=cwd,
                 )
         else:
             return run_cmd(
                 [Path(sys.executable).as_posix(), "-m", "pip", "install", *args],
                 custom_env=custom_env,
+                cwd=cwd,
             )
 
     @staticmethod
@@ -1121,22 +1130,26 @@ class EnvManager:
         path: Path | str,
         use_uv: bool | None = True,
         custom_env: dict[str, str] | None = None,
+        cwd: Path | str | None = None,
     ) -> bool:
         """从 requirements.txt 文件指定安装的依赖
 
         Args:
             path (Path | str): requirements.txt 文件路径
             use_uv (bool | None): 是否使用 uv 代替 Pip 进行安装
+            custom_env (dict[str, str] | None): 自定义环境变量
+            cwd (Path | str | None): 执行 Pip / uv 时的起始路径
         Returns:
             bool: 安装依赖成功时返回`True`
         """
         if custom_env is None:
             custom_env = os.environ.copy()
+        cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
         path = Path(path) if not isinstance(path, Path) and path is not None else path
 
         try:
             logger.info("从 %s 安装 Python 软件包中", path)
-            EnvManager.pip_install("-r", path.as_posix(), use_uv=use_uv, custom_env=custom_env)
+            EnvManager.pip_install("-r", path.as_posix(), use_uv=use_uv, custom_env=custom_env, cwd=cwd)
             logger.info("从 %s 安装 Python 软件包成功", path)
             return True
         except Exception as e:
@@ -5496,16 +5509,21 @@ class RequirementCheck:
             name (str | None): 显示的名称
             use_uv (bool | None): 是否使用 uv 安装依赖
         """
-        if not os.path.exists(requirement_path):
+        requirement_path = Path(requirement_path) if not isinstance(requirement_path, Path) and requirement_path is not None else requirement_path
+        if not requirement_path.exists():
             logger.error("未找到 %s 文件, 无法检查依赖完整性", requirement_path)
             return
         if name is None:
-            name = str(requirement_path).split("/")[-2]
+            name = requirement_path.parent.name
         logger.info("检查 %s 依赖完整性中", name)
         if not RequirementCheck.validate_requirements(requirement_path):
             logger.info("安装 %s 依赖中", name)
             try:
-                EnvManager.install_requirements(requirement_path, use_uv)
+                EnvManager.install_requirements(
+                    path=requirement_path,
+                    use_uv=use_uv,
+                    cwd=requirement_path.parent,
+                )
                 logger.info("安装 %s 依赖完成", name)
             except Exception as e:
                 logger.error("安装 %s 依赖出现错误: %s", name, e)
@@ -5538,10 +5556,11 @@ class RequirementCheck:
         try:
             torch_spec = importlib.util.find_spec("torch")
             for folder in torch_spec.submodule_search_locations:
-                lib_folder = os.path.join(folder, "lib")
-                test_file = os.path.join(lib_folder, "fbgemm.dll")
-                dest = os.path.join(lib_folder, "libomp140.x86_64.dll")
-                if os.path.exists(dest):
+                folder = Path(folder)
+                lib_folder = folder / "lib"
+                test_file = lib_folder / "fbgemm.dll"
+                dest = lib_folder / "libomp140.x86_64.dll"
+                if dest.exists():
                     break
 
                 with open(test_file, "rb") as f:
@@ -5552,7 +5571,7 @@ class RequirementCheck:
                     _ = ctypes.cdll.LoadLibrary(test_file)
                 except FileNotFoundError as _:
                     logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
-                    shutil.copyfile(os.path.join(lib_folder, "libiomp5md.dll"), dest)
+                    shutil.copyfile(lib_folder / "libiomp5md.dll", dest)
         except Exception as _:
             pass
 
@@ -5611,9 +5630,10 @@ class ComfyUIRequirementCheck(RequirementCheck):
         Returns:
             ComfyUIEnvironmentComponent: ComfyUI 环境组件表字典
         """
+        comfyui_path = Path(comfyui_path) if not isinstance(comfyui_path, Path) and comfyui_path is not None else comfyui_path
         comfyui_env_data: ComfyUIEnvironmentComponent = {
             "ComfyUI": {
-                "requirement_path": os.path.join(comfyui_path, "requirements.txt"),
+                "requirement_path": (comfyui_path / "requirements.txt").as_posix(),
                 "is_disabled": False,
                 "requires": [],
                 "has_missing_requires": False,
@@ -5622,16 +5642,17 @@ class ComfyUIRequirementCheck(RequirementCheck):
                 "conflict_requires": [],
             },
         }
-        custom_nodes_path = os.path.join(comfyui_path, "custom_nodes")
-        for custom_node in os.listdir(custom_nodes_path):
-            if os.path.isfile(os.path.join(custom_nodes_path, custom_node)):
+
+        custom_nodes_path = comfyui_path / "custom_nodes"
+        for custom_node in custom_nodes_path.iterdir():
+            if custom_node.is_file():
                 continue
 
-            custom_node_requirement_path = os.path.join(custom_nodes_path, custom_node, "requirements.txt")
-            custom_node_is_disabled = True if custom_node.endswith(".disabled") else False
+            custom_node_requirement_path = custom_node / "requirements.txt"
+            custom_node_is_disabled = True if custom_node.parent.as_posix().endswith(".disabled") else False
 
-            comfyui_env_data[custom_node] = {
-                "requirement_path": (custom_node_requirement_path if os.path.exists(custom_node_requirement_path) else None),
+            comfyui_env_data[custom_node.name] = {
+                "requirement_path": (custom_node_requirement_path.as_posix() if custom_node_requirement_path.exists() else None),
                 "is_disabled": custom_node_is_disabled,
                 "requires": [],
                 "has_missing_requires": False,
@@ -6049,11 +6070,12 @@ class ComfyUIRequirementCheck(RequirementCheck):
             (tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]):
                 ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
         """
-        if not os.path.exists(os.path.join(comfyui_root_path, "requirements.txt")):
+        comfyui_root_path = Path(comfyui_root_path) if not isinstance(comfyui_root_path, Path) and comfyui_root_path is not None else comfyui_root_path
+        if not (comfyui_root_path / "requirements.txt").exists():
             logger.error("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
             return None, None, None
 
-        if not os.path.exists(os.path.join(comfyui_root_path, "custom_nodes")):
+        if not (comfyui_root_path / "custom_nodes").exists():
             logger.error("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
             return None, None, None
 
@@ -6100,10 +6122,15 @@ class ComfyUIRequirementCheck(RequirementCheck):
                 return
 
         for req in req_list:
-            name = req.split("/")[-2]
+            req_path = Path(req)
+            name = req_path.parent.name
             logger.info("安装 %s 的依赖中", name)
             try:
-                EnvManager.install_requirements(req, use_uv)
+                EnvManager.install_requirements(
+                    path=req,
+                    use_uv=use_uv,
+                    cwd=req_path.parent,
+                )
             except Exception as e:
                 logger.error("安装 %s 的依赖失败: %s", name, e)
 
@@ -7089,7 +7116,7 @@ class SDScriptsManager(BaseManager):
             args=args,
             kwargs=kwargs,
         )
-        logger.info("配置 sd-scripts 环境中")
+        logger.info("开始安装 sd-scripts")
         if custom_sys_pkg_cmd is False:
             custom_sys_pkg_cmd = []
         elif custom_sys_pkg_cmd is True:
@@ -7137,9 +7164,11 @@ class SDScriptsManager(BaseManager):
             use_uv=use_uv,
         )
         # 安装 sd-scripts 的依赖
-        os.chdir(sd_scripts_path)
-        self.env.install_requirements(path=requirement_path, use_uv=use_uv)
-        os.chdir(self.workspace)
+        self.env.install_requirements(
+            path=requirement_path,
+            use_uv=use_uv,
+            cwd=sd_scripts_path.parent,
+        )
         # 安装使用 sd-scripts 进行训练所需的其他软件包
         logger.info("安装其他 Python 模块中")
         try:
@@ -7166,7 +7195,7 @@ class SDScriptsManager(BaseManager):
             self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             self.cuda_malloc.set_cuda_malloc()
-        logger.info("sd-scripts 环境配置完成")
+        logger.info("sd-scripts 安装完成")
 
 
 class FooocusManager(BaseManager):
@@ -7503,9 +7532,11 @@ class FooocusManager(BaseManager):
             pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
-        os.chdir(fooocus_path)
-        self.env.install_requirements(requirements_path, use_uv)
-        os.chdir(self.workspace)
+        self.env.install_requirements(
+            path=requirements_path,
+            use_uv=use_uv,
+            cwd=fooocus_path.parent,
+        )
         self.install_config(
             preset=fooocus_preset,
             translation=fooocus_translation,
@@ -7828,9 +7859,11 @@ class ComfyUIManager(BaseManager):
             pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
-        os.chdir(comfyui_path)
-        self.env.install_requirements(requirements_path, use_uv)
-        os.chdir(self.workspace)
+        self.env.install_requirements(
+            path=requirements_path,
+            use_uv=use_uv,
+            cwd=comfyui_path.parent,
+        )
         self.install_config(comfyui_setting)
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
@@ -8243,14 +8276,16 @@ class SDWebUIManager(BaseManager):
             pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
-        os.chdir(sd_webui_path)
         self.install_config(
             setting=sd_webui_setting,
             requirements=sd_webui_requirements_url,
             requirements_file=requirements_path.name,
         )
-        self.env.install_requirements(requirements_path, use_uv)
-        os.chdir(self.workspace)
+        self.env.install_requirements(
+            path=requirements_path,
+            use_uv=use_uv,
+            cwd=sd_webui_path.parent,
+        )
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
@@ -8991,9 +9026,9 @@ class SDTrainerManager(BaseManager):
         elif custom_sys_pkg_cmd is True:
             custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
-        comfyui_path = self.workspace / self.workfolder
+        sd_trainer_path = self.workspace / self.workfolder
         sd_trainer_repo = "https://github.com/Akegarasu/lora-scripts" if sd_trainer_repo is None else sd_trainer_repo
-        requirements_path = comfyui_path / ("requirements.txt" if sd_trainer_requirements is None else sd_trainer_requirements)
+        requirements_path = sd_trainer_path / ("requirements.txt" if sd_trainer_requirements is None else sd_trainer_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
         self.mirror.set_mirror(
@@ -9009,17 +9044,19 @@ class SDTrainerManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        self.git.clone(sd_trainer_repo, comfyui_path)
-        self.git.update(comfyui_path)
+        self.git.clone(sd_trainer_repo, sd_trainer_path)
+        self.git.update(sd_trainer_path)
         self.env.install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
             pytorch_mirror=pytorch_mirror,
             use_uv=use_uv,
         )
-        os.chdir(comfyui_path)
-        self.env.install_requirements(requirements_path, use_uv)
-        os.chdir(self.workspace)
+        self.env.install_requirements(
+            path=requirements_path,
+            use_uv=use_uv,
+            cwd=sd_trainer_path.parent,
+        )
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
         if enable_tcmalloc:
