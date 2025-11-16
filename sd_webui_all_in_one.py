@@ -90,7 +90,7 @@ class LoggingColoredFormatter(logging.Formatter):
 
         if self.color:
             seq = self.COLORS.get(levelname, self.COLORS["RESET"])
-            colored_record.levelname = f'{seq}{levelname}{self.COLORS["RESET"]}'
+            colored_record.levelname = f"{seq}{levelname}{self.COLORS['RESET']}"
 
         return super().format(colored_record)
 
@@ -6071,8 +6071,10 @@ class CUDAMalloc:
             set[str]: GPU 名称列表
         """
         if os.name == "nt":
+
             class DisplayDevicea(ctypes.Structure):
                 """显示设备信息结构类型"""
+
                 _fields_ = [
                     ("cb", ctypes.c_ulong),
                     ("DeviceName", ctypes.c_char * 32),
@@ -6612,7 +6614,7 @@ class BaseManager:
             {"link_dir": "extra_model_paths.yaml", "is_file": True},
         ]
         ```
-        
+
         Args:
             base_dir (Path): 链接的根路径
             drive_path (Path): 链接到的 Google Drive 的路径
@@ -7712,7 +7714,9 @@ class SDWebUIManager(BaseManager):
         logger.info("下载配置文件")
         if setting is not None:
             self.downloader.download_file(
-                url=setting, path=setting_path, save_name="config.json",
+                url=setting,
+                path=setting_path,
+                save_name="config.json",
             )
         if requirements is not None:
             try:
@@ -8388,7 +8392,9 @@ class InvokeAIManager(BaseManager):
                     return True
                 else:
                     logger.error(
-                        "导入 %s 模型到 InvokeAI 时出现了错误: %s", file_name, result.error
+                        "导入 %s 模型到 InvokeAI 时出现了错误: %s",
+                        file_name,
+                        result.error,
                     )
                     return False
             except Exception as e:
@@ -8411,9 +8417,7 @@ class InvokeAIManager(BaseManager):
             logger.error("启动 InvokeAI 模型管理服务失败, 无法导入模型: %s", e)
             return
         logger.info(
-            "就地安装 (仅本地) 模式: %s", (
-                "禁用" if install_model_to_local else "启用"
-            )
+            "就地安装 (仅本地) 模式: %s", ("禁用" if install_model_to_local else "启用")
         )
         for model in model_list:
             count += 1

@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 readme = { content-type = "text/markdown", file = "README.md" }
 license = { file = "LICENSE" }
 dynamic = ["version"]
-authors = [{name = "licyk"}]
+authors = [ {name = "licyk"} ]
 
 [tool.setuptools]
 py-modules = ["sd_webui_all_in_one"]
@@ -33,3 +33,10 @@ disable = [
 [tool.pylint.format]
 max-line-length = 180
 ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+
+[tool.ruff]
+line-length = 180
+indent-width = 4
+ignore = [
+    "E402" # module-import-not-at-top-of-file
+]
