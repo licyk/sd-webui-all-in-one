@@ -54,7 +54,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset sd_trainer_installer installer/sd_trainer_installer.ps1 -y || true
+          gh release delete-asset sd_trainer_installer sd_trainer_installer.ps1 -y || true
           gh release upload sd_trainer_installer installer/sd_trainer_installer.ps1
 
       - name: Release InvokeAI Installer
@@ -62,7 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset invokeai_installer installer/invokeai_installer.ps1 -y || true
+          gh release delete-asset invokeai_installer invokeai_installer.ps1 -y || true
           gh release upload invokeai_installer installer/invokeai_installer.ps1
 
       - name: Release ComfyUI Installer
@@ -70,7 +70,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset comfyui_installer installer/comfyui_installer.ps1  -y || true
+          gh release delete-asset comfyui_installer comfyui_installer.ps1  -y || true
           gh release upload comfyui_installer installer/comfyui_installer.ps1
 
       - name: Release SD WebUI Installer
@@ -78,7 +78,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset stable_diffusion_webui_installer installer/stable_diffusion_webui_installer.ps1  -y || true
+          gh release delete-asset stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1  -y || true
           gh release upload stable_diffusion_webui_installer installer/stable_diffusion_webui_installer.ps1
 
       - name: Release Fooocus Installer
@@ -86,7 +86,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset fooocus_installer installer/fooocus_installer.ps1  -y || true
+          gh release delete-asset fooocus_installer fooocus_installer.ps1  -y || true
           gh release upload fooocus_installer installer/fooocus_installer.ps1
 
       - name: Release SD-Trainer-Script Installer
@@ -94,7 +94,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset sd_trainer_script_installer installer/sd_trainer_script_installer.ps1  -y || true
+          gh release delete-asset sd_trainer_script_installer sd_trainer_script_installer.ps1  -y || true
           gh release upload sd_trainer_script_installer installer/sd_trainer_script_installer.ps1
 
       - name: Release config
@@ -102,37 +102,37 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset archive installer/configure_env.bat -y || true
+          gh release delete-asset archive configure_env.bat -y || true
           gh release upload archive installer/configure_env.bat
 
-          gh release delete-asset archive config/fooocus_config.json -y || true
+          gh release delete-asset archive fooocus_config.json -y || true
           gh release upload archive installer/fooocus_config.json
 
-          gh release delete-asset archive installer/fooocus_path_config_kaggle.json -y || true
+          gh release delete-asset archive fooocus_path_config_kaggle.json -y || true
           gh release upload archive installer/fooocus_path_config_kaggle.json
 
-          gh release delete-asset archive installer/fooocus_zh_cn.json -y || true
+          gh release delete-asset archive fooocus_zh_cn.json -y || true
           gh release upload archive installer/fooocus_zh_cn.json
 
-          gh release delete-asset archive installer/libtcmalloc_minimal.so.4 -y || true
+          gh release delete-asset archive libtcmalloc_minimal.so.4 -y || true
           gh release upload archive installer/libtcmalloc_minimal.so.4
 
-          gh release delete-asset archive installer/sd_webui_config.json -y || true
+          gh release delete-asset archive sd_webui_config.json -y || true
           gh release upload archive installer/sd_webui_config.json
 
-          gh release delete-asset archive installer/install_embed_python.ps1 -y || true
+          gh release delete-asset archive install_embed_python.ps1 -y || true
           gh release upload archive installer/install_embed_python.ps1
 
-          gh release delete-asset archive installer/comfy.settings.json -y || true
+          gh release delete-asset archive comfy.settings.json -y || true
           gh release upload archive installer/comfy.settings.json
 
-          gh release delete-asset archive installer/sd_webui_requirements_versions.txt -y || true
+          gh release delete-asset archive sd_webui_requirements_versions.txt -y || true
           gh release upload archive installer/sd_webui_requirements_versions.txt
 
-          gh release delete-asset archive installer/sd_webui_forge_requirements_versions.txt -y || true
+          gh release delete-asset archive sd_webui_forge_requirements_versions.txt -y || true
           gh release upload archive installer/sd_webui_forge_requirements_versions.txt
 
-          gh release delete-asset archive installer/sd_webui_forge_classic_requirements_versions.txt -y || true
+          gh release delete-asset archive sd_webui_forge_classic_requirements_versions.txt -y || true
           gh release upload archive installer/sd_webui_forge_classic_requirements_versions.txt
 
       - name: Release Jupyter Notebook
@@ -140,43 +140,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset archive notebook/sd_scripts_kaggle.ipynb -y || true
+          gh release delete-asset archive sd_scripts_kaggle.ipynb -y || true
           gh release upload archive notebook/sd_scripts_kaggle.ipynb
 
           gh release delete-asset archive sd_scripts_ipynb_core.py -y || true
           gh release upload archive sd_scripts_ipynb_core.py
 
-          gh release delete-asset archive notebook/sd_scripts_colab.ipynb -y || true
+          gh release delete-asset archive sd_scripts_colab.ipynb -y || true
           gh release upload archive notebook/sd_scripts_colab.ipynb
 
-          gh release delete-asset archive notebook/sd_webui_all_in_one_colab.ipynb -y || true
+          gh release delete-asset archive sd_webui_all_in_one_colab.ipynb -y || true
           gh release upload archive notebook/sd_webui_all_in_one_colab.ipynb
 
-          gh release delete-asset archive notebook/sd_webui_all_in_one.ipynb -y || true
+          gh release delete-asset archive sd_webui_all_in_one.ipynb -y || true
           gh release upload archive notebook/sd_webui_all_in_one.ipynb
 
-          gh release delete-asset archive notebook/sd_trainer_kaggle.ipynb -y || true
+          gh release delete-asset archive sd_trainer_kaggle.ipynb -y || true
           gh release upload archive notebook/sd_trainer_kaggle.ipynb
 
-          gh release delete-asset archive notebook/fooocus_colab.ipynb -y || true
+          gh release delete-asset archive fooocus_colab.ipynb -y || true
           gh release upload archive notebook/fooocus_colab.ipynb
 
-          gh release delete-asset archive notebook/fooocus_kaggle.ipynb -y || true
+          gh release delete-asset archive fooocus_kaggle.ipynb -y || true
           gh release upload archive notebook/fooocus_kaggle.ipynb
 
-          gh release delete-asset archive notebook/hdm_train_kaggle.ipynb -y || true
+          gh release delete-asset archive hdm_train_kaggle.ipynb -y || true
           gh release upload archive notebook/hdm_train_kaggle.ipynb
 
-          gh release delete-asset archive notebook/comfyui_colab.ipynb -y || true
+          gh release delete-asset archive comfyui_colab.ipynb -y || true
           gh release upload archive notebook/comfyui_colab.ipynb
 
-          gh release delete-asset archive notebook/invokeai_colab.ipynb -y || true
+          gh release delete-asset archive invokeai_colab.ipynb -y || true
           gh release upload archive notebook/invokeai_colab.ipynb
 
-          gh release delete-asset archive notebook/stable_diffusion_webui_colab.ipynb -y || true
+          gh release delete-asset archive stable_diffusion_webui_colab.ipynb -y || true
           gh release upload archive notebook/stable_diffusion_webui_colab.ipynb
 
-          gh release delete-asset archive notebook/sd_trainer_colab.ipynb -y || true
+          gh release delete-asset archive sd_trainer_colab.ipynb -y || true
           gh release upload archive notebook/sd_trainer_colab.ipynb
 
   Release-To-Gitee:
