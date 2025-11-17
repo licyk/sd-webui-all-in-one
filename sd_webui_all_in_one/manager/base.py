@@ -30,24 +30,12 @@ class BaseManager:
     Attributes:
         workspace (Path): 工作区路径
         workfolder (str): 工作区的文件夹名称
-        git (GitWarpper): Git工具实例, 用于 Git 相关操作
-        downloader (Downloader): 下载器实例, 用于文件下载
-        env (EnvManager): 环境管理器实例，用于环境依赖管理
-        utils (Utils): 工具集合实例, 提供各种辅助功能
         repo (RepoManager): 仓库管理器实例, 用于 HuggingFace / ModelScope 仓库操作
-        mirror (MirrorConfigManager): 镜像配置管理器实例
         tun (TunnelManager): 隧道管理器实例, 用于内网穿透
-        env_check (RequirementCheck): 环境要求检查器实例
-        ort_check (OnnxRuntimeGPUCheck): ONNX Runtime GPU 检查器实例
-        cuda_malloc (CUDAMalloc): CUDA 内存分配器实例
         tcmalloc (TCMalloc): TCMalloc 内存分配器实例
-        remove_files (Callable): 文件删除函数引用
-        run_cmd (Callable): 命令执行函数引用
         copy_files (Callable): 文件复制函数引用
-        get_logger (Callable): 日志获取函数引用
-        multi_thread_downloader_class (type): 多线程下载器类引用
-        common_version_comparison (type): 通用版本比较类引用
-        py_whl_version_comparison (type): Python Wheel版本比较类引用
+        import_kaggle_input (Callable): Kaggle Input 导入函数引用
+        display_model_and_dataset_dir (Callable): 展示模型 / 数据集目录函数引用
     """
 
     def __init__(
