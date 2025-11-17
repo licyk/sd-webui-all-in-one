@@ -83,7 +83,6 @@ def run_cmd(
                 encoding="utf-8",
                 env=custom_env,
                 cwd=cwd,
-                errors="replace",
             )
 
             for line in process.stdout:
