@@ -84,7 +84,7 @@ class SDWebUIManager(BaseManager):
         self.link_to_google_drive(
             base_dir=sd_webui_path,
             drive_path=drive_output,
-            links=extras,
+            links=links,
         )
 
     def get_sd_model(
