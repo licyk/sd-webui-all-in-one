@@ -11,6 +11,7 @@ if [[ -z "${github_release_tag}" ]]; then
 fi
 
 echo "${github_files}" | while IFS= read -r file_path; do
+    [[ -z "${file_path}" ]] && continue
     echo "上传文件: ${file_path}"
     gh release delete-asset "${github_release_tag}" "$(basename "${file_path}")" -y || true
     gh release upload "${github_release_tag}" "${file_path}"
