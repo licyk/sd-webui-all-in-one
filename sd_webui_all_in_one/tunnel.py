@@ -207,7 +207,6 @@ class TunnelManager:
             universal_newlines=True,
             bufsize=1,
             encoding="utf-8",
-            errors="replace",
         )
 
         output_queue = queue.Queue()
@@ -471,7 +470,6 @@ class TunnelManager:
             text=True,
             bufsize=1,
             encoding="utf-8",
-            errors="replace",
         )
 
         output_queue = queue.Queue()

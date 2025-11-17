@@ -44,7 +44,7 @@ class TCMalloc:
         """
         # 检查 glibc 版本
         try:
-            result = subprocess.run(["ldd", "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+            result = subprocess.run(["ldd", "--version"], capture_output=True, text=True)
             libc_ver_line = result.stdout.split("\n")[0]
             libc_ver = re.search(r"(\d+\.\d+)", libc_ver_line)
             if libc_ver:
@@ -72,8 +72,6 @@ class TCMalloc:
                     capture_output=True,
                     text=True,
                     env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")),
-                    encoding="utf-8",
-                    errors="replace",
                 )
                 libraries = result.stdout.split("\n")
 
@@ -92,7 +90,7 @@ class TCMalloc:
                             # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
                             if CommonVersionComparison(libc_ver) < CommonVersionComparison(libc_v234):
                                 # glibc < 2.34, pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
-                                ldd_result = subprocess.run(["ldd", lib_path], capture_output=True, text=True, encoding="utf-8", errors="replace")
+                                ldd_result = subprocess.run(["ldd", lib_path], capture_output=True, text=True)
                                 if "libpthread" in ldd_result.stdout:
                                     logger.info(
                                         "%s 链接到 libpthread, 执行 LD_PRELOAD=%s",
