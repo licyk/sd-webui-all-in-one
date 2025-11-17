@@ -12,8 +12,7 @@ dynamic = ["version"]
 authors = [ {name = "licyk"} ]
 
 [tool.setuptools]
-py-modules = ["sd_webui_all_in_one"]
-include-package-data = true
+packages = ["sd_webui_all_in_one", "sd_webui_all_in_one.subpackage"]
 
 [tool.setuptools.dynamic]
 version = { attr = "sd_webui_all_in_one.VERSION" }
