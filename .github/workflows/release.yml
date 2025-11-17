@@ -245,7 +245,7 @@ jobs:
       - name: Release Fooocus Installer to Gitee
         shell: bash
         env:
-          gitee_release_id: 467150、
+          gitee_release_id: 467150
           gitee_files: |
             installer/fooocus_installer.ps1
         run: |
