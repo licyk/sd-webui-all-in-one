@@ -106,7 +106,7 @@ jobs:
           gh release upload archive installer/configure_env.bat
 
           gh release delete-asset archive fooocus_config.json -y || true
-          gh release upload archive installer/fooocus_config.json
+          gh release upload archive config/fooocus_config.json
 
           gh release delete-asset archive fooocus_path_config_kaggle.json -y || true
           gh release upload archive installer/fooocus_path_config_kaggle.json

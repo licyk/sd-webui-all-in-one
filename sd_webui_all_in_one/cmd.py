@@ -106,8 +106,6 @@ def run_cmd(
                 shell=shell,
                 env=custom_env,
                 cwd=cwd,
-                encoding="utf-8",
-                errors="replace",
             )
             if result.returncode != 0:
                 raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
@@ -126,8 +124,6 @@ def run_cmd(
         shell=shell,
         env=custom_env,
         cwd=cwd,
-        encoding="utf-8",
-        errors="replace",
     )
 
     if result.returncode != 0:
