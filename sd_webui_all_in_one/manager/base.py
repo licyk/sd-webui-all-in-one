@@ -269,6 +269,8 @@ class BaseManager:
                     text=True,
                     shell=True,
                     cwd=base_path,
+                    encoding="utf-8",
+                    errors="replace",
                 ) as p:
                     for line in p.stdout:
                         print(line, end="", flush=True)
@@ -277,6 +279,8 @@ class BaseManager:
                     cmd,
                     shell=True,
                     cwd=base_path,
+                    encoding="utf-8",
+                    errors="replace",
                 )
             else:
                 logger.error("未知的显示模式: %s", display_mode)
