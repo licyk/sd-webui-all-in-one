@@ -33,7 +33,7 @@ jobs:
       - name: Launch SD-Trainer-Script Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/sd_trainer_script_installer.ps1" `
+          & "${{ github.workspace }}/installer/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/musubi_tuner" `
             -PyTorchMirrorType cu128 `
             -BuildMode `

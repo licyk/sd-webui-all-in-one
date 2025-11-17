@@ -33,7 +33,7 @@ jobs:
       - name: Launch InvokeAI Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/invokeai_installer.ps1" `
+          & "${{ github.workspace }}/installer/invokeai_installer.ps1" `
             -InstallPath "${{ github.workspace }}/invokeai" `
             -PyTorchMirrorType cu128 `
             -BuildMode `

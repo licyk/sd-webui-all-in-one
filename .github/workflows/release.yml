@@ -5,36 +5,36 @@ on:
     branches:
       - main
     paths:
-      - sd_trainer_installer.ps1
-      - invokeai_installer.ps1
-      - comfyui_installer.ps1
-      - stable_diffusion_webui_installer.ps1
-      - fooocus_installer.ps1
-      - sd_trainer_script_installer.ps1
-      - configure_env.bat
-      - fooocus_config.json
-      - fooocus_path_config_kaggle.json
-      - fooocus_zh_cn.json
-      - libtcmalloc_minimal.so.4
-      - sd_webui_config.json
-      - install_embed_python.ps1
-      - comfy.settings.json
-      - sd_webui_requirements_versions.txt
-      - sd_webui_forge_requirements_versions.txt
-      - sd_webui_forge_classic_requirements_versions.txt
-      - sd_scripts_kaggle.ipynb
+      - installer/sd_trainer_installer.ps1
+      - installer/invokeai_installer.ps1
+      - installer/comfyui_installer.ps1
+      - installer/stable_diffusion_webui_installer.ps1
+      - installer/fooocus_installer.ps1
+      - installer/sd_trainer_script_installer.ps1
+      - installer/install_embed_python.ps1
+      - installer/configure_env.bat
+      - config/fooocus_config.json
+      - config/fooocus_path_config_kaggle.json
+      - config/fooocus_zh_cn.json
+      - config/libtcmalloc_minimal.so.4
+      - config/sd_webui_config.json
+      - config/comfy.settings.json
+      - config/sd_webui_requirements_versions.txt
+      - config/sd_webui_forge_requirements_versions.txt
+      - config/sd_webui_forge_classic_requirements_versions.txt
+      - notebook/sd_scripts_kaggle.ipynb
       - sd_scripts_ipynb_core.py
-      - sd_scripts_colab.ipynb
-      - sd_webui_all_in_one_colab.ipynb
-      - sd_webui_all_in_one.ipynb
-      - sd_trainer_kaggle.ipynb
-      - fooocus_colab.ipynb
-      - fooocus_kaggle.ipynb
-      - hdm_train_kaggle.ipynb
-      - comfyui_colab.ipynb
-      - invokeai_colab.ipynb
-      - stable_diffusion_webui_colab.ipynb
-      - sd_trainer_colab.ipynb
+      - config/sd_scripts_colab.ipynb
+      - config/sd_webui_all_in_one_colab.ipynb
+      - config/sd_webui_all_in_one.ipynb
+      - config/sd_trainer_kaggle.ipynb
+      - config/fooocus_colab.ipynb
+      - config/fooocus_kaggle.ipynb
+      - config/hdm_train_kaggle.ipynb
+      - config/comfyui_colab.ipynb
+      - config/invokeai_colab.ipynb
+      - config/stable_diffusion_webui_colab.ipynb
+      - config/sd_trainer_colab.ipynb
   delete:
   create:
   workflow_dispatch:
@@ -54,130 +54,130 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset sd_trainer_installer sd_trainer_installer.ps1 -y || true
-          gh release upload sd_trainer_installer sd_trainer_installer.ps1
+          gh release delete-asset sd_trainer_installer installer/sd_trainer_installer.ps1 -y || true
+          gh release upload sd_trainer_installer installer/sd_trainer_installer.ps1
 
       - name: Release InvokeAI Installer
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset invokeai_installer invokeai_installer.ps1 -y || true
-          gh release upload invokeai_installer invokeai_installer.ps1
+          gh release delete-asset invokeai_installer installer/invokeai_installer.ps1 -y || true
+          gh release upload invokeai_installer installer/invokeai_installer.ps1
 
       - name: Release ComfyUI Installer
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset comfyui_installer comfyui_installer.ps1  -y || true
-          gh release upload comfyui_installer comfyui_installer.ps1
+          gh release delete-asset comfyui_installer installer/comfyui_installer.ps1  -y || true
+          gh release upload comfyui_installer installer/comfyui_installer.ps1
 
       - name: Release SD WebUI Installer
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1  -y || true
-          gh release upload stable_diffusion_webui_installer stable_diffusion_webui_installer.ps1
+          gh release delete-asset stable_diffusion_webui_installer installer/stable_diffusion_webui_installer.ps1  -y || true
+          gh release upload stable_diffusion_webui_installer installer/stable_diffusion_webui_installer.ps1
 
       - name: Release Fooocus Installer
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset fooocus_installer fooocus_installer.ps1  -y || true
-          gh release upload fooocus_installer fooocus_installer.ps1
+          gh release delete-asset fooocus_installer installer/fooocus_installer.ps1  -y || true
+          gh release upload fooocus_installer installer/fooocus_installer.ps1
 
       - name: Release SD-Trainer-Script Installer
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset sd_trainer_script_installer sd_trainer_script_installer.ps1  -y || true
-          gh release upload sd_trainer_script_installer sd_trainer_script_installer.ps1
+          gh release delete-asset sd_trainer_script_installer installer/sd_trainer_script_installer.ps1  -y || true
+          gh release upload sd_trainer_script_installer installer/sd_trainer_script_installer.ps1
 
       - name: Release config
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset archive configure_env.bat -y || true
-          gh release upload archive configure_env.bat
+          gh release delete-asset archive installer/configure_env.bat -y || true
+          gh release upload archive installer/configure_env.bat
 
-          gh release delete-asset archive fooocus_config.json -y || true
-          gh release upload archive fooocus_config.json
+          gh release delete-asset archive config/fooocus_config.json -y || true
+          gh release upload archive installer/fooocus_config.json
 
-          gh release delete-asset archive fooocus_path_config_kaggle.json -y || true
-          gh release upload archive fooocus_path_config_kaggle.json
+          gh release delete-asset archive installer/fooocus_path_config_kaggle.json -y || true
+          gh release upload archive installer/fooocus_path_config_kaggle.json
 
-          gh release delete-asset archive fooocus_zh_cn.json -y || true
-          gh release upload archive fooocus_zh_cn.json
+          gh release delete-asset archive installer/fooocus_zh_cn.json -y || true
+          gh release upload archive installer/fooocus_zh_cn.json
 
-          gh release delete-asset archive libtcmalloc_minimal.so.4 -y || true
-          gh release upload archive libtcmalloc_minimal.so.4
+          gh release delete-asset archive installer/libtcmalloc_minimal.so.4 -y || true
+          gh release upload archive installer/libtcmalloc_minimal.so.4
 
-          gh release delete-asset archive sd_webui_config.json -y || true
-          gh release upload archive sd_webui_config.json
+          gh release delete-asset archive installer/sd_webui_config.json -y || true
+          gh release upload archive installer/sd_webui_config.json
 
-          gh release delete-asset archive install_embed_python.ps1 -y || true
-          gh release upload archive install_embed_python.ps1
+          gh release delete-asset archive installer/install_embed_python.ps1 -y || true
+          gh release upload archive installer/install_embed_python.ps1
 
-          gh release delete-asset archive comfy.settings.json -y || true
-          gh release upload archive comfy.settings.json
+          gh release delete-asset archive installer/comfy.settings.json -y || true
+          gh release upload archive installer/comfy.settings.json
 
-          gh release delete-asset archive sd_webui_requirements_versions.txt -y || true
-          gh release upload archive sd_webui_requirements_versions.txt
+          gh release delete-asset archive installer/sd_webui_requirements_versions.txt -y || true
+          gh release upload archive installer/sd_webui_requirements_versions.txt
 
-          gh release delete-asset archive sd_webui_forge_requirements_versions.txt -y || true
-          gh release upload archive sd_webui_forge_requirements_versions.txt
+          gh release delete-asset archive installer/sd_webui_forge_requirements_versions.txt -y || true
+          gh release upload archive installer/sd_webui_forge_requirements_versions.txt
 
-          gh release delete-asset archive sd_webui_forge_classic_requirements_versions.txt -y || true
-          gh release upload archive sd_webui_forge_classic_requirements_versions.txt
+          gh release delete-asset archive installer/sd_webui_forge_classic_requirements_versions.txt -y || true
+          gh release upload archive installer/sd_webui_forge_classic_requirements_versions.txt
 
       - name: Release Jupyter Notebook
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release delete-asset archive sd_scripts_kaggle.ipynb -y || true
-          gh release upload archive sd_scripts_kaggle.ipynb
+          gh release delete-asset archive notebook/sd_scripts_kaggle.ipynb -y || true
+          gh release upload archive notebook/sd_scripts_kaggle.ipynb
 
           gh release delete-asset archive sd_scripts_ipynb_core.py -y || true
           gh release upload archive sd_scripts_ipynb_core.py
 
-          gh release delete-asset archive sd_scripts_colab.ipynb -y || true
-          gh release upload archive sd_scripts_colab.ipynb
+          gh release delete-asset archive notebook/sd_scripts_colab.ipynb -y || true
+          gh release upload archive notebook/sd_scripts_colab.ipynb
 
-          gh release delete-asset archive sd_webui_all_in_one_colab.ipynb -y || true
-          gh release upload archive sd_webui_all_in_one_colab.ipynb
+          gh release delete-asset archive notebook/sd_webui_all_in_one_colab.ipynb -y || true
+          gh release upload archive notebook/sd_webui_all_in_one_colab.ipynb
 
-          gh release delete-asset archive sd_webui_all_in_one.ipynb -y || true
-          gh release upload archive sd_webui_all_in_one.ipynb
+          gh release delete-asset archive notebook/sd_webui_all_in_one.ipynb -y || true
+          gh release upload archive notebook/sd_webui_all_in_one.ipynb
 
-          gh release delete-asset archive sd_trainer_kaggle.ipynb -y || true
-          gh release upload archive sd_trainer_kaggle.ipynb
+          gh release delete-asset archive notebook/sd_trainer_kaggle.ipynb -y || true
+          gh release upload archive notebook/sd_trainer_kaggle.ipynb
 
-          gh release delete-asset archive fooocus_colab.ipynb -y || true
-          gh release upload archive fooocus_colab.ipynb
+          gh release delete-asset archive notebook/fooocus_colab.ipynb -y || true
+          gh release upload archive notebook/fooocus_colab.ipynb
 
-          gh release delete-asset archive fooocus_kaggle.ipynb -y || true
-          gh release upload archive fooocus_kaggle.ipynb
+          gh release delete-asset archive notebook/fooocus_kaggle.ipynb -y || true
+          gh release upload archive notebook/fooocus_kaggle.ipynb
 
-          gh release delete-asset archive hdm_train_kaggle.ipynb -y || true
-          gh release upload archive hdm_train_kaggle.ipynb
+          gh release delete-asset archive notebook/hdm_train_kaggle.ipynb -y || true
+          gh release upload archive notebook/hdm_train_kaggle.ipynb
 
-          gh release delete-asset archive comfyui_colab.ipynb -y || true
-          gh release upload archive comfyui_colab.ipynb
+          gh release delete-asset archive notebook/comfyui_colab.ipynb -y || true
+          gh release upload archive notebook/comfyui_colab.ipynb
 
-          gh release delete-asset archive invokeai_colab.ipynb -y || true
-          gh release upload archive invokeai_colab.ipynb
+          gh release delete-asset archive notebook/invokeai_colab.ipynb -y || true
+          gh release upload archive notebook/invokeai_colab.ipynb
 
-          gh release delete-asset archive stable_diffusion_webui_colab.ipynb -y || true
-          gh release upload archive stable_diffusion_webui_colab.ipynb
+          gh release delete-asset archive notebook/stable_diffusion_webui_colab.ipynb -y || true
+          gh release upload archive notebook/stable_diffusion_webui_colab.ipynb
 
-          gh release delete-asset archive sd_trainer_colab.ipynb -y || true
-          gh release upload archive sd_trainer_colab.ipynb
+          gh release delete-asset archive notebook/sd_trainer_colab.ipynb -y || true
+          gh release upload archive notebook/sd_trainer_colab.ipynb
 
   Release-To-Gitee:
     # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
@@ -204,17 +204,17 @@ jobs:
           gitee_release_id: 435278
           gitee_upload_retry_times: 3
           gitee_files: |
-            configure_env.bat
-            fooocus_config.json
-            fooocus_path_config_kaggle.json
-            fooocus_zh_cn.json
-            libtcmalloc_minimal.so.4
-            sd_webui_config.json
-            install_embed_python.ps1
-            comfy.settings.json
-            sd_webui_requirements_versions.txt
-            sd_webui_forge_requirements_versions.txt
-            sd_webui_forge_classic_requirements_versions.txt
+            installer/configure_env.bat
+            config/fooocus_config.json
+            config/fooocus_path_config_kaggle.json
+            config/fooocus_zh_cn.json
+            config/libtcmalloc_minimal.so.4
+            config/sd_webui_config.json
+            installer/install_embed_python.ps1
+            config/comfy.settings.json
+            config/sd_webui_requirements_versions.txt
+            config/sd_webui_forge_requirements_versions.txt
+            config/sd_webui_forge_classic_requirements_versions.txt
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -227,19 +227,19 @@ jobs:
           gitee_release_id: 435278
           gitee_upload_retry_times: 3
           gitee_files: |
-            sd_scripts_kaggle.ipynb
+            notebook/sd_scripts_kaggle.ipynb
             sd_scripts_ipynb_core.py
-            sd_scripts_colab.ipynb
-            sd_webui_all_in_one_colab.ipynb
-            sd_webui_all_in_one.ipynb
-            sd_trainer_kaggle.ipynb
-            fooocus_colab.ipynb
-            fooocus_kaggle.ipynb
-            hdm_train_kaggle.ipynb
-            comfyui_colab.ipynb
-            invokeai_colab.ipynb
-            stable_diffusion_webui_colab.ipynb
-            sd_trainer_colab.ipynb
+            notebook/sd_scripts_colab.ipynb
+            notebook/sd_webui_all_in_one_colab.ipynb
+            notebook/sd_webui_all_in_one.ipynb
+            notebook/sd_trainer_kaggle.ipynb
+            notebook/fooocus_colab.ipynb
+            notebook/fooocus_kaggle.ipynb
+            notebook/hdm_train_kaggle.ipynb
+            notebook/comfyui_colab.ipynb
+            notebook/invokeai_colab.ipynb
+            notebook/stable_diffusion_webui_colab.ipynb
+            notebook/sd_trainer_colab.ipynb
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -254,7 +254,7 @@ jobs:
           # gitee_file_path: "${{ github.workspace }}/sd_trainer_installer.ps1"
           # gitee_file_name: sd_trainer_installer.ps1
           gitee_files: |
-            sd_trainer_installer.ps1
+            installer/sd_trainer_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -267,7 +267,7 @@ jobs:
           gitee_release_id: 402883
           gitee_upload_retry_times: 3
           gitee_files: |
-            invokeai_installer.ps1
+            installer/invokeai_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -280,7 +280,7 @@ jobs:
           gitee_release_id: 447269
           gitee_upload_retry_times: 3
           gitee_files: |
-            comfyui_installer.ps1
+            installer/comfyui_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -293,7 +293,7 @@ jobs:
           gitee_release_id: 452051
           gitee_upload_retry_times: 3
           gitee_files: |
-            stable_diffusion_webui_installer.ps1
+            installer/stable_diffusion_webui_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -306,7 +306,7 @@ jobs:
           gitee_release_id: 467150
           gitee_upload_retry_times: 3
           gitee_files: |
-            fooocus_installer.ps1
+            installer/fooocus_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"
 
@@ -319,6 +319,6 @@ jobs:
           gitee_release_id: 461216
           gitee_upload_retry_times: 3
           gitee_files: |
-            sd_trainer_script_installer.ps1
+            installer/sd_trainer_script_installer.ps1
         run: |
           python "${{ github.workspace }}/.github/gitee_release.py"

@@ -29,37 +29,37 @@ jobs:
         shell: pwsh
         run: |
           try {
-              pwsh -File "${{ github.workspace }}/fooocus_installer.ps1" -InstallPath "${{ github.workspace }}/fooocus" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/fooocus_installer.ps1" -InstallPath "${{ github.workspace }}/fooocus" -UseUpdateMode
           } catch {
               Write-Host "fooocus_installer.ps1 执行时出现错误: $_"
           }
 
           try {
-              pwsh -File "${{ github.workspace }}/comfyui_installer.ps1" -InstallPath "${{ github.workspace }}/comfyui" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/comfyui_installer.ps1" -InstallPath "${{ github.workspace }}/comfyui" -UseUpdateMode
           } catch {
               Write-Host "comfyui_installer.ps1 执行时出现错误: $_"
           }
 
           try {
-              pwsh -File "${{ github.workspace }}/invokeai_installer.ps1" -InstallPath "${{ github.workspace }}/invokeai" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/invokeai_installer.ps1" -InstallPath "${{ github.workspace }}/invokeai" -UseUpdateMode
           } catch {
               Write-Host "invokeai_installer.ps1 执行时出现错误: $_"
           }
 
           try {
-              pwsh -File "${{ github.workspace }}/sd_trainer_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/sd_trainer_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer" -UseUpdateMode
           } catch {
               Write-Host "sd_trainer_installer.ps1 执行时出现错误: $_"
           }
 
           try {
-              pwsh -File "${{ github.workspace }}/sd_trainer_script_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer_script" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/sd_trainer_script_installer.ps1" -InstallPath "${{ github.workspace }}/sd_trainer_script" -UseUpdateMode
           } catch {
               Write-Host "sd_trainer_script_installer.ps1 执行时出现错误: $_"
           }
 
           try {
-              pwsh -File "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" -InstallPath "${{ github.workspace }}/sd_webui" -UseUpdateMode
+              pwsh -File "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" -InstallPath "${{ github.workspace }}/sd_webui" -UseUpdateMode
           } catch {
               Write-Host "stable_diffusion_webui_installer.ps1 执行时出现错误: $_"
           }

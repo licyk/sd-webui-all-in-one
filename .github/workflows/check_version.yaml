@@ -51,14 +51,14 @@ jobs:
             }
 
             $has_error = $false
-            $repo_path = "${{ github.workspace }}"
+            $installer_path = "${{ github.workspace }}/installer"
             $installer_list = @(
-                @("${repo_path}/comfyui_installer.ps1", "COMFYUI_INSTALLER_VERSION"),
-                @("${repo_path}/fooocus_installer.ps1", "FOOOCUS_INSTALLER_VERSION"),
-                @("${repo_path}/invokeai_installer.ps1", "INVOKEAI_INSTALLER_VERSION"),
-                @("${repo_path}/sd_trainer_installer.ps1", "SD_TRAINER_INSTALLER_VERSION"),
-                @("${repo_path}/sd_trainer_script_installer.ps1", "SD_TRAINER_SCRIPT_INSTALLER_VERSION"),
-                @("${repo_path}/stable_diffusion_webui_installer.ps1", "SD_WEBUI_INSTALLER_VERSION")
+                @("${installer_path}/comfyui_installer.ps1", "COMFYUI_INSTALLER_VERSION"),
+                @("${installer_path}/fooocus_installer.ps1", "FOOOCUS_INSTALLER_VERSION"),
+                @("${installer_path}/invokeai_installer.ps1", "INVOKEAI_INSTALLER_VERSION"),
+                @("${installer_path}/sd_trainer_installer.ps1", "SD_TRAINER_INSTALLER_VERSION"),
+                @("${installer_path}/sd_trainer_script_installer.ps1", "SD_TRAINER_SCRIPT_INSTALLER_VERSION"),
+                @("${installer_path}/stable_diffusion_webui_installer.ps1", "SD_WEBUI_INSTALLER_VERSION")
             )
             $data = @()
 

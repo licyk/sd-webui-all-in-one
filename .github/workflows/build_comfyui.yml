@@ -33,7 +33,7 @@ jobs:
       - name: Launch ComfyUI Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/comfyui_installer.ps1" `
+          & "${{ github.workspace }}/installer/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
             -PyTorchMirrorType cu128 `
             -BuildMode `

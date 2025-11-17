@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools", "pip", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sd-webui-all-in-one"
+description = "支持部署多个 WebUI 的部署工具"
+requires-python = ">=3.10"
+readme = { content-type = "text/markdown", file = "README.md" }
+license = "GPL-3.0"
+dynamic = ["version"]
+authors = [ {name = "licyk"} ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sd_webui_all_in_one*"]
+exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*", "__pycache__"]
+namespaces = true
+
+#[tool.setuptools.package-data]
+#sd_webui_all_in_one = ["**/*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "sd_webui_all_in_one.version.VERSION" }
+
+[tool.pylint]
+disable = [
+    "missing-timeout",
+    "too-many-lines",
+    "import-outside-toplevel",
+    "broad-exception-caught",
+    "broad-exception-raised",
+    "subprocess-run-check",
+    "keyword-arg-before-vararg",
+    "fixme"
+]
+
+[tool.pylint.format]
+max-line-length = 180
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+
+[tool.ruff]
+line-length = 180
+indent-width = 4
+ignore = [
+    "E402" # module-import-not-at-top-of-file
+]
