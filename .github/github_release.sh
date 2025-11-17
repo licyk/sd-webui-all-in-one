@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [[ -z "${github_files}" ]]; then
     echo "github_files 环境变量未设置"

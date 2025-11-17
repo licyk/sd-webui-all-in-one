@@ -58,7 +58,7 @@ jobs:
           github_files: |
             installer/sd_trainer_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release InvokeAI Installer
         shell: bash
@@ -67,7 +67,7 @@ jobs:
           github_files: |
             installer/invokeai_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release ComfyUI Installer
         shell: bash
@@ -76,7 +76,7 @@ jobs:
           github_files: |
             installer/comfyui_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release SD WebUI Installer
         shell: bash
@@ -85,7 +85,7 @@ jobs:
           github_files: |
             installer/stable_diffusion_webui_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release Fooocus Installer
         shell: bash
@@ -94,7 +94,7 @@ jobs:
           github_files: |
             installer/fooocus_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release SD-Trainer-Script Installer
         shell: bash
@@ -103,7 +103,7 @@ jobs:
           github_files: |
             installer/sd_trainer_script_installer.ps1
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release config
         shell: bash
@@ -122,7 +122,7 @@ jobs:
             config/sd_webui_forge_requirements_versions.txt
             config/sd_webui_forge_classic_requirements_versions.txt
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
       - name: Release Jupyter Notebook
         shell: bash
@@ -143,7 +143,7 @@ jobs:
             notebook/stable_diffusion_webui_colab.ipynb
             notebook/sd_trainer_colab.ipynb
         run: |
-          sh "${{ github.workspace }}/.github/github_release.sh"
+          bash"${{ github.workspace }}/.github/github_release.sh"
 
   Release-To-Gitee:
     # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
