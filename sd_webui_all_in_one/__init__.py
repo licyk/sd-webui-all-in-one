@@ -3,6 +3,7 @@
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_NAME, LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.version import VERSION
+from sd_webui_all_in_one.manager.base import BaseManager
 from sd_webui_all_in_one.manager.sd_webui import SDWebUIManager
 from sd_webui_all_in_one.manager.comfyui import ComfyUIManager
 from sd_webui_all_in_one.manager.fooocus import FooocusManager
@@ -17,6 +18,7 @@ logger = get_logger(
 )
 
 __all__ = [
+    "BaseManager",
     "SDWebUIManager",
     "ComfyUIManager",
     "FooocusManager",

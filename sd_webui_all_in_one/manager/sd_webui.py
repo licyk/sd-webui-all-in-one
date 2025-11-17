@@ -324,7 +324,7 @@ class SDWebUIManager(BaseManager):
         os.chdir(self.workspace)
         sd_webui_path = self.workspace / self.workfolder
         sd_webui_repo = "https://github.com/AUTOMATIC1111/stable-diffusion-webui" if sd_webui_repo is None else sd_webui_repo
-        sd_webui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_webui_config.json" if sd_webui_setting is None else sd_webui_setting
+        sd_webui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/sd_webui_config.json" if sd_webui_setting is None else sd_webui_setting
         requirements_path = sd_webui_path / ("requirements_versions.txt" if sd_webui_requirements is None else sd_webui_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()

@@ -33,7 +33,7 @@ jobs:
       - name: Launch SD WebUI Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/stable_diffusion_webui_installer.ps1" `
+          & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge_classic" `
             -PyTorchMirrorType cu128 `
             -PyTorchPackage "torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128" `

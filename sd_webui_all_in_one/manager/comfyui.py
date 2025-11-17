@@ -303,7 +303,7 @@ class ComfyUIManager(BaseManager):
         os.chdir(self.workspace)
         comfyui_path = self.workspace / self.workfolder
         comfyui_repo = "https://github.com/comfyanonymous/ComfyUI" if comfyui_repo is None else comfyui_repo
-        comfyui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/comfy.settings.json" if comfyui_setting is None else comfyui_setting
+        comfyui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/comfy.settings.json" if comfyui_setting is None else comfyui_setting
         requirements_path = comfyui_path / ("requirements.txt" if comfyui_requirements is None else comfyui_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()

@@ -1,8 +1,9 @@
 ﻿param (
     [switch]$Help,
     [string]$CorePrefix,
-    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "ComfyUI"),
+    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "stable-diffusion-webui"),
     [string]$PyTorchMirrorType,
+    [string]$InstallBranch,
     [switch]$UseUpdateMode,
     [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
@@ -12,12 +13,13 @@
     [string]$UseCustomGithubMirror,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
-    [switch]$BuildWithUpdateNode,
+    [switch]$BuildWithUpdateExtension,
     [switch]$BuildWithLaunch,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [switch]$NoPreDownloadNode,
+    [int]$BuildWitchBranch,
+    [switch]$NoPreDownloadExtension,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
@@ -27,7 +29,7 @@
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
     [switch]$DisableHuggingFaceMirror,
-    [switch]$UseCustomHuggingFaceMirror,
+    [string]$UseCustomHuggingFaceMirror,
     [string]$LaunchArg,
     [switch]$EnableShortcut,
     [switch]$DisableCUDAMalloc,
@@ -35,7 +37,7 @@
     [switch]$DisableAutoApplyUpdate
 )
 & {
-    $prefix_list = @("core", "ComfyUI", "comfyui", "ComfyUI-aki-v1.0", "ComfyUI-aki-v1.1", "ComfyUI-aki-v1.2", "ComfyUI-aki-v1.3", "ComfyUI-aki-v1.4", "ComfyUI-aki-v1.5", "ComfyUI-aki-v1.6", "ComfyUI-aki-v1.7", "ComfyUI-aki-v2")
+    $prefix_list = @("core", "stable-diffusion-webui", "stable-diffusion-webui-forge", "stable-diffusion-webui-reForge", "sd-webui-forge-classic", "stable-diffusion-webui-amdgpu", "automatic", "sd_webui", "sd_webui_forge", "sd-webui-aki-v4.10", "sd-webui-aki-v4.11.1-cu128", "sd-webui-forge-aki-v1.0")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
         if ($CorePrefix) {
             $origin_core_prefix = $CorePrefix
@@ -63,8 +65,8 @@
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
-# ComfyUI Installer 版本和检查更新间隔
-$COMFYUI_INSTALLER_VERSION = 283
+# SD WebUI Installer 版本和检查更新间隔
+$SD_WEBUI_INSTALLER_VERSION = 272
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -122,8 +124,22 @@ $GITHUB_MIRROR_LIST = @(
 $UV_MINIMUM_VER = "0.9.9"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
-# ComfyUI 仓库地址
-$COMFYUI_REPO = "https://github.com/comfyanonymous/ComfyUI"
+# Stable Diffusion WebUI 仓库地址
+$SD_WEBUI_REPO = if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+    "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+    "https://github.com/lllyasviel/stable-diffusion-webui-forge"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+    "https://github.com/Panchovix/stable-diffusion-webui-reForge"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+    "https://github.com/Haoming02/sd-webui-forge-classic"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+    "https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu"
+} elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+    "https://github.com/vladmandic/sdnext"
+} else {
+    "https://github.com/AUTOMATIC1111/stable-diffusion-webui"
+}
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
 $PYTHON_EXTRA_PATH = "$InstallPath/$Env:CORE_PREFIX/python"
@@ -182,14 +198,13 @@ $Env:TORCHINDUCTOR_CACHE_DIR = "$InstallPath/cache/torchinductor"
 $Env:TRITON_CACHE_DIR = "$InstallPath/cache/triton"
 $Env:UV_CACHE_DIR = "$InstallPath/cache/uv"
 $Env:UV_PYTHON = "$InstallPath/python/python.exe"
-$Env:COMFYUI_PATH = "$InstallPath/$Env:CORE_PREFIX"
 
 
 
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
-    Write-Host "[ComfyUI Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host "[SD WebUI Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
 }
@@ -213,13 +228,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    $ver = $([string]$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    $ver = $([string]$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     $major = ($ver[0..($ver.Length - 3)])
     $minor = $ver[-2]
     $micro = $ver[-1]
-    Print-Msg "ComfyUI Installer 版本: v${major}.${minor}.${micro}"
+    Print-Msg "SD WebUI Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -375,7 +390,7 @@ function Install-Python {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Python 中"
             } else {
-                Print-Msg "Python 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+                Print-Msg "Python 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -424,7 +439,7 @@ function Install-Git {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Git 中"
             } else {
-                Print-Msg "Git 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+                Print-Msg "Git 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -470,7 +485,7 @@ function Install-Aria2 {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Aria2 中"
             } else {
-                Print-Msg "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+                Print-Msg "Aria2 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -491,7 +506,7 @@ function Install-uv {
     if ($?) {
         Print-Msg "uv 下载成功"
     } else {
-        Print-Msg "uv 下载失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+        Print-Msg "uv 下载失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         if (!($BuildMode)) {
             Read-Host | Out-Null
         }
@@ -560,7 +575,7 @@ function Set-Github-Mirror {
 
 
 # Git 仓库下载
-function Git-CLone {
+function Git-Clone {
     param (
         [String]$url,
         [String]$path
@@ -598,7 +613,7 @@ function Git-CLone {
             Move-Item -Path "$cache_path" -Destination "$path" -Force
             Print-Msg "$name 安装成功"
         } else {
-            Print-Msg "$name 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+            Print-Msg "$name 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
@@ -978,6 +993,7 @@ if __name__ == '__main__':
 }
 
 
+
 # 为 PyTorch 获取合适的 CUDA 版本类型
 function Get-Appropriate-CUDA-Version-Type {
     $content = "
@@ -1228,7 +1244,7 @@ function Install-PyTorch {
         if ($?) {
             Print-Msg "PyTorch 安装成功"
         } else {
-            Print-Msg "PyTorch 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+            Print-Msg "PyTorch 安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
@@ -1276,25 +1292,64 @@ function Install-PyTorch {
 }
 
 
-# 安装 ComfyUI 依赖
-function Install-ComfyUI-Dependence {
+# 安装 CLIP
+function Install-CLIP {
+    $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip"
+
+    Print-Msg "检测是否需要安装 CLIP 软件包"
+    python -m pip show clip --quiet 2> $null
+    if ($?) {
+        Print-Msg "CLIP 软件包已安装"
+        return
+    } else {
+        Print-Msg "安装 CLIP 软件包中"
+    }    
+
+    if ($USE_UV) {
+        uv pip install $url
+        if (!($?)) {
+            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
+            python -m pip install $url
+        }
+    } else {
+        python -m pip install $url
+    }
+    if ($?) {
+        Print-Msg "CLIP 软件包安装成功"
+    } else {
+        Print-Msg "CLIP 软件包安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
+        if (!($BuildMode)) {
+            Read-Host | Out-Null
+        }
+        exit 1
+    }
+}
+
+
+# 安装 Stable Diffusion WebUI 依赖
+function Install-Stable-Diffusion-WebUI-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/$Env:CORE_PREFIX"
-    Print-Msg "安装 ComfyUI 依赖中"
+    $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements_versions.txt"
+    # SD Next
+    if (!(Test-Path "$dep_path")) {
+        $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements.txt"
+    }
+    Print-Msg "安装 Stable Diffusion WebUI 依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements.txt
+        uv pip install -r "$dep_path"
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install -r requirements.txt
+            python -m pip install -r "$dep_path"
         }
     } else {
-        python -m pip install -r requirements.txt
+        python -m pip install -r "$dep_path"
     }
     if ($?) {
-        Print-Msg "ComfyUI 依赖安装成功"
+        Print-Msg "Stable Diffusion WebUI 依赖安装成功"
     } else {
-        Print-Msg "ComfyUI 依赖安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+        Print-Msg "Stable Diffusion WebUI 依赖安装失败, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装"
         Set-Location "$current_path"
         if (!($BuildMode)) {
             Read-Host | Out-Null
@@ -1302,6 +1357,202 @@ function Install-ComfyUI-Dependence {
         exit 1
     }
     Set-Location "$current_path"
+}
+
+
+# 模型下载器
+function Model-Downloader ($download_list) {
+    $sum = $download_list.Count
+    for ($i = 0; $i -lt $download_list.Count; $i++) {
+        $content = $download_list[$i]
+        $url = $content[0]
+        $path = $content[1]
+        $file = $content[2]
+        $model_full_path = Join-Path -Path $path -ChildPath $file
+        if (Test-Path $model_full_path) {
+            Print-Msg "[$($i + 1)/$sum] $file 模型已存在于 $path 中"
+        } else {
+            Print-Msg "[$($i + 1)/$sum] 下载 $file 模型到 $path 中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$path" -o "$file"
+            if ($?) {
+                Print-Msg "[$($i + 1)/$sum] $file 下载成功"
+            } else {
+                Print-Msg "[$($i + 1)/$sum] $file 下载失败"
+            }
+        }
+    }
+}
+
+
+# 配置安装的核心组件列表
+function Get-Stable-Diffusion-WebUI-Component-List ($branch) {
+    $sd_webui_repositories = New-Object System.Collections.ArrayList
+    $repositories_list = New-Object System.Collections.ArrayList
+    $sd_webui_repositories_path = "$InstallPath/$Env:CORE_PREFIX/repositories"
+
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/salesforce/BLIP", "$sd_webui_repositories_path/BLIP"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Stability-AI/stablediffusion", "$sd_webui_repositories_path/stable-diffusion-stability-ai"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Stability-AI/generative-models", "$sd_webui_repositories_path/generative-models"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/crowsonkb/k-diffusion", "$sd_webui_repositories_path/k-diffusion"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets", "$sd_webui_repositories_path/stable-diffusion-webui-assets"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/huggingface_guess", "$sd_webui_repositories_path/huggingface_guess"
+    )) | Out-Null
+    $sd_webui_repositories.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/google_blockly_prototypes", "$sd_webui_repositories_path/google_blockly_prototypes"
+    )) | Out-Null
+
+    for ($i = 0; $i -lt $sd_webui_repositories.Count; $i++) {
+        $branch_type, $repo_url, $path = $sd_webui_repositories[$i]
+        if ($branch -in $branch_type) {
+            $repositories_list.Add(@($repo_url, $path)) | Out-Null
+        }
+    }
+
+    return $repositories_list
+}
+
+
+# 配置安装的扩展列表
+function Get-Stable-Diffusion-WebUI-Extension ($branch) {
+    $sd_webui_extension = New-Object System.Collections.ArrayList
+    $extension_list = New-Object System.Collections.ArrayList
+    $sd_webui_extension_path = "$InstallPath/$Env:CORE_PREFIX/extensions"
+
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111", "$sd_webui_extension_path/ultimate-upscale-for-automatic1111"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete", "$sd_webui_extension_path/a1111-sd-webui-tagcomplete"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Bing-su/adetailer", "$sd_webui_extension_path/adetailer"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/zanllp/sd-webui-infinite-image-browsing", "$sd_webui_extension_path/sd-webui-infinite-image-browsing"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/huchenlei/sd-webui-openpose-editor", "$sd_webui_extension_path/sd-webui-openpose-editor"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Physton/sd-webui-prompt-all-in-one", "$sd_webui_extension_path/sd-webui-prompt-all-in-one"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu"),
+        "https://github.com/licyk/sd-webui-wd14-tagger", "$sd_webui_extension_path/sd-webui-wd14-tagger"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans", "$sd_webui_extension_path/stable-diffusion-webui-localization-zh_Hans"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Haoming02/sd-webui-mosaic-outpaint", "$sd_webui_extension_path/sd-webui-mosaic-outpaint"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Haoming02/sd-webui-resource-monitor", "$sd_webui_extension_path/sd-webui-resource-monitor"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/sd-webui-tcd-sampler", "$sd_webui_extension_path/sd-webui-tcd-sampler"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/licyk/advanced_euler_sampler_extension", "$sd_webui_extension_path/advanced_euler_sampler_extension"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_amdgpu"),
+        "https://github.com/hako-mikan/sd-webui-regional-prompter", "$sd_webui_extension_path/sd-webui-regional-prompter"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/Akegarasu/sd-webui-model-converter", "$sd_webui_extension_path/sd-webui-model-converter"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu"),
+        "https://github.com/Mikubill/sd-webui-controlnet", "$sd_webui_extension_path/sd-webui-controlnet"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu"),
+        "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111", "$sd_webui_extension_path/multidiffusion-upscaler-for-automatic1111"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding", "$sd_webui_extension_path/sd-dynamic-thresholding"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/hako-mikan/sd-webui-lora-block-weight", "$sd_webui_extension_path/sd-webui-lora-block-weight"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu"),
+        "https://github.com/arenasys/stable-diffusion-webui-model-toolkit", "$sd_webui_extension_path/stable-diffusion-webui-model-toolkit"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/a1111-sd-webui-haku-img", "$sd_webui_extension_path/a1111-sd-webui-haku-img"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_amdgpu"),
+        "https://github.com/hako-mikan/sd-webui-supermerger", "$sd_webui_extension_path/sd-webui-supermerger"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/continue-revolution/sd-webui-segment-anything", "$sd_webui_extension_path/sd-webui-segment-anything"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/licyk/sd_forge_hypertile_svd_z123", "$sd_webui_extension_path/sd_forge_hypertile_svd_z123"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui_forge"),
+        "https://github.com/lllyasviel/sd-forge-layerdiffuse", "$sd_webui_extension_path/sd-forge-layerdiffuse"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/licyk/sd-webui-licyk-style-image", "$sd_webui_extension_path/sd-webui-licyk-style-image"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/w-e-w/sdwebui-close-confirmation-dialogue", "$sd_webui_extension_path/sdwebui-close-confirmation-dialogue"
+    )) | Out-Null
+    $sd_webui_extension.Add(@(
+        @("sd_webui", "sd_webui_forge", "sd_webui_reforge", "sd_webui_forge_classic", "sd_webui_amdgpu", "sdnext"),
+        "https://github.com/viyiviyi/stable-diffusion-webui-zoomimage", "$sd_webui_extension_path/stable-diffusion-webui-zoomimage"
+    )) | Out-Null
+
+    for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
+        $branch_type, $repo_url, $path = $sd_webui_extension[$i]
+        if ($branch -in $branch_type) {
+            $extension_list.Add(@($repo_url, $path)) | Out-Null
+        }
+    }
+
+    return $extension_list
 }
 
 
@@ -1350,62 +1601,104 @@ function Check-Install {
     Check-uv-Version
 
     Set-Github-Mirror
-    $comfyui_path = "$InstallPath/$Env:CORE_PREFIX"
-    $custom_node_path = "$comfyui_path/custom_nodes"
-    Git-CLone "$COMFYUI_REPO" "$comfyui_path"
 
-    if ($NoPreDownloadNode) {
-        Print-Msg "检测到 -NoPreDownloadNode 命令行参数, 跳过安装 ComfyUI 扩展"
+    if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+        $branch_type = "sd_webui"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+        $branch_type = "sd_webui_forge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+        $branch_type = "sd_webui_reforge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+        $branch_type = "sd_webui_forge_classic"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+        $branch_type = "sd_webui_amdgpu"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+        $branch_type = "sdnext"
     } else {
-        # ComfyUI 扩展
-        Git-CLone "https://github.com/Comfy-Org/ComfyUI-Manager" "$custom_node_path/ComfyUI-Manager"
-        Git-CLone "https://github.com/Fannovel16/comfyui_controlnet_aux" "$custom_node_path/comfyui_controlnet_aux"
-        Git-CLone "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet" "$custom_node_path/ComfyUI-Advanced-ControlNet"
-        Git-CLone "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "$custom_node_path/ComfyUI_IPAdapter_plus"
-        Git-CLone "https://github.com/kijai/ComfyUI-Marigold" "$custom_node_path/ComfyUI-Marigold"
-        Git-CLone "https://github.com/pythongosssss/ComfyUI-WD14-Tagger" "$custom_node_path/ComfyUI-WD14-Tagger"
-        Git-CLone "https://github.com/BlenderNeko/ComfyUI_TiledKSampler" "$custom_node_path/ComfyUI_TiledKSampler"
-        Git-CLone "https://github.com/pythongosssss/ComfyUI-Custom-Scripts" "$custom_node_path/ComfyUI-Custom-Scripts"
-        Git-CLone "https://github.com/LEv145/images-grid-comfy-plugin" "$custom_node_path/images-grid-comfy-plugin"
-        Git-CLone "https://github.com/ssitu/ComfyUI_UltimateSDUpscale" "$custom_node_path/ComfyUI_UltimateSDUpscale"
-        Git-CLone "https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet" "$custom_node_path/ComfyUI_Custom_Nodes_AlekPet"
-        Git-CLone "https://github.com/talesofai/comfyui-browser" "$custom_node_path/comfyui-browser"
-        Git-CLone "https://github.com/ltdrdata/ComfyUI-Inspire-Pack" "$custom_node_path/ComfyUI-Inspire-Pack"
-        Git-CLone "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes" "$custom_node_path/ComfyUI_Comfyroll_CustomNodes"
-        Git-CLone "https://github.com/crystian/ComfyUI-Crystools" "$custom_node_path/ComfyUI-Crystools"
-        Git-CLone "https://github.com/shiimizu/ComfyUI-TiledDiffusion" "$custom_node_path/ComfyUI-TiledDiffusion"
-        Git-CLone "https://github.com/huchenlei/ComfyUI-openpose-editor" "$custom_node_path/ComfyUI-openpose-editor"
-        Git-CLone "https://github.com/licyk/ComfyUI-Restart-Sampler" "$custom_node_path/ComfyUI-Restart-Sampler"
-        Git-CLone "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one" "$custom_node_path/WeiLin-ComfyUI-prompt-all-in-one"
-        Git-CLone "https://github.com/licyk/ComfyUI-HakuImg" "$custom_node_path/ComfyUI-HakuImg"
-        Git-CLone "https://github.com/yolain/ComfyUI-Easy-Use" "$custom_node_path/ComfyUI-Easy-Use"
-        Git-CLone "https://github.com/rgthree/rgthree-comfy" "$custom_node_path/rgthree-comfy"
+        $branch_type = "sd_webui"
+    }
+
+    $sd_webui_component = Get-Stable-Diffusion-WebUI-Component-List $branch_type
+    $sd_webui_extension = Get-Stable-Diffusion-WebUI-Extension $branch_type
+
+    # SD WebUI 核心
+    Git-Clone "$SD_WEBUI_REPO" "$InstallPath/$Env:CORE_PREFIX"
+
+    # SD WebUI 组件
+    for ($i = 0; $i -lt $sd_webui_component.Count; $i++) {
+        $repo_url, $path = $sd_webui_component[$i]
+        Git-Clone "$repo_url" "$path"
+    }
+
+    # SD WebUI 扩展
+    if ($NoPreDownloadExtension) {
+        Print-Msg "检测到 -NoPreDownloadExtension 命令行参数, 跳过安装 Stable Diffusion WebUI 扩展"
+    } else {
+        for ($i = 0; $i -lt $sd_webui_extension.Count; $i++) {
+            $repo_url, $path = $sd_webui_extension[$i]
+            Git-Clone "$repo_url" "$path"
+        }
     }
 
     Install-PyTorch
-    Install-ComfyUI-Dependence
+    Install-CLIP
+    Install-Stable-Diffusion-WebUI-Dependence
 
     if (!(Test-Path "$InstallPath/launch_args.txt")) {
-        Print-Msg "设置默认 ComfyUI 启动参数"
-        $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
+        Print-Msg "设置默认 Stable Diffusion WebUI 启动参数"
+        if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+            $content = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+            $content = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check --skip-version-check --no-download-sd-model"
+        } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+            $content = "--autolaunch --use-cuda --use-xformers"
+        } else {
+            $content = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
+        }
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
     }
 
-    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/user/default/comfy.settings.json")) {
-        Print-Msg "设置默认 ComfyUI 设置"
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/config.json")) {
+        Print-Msg "设置默认 Stable Diffusion WebUI 设置"
         $json_content = @{
-            "Comfy.Settings.ExtensionPanel" = $true
-            "DZ.Debug.enabled" = $true
-            "Comfy.UseNewMenu" = "Top"
-            "Comfy.Locale" = "zh"
-            "Comfy.RerouteBeta" = $true
+            "quicksettings_list" = @(
+                "sd_model_checkpoint",
+                "sd_vae",
+                "CLIP_stop_at_last_layers"
+            )
+            "save_to_dirs" = $false
+            "grid_save_to_dirs" = $false
+            "export_for_4chan" = $false
+            "CLIP_stop_at_last_layers" = 2
+            "localization" = "zh-Hans (Stable)"
+            "show_progress_every_n_steps" = 1
+            "js_live_preview_in_modal_lightbox" = $true
+            "upscaler_for_img2img" = "Lanczos"
+            "emphasis" = "No norm"
+            "samples_filename_pattern" = "[datetime<%Y%m%d_%H%M%S>]_[model_name]_[sampler]"
+            "extra_options_img2img" = @(
+                "upscaler_for_img2img",
+                "img2img_color_correction",
+                "img2img_fix_steps",
+                "img2img_extra_noise"
+            )
+            "extra_options_txt2img" = @(
+                "img2img_extra_noise"
+            )
+            "img2img_color_correction" = $true
         }
+
         $json_content = $json_content | ConvertTo-Json -Depth 4
-        New-Item -ItemType Directory -Path "$InstallPath/$Env:CORE_PREFIX/user/default" -Force > $null
         # 创建一个不带 BOM 的 UTF-8 编码器
         $utf8_encoding = New-Object System.Text.UTF8Encoding($false)
         # 使用 StreamWriter 来写入文件
-        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/user/default/comfy.settings.json", $false, $utf8_encoding)
+        $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/config.json", $false, $utf8_encoding)
         $stream_writer.Write($json_content)
         $stream_writer.Close()
     }
@@ -1413,18 +1706,22 @@ function Check-Install {
     if ($NoPreDownloadModel) {
         Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
     } else {
-        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/checkpoints"
+        Print-Msg "预下载模型中"
+        $model_list = New-Object System.Collections.ArrayList
+        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/Stable-diffusion"
+        $vae_approx_path = "$InstallPath/$Env:CORE_PREFIX/models/VAE-approx"
+
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt", "$vae_approx_path", "model.pt")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt", "$vae_approx_path", "vaeapprox-sdxl.pt")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt", "$vae_approx_path", "vaeapprox-sd3.pt")) | Out-Null
+
         $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors"
         $name = Split-Path -Path $url -Leaf
         if ((!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) -or (Test-Path "$checkpoint_path/${name}.aria2")) {
-            Print-Msg "预下载模型中"
-            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$checkpoint_path" -o "$name"
-            if ($?) {
-                Print-Msg "下载 $name 模型成功"
-            } else {
-                Print-Msg "下载 $name 模型失败"
-            }
+            $model_list.Add(@("$url", "$checkpoint_path", "$name")) | Out-Null
         }
+
+        Model-Downloader $model_list
     }
 
     # 清理缓存
@@ -1452,7 +1749,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [switch]`$UseCustomHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
@@ -1463,7 +1760,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -1488,8 +1785,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -1512,7 +1809,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -1603,34 +1899,33 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableUV] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-DisableUV] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式
+        启用 SD WebUI Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 ComfyUI Installer 更新检查
+        禁用 SD WebUI Installer 更新检查
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -1642,7 +1937,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
     -DisableGithubMirror
-        禁用 ComfyUI Installer 自动设置 Github 镜像源
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -1665,25 +1960,25 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableUV
-        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
-    -LaunchArg <ComfyUI 启动参数>
-        设置 ComfyUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+    -LaunchArg <Stable Diffusion WebUI 启动参数>
+        设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --autolaunch 和 --xformers, 则使用 -LaunchArg ```"--autolaunch --xformers```" 进行启用
 
     -EnableShortcut
-        创建 ComfyUI 启动快捷方式
+        创建 Stable Diffusion WebUI 启动快捷方式
 
     -DisableCUDAMalloc
-        禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        禁用 SD WebUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题, 禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复
+        禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        禁用 ComfyUI Installer 自动应用新版本更新
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -1696,7 +1991,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -1720,13 +2015,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1748,6 +2043,7 @@ import shutil
 import os
 import ctypes
 import logging
+
 
 try:
     torch_spec = importlib.util.find_spec('torch')
@@ -1777,22 +2073,22 @@ except Exception as _:
 }
 
 
-# ComfyUI Installer 更新检测
-function Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
         return
     }
 
@@ -1816,12 +2112,12 @@ function Check-ComfyUI-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -1829,35 +2125,35 @@ function Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 ComfyUI Installer 更新`"
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -2070,8 +2366,8 @@ function Set-uv {
 }
 
 
-# ComfyUI 启动参数
-function Get-ComfyUI-Launch-Args {
+# Stable Diffusion WebUI 启动参数
+function Get-Stable-Diffusion-WebUI-Launch-Args {
     `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
@@ -2093,27 +2389,50 @@ function Get-ComfyUI-Launch-Args {
 }
 
 
-# 设置 ComfyUI 的快捷启动方式
-function Create-ComfyUI-Shortcut {
-    `$filename = `"ComfyUI`"
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/comfyui_icon.ico`"
-    `$shortcut_icon = `"`$PSScriptRoot/comfyui_icon.ico`"
+# 设置 Stable Diffusion WebUI 的快捷启动方式
+function Create-Stable-Diffusion-WebUI-Shortcut {
+    # 设置快捷方式名称
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
+            `$filename = `"SD-WebUI`"
+        } elseif ((`$branch -eq `"lllyasviel/stable-diffusion-webui-forge`") -or (`$branch -eq `"lllyasviel/stable-diffusion-webui-forge.git`")) {
+            `$filename = `"SD-WebUI-Forge`"
+        } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
+            `$filename = `"SD-WebUI-reForge`"
+        } elseif ((`$branch -eq `"Haoming02/sd-webui-forge-classic`") -or (`$branch -eq `"Haoming02/sd-webui-forge-classic.git`")) {
+            `$filename = `"SD-WebUI-Forge-Classic`"
+        } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
+            `$filename = `"SD-WebUI-AMDGPU`"
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
+            `$filename = `"SD-Next`"
+        } else {
+            `$filename = `"SD-WebUI`"
+        }
+    } else {
+        `$filename = `"SD-WebUI`"
+    }
+
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
+    `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
     if ((!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) -and (!(`$EnableShortcut))) {
         return
     }
 
-    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 ComfyUI 快捷启动方式中`"
+    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 Stable Diffusion WebUI 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
-        Print-Msg `"获取 ComfyUI 图标中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/comfyui_icon.ico`"
+        Print-Msg `"获取 Stable Diffusion WebUI 图标中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
         if (!(`$?)) {
-            Print-Msg `"获取 ComfyUI 图标失败, 无法创建 ComfyUI 快捷启动方式`"
+            Print-Msg `"获取 Stable Diffusion WebUI 图标失败, 无法创建 Stable Diffusion WebUI 快捷启动方式`"
             return
         }
     }
 
-    Print-Msg `"更新 ComfyUI 快捷启动方式`"
+    Print-Msg `"更新 Stable Diffusion WebUI 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
@@ -2280,8 +2599,8 @@ if __name__ == '__main__':
 }
 
 
-# 检查 ComfyUI 依赖完整性
-function Check-ComfyUI-Requirements {
+# 检查 Stable Diffusion WebUI 依赖完整性
+function Check-Stable-Diffusion-WebUI-Requirements {
     `$content = `"
 '''运行环境检查'''
 import re
@@ -3288,25 +3607,25 @@ if __name__ == '__main__':
     main()
 `".Trim()
 
-    Print-Msg `"检查 ComfyUI 内核依赖完整性中`"
+    Print-Msg `"检查 Stable Diffusion WebUI 内核依赖完整性中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_requirement.py`" -Value `$content
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_stable_diffusion_webui_requirement.py`" -Value `$content
 
     `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
         `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
-        Print-Msg `"未检测到 ComfyUI 依赖文件, 跳过依赖完整性检查`"
+        Print-Msg `"未检测到 Stable Diffusion WebUI 依赖文件, 跳过依赖完整性检查`"
         return
     }
 
-    `$status = `$(python `"`$Env:CACHE_HOME/check_comfyui_requirement.py`" --requirement-path `"`$dep_path`")
+    `$status = `$(python `"`$Env:CACHE_HOME/check_stable_diffusion_webui_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
-        Print-Msg `"检测到 ComfyUI 内核有依赖缺失, 安装 ComfyUI 依赖中`"
+        Print-Msg `"检测到 Stable Diffusion WebUI 内核有依赖缺失, 安装 Stable Diffusion WebUI 依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
@@ -3317,1725 +3636,126 @@ if __name__ == '__main__':
             python -m pip install -r `"`$dep_path`"
         }
         if (`$?) {
-            Print-Msg `"ComfyUI 依赖安装成功`"
+            Print-Msg `"Stable Diffusion WebUI 依赖安装成功`"
         } else {
-            Print-Msg `"ComfyUI 依赖安装失败, 这将会导致 ComfyUI 缺失依赖无法正常运行`"
+            Print-Msg `"Stable Diffusion WebUI 依赖安装失败, 这将会导致 Stable Diffusion WebUI 缺失依赖无法正常运行`"
         }
     } else {
-        Print-Msg `"ComfyUI 无缺失依赖`"
+        Print-Msg `"Stable Diffusion WebUI 无缺失依赖`"
     }
 }
 
 
-# 检查 ComfyUI 环境中组件依赖
-function Check-ComfyUI-Env-Requirements {
-    `$content = `"
-'''ComfyUI 运行环境检查'''
-import re
-import os
-import sys
-import copy
-import logging
-import argparse
-import importlib.metadata
-from collections import namedtuple
-from pathlib import Path
-from typing import Optional, TypedDict, Union
+# 检查插件是否被禁用
+function Check-Extension-Is-Disabled (`$name) {
+    `$sd_webui_config = `"`$PSScriptRoot/`$Env:CORE_PREFIX/config.json`"
 
-
-def get_args() -> argparse.Namespace:
-    '''获取命令行参数输入参数输入'''
-    parser = argparse.ArgumentParser(description='ComfyUI 运行环境检查')
-    def normalized_filepath(filepath): return str(
-        Path(filepath).absolute().as_posix())
-
-    parser.add_argument(
-        '--comfyui-path', type=normalized_filepath, default=None, help='ComfyUI 路径')
-    parser.add_argument('--conflict-depend-notice-path', type=normalized_filepath,
-                        default=None, help='保存 ComfyUI 扩展依赖冲突信息的文件路径')
-    parser.add_argument('--requirement-list-path', type=normalized_filepath,
-                        default=None, help='保存 ComfyUI 需要安装扩展依赖的路径列表')
-    parser.add_argument('--debug-mode', action='store_true', help='显示调试信息')
-
-    return parser.parse_args()
-
-
-COMMAND_ARGS = get_args()
-
-
-class ColoredFormatter(logging.Formatter):
-    '''Logging 格式化'''
-    COLORS = {
-        'DEBUG': '\033[0;36m',          # CYAN
-        'INFO': '\033[0;32m',           # GREEN
-        'WARNING': '\033[0;33m',        # YELLOW
-        'ERROR': '\033[0;31m',          # RED
-        'CRITICAL': '\033[0;37;41m',    # WHITE ON RED
-        'RESET': '\033[0m',             # RESET COLOR
+    try {
+        `$json_content = Get-Content -Path `$sd_webui_config -Raw | ConvertFrom-Json
+    }
+    catch {
+        return `$false
     }
 
-    def format(self, record):
-        colored_record = copy.copy(record)
-        levelname = colored_record.levelname
-        seq = self.COLORS.get(levelname, self.COLORS['RESET'])
-        colored_record.levelname = '{}{}{}'.format(
-            seq, levelname, self.COLORS['RESET'])
-        return super().format(colored_record)
-
-
-def get_logger(
-    name: str,
-    level: int = logging.INFO,
-) -> logging.Logger:
-    '''获取 Loging 对象
-
-    参数:
-        name (str):
-            Logging 名称
-
-
-    '''
-    logger = logging.getLogger(name)
-    logger.propagate = False
-
-    if not logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(
-            ColoredFormatter(
-                '[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s', '%H:%M:%S'
-            )
-        )
-        logger.addHandler(handler)
-
-    logger.setLevel(level)
-    logger.debug('Logger initialized.')
-
-    return logger
-
-
-logger = get_logger(
-    'ComfyUI Env Checker',
-    logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO
-)
-
-
-# 提取版本标识符组件的正则表达式
-# ref:
-# https://peps.python.org/pep-0440
-# https://packaging.python.org/en/latest/specifications/version-specifiers
-VERSION_PATTERN = r'''
-    v?
-    (?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_\.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
-            [-_\.]?
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<post>                                         # post release
-            (?:-(?P<post_n1>[0-9]+))
-            |
-            (?:
-                [-_\.]?
-                (?P<post_l>post|rev|r)
-                [-_\.]?
-                (?P<post_n2>[0-9]+)?
-            )
-        )?
-        (?P<dev>                                          # dev release
-            [-_\.]?
-            (?P<dev_l>dev)
-            [-_\.]?
-            (?P<dev_n>[0-9]+)?
-        )?
-    )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
-'''
-
-
-# 编译正则表达式
-package_version_parse_regex = re.compile(
-    r'^\s*' + VERSION_PATTERN + r'\s*$',
-    re.VERBOSE | re.IGNORECASE,
-)
-
-
-# 定义版本组件的命名元组
-VersionComponent = namedtuple(
-    'VersionComponent', [
-        'epoch',
-        'release',
-        'pre_l',
-        'pre_n',
-        'post_n1',
-        'post_l',
-        'post_n2',
-        'dev_l',
-        'dev_n',
-        'local',
-        'is_wildcard'
-    ]
-)
-
-
-def parse_version(version_str: str) -> VersionComponent:
-    '''解释 Python 软件包版本号
-
-    参数:
-        version_str (str):
-            Python 软件包版本号
-
-    返回值:
-        VersionComponent: 版本组件的命名元组
-
-    异常:
-        ValueError: 如果 Python 版本号不符合 PEP440 规范
-    '''
-    # 检测并剥离通配符
-    wildcard = version_str.endswith('.*') or version_str.endswith('*')
-    clean_str = version_str.rstrip(
-        '*').rstrip('.') if wildcard else version_str
-
-    match = package_version_parse_regex.match(clean_str)
-    if not match:
-        logger.error(f'未知的版本号字符串: {version_str}')
-        raise ValueError(f'Invalid version string: {version_str}')
-
-    components = match.groupdict()
-
-    # 处理 release 段 (允许空字符串)
-    release_str = components['release'] or '0'
-    release_segments = [int(seg) for seg in release_str.split('.')]
-
-    # 构建命名元组
-    return VersionComponent(
-        epoch=int(components['epoch'] or 0),
-        release=release_segments,
-        pre_l=components['pre_l'],
-        pre_n=int(components['pre_n']) if components['pre_n'] else None,
-        post_n1=int(components['post_n1']) if components['post_n1'] else None,
-        post_l=components['post_l'],
-        post_n2=int(components['post_n2']) if components['post_n2'] else None,
-        dev_l=components['dev_l'],
-        dev_n=int(components['dev_n']) if components['dev_n'] else None,
-        local=components['local'],
-        is_wildcard=wildcard
-    )
-
-
-def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
-
-    参数:
-        v1 (VersionComponent):
-            第 1 个 Python 版本号标识符组件
-        v2 (VersionComponent):
-            第 2 个 Python 版本号标识符组件
-
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
-
-    # 比较 epoch
-    if v1.epoch != v2.epoch:
-        return v1.epoch - v2.epoch
-
-    # 对其 release 长度, 缺失部分补 0
-    if len(v1.release) != len(v2.release):
-        for _ in range(abs(len(v1.release) - len(v2.release))):
-            if len(v1.release) < len(v2.release):
-                v1.release.append(0)
-            else:
-                v2.release.append(0)
-
-    # 比较 release
-    for n1, n2 in zip(v1.release, v2.release):
-        if n1 != n2:
-            return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小 ?
-    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
-    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
-    # 但 0.15.0 和 0.15 实际上是一样的版本
-    # if len(v1.release) != len(v2.release):
-    #     return len(v1.release) - len(v2.release)
-
-    # 比较 pre-release
-    if v1.pre_l and not v2.pre_l:
-        return -1  # pre-release 小于正常版本
-    elif not v1.pre_l and v2.pre_l:
-        return 1
-    elif v1.pre_l and v2.pre_l:
-        pre_order = {
-            'a': 0,
-            'b': 1,
-            'c': 2,
-            'rc': 3,
-            'alpha': 0,
-            'beta': 1,
-            'pre': 0,
-            'preview': 0
-        }
-        if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
-            return pre_order[v1.pre_l] - pre_order[v2.pre_l]
-        elif v1.pre_n is not None and v2.pre_n is not None:
-            return v1.pre_n - v2.pre_n
-        elif v1.pre_n is None and v2.pre_n is not None:
-            return -1
-        elif v1.pre_n is not None and v2.pre_n is None:
-            return 1
-
-    # 比较 post-release
-    if v1.post_n1 is not None:
-        post_n1 = v1.post_n1
-    elif v1.post_l:
-        post_n1 = int(v1.post_n2) if v1.post_n2 else 0
-    else:
-        post_n1 = 0
-
-    if v2.post_n1 is not None:
-        post_n2 = v2.post_n1
-    elif v2.post_l:
-        post_n2 = int(v2.post_n2) if v2.post_n2 else 0
-    else:
-        post_n2 = 0
-
-    if post_n1 != post_n2:
-        return post_n1 - post_n2
-
-    # 比较 dev-release
-    if v1.dev_l and not v2.dev_l:
-        return -1  # dev-release 小于 post-release 或正常版本
-    elif not v1.dev_l and v2.dev_l:
-        return 1
-    elif v1.dev_l and v2.dev_l:
-        if v1.dev_n is not None and v2.dev_n is not None:
-            return v1.dev_n - v2.dev_n
-        elif v1.dev_n is None and v2.dev_n is not None:
-            return -1
-        elif v1.dev_n is not None and v2.dev_n is None:
-            return 1
-
-    # 比较 local version
-    if v1.local and not v2.local:
-        return -1  # local version 小于 dev-release 或正常版本
-    elif not v1.local and v2.local:
-        return 1
-    elif v1.local and v2.local:
-        local1 = v1.local.split('.')
-        local2 = v2.local.split('.')
-        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
-        if len(local1) != len(local2):
-            for _ in range(abs(len(local1) - len(local2))):
-                if len(local1) < len(local2):
-                    local1.append(0)
-                else:
-                    local2.append(0)
-        for l1, l2 in zip(local1, local2):
-            if l1.isdigit() and l2.isdigit():
-                l1, l2 = int(l1), int(l2)
-            if l1 != l2:
-                return (l1 > l2) - (l1 < l2)
-        return len(local1) - len(local2)
-
-    return 0  # 版本相同
-
-
-def compare_versions(version1: str, version2: str) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
-
-    参数:
-        version1 (str):
-            版本号 1
-        version2 (str):
-            版本号 2
-
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
-    v1 = parse_version(version1)
-    v2 = parse_version(version2)
-    return compare_version_objects(v1, v2)
-
-
-def compatible_version_matcher(spec_version: str):
-    '''PEP 440 兼容性版本匹配 (~= 操作符)
-
-    返回值:
-        _is_compatible(version_str: str) -> bool: 一个接受 version_str (str) 参数的判断函数
-    '''
-    # 解析规范版本
-    spec = parse_version(spec_version)
-
-    # 获取有效release段 (去除末尾的零)
-    clean_release = []
-    for num in spec.release:
-        if num != 0 or (clean_release and clean_release[-1] != 0):
-            clean_release.append(num)
-
-    # 确定最低版本和前缀匹配规则
-    if len(clean_release) == 0:
-        logger.error('解析到错误的兼容性发行版本号')
-        raise ValueError('Invalid version for compatible release clause')
-
-    # 生成前缀匹配模板 (忽略后缀)
-    prefix_length = len(clean_release) - 1
-    if prefix_length == 0:
-        # 处理类似 ~= 2 的情况 (实际 PEP 禁止，但这里做容错)
-        prefix_pattern = [spec.release[0]]
-        min_version = parse_version(f'{spec.release[0]}')
-    else:
-        prefix_pattern = list(spec.release[:prefix_length])
-        min_version = spec
-
-    def _is_compatible(version_str: str) -> bool:
-        target = parse_version(version_str)
-
-        # 主版本前缀检查
-        target_prefix = target.release[:len(prefix_pattern)]
-        if target_prefix != prefix_pattern:
-            return False
-
-        # 最低版本检查 (自动忽略 pre/post/dev 后缀)
-        return compare_version_objects(target, min_version) >= 0
-
-    return _is_compatible
-
-
-def version_match(spec: str, version: str) -> bool:
-    '''PEP 440 版本前缀匹配
-
-    参数:
-        spec (str): 版本匹配表达式 (e.g. '1.1.*')
-        version (str): 需要检测的实际版本号 (e.g. '1.1a1')
-
-    返回值:
-        bool: 是否匹配
-    '''
-    # 分离通配符和本地版本
-    spec_parts = spec.split('+', 1)
-    spec_main = spec_parts[0].rstrip('.*')  # 移除通配符
-    has_wildcard = spec.endswith('.*') and '+' not in spec
-
-    # 解析规范版本 (不带通配符)
-    try:
-        spec_ver = parse_version(spec_main)
-    except ValueError:
-        return False
-
-    # 解析目标版本 (忽略本地版本)
-    target_ver = parse_version(version.split('+', 1)[0])
-
-    # 前缀匹配规则
-    if has_wildcard:
-        # 生成补零后的 release 段
-        spec_release = spec_ver.release.copy()
-        while len(spec_release) < len(target_ver.release):
-            spec_release.append(0)
-
-        # 比较前 N 个 release 段 (N 为规范版本长度)
-        return (
-            target_ver.release[:len(spec_ver.release)] == spec_ver.release
-            and target_ver.epoch == spec_ver.epoch
-        )
-    else:
-        # 严格匹配时使用原比较函数
-        return compare_versions(spec_main, version) == 0
-
-
-def is_v1_ge_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于或等于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) >= 0
-
-
-def is_v1_gt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) > 0
-
-
-def is_v1_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) == 0
-
-
-def is_v1_lt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) < 0
-
-
-def is_v1_le_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于或等于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> True
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) <= 0
-
-
-def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0*, 1.0a1 -> True
-            0.9*, 1.0 -> False
-    '''
-    func = compatible_version_matcher(v1)
-    return func(v2)
-
-
-def version_string_is_canonical(version: str) -> bool:
-    '''判断版本号标识符是否符合标准
-
-    参数:
-        version (str):
-            版本号字符串
-
-    返回值:
-        bool: 如果版本号标识符符合 PEP 440 标准, 则返回True
-
-    '''
-    return re.match(
-        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$',
-        version,
-    ) is not None
-
-
-def is_package_has_version(package: str) -> bool:
-    '''检查 Python 软件包是否指定版本号
-
-    参数:
-        package (str):
-            Python 软件包名
-
-    返回值:
-        bool: 如果 Python 软件包存在版本声明, 如torch==2.3.0, 则返回True
-    '''
-    return package != (
-        package.replace('===', '')
-        .replace('~=', '')
-        .replace('!=', '')
-        .replace('<=', '')
-        .replace('>=', '')
-        .replace('<', '')
-        .replace('>', '')
-        .replace('==', '')
-    )
-
-
-def get_package_name(package: str) -> str:
-    '''获取 Python 软件包的包名, 去除末尾的版本声明
-
-    参数:
-        package (str):
-            Python 软件包名
-
-    返回值:
-        str: 返回去除版本声明后的 Python 软件包名
-    '''
-    return (
-        package.split('===')[0]
-        .split('~=')[0]
-        .split('!=')[0]
-        .split('<=')[0]
-        .split('>=')[0]
-        .split('<')[0]
-        .split('>')[0]
-        .split('==')[0]
-        .strip()
-    )
-
-
-def get_package_version(package: str) -> str:
-    '''获取 Python 软件包的包版本号
-
-    参数:
-        package (str):
-            Python 软件包名
-
-    返回值:
-        str: 返回 Python 软件包的包版本号
-    '''
-    return (
-        package.split('===').pop()
-        .split('~=').pop()
-        .split('!=').pop()
-        .split('<=').pop()
-        .split('>=').pop()
-        .split('<').pop()
-        .split('>').pop()
-        .split('==').pop()
-        .strip()
-    )
-
-
-WHEEL_PATTERN = r'''
-    ^                           # 字符串开始
-    (?P<distribution>[^-]+)     # 包名 (匹配第一个非连字符段)
-    -                           # 分隔符
-    (?:                         # 版本号和可选构建号组合
-        (?P<version>[^-]+)      # 版本号 (至少一个非连字符段)
-        (?:-(?P<build>\d\w*))?  # 可选构建号 (以数字开头)
-    )
-    -                           # 分隔符
-    (?P<python>[^-]+)           # Python 版本标签
-    -                           # 分隔符
-    (?P<abi>[^-]+)              # ABI 标签
-    -                           # 分隔符
-    (?P<platform>[^-]+)         # 平台标签
-    \.whl$                      # 固定后缀
-'''
-
-
-def parse_wheel_filename(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 distribution 名称
-
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
-        str: distribution 名称, 例如 pydantic
-
-    异常:
-        ValueError: 如果文件名不符合 PEP491 规范
-    '''
-    match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
-    if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('distribution')
-
-
-def parse_wheel_version(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 version 名称
-
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
-        str: version 名称, 例如 1.10.15
-
-    异常:
-        ValueError: 如果文件名不符合 PEP491 规范
-    '''
-    match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
-    if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('version')
-
-
-def parse_wheel_to_package_name(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 <distribution>==<version>
-
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
-        str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
-    '''
-    distribution = parse_wheel_filename(filename)
-    version = parse_wheel_version(filename)
-    return f'{distribution}=={version}'
-
-
-def remove_optional_dependence_from_package(filename: str) -> str:
-    '''移除 Python 软件包声明中可选依赖
-
-    参数:
-        filename (str):
-            Python 软件包名
-
-    返回值:
-        str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
-    '''
-    return re.sub(r'\[.*?\]', '', filename)
-
-
-def parse_requirement_list(requirements: list) -> list:
-    '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
-
-    参数:
-        requirements (list):
-            Python 软件包名声明列表
-            e.g:
-            python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers[torch]==0.10.2',
-                'NUMPY',
-                '-e .',
-                '--index-url https://pypi.python.org/simple',
-                '--extra-index-url https://download.pytorch.org/whl/cu124',
-                '--find-links https://download.pytorch.org/whl/torch_stable.html',
-                '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
-                'git+https://github.com/WASasquatch/img2texture.git',
-                'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
-                'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
-                'protobuf<5,>=4.25.3',
-            ]
-            
-
-    返回值:
-        list: 将 Python 软件包名声明列表解析成标准声明列表
-        e.g. 上述例子中的软件包名声明列表将解析成:
-        python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers==0.10.2',
-                'numpy',
-                'mgds',
-                'img2texture',
-                'pydantic==1.10.15',
-                'prodigy-plus-schedule-free==1.9.1',
-                'protobuf<5',
-                'protobuf>=4.25.3',
-            ]
-            
-    '''
-    package_list = []
-    canonical_package_list = []
-    requirement: str
-    for requirement in requirements:
-        requirement = requirement.strip()
-        logger.debug('原始 Python 软件包名: %s', requirement)
-
-        if (
-            requirement is None
-            or requirement == ''
-            or requirement.startswith('#')
-            or '# skip_verify' in requirement
-            or requirement.startswith('--index-url')
-            or requirement.startswith('--extra-index-url')
-            or requirement.startswith('--find-links')
-            or requirement.startswith('-e .')
-        ):
-            continue
-
-        # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
-        # git+https://github.com/WASasquatch/img2texture.git -> img2texture
-        # git+https://github.com/deepghs/waifuc -> waifuc
-        if requirement.startswith('-e git+http') or requirement.startswith('git+http'):
-            egg_match = re.search(r'egg=([^#&]+)', requirement)
-            if egg_match:
-                package_list.append(egg_match.group(1).split('-')[0])
-                continue
-
-            package_name = os.path.basename(requirement)
-            package_name = package_name.split(
-                '.git')[0] if package_name.endswith('.git') else package_name
-            package_list.append(package_name)
-            continue
-
-        # https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl -> pydantic==1.10.15
-        if requirement.startswith('https://') or requirement.startswith('http://'):
-            package_name = parse_wheel_to_package_name(
-                os.path.basename(requirement))
-            package_list.append(package_name)
-            continue
-
-        # 常规 Python 软件包声明
-        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
-        cleaned_requirements = re.sub(
-            r'\s*#.*$', '', requirement).strip().split(',')
-        if len(cleaned_requirements) > 1:
-            package_name = get_package_name(cleaned_requirements[0].strip())
-            for package_name_with_version_marked in cleaned_requirements:
-                version_symbol = str.replace(
-                    package_name_with_version_marked, package_name, '', 1)
-                format_package_name = remove_optional_dependence_from_package(
-                    f'{package_name}{version_symbol}'.strip())
-                package_list.append(format_package_name)
-        else:
-            format_package_name = remove_optional_dependence_from_package(
-                cleaned_requirements[0].strip())
-            package_list.append(format_package_name)
-
-    # 处理包名大小写并统一成小写, 并去除前后空格
-    for p in package_list:
-        p: str = p.lower().strip()
-        logger.debug('预处理后的 Python 软件包名: %s', p)
-        if not is_package_has_version(p):
-            logger.debug('%s 无版本声明', p)
-            canonical_package_list.append(p)
-            continue
-
-        if version_string_is_canonical(get_package_version(p)):
-            canonical_package_list.append(p)
-        else:
-            logger.debug('%s 软件包名的版本不符合标准', p)
-
-    return canonical_package_list
-
-
-def remove_duplicate_object_from_list(origin: list) -> list:
-    '''对list进行去重
-
-    参数:
-        origin (list):
-            原始的list
-
-    返回值:
-        list: 去重后的list, e.g. [1, 2, 3, 2] -> [1, 2, 3]
-    '''
-    return list(set(origin))
-
-
-def read_packages_from_requirements_file(file_path: Union[str, Path]) -> list:
-    '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
-
-    参数:
-        file_path (str, Path):
-            requirements.txt 文件路径
-
-    返回值:
-        list: 从 requirements.txt 文件中读取的 Python 软件包声明列表
-    '''
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.readlines()
-    except Exception as e:
-        logger.error('打开 %s 时出现错误: %s\n请检查文件是否出现损坏', file_path, e)
-        return []
-
-
-def get_package_version_from_library(package_name: str) -> Union[str, None]:
-    '''获取已安装的 Python 软件包版本号
-
-    参数:
-        package_name (str):
-
-    返回值:
-        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回None
-    '''
-    try:
-        ver = importlib.metadata.version(package_name)
-    except:
-        ver = None
-
-    if ver is None:
-        try:
-            ver = importlib.metadata.version(package_name.lower())
-        except:
-            ver = None
-
-    if ver is None:
-        try:
-            ver = importlib.metadata.version(package_name.replace('_', '-'))
-        except:
-            ver = None
-
-    return ver
-
-
-class ComponentEnvironmentDetails(TypedDict):
-    '''ComfyUI 组件的环境信息结构'''
-    requirement_path: str           # 依赖文件路径
-    is_disabled: bool               # 组件是否禁用
-    requires: list[str]             # 需要的依赖列表
-    has_missing_requires: bool      # 是否存在缺失依赖
-    missing_requires: list[str]     # 具体缺失的依赖项
-    has_conflict_requires: bool     # 是否存在冲突依赖
-    conflict_requires: list[str]    # 具体冲突的依赖项
-
-
-ComfyUIEnvironmentComponent = dict[
-    str, ComponentEnvironmentDetails
-]  # ComfyUI 环境组件表字典
-
-
-def create_comfyui_environment_dict(
-    comfyui_path: Union[str, Path],
-) -> ComfyUIEnvironmentComponent:
-    '''创建 ComfyUI 环境组件表字典
-
-    参数:
-        comfyui_path (str, Path):
-            ComfyUI 根路径
-
-    返回值:
-        ComfyUIEnvironmentComponent: ComfyUI 环境组件表字典
-    '''
-    comfyui_env_data: ComfyUIEnvironmentComponent = {
-        'ComfyUI': {
-            'requirement_path': os.path.join(comfyui_path, 'requirements.txt'),
-            'is_disabled': False,
-            'requires': [],
-            'has_missing_requires': False,
-            'missing_requires': [],
-            'has_conflict_requires': False,
-            'conflict_requires': [],
-        },
-    }
-    custom_nodes_path = os.path.join(comfyui_path, 'custom_nodes')
-    for custom_node in os.listdir(custom_nodes_path):
-        if os.path.isfile(os.path.join(custom_nodes_path, custom_node)):
-            continue
-
-        custom_node_requirement_path = os.path.join(
-            custom_nodes_path, custom_node, 'requirements.txt')
-        custom_node_is_disabled = True if custom_node.endswith(
-            '.disabled') else False
-
-        comfyui_env_data[custom_node] = {
-            'requirement_path': (
-                custom_node_requirement_path
-                if os.path.exists(custom_node_requirement_path)
-                else None
-            ),
-            'is_disabled': custom_node_is_disabled,
-            'requires': [],
-            'has_missing_requires': False,
-            'missing_requires': [],
-            'has_conflict_requires': False,
-            'conflict_requires': [],
-        }
-
-    return comfyui_env_data
-
-
-def update_comfyui_environment_dict(
-    env_data: ComfyUIEnvironmentComponent,
-    component_name: str,
-    requirement_path: Optional[str] = None,
-    is_disabled: Optional[bool] = None,
-    requires: Optional[list[str]] = None,
-    has_missing_requires: Optional[bool] = None,
-    missing_requires: Optional[list[str]] = None,
-    has_conflict_requires: Optional[bool] = None,
-    conflict_requires: Optional[list[str]] = None,
-) -> None:
-    '''更新 ComfyUI 环境组件表字典
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-        component_name (str):
-            ComfyUI 组件名称
-
-        requirement_path (str, None):
-            ComfyUI 组件依赖文件路径
-
-        is_disabled (bool, None):
-            ComfyUI 组件是否被禁用
-
-        requires (list[str], None):
-            ComfyUI 组件需要的依赖列表
-
-        has_missing_requires (bool, None):
-            ComfyUI 组件是否存在缺失依赖
-
-        missing_requires (list[str], None):
-            ComfyUI 组件缺失依赖列表
-
-        has_conflict_requires (bool, None):
-            ComfyUI 组件是否存在冲突依赖
-
-        conflict_requires (list[str], None):
-            ComfyUI 组件冲突依赖列表
-    '''
-    env_data[component_name] = {
-        'requirement_path': (
-            requirement_path
-            if requirement_path
-            else env_data.get(component_name).get('requirement_path')
-        ),
-        'is_disabled': (
-            is_disabled
-            if is_disabled
-            else env_data.get(component_name).get('is_disabled')
-        ),
-        'requires': (
-            requires
-            if requires
-            else env_data.get(component_name).get('requires')
-        ),
-        'has_missing_requires': (
-            has_missing_requires
-            if has_missing_requires
-            else env_data.get(component_name).get('has_missing_requires')
-        ),
-        'missing_requires': (
-            missing_requires
-            if missing_requires
-            else env_data.get(component_name).get('missing_requires')
-        ),
-        'has_conflict_requires': (
-            has_conflict_requires
-            if has_conflict_requires
-            else env_data.get(component_name).get('has_conflict_requires')
-        ),
-        'conflict_requires': (
-            conflict_requires
-            if conflict_requires
-            else env_data.get(component_name).get('conflict_requires')
-        ),
-    }
-
-
-def update_comfyui_component_requires_list(
-    env_data: ComfyUIEnvironmentComponent,
-) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
-    for component_name, details in env_data.items():
-        if details.get('is_disabled'):
-            continue
-
-        requirement_path = details.get('requirement_path')
-        if requirement_path is None:
-            continue
-
-        origin_requires = read_packages_from_requirements_file(
-            requirement_path
-        )
-        requires = parse_requirement_list(origin_requires)
-        update_comfyui_environment_dict(
-            env_data=env_data,
-            component_name=component_name,
-            requires=requires,
-        )
-
-
-def update_comfyui_component_missing_requires_list(
-    env_data: ComfyUIEnvironmentComponent,
-) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
-    for component_name, details in env_data.items():
-        if details.get('is_disabled'):
-            continue
-
-        requires = details.get('requires')
-        has_missing_requires = False
-        missing_requires = []
-
-        for package in requires:
-            if not is_package_installed(package):
-                has_missing_requires = True
-                missing_requires.append(package)
-
-        update_comfyui_environment_dict(
-            env_data=env_data,
-            component_name=component_name,
-            has_missing_requires=has_missing_requires,
-            missing_requires=missing_requires,
-        )
-
-
-def update_comfyui_component_conflict_requires_list(
-    env_data: ComfyUIEnvironmentComponent,
-    conflict_package_list: list
-) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-        conflict_package_list (list):
-            冲突的 Python 软件包列表
-    '''
-    for component_name, details in env_data.items():
-        if details.get('is_disabled'):
-            continue
-
-        requires = details.get('requires')
-        has_conflict_requires = False
-        conflict_requires = []
-
-        for conflict_package in conflict_package_list:
-            for package in requires:
-                if (
-                    is_package_has_version(package)
-                    and
-                    get_package_name(
-                        conflict_package
-                    ) == get_package_name(package)
-                ):
-                    has_conflict_requires = True
-                    conflict_requires.append(package)
-
-        update_comfyui_environment_dict(
-            env_data=env_data,
-            component_name=component_name,
-            has_conflict_requires=has_conflict_requires,
-            conflict_requires=conflict_requires,
-        )
-
-
-def get_comfyui_component_requires_list(
-    env_data: ComfyUIEnvironmentComponent,
-) -> list:
-    '''从 ComfyUI 环境组件表字典读取所有组件的 requires
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-    返回值:
-        list: ComfyUI 环境组件的 Python 软件包列表
-    '''
-    package_list = []
-    for _, details in env_data.items():
-        if details.get('is_disabled'):
-            continue
-
-        package_list += details.get('requires')
-
-    return remove_duplicate_object_from_list(package_list)
-
-
-def statistical_need_install_require_component(
-    env_data: ComfyUIEnvironmentComponent,
-) -> list:
-    '''根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-    返回值:
-        list: ComfyUI 环境组件的依赖文件路径列表
-    '''
-    requirement_list = []
-    for _, details in env_data.items():
-        if (
-            details.get('has_missing_requires')
-            or details.get('has_conflict_requires')
-        ):
-            requirement_list.append(
-                Path(details.get('requirement_path')).as_posix())
-
-    return requirement_list
-
-
-def statistical_has_conflict_component(
-    env_data: ComfyUIEnvironmentComponent,
-    conflict_package_list: list
-) -> list:
-    '''根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-    返回值:
-        list: ComfyUI 环境组件的依赖文件路径列表
-    '''
-    content = []
-    for conflict_package in conflict_package_list:
-        content.append(get_package_name(f'{conflict_package}:'))
-        for component_name, details in env_data.items():
-            for conflict_component_package in details.get('conflict_requires'):
-                if get_package_name(conflict_component_package) == conflict_package:
-                    content.append(
-                        f' - {component_name}: {conflict_component_package}')
-
-    return content[:-1] if len(content) > 0 and content[-1] == '' else content
-
-
-def is_package_installed(package: str) -> bool:
-    '''判断 Python 软件包是否已安装在环境中
-
-    参数:
-        package (str):
-            Python 软件包名
-
-    返回值:
-        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回False
-    '''
-    # 分割 Python 软件包名和版本号
-    if '===' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('===')]
-    elif '~=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('~=')]
-    elif '!=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('!=')]
-    elif '<=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<=')]
-    elif '>=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>=')]
-    elif '<' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<')]
-    elif '>' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>')]
-    elif '==' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('==')]
-    else:
-        pkg_name, pkg_version = package.strip(), None
-
-    env_pkg_version = get_package_version_from_library(pkg_name)
-    logger.debug(
-        '已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s',
-        pkg_name, env_pkg_version, pkg_version
-    )
-
-    if env_pkg_version is None:
-        logger.debug('%s 未安装到环境中', package)
-        return False
-
-    if pkg_version is not None:
-        # ok = env_pkg_version === / == pkg_version
-        if '===' in package or '==' in package:
-            logger.debug('包含条件: === / ==')
-            if is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s == %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version ~= pkg_version
-        if '~=' in package:
-            logger.debug('包含条件: ~=')
-            if is_v1_c_eq_v2(pkg_version, env_pkg_version):
-                logger.debug('%s ~= %s', pkg_version, env_pkg_version)
-                return True
-
-        # ok = env_pkg_version != pkg_version
-        if '!=' in package:
-            logger.debug('包含条件: !=')
-            if not is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s != %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version <= pkg_version
-        if '<=' in package:
-            logger.debug('包含条件: <=')
-            if is_v1_le_v2(env_pkg_version, pkg_version):
-                logger.debug('%s <= %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version >= pkg_version
-        if '>=' in package:
-            logger.debug('包含条件: >=')
-            if is_v1_ge_v2(env_pkg_version, pkg_version):
-                logger.debug('%s >= %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version < pkg_version
-        if '<' in package:
-            logger.debug('包含条件: <')
-            if is_v1_lt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s < %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version > pkg_version
-        if '>' in package:
-            logger.debug('包含条件: >')
-            if is_v1_gt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s > %s', env_pkg_version, pkg_version)
-                return True
-
-        logger.debug('%s 需要安装正确版本', package)
-        return False
-
-    return True
-
-
-def fitter_has_version_package(package_list: list) -> list:
-    '''过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
-
-    参数:
-        package_list (list):
-            Python 软件包列表
-
-    返回值:
-        list: 仅包含版本号的 Python 软件包列表
-    '''
-    return [
-        p for p in package_list
-        if is_package_has_version(p)
-    ]
-
-
-def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
-    '''检测 Python 软件包版本号声明是否存在冲突
-
-    参数:
-        pkg1 (str):
-            第 1 个 Python 软件包名称
-
-        pkg2 (str):
-            第 2 个 Python 软件包名称
-
-    返回值:
-        bool: 如果 Python 软件包版本声明出现冲突则返回True
-    '''
-    # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
-    for i in range(2):
-        if i == 1:
-            if pkg1 == pkg2:
-                break
-            else:
-                pkg1, pkg2 = pkg2, pkg1
-
-        ver1 = get_package_version(pkg1)
-        ver2 = get_package_version(pkg2)
-        logger.debug(
-            '冲突依赖检测: pkg1: %s, pkg2: %s, ver1: %s, ver2: %s',
-            pkg1, pkg2, ver1, ver2)
-
-        # >=, <=
-        if '>=' in pkg1 and '<=' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, <
-        if '>=' in pkg1 and '<' in pkg2 and '=' not in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, <=
-        if '>' in pkg1 and '=' not in pkg1 and '<=' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, <
-        if '>' in pkg1 and '=' not in pkg1 and '<' in pkg2 and '=' not in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, ==
-        if '>' in pkg1 and '=' not in pkg1 and '==' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, ==
-        if '>=' in pkg1 and '==' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <, ==
-        if '<' in pkg1 and '=' not in pkg1 and '==' in pkg2:
-            if is_v1_le_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s <= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <=, ==
-        if '<=' in pkg1 and '==' in pkg2:
-            if is_v1_lt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s < %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # !=, ==
-        if '!=' in pkg1 and '==' in pkg2:
-            if is_v1_eq_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s == %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, ~=
-        if '>' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, ~=
-        if '>=' in pkg1 and '~=' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <, ~=
-        if '<' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
-            if is_v1_le_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s <= %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <=, ~=
-        if '<=' in pkg1 and '~=' in pkg2:
-            if is_v1_lt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s < %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # !=, ~=
-        # 这个也没什么必要
-        # if '!=' in pkg1 and '~=' in pkg2:
-        #     if is_v1_c_eq_v2(ver1, ver2):
-        #         logger.debug(
-        #             '冲突依赖: %s, %s, 版本冲突: %s ~= %s',
-        #             pkg1, pkg2, ver1, ver2)
-        #         return True
-
-        # ~=, == / ~=, ===
-        if ('~=' in pkg1 and '==' in pkg2) or ('~=' in pkg1 and '===' in pkg2):
-            if is_v1_gt_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-        # ~=, ~=
-        # ~= 类似 >= V.N, == V.*, 所以该部分的比较没必要使用
-        # if '~=' in pkg1 and '~=' in pkg2:
-        #     if not is_v1_c_eq_v2(ver1, ver2):
-        #         logger.debug(
-        #             '冲突依赖: %s, %s, 版本冲突: %s !~= %s',
-        #             pkg1, pkg2, ver1, ver2)
-        #         return True
-
-        # ==, == / ===, ===
-        if ('==' in pkg1 and '==' in pkg2) or ('===' in pkg1 and '===' in pkg2):
-            if not is_v1_eq_v2(ver1, ver2):
-                logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s != %s',
-                    pkg1, pkg2, ver1, ver2)
-                return True
-
-    return False
-
-
-def detect_conflict_package_from_list(package_list: list) -> list:
-    '''检测 Python 软件包版本声明列表中存在冲突的软件包
-
-    参数:
-        package_list (list):
-            Python 软件包版本声明列表
-
-    返回值:
-        list: 冲突的 Python 软件包列表
-    '''
-    conflict_package = []
-    for i in package_list:
-        for j in package_list:
-            if (
-                get_package_name(i) == get_package_name(j)
-                and detect_conflict_package(i, j)
-            ):
-                conflict_package.append(get_package_name(i))
-
-    return remove_duplicate_object_from_list(conflict_package)
-
-
-def display_comfyui_environment_dict(
-    env_data: ComfyUIEnvironmentComponent,
-) -> None:
-    '''列出 ComfyUI 环境组件字典内容
-
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
-    logger.debug('ComfyUI 环境组件表')
-    for component_name, details in env_data.items():
-        logger.debug(
-            'Component: %s', component_name
-        )
-        logger.debug(
-            ' - requirement_path: %s', details['requirement_path']
-        )
-        logger.debug(
-            ' - is_disabled: %s', details['is_disabled']
-        )
-        logger.debug(
-            ' - requires: %s', details['requires']
-        )
-        logger.debug(
-            ' - has_missing_requires: %s', details['has_missing_requires']
-        )
-        logger.debug(
-            ' - missing_requires: %s', details['missing_requires']
-        )
-        logger.debug(
-            ' - has_conflict_requires: %s', details['has_conflict_requires']
-        )
-        logger.debug(
-            ' - conflict_requires: %s', details['conflict_requires']
-        )
-        print()
-
-
-def display_check_result(
-    requirement_list: list,
-    conflict_result: list
-) -> None:
-    '''显示 ComfyUI 运行环境检查结果
-
-    参数:
-        requirement_list (list):
-            ComfyUI 组件依赖文件路径列表
-
-        conflict_result (list):
-            冲突组件统计信息
-    '''
-    if len(requirement_list) > 0:
-        logger.debug('需要安装 ComfyUI 组件列表')
-        for requirement in requirement_list:
-            component_name = requirement.split('/')[-2]
-            logger.debug('%s:', component_name)
-            logger.debug(' - %s', requirement)
-        print()
-
-    if len(conflict_result) > 0:
-        logger.debug('ComfyUI 冲突组件')
-        for text in conflict_result:
-            logger.debug(text)
-        print()
-
-
-def write_content_to_file(
-        content: list,
-        path: Union[str, Path]
-) -> None:
-    '''将内容列表写入到文件中
-
-    参数:
-        content (list):
-            内容列表
-
-        path (str, Path):
-            保存内容的路径
-    '''
-    if len(content) == 0:
-        return
-
-    dir_path = os.path.dirname(path)
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path, exist_ok=True)
-
-    try:
-        logger.debug('写入文件到 %s', path)
-        with open(path, 'w', encoding='utf-8') as f:
-            for item in content:
-                f.write(item + '\n')
-    except Exception as e:
-        logger.error('写入文件到 %s 时出现了错误: %s', path, e)
-
-
-def main() -> None:
-    comfyui_root_path = COMMAND_ARGS.comfyui_path
-    comfyui_conflict_notice = COMMAND_ARGS.conflict_depend_notice_path
-    comfyui_requirement_path = COMMAND_ARGS.requirement_list_path
-    debug_mode = COMMAND_ARGS.debug_mode
-
-    if not os.path.exists(os.path.join(comfyui_root_path, 'requirements.txt')):
-        logger.error('ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整')
-        sys.exit(1)
-
-    if not os.path.exists(os.path.join(comfyui_root_path, 'custom_nodes')):
-        logger.error('ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整')
-        sys.exit(1)
-
-    if not comfyui_conflict_notice or not comfyui_requirement_path:
-        logger.error(
-            '未配置 --conflict-depend-notice-path / --requirement-list-path, 无法进行环境检测')
-        sys.exit(1)
-
-    logger.debug('检测 ComfyUI 环境中')
-    env_data = create_comfyui_environment_dict(comfyui_root_path)
-    update_comfyui_component_requires_list(env_data)
-    update_comfyui_component_missing_requires_list(env_data)
-    pkg_list = get_comfyui_component_requires_list(env_data)
-    has_version_pkg = fitter_has_version_package(pkg_list)
-    conflict_pkg = detect_conflict_package_from_list(has_version_pkg)
-    update_comfyui_component_conflict_requires_list(env_data, conflict_pkg)
-    req_list = statistical_need_install_require_component(env_data)
-    conflict_info = statistical_has_conflict_component(env_data, conflict_pkg)
-    write_content_to_file(conflict_info, comfyui_conflict_notice)
-    write_content_to_file(req_list, comfyui_requirement_path)
-    if debug_mode:
-        display_comfyui_environment_dict(env_data)
-        display_check_result(req_list, conflict_info)
-    logger.debug('ComfyUI 环境检查完成')
-
-
-if __name__ == '__main__':
-    main()
-`".Trim()
-
-    Print-Msg `"检查 ComfyUI 运行环境组件依赖中`"
-    if (!(Test-Path `"`$Env:CACHE_HOME`")) {
-        New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
-    }
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_comfyui_env.py`" -Value `$content
-    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
-    Remove-Item -Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" -Force -Recurse -ErrorAction SilentlyContinue 2> `$null
-
-    python `"`$Env:CACHE_HOME/check_comfyui_env.py`" --comfyui-path `"`$PSScriptRoot/`$Env:CORE_PREFIX`" --conflict-depend-notice-path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`" --requirement-list-path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`" `
-
-    if (Test-Path `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`") {
-        Print-Msg `"检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用`"
-        Print-Msg `"您可以进入 ComfyUI 后使用 ComfyUI Manager 禁用或者卸载冲突的插件, 也可以进入 `$PSScriptRoot/`$Env:CORE_PREFIX/custom_nodes 路径, 将冲突插件的文件夹名称进行修改, 加上 .disabled 后缀后即可禁用插件, 或者直接删除插件的文件夹以卸载插件`"
-        Print-Msg `"您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况`"
-        Print-Msg `"您通常情况下可以选择忽略该警告并继续运行`"
-        Write-Host `"-------------------------------------------------------------------------------`"
-        Write-Host `"发生冲突的组件:`"
-        `$content = Get-Content `"`$Env:CACHE_HOME/comfyui_conflict_requirement_list.txt`"
-        for (`$i = 0; `$i -lt `$content.Length; `$i++) {
-            Write-Host `$content[`$i]
-        }
-        Write-Host `"-------------------------------------------------------------------------------`"
-        Print-Msg `"是否按顺序安装冲突依赖 (yes/no) ?`"
-        Print-Msg `"提示:`"
-        Print-Msg `"如果不选择按顺序安装冲突依赖, 则跳过安装冲突依赖直接运行 ComfyUI`"
-        Print-Msg `"输入 yes 或 no 后回车`"
-        `$option = (Read-Host `"========================================>`").Trim()
-        if (`$option -eq `"yes`" -or `$option -eq `"y`" -or `$option -eq `"YES`" -or `$option -eq `"Y`") {
-            Print-Msg `"按顺序安装冲突组件依赖中`"
+    if (`$json_content.PSObject.Properties[`"disable_all_extensions`"]) {
+        if (`$json_content.disable_all_extensions -ne `"none`") {
+            return `$true
         } else {
-            Print-Msg `"跳过按顺序安装组件依赖`"
-            return
-        }
-    }
-
-    # 安装组件依赖
-    if (!(Test-Path `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`")) {
-        Print-Msg `"ComfyUI 运行环境无组件依赖缺失`"
-        return
-    }
-    `$requirement_list = Get-Content `"`$Env:CACHE_HOME/comfyui_requirement_list.txt`"
-    `$sum = if (`$requirement_list.GetType().Name -eq `"String`") { 1 } else { `$requirement_list.Length }
-    for (`$i = 0; `$i -lt `$sum; `$i++) {
-        `$path = if (`$requirement_list.GetType().Name -eq `"String`") { `$requirement_list } else { `$requirement_list[`$i] }
-        `$name = Split-Path `$(Split-Path `$path -Parent) -Leaf
-
-        Print-Msg `"[`$(`$i + 1)/`$sum] 安装 `$name 组件依赖中`"
-        if (`$USE_UV) {
-            uv pip install -r `"`$path`"
-            if (!(`$?)) {
-                Print-Msg `"[`$(`$i + 1)/`$sum] 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-                python -m pip install -r `"`$path`"
-            }
-        } else {
-            python -m pip install -r `"`$path`"
-        }
-        if (`$?) {
-            Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装成功`"
-        } else {
-            Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装失败, 可能会导致该组件缺失依赖出现运行异常`"
-        }
-
-        `$install_script = `"`$(Split-Path `$path -Parent)/install.py`"
-        if (Test-Path `"`$install_script`") {
-            Print-Msg `"[`$(`$i + 1)/`$sum] 执行 `$name 的依赖安装脚本中`"
-            python `"`$install_script`"
-            if (`$?) {
-                Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装脚本执行成功`"
+            if (`$json_content.disabled_extensions -contains `$name) {
+                return `$true
             } else {
-                Print-Msg `"[`$(`$i + 1)/`$sum] `$name 组件依赖安装脚本执行失败, 可能会导致该组件缺失依赖出现运行异常`"
+                return `$false
             }
         }
     }
+}
+
+
+# 检查 Stable Diffusion WebUI 环境中组件依赖
+function Check-Stable-Diffusion-WebUI-Env-Requirements {
+    `$current_python_path = `$Env:PYTHONPATH
+    `$Env:PYTHONPATH = `"`$([System.IO.Path]::GetFullPath(`"`$PSScriptRoot/`$Env:CORE_PREFIX`"))`$([System.IO.Path]::PathSeparator)`$Env:PYTHONPATH`"
+    Print-Msg `"检查 Stable Diffusion WebUI 扩展依赖中`"
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
+    `$current_live_config = `$Env:WEBUI_LAUNCH_LIVE_OUTPUT
+    `$Env:WEBUI_LAUNCH_LIVE_OUTPUT = 1
+
+    if (`$LaunchArg) {
+        `$launch_args = `$LaunchArg
+    } elseif (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
+        `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+    } else {
+        `$launch_args = `"`"
+    }
+
+    `$sum = 0
+    ForEach (`$extension_path in `$extension_list) {
+        if (Test-Path `"`$extension_path/install.py`") {
+            `$sum += 1
+        }
+    }
+
+    `$count = 0
+    if ((`$launch_args -match `"--disable-extra-extensions`") -or (`$launch_args -match `"--disable-all-extensions`")) {
+        `$extension_list = @()
+    }
+    ForEach (`$extension_path in `$extension_list) {
+        if (!(Test-Path `"`$extension_path/install.py`")) {
+            continue
+        }
+        `$count += 1
+        `$name = `$([System.IO.Path]::GetFileName(`$extension_path))
+        `$status = Check-Extension-Is-Disabled `$name
+        if (`$status) {
+            Print-Msg `"[`$count/`$sum] `$name 扩展已禁用, 不执行该扩展的依赖安装脚本`"
+        } else {
+            Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本中`"
+            python `"`$extension_path/install.py`"
+            if (`$?) {
+                Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本成功`"
+            } else {
+                Print-Msg `"[`$count/`$sum] 执行 `$name 扩展的依赖安装脚本失败, 这可能会导致 `$name 扩展部分功能无法正常使用`"
+            }
+        }
+    }
+    Print-Msg `"Stable Diffusion WebUI 扩展依赖检查完成`"
+
+    Print-Msg `"检查 Stable Diffusion WebUI 内置扩展依赖中`"
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions-builtin`" | Select-Object -ExpandProperty FullName
+
+    `$sum = 0
+    ForEach (`$extension_path in `$extension_list) {
+        if (Test-Path `"`$extension_path/install.py`") {
+            `$sum += 1
+        }
+    }
+
+    `$count = 0
+    if (`$launch_args -match `"--disable-all-extensions`") {
+        `$extension_list = @()
+    }
+    ForEach (`$extension_path in `$extension_list) {
+        if (!(Test-Path `"`$extension_path/install.py`")) {
+            continue
+        }
+        `$count += 1
+        `$name = `$([System.IO.Path]::GetFileName(`$extension_path))
+        `$status = Check-Extension-Is-Disabled `$name
+        if (`$status) {
+            Print-Msg `"[`$count/`$sum] `$name 内置扩展已禁用, 不执行该内置扩展的依赖安装脚本`"
+        } else {
+            Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本中`"
+            python `"`$extension_path/install.py`"
+            if (`$?) {
+                Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本成功`"
+            } else {
+                Print-Msg `"[`$count/`$sum] 执行 `$name 内置扩展的依赖安装脚本失败, 这可能会导致 `$name 内置扩展部分功能无法正常使用`"
+            }
+        }
+    }
+    Print-Msg `"Stable Diffusion WebUI 内置扩展依赖检查完成`"
+    `$Env:PYTHONPATH = `$current_python_path
+    `$Env:WEBUI_LAUNCH_LIVE_OUTPUT = `$current_live_config
 }
 
 
@@ -5432,65 +4152,138 @@ function Check-MS-VCPP-Redistributable {
 }
 
 
-# 检查 ComfyUI 运行环境
-function Check-ComfyUI-Env {
+# 检查 Stable Diffusion WebUI 运行环境
+function Check-Stable-Diffusion-WebUI-Env {
     if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`"
+        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Stable Diffusion WebUI 运行环境检测, 这可能会导致 Stable Diffusion WebUI 运行环境中存在的问题无法被发现并解决`"
         return
     } else {
-        Print-Msg `"检查 ComfyUI 运行环境中`"
+        Print-Msg `"检查 Stable Diffusion WebUI 运行环境中`"
     }
 
-    Check-ComfyUI-Requirements
-    Check-ComfyUI-Env-Requirements
+    Check-Stable-Diffusion-WebUI-Requirements
+    Check-Stable-Diffusion-WebUI-Env-Requirements
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
     Check-MS-VCPP-Redistributable
-    Print-Msg `"ComfyUI 运行环境检查完成`"
+    Print-Msg `"Stable Diffusion WebUI 运行环境检查完成`"
+}
+
+
+# 设置 SD WebUI 扩展列表镜像源
+function Set-Stable-Diffusion-WebUI-Extension-List-Mirror {
+    # 扩展列表地址: https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Stable Diffusion WebUI 扩展列表镜像源`"
+        return
+    }
+
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) { # 使用自定义 Github 镜像源
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源`"
+        Print-Msg `"测试 `$github_mirror 是否可用`"
+        `$github_mirror = `$github_mirror -creplace `"github.com`", `"raw.githubusercontent.com`"
+        `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
+        try {
+            Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
+            Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
+            `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
+        }
+        catch {
+            Print-Msg `"该镜像源不可用, 取消设置 Stable Diffusion WebUI 扩展列表镜像源`"
+        }
+        return
+    }
+
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        `$github_mirror = `$i -creplace `"github.com`", `"raw.githubusercontent.com`"
+        `$mirror_test_url = `"`${github_mirror}/licyk/empty/main/README.md`"
+        try {
+            Invoke-WebRequest -Uri `$mirror_test_url | Out-Null
+            Print-Msg `"该镜像源可用, 设置 Stable Diffusion WebUI 扩展列表镜像源`"
+            `$Env:WEBUI_EXTENSIONS_INDEX = `"`${github_mirror}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json`"
+            `$status = 1
+            break
+        }
+        catch {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消设置 Stable Diffusion WebUI 扩展列表镜像源`"
+    }
+}
+
+
+# 设置 ControlNet 扩展依赖镜像源
+function Set-ControlNet-Extension-Requirement-Mirror {
+    if (`$USE_PIP_MIRROR) {
+        Print-Msg `"检测到使用 PyPI 镜像源, 为 ControlNet 扩展依赖的安装设置 PyPI 镜像源`"
+    } else {
+        Print-Msg `"检测到使用 PyPI 官方源, 使用 ControlNet 扩展默认的 PyPI 镜像源`"
+        return
+    }
+    `$Env:INSIGHTFACE_WHEEL = `"insightface`"
+    `$Env:HANDREFINER_WHEEL = `"handrefinerportable`"
+    `$Env:DEPTH_ANYTHING_WHEEL = `"depth_anything`"
+    `$Env:DEPTH_ANYTHING_V2_WHEEL = `"depth_anything_v2`"
+    `$Env:DSINE_WHEEL = `"dsine`"
+    `$Env:CLIP_PACKAGE = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip`"
+    `$Env:PIP_FIND_LINKS = `"`$Env:PIP_FIND_LINKS https://licyk.github.io/t/pypi/index.html`"
+    `$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR, https://licyk.github.io/t/pypi/index.html`"
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
     } else {
-        Check-ComfyUI-Installer-Update
+        Check-Stable-Diffusion-WebUI-Installer-Update
     }
     Set-Github-Mirror
     Set-HuggingFace-Mirror
     Set-uv
     PyPI-Mirror-Status
+    Set-Stable-Diffusion-WebUI-Extension-List-Mirror
+    Set-ControlNet-Extension-Requirement-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$launch_args = Get-ComfyUI-Launch-Args
+    `$launch_args = Get-Stable-Diffusion-WebUI-Launch-Args
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
     Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
-    Create-ComfyUI-Shortcut
-    Check-ComfyUI-Env
+    Create-Stable-Diffusion-WebUI-Shortcut
+    Check-Stable-Diffusion-WebUI-Env
     Set-PyTorch-CUDA-Memory-Alloc
-    Print-Msg `"启动 ComfyUI 中`"
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过启动 ComfyUI`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过启动 Stable Diffusion WebUI`"
     } else {
-        python main.py `$launch_args
+        Print-Msg `"启动 Stable Diffusion WebUI 中`"
+        python launch.py `$launch_args
         `$req = `$?
         if (`$req) {
-            Print-Msg `"ComfyUI 正常退出`"
+            Print-Msg `"Stable Diffusion WebUI 正常退出`"
         } else {
-            Print-Msg `"ComfyUI 出现异常, 已退出`"
+            Print-Msg `"Stable Diffusion WebUI 出现异常, 已退出`"
         }
         Read-Host | Out-Null
     }
@@ -5527,7 +4320,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -5552,8 +4345,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -5576,7 +4369,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -5667,40 +4459,39 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式
+        启用 SD WebUI Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 ComfyUI Installer 更新检查
+        禁用 SD WebUI Installer 更新检查
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 ComfyUI Installer 自动设置 Github 镜像源
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -5723,10 +4514,10 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableAutoApplyUpdate
-        禁用 ComfyUI Installer 自动应用新版本更新
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5739,7 +4530,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -5763,13 +4554,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -5792,22 +4583,22 @@ function Fix-Git-Point-Off-Set {
 }
 
 
-# ComfyUI Installer 更新检测
-function Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
         return
     }
 
@@ -5831,12 +4622,12 @@ function Check-ComfyUI-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -5844,35 +4635,35 @@ function Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 ComfyUI Installer 更新`"
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -5981,24 +4772,24 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
     } else {
-        Check-ComfyUI-Installer-Update
+        Check-Stable-Diffusion-WebUI-Installer-Update
     }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    Print-Msg `"拉取 ComfyUI 更新内容中`"
+    Print-Msg `"拉取 Stable Diffusion WebUI 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
@@ -6017,22 +4808,23 @@ function Main {
 
     git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
-        Print-Msg `"应用 ComfyUI 更新中`"
+        Print-Msg `"应用 Stable Diffusion WebUI 更新中`"
         `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
         git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
-            Print-Msg `"ComfyUI 已为最新版, 当前版本：`$core_origin_ver`"
+            Print-Msg `"Stable Diffusion WebUI 已为最新版, 当前版本：`$core_origin_ver`"
         } else {
-            Print-Msg `"ComfyUI 更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+            Print-Msg `"Stable Diffusion WebUI 更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         }
     } else {
-        Print-Msg `"拉取 ComfyUI 更新内容失败`"
-        Print-Msg `"更新 ComfyUI 失败, 请检查控制台日志。可尝试重新运行 ComfyUI Installer 更新脚本进行重试`"
+        Print-Msg `"拉取 Stable Diffusion WebUI 更新内容失败`"
+        Print-Msg `"更新 Stable Diffusion WebUI 失败, 请检查控制台日志。可尝试重新运行 SD WebUI Installer 更新脚本进行重试`"
     }
 
-    Print-Msg `"退出 ComfyUI 更新脚本`"
+    Print-Msg `"退出 Stable Diffusion WebUI 更新脚本`"
+
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
     }
@@ -6052,8 +4844,8 @@ Main
 }
 
 
-# 更新脚本
-function Write-Update-Node-Script {
+# 更新插件脚本
+function Write-Update-Extension-Script {
     $content = "
 param (
     [switch]`$Help,
@@ -6068,7 +4860,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -6093,8 +4885,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -6117,7 +4909,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -6208,40 +4999,39 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式
+        启用 SD WebUI Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 ComfyUI Installer 更新检查
+        禁用 SD WebUI Installer 更新检查
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 ComfyUI Installer 自动设置 Github 镜像源
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -6264,10 +5054,10 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableAutoApplyUpdate
-        禁用 ComfyUI Installer 自动应用新版本更新
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -6280,7 +5070,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -6304,13 +5094,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -6333,22 +5123,22 @@ function Fix-Git-Point-Off-Set {
 }
 
 
-# ComfyUI Installer 更新检测
-function Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
         return
     }
 
@@ -6372,12 +5162,12 @@ function Check-ComfyUI-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -6385,35 +5175,35 @@ function Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 ComfyUI Installer 更新`"
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -6525,9 +5315,9 @@ function List-Update-Status (`$update_status) {
     `$success = 0
     `$failed = 0
     `$sum = 0
-    Print-Msg `"当前 ComfyUI 自定义节点更新结果`"
+    Print-Msg `"当前 Stable Diffusion WebUI 扩展更新结果`"
     Write-Host `"-----------------------------------------------------`"
-    Write-Host `"自定义节点名称`" -ForegroundColor White -NoNewline
+    Write-Host `"扩展名称`" -ForegroundColor White -NoNewline
     Write-Host `" | `" -NoNewline
     Write-Host `"更新结果`" -ForegroundColor Cyan
     Write-Host
@@ -6558,79 +5348,79 @@ function List-Update-Status (`$update_status) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
     } else {
-        Check-ComfyUI-Installer-Update
+        Check-Stable-Diffusion-WebUI-Installer-Update
     }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$node_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/custom_nodes`" | Select-Object -ExpandProperty FullName
+    `$extension_list = Get-ChildItem -Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
     `$sum = 0
     `$count = 0
-    ForEach (`$node in `$node_list) {
-        if (Test-Path `"`$node/.git`") {
+    ForEach (`$extension in `$extension_list) {
+        if (Test-Path `"`$extension/.git`") {
             `$sum += 1
         }
     }
 
-    Print-Msg `"更新 ComfyUI 自定义节点中`"
+    Print-Msg `"更新 Stable Diffusion WebUI 扩展中`"
     `$update_status = New-Object System.Collections.ArrayList
-    ForEach (`$node in `$node_list) {
-        if (!(Test-Path `"`$node/.git`")) {
+    ForEach (`$extension in `$extension_list) {
+        if (!(Test-Path `"`$extension/.git`")) {
             continue
         }
 
         `$count += 1
-        `$node_name = `$(`$(Get-Item `$node).Name)
-        Print-Msg `"[`$count/`$sum] 更新 `$node_name 自定义节点中`"
-        Fix-Git-Point-Off-Set `"`$node`"
-        `$origin_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-        `$branch = `$(git -C `"`$node`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
+        `$extension_name = `$(`$(Get-Item `$extension).Name)
+        Print-Msg `"[`$count/`$sum] 更新 `$extension_name 扩展中`"
+        Fix-Git-Point-Off-Set `"`$extension`"
+        `$origin_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+        `$branch = `$(git -C `"`$extension`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-        git -C `"`$node`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$node`" branch --show-current)`"
+        git -C `"`$extension`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$extension`" branch --show-current)`"
         if (`$?) {
             `$remote_branch = `"origin/`$branch`"
         } else {
-            `$author=`$(git -C `"`$node`" config --get `"branch.`${branch}.remote`")
+            `$author=`$(git -C `"`$extension`" config --get `"branch.`${branch}.remote`")
             if (`$author) {
-                `$remote_branch = `$(git -C `"`$node`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
+                `$remote_branch = `$(git -C `"`$extension`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
             } else {
                 `$remote_branch = `$branch
             }
         }
 
-        git -C `"`$node`" fetch --recurse-submodules --all
+        git -C `"`$extension`" fetch --recurse-submodules --all
         if (`$?) {
-            `$commit_hash = `$(git -C `"`$node`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-            git -C `"`$node`" reset --hard `"`$remote_branch`" --recurse-submodules
-            `$latest_ver = `$(git -C `"`$node`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+            `$commit_hash = `$(git -C `"`$extension`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+            git -C `"`$extension`" reset --hard `"`$remote_branch`" --recurse-submodules
+            `$latest_ver = `$(git -C `"`$extension`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
             if (`$origin_ver -eq `$latest_ver) {
-                Print-Msg `"[`$count/`$sum] `$node_name 自定义节点已为最新版`"
-                `$update_status.Add(@(`$node_name, `"已为最新版`", `$true)) | Out-Null
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展已为最新版`"
+                `$update_status.Add(@(`$extension_name, `"已为最新版`", `$true)) | Out-Null
             } else {
-                Print-Msg `"[`$count/`$sum] `$node_name 自定义节点更新成功, 版本：`$origin_ver -> `$latest_ver`"
-                `$update_status.Add(@(`$node_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
+                Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新成功, 版本：`$origin_ver -> `$latest_ver`"
+                `$update_status.Add(@(`$extension_name, `"更新成功, 版本：`$origin_ver -> `$latest_ver`", `$true)) | Out-Null
             }
         } else {
-            Print-Msg `"[`$count/`$sum] `$node_name 自定义节点更新失败`"
-            `$update_status.Add(@(`$node_name, `"更新失败`", `$false)) | Out-Null
+            Print-Msg `"[`$count/`$sum] `$extension_name 扩展更新失败`"
+            `$update_status.Add(@(`$extension_name, `"更新失败`", `$false)) | Out-Null
         }
     }
 
     List-Update-Status `$update_status
 
-    Print-Msg `"退出 ComfyUI 自定义节点更新脚本`"
+    Print-Msg `"退出 Stable Diffusion WebUI 扩展更新脚本`"
 
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
@@ -6642,51 +5432,363 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/update_node.ps1") {
-        Print-Msg "更新 update_node.ps1 中"
+    if (Test-Path "$InstallPath/update_extension.ps1") {
+        Print-Msg "更新 update_extension.ps1 中"
     } else {
-        Print-Msg "生成 update_node.ps1 中"
+        Print-Msg "生成 update_extension.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/update_node.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/update_extension.ps1" -Value $content
 }
 
 
-# 获取安装脚本
-function Write-Launch-ComfyUI-Install-Script {
+# 分支切换脚本
+function Write-Switch-Branch-Script {
     $content = "
 param (
-    [string]`$InstallPath,
+    [switch]`$Help,
+    [string]`$CorePrefix,
+    [switch]`$BuildMode,
+    [int]`$BuildWitchBranch,
+    [switch]`$DisablePyPIMirror,
+    [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
+    [switch]`$DisableAutoApplyUpdate
 )
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
-if (-not `$InstallPath) {
-    `$InstallPath = `$PSScriptRoot
+& {
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$PSScriptRoot/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
 }
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# PyPI 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CPU = `"$PIP_EXTRA_INDEX_MIRROR_CPU`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU = `"$PIP_EXTRA_INDEX_MIRROR_XPU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+`$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
+`$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghfast.top/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gh.api.99988866.xyz/https://github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
+)
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+
+参数:
+    -Help
+        获取 SD WebUI Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
+
+    -BuildMode
+        启用 SD WebUI Installer 构建模式
+
+    -BuildWitchBranch <Stable Diffusion WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支
+        Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 SD WebUI Installer 更新检查
+
+    -DisableProxy
+        禁用 SD WebUI Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD WebUI Installer 自动应用新版本更新
+
+
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
+`".Trim()
+
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
+}
+
+
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
+    # 可用的下载源
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
+    )
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
+            } else {
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
+                return
+            }
+        }
+    }
+
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
+            return
+        }
+    } else {
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
+    }
+
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -6732,33 +5834,451 @@ function Set-Proxy {
 }
 
 
-# 下载 ComfyUI Installer
-function Download-ComfyUI-Installer {
+# Github 镜像源
+function Set-Github-Mirror {
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    }
+
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
+        return
+    }
+
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+        }
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+    }
+
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+    }
+}
+
+
+# 获取 SD WebUI 分支
+function Get-Stable-Diffusion-WebUI-Branch {
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
+    if (`$ref -eq `$null) {
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
+    }
+
+    return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
+}
+
+
+# 切换 SD WebUI 分支
+function Switch-Stable-Diffusion-WebUI-Branch (`$remote, `$branch, `$use_submod) {
+    `$sd_webui_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$preview_url = `$(git -C `"`$sd_webui_path`" remote get-url origin)
+
+    Set-Github-Mirror # 设置 Github 镜像源
+
+    Print-Msg `"Stable Diffusion WebUI 远程源替换: `$preview_url -> `$remote`"
+    git -C `"`$sd_webui_path`" remote set-url origin `"`$remote`" # 替换远程源
+
+    # 处理 Git 子模块
+    if (`$use_submod) {
+        Print-Msg `"更新 Stable Diffusion WebUI 的 Git 子模块信息`"
+        git -C `"`$sd_webui_path`" submodule update --init --recursive
+    } else {
+        Print-Msg `"禁用 Stable Diffusion WebUI 的 Git 子模块`"
+        git -C `"`$sd_webui_path`" submodule deinit --all -f
+    }
+
+    Print-Msg `"拉取 Stable Diffusion WebUI 远程源更新`"
+    git -C `"`$sd_webui_path`" fetch # 拉取远程源内容
+    if (`$?) {
+        if (`$use_submod) {
+            Print-Msg `"清理原有的 Git 子模块`"
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
+        }
+        Print-Msg `"切换 Stable Diffusion WebUI 分支至 `$branch`"
+
+        # 本地分支不存在时创建一个分支
+        git -C `"`$sd_webui_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
+        if (!(`$?)) {
+            git -C `"`$sd_webui_path`" branch `"`${branch}`"
+        }
+
+        git -C `"`$sd_webui_path`" checkout `"`${branch}`" --force # 切换分支
+        Print-Msg `"应用 Stable Diffusion WebUI 远程源的更新`"
+        if (`$use_submod) {
+            Print-Msg `"更新 Stable Diffusion WebUI 的 Git 子模块信息`"
+            git -C `"`$sd_webui_path`" reset --hard `"origin/`$branch`"
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
+            git -C `"`$sd_webui_path`" submodule update --init --recursive
+        }
+        if (`$use_submod) {
+            git -C `"`$sd_webui_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$sd_webui_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
+        Print-Msg `"切换 Stable Diffusion WebUI 分支完成`"
+        `$global:status = `$true
+    } else {
+        Print-Msg `"拉取 Stable Diffusion WebUI 远程源更新失败, 取消分支切换`"
+        Print-Msg `"尝试回退 Stable Diffusion WebUI 的更改`"
+        git -C `"`$sd_webui_path`" remote set-url origin `"`$preview_url`"
+        if (`$use_submod) {
+            git -C `"`$sd_webui_path`" submodule deinit --all -f
+        } else {
+            git -C `"`$sd_webui_path`" submodule update --init --recursive
+        }
+        Print-Msg `"回退 Stable Diffusion WebUI 分支更改完成`"
+        Print-Msg `"切换 Stable Diffusion WebUI 分支更改失败`"
+        `$global:status = `$false
+    }
+}
+
+
+# 重置 repositories 中的组件
+function Reset-Repositories {
+    `$repositories_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/repositories`"
+    if (!(Test-Path `"`$repositories_path`")) {
+        return
+    }
+
+    Print-Msg `"重置 Stable Diffusion WebUI 组件状态中`"
+    `$repositories_list = Get-ChildItem -Path `"`$repositories_path`" | Select-Object -ExpandProperty FullName
+    ForEach (`$rep_path in `$repositories_list) {
+        if (Test-Path `"`$rep_path/.git`") {
+            git -C `"`$rep_path`" reset --hard --recurse-submodules
+        }
+    }
+
+    Print-Msg `"重置 Stable Diffusion WebUI 组件状态完成`"
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
+    Set-Proxy
+    if (`$BuildMode) {
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
+    } else {
+        Check-Stable-Diffusion-WebUI-Installer-Update
+    }
+
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Read-Host | Out-Null
+        return
+    }
+
+    `$content = `"
+-----------------------------------------------------
+- 1、AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
+- 2、AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支
+- 3、lllyasviel - Stable-Diffusion-WebUI-Forge 分支
+- 4、Panchovix - Stable-Diffusion-WebUI-reForge 主分支
+- 5、Panchovix - Stable-Diffusion-WebUI-reForge 测试分支
+- 6、Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支
+- 7、Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支
+- 8、lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
+- 9、vladmandic - SD.NEXT 主分支
+- 10、vladmandic - SD.NEXT 测试分支
+-----------------------------------------------------
+`".Trim()
+
+    `$to_exit = 0
+
+    while (`$True) {
+        Print-Msg `"Stable Diffusion WebUI 分支列表`"
+        `$go_to = 0
+        Write-Host `$content
+        Print-Msg `"当前 Stable Diffusion WebUI 分支: `$(Get-Stable-Diffusion-WebUI-Branch)`"
+        Print-Msg `"请选择 Stable Diffusion WebUI 分支`"
+        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 Stable Diffusion WebUI 分支切换脚本`"
+        if (`$BuildMode) {
+            `$go_to = 1
+            `$arg = `$BuildWitchBranch
+        } else {
+            `$arg = (Read-Host `"=========================================>`").Trim()
+        }
+
+        switch (`$arg) {
+            1 {
+                `$remote = `"https://github.com/AUTOMATIC1111/stable-diffusion-webui`"
+                `$branch = `"master`"
+                `$branch_name = `"AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            2 {
+                `$remote = `"https://github.com/AUTOMATIC1111/stable-diffusion-webui`"
+                `$branch = `"dev`"
+                `$branch_name = `"AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            3 {
+                `$remote = `"https://github.com/lllyasviel/stable-diffusion-webui-forge`"
+                `$branch = `"main`"
+                `$branch_name = `"lllyasviel - Stable-Diffusion-WebUI-Forge 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            4 {
+                `$remote = `"https://github.com/Panchovix/stable-diffusion-webui-reForge`"
+                `$branch = `"main`"
+                `$branch_name = `"Panchovix - Stable-Diffusion-WebUI-reForge 主分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            5 {
+                `$remote = `"https://github.com/Panchovix/stable-diffusion-webui-reForge`"
+                `$branch = `"dev_upstream`"
+                `$branch_name = `"Panchovix - Stable-Diffusion-WebUI-reForge 测试分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            6 {
+                `$remote = `"https://github.com/Haoming02/sd-webui-forge-classic`"
+                `$branch = `"classic`"
+                `$branch_name = `"Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            7 {
+                `$remote = `"https://github.com/Haoming02/sd-webui-forge-classic`"
+                `$branch = `"neo`"
+                `$branch_name = `"Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            8 {
+                `$remote = `"https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu`"
+                `$branch = `"master`"
+                `$branch_name = `"lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            9 {
+                `$remote = `"https://github.com/vladmandic/sdnext`"
+                `$branch = `"master`"
+                `$branch_name = `"vladmandic - SD.NEXT 主分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            10 {
+                `$remote = `"https://github.com/vladmandic/sdnext`"
+                `$branch = `"dev`"
+                `$branch_name = `"vladmandic - SD.NEXT 测试分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            exit {
+                Print-Msg `"退出 Stable Diffusion WebUI 分支切换脚本`"
+                `$to_exit = 1
+                `$go_to = 1
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+
+    if (`$to_exit -eq 1) {
+        Read-Host | Out-Null
+        exit 0
+    }
+
+    Print-Msg `"是否切换 Stable Diffusion WebUI 分支到 `$branch_name ?`"
+    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    if (`$BuildMode) {
+        `$operate = `"yes`"
+    } else {
+        `$operate = (Read-Host `"=========================================>`").Trim()
+    }
+
+    if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
+        Print-Msg `"开始切换 Stable Diffusion WebUI 分支`"
+        Switch-Stable-Diffusion-WebUI-Branch `$remote `$branch `$use_submod
+        Reset-Repositories
+        if (`$status) {
+            Print-Msg `"切换 Stable Diffusion WebUI 分支成功`"
+        } else {
+            Print-Msg `"切换 Stable Diffusion WebUI 分支失败, 可尝试重新运行 Stable Diffusion WebUI 分支切换脚本`"
+        }
+    } else {
+        Print-Msg `"取消切换 Stable Diffusion WebUI 分支`"
+    }
+    Print-Msg `"退出 Stable Diffusion WebUI 分支切换脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
+}
+
+###################
+
+Main
+".Trim()
+
+    if (Test-Path "$InstallPath/switch_branch.ps1") {
+        Print-Msg "更新 switch_branch.ps1 中"
+    } else {
+        Print-Msg "生成 switch_branch.ps1 中"
+    }
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/switch_branch.ps1" -Value $content
+}
+
+
+# 获取安装脚本
+function Write-Launch-Stable-Diffusion-WebUI-Install-Script {
+    $content = "
+param (
+    [string]`$InstallPath,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisablePyPIMirror,
+    [switch]`$DisableUV,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [string]`$InstallBranch,
+    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
+)
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
+if (-not `$InstallPath) {
+    `$InstallPath = `$PSScriptRoot
+}
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    # 检测是否禁用自动设置镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+}
+
+
+# 下载 SD WebUI Installer
+function Download-Stable-Diffusion-WebUI-Installer {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"正在下载最新的 ComfyUI Installer 脚本`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+        Print-Msg `"正在下载最新的 SD WebUI Installer 脚本`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1`"
         if (`$?) {
-            Print-Msg `"下载 ComfyUI Installer 脚本成功`"
+            Print-Msg `"下载 SD WebUI Installer 脚本成功`"
             break
         } else {
-            Print-Msg `"下载 ComfyUI Installer 脚本失败`"
+            Print-Msg `"下载 SD WebUI Installer 脚本失败`"
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试下载 ComfyUI Installer 脚本`"
+                Print-Msg `"重试下载 SD WebUI Installer 脚本`"
             } else {
-                Print-Msg `"下载 ComfyUI Installer 脚本失败, 可尝试重新运行 ComfyUI Installer 下载脚本`"
+                Print-Msg `"下载 SD WebUI Installer 脚本失败, 可尝试重新运行 SD WebUI Installer 下载脚本`"
                 return `$false
             }
         }
@@ -6804,6 +6324,37 @@ function Get-Local-Setting {
         }
     }
 
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui`")
+        } elseif ((`$branch -eq `"lllyasviel/stable-diffusion-webui-forge`") -or (`$branch -eq `"lllyasviel/stable-diffusion-webui-forge.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
+        } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+        } elseif ((`$branch -eq `"Haoming02/sd-webui-forge-classic`") -or (`$branch -eq `"Haoming02/sd-webui-forge-classic.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_forge_classic`")
+        } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
+        } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sdnext`")
+        }
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui.txt`") -or (`$InstallBranch -eq `"sd_webui`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_forge.txt`") -or (`$InstallBranch -eq `"sd_webui_forge`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_forge`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_reforge.txt`") -or (`$InstallBranch -eq `"sd_webui_reforge`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_reforge`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_forge_classic.txt`") -or (`$InstallBranch -eq `"sd_webui_forge_classic`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_forge_classic`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_webui_amdgpu.txt`") -or (`$InstallBranch -eq `"sd_webui_amdgpu`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_webui_amdgpu`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_next.txt`") -or (`$InstallBranch -eq `"sdnext`")) {
+        `$arg.Add(`"-InstallBranch`", `"sdnext`")
+    }
+
     `$arg.Add(`"-InstallPath`", `$InstallPath)
 
     return `$arg
@@ -6829,20 +6380,20 @@ function Get-ExtraArgs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Version
     Set-Proxy
 
-    `$status = Download-ComfyUI-Installer
+    `$status = Download-Stable-Diffusion-WebUI-Installer
 
     if (`$status) {
-        Print-Msg `"运行 ComfyUI Installer 中`"
+        Print-Msg `"运行 SD WebUI Installer 中`"
         `$arg = Get-Local-Setting
         `$extra_args = Get-ExtraArgs
         try {
-            Invoke-Expression `"& ```"`$PSScriptRoot/cache/comfyui_installer.ps1```" `$extra_args @arg`"
+            Invoke-Expression `"& ```"`$PSScriptRoot/cache/stable_diffusion_webui_installer.ps1```" `$extra_args @arg`"
         }
         catch {
-            Print-Msg `"运行 ComfyUI Installer 时出现了错误: `$_`"
+            Print-Msg `"运行 SD WebUI Installer 时出现了错误: `$_`"
             Read-Host | Out-Null
         }
     } else {
@@ -6855,12 +6406,12 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/launch_comfyui_installer.ps1") {
-        Print-Msg "更新 launch_comfyui_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_stable_diffusion_webui_installer.ps1") {
+        Print-Msg "更新 launch_stable_diffusion_webui_installer.ps1 中"
     } else {
-        Print-Msg "生成 launch_comfyui_installer.ps1 中"
+        Print-Msg "生成 launch_stable_diffusion_webui_installer.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_comfyui_installer.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_stable_diffusion_webui_installer.ps1" -Value $content
 }
 
 
@@ -6881,7 +6432,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -6906,8 +6457,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -6930,7 +6481,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -7002,53 +6552,52 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式
+        启用 SD WebUI Installer 构建模式
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD WebUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 ComfyUI Installer 更新检查
+        禁用 SD WebUI Installer 更新检查
 
     -DisableUV
-        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableAutoApplyUpdate
-        禁用 ComfyUI Installer 自动应用新版本更新
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7061,7 +6610,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -7085,13 +6634,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -7105,22 +6654,22 @@ function PyPI-Mirror-Status {
 }
 
 
-# ComfyUI Installer 更新检测
-function Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
         return
     }
 
@@ -7144,12 +6693,12 @@ function Check-ComfyUI-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -7157,35 +6706,35 @@ function Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 ComfyUI Installer 更新`"
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -8393,14 +7942,14 @@ function List-PyTorch (`$pytorch_list) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
     } else {
-        Check-ComfyUI-Installer-Update
+        Check-Stable-Diffusion-WebUI-Installer-Update
     }
     Set-uv
     PyPI-Mirror-Status
@@ -8434,11 +7983,11 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTorch 重装脚本`"
         if (`$BuildMode) {
-            Print-Msg `"ComfyUI Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
+            Print-Msg `"SD WebUI Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"========================================>`").Trim()
+            `$arg = (Read-Host `"=========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -8506,7 +8055,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"=========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
@@ -8526,7 +8075,7 @@ function Main {
     if (`$BuildMode) {
         `$install_torch = `"yes`"
     } else {
-        `$install_torch = (Read-Host `"========================================>`").Trim()
+        `$install_torch = (Read-Host `"=========================================>`").Trim()
     }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
@@ -8581,6 +8130,7 @@ function Main {
     }
 
     Print-Msg `"退出 PyTorch 重装脚本`"
+
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
     }
@@ -8615,7 +8165,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -8640,8 +8190,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -8664,7 +8214,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -8736,47 +8285,46 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式
+        启用 SD WebUI Installer 构建模式
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableUpdate
-        禁用 ComfyUI Installer 更新检查
+        禁用 SD WebUI Installer 更新检查
 
     -DisableAutoApplyUpdate
-        禁用 ComfyUI Installer 自动应用新版本更新
+        禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -8789,7 +8337,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -8813,13 +8361,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -8865,22 +8413,22 @@ function Set-Proxy {
 }
 
 
-# ComfyUI Installer 更新检测
-function Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 ComfyUI Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD WebUI Installer 的自动检查更新功能`"
         return
     }
 
@@ -8904,12 +8452,12 @@ function Check-ComfyUI-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -8917,35 +8465,35 @@ function Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 ComfyUI Installer 更新`"
+            Print-Msg `"跳过 SD WebUI Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 ComfyUI Installer 有新版本可用`"
+        Print-Msg `"检测到 SD WebUI Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -9063,386 +8611,334 @@ function Get-Model-List {
 
     # >>>>>>>>>> Start
     # SD 1.5
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/Counterfeit-V3.0_fp16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cetusMix_Whalefall2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cuteyukimixAdorable_neochapter3.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ekmix-pastel-fp16-no-ema.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ex2K_sse2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/kohakuV5_rev2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinamix_meinaV11.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/oukaStar_10.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/rabbit_v6.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/sweetSugarSyndrome_rev15.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/AnythingV5Ink_ink.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinapastel_v6Pastel.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/qteamixQ_omegaFp16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/tmndMix_tmndMixSPRAINBOW.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/Counterfeit-V3.0_fp16.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cetusMix_Whalefall2.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cuteyukimixAdorable_neochapter3.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ekmix-pastel-fp16-no-ema.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ex2K_sse2.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/kohakuV5_rev2.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinamix_meinaV11.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/oukaStar_10.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/rabbit_v6.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/sweetSugarSyndrome_rev15.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/AnythingV5Ink_ink.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinapastel_v6Pastel.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/qteamixQ_omegaFp16.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/tmndMix_tmndMixSPRAINBOW.safetensors`", `"SD 1.5`", `"Stable-diffusion`")) | Out-Null
     # SD 2.1
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`", `"SD 2.1`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`", `"SD 2.1`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`", `"SD 2.1`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`", `"SD 2.1`", `"Stable-diffusion`")) | Out-Null
     # SDXL
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/sd_xl_offset_example-lora_1.0.safetensors`", `"SDXL`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl_edit.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0-base.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-opt.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-zero.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/holodayo-xl-2.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kivotos-xl-2.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/clandestine-xl-1.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/UrangDiffusion-1.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/RaeDiffusion-XL-v2.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_anime_V52.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-delta-rev1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-zeta.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v11.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.2-aesthetic.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.3-aesthetic.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/miaomiaoHarem_v15a.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/waiNSFWIllustrious_v80.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tIllunai3_v4.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred05Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred077.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred11Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred06Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxl12.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxlVPredV10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/omegaPonyXLAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animeIllustDiffusion_v061.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifuDiffusion_v10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifu-diffusion-v2.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/AnythingXL_xl.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/abyssorangeXLElse_v10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animaPencilXL_v200.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/bluePencilXL_v401.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/nekorayxl_v06W3.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/CounterfeitXL-V1.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/sd_xl_offset_example-lora_1.0.safetensors`", `"SDXL`", `"Lora`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl_edit.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0-base.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-opt.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-zero.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/holodayo-xl-2.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kivotos-xl-2.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/clandestine-xl-1.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/UrangDiffusion-1.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/RaeDiffusion-XL-v2.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_anime_V52.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-delta-rev1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-zeta.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v11.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.2-aesthetic.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.3-aesthetic.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/miaomiaoHarem_v15a.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/waiNSFWIllustrious_v80.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tIllunai3_v4.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred05Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred077.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred11Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred06Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxl12.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxlVPredV10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/omegaPonyXLAnime_v20.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animeIllustDiffusion_v061.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifuDiffusion_v10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifu-diffusion-v2.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/AnythingXL_xl.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/abyssorangeXLElse_v10.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animaPencilXL_v200.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/bluePencilXL_v401.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/nekorayxl_v06W3.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/CounterfeitXL-V1.0.safetensors`", `"SDXL`", `"Stable-diffusion`")) | Out-Null
     # SD 3
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips_t5xxlfp8.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_fp8_scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_turbo.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/emi3.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips_t5xxlfp8.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_fp8_scaled.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_turbo.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/emi3.safetensors`", `"SD 3`", `"Stable-diffusion`")) | Out-Null
     # SD 3 Text Encoder
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_g.safetensors`", `"SD 3 Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_l.safetensors`", `"SD 3 Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp16.safetensors`", `"SD 3 Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"SD 3 Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors`", `"SD 3 Text Encoder`", `"text_encoders`")) | Out-Null
-    # HunyuanDiT
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/hunyuan_dit_1.2.safetensors`", `"HunyuanDiT`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/comfy_freeway_animation_hunyuan_dit_180w.safetensors`", `"HunyuanDiT`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_g.safetensors`", `"SD 3 Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_l.safetensors`", `"SD 3 Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp16.safetensors`", `"SD 3 Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"SD 3 Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors`", `"SD 3 Text Encoder`", `"text_encoder`")) | Out-Null
     # FLUX
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4-v2.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q2_K.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q3_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_1.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_1.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q6_K.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q8_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-F16.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q2_K.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q3_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_1.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_1.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_K_S.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q6_K.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q8_0.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-F16.gguf`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/jimmycarter-LibreFLUX.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/shuttle-3-diffusion.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev_fp8_scaled.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-kontext_fp8_scaled.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-kontext-dev.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/chroma-unlocked-v50.safetensors`", `"FLUX`", `"diffusion_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4-v2.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q2_K.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q3_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_1.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_1.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q6_K.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q8_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-F16.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q2_K.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q3_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_1.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_1.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_K_S.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q6_K.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q8_0.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-F16.gguf`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/jimmycarter-LibreFLUX.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/shuttle-3-diffusion.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev_fp8_scaled.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-kontext_fp8_scaled.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-kontext-dev.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/chroma-unlocked-v50.safetensors`", `"FLUX`", `"Stable-diffusion`")) | Out-Null
     # FLUX Text Encoder
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_L.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q6_K.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q8_0.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f16.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f32.gguf`", `"FLUX Text Encoder`", `"text_encoders`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_L.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_M.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_S.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q6_K.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q8_0.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f16.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f32.gguf`", `"FLUX Text Encoder`", `"text_encoder`")) | Out-Null
     # FLUX VAE
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`", `"FLUX VAE`", `"vae`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`", `"FLUX VAE`", `"VAE`")) | Out-Null
     # SD 1.5 VAE
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"VAE`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"VAE`")) | Out-Null
     # SDXL VAE
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`", `"SDXL VAE`", `"VAE`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`", `"SDXL VAE`", `"VAE`")) | Out-Null
     # VAE approx
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt`", `"VAE approx`", `"VAE-approx`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt`", `"VAE approx`", `"VAE-approx`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt`", `"VAE approx`", `"VAE-approx`")) | Out-Null
     # Upscale
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/Codeformer/codeformer-v0.1.0.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/16xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x-ITF-SkinDiffDetail-Lite-v1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-BrightenRedux_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-YandereInpaint_375000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKDDetoon_97500_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Poisson-Detailed_108000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Uniform-Detailed_100000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x-UltraSharp.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_CountryRoads_377000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Fatality_Comix_260000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Siax_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-Artisoftject_210000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere-Lite_280k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere_300k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-YandereNeoXL_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKDSuperscale_Artisoft_120000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NickelbackFS_72000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Nickelback_70000G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_RealisticRescaler_100000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Valar_v1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_fatal_Anime_500000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_foolhardy_Remacri.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Superscale_150000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Typescale_175k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/A_ESRGAN_Single.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGAN.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGANx2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRNet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/ESRGAN_4x.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/LADDIER1_282500_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Neutral_115000_swaG.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharp_101000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharper_103000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Detailed_155000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Soft_190000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/WaifuGAN_v3_30000.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/lollypop.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/sudo_rife4_269.662_testV1_scale1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/detection_Resnet50_Final.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_bisenet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_parsenet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus_anime_6B.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X2_64.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X4_64.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_CompressedSR_X4_48.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/SwinIR_4x.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/Codeformer/codeformer-v0.1.0.pth`", `"Upscale`", `"Codeformer`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x2.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x3.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x4.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x2.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x3.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x4.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x2.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x3.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x4.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x2.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x3.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x4.pth`", `"Upscale`", `"DAT`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/16xPSNR.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x-ITF-SkinDiffDetail-Lite-v1.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-BrightenRedux_200k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-YandereInpaint_375000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKDDetoon_97500_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Poisson-Detailed_108000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Uniform-Detailed_100000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x-UltraSharp.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4xPSNR.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_CountryRoads_377000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Fatality_Comix_260000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Siax_200k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-Artisoftject_210000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere-Lite_280k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere_300k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-YandereNeoXL_200k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKDSuperscale_Artisoft_120000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NickelbackFS_72000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Nickelback_70000G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_RealisticRescaler_100000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Valar_v1.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_fatal_Anime_500000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_foolhardy_Remacri.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8xPSNR.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Superscale_150000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Typescale_175k.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/A_ESRGAN_Single.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGAN.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGANx2.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRNet.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/ESRGAN_4x.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/LADDIER1_282500_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Neutral_115000_swaG.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharp_101000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharper_103000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Detailed_155000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Soft_190000_G.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/WaifuGAN_v3_30000.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/lollypop.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/sudo_rife4_269.662_testV1_scale1.pth`", `"Upscale`", `"ESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.3.pth`", `"Upscale`", `"GFPGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.4.pth`", `"Upscale`", `"GFPGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/detection_Resnet50_Final.pth`", `"Upscale`", `"GFPGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_bisenet.pth`", `"Upscale`", `"GFPGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_parsenet.pth`", `"Upscale`", `"GFPGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus.pth`", `"Upscale`", `"RealESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus_anime_6B.pth`", `"Upscale`", `"RealESRGAN`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X2_64.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X4_64.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_CompressedSR_X4_48.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/SwinIR_4x.pth`", `"Upscale`", `"SwinIR`")) | Out-Null
     # Embedding
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/EasyNegativeV2.safetensors`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist-anime.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-hands-5.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-image-v2-39000.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad_prompt_version2.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/ng_deepnegative_v1_75t.pt`", `"Embedding`", `"embeddings`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/verybadimagenegative_v1.3.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/EasyNegativeV2.safetensors`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist-anime.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-hands-5.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-image-v2-39000.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad_prompt_version2.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/ng_deepnegative_v1_75t.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/verybadimagenegative_v1.3.pt`", `"Embedding`", `"../embeddings`")) | Out-Null
     # SD 1.5 ControlNet
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_ip2p_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_shuffle_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1e_sd15_tile_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1p_sd15_depth_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_canny_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_inpaint_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_lineart_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_mlsd_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_normalbae_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_openpose_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_scribble_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_seg_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_softedge_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15s2_lineart_anime_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_brightness.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_illumination.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_qrcode_monster.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_ip2p_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_shuffle_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1e_sd15_tile_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1p_sd15_depth_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_canny_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_inpaint_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_lineart_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_mlsd_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_normalbae_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_openpose_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_scribble_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_seg_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_softedge_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15s2_lineart_anime_fp16.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_brightness.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_illumination.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_qrcode_monster.safetensors`", `"SD 1.5 ControlNet`", `"ControlNet`")) | Out-Null
     # SDXL ControlNet
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/mistoLine_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/destitech-controlnet-inpaint-dreamer-sdxl.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/control-lora/resolve/master/control-lora-recolor-rank128-sdxl.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/xinsir-controlnet-union-sdxl-1.0-promax.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/kohakuXLControlnet_canny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/animagineXL40_canny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLCanny_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineart_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLDepth_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLSoftedge_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineartRrealistic_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLShuffle_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLOpenPose_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLTile_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv0.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_canny_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_depth_midas_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_tile_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsCanny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidas.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartAnime.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsNormalMidas.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsSoftedgeHed.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsMangaLine.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartRealistic.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidasV11.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribbleHed.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribblePidinet.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_openposeModel.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsTile.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/NoobAI_Inpainting_ControlNet.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
-    # SD 3.5 ControlNet
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_blur.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_canny.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_depth.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
-    # FLUX ControlNet
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-redux-dev.safetensors`", `"FLUX ControlNet`", `"style_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev.safetensors`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q3_K_S.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_0.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_1.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_K_S.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_0.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_1.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_K_S.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q6_K.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q8_0.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank128.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank256.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank32.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank4.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank64.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank8.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev.safetensors`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev.safetensors`", `"FLUX ControlNet`", `"diffusion_models`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-depth-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-hed-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Depth.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Upscaler.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-instantx-controlnet-union.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-mistoline.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-shakker-labs-controlnet-union-pro.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/mistoLine_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/destitech-controlnet-inpaint-dreamer-sdxl.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/control-lora/resolve/master/control-lora-recolor-rank128-sdxl.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/xinsir-controlnet-union-sdxl-1.0-promax.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/kohakuXLControlnet_canny.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/animagineXL40_canny.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLCanny_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineart_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLDepth_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLSoftedge_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineartRrealistic_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLShuffle_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLOpenPose_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLTile_v10.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv0.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_canny_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_depth_midas_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_tile_fp16.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsCanny.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidas.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartAnime.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsNormalMidas.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsSoftedgeHed.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsMangaLine.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartRealistic.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidasV11.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribbleHed.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribblePidinet.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_openposeModel.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsTile.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/NoobAI_Inpainting_ControlNet.safetensors`", `"SDXL ControlNet`", `"ControlNet`")) | Out-Null
     # CLIP Vision
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_g.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_h.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_vitl.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/sigclip_vision_patch14_384.safetensors`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
     # IP Adapter
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_light.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_plus.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_vit-G.safetensors`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter-plus_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/noobIPAMARK1_mark1.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors`", `"FLUX IP Adapter`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15.pth`", `"SD 1.5 IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_light.pth`", `"SD 1.5 IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_plus.pth`", `"SD 1.5 IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_vit-G.safetensors`", `"SD 1.5 IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter-plus_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl.safetensors`", `"SDXL IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/noobIPAMARK1_mark1.safetensors`", `"SDXL IP Adapter`", `"ControlNet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ControlNet`")) | Out-Null
     # <<<<<<<<<< End
 
     return `$model_list
@@ -9527,7 +9023,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"========================================>`").Trim()
+    return (Read-Host `"=========================================>`").Trim()
 }
 
 
@@ -9565,19 +9061,19 @@ function Search-Model-List (`$model_list, `$key) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"ComfyUI Installer 构建模式已启用, 跳过 ComfyUI Installer 更新检查`"
+        Print-Msg `"SD WebUI Installer 构建模式已启用, 跳过 SD WebUI Installer 更新检查`"
     } else {
-        Check-ComfyUI-Installer-Update
+        Check-Stable-Diffusion-WebUI-Installer-Update
     }
     Check-Aria2-Version
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
@@ -9699,12 +9195,12 @@ function Main {
     } else {
         `$download_operate = Get-User-Input
     }
-
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }
 
     Print-Msg `"退出模型下载脚本`"
+
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
     }
@@ -9724,18 +9220,18 @@ Main
 }
 
 
-# ComfyUI Installer 设置脚本
-function Write-ComfyUI-Installer-Settings-Script {
+# SD WebUI Installer 设置脚本
+function Write-Stable-Diffusion-WebUI-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
-    [switch]`$DisableProxy,
-    [switch]`$UseCustomProxy
+    [switch]`$DisableProxys,
+    [string]`$UseCustomProxy
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -9760,8 +9256,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -9784,7 +9280,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -9856,19 +9351,18 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -9877,13 +9371,13 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9896,7 +9390,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -9920,13 +9414,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -10018,8 +9512,8 @@ function Get-Github-Mirror-Setting {
 }
 
 
-# 获取 ComfyUI Installer 自动检测更新设置
-function Get-ComfyUI-Installer-Auto-Check-Update-Setting {
+# 获取 SD WebUI Installer 自动检测更新设置
+function Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         return `"禁用`"
     } else {
@@ -10028,8 +9522,8 @@ function Get-ComfyUI-Installer-Auto-Check-Update-Setting {
 }
 
 
-# 获取 ComfyUI Installer 自动应用更新设置
-function Get-ComfyUI-Installer-Auto-Apply-Update-Setting {
+# 获取 SD WebUI Installer 自动应用更新设置
+function Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") {
         return `"禁用`"
     } else {
@@ -10068,8 +9562,8 @@ function Get-PyPI-Mirror-Setting {
 }
 
 
-# 获取 ComfyUI 运行环境检测配置
-function Get-ComfyUI-Env-Check-Setting {
+# 获取 Stable Diffusion WebUI 运行环境检测配置
+function Get-Stable-Diffusion-WebUI-Env-Check-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
         return `"启用`"
     } else {
@@ -10093,14 +9587,14 @@ function Get-Core-Prefix-Setting {
     if (Test-Path `"`$PSScriptRoot/core_prefix.txt`") {
         return `"自定义 (使用自定义路径前缀: `$(Get-Content `"`$PSScriptRoot/core_prefix.txt`"))`"
     } else {
-        return `"自动选择`"
+        return `"自动`"
     }
 }
 
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"========================================>`").Trim()
+    return (Read-Host `"=========================================>`").Trim()
 }
 
 
@@ -10269,7 +9763,7 @@ function Update-Github-Mirror-Setting {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 Github 镜像成功, 在更新 ComfyUI 时将自动检测可用的 Github 镜像源并使用`"
+                Print-Msg `"启用 Github 镜像成功, 在更新 Stable Diffusion WebUI 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
             2 {
@@ -10279,10 +9773,18 @@ function Update-Github-Mirror-Setting {
                 Print-Msg `" https://mirror.ghproxy.com/https://github.com`"
                 Print-Msg `" https://ghproxy.net/https://github.com`"
                 Print-Msg `" https://gh.api.99988866.xyz/https://github.com`"
-                Print-Msg `" https://gitclone.com/github.com`"
+                Print-Msg `" https://ghproxy.1888866.xyz/github.com`"
+                Print-Msg `" https://slink.ltd/https://github.com`"
+                Print-Msg `" https://github.boki.moe/github.com`"
+                Print-Msg `" https://github.moeyy.xyz/https://github.com`"
+                Print-Msg `" https://gh-proxy.net/https://github.com`"
+                Print-Msg `" https://gh-proxy.ygxz.in/https://github.com`"
+                Print-Msg `" https://wget.la/https://github.com`"
+                Print-Msg `" https://kkgithub.com`"
                 Print-Msg `" https://gh-proxy.com/https://github.com`"
                 Print-Msg `" https://ghps.cc/https://github.com`"
                 Print-Msg `" https://gh.idayer.com/https://github.com`"
+                Print-Msg `" https://gitclone.com/github.com`"
                 Print-Msg `"提示: 输入 Github 镜像源地址后回车保存`"
                 `$github_mirror_address = Get-User-Input
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
@@ -10312,29 +9814,29 @@ function Update-Github-Mirror-Setting {
 }
 
 
-# ComfyUI Installer 自动检查更新设置
-function Update-ComfyUI-Installer-Auto-Check-Update-Setting {
+# SD WebUI Installer 自动检查更新设置
+function Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 ComfyUI Installer 自动检测更新设置: `$(Get-ComfyUI-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"当前 SD WebUI Installer 自动检测更新设置: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 ComfyUI Installer 自动更新检查`"
-        Print-Msg `"2. 禁用 ComfyUI Installer 自动更新检查`"
+        Print-Msg `"1. 启用 SD WebUI Installer 自动更新检查`"
+        Print-Msg `"2. 禁用 SD WebUI Installer 自动更新检查`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
-        Print-Msg `"警告: 当 ComfyUI Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
+        Print-Msg `"警告: 当 SD WebUI Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
 
         `$arg = Get-User-Input
 
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 ComfyUI Installer 自动更新检查成功`"
+                Print-Msg `"启用 SD WebUI Installer 自动更新检查成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_update.txt`" -Force > `$null
-                Print-Msg `"禁用 ComfyUI Installer 自动更新检查成功`"
+                Print-Msg `"禁用 SD WebUI Installer 自动更新检查成功`"
                 break
             }
             3 {
@@ -10353,14 +9855,14 @@ function Update-ComfyUI-Installer-Auto-Check-Update-Setting {
 }
 
 
-# ComfyUI Installer 自动应用更新设置
-function Update-ComfyUI-Installer-Auto-Apply-Update-Setting {
+# SD WebUI Installer 自动应用更新设置
+function Update-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 ComfyUI Installer 自动应用更新设置: `$(Get-ComfyUI-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"当前 SD WebUI Installer 自动应用更新设置: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 ComfyUI Installer 自动应用更新`"
-        Print-Msg `"2. 禁用 ComfyUI Installer 自动应用更新`"
+        Print-Msg `"1. 启用 SD WebUI Installer 自动应用更新`"
+        Print-Msg `"2. 禁用 SD WebUI Installer 自动应用更新`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -10369,12 +9871,12 @@ function Update-ComfyUI-Installer-Auto-Apply-Update-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 ComfyUI Installer 自动应用更新成功`"
+                Print-Msg `"启用 SD WebUI Installer 自动应用更新成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force > `$null
-                Print-Msg `"禁用 ComfyUI Installer 自动应用更新成功`"
+                Print-Msg `"禁用 SD WebUI Installer 自动应用更新成功`"
                 break
             }
             3 {
@@ -10393,14 +9895,14 @@ function Update-ComfyUI-Installer-Auto-Apply-Update-Setting {
 }
 
 
-# ComfyUI 启动参数设置
-function Update-ComfyUI-Launch-Args-Setting {
+# Stable Diffusion WebUI 启动参数设置
+function Update-Stable-Diffusion-WebUI-Launch-Args-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 ComfyUI 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"当前 Stable Diffusion WebUI 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 设置 ComfyUI 启动参数`"
-        Print-Msg `"2. 删除 ComfyUI 启动参数`"
+        Print-Msg `"1. 设置 Stable Diffusion WebUI 启动参数`"
+        Print-Msg `"2. 删除 Stable Diffusion WebUI 启动参数`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -10408,17 +9910,17 @@ function Update-ComfyUI-Launch-Args-Setting {
 
         switch (`$arg) {
             1 {
-                Print-Msg `"请输入 ComfyUI 启动参数`"
-                Print-Msg `"提示: 保存启动参数后原本的启动参数配置将被覆盖`"
+                Print-Msg `"请输入 Stable Diffusion WebUI 启动参数`"
+                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, Stable Diffusion WebUI 可用的启动参数可阅读: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings`"
                 Print-Msg `"输入启动参数后回车保存`"
-                `$comfyui_launch_args = Get-User-Input
-                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$comfyui_launch_args
-                Print-Msg `"设置 ComfyUI 启动参数成功, 使用的 ComfyUI 启动参数为: `$comfyui_launch_args`"
+                `$stable_diffusion_webui_launch_args = Get-User-Input
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$stable_diffusion_webui_launch_args
+                Print-Msg `"设置 Stable Diffusion WebUI 启动参数成功, 使用的 Stable Diffusion WebUI 启动参数为: `$stable_diffusion_webui_launch_args`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"删除 ComfyUI 启动参数成功`"
+                Print-Msg `"删除 Stable Diffusion WebUI 启动参数成功`"
                 break
             }
             3 {
@@ -10437,14 +9939,14 @@ function Update-ComfyUI-Launch-Args-Setting {
 }
 
 
-# 自动创建 ComfyUI 快捷启动方式设置
+# 自动创建 Stable Diffusion WebUI 快捷启动方式设置
 function Auto-Set-Launch-Shortcut-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前自动创建 ComfyUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"当前自动创建 Stable Diffusion WebUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用自动创建 ComfyUI 快捷启动方式`"
-        Print-Msg `"2. 禁用自动创建 ComfyUI 快捷启动方式`"
+        Print-Msg `"1. 启用自动创建 Stable Diffusion WebUI 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 Stable Diffusion WebUI 快捷启动方式`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -10453,12 +9955,12 @@ function Auto-Set-Launch-Shortcut-Setting {
         switch (`$arg) {
             1 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
-                Print-Msg `"启用自动创建 ComfyUI 快捷启动方式成功`"
+                Print-Msg `"启用自动创建 Stable Diffusion WebUI 快捷启动方式成功`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"禁用自动创建 ComfyUI 快捷启动方式成功`"
+                Print-Msg `"禁用自动创建 Stable Diffusion WebUI 快捷启动方式成功`"
                 break
             }
             3 {
@@ -10557,14 +10059,14 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
-# ComfyUI 运行环境检测设置
-function ComfyUI-Env-Check-Setting {
+# Stable Diffusion WebUI 运行环境检测设置
+function Stable-Diffusion-WebUI-Env-Check-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 ComfyUI 运行环境检测设置: `$(Get-ComfyUI-Env-Check-Setting)`"
+        Print-Msg `"当前 Stable Diffusion WebUI 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 ComfyUI 运行环境检测`"
-        Print-Msg `"2. 禁用 ComfyUI 运行环境检测`"
+        Print-Msg `"1. 启用 Stable Diffusion WebUI 运行环境检测`"
+        Print-Msg `"2. 禁用 Stable Diffusion WebUI 运行环境检测`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -10573,12 +10075,12 @@ function ComfyUI-Env-Check-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 ComfyUI 运行环境检测成功`"
+                Print-Msg `"启用 Stable Diffusion WebUI 运行环境检测成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
-                Print-Msg `"禁用 ComfyUI 运行环境检测成功`"
+                Print-Msg `"禁用 Stable Diffusion WebUI 运行环境检测成功`"
                 break
             }
             3 {
@@ -10651,15 +10153,15 @@ function Update-Core-Prefix-Setting {
 }
 
 
-# 检查 ComfyUI Installer 更新
-function Check-ComfyUI-Installer-Update {
+# 检查 SD WebUI Installer 更新
+function Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
@@ -10667,37 +10169,37 @@ function Check-ComfyUI-Installer-Update {
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
-        }
+        } 
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 有新版本可用`"
-        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    if (`$latest_version -gt `$SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 有新版本可用`"
+        Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
         `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-        Print-Msg `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+        Print-Msg `"更新结束, 重新启动 SD WebUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
         Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
         exit 0
     } else {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
     }
 }
 
@@ -10735,10 +10237,10 @@ function Check-Env {
         `$broken = 1
     }
 
-    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/main.py`") {
-        `$comfyui_status = `"已安装`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/launch.py`") {
+        `$stable_diffusion_webui_status = `"已安装`"
     } else {
-        `$comfyui_status = `"未安装`"
+        `$stable_diffusion_webui_status = `"未安装`"
         `$broken = 1
     }
 
@@ -10766,27 +10268,27 @@ function Check-Env {
     Print-Msg `"Aria2: `$aria2_status`"
     Print-Msg `"PyTorch: `$torch_status`"
     Print-Msg `"xFormers: `$xformers_status`"
-    Print-Msg `"ComfyUI: `$comfyui_status`"
+    Print-Msg `"stable-diffusion-webui: `$stable_diffusion_webui_status`"
     Print-Msg `"-----------------------------------------------------`"
     if (`$broken -eq 1) {
-        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 ComfyUI Installer 进行安装`"
+        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 SD WebUI Installer 进行安装`"
     } else {
         Print-Msg `"当前环境无缺失组件`"
     }
 }
 
 
-# 查看 ComfyUI Installer 文档
-function Get-ComfyUI-Installer-Help-Docs {
-    Print-Msg `"调用浏览器打开 ComfyUI Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md`"
+# 查看 SD WebUI Installer 文档
+function Get-Stable-Diffusion-WebUI-Installer-Help-Docs {
+    Print-Msg `"调用浏览器打开 SD WebUI Installer 文档中`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md`"
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
 
@@ -10798,32 +10300,32 @@ function Main {
         Print-Msg `"Python 包管理器: `$(Get-Python-Package-Manager-Setting)`"
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
-        Print-Msg `"ComfyUI Installer 自动检查更新: `$(Get-ComfyUI-Installer-Auto-Check-Update-Setting)`"
-        Print-Msg `"ComfyUI Installer 自动应用更新: `$(Get-ComfyUI-Installer-Auto-Apply-Update-Setting)`"
-        Print-Msg `"ComfyUI 启动参数: `$(Get-Launch-Args-Setting)`"
-        Print-Msg `"自动创建 ComfyUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"SD WebUI Installer 自动检查更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"SD WebUI Installer 自动应用更新: `$(Get-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"自动创建 Stable Diffusion WebUI 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
-        Print-Msg `"ComfyUI 运行环境检测设置: `$(Get-ComfyUI-Env-Check-Setting)`"
-        Print-Msg `"ComfyUI 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 运行环境检测设置: `$(Get-Stable-Diffusion-WebUI-Env-Check-Setting)`"
+        Print-Msg `"Stable Diffusion WebUI 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
         Print-Msg `"2. 进入 Python 包管理器设置`"
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
-        Print-Msg `"5. 进入 ComfyUI Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 ComfyUI Installer 自动应用更新设置`"
-        Print-Msg `"7. 进入 ComfyUI 启动参数设置`"
-        Print-Msg `"8. 进入自动创建 ComfyUI 快捷启动方式设置`"
+        Print-Msg `"5. 进入 SD WebUI Installer 自动检查更新设置`"
+        Print-Msg `"6. 进入 SD WebUI Installer 自动应用更新设置`"
+        Print-Msg `"7. 进入 Stable Diffusion WebUI 启动参数设置`"
+        Print-Msg `"8. 进入自动创建 Stable Diffusion WebUI 快捷启动方式设置`"
         Print-Msg `"9. 进入 PyPI 镜像源设置`"
         Print-Msg `"10. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"11. 进入 ComfyUI 运行环境检测设置`"
-        Print-Msg `"12. 进入 ComfyUI 内核路径前缀设置`"
-        Print-Msg `"13. 更新 ComfyUI Installer 管理脚本`"
+        Print-Msg `"11. 进入 Stable Diffusion WebUI 运行环境检测设置`"
+        Print-Msg `"12. 进入 Stable Diffusion WebUI 内核路径前缀设置`"
+        Print-Msg `"13 更新 SD WebUI Installer 管理脚本`"
         Print-Msg `"14. 检查环境完整性`"
-        Print-Msg `"15. 查看 ComfyUI Installer 文档`"
-        Print-Msg `"16. 退出 ComfyUI Installer 设置`"
+        Print-Msg `"15. 查看 SD WebUI Installer 文档`"
+        Print-Msg `"16. 退出 SD WebUI Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -10844,15 +10346,15 @@ function Main {
                 break
             }
             5 {
-                Update-ComfyUI-Installer-Auto-Check-Update-Setting
+                Update-Stable-Diffusion-WebUI-Installer-Auto-Check-Update-Setting
                 break
             }
             6 {
-                Update-ComfyUI-Installer-Auto-Apply-Update-Setting
+                Update-Stable-Diffusion-WebUI-Installer-Auto-Apply-Update-Setting
                 break
             }
             7 {
-                Update-ComfyUI-Launch-Args-Setting
+                Update-Stable-Diffusion-WebUI-Launch-Args-Setting
                 break
             }
             8 {
@@ -10868,7 +10370,7 @@ function Main {
                 break
             }
             11 {
-                ComfyUI-Env-Check-Setting
+                Stable-Diffusion-WebUI-Env-Check-Setting
                 break
             }
             12 {
@@ -10876,7 +10378,7 @@ function Main {
                 break
             }
             13 {
-                Check-ComfyUI-Installer-Update
+                Check-Stable-Diffusion-WebUI-Installer-Update
                 break
             }
             14 {
@@ -10884,7 +10386,7 @@ function Main {
                 break
             }
             15 {
-                Get-ComfyUI-Installer-Help-Docs
+                Get-Stable-Diffusion-WebUI-Installer-Help-Docs
                 break
             }
             16 {
@@ -10898,7 +10400,7 @@ function Main {
         }
 
         if (`$go_to -eq 1) {
-            Print-Msg `"退出 ComfyUI Installer 设置`"
+            Print-Msg `"退出 SD WebUI Installer 设置`"
             break
         }
     }
@@ -10918,6 +10420,7 @@ Read-Host | Out-Null
     Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/settings.ps1" -Value $content
 }
 
+
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
@@ -10926,14 +10429,14 @@ param (
     [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableGithubMirror,
-    [switch]`$UseCustomGithubMirror,
+    [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
+    `$prefix_list = @(`"core`", `"stable-diffusion-webui`", `"stable-diffusion-webui-forge`", `"stable-diffusion-webui-reForge`", `"sd-webui-forge-classic`", `"stable-diffusion-webui-amdgpu`", `"automatic`", `"sd_webui`", `"sd_webui_forge`", `"sd-webui-aki-v4.10`", `"sd-webui-aki-v4.11.1-cu128`", `"sd-webui-forge-aki-v1.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -10958,8 +10461,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# ComfyUI Installer 版本和检查更新间隔
-`$Env:COMFYUI_INSTALLER_VERSION = $COMFYUI_INSTALLER_VERSION
+# SD WebUI Installer 版本和检查更新间隔
+`$Env:SD_WEBUI_INSTALLER_VERSION = $SD_WEBUI_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -10982,7 +10485,6 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
 `$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130 = `"$PIP_EXTRA_INDEX_MIRROR_CU130`"
 `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
@@ -11073,20 +10575,19 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:COMFYUI_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
-`$Env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
+`$Env:SD_WEBUI_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -11095,7 +10596,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableGithubMirror
-        禁用 ComfyUI Installer 自动设置 Github 镜像源
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -11118,7 +10619,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -11130,7 +10631,7 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -11142,14 +10643,14 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[ComfyUI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[SD WebUI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
 # 消息输出
 function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -11194,33 +10695,33 @@ function global:Update-Aria2 {
         }
     }
 
-    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:COMFYUI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
+    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_WEBUI_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
     Print-Msg `"更新 Aria2 完成`"
 }
 
 
-# ComfyUI Installer 更新检测
-function global:Check-ComfyUI-Installer-Update {
+# SD WebUI Installer 更新检测
+function global:Check-Stable-Diffusion-WebUI-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/comfyui_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/comfyui_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/stable_diffusion_webui_installer/stable_diffusion_webui_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-    Set-Content -Encoding UTF8 -Path `"`$Env:COMFYUI_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 ComfyUI Installer 更新中`"
+        Print-Msg `"检查 SD WebUI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/comfyui_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/comfyui_installer.ps1`" |
-                Select-String -Pattern `"COMFYUI_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" |
+                Select-String -Pattern `"SD_WEBUI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -11228,48 +10729,48 @@ function global:Check-ComfyUI-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 ComfyUI Installer 更新中`"
+                Print-Msg `"重试检查 SD WebUI Installer 更新中`"
             } else {
-                Print-Msg `"检查 ComfyUI Installer 更新失败`"
+                Print-Msg `"检查 SD WebUI Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$Env:COMFYUI_INSTALLER_VERSION) {
-        Print-Msg `"ComfyUI Installer 有新版本可用`"
-        Print-Msg `"调用 ComfyUI Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$Env:COMFYUI_INSTALLER_ROOT`" -UseUpdateMode
-        Print-Msg `"更新结束, 需重新启动 ComfyUI Installer 管理脚本以应用更新, 回车退出 ComfyUI Installer 管理脚本`"
+    if (`$latest_version -gt `$Env:SD_WEBUI_INSTALLER_VERSION) {
+        Print-Msg `"SD WebUI Installer 有新版本可用`"
+        Print-Msg `"调用 SD WebUI Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/stable_diffusion_webui_installer.ps1`" -InstallPath `"`$Env:SD_WEBUI_INSTALLER_ROOT`" -UseUpdateMode
+        Print-Msg `"更新结束, 需重新启动 SD WebUI Installer 管理脚本以应用更新, 回车退出 SD WebUI Installer 管理脚本`"
         Read-Host | Out-Null
         exit 0
     } else {
-        Print-Msg `"ComfyUI Installer 已是最新版本`"
+        Print-Msg `"SD WebUI Installer 已是最新版本`"
     }
 }
 
 
 # 启用 Github 镜像源
 function global:Test-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`") {
-        Remove-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/.gitconfig`" -Force -Recurse
+    `$Env:GIT_CONFIG_GLOBAL = `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`") {
+        Remove-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/.gitconfig`" -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory `"*`"
     git config --global core.longpaths true
 
-    if ((Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+    if ((Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
         Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
-    if ((Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) { # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) { # 使用自定义 Github 镜像源
         if (`$UseCustomGithubMirror) {
             `$github_mirror = `$UseCustomGithubMirror
         } else {
-            `$github_mirror = Get-Content `"`$Env:COMFYUI_INSTALLER_ROOT/gh_mirror.txt`"
+            `$github_mirror = Get-Content `"`$Env:SD_WEBUI_INSTALLER_ROOT/gh_mirror.txt`"
         }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
@@ -11307,17 +10808,17 @@ function global:Test-Github-Mirror {
 }
 
 
-# 安装 ComfyUI 自定义节点
-function global:Install-ComfyUI-Node (`$url) {
+# 安装 Stable Diffusion WebUI 扩展
+function global:Install-Stable-Diffusion-WebUI-Extension (`$url) {
     # 应用 Github 镜像源
     if (`$global:is_test_gh_mirror -ne 1) {
         Test-Github-Mirror
         `$global:is_test_gh_mirror = 1
     }
 
-    `$node_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
-    `$cache_path = `"`$Env:CACHE_HOME/`${node_name}_tmp`"
-    `$path = `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes/`$node_name`"
+    `$extension_name = `$(Split-Path `$url -Leaf) -replace `".git`", `"`"
+    `$cache_path = `"`$Env:CACHE_HOME/`${extension_name}_tmp`"
+    `$path = `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions/`$extension_name`"
     if (!(Test-Path `"`$path`")) {
         `$status = 1
     } else {
@@ -11328,7 +10829,7 @@ function global:Install-ComfyUI-Node (`$url) {
     }
 
     if (`$status -eq 1) {
-        Print-Msg `"安装 `$node_name 自定义节点中`"
+        Print-Msg `"安装 `$extension_name 扩展中`"
         # 清理缓存路径
         if (Test-Path `"`$cache_path`") {
             Remove-Item -Path `"`$cache_path`" -Force -Recurse
@@ -11343,12 +10844,12 @@ function global:Install-ComfyUI-Node (`$url) {
             # 将下载好的文件从缓存文件夹移动到指定路径
             New-Item -ItemType Directory -Path `"`$([System.IO.Path]::GetDirectoryName(`$path))`" -Force > `$null
             Move-Item -Path `"`$cache_path`" -Destination `"`$path`" -Force
-            Print-Msg `"`$node_name 自定义节点安装成功`"
+            Print-Msg `"`$extension_name 扩展安装成功`"
         } else {
-            Print-Msg `"`$node_name 自定义节点安装失败`"
+            Print-Msg `"`$extension_name 扩展安装失败`"
         }
     } else {
-        Print-Msg `"`$node_name 自定义节点已安装`"
+        Print-Msg `"`$extension_name 扩展已安装`"
     }
 }
 
@@ -11390,20 +10891,20 @@ function global:Git-Clone (`$url, `$path) {
 }
 
 
-# 列出已安装的 ComfyUI 自定义节点
-function global:List-Node {
-    `$node_list = Get-ChildItem -Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes`" | Select-Object -ExpandProperty FullName
-    Print-Msg `"当前 ComfyUI 已安装的自定义节点`"
+# 列出已安装的 Stable Diffusion WebUI 扩展
+function global:List-Extension {
+    `$extension_list = Get-ChildItem -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions`" | Select-Object -ExpandProperty FullName
+    Print-Msg `"当前 Stable Diffusion WebUI 已安装的扩展`"
     `$count = 0
-    ForEach (`$i in `$node_list) {
+    ForEach (`$i in `$extension_list) {
         if (Test-Path `"`$i`" -PathType Container) {
             `$count += 1
             `$name = [System.IO.Path]::GetFileNameWithoutExtension(`"`$i`")
             Print-Msg `"- `$name`"
         }
     }
-    Print-Msg `"ComfyUI 自定义节点路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/custom_nodes`"))`"
-    Print-Msg `"ComfyUI 自定义节点数量: `$count`"
+    Print-Msg `"Stable Diffusion WebUI 扩展路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/extensions`"))`"
+    Print-Msg `"Stable Diffusion WebUI 扩展数量: `$count`"
 }
 
 
@@ -11416,23 +10917,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -11453,7 +10954,7 @@ function global:Install-Hanamizuki {
 echo Initialize configuration
 setlocal enabledelayedexpansion
 set CurrentPath=%~dp0
-set DefaultCorePrefix=ComfyUI
+set DefaultCorePrefix=stable-diffusion-webui
 if exist ```"%~dp0%DefaultCorePrefix%```" (
     set CorePrefix=%DefaultCorePrefix%
 ) else (
@@ -11497,7 +10998,7 @@ if exist ```"%RootPath%```" (
     cd /d ```"%RootPath%```"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if ComfyUI is installed, or if the CorePrefix is set correctly
+    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -11514,13 +11015,13 @@ if exist .\hanamizuki.exe (
 )
     `".Trim()
 
-    Set-Content -Encoding Default -Path `"`$Env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
+    Set-Content -Encoding Default -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
-        if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:COMFYUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/python`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
+        if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/python`") {
+            Print-Msg `"尝试将 Python 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/python`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -11528,14 +11029,14 @@ if exist .\hanamizuki.exe (
                 Print-Msg `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
             }
         } else {
-            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 ComfyUI Installer 修复环境`"
+            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境`"
         }
     }
 
-    if (!(Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
-        if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:COMFYUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$Env:COMFYUI_INSTALLER_ROOT/git`" `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+    if (!(Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/git`") {
+            Print-Msg `"尝试将 Git 移动至 `$Env:SD_WEBUI_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/git`" `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -11543,7 +11044,7 @@ if exist .\hanamizuki.exe (
                 Print-Msg `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
             }
         } else {
-            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 ComfyUI Installer 修复环境`"
+            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境`"
         }
     }
 
@@ -11553,7 +11054,7 @@ if exist .\hanamizuki.exe (
 
 # 获取指定路径的内核路径前缀
 function global:Get-Core-Prefix (`$to_path) {
-    `$from_path = `$Env:COMFYUI_INSTALLER_ROOT
+    `$from_path = `$Env:SD_WEBUI_INSTALLER_ROOT
     `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
     `$to_uri = New-Object System.Uri(`$to_path.Trim('/').Trim('\').Replace('\', '/'))
     `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
@@ -11573,40 +11074,40 @@ Set-Alias python3 python
 Set-Alias python3.11 python
 
 
-# 列出 ComfyUI Installer 内置命令
+# 列出 SD WebUI Installer 内置命令
 function global:List-CMD {
     Write-Host `"
 ==================================
-ComfyUI Installer created by licyk
+SD WebUI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ==================================
 
-当前可用的 ComfyUI Installer 内置命令：
+当前可用的 SD WebUI Installer 内置命令：
 
     Update-uv
     Update-Aria2
-    Check-ComfyUI-Installer-Update
+    Check-Stable-Diffusion-WebUI-Installer-Update
     Test-Github-Mirror
-    Install-ComfyUI-Node
+    Install-Stable-Diffusion-WebUI-Extension
     Git-Clone
     Install-Hanamizuki
-    List-Node
+    List-Extension
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 ComfyUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多帮助信息可在 SD WebUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 `"
 }
 
 
-# 显示 ComfyUI Installer 版本
-function Get-ComfyUI-Installer-Version {
-    `$ver = `$([string]`$Env:COMFYUI_INSTALLER_VERSION).ToCharArray()
+# 显示 SD WebUI Installer 版本
+function Get-Stable-Diffusion-WebUI-Installer-Version {
+    `$ver = `$([string]`$Env:SD_WEBUI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"ComfyUI Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD WebUI Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -11633,7 +11134,7 @@ function PyPI-Mirror-Status {
     if (`$USE_PIP_MIRROR) {
         Print-Msg `"使用 PyPI 镜像源`"
     } else {
-        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror, 命令行参数 已将 PyPI 源切换至官方源`"
+        Print-Msg `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
     }
 }
 
@@ -11733,18 +11234,19 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     PyPI-Mirror-Status
-    if (Test-Path `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:COMFYUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:SD_WEBUI_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
-    Print-Msg `"激活 ComfyUI Env`"
-    Print-Msg `"更多帮助信息可在 ComfyUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md`"
+    Print-Msg `"激活 Stable Diffusion WebUI Env`"
+    Print-Msg `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md`"
 }
 
 ###################
@@ -11766,12 +11268,12 @@ function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD WebUI Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
-Print-Msg `"执行 ComfyUI Installer 激活环境脚本`"
+Print-Msg `"执行 SD WebUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
 
@@ -11788,50 +11290,50 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 function Write-ReadMe {
     $content = "
 ====================================================================
-ComfyUI Installer created by licyk
+SD WebUI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ====================================================================
 ########## 使用帮助 ##########
 
-这是关于 ComfyUI 的简单使用文档。
+这是关于 Stable Diffusion WebUI 的简单使用文档。
 
-使用 ComfyUI Installer 进行安装并安装成功后，将在当前目录生成 ComfyUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+使用 SD WebUI Installer 进行安装并安装成功后，将在当前目录生成 Stable Diffusion WebUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-- launch.ps1：启动 ComfyUI。
-- update.ps1：更新 ComfyUI。
-- update_node.ps1：更新 ComfyUI 自定义节点。
-- download_models.ps1：下载模型的脚本，下载的模型将存放在 ComfyUI 的模型文件夹中。
+- launch.ps1：启动 Stable Diffusion WebUI。
+- update.ps1：更新 Stable Diffusion WebUI。
+- update_extension.ps1：更新 Stable Diffusion WebUI 扩展。
+- download_models.ps1：下载模型的脚本，下载的模型将存放在 Stable Diffusion WebUI 的模型文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-- settings.ps1：管理 ComfyUI Installer 的设置。
-- terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令
+- switch_branch.ps1：切换 Stable Diffusion WebUI 分支。
+- settings.ps1：管理 SD WebUI Installer 的设置。
+- terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 - activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- launch_comfyui_installer.ps1：获取最新的 ComfyUI Installer 安装脚本并运行。
+- launch_stable_diffusion_webui_installer.ps1：获取最新的 SD WebUI Installer 安装脚本并运行。
 - configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
 
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- ComfyUI / core：ComfyUI 内核。
+- stable-diffusion-webui / core：Stable Diffusion WebUI 内核。
 
-详细的 ComfyUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+详细的 SD WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 
-ComfyUI 的使用教程：
-https://sdnote.netlify.app/guide/comfyui
-https://sdnote.netlify.app/help/comfyui
-https://docs.comfy.org/zh-CN/get_started/first_generation
-https://www.aigodlike.com
-https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931
-https://comfyanonymous.github.io/ComfyUI_examples
-https://blenderneko.github.io/ComfyUI-docs
-https://comfyui-wiki.com/zh
+Stable Diffusion WebUI 的使用教程：
+https://sdnote.netlify.app/guide/sd_webui
+https://sdnote.netlify.app/help/sd_webui
 
 
 ====================================================================
 ########## Github 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
-ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
+Stable Diffusion WebUI 项目地址：https://github.com/AUTOMATIC1111/stable-diffusion-webui
+Stable Diffusion WebUI Forge 项目地址：https://github.com/lllyasviel/stable-diffusion-webui-forge
+Stable Diffusion WebUI reForge 项目地址：https://github.com/Panchovix/stable-diffusion-webui-reForge
+Stable Diffusion WebUI Forge Classic 项目地址：https://github.com/Haoming02/sd-webui-forge-classic
+Stable Diffusion WebUI AMDGPU 项目地址：https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu
+SD Next 项目地址：https://github.com/vladmandic/sdnext
 
 
 ====================================================================
@@ -11866,11 +11368,12 @@ function Write-Manager-Scripts {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
     Write-Launch-Script
     Write-Update-Script
-    Write-Update-Node-Script
-    Write-Launch-ComfyUI-Install-Script
+    Write-Update-Extension-Script
+    Write-Switch-Branch-Script
+    Write-Launch-Stable-Diffusion-WebUI-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
-    Write-ComfyUI-Installer-Settings-Script
+    Write-Stable-Diffusion-WebUI-Installer-Settings-Script
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
@@ -11880,8 +11383,8 @@ function Write-Manager-Scripts {
 
 
 # 将安装器配置文件复制到管理脚本路径
-function Copy-ComfyUI-Installer-Config {
-    Print-Msg "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
+function Copy-Stable-Diffusion-WebUI-Installer-Config {
+    Print-Msg "为 SD WebUI Installer 管理脚本复制 SD WebUI Installer 配置文件中"
 
     if ((!($DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
         Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$InstallPath"
@@ -11926,7 +11429,7 @@ function Write-Hanamizuki-Script {
 echo Initialize configuration
 setlocal enabledelayedexpansion
 set CurrentPath=%~dp0
-set DefaultCorePrefix=ComfyUI
+set DefaultCorePrefix=stable-diffusion-webui
 if exist `"%~dp0%DefaultCorePrefix%`" (
     set CorePrefix=%DefaultCorePrefix%
 ) else (
@@ -11970,7 +11473,7 @@ if exist `"%RootPath%`" (
     cd /d `"%RootPath%`"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if ComfyUI is installed, or if the CorePrefix is set correctly
+    echo Please check if Stable Diffusion WebUI is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -12054,7 +11557,7 @@ function Install-Hanamizuki {
                 Print-Msg "请关闭所有占用 Python 的进程, 并重新运行该命令"
             }
         } else {
-            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 ComfyUI Installer 修复环境"
+            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境"
         }
     }
 
@@ -12069,7 +11572,7 @@ function Install-Hanamizuki {
                 Print-Msg "请关闭所有占用 Git 的进程, 并重新运行该命令"
             }
         } else {
-            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 ComfyUI Installer 修复环境"
+            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境"
         }
     }
 
@@ -12082,27 +11585,42 @@ function Use-Install-Mode {
     Set-Proxy
     Set-uv
     PyPI-Mirror-Status
-    Print-Msg "启动 ComfyUI 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 ComfyUI Installer, 更多的说明请阅读 ComfyUI Installer 使用文档"
-    Print-Msg "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md"
+    Print-Msg "启动 Stable Diffusion WebUI 安装程序"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD WebUI Installer, 更多的说明请阅读 SD WebUI Installer 使用文档"
+    Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
+    if ((Test-Path "$PSScriptRoot/install_sd_webui.txt") -or ($InstallBranch -eq "sd_webui")) {
+        Print-Msg "检测到 install_sd_webui.txt 配置文件 / -InstallBranch sd_webui 命令行参数, 选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge.txt") -or ($InstallBranch -eq "sd_webui_forge")) {
+        Print-Msg "检测到 install_sd_webui_forge.txt 配置文件 / -InstallBranch sd_webui_forge 命令行参数, 选择安装 lllyasviel/Stable-Diffusion-WebUI-Forge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_reforge.txt") -or ($InstallBranch -eq "sd_webui_reforge")) {
+        Print-Msg "检测到 install_sd_webui_reforge.txt 配置文件 / -InstallBranch sd_webui_reforge 命令行参数, 选择安装 Panchovix/Stable-Diffusion-WebUI-reForge"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_forge_classic.txt") -or ($InstallBranch -eq "sd_webui_forge_classic")) {
+        Print-Msg "检测到 install_sd_webui_forge_classic.txt 配置文件 / -InstallBranch sd_webui_forge_classic 命令行参数, 选择安装 Haoming02/Stable-Diffusion-WebUI-Forge-Classic"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_webui_amdgpu.txt") -or ($InstallBranch -eq "sd_webui_amdgpu")) {
+        Print-Msg "检测到 install_sd_webui_amdgpu.txt 配置文件 / -InstallBranch sd_webui_amdgp 命令行参数u, 选择安装 lshqqytiger/Stable-Diffusion-WebUI-AMDGPU"
+    } elseif ((Test-Path "$PSScriptRoot/install_sd_next.txt") -or ($InstallBranch -eq "sdnext")) {
+        Print-Msg "检测到 install_sd_next.txt 配置文件 / -InstallBranch sdnext 命令行参数, 选择安装 vladmandic/SD.NEXT"
+    } else {
+        Print-Msg "未指定安装的 SD WebUI 分支, 默认选择安装 AUTOMATIC1111/Stable-Diffusion-WebUI"
+    }
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Copy-ComfyUI-Installer-Config
+    Copy-Stable-Diffusion-WebUI-Installer-Config
 
     if ($BuildMode) {
         Use-Build-Mode
         Install-Hanamizuki
-        Print-Msg "ComfyUI 环境构建完成, 路径: $InstallPath"
+        Print-Msg "SD WebUI 环境构建完成, 路径: $InstallPath"
     } else {
         Install-Hanamizuki
-        Print-Msg "ComfyUI 安装结束, 安装路径为: $InstallPath"
+        Print-Msg "Stable Diffusion WebUI 安装结束, 安装路径为: $InstallPath"
     }
 
-    Print-Msg "帮助文档可在 ComfyUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 ComfyUI Installer 使用文档"
-    Print-Msg "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md"
-    Print-Msg "退出 ComfyUI Installer"
+    Print-Msg "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
+    Print-Msg "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md"
+    Print-Msg "退出 SD WebUI Installer"
 
     if (!($BuildMode)) {
         Read-Host | Out-Null
@@ -12152,6 +11670,22 @@ function Use-Build-Mode {
         . "$InstallPath/download_models.ps1" @launch_args
     }
 
+    if ($BuildWitchBranch) {
+        $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
+        $launch_args.Add("-BuildWitchBranch", $BuildWitchBranch)
+        if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
+        if ($DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
+        if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
+        if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
+        if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
+        Print-Msg "执行 Stable Diffusion WebUI 分支切换脚本中"
+        . "$InstallPath/switch_branch.ps1" @launch_args
+    }
+
     if ($BuildWithUpdate) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
@@ -12163,11 +11697,11 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 ComfyUI 更新脚本中"
+        Print-Msg "执行 Stable Diffusion WebUI 更新脚本中"
         . "$InstallPath/update.ps1" @launch_args
     }
 
-    if ($BuildWithUpdateNode) {
+    if ($BuildWithUpdateExtension) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
         if ($DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
@@ -12178,8 +11712,8 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 ComfyUI 自定义节点更新脚本中"
-        . "$InstallPath/update_node.ps1" @launch_args
+        Print-Msg "执行 Stable Diffusion WebUI 插件更新脚本中"
+        . "$InstallPath/update_extension.ps1" @launch_args
     }
 
     if ($BuildWithLaunch) {
@@ -12200,7 +11734,7 @@ function Use-Build-Mode {
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 ComfyUI 启动脚本中"
+        Print-Msg "执行 Stable Diffusion WebUI 启动脚本中"
         . "$InstallPath/launch.ps1" @launch_args
     }
 
@@ -12267,42 +11801,54 @@ if '%errorlevel%' NEQ '0' (
 
 
 # 帮助信息
-function Get-ComfyUI-Installer-Cmdlet-Help {
+function Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 ComfyUI Installer 的帮助信息
+        获取 SD WebUI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
-    -InstallPath <安装 ComfyUI 的绝对路径>
-        指定 ComfyUI Installer 安装 ComfyUI 的路径, 使用绝对路径表示
-        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Donwload 这个路径
+    -InstallPath <安装 Stable Diffusion WebUI 的绝对路径>
+        指定 SD WebUI Installer 安装 Stable Diffusion WebUI 的路径, 使用绝对路径表示
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD WebUI Installer 安装 Stable Diffusion WebUI 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
+    -InstallBranch <安装的 Stable Diffusion WebUI 分支>
+        指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui, sd_webui_forge, sd_webui_reforge, sd_webui_forge_classic, sd_webui_amdgpu, sdnext)
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"sd_webui_forge`", 这将指定 SD WebUI Installer 安装 lllyasviel/Stable-Diffusion-WebUI-Forge 分支
+        未指定该参数时, 默认安装 AUTOMATIC1111/Stable-Diffusion-WebUI 分支
+        支持指定安装的分支如下:
+            sd_webui:               AUTOMATIC1111/Stable-Diffusion-WebUI
+            sd_webui_forge:         lllyasviel/Stable-Diffusion-WebUI-Forge
+            sd_webui_reforge:       Panchovix/Stable-Diffusion-WebUI-reForge
+            sd_webui_forge_classic: Haoming02/Stable-Diffusion-WebUI-Forge-Classic
+            sd_webui_amdgpu:        lshqqytiger/Stable-Diffusion-WebUI-AMDGPU
+            sdnext:                 vladmandic/SD.NEXT
+
     -UseUpdateMode
-        指定 ComfyUI Installer 使用更新模式, 只对 ComfyUI Installer 的管理脚本进行更新
+        指定 SD WebUI Installer 使用更新模式, 只对 SD WebUI Installer 的管理脚本进行更新
 
     -DisablePyPIMirror
-        禁用 ComfyUI Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+        禁用 SD WebUI Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 ComfyUI Installer 自动设置代理服务器
+        禁用 SD WebUI Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
-        禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableGithubMirror
-        禁用 ComfyUI Installer 自动设置 Github 镜像源
+        禁用 SD WebUI Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -12325,39 +11871,44 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -BuildMode
-        启用 ComfyUI Installer 构建模式, 在基础安装流程结束后将调用 ComfyUI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 ComfyUI Installer 的执行, 而是直接退出
-        当指定调用多个 ComfyUI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+        启用 SD WebUI Installer 构建模式, 在基础安装流程结束后将调用 SD WebUI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD WebUI Installer 的执行, 而是直接退出
+        当指定调用多个 SD WebUI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
+            - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
+            - update_extension.ps1      (对应 -BuildWithUpdateExtension 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update.ps1 脚本, 更新 ComfyUI 内核
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update.ps1 脚本, 更新 Stable Diffusion WebUI 内核
 
-    -BuildWithUpdateNode
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_node.ps1 脚本, 更新 ComfyUI 自定义节点
+    -BuildWithUpdateExtension
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 update_extension.ps1 脚本, 更新 Stable Diffusion WebUI 扩展
 
     -BuildWithLaunch
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 launch.ps1 脚本, 执行启动 ComfyUI 前的环境检查流程, 但跳过启动 ComfyUI
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 launch.ps1 脚本, 执行启动 Stable Diffusion WebUI 前的环境检查流程, 但跳过启动 Stable Diffusion WebUI
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD WebUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -NoPreDownloadNode
-        安装 ComfyUI 时跳过安装 ComfyUI 扩展
+    -BuildWitchBranch <Stable Diffusion WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支
+        Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -NoPreDownloadExtension
+        安装 Stable Diffusion WebUI 时跳过下载 Stable Diffusion WebUI 扩展
 
     -NoPreDownloadModel
-        安装 ComfyUI 时跳过预下载模型
+        安装 Stable Diffusion WebUI 时跳过预下载模型
 
     -PyTorchPackage <PyTorch 软件包>
         (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
@@ -12372,31 +11923,31 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
         安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 更新检查
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 更新检查
 
     -DisableHuggingFaceMirror
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
-    -LaunchArg <ComfyUI 启动参数>
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 设置 ComfyUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg `"--fast --auto-launch`" 进行启用
+    -LaunchArg <Stable Diffusion WebUI 启动参数>
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --autolaunch 和 --xformers, 则使用 -LaunchArg `"--autolaunch --xformers`" 进行启用
 
     -EnableShortcut
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 创建 ComfyUI 启动快捷方式
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 创建 Stable Diffusion WebUI 启动快捷方式
 
     -DisableCUDAMalloc
-        (仅在 ComfyUI Installer 构建模式下生效, 并且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        (仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题, 禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        (仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 自动应用新版本更新
+        (仅在 SD WebUI Installer 构建模式下生效, 并且只作用于 SD WebUI Installer 管理脚本) 禁用 SD WebUI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/comfyui_installer.md
+更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/stable_diffusion_webui_installer.md
 ".Trim()
 
     if ($Help) {
@@ -12409,8 +11960,8 @@ function Get-ComfyUI-Installer-Cmdlet-Help {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Get-ComfyUI-Installer-Version
-    Get-ComfyUI-Installer-Cmdlet-Help
+    Get-Stable-Diffusion-WebUI-Installer-Version
+    Get-Stable-Diffusion-WebUI-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
 
     if ($UseUpdateMode) {
@@ -12419,7 +11970,7 @@ function Main {
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($BuildMode) {
-            Print-Msg "ComfyUI Installer 构建模式已启用"
+            Print-Msg "SD WebUI Installer 构建模式已启用"
         }
         Print-Msg "使用安装模式"
         Use-Install-Mode

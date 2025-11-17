@@ -33,7 +33,7 @@ jobs:
       - name: Launch Fooocus Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/fooocus_installer.ps1" `
+          & "${{ github.workspace }}/installer/fooocus_installer.ps1" `
             -InstallPath "${{ github.workspace }}/fooocus" `
             -PyTorchMirrorType cu128 `
             -BuildMode `

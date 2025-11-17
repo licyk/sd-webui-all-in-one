@@ -359,8 +359,8 @@ class FooocusManager(BaseManager):
         os.chdir(self.workspace)
         fooocus_path = self.workspace / self.workfolder
         fooocus_repo = "https://github.com/lllyasviel/Fooocus" if fooocus_repo is None else fooocus_repo
-        fooocus_preset = "https://github.com/licyk/sd-webui-all-in-one/raw/main/fooocus_config.json" if fooocus_preset is None else fooocus_preset
-        fooocus_translation = "https://github.com/licyk/sd-webui-all-in-one/raw/main/fooocus_zh_cn.json" if fooocus_translation is None else fooocus_translation
+        fooocus_preset = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_config.json" if fooocus_preset is None else fooocus_preset
+        fooocus_translation = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_zh_cn.json" if fooocus_translation is None else fooocus_translation
         requirements_path = fooocus_path / ("requirements_versions.txt" if fooocus_requirements is None else fooocus_requirements)
         config_file = fooocus_path / "presets" / "custom.json"
         if check_avaliable_gpu:

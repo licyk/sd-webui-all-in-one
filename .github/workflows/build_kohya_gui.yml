@@ -33,7 +33,7 @@ jobs:
       - name: Launch SD-Trainer Installer
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/sd_trainer_installer.ps1" `
+          & "${{ github.workspace }}/installer/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/kohya_gui" `
             -PyTorchMirrorType cu128 `
             -BuildMode `

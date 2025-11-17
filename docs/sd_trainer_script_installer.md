@@ -120,9 +120,9 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 |---|
 |[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
 |[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
-|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
-|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/configure_env.bat)|
-|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/configure_env.bat)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/configure_env.bat)|
 
 ***
 
@@ -172,9 +172,9 @@ $ tree -L 1
 |---|
 |[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
 |[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
-|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1)|
-|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1)|
-|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_script_installer.ps1)|
 
 在 SD-Trainer-Script Installer 成功安装 SD-Trainer-Script 后，在`SD-Trainer-Script`文件夹中可以看到 SD-Trainer-Script 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer-Script Installer。
 

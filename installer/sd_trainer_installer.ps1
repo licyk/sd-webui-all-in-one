@@ -1,7 +1,7 @@
 ﻿param (
     [switch]$Help,
     [string]$CorePrefix,
-    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer-Script"),
+    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer"),
     [string]$PyTorchMirrorType,
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
@@ -20,18 +20,21 @@
     [int]$BuildWitchBranch,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
+    [switch]$InstallHanamizuki,
     [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
     [switch]$DisableHuggingFaceMirror,
     [string]$UseCustomHuggingFaceMirror,
+    [string]$LaunchArg,
+    [switch]$EnableShortcut,
     [switch]$DisableCUDAMalloc,
     [switch]$DisableEnvCheck,
     [switch]$DisableAutoApplyUpdate
 )
 & {
-    $prefix_list = @("core", "sd-scripts", "SimpleTuner", "ai-toolkit", "finetrainers", "diffusion-pipe", "musubi-tuner")
+    $prefix_list = @("core", "lora-scripts", "lora_scripts", "sd-trainer", "SD-Trainer", "sd_trainer", "lora-scripts", "lora-scripts-v1.5.1", "lora-scripts-v1.6.2", "lora-scripts-v1.7.3", "lora-scripts-v1.8.1", "lora-scripts-v1.9.0-cu124", "lora-scripts-v1.10.0", "lora-scripts-v1.12.0")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
         if ($CorePrefix) {
             $origin_core_prefix = $CorePrefix
@@ -59,8 +62,8 @@
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 199
+# SD-Trainer Installer 版本和检查更新间隔
+$SD_TRAINER_INSTALLER_VERSION = 311
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -73,7 +76,7 @@ $PIP_FIND_ADDR = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
 $PIP_FIND_ADDR_ORI = "https://download.pytorch.org/whl/torch_stable.html"
 $USE_PIP_MIRROR = if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($DisablePyPIMirror))) { $true } else { $false }
 $PIP_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_INDEX_ADDR } else { $PIP_INDEX_ADDR_ORI }
-$PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { "$PIP_EXTRA_INDEX_ADDR_ORI $PIP_EXTRA_INDEX_ADDR" } else { $PIP_EXTRA_INDEX_ADDR_ORI }
+$PIP_EXTRA_INDEX_MIRROR = if ($USE_PIP_MIRROR) { $PIP_EXTRA_INDEX_ADDR } else { $PIP_EXTRA_INDEX_ADDR_ORI }
 $PIP_FIND_MIRROR = if ($USE_PIP_MIRROR) { $PIP_FIND_ADDR } else { $PIP_FIND_ADDR_ORI }
 $PIP_FIND_MIRROR_CU121 = "https://download.pytorch.org/whl/cu121/torch_stable.html"
 $PIP_EXTRA_INDEX_MIRROR_PYTORCH = "https://download.pytorch.org/whl"
@@ -118,21 +121,13 @@ $GITHUB_MIRROR_LIST = @(
 $UV_MINIMUM_VER = "0.9.9"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
-# SD-Trainer-Script 仓库地址
-$SD_TRAINER_SCRIPT_REPO = if ((Test-Path "$PSScriptRoot/install_sd_scripts.txt") -or ($InstallBranch -eq "sd_scripts")) {
-    "https://github.com/kohya-ss/sd-scripts"
-} elseif ((Test-Path "$PSScriptRoot/install_simple_tuner.txt") -or ($InstallBranch -eq "simple_tuner")) {
-    "https://github.com/bghira/SimpleTuner"
-} elseif ((Test-Path "$PSScriptRoot/install_ai_toolkit.txt") -or ($InstallBranch -eq "ai_toolkit")) {
-    "https://github.com/ostris/ai-toolkit"
-} elseif ((Test-Path "$PSScriptRoot/install_finetrainers.txt") -or ($InstallBranch -eq "finetrainers")) {
-    "https://github.com/a-r-r-o-w/finetrainers"
-} elseif ((Test-Path "$PSScriptRoot/install_diffusion_pipe.txt") -or ($InstallBranch -eq "diffusion_pipe")) {
-    "https://github.com/tdrussell/diffusion-pipe"
-} elseif ((Test-Path "$PSScriptRoot/install_musubi_tuner.txt") -or ($InstallBranch -eq "musubi_tuner")) {
-    "https://github.com/kohya-ss/musubi-tuner"
+# SD-Trainer 仓库地址
+$SD_TRAINER_REPO = if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
+    "https://github.com/Akegarasu/lora-scripts"
+} elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
+    "https://github.com/bmaltais/kohya_ss"
 } else {
-    "https://github.com/kohya-ss/sd-scripts"
+    "https://github.com/Akegarasu/lora-scripts"
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
@@ -198,7 +193,7 @@ $Env:UV_PYTHON = "$InstallPath/python/python.exe"
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
-    Write-Host "[SD-Trainer-Script Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host "[SD-Trainer Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
 }
@@ -222,13 +217,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    $ver = $([string]$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    $ver = $([string]$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     $major = ($ver[0..($ver.Length - 3)])
     $minor = $ver[-2]
     $micro = $ver[-1]
-    Print-Msg "SD-Trainer-Script Installer 版本: v${major}.${minor}.${micro}"
+    Print-Msg "SD-Trainer Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -384,7 +379,7 @@ function Install-Python {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Python 中"
             } else {
-                Print-Msg "Python 安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+                Print-Msg "Python 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -433,7 +428,7 @@ function Install-Git {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Git 中"
             } else {
-                Print-Msg "Git 安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+                Print-Msg "Git 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -479,7 +474,7 @@ function Install-Aria2 {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Aria2 中"
             } else {
-                Print-Msg "Aria2 安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+                Print-Msg "Aria2 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -500,7 +495,7 @@ function Install-uv {
     if ($?) {
         Print-Msg "uv 下载成功"
     } else {
-        Print-Msg "uv 下载失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+        Print-Msg "uv 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
         if (!($BuildMode)) {
             Read-Host | Out-Null
         }
@@ -568,8 +563,8 @@ function Set-Github-Mirror {
 }
 
 
-# 安装 SD-Trainer-Script
-function Install-SD-Trainer-Script {
+# 安装 SD-Trainer
+function Install-SD-Trainer {
     $status = 0
     if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX")) {
         $status = 1
@@ -581,14 +576,14 @@ function Install-SD-Trainer-Script {
     }
 
     $path = "$InstallPath/$Env:CORE_PREFIX"
-    $cache_path = "$Env:CACHE_HOME/sd-scripts_tmp"
+    $cache_path = "$Env:CACHE_HOME/lora-scripts_tmp"
     if ($status -eq 1) {
-        Print-Msg "正在下载 SD-Trainer-Script"
+        Print-Msg "正在下载 SD-Trainer"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
-        git clone --recurse-submodules $SD_TRAINER_SCRIPT_REPO "$cache_path"
+        git clone --recurse-submodules $SD_TRAINER_REPO "$cache_path"
         if ($?) { # 检测是否下载成功
             # 清理空文件夹
             if (Test-Path "$path") {
@@ -598,25 +593,25 @@ function Install-SD-Trainer-Script {
             # 将下载好的文件从缓存文件夹移动到指定路径
             New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
-            Print-Msg "SD-Trainer-Script 安装成功"
+            Print-Msg "SD-Trainer 安装成功"
         } else {
-            Print-Msg "SD-Trainer-Script 安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+            Print-Msg "SD-Trainer 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
             exit 1
         }
     } else {
-        Print-Msg "SD-Trainer-Script 已安装"
+        Print-Msg "SD-Trainer 已安装"
     }
 
-    Print-Msg "安装 SD-Trainer-Script 子模块中"
+    Print-Msg "安装 SD-Trainer 子模块中"
     git -C "$InstallPath/$Env:CORE_PREFIX" submodule init
     git -C "$InstallPath/$Env:CORE_PREFIX" submodule update
     if ($?) {
-        Print-Msg "SD-Trainer-Script 子模块安装成功"
+        Print-Msg "SD-Trainer 子模块安装成功"
     } else {
-        Print-Msg "SD-Trainer-Script 子模块安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+        Print-Msg "SD-Trainer 子模块安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
         if (!($BuildMode)) {
             Read-Host | Out-Null
         }
@@ -1243,7 +1238,7 @@ function Install-PyTorch {
         if ($?) {
             Print-Msg "PyTorch 安装成功"
         } else {
-            Print-Msg "PyTorch 安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+            Print-Msg "PyTorch 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
@@ -1291,41 +1286,25 @@ function Install-PyTorch {
 }
 
 
-# 安装 SD-Trainer-Script 依赖
-function Install-SD-Trainer-Script-Dependence {
+# 安装 SD-Trainer 依赖
+function Install-SD-Trainer-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/$Env:CORE_PREFIX"
-    $no_requirements_file = $false
-    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/requirements.txt")) {
-        $no_requirements_file = $true
-    }
-    Print-Msg "安装 SD-Trainer-Script 依赖中"
+    Print-Msg "安装 SD-Trainer 依赖中"
     if ($USE_UV) {
-        if ($no_requirements_file) {
-            uv pip install -e .
-        } else {
-            uv pip install -r requirements.txt
-        }
+        uv pip install -r requirements.txt
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            if ($no_requirements_file) {
-                python -m pip install -e .
-            } else {
-                python -m pip install -r requirements.txt
-            }
-        }
-    } else {
-        if ($no_requirements_file) {
-            python -m pip install -e .
-        } else {
             python -m pip install -r requirements.txt
         }
+    } else {
+        python -m pip install -r requirements.txt
     }
     if ($?) {
-        Print-Msg "SD-Trainer-Script 依赖安装成功"
+        Print-Msg "SD-Trainer 依赖安装成功"
     } else {
-        Print-Msg "SD-Trainer-Script 依赖安装失败, 终止 SD-Trainer-Script 安装进程, 可尝试重新运行 SD-Trainer-Script Installer 重试失败的安装"
+        Print-Msg "SD-Trainer 依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
         Set-Location "$current_path"
         if (!($BuildMode)) {
             Read-Host | Out-Null
@@ -1333,31 +1312,6 @@ function Install-SD-Trainer-Script-Dependence {
         exit 1
     }
     Set-Location "$current_path"
-}
-
-
-# 安装 Python 软件包
-function Install-Python-Package ($pkg) {
-    Print-Msg "安装 $pkg 软件包中"
-    if ($USE_UV) {
-        uv pip install $pkg.ToString().Split()
-        if (!($?)) {
-            Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install $pkg.ToString().Split()
-        }
-    } else {
-        python -m pip install $pkg.ToString().Split()
-    }
-    if ($?) {
-        Print-Msg "安装 $pkg 软件包安装成功"
-    } else {
-        Print-Msg "安装 $pkg 软件包安装失败, 终止 SD-Trainer-Scripts 安装进程, 可尝试重新运行 SD-Trainer-Scripts Installer 重试失败的安装"
-        Set-Location "$current_path"
-        if (!($BuildMode)) {
-            Read-Host | Out-Null
-        }
-        exit 1
-    }
 }
 
 
@@ -1372,6 +1326,11 @@ function Check-Install {
     } else {
         Print-Msg "Python 未安装"
         Install-Python
+    }
+
+    # 切换 uv 指定的 Python
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe") {
+        $Env:UV_PYTHON = "$InstallPath/$Env:CORE_PREFIX/python/python.exe"
     }
 
     Print-Msg "检测是否安装 Git"
@@ -1401,10 +1360,22 @@ function Check-Install {
     Check-uv-Version
 
     Set-Github-Mirror
-    Install-SD-Trainer-Script
+    Install-SD-Trainer
     Install-PyTorch
-    Install-SD-Trainer-Script-Dependence
-    Install-Python-Package "lycoris-lora dadaptation open-clip-torch wandb tensorboard"
+    Install-SD-Trainer-Dependence
+
+    # 设置默认启动参数
+    if (!(Test-Path "$InstallPath/launch_args.txt")) {
+        Print-Msg "设置默认 SD-Trainer 启动参数"
+        if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
+            $content = "--skip-prepare-onnxruntime"
+        } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
+            $content = "--inbrowser --language zh-CN --noverify"
+        } else {
+            $content = "--skip-prepare-onnxruntime"
+        }
+        Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
+    }
 
     # 清理缓存
     if ($NoCleanCache) {
@@ -1419,46 +1390,8 @@ function Check-Install {
 }
 
 
-# 训练模板脚本
-function Write-Train-Script {
-    $content = "#################################################
-# 初始化基础环境变量, 以正确识别到运行环境
-& `"`$PSScriptRoot/init.ps1`"
-Set-Location `$PSScriptRoot
-# 此处的代码不要修改或者删除, 否则可能会出现意外情况
-# 
-# SD-Trainer-Script 环境初始化后提供以下变量便于使用
-# 
-# `${ROOT_PATH}               当前目录
-# `${SD_SCRIPTS_PATH}         训练脚本所在目录
-# `${DATASET_PATH}            数据集目录
-# `${MODEL_PATH}              模型下载器下载的模型路径
-# `${GIT_EXEC}                Git 路径
-# `${PYTHON_EXEC}             Python 解释器路径
-# 
-# 下方可编写训练代码
-# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
-# 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
-#################################################
-
-
-
-
-
-#################################################
-Write-Host `"训练结束, 退出训练脚本`"
-Read-Host | Out-Null # 训练结束后保持控制台不被关闭
-".Trim()
-
-    if (!(Test-Path "$InstallPath/train.ps1")) {
-        Print-Msg "生成 train.ps1 中"
-        Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/train.ps1" -Value $content
-    }
-}
-
-
-# 初始化脚本
-function Write-Library-Script {
+# 启动脚本
+function Write-Launch-Script {
     $content = "
 param (
     [switch]`$Help,
@@ -1471,12 +1404,14 @@ param (
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableUV,
+    [string]`$LaunchArg,
+    [switch]`$EnableShortcut,
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableEnvCheck,
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -1501,8 +1436,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -1600,29 +1535,29 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式
+        启用 SD-Trainer Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer 更新检查
+        禁用 SD-Trainer Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -1634,19 +1569,25 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
     -DisableUV
-        禁用 SD-Trainer-Script Installer使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+
+    -LaunchArg <SD-Trainer 启动参数>
+        设置 SD-Trainer 自定义启动参数, 如启用 --disable-offload-from-vram 和 --disable-analytics, 则使用 -LaunchArg ```"--disable-offload-from-vram --disable-analytics```" 进行启用
+
+    -EnableShortcut
+        创建 SD-Trainer 启动快捷方式
 
     -DisableCUDAMalloc
-        禁用 SD-Trainer-Script Installer通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        禁用 SD-Trainer Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
+        禁用 SD-Trainer Installer 检查 SD-Trainer 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer-Script Installer 自动应用新版本更新
+        禁用 SD-Trainer Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -1659,7 +1600,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -1683,13 +1624,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1741,22 +1682,22 @@ except Exception as _:
 }
 
 
-# SD-Trainer-Script Installer 更新检测
-function Check-SD-Trainer-Script-Installer-Update {
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
         return
     }
 
@@ -1780,12 +1721,12 @@ function Check-SD-Trainer-Script-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -1793,35 +1734,35 @@ function Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            Print-Msg `"跳过 SD-Trainer Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -1958,6 +1899,11 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
+    }
+
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
         Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
@@ -1967,6 +1913,87 @@ function Set-uv {
         `$Global:USE_UV = `$true
         Check-uv-Version
     }
+}
+
+
+# SD-Trainer 启动参数
+function Get-SD-Trainer-Launch-Args {
+    `$arguments = New-Object System.Collections.ArrayList
+    if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
+        if (`$LaunchArg) {
+            `$launch_args = `$LaunchArg
+        } else {
+            `$launch_args = Get-Content `"`$PSScriptRoot/launch_args.txt`"
+        }
+        if (`$launch_args.Trim().Split().Length -le 1) {
+            `$arguments = `$launch_args.Trim().Split()
+        } else {
+            `$arguments = [regex]::Matches(`$launch_args, '(`"[^`"]*`"|''[^'']*''|\S+)') | ForEach-Object {
+                `$_.Value -replace '^[`"'']|[`"'']`$', ''
+            }
+        }
+        Print-Msg `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
+        Print-Msg `"使用的启动参数: `$arguments`"
+    }
+    return `$arguments
+}
+
+
+# 设置 SD-Trainer 的快捷启动方式
+function Create-SD-Trainer-Shortcut {
+    # 设置快捷方式名称
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
+            `$filename = `"SD-Trainer`"
+        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
+            `$filename = `"Kohya-GUI`"
+        } else {
+            `$filename = `"SD-Trainer`"
+        }
+    } else {
+        `$filename = `"SD-Trainer`"
+    }
+
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/sd_trainer_icon.ico`"
+    `$shortcut_icon = `"`$PSScriptRoot/sd_trainer_icon.ico`"
+
+    if ((!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) -and (!(`$EnableShortcut))) {
+        return
+    }
+
+    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 SD-Trainer 快捷启动方式中`"
+    if (!(Test-Path `"`$shortcut_icon`")) {
+        Print-Msg `"获取 SD-Trainer 图标中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/sd_trainer_icon.ico`"
+        if (!(`$?)) {
+            Print-Msg `"获取 SD-Trainer 图标失败, 无法创建 SD-Trainer 快捷启动方式`"
+            return
+        }
+    }
+
+    Print-Msg `"更新 SD-Trainer 快捷启动方式`"
+    `$shell = New-Object -ComObject WScript.Shell
+    `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
+    `$shortcut_path = `"`$desktop\`$filename.lnk`"
+    `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
+    `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
+    `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
+    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
+    `$shortcut.IconLocation = `$shortcut_icon
+
+    # 保存到桌面
+    `$shortcut.Save()
+    `$start_menu_path = `"`$Env:APPDATA/Microsoft/Windows/Start Menu/Programs`"
+    `$taskbar_path = `"`$Env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`"
+    # 保存到开始菜单
+    Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
+    # 固定到任务栏
+    # Copy-Item -Path `"`$shortcut_path`" -Destination `"`$taskbar_path`" -Force
+    # `$shell = New-Object -ComObject Shell.Application
+    # `$shell.Namespace([System.IO.Path]::GetFullPath(`$taskbar_path)).ParseName((Get-Item `$shortcut_path).Name).InvokeVerb('taskbarpin')
 }
 
 
@@ -2114,96 +2141,8 @@ if __name__ == '__main__':
 }
 
 
-# 从 pyproject.toml 中解析出依赖列表
-function Get-Requirement-From-PyProject-File (`$pyproj_toml_path, `$save_path, `$deps_type = `"pip`") {
-    `$content = Get-Content -Path `$pyproj_toml_path -Raw
-    if (`$deps_type -eq `"pip`") {
-        `$dependencies = `$content | Select-String -Pattern '(?ms)\bdependencies\s*=\s*\[(.*?)\]' |
-            ForEach-Object { `$_.Matches.Groups[1].Value }
-
-        `$clean_deps = `$dependencies -split '\r?\n' |
-            Where-Object {
-                `$_.Trim() -ne '' -and
-                -not `$_.Trim().StartsWith('#') -and
-                `$_.Contains('`"')
-            } |
-            ForEach-Object {
-                (`$_.Split('#')[0].Trim() -replace '`"|,', '').Trim()
-            }
-    } elseif (`$deps_type -eq `"poetry`") {
-        `$exclude_packages = @('python')
-
-        `$deps_content = [regex]::Match(
-            `$content,
-            '(?ms)\[tool\.poetry\.dependencies\](.*?)(?=\n\[|\Z)'
-        ).Groups[1].Value
-
-        `$clean_deps = `$deps_content -split '\r?\n' | ForEach-Object {
-            `$line = `$_.Trim()
-            if (-not `$line) { return }
-
-            if (`$line -match '^([\w-]+)\s*=\s*`"([^`"]+)`"') {
-                `$package = `$matches[1]
-                if (`$exclude_packages -contains `$package) { return }
-
-                `$version = `$matches[2] -replace '^\^'
-                if (`$version -eq '*') {
-                    `$package
-                } else {
-                    if (`$version -match '^[<>=!]') {
-                        `"`$package`$version`"
-                    } else {
-                        `"`$package==`$version`"
-                    }
-                }
-            } elseif (`$line -match '^([\w-]+)\s*=\s*{\s*.*version\s*=\s*`"([^`"]+)`".*?}') {
-                `$package = `$matches[1]
-                if (`$exclude_packages -contains `$package) { return }
-
-                `$version = `$matches[2] -replace '^\^'
-                if (`$version -eq '*') {
-                    `$package
-                } else {
-                    if (`$version -match '^[<>=!]') {
-                        `"`$package`$version`"
-                    } else {
-                        `"`$package==`$version`"
-                    }
-                }
-            } elseif (`$line -match '^([\w-]+)\s*=\s*{') {
-                `$package = `$matches[1]
-                if (`$exclude_packages -contains `$package) { return }
-
-                `$package
-            }
-        } | Where-Object { `$_ }
-    }
-
-    `$utf8_encoding = New-Object System.Text.UTF8Encoding(`$false)
-    `$stream_writer = [System.IO.StreamWriter]::new(`"`$save_path`", `$false, `$utf8_encoding)
-    foreach (`$dependency in `$clean_deps) {
-        `$stream_writer.WriteLine(`$dependency)
-    }
-    `$stream_writer.Close()
-}
-
-
-# 解析 kohya-ss/musubi-tuner 分支的依赖列表
-function Get-PyProject-Requirement {
-    `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
-    `$array = `$git_remote -split `"/`"
-    `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-    if ((`$branch -eq `"kohya-ss/musubi-tuner`") -or (`$branch -eq `"kohya-ss/musubi-tuner.git`")) {
-        `$pyproj_toml_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/pyproject.toml`"
-        `$req_path = `"`$Env:CACHE_HOME/requirements.txt`"
-        Get-Requirement-From-PyProject-File `"`$pyproj_toml_path`" `"`$req_path`"
-    }
-    return `$req_path
-}
-
-
-# 检查 SD-Trainer-Scripts 依赖完整性
-function Check-SD-Trainer-Scripts-Requirements {
+# 检查 SD-Trainer 依赖完整性
+function Check-SD-Trainer-Requirements {
     `$content = `"
 '''运行环境检查'''
 import re
@@ -3210,7 +3149,7 @@ if __name__ == '__main__':
     main()
 `".Trim()
 
-    Print-Msg `"检查 SD-Trainer-Scripts 内核依赖完整性中`"
+    Print-Msg `"检查 SD-Trainer 内核依赖完整性中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
@@ -3220,20 +3159,15 @@ if __name__ == '__main__':
     if (!(Test-Path `"`$dep_path`")) {
         `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
-
     if (!(Test-Path `"`$dep_path`")) {
-        `$dep_path = Get-PyProject-Requirement
-    }
-
-    if (!(Test-Path `"`$dep_path`")) {
-        Print-Msg `"未检测到 SD-Trainer-Scripts 依赖文件, 跳过依赖完整性检查`"
+        Print-Msg `"未检测到 SD-Trainer 依赖文件, 跳过依赖完整性检查`"
         return
     }
 
     `$status = `$(python `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
-        Print-Msg `"检测到 SD-Trainer-Scripts 内核有依赖缺失, 安装 SD-Trainer-Scripts 依赖中`"
+        Print-Msg `"检测到 SD-Trainer 内核有依赖缺失, 安装 SD-Trainer 依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
@@ -3244,12 +3178,12 @@ if __name__ == '__main__':
             python -m pip install -r `"`$dep_path`"
         }
         if (`$?) {
-            Print-Msg `"SD-Trainer-Scripts 依赖安装成功`"
+            Print-Msg `"SD-Trainer 依赖安装成功`"
         } else {
-            Print-Msg `"SD-Trainer-Scripts 依赖安装失败, 这将会导致 SD-Trainer-Scripts 缺失依赖无法正常运行`"
+            Print-Msg `"SD-Trainer 依赖安装失败, 这将会导致 SD-Trainer 缺失依赖无法正常运行`"
         }
     } else {
-        Print-Msg `"SD-Trainer-Scripts 无缺失依赖`"
+        Print-Msg `"SD-Trainer 无缺失依赖`"
     }
 }
 
@@ -3512,6 +3446,17 @@ if __name__ == '__main__':
     print(need_install_ort_ver(False))
 `".Trim()
 
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) -and (((!(Test-Path `"`$PSScriptRoot/launch_args.txt`")) -and (!(`$LaunchArg))) -or (((Test-Path `"`$PSScriptRoot/launch_args.txt`") -and (!(Select-String -Path `"`$PSScriptRoot/launch_args.txt`" -Pattern `"--skip-prepare-onnxruntime`"))) -and ((`$LaunchArg) -and (!(`$LaunchArg -match `"--skip-prepare-onnxruntime`")))))) {
+            Print-Msg `"检测到使用的是 Akegarasu/lora-scripts 分支, 并且未添加 --skip-prepare-onnxruntime 启动参数, SD-Trainer Installer 内置的 onnxruntime-gpu 检查将不再运行`"
+            Print-Msg `"如果需要使用 SD-Trainer Installer 提供的 onnxruntime-gpu 检查, 需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查功能, 可运行 settings.ps1 后进行启动参数设置进行添加`"
+            return
+        }
+    }
+
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
     `$status = `$(python -c `"`$content`")
 
@@ -3647,61 +3592,128 @@ function Check-MS-VCPP-Redistributable {
 }
 
 
-# 检查 SD-Trainer-Script 运行环境
-function Check-SD-Trainer-Script-Env {
-    if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD-Trainer-Script 运行环境检测, 这可能会导致 SD-Trainer-Script 运行环境中存在的问题无法被发现并解决`"
-        return
-    } else {
-        Print-Msg `"检查 SD-Trainer-Script 运行环境中`"
+# 检查 accelerate 可执行文件可用性
+function Check-Accelerate-Executable-File {
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (((`$branch -ne `"bmaltais/kohya_ss`") -and (`$branch -ne `"bmaltais/kohya_ss.git`"))) {
+            return
+        }
     }
 
-    Check-SD-Trainer-Scripts-Requirements
+    if (!(Get-Command accelerate -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    Print-Msg `"检查 accelerate 可执行文件可用性`"
+    accelerate --help > `$null 2>&1
+    if (`$?) {
+        Print-Msg `"accelerate 可执行文件可用`"
+        return
+    }
+
+    Print-Msg `"accelerate 不可用, 尝试重新安装中`"
+    `$content = `"
+from importlib.metadata import version
+
+try:
+    print('accelerate==' + version('accelerate'))
+except Exception as _:
+    print('accelerate')
+    `".Trim()
+    `$accelerate_package = `$(python -c `"`$content`")
+    python -m pip uninstall accelerate -y
+    if (`$USE_UV) {
+        uv pip install `$accelerate_package
+        if (!(`$?)) {
+            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
+            python -m pip install `$accelerate_package
+        }
+    } else {
+        python -m pip install `$accelerate_package
+    }
+
+    if (`$?) {
+        Print-Msg `"accelerate 重新安装成功`"
+    } else {
+        Print-Msg `"accelerate 重新安装失败, 这可能导致部分功能异常`"
+    }
+}
+
+
+# 检查 SD-Trainer 运行环境
+function Check-SD-Trainer-Env {
+    if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
+        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD-Trainer 运行环境检测, 这可能会导致 SD-Trainer 运行环境中存在的问题无法被发现并解决`"
+        return
+    } else {
+        Print-Msg `"检查 SD-Trainer 运行环境中`"
+    }
+
+    Check-Accelerate-Executable-File
+    Check-SD-Trainer-Requirements
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
     Check-MS-VCPP-Redistributable
-    Print-Msg `"SD-Trainer-Script 运行环境检查完成`"
+    Print-Msg `"SD-Trainer 运行环境检查完成`"
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer-Script Installer 构建模式已启用, 跳过 SD-Trainer-Script Installer 更新检查`"
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Script-Installer-Update
+        Check-SD-Trainer-Installer-Update
     }
     Set-HuggingFace-Mirror
     Set-uv
     PyPI-Mirror-Status
+
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Read-Host | Out-Null
+        return
+    }
+
+    `$launch_args = Get-SD-Trainer-Launch-Args
+    # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
     Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
-    Check-SD-Trainer-Script-Env
-    Set-Location `"`$current_path`"
+
+    # 检测使用的启动脚本
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") {
+        `$launch_script = `"gui.py`"
+    } elseif (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`") {
+        `$launch_script = `"kohya_gui.py`"
+    } else {
+        `$launch_script = `"gui.py`"
+    }
+
+    Create-SD-Trainer-Shortcut
+    Check-SD-Trainer-Env
     Set-PyTorch-CUDA-Memory-Alloc
-
-    `$Global:ROOT_PATH = `$PSScriptRoot
-    `$Global:SD_SCRIPTS_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/`$Env:CORE_PREFIX`")
-    `$Global:DATASET_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/datasets`")
-    `$Global:MODEL_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/models`")
-    `$Global:OUTPUT_PATH = [System.IO.Path]::GetFullPath(`"`$ROOT_PATH/outputs`")
-    `$Global:GIT_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command git -ErrorAction SilentlyContinue).Source)
-    `$Global:PYTHON_EXEC = [System.IO.Path]::GetFullPath(`$(Get-Command python -ErrorAction SilentlyContinue).Source)
-
-    Print-Msg `"可用的预设变量`"
-    Print-Msg `"ROOT_PATH: `$ROOT_PATH`"
-    Print-Msg `"SD_SCRIPTS_PATH: `$SD_SCRIPTS_PATH`"
-    Print-Msg `"DATASET_PATH: `$DATASET_PATH`"
-    Print-Msg `"MODEL_PATH: `$MODEL_PATH`"
-    Print-Msg `"OUTPUT_PATH: `$OUTPUT_PATH`"
-    Print-Msg `"GIT_EXEC: `$GIT_EXEC`"
-    Print-Msg `"PYTHON_EXEC: `$PYTHON_EXEC`"
-    Print-Msg `"初始化环境完成`"
+    if (`$BuildMode) {
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过启动 SD-Trainer`"
+    } else {
+        Print-Msg `"启动 SD-Trainer 中`"
+        python `$launch_script.ToString() `$launch_args
+        `$req = `$?
+        if (`$req) {
+            Print-Msg `"SD-Trainer 正常退出`"
+        } else {
+            Print-Msg `"SD-Trainer 出现异常, 已退出`"
+        }
+        Read-Host | Out-Null
+    }
+    Set-Location `"`$current_path`"
 }
 
 ###################
@@ -3709,12 +3721,12 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/init.ps1") {
-        Print-Msg "更新 init.ps1 中"
+    if (Test-Path "$InstallPath/launch.ps1") {
+        Print-Msg "更新 launch.ps1 中"
     } else {
-        Print-Msg "生成 init.ps1 中"
+        Print-Msg "生成 launch.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/init.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch.ps1" -Value $content
 }
 
 
@@ -3734,7 +3746,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -3759,551 +3771,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
-`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
-# PyPI 镜像源
-`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
-`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
-`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
-`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
-`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
-`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
-`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
-`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `"`$PIP_EXTRA_INDEX_ADDR_ORI `$PIP_EXTRA_INDEX_ADDR`" } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
-`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
-`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
-`$PIP_EXTRA_INDEX_MIRROR_CPU = `"$PIP_EXTRA_INDEX_MIRROR_CPU`"
-`$PIP_EXTRA_INDEX_MIRROR_XPU = `"$PIP_EXTRA_INDEX_MIRROR_XPU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
-`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
-`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
-`$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
-`$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
-`$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
-`$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
-`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
-# Github 镜像源
-`$GITHUB_MIRROR_LIST = @(
-    `"https://ghfast.top/https://github.com`",
-    `"https://mirror.ghproxy.com/https://github.com`",
-    `"https://ghproxy.net/https://github.com`",
-    `"https://gh.api.99988866.xyz/https://github.com`",
-    `"https://gh-proxy.com/https://github.com`",
-    `"https://ghps.cc/https://github.com`",
-    `"https://gh.idayer.com/https://github.com`",
-    `"https://ghproxy.1888866.xyz/github.com`",
-    `"https://slink.ltd/https://github.com`",
-    `"https://github.boki.moe/github.com`",
-    `"https://github.moeyy.xyz/https://github.com`",
-    `"https://gh-proxy.net/https://github.com`",
-    `"https://gh-proxy.ygxz.in/https://github.com`",
-    `"https://wget.la/https://github.com`",
-    `"https://kkgithub.com`",
-    `"https://gitclone.com/github.com`"
-)
-# uv 最低版本
-`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
-# Aria2 最低版本
-`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
-# PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
-`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
-`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
-# 环境变量
-`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
-`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
-`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
-`$Env:UV_INDEX = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
-`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
-`$Env:UV_LINK_MODE = `"copy`"
-`$Env:UV_HTTP_TIMEOUT = 30
-`$Env:UV_CONCURRENT_DOWNLOADS = 50
-`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
-`$Env:UV_CONFIG_FILE = `"nul`"
-`$Env:PIP_CONFIG_FILE = `"nul`"
-`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
-`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
-`$Env:PIP_TIMEOUT = 30
-`$Env:PIP_RETRIES = 5
-`$Env:PIP_PREFER_BINARY = 1
-`$Env:PIP_YES = 1
-`$Env:PYTHONUTF8 = 1
-`$Env:PYTHONIOENCODING = `"utf-8`"
-`$Env:PYTHONUNBUFFERED = 1
-`$Env:PYTHONNOUSERSITE = 1
-`$Env:PYTHONFAULTHANDLER = 1
-`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
-`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
-`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
-`$Env:BITSANDBYTES_NOWELCOME = 1
-`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
-`$Env:CUDA_MODULE_LOADING = `"LAZY`"
-`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
-`$Env:USE_LIBUV = 0
-`$Env:SYCL_CACHE_PERSISTENT = 1
-`$Env:TF_CPP_MIN_LOG_LEVEL = 3
-`$Env:SAFETENSORS_FAST_GPU = 1
-`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
-`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-
-
-
-# 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
-    `$content = `"
-使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
-
-参数:
-    -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 core
-
-    -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUpdate
-        禁用 SD-Trainer-Script Installer 更新检查
-
-    -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
-
-    -UseCustomGithubMirror <Github 镜像站地址>
-        使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
-
-    -DisableAutoApplyUpdate
-        禁用 SD-Trainer-Script Installer 自动应用新版本更新
-
-
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
-`".Trim()
-
-    if (`$Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
-
-
-# 消息输出
-function Print-Msg (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
-    Write-Host `":: `" -ForegroundColor Blue -NoNewline
-    Write-Host `"`$msg`"
-}
-
-
-# 获取内核路径前缀状态
-function Get-Core-Prefix-Status {
-    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
-        if (`$CorePrefix) {
-            `$origin_core_prefix = `$CorePrefix
-        } else {
-            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
-        }
-        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
-            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
-        }
-    }
-    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
-    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
-}
-
-
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
-    `$major = (`$ver[0..(`$ver.Length - 3)])
-    `$minor = `$ver[-2]
-    `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
-# 修复 Git 分支游离
-function Fix-Git-Point-Off-Set {
-    param(
-        `$path
-    )
-    if (Test-Path `"`$path/.git`") {
-        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
-        if (!(`$?)) {
-            Print-Msg `"检测到出现分支游离, 进行修复中`"
-            git -C `"`$path`" remote prune origin # 删除无用分支
-            git -C `"`$path`" submodule init # 初始化git子模块
-            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
-            git -C `"`$path`" checkout `$branch # 切换到主分支
-            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
-        }
-    }
-}
-
-
-# SD-Trainer-Script Installer 更新检测
-function Check-SD-Trainer-Script-Installer-Update {
-    # 可用的下载源
-    `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
-    )
-    `$i = 0
-
-    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-
-    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
-        return
-    }
-
-    # 获取更新时间间隔
-    try {
-        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
-        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    catch {
-        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
-    }
-    finally {
-        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
-        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
-    }
-
-    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
-        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
-    } else {
-        return
-    }
-
-    ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
-        try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
-            `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
-                ForEach-Object { `$_.ToString() }
-            )[0].Split(`"=`")[1].Trim()
-            break
-        }
-        catch {
-            `$i += 1
-            if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
-            } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
-                return
-            }
-        }
-    }
-
-    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
-        return
-    }
-
-    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
-        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-        `$arg = (Read-Host `"========================================>`").Trim()
-        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
-            return
-        }
-    } else {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
-    }
-
-    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
-    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
-    exit 0
-}
-
-
-# 代理配置
-function Set-Proxy {
-    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    # 检测是否禁用自动设置镜像源
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
-        return
-    }
-
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
-        if (`$UseCustomProxy) {
-            `$proxy_value = `$UseCustomProxy
-        } else {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
-        }
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$proxy_addr = `$(`$internet_setting.ProxyServer)
-        # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
-            `$proxy_value = `$matches[1]
-            # 去除 http / https 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"http://`${proxy_value}`"
-        } elseif (`$proxy_addr -match `"socks=(.*)`") {
-            `$proxy_value = `$matches[1]
-            # 去除 socks 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"socks://`${proxy_value}`"
-        } else {
-            `$proxy_value = `"http://`${proxy_addr}`"
-        }
-        `$Env:HTTP_PROXY = `$proxy_value
-        `$Env:HTTPS_PROXY = `$proxy_value
-        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-}
-
-
-# Github 镜像源
-function Set-Github-Mirror {
-    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
-    }
-
-    # 默认 Git 配置
-    git config --global --add safe.directory `"*`"
-    git config --global core.longpaths true
-
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
-        return
-    }
-
-    # 使用自定义 Github 镜像源
-    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
-        if (`$UseCustomGithubMirror) {
-            `$github_mirror = `$UseCustomGithubMirror
-        } else {
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
-        }
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        return
-    }
-
-    # 自动检测可用镜像源并使用
-    `$status = 0
-    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
-        Print-Msg `"测试 Github 镜像源: `$i`"
-        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-        }
-        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
-        if (`$?) {
-            Print-Msg `"该 Github 镜像源可用`"
-            `$github_mirror = `$i
-            `$status = 1
-            break
-        } else {
-            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
-        }
-    }
-
-    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
-        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
-    }
-
-    if (`$status -eq 0) {
-        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
-    } else {
-        Print-Msg `"设置 Github 镜像源`"
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-    }
-}
-
-
-function Main {
-    Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
-    Get-Core-Prefix-Status
-    Set-Proxy
-    if (`$BuildMode) {
-        Print-Msg `"SD-Trainer-Script Installer 构建模式已启用, 跳过 SD-Trainer-Script Installer 更新检查`"
-    } else {
-        Check-SD-Trainer-Script-Installer-Update
-    }
-    Set-Github-Mirror
-
-    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
-        Read-Host | Out-Null
-        return
-    }
-
-    Print-Msg `"拉取 SD-Trainer-Script 更新内容中`"
-    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
-    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
-
-    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
-    if (`$?) {
-        `$remote_branch = `"origin/`$branch`"
-    } else {
-        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
-        if (`$author) {
-            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
-        } else {
-            `$remote_branch = `$branch
-        }
-    }
-
-    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
-    if (`$?) {
-        Print-Msg `"应用 SD-Trainer-Script 更新中`"
-        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
-        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
-        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
-
-        if (`$core_origin_ver -eq `$core_latest_ver) {
-            Print-Msg `"SD-Trainer-Script 已为最新版`"
-            `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
-        } else {
-            Print-Msg `"SD-Trainer-Script 更新成功`"
-            `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
-        }
-    } else {
-        Print-Msg `"拉取 SD-Trainer-Script 更新内容失败`"
-        Print-Msg `"更新 SD-Trainer-Script 失败, 请检查控制台日志。可尝试重新运行 SD-Trainer-Script Installer 更新脚本进行重试`"
-    }
-
-    Print-Msg `"退出 SD-Trainer-Script 更新脚本`"
-
-    if (!(`$BuildMode)) {
-        Read-Host | Out-Null
-    }
-}
-
-###################
-
-Main
-".Trim()
-
-    if (Test-Path "$InstallPath/update.ps1") {
-        Print-Msg "更新 update.ps1 中"
-    } else {
-        Print-Msg "生成 update.ps1 中"
-    }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/update.ps1" -Value $content
-}
-
-
-# 分支切换脚本
-function Write-Switch-Branch-Script {
-    $content = "
-param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [int]`$BuildWitchBranch,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUpdate,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$DisableAutoApplyUpdate
-)
-& {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
-    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        if (`$CorePrefix) {
-            `$origin_core_prefix = `$CorePrefix
-        } else {
-            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
-        }
-        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
-        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
-            `$to_path = `$origin_core_prefix
-            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
-            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
-            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-        }
-        `$Env:CORE_PREFIX = `$origin_core_prefix
-        return
-    }
-    ForEach (`$i in `$prefix_list) {
-        if (Test-Path `"`$PSScriptRoot/`$i`") {
-            `$Env:CORE_PREFIX = `$i
-            return
-        }
-    }
-    `$Env:CORE_PREFIX = `"core`"
-}
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -4420,39 +3889,35 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式
-
-    -BuildWitchBranch <SD-Trainer-Script 分支编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer-Script 分支编号切换到对应的 SD-Trainer-Script 分支
-        SD-Trainer-Script 分支编号可运行 switch_branch.ps1 脚本进行查看
+        启用 SD-Trainer Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer 更新检查
+        禁用 SD-Trainer Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
+        禁用 SD-Trainer Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -4475,10 +3940,10 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer-Script Installer 自动应用新版本更新
+        禁用 SD-Trainer Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -4491,7 +3956,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -4515,32 +3980,51 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
-# SD-Trainer-Script Installer 更新检测
-function Check-SD-Trainer-Script-Installer-Update {
+# 修复 Git 分支游离
+function Fix-Git-Point-Off-Set {
+    param(
+        `$path
+    )
+    if (Test-Path `"`$path/.git`") {
+        git -C `"`$path`" symbolic-ref HEAD > `$null 2> `$null
+        if (!(`$?)) {
+            Print-Msg `"检测到出现分支游离, 进行修复中`"
+            git -C `"`$path`" remote prune origin # 删除无用分支
+            git -C `"`$path`" submodule init # 初始化git子模块
+            `$branch = `$(git -C `"`$path`" branch -a | Select-String -Pattern `"/HEAD`").ToString().Split(`"/`")[3] # 查询远程HEAD所指分支
+            git -C `"`$path`" checkout `$branch # 切换到主分支
+            git -C `"`$path`" reset --recurse-submodules --hard origin/`$branch # 回退到远程分支的版本
+        }
+    }
+}
+
+
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
         return
     }
 
@@ -4564,12 +4048,12 @@ function Check-SD-Trainer-Script-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -4577,35 +4061,35 @@ function Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            Print-Msg `"跳过 SD-Trainer Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -4712,212 +4196,62 @@ function Set-Github-Mirror {
 }
 
 
-# 获取 SD-Trainer-Script 分支
-function Get-SD-Trainer-Script-Branch {
-    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
-    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
-    if (`$ref -eq `$null) {
-        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
-    }
-
-    return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
-}
-
-
-# 切换 SD-Trainer-Script 分支
-function Switch-SD-Trainer-Script-Branch (`$remote, `$branch, `$use_submod) {
-    `$sd_trainer_script_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
-    `$preview_url = `$(git -C `"`$sd_trainer_script_path`" remote get-url origin)
-
-    Set-Github-Mirror # 设置 Github 镜像源
-
-    Print-Msg `"SD-Trainer-Script 远程源替换: `$preview_url -> `$remote`"
-    git -C `"`$sd_trainer_script_path`" remote set-url origin `"`$remote`" # 替换远程源
-
-    # 处理 Git 子模块
-    if (`$use_submod) {
-        Print-Msg `"更新 SD-Trainer-Script 的 Git 子模块信息`"
-        git -C `"`$sd_trainer_script_path`" submodule update --init --recursive
-    } else {
-        Print-Msg `"禁用 SD-Trainer-Script 的 Git 子模块`"
-        git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
-    }
-
-    Print-Msg `"拉取 SD-Trainer-Script 远程源更新`"
-    git -C `"`$sd_trainer_script_path`" fetch # 拉取远程源内容
-    if (`$?) {
-        if (`$use_submod) {
-            Print-Msg `"清理原有的 Git 子模块`"
-            git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
-        }
-        Print-Msg `"切换 SD-Trainer-Script 分支至 `$branch`"
-
-        # 本地分支不存在时创建一个分支
-        git -C `"`$sd_trainer_script_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
-        if (!(`$?)) {
-            git -C `"`$sd_trainer_script_path`" branch `"`${branch}`"
-        }
-
-        git -C `"`$sd_trainer_script_path`" checkout `"`${branch}`" --force # 切换分支
-        Print-Msg `"应用 SD-Trainer-Script 远程源的更新`"
-        if (`$use_submod) {
-            Print-Msg `"更新 SD-Trainer-Script 的 Git 子模块信息`"
-            git -C `"`$sd_trainer_script_path`" reset --hard `"origin/`$branch`"
-            git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
-            git -C `"`$sd_trainer_script_path`" submodule update --init --recursive
-        }
-        if (`$use_submod) {
-            git -C `"`$sd_trainer_script_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
-        } else {
-            git -C `"`$sd_trainer_script_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
-        }
-        Print-Msg `"切换 SD-Trainer-Script 分支成功`"
-    } else {
-        Print-Msg `"拉取 SD-Trainer-Script 远程源更新失败, 取消分支切换`"
-        Print-Msg `"尝试回退 SD-Trainer-Script 的更改`"
-        git -C `"`$sd_trainer_script_path`" remote set-url origin `"`$preview_url`"
-        if (`$use_submod) {
-            git -C `"`$sd_trainer_script_path`" submodule deinit --all -f
-        } else {
-            git -C `"`$sd_trainer_script_path`" submodule update --init --recursive
-        }
-        Print-Msg `"回退 SD-Trainer-Script 分支更改完成`"
-        Print-Msg `"切换 SD-Trainer-Script 分支更改失败, 可尝试重新运行 SD-Trainer-Script 分支切换脚本`"
-    }
-}
-
-
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer-Script Installer 构建模式已启用, 跳过 SD-Trainer-Script Installer 更新检查`"
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Script-Installer-Update
+        Check-SD-Trainer-Installer-Update
     }
+    Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer-Script 是否已正确安装, 或者尝试运行 SD-Trainer-Script Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$content = `"
------------------------------------------------------
-- 1、kohya-ss - sd-scripts 主分支
-- 2、kohya-ss - sd-scripts 测试分支
-- 3、bghira - SimpleTuner 分支
-- 4、ostris - ai-toolkit 分支
-- 5、a-r-r-o-w - finetrainers 分支
-- 6、tdrussell - diffusion-pipe 分支
-- 7、kohya-ss - musubi-tuner 分支
------------------------------------------------------
-`".Trim()
+    Print-Msg `"拉取 SD-Trainer 更新内容中`"
+    Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
+    `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
 
-    `$to_exit = 0
-
-    while (`$True) {
-        Print-Msg `"SD-Trainer-Script 分支列表`"
-        `$go_to = 0
-        Write-Host `$content
-        Print-Msg `"当前 SD-Trainer-Script 分支: `$(Get-SD-Trainer-Script-Branch)`"
-        Print-Msg `"请选择 SD-Trainer-Script 分支`"
-        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 SD-Trainer-Script 分支切换脚本`"
-        if (`$BuildMode) {
-            `$arg = `$BuildWitchBranch
-            `$go_to = 1
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show-ref --verify --quiet `"refs/remotes/origin/`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" branch --show-current)`"
+    if (`$?) {
+        `$remote_branch = `"origin/`$branch`"
+    } else {
+        `$author=`$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" config --get `"branch.`${branch}.remote`")
+        if (`$author) {
+            `$remote_branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" rev-parse --abbrev-ref `"`${branch}@{upstream}`")
         } else {
-            `$arg = (Read-Host `"==================================================>`").Trim()
-        }
-
-        switch (`$arg) {
-            1 {
-                `$remote = `"https://github.com/kohya-ss/sd-scripts`"
-                `$branch = `"main`"
-                `$branch_name = `"kohya-ss - sd-scripts 主分支`"
-                `$use_submod = `$false
-                `$go_to = 1
-            }
-            2 {
-                `$remote = `"https://github.com/kohya-ss/sd-scripts`"
-                `$branch = `"dev`"
-                `$branch_name = `"kohya-ss - sd-scripts 测试分支`"
-                `$use_submod = `$false
-                `$go_to = 1
-            }
-            3 {
-                `$remote = `"https://github.com/bghira/SimpleTuner`"
-                `$branch = `"main`"
-                `$branch_name = `"bghira - SimpleTuner 分支`"
-                `$use_submod = `$false
-                `$go_to = 1
-            }
-            4 {
-                `$remote = `"https://github.com/ostris/ai-toolkit`"
-                `$branch = `"main`"
-                `$branch_name = `"ostris - ai-toolkit 分支`"
-                `$use_submod = `$true
-                `$go_to = 1
-            }
-            5 {
-                `$remote = `"https://github.com/a-r-r-o-w/finetrainers`"
-                `$branch = `"main`"
-                `$branch_name = `"a-r-r-o-w - finetrainers 分支`"
-                `$use_submod = `$false
-                `$go_to = 1
-            }
-            6 {
-                `$remote = `"https://github.com/tdrussell/diffusion-pipe`"
-                `$branch = `"main`"
-                `$branch_name = `"tdrussell - diffusion-pipe 分支`"
-                `$use_submod = `$true
-                `$go_to = 1
-            }
-            7 {
-                `$remote = `"https://github.com/kohya-ss/musubi-tuner`"
-                `$branch = `"main`"
-                `$branch_name = `"kohya-ss - musubi-tuner 分支`"
-                `$use_submod = `$false
-                `$go_to = 1
-            }
-            exit {
-                Print-Msg `"退出 SD-Trainer-Script 分支切换脚本`"
-                `$to_exit = 1
-                `$go_to = 1
-            }
-            Default {
-                Print-Msg `"输入有误, 请重试`"
-            }
-        }
-
-        if (`$go_to -eq 1) {
-            break
+            `$remote_branch = `$branch
         }
     }
 
-    if (`$to_exit -eq 1) {
-        Read-Host | Out-Null
-        exit 0
-    }
+    git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
+    if (`$?) {
+        Print-Msg `"应用 SD-Trainer 更新中`"
+        `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
+        git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
+        `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
-    Print-Msg `"是否切换 SD-Trainer-Script 分支到 `$branch_name ?`"
-    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
-    if (`$BuildMode) {
-        `$operate = `"yes`"
+        if (`$core_origin_ver -eq `$core_latest_ver) {
+            Print-Msg `"SD-Trainer 已为最新版`"
+            `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
+        } else {
+            Print-Msg `"SD-Trainer 更新成功`"
+            `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+        }
     } else {
-        `$operate = (Read-Host `"==================================================>`").Trim()
+        Print-Msg `"拉取 SD-Trainer 更新内容失败`"
+        Print-Msg `"更新 SD-Trainer 失败, 请检查控制台日志。可尝试重新运行 SD-Traine Installer 更新脚本进行重试`"
     }
 
-    if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
-        Print-Msg `"开始切换 SD-Trainer-Script 分支`"
-        Switch-SD-Trainer-Script-Branch `$remote `$branch `$use_submod
-    } else {
-        Print-Msg `"取消切换 SD-Trainer-Script 分支`"
-    }
-    Print-Msg `"退出 SD-Trainer-Script 分支切换脚本`"
+    Print-Msg `"退出 SD-Trainer 更新脚本`"
 
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
@@ -4929,52 +4263,363 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/switch_branch.ps1") {
-        Print-Msg "更新 switch_branch.ps1 中"
+    if (Test-Path "$InstallPath/update.ps1") {
+        Print-Msg "更新 update.ps1 中"
     } else {
-        Print-Msg "生成 switch_branch.ps1 中"
+        Print-Msg "生成 update.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/switch_branch.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/update.ps1" -Value $content
 }
 
 
-# 获取安装脚本
-function Write-Launch-SD-Trainer-Script-Install-Script {
+# 分支切换脚本
+function Write-Switch-Branch-Script {
     $content = "
 param (
-    [string]`$InstallPath,
+    [switch]`$Help,
+    [string]`$CorePrefix,
+    [switch]`$BuildMode,
+    [int]`$BuildWitchBranch,
+    [switch]`$DisablePyPIMirror,
+    [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
-    [string]`$InstallBranch,
-    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
+    [switch]`$DisableAutoApplyUpdate
 )
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
-if (-not `$InstallPath) {
-    `$InstallPath = `$PSScriptRoot
+& {
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$PSScriptRoot/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
 }
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
+# PyPI 镜像源
+`$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
+`$PIP_INDEX_ADDR_ORI = `"$PIP_INDEX_ADDR_ORI`"
+`$PIP_EXTRA_INDEX_ADDR = `"$PIP_EXTRA_INDEX_ADDR`"
+`$PIP_EXTRA_INDEX_ADDR_ORI = `"$PIP_EXTRA_INDEX_ADDR_ORI`"
+`$PIP_FIND_ADDR = `"$PIP_FIND_ADDR`"
+`$PIP_FIND_ADDR_ORI = `"$PIP_FIND_ADDR_ORI`"
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
+`$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
+`$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
+`$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
+`$PIP_FIND_MIRROR_CU121 = `"$PIP_FIND_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_PYTORCH = `"$PIP_EXTRA_INDEX_MIRROR_PYTORCH`"
+`$PIP_EXTRA_INDEX_MIRROR_CPU = `"$PIP_EXTRA_INDEX_MIRROR_CPU`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU = `"$PIP_EXTRA_INDEX_MIRROR_XPU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118 = `"$PIP_EXTRA_INDEX_MIRROR_CU118`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121 = `"$PIP_EXTRA_INDEX_MIRROR_CU121`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124 = `"$PIP_EXTRA_INDEX_MIRROR_CU124`"
+`$PIP_EXTRA_INDEX_MIRROR_CU126 = `"$PIP_EXTRA_INDEX_MIRROR_CU126`"
+`$PIP_EXTRA_INDEX_MIRROR_CU128 = `"$PIP_EXTRA_INDEX_MIRROR_CU128`"
+`$PIP_EXTRA_INDEX_MIRROR_CU129 = `"$PIP_EXTRA_INDEX_MIRROR_CU129`"
+`$PIP_EXTRA_INDEX_MIRROR_CPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CPU_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_XPU_NJU = `"$PIP_EXTRA_INDEX_MIRROR_XPU_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU118_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU118_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU121_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU121_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU124_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU124_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU126_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU126_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
+`$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghfast.top/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gh.api.99988866.xyz/https://github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
+)
+# uv 最低版本
+`$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
+# Aria2 最低版本
+`$ARIA2_MINIMUM_VER = `"$ARIA2_MINIMUM_VER`"
+# PATH
+`$PYTHON_PATH = `"`$PSScriptRoot/python`"
+`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python`"
+`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/Scripts`"
+`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
+`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin`"
+`$Env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$Env:PATH`"
+# 环境变量
+`$Env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
+`$Env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
+`$Env:PIP_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_DEFAULT_INDEX = `"`$PIP_INDEX_MIRROR`"
+`$Env:UV_INDEX = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
+`$Env:UV_FIND_LINKS = `"`$PIP_FIND_MIRROR`"
+`$Env:UV_LINK_MODE = `"copy`"
+`$Env:UV_HTTP_TIMEOUT = 30
+`$Env:UV_CONCURRENT_DOWNLOADS = 50
+`$Env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
+`$Env:UV_CONFIG_FILE = `"nul`"
+`$Env:PIP_CONFIG_FILE = `"nul`"
+`$Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+`$Env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+`$Env:PIP_TIMEOUT = 30
+`$Env:PIP_RETRIES = 5
+`$Env:PIP_PREFER_BINARY = 1
+`$Env:PIP_YES = 1
+`$Env:PYTHONUTF8 = 1
+`$Env:PYTHONIOENCODING = `"utf-8`"
+`$Env:PYTHONUNBUFFERED = 1
+`$Env:PYTHONNOUSERSITE = 1
+`$Env:PYTHONFAULTHANDLER = 1
+`$Env:PYTHONWARNINGS = `"$Env:PYTHONWARNINGS`"
+`$Env:GRADIO_ANALYTICS_ENABLED = `"False`"
+`$Env:HF_HUB_DISABLE_SYMLINKS_WARNING = 1
+`$Env:BITSANDBYTES_NOWELCOME = 1
+`$Env:ClDeviceGlobalMemSizeAvailablePercent = 100
+`$Env:CUDA_MODULE_LOADING = `"LAZY`"
+`$Env:TORCH_CUDNN_V8_API_ENABLED = 1
+`$Env:USE_LIBUV = 0
+`$Env:SYCL_CACHE_PERSISTENT = 1
+`$Env:TF_CPP_MIN_LOG_LEVEL = 3
+`$Env:SAFETENSORS_FAST_GPU = 1
+`$Env:CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
+`$Env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
+`$Env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
+`$Env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
+`$Env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
+`$Env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
+`$Env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
+`$Env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
+`$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
+`$Env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
+`$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
+`$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
+`$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
 
+
+
+# 帮助信息
+function Get-SD-Trainer-Installer-Cmdlet-Help {
+    `$content = `"
+使用:
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <SD-Trainer 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+
+参数:
+    -Help
+        获取 SD-Trainer Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
+
+    -BuildMode
+        启用 SD-Trainer Installer 构建模式
+
+    -BuildWitchBranch <SD-Trainer 分支编号>
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer 分支编号切换到对应的 SD-Trainer 分支
+        SD-Trainer 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -DisablePyPIMirror
+        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+
+    -DisableUpdate
+        禁用 SD-Trainer Installer 更新检查
+
+    -DisableProxy
+        禁用 SD-Trainer Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+        可用的 Github 镜像站地址:
+            https://ghfast.top/https://github.com
+            https://mirror.ghproxy.com/https://github.com
+            https://ghproxy.net/https://github.com
+            https://gh.api.99988866.xyz/https://github.com
+            https://gh-proxy.com/https://github.com
+            https://ghps.cc/https://github.com
+            https://gh.idayer.com/https://github.com
+            https://ghproxy.1888866.xyz/github.com
+            https://slink.ltd/https://github.com
+            https://github.boki.moe/github.com
+            https://github.moeyy.xyz/https://github.com
+            https://gh-proxy.net/https://github.com
+            https://gh-proxy.ygxz.in/https://github.com
+            https://wget.la/https://github.com
+            https://kkgithub.com
+            https://gitclone.com/github.com
+
+    -DisableAutoApplyUpdate
+        禁用 SD-Trainer Installer 自动应用新版本更新
+
+
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+`".Trim()
+
+    if (`$Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
 
 
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 获取内核路径前缀状态
+function Get-Core-Prefix-Status {
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        Print-Msg `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix.Trim('/').Trim('\'))) {
+            Print-Msg `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$Env:CORE_PREFIX`"
+        }
+    }
+    Print-Msg `"当前内核路径前缀: `$Env:CORE_PREFIX`"
+    Print-Msg `"完整内核路径: `$PSScriptRoot\`$Env:CORE_PREFIX`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
+    # 可用的下载源
+    `$urls = @(
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
+    )
+    `$i = 0
+
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+
+    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        return
+    }
+
+    # 获取更新时间间隔
+    try {
+        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    catch {
+        `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
+    }
+    finally {
+        `$update_time = Get-Date -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$time_span = New-TimeSpan -Start `$last_update_time -End `$update_time
+    }
+
+    if (`$time_span.TotalSeconds -gt `$UPDATE_TIME_SPAN) {
+        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    } else {
+        return
+    }
+
+    ForEach (`$url in `$urls) {
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        try {
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            `$latest_version = [int]`$(
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                ForEach-Object { `$_.ToString() }
+            )[0].Split(`"=`")[1].Trim()
+            break
+        }
+        catch {
+            `$i += 1
+            if (`$i -lt `$urls.Length) {
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+            } else {
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                return
+            }
+        }
+    }
+
+    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+        return
+    }
+
+    if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+        `$arg = (Read-Host `"========================================>`").Trim()
+        if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
+            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            return
+        }
+    } else {
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+    }
+
+    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    exit 0
 }
 
 
@@ -5020,33 +4665,361 @@ function Set-Proxy {
 }
 
 
-# 下载 SD-Trainer-Script Installer
-function Download-SD-Trainer-Script-Installer {
+# Github 镜像源
+function Set-Github-Mirror {
+    `$Env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
+    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
+        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    }
+
+    # 默认 Git 配置
+    git config --global --add safe.directory `"*`"
+    git config --global core.longpaths true
+
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
+        return
+    }
+
+    # 使用自定义 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
+        if (`$UseCustomGithubMirror) {
+            `$github_mirror = `$UseCustomGithubMirror
+        } else {
+            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+        }
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        return
+    }
+
+    # 自动检测可用镜像源并使用
+    `$status = 0
+    ForEach(`$i in `$GITHUB_MIRROR_LIST) {
+        Print-Msg `"测试 Github 镜像源: `$i`"
+        if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+            Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+        }
+        git clone `"`$i/licyk/empty`" `"`$Env:CACHE_HOME/github-mirror-test`" --quiet
+        if (`$?) {
+            Print-Msg `"该 Github 镜像源可用`"
+            `$github_mirror = `$i
+            `$status = 1
+            break
+        } else {
+            Print-Msg `"镜像源不可用, 更换镜像源进行测试`"
+        }
+    }
+
+    if (Test-Path `"`$Env:CACHE_HOME/github-mirror-test`") {
+        Remove-Item -Path `"`$Env:CACHE_HOME/github-mirror-test`" -Force -Recurse
+    }
+
+    if (`$status -eq 0) {
+        Print-Msg `"无可用 Github 镜像源, 取消使用 Github 镜像源`"
+    } else {
+        Print-Msg `"设置 Github 镜像源`"
+        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+    }
+}
+
+
+# 获取 SD-Trainer 分支
+function Get-SD-Trainer-Branch {
+    `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
+    if (`$ref -eq `$null) {
+        `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h`")
+    }
+
+    return `"`$(`$remote.Split(`"/`")[-2])/`$(`$remote.Split(`"/`")[-1]) `$([System.IO.Path]::GetFileName(`$ref))`"
+}
+
+
+# 切换 SD-Trainer 分支
+function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
+    `$sd_trainer_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$preview_url = `$(git -C `"`$sd_trainer_path`" remote get-url origin)
+
+    Set-Github-Mirror # 设置 Github 镜像源
+
+    Print-Msg `"SD-Trainer 远程源替换: `$preview_url -> `$remote`"
+    git -C `"`$sd_trainer_path`" remote set-url origin `"`$remote`" # 替换远程源
+
+    # 处理 Git 子模块
+    if (`$use_submod) {
+        Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
+        git -C `"`$sd_trainer_path`" submodule update --init --recursive
+    } else {
+        Print-Msg `"禁用 SD-Trainer 的 Git 子模块`"
+        git -C `"`$sd_trainer_path`" submodule deinit --all -f
+    }
+
+    Print-Msg `"拉取 SD-Trainer 远程源更新`"
+    git -C `"`$sd_trainer_path`" fetch # 拉取远程源内容
+    if (`$?) {
+        if (`$use_submod) {
+            Print-Msg `"清理原有的 Git 子模块`"
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+        }
+        Print-Msg `"切换 SD-Trainer 分支至 `$branch`"
+
+        # 本地分支不存在时创建一个分支
+        git -C `"`$sd_trainer_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
+        if (!(`$?)) {
+            git -C `"`$sd_trainer_path`" branch `"`${branch}`"
+        }
+
+        git -C `"`$sd_trainer_path`" checkout `"`${branch}`" --force # 切换分支
+        Print-Msg `"应用 SD-Trainer 远程源的更新`"
+        if (`$use_submod) {
+            Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
+            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`"
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+            git -C `"`$sd_trainer_path`" submodule update --init --recursive
+        }
+        if (`$use_submod) {
+            git -C `"`$sd_trainer_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        } else {
+            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+        }
+        Print-Msg `"切换 SD-Trainer 分支成功`"
+    } else {
+        Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
+        Print-Msg `"尝试回退 SD-Trainer 的更改`"
+        git -C `"`$sd_trainer_path`" remote set-url origin `"`$preview_url`"
+        if (`$use_submod) {
+            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+        } else {
+            git -C `"`$sd_trainer_path`" submodule update --init --recursive
+        }
+        Print-Msg `"回退 SD-Trainer 分支更改完成`"
+        Print-Msg `"切换 SD-Trainer 分支更改失败, 可尝试重新运行 SD-Trainer 分支切换脚本`"
+    }
+}
+
+
+function Main {
+    Print-Msg `"初始化中`"
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Core-Prefix-Status
+    Set-Proxy
+    if (`$BuildMode) {
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+    } else {
+        Check-SD-Trainer-Installer-Update
+    }
+
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Read-Host | Out-Null
+        return
+    }
+
+    `$content = `"
+-----------------------------------------------------
+- 1、Akegarasu - SD-Trainer 分支
+- 2、bmaltais - Kohya GUI 分支
+-----------------------------------------------------
+`".Trim()
+
+    `$to_exit = 0
+
+    while (`$True) {
+        Print-Msg `"SD-Trainer 分支列表`"
+        `$go_to = 0
+        Write-Host `$content
+        Print-Msg `"当前 SD-Trainer 分支: `$(Get-SD-Trainer-Branch)`"
+        Print-Msg `"请选择 SD-Trainer 分支`"
+        Print-Msg `"提示:`"
+        Print-Msg `"1. 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
+        Print-Msg `"2. 切换分支后, 需要清除原来的启动参数, 因为 Akegarasu/SD-Trainer 分支的启动参数和 bmaltais/Kohya GUI 参数互不兼容, 可通过 settings.ps1 脚本中的启动参数设置进行清除`"
+        if (`$BuildMode) {
+            `$arg = `$BuildWitchBranch
+        } else {
+            `$arg = (Read-Host `"===========================================>`").Trim()
+        }
+
+        switch (`$arg) {
+            1 {
+                `$remote = `"https://github.com/Akegarasu/lora-scripts`"
+                `$branch = `"main`"
+                `$branch_name = `"Akegarasu - SD-Trainer 分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            2 {
+                `$remote = `"https://github.com/bmaltais/kohya_ss`"
+                `$branch = `"master`"
+                `$branch_name = `"bmaltais - Kohya GUI 分支`"
+                `$use_submod = `$true
+                `$go_to = 1
+            }
+            exit {
+                Print-Msg `"退出 SD-Trainer 分支切换脚本`"
+                `$to_exit = 1
+                `$go_to = 1
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+
+    if (`$to_exit -eq 1) {
+        Read-Host | Out-Null
+        exit 0
+    }
+
+    Print-Msg `"是否切换 SD-Trainer 分支到 `$branch_name ?`"
+    Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
+    if (`$BuildMode) {
+        `$operate = `"yes`"
+    } else {
+        `$operate = (Read-Host `"===========================================>`").Trim()
+    }
+
+    if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
+        Print-Msg `"开始切换 SD-Trainer 分支`"
+        Switch-SD-Trainer-Branch `$remote `$branch `$use_submod
+    } else {
+        Print-Msg `"取消切换 SD-Trainer 分支`"
+    }
+    Print-Msg `"退出 SD-Trainer 分支切换脚本`"
+
+    if (!(`$BuildMode)) {
+        Read-Host | Out-Null
+    }
+}
+
+###################
+
+Main
+".Trim()
+
+    if (Test-Path "$InstallPath/switch_branch.ps1") {
+        Print-Msg "更新 switch_branch.ps1 中"
+    } else {
+        Print-Msg "生成 switch_branch.ps1 中"
+    }
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/switch_branch.ps1" -Value $content
+}
+
+
+# 获取安装脚本
+function Write-Launch-SD-Trainer-Install-Script {
+    $content = "
+param (
+    [string]`$InstallPath,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisablePyPIMirror,
+    [switch]`$DisableUV,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
+    [string]`$InstallBranch,
+    [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
+)
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+if (-not `$InstallPath) {
+    `$InstallPath = `$PSScriptRoot
+}
+
+
+
+# 消息输出
+function Print-Msg (`$msg) {
+    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `":: `" -ForegroundColor Blue -NoNewline
+    Write-Host `"`$msg`"
+}
+
+
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+    `$major = (`$ver[0..(`$ver.Length - 3)])
+    `$minor = `$ver[-2]
+    `$micro = `$ver[-1]
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+}
+
+
+# 代理配置
+function Set-Proxy {
+    `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
+    # 检测是否禁用自动设置镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
+        return
+    }
+
+    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
+        if (`$UseCustomProxy) {
+            `$proxy_value = `$UseCustomProxy
+        } else {
+            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
+    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
+        `$proxy_addr = `$(`$internet_setting.ProxyServer)
+        # 提取代理地址
+        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
+            `$proxy_value = `$matches[1]
+            # 去除 http / https 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"http://`${proxy_value}`"
+        } elseif (`$proxy_addr -match `"socks=(.*)`") {
+            `$proxy_value = `$matches[1]
+            # 去除 socks 前缀
+            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
+            `$proxy_value = `"socks://`${proxy_value}`"
+        } else {
+            `$proxy_value = `"http://`${proxy_addr}`"
+        }
+        `$Env:HTTP_PROXY = `$proxy_value
+        `$Env:HTTPS_PROXY = `$proxy_value
+        Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+    }
+}
+
+
+# 下载 SD-Trainer Installer
+function Download-SD-Trainer-Installer {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"正在下载最新的 SD-Trainer-Script Installer 脚本`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_script_installer.ps1`"
+        Print-Msg `"正在下载最新的 SD-Trainer Installer 脚本`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
         if (`$?) {
-            Print-Msg `"下载 SD-Trainer-Script Installer 脚本成功`"
+            Print-Msg `"下载 SD-Trainer Installer 脚本成功`"
             break
         } else {
-            Print-Msg `"下载 SD-Trainer-Script Installer 脚本失败`"
+            Print-Msg `"下载 SD-Trainer Installer 脚本失败`"
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试下载 SD-Trainer-Script Installer 脚本`"
+                Print-Msg `"重试下载 SD-Trainer Installer 脚本`"
             } else {
-                Print-Msg `"下载 SD-Trainer-Script Installer 脚本失败, 可尝试重新运行 SD-Trainer-Script Installer 下载脚本`"
+                Print-Msg `"下载 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
                 return `$false
             }
         }
@@ -5096,31 +5069,15 @@ function Get-Local-Setting {
         `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if ((`$branch -eq `"kohya-ss/sd-scripts`") -or (`$branch -eq `"kohya-ss/sd-scripts.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"sd_scripts`")
-        } elseif ((`$branch -eq `"bghira/SimpleTuner`") -or (`$branch -eq `"bghira/SimpleTuner.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"simple_tuner`")
-        } elseif ((`$branch -eq `"ostris/ai-toolkit`") -or (`$branch -eq `"ostris/ai-toolkit.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"ai_toolkit`")
-        } elseif ((`$branch -eq `"a-r-r-o-w/finetrainers`") -or (`$branch -eq `"a-r-r-o-w/finetrainers.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"finetrainers`")
-        } elseif ((`$branch -eq `"tdrussell/diffusion-pipe`") -or (`$branch -eq `"tdrussell/diffusion-pipe.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"diffusion_pipe`")
-        } elseif ((`$branch -eq `"kohya-ss/musubi-tuner`") -or (`$branch -eq `"kohya-ss/musubi-tuner.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
+        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
+        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
         }
-    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_scripts.txt`") -or (`$InstallBranch -eq `"sd_scripts`")) {
-        `$arg.Add(`"-InstallBranch`", `"sd_scripts`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_simple_tuner.txt`") -or (`$InstallBranch -eq `"simple_tuner`")) {
-        `$arg.Add(`"-InstallBranch`", `"simple_tuner`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_ai_toolkit.txt`") -or (`$InstallBranch -eq `"ai_toolkit`")) {
-        `$arg.Add(`"-InstallBranch`", `"ai_toolkit`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_finetrainers.txt`") -or (`$InstallBranch -eq `"finetrainers`")) {
-        `$arg.Add(`"-InstallBranch`", `"finetrainers`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_diffusion_pipe.txt`") -or (`$InstallBranch -eq `"diffusion_pipe`")) {
-        `$arg.Add(`"-InstallBranch`", `"diffusion_pipe`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_musubi_tuner.txt`") -or (`$InstallBranch -eq `"musubi_tuner`")) {
-        `$arg.Add(`"-InstallBranch`", `"musubi_tuner`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_trainer.txt`") -or (`$InstallBranch -eq `"sd_trainer`")) {
+        `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_kohya_gui.txt`") -or (`$InstallBranch -eq `"kohya_gui`")) {
+        `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
     }
 
     `$arg.Add(`"-InstallPath`", `$InstallPath)
@@ -5148,20 +5105,20 @@ function Get-ExtraArgs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
+    Get-SD-Trainer-Installer-Version
     Set-Proxy
 
-    `$status = Download-SD-Trainer-Script-Installer
+    `$status = Download-SD-Trainer-Installer
 
     if (`$status) {
-        Print-Msg `"运行 SD-Trainer-Script Installer 中`"
+        Print-Msg `"运行 SD-Trainer Installer 中`"
         `$arg = Get-Local-Setting
         `$extra_args = Get-ExtraArgs
         try {
-            Invoke-Expression `"& ```"`$PSScriptRoot/cache/sd_trainer_script_installer.ps1```" `$extra_args @arg`"
+            Invoke-Expression `"& ```"`$PSScriptRoot/cache/sd_trainer_installer.ps1```" `$extra_args @arg`"
         }
         catch {
-            Print-Msg `"运行 SD-Trainer-Script Installer 时出现了错误: `$_`"
+            Print-Msg `"运行 SD-Trainer Installer 时出现了错误: `$_`"
             Read-Host | Out-Null
         }
     } else {
@@ -5174,12 +5131,12 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/launch_sd_trainer_script_installer.ps1") {
-        Print-Msg "更新 launch_sd_trainer_script_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_sd_trainer_installer.ps1") {
+        Print-Msg "更新 launch_sd_trainer_installer.ps1 中"
     } else {
-        Print-Msg "生成 launch_sd_trainer_script_installer.ps1 中"
+        Print-Msg "生成 launch_sd_trainer_installer.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_sd_trainer_script_installer.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_sd_trainer_installer.ps1" -Value $content
 }
 
 
@@ -5200,7 +5157,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -5225,8 +5182,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -5324,48 +5281,48 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式
+        启用 SD-Trainer Installer 构建模式
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer-Script Installer构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer 更新检查
+        禁用 SD-Trainer Installer 更新检查
 
     -DisableUV
-        禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer-Script Installer 自动应用新版本更新
+        禁用 SD-Trainer Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5378,7 +5335,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -5402,13 +5359,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -5422,22 +5379,22 @@ function PyPI-Mirror-Status {
 }
 
 
-# SD-Trainer-Script Installer 更新检测
-function Check-SD-Trainer-Script-Installer-Update {
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
         return
     }
 
@@ -5461,12 +5418,12 @@ function Check-SD-Trainer-Script-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -5474,35 +5431,35 @@ function Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            Print-Msg `"跳过 SD-Trainer Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -5575,6 +5532,11 @@ print(is_uv_need_update())
 
 # 设置 uv 的使用状态
 function Set-uv {
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$PSScriptRoot/`$Env:CORE_PREFIX/python/python.exe`"
+    }
+
     if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$DisableUV)) {
         Print-Msg `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$Global:USE_UV = `$false
@@ -6705,14 +6667,14 @@ function List-PyTorch (`$pytorch_list) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer-Script Installer 构建模式已启用, 跳过 SD-Trainer-Script Installer 更新检查`"
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Script-Installer-Update
+        Check-SD-Trainer-Installer-Update
     }
     Set-uv
     PyPI-Mirror-Status
@@ -6746,11 +6708,11 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTorch 重装脚本`"
         if (`$BuildMode) {
-            Print-Msg `"SD-Trainer-Script Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
+            Print-Msg `"SD-Trainer Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"==================================================>`").Trim()
+            `$arg = (Read-Host `"===========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -6818,7 +6780,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"==================================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"===========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
@@ -6838,7 +6800,7 @@ function Main {
     if (`$BuildMode) {
         `$install_torch = `"yes`"
     } else {
-        `$install_torch = (Read-Host `"==================================================>`").Trim()
+        `$install_torch = (Read-Host `"===========================================>`").Trim()
     }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
@@ -6924,7 +6886,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -6949,8 +6911,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -7048,42 +7010,42 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式
+        启用 SD-Trainer Installer 构建模式
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableUpdate
-        禁用 SD-Trainer-Script Installer 更新检查
+        禁用 SD-Trainer Installer 更新检查
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer-Script Installer 自动应用新版本更新
+        禁用 SD-Trainer Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7096,7 +7058,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -7120,13 +7082,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -7172,22 +7134,22 @@ function Set-Proxy {
 }
 
 
-# SD-Trainer-Script Installer 更新检测
-function Check-SD-Trainer-Script-Installer-Update {
+# SD-Trainer Installer 更新检测
+function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer-Script Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
         return
     }
 
@@ -7211,12 +7173,12 @@ function Check-SD-Trainer-Script-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -7224,35 +7186,35 @@ function Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer-Script Installer 更新`"
+            Print-Msg `"跳过 SD-Trainer Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer-Script Installer 有新版本可用`"
+        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -7352,7 +7314,9 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$Env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
+    } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
         Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
     } else {
         New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
@@ -7539,7 +7503,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"==================================================>`").Trim()
+    return (Read-Host `"===========================================>`").Trim()
 }
 
 
@@ -7577,14 +7541,14 @@ function Search-Model-List (`$model_list, `$key) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer-Script Installer 构建模式已启用, 跳过 SD-Trainer-Script Installer 更新检查`"
+        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Script-Installer-Update
+        Check-SD-Trainer-Installer-Update
     }
     Check-Aria2-Version
 
@@ -7731,8 +7695,8 @@ Main
 }
 
 
-# SD-Trainer-Script Installer 设置脚本
-function Write-SD-Trainer-Script-Installer-Settings-Script {
+# SD-Trainer Installer 设置脚本
+function Write-SD-Trainer-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
@@ -7742,7 +7706,7 @@ param (
     [string]`$UseCustomProxy
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -7767,8 +7731,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -7866,14 +7830,14 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -7882,13 +7846,13 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7901,7 +7865,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -7925,13 +7889,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -8023,8 +7987,8 @@ function Get-Github-Mirror-Setting {
 }
 
 
-# 获取 SD-Trainer-Script Installer 自动检测更新设置
-function Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
+# 获取 SD-Trainer Installer 自动检测更新设置
+function Get-SD-Trainer-Installer-Auto-Check-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         return `"禁用`"
     } else {
@@ -8033,12 +7997,32 @@ function Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
 }
 
 
-# 获取 SD-Trainer-Script Installer 自动应用更新设置
-function Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting {
+# 获取 SD-Trainer Installer 自动应用更新设置
+function Get-SD-Trainer-Installer-Auto-Apply-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") {
         return `"禁用`"
     } else {
         return `"启用`"
+    }
+}
+
+
+# 获取启动参数设置
+function Get-Launch-Args-Setting {
+    if (Test-Path `"`$PSScriptRoot/launch_args.txt`") {
+        return Get-Content `"`$PSScriptRoot/launch_args.txt`"
+    } else {
+        return `"无`"
+    }
+}
+
+
+# 获取自动创建快捷启动方式
+function Get-Auto-Set-Launch-Shortcut-Setting {
+    if (Test-Path `"`$PSScriptRoot/enable_shortcut.txt`") {
+        return `"启用`"
+    } else {
+        return `"禁用`"
     }
 }
 
@@ -8063,8 +8047,8 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
-# 获取 SD-Trainer-Script 运行环境检测配置
-function Get-SD-Trainer-Script-Env-Check-Setting {
+# 获取 SD-Trainer 运行环境检测配置
+function Get-SD-Trainer-Env-Check-Setting {
     if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
         return `"启用`"
     } else {
@@ -8085,7 +8069,7 @@ function Get-Core-Prefix-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"==================================================>`").Trim()
+    return (Read-Host `"===========================================>`").Trim()
 }
 
 
@@ -8254,7 +8238,7 @@ function Update-Github-Mirror-Setting {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 Github 镜像成功, 在更新 SD-Trainer-Script 时将自动检测可用的 Github 镜像源并使用`"
+                Print-Msg `"启用 Github 镜像成功, 在更新 SD-Trainer 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
             2 {
@@ -8305,29 +8289,29 @@ function Update-Github-Mirror-Setting {
 }
 
 
-# SD-Trainer-Script Installer 自动检查更新设置
-function Update-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
+# SD-Trainer Installer 自动检查更新设置
+function Update-SD-Trainer-Installer-Auto-Check-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer-Script Installer 自动检测更新设置: `$(Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"当前 SD-Trainer Installer 自动检测更新设置: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer-Script Installer 自动更新检查`"
-        Print-Msg `"2. 禁用 SD-Trainer-Script Installer 自动更新检查`"
+        Print-Msg `"1. 启用 SD-Trainer Installer 自动更新检查`"
+        Print-Msg `"2. 禁用 SD-Trainer Installer 自动更新检查`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
-        Print-Msg `"警告: 当 SD-Trainer-Script Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
+        Print-Msg `"警告: 当 SD-Trainer Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
 
         `$arg = Get-User-Input
 
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer-Script Installer 自动更新检查成功`"
+                Print-Msg `"启用 SD-Trainer Installer 自动更新检查成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_update.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer-Script Installer 自动更新检查成功`"
+                Print-Msg `"禁用 SD-Trainer Installer 自动更新检查成功`"
                 break
             }
             3 {
@@ -8346,14 +8330,14 @@ function Update-SD-Trainer-Script-Installer-Auto-Check-Update-Setting {
 }
 
 
-# SD-Trainer-Script Installer 自动应用更新设置
-function Update-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting {
+# SD-Trainer Installer 自动应用更新设置
+function Update-SD-Trainer-Installer-Auto-Apply-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer-Script Installer 自动应用更新设置: `$(Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"当前 SD-Trainer Installer 自动应用更新设置: `$(Get-SD-Trainer-Installer-Auto-Apply-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer-Script Installer 自动应用更新`"
-        Print-Msg `"2. 禁用 SD-Trainer-Script Installer 自动应用更新`"
+        Print-Msg `"1. 启用 SD-Trainer Installer 自动应用更新`"
+        Print-Msg `"2. 禁用 SD-Trainer Installer 自动应用更新`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -8362,12 +8346,99 @@ function Update-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer-Script Installer 自动应用更新成功`"
+                Print-Msg `"启用 SD-Trainer Installer 自动应用更新成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer-Script Installer 自动应用更新成功`"
+                Print-Msg `"禁用 SD-Trainer Installer 自动应用更新成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
+# SD-Trainer 启动参数设置
+function Update-SD-Trainer-Launch-Args-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 设置 SD-Trainer 启动参数`"
+        Print-Msg `"2. 删除 SD-Trainer 启动参数`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Print-Msg `"请输入 SD-Trainer 启动参数`"
+                Print-Msg `"提示:`"
+                Print-Msg `"1. 保存启动参数后原有的启动参数将被覆盖`"
+                Print-Msg `"2. SD-Trainer 可用的启动参数可阅读: https://github.com/Akegarasu/lora-scripts?tab=readme-ov-file#program-arguments`"
+                Print-Msg `"3. Kohya GUI 可用的启动参数可阅读: https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service`"
+                Print-Msg `"输入启动参数后回车保存`"
+                `$sd_trainer_launch_args = Get-User-Input
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$sd_trainer_launch_args
+                Print-Msg `"设置 SD-Trainer 启动参数成功, 使用的 SD-Trainer 启动参数为: `$sd_trainer_launch_args`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"删除 SD-Trainer 启动参数成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
+# 自动创建 SD-Trainer 快捷启动方式设置
+function Auto-Set-Launch-Shortcut-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用自动创建 SD-Trainer 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 SD-Trainer 快捷启动方式`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
+                Print-Msg `"启用自动创建 SD-Trainer 快捷启动方式成功`"
+                break
+            }
+            2 {
+                Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"禁用自动创建 SD-Trainer 快捷启动方式成功`"
                 break
             }
             3 {
@@ -8520,15 +8591,15 @@ function Update-Core-Prefix-Setting {
 }
 
 
-# 检查 SD-Trainer-Script Installer 更新
-function Check-SD-Trainer-Script-Installer-Update {
+# 检查 SD-Trainer Installer 更新
+function Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
@@ -8536,12 +8607,12 @@ function Check-SD-Trainer-Script-Installer-Update {
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -8549,36 +8620,36 @@ function Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 有新版本可用`"
-        Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
         `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-        Print-Msg `"更新结束, 重新启动 SD-Trainer-Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+        Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
         Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
         exit 0
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
     }
 }
 
 
-# SD-Trainer-Script 运行环境检测设置
-function SD-Trainer-Script-Env-Check-Setting {
+# SD-Trainer 运行环境检测设置
+function SD-Trainer-Env-Check-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer-Script 运行环境检测设置: `$(Get-SD-Trainer-Script-Env-Check-Setting)`"
+        Print-Msg `"当前 SD-Trainer 运行环境检测设置: `$(Get-SD-Trainer-Env-Check-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer-Script 运行环境检测`"
-        Print-Msg `"2. 禁用 SD-Trainer-Script 运行环境检测`"
+        Print-Msg `"1. 启用 SD-Trainer 运行环境检测`"
+        Print-Msg `"2. 禁用 SD-Trainer 运行环境检测`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -8587,12 +8658,12 @@ function SD-Trainer-Script-Env-Check-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer-Script 运行环境检测成功`"
+                Print-Msg `"启用 SD-Trainer 运行环境检测成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer-Script 运行环境检测成功`"
+                Print-Msg `"禁用 SD-Trainer 运行环境检测成功`"
                 break
             }
             3 {
@@ -8644,6 +8715,13 @@ function Check-Env {
         `$broken = 1
     }
 
+    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`")) {
+        `$sd_trainer_status = `"已安装`"
+    } else {
+        `$sd_trainer_status = `"未安装`"
+        `$broken = 1
+    }
+
     python -m pip show torch --quiet 2> `$null
     if (`$?) {
         `$torch_status = `"已安装`"
@@ -8668,26 +8746,27 @@ function Check-Env {
     Print-Msg `"Aria2: `$aria2_status`"
     Print-Msg `"PyTorch: `$torch_status`"
     Print-Msg `"xFormers: `$xformers_status`"
+    Print-Msg `"SD-Trainer: `$sd_trainer_status`"
     Print-Msg `"-----------------------------------------------------`"
     if (`$broken -eq 1) {
-        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 SD-Trainer-Script Installer 进行安装`"
+        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 SD-Trainer Installer 进行安装`"
     } else {
         Print-Msg `"当前环境无缺失组件`"
     }
 }
 
 
-# 查看 SD-Trainer-Script Installer 文档
-function Get-SD-Trainer-Script-Installer-Help-Docs {
-    Print-Msg `"调用浏览器打开 SD-Trainer-Script Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md`"
+# 查看 SD-Trainer Installer 文档
+function Get-SD-Trainer-Installer-Help-Docs {
+    Print-Msg `"调用浏览器打开 SD-Trainer Installer 文档中`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
 
@@ -8699,28 +8778,32 @@ function Main {
         Print-Msg `"Python 包管理器: `$(Get-Python-Package-Manager-Setting)`"
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
-        Print-Msg `"SD-Trainer-Script Installer 自动检查更新: `$(Get-SD-Trainer-Script-Installer-Auto-Check-Update-Setting)`"
-        Print-Msg `"SD-Trainer-Script Installer 自动应用更新: `$(Get-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"SD-Trainer Installer 自动检查更新: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"SD-Trainer Installer 自动应用更新: `$(Get-SD-Trainer-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
-        Print-Msg `"SD-Trainer-Script 运行环境检测设置: `$(Get-SD-Trainer-Script-Env-Check-Setting)`"
-        Print-Msg `"SD-Trainer-Script 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
+        Print-Msg `"SD-Trainer 运行环境检测设置: `$(Get-SD-Trainer-Env-Check-Setting)`"
+        Print-Msg `"SD-Trainer 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
         Print-Msg `"2. 进入 Python 包管理器设置`"
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
-        Print-Msg `"5. 进入 SD-Trainer-Script Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 SD-Trainer-Script Installer 自动应用更新设置`"
-        Print-Msg `"7. 进入 PyPI 镜像源设置`"
-        Print-Msg `"8. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"9. 进入 SD-Trainer-Scripts 运行环境检测设置`"
-        Print-Msg `"10. 进入 SD-Trainer-Script 内核路径前缀设置`"
-        Print-Msg `"11. 更新 SD-Trainer-Script Installer 管理脚本`"
-        Print-Msg `"12. 检查环境完整性`"
-        Print-Msg `"13. 查看 SD-Trainer-Script Installer 文档`"
-        Print-Msg `"14. 退出 SD-Trainer-Script Installer 设置`"
+        Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
+        Print-Msg `"6. 进入 SD-Trainer Installer 自动应用更新设置`"
+        Print-Msg `"7. 进入 SD-Trainer 启动参数设置`"
+        Print-Msg `"8. 进入自动创建 SD-Trainer 快捷启动方式设置`"
+        Print-Msg `"9. 进入 PyPI 镜像源设置`"
+        Print-Msg `"10. 进入自动设置 CUDA 内存分配器设置`"
+        Print-Msg `"11. 进入 SD-Trainer 运行环境检测设置`"
+        Print-Msg `"12. 进入 SD-Trainer 内核路径前缀设置`"
+        Print-Msg `"13. 更新 SD-Trainer Installer 管理脚本`"
+        Print-Msg `"14. 检查环境完整性`"
+        Print-Msg `"15. 查看 SD-Trainer Installer 文档`"
+        Print-Msg `"16. 退出 SD-Trainer Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -8741,42 +8824,50 @@ function Main {
                 break
             }
             5 {
-                Update-SD-Trainer-Script-Installer-Auto-Check-Update-Setting
+                Update-SD-Trainer-Installer-Auto-Check-Update-Setting
                 break
             }
             6 {
-                Update-SD-Trainer-Script-Installer-Auto-Apply-Update-Setting
+                Update-SD-Trainer-Installer-Auto-Apply-Update-Setting
                 break
             }
             7 {
-                PyPI-Mirror-Setting
+                Update-SD-Trainer-Launch-Args-Setting
                 break
             }
             8 {
-                PyTorch-CUDA-Memory-Alloc-Setting
+                Auto-Set-Launch-Shortcut-Setting
                 break
             }
             9 {
-                SD-Trainer-Script-Env-Check-Setting
+                PyPI-Mirror-Setting
                 break
             }
             10 {
-                Update-Core-Prefix-Setting
+                PyTorch-CUDA-Memory-Alloc-Setting
                 break
             }
             11 {
-                Check-SD-Trainer-Script-Installer-Update
+                SD-Trainer-Env-Check-Setting
                 break
             }
             12 {
-                Check-Env
+                Update-Core-Prefix-Setting
                 break
             }
             13 {
-                Get-SD-Trainer-Script-Installer-Help-Docs
+                Check-SD-Trainer-Installer-Update
                 break
             }
             14 {
+                Check-Env
+                break
+            }
+            15 {
+                Get-SD-Trainer-Installer-Help-Docs
+                break
+            }
+            16 {
                 `$go_to = 1
                 break
             }
@@ -8787,7 +8878,7 @@ function Main {
         }
 
         if (`$go_to -eq 1) {
-            Print-Msg `"退出 SD-Trainer-Script Installer 设置`"
+            Print-Msg `"退出 SD-Trainer Installer 设置`"
             break
         }
     }
@@ -8822,7 +8913,7 @@ param (
     [string]`$UseCustomGithubMirror
 )
 & {
-    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -8847,8 +8938,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer-Script Installer 版本和检查更新间隔
-`$Env:SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
+# SD-Trainer Installer 版本和检查更新间隔
+`$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -8942,19 +9033,19 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT = `$PSScriptRoot
+`$Env:SD_TRAINER_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -8963,7 +9054,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -8975,7 +9066,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
+        禁用 SD-Trainer Installer自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -8998,7 +9089,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9010,14 +9101,14 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[SD-Trainer-Script Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[SD-Trainer Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
 # 消息输出
 function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -9062,33 +9153,33 @@ function global:Update-Aria2 {
         }
     }
 
-    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
+    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_TRAINER_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
     Print-Msg `"更新 Aria2 完成`"
 }
 
 
-# SD-Trainer-Script Installer 更新检测
-function global:Check-SD-Trainer-Script-Installer-Update {
+# SD-Trainer Installer 更新检测
+function global:Check-SD-Trainer-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_script_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_script_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-    Set-Content -Encoding UTF8 -Path `"`$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer-Script Installer 更新中`"
+        Print-Msg `"检查 SD-Trainer Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_SCRIPT_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
+                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -9096,30 +9187,174 @@ function global:Check-SD-Trainer-Script-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer-Script Installer 更新中`"
+                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer-Script Installer 更新失败`"
+                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$Env:SD_TRAINER_SCRIPT_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer-Script Installer 有新版本可用`"
-        Print-Msg `"调用 SD-Trainer-Script Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/sd_trainer_script_installer.ps1`" -InstallPath `"`$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT`" -UseUpdateMode
-        Print-Msg `"更新结束, 需重新启动 SD-Trainer-Script Installer 管理脚本以应用更新, 回车退出 SD-Trainer-Script Installer 管理脚本`"
+    if (`$latest_version -gt `$Env:SD_TRAINER_INSTALLER_VERSION) {
+        Print-Msg `"SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$Env:SD_TRAINER_INSTALLER_ROOT`" -UseUpdateMode
+        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
         Read-Host | Out-Null
         exit 0
     } else {
-        Print-Msg `"SD-Trainer-Script Installer 已是最新版本`"
+        Print-Msg `"SD-Trainer Installer 已是最新版本`"
     }
+}
+
+
+# 安装绘世启动器
+function global:Install-Hanamizuki {
+    `$urls = @(
+        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`",
+        `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`",
+        `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`"
+    )
+    `$i = 0
+
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        return
+    }
+
+    New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
+
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+        Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
+    } else {
+        ForEach (`$url in `$urls) {
+            Print-Msg `"下载绘世启动器中`"
+            try {
+                Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+                Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
+                break
+            }
+            catch {
+                `$i += 1
+                if (`$i -lt `$urls.Length) {
+                    Print-Msg `"重试下载绘世启动器中`"
+                } else {
+                    Print-Msg `"下载绘世启动器失败`"
+                    return
+                }
+            }
+        }
+    }
+
+    `$content = `"
+@echo off
+echo Initialize configuration
+setlocal enabledelayedexpansion
+set CurrentPath=%~dp0
+set DefaultCorePrefix=lora-scripts
+if exist ```"%~dp0%DefaultCorePrefix%```" (
+    set CorePrefix=%DefaultCorePrefix%
+) else (
+    set CorePrefix=core
+)
+set CorePrefixFile=%~dp0core_prefix.txt
+
+set ArgIndex=0
+set NextIsValue=0
+for %%i in (%*) do (
+    set /a ArgIndex+=1
+    if !NextIsValue!==1 (
+        set CorePrefix=%%i
+        set NextIsValue=0
+        goto :convert
+    ) else (
+        if ```"%%i```"==```"-CorePrefix```" (
+            set NextIsValue=1
+        )
+    )
+)
+
+if exist ```"%CorePrefixFile%```" (
+    for /f ```"delims=```" %%i in ('powershell -command ```"Get-Content -Path '%CorePrefixFile%'```"') do (
+        set CorePrefix=%%i
+        goto :convert
+    )
+)
+
+:convert
+for /f ```"delims=```" %%i in ('powershell -command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
+    set CorePrefix=%%i
+    goto :continue
+)
+
+:continue
+set RootPath=%~dp0%CorePrefix%
+echo CorePrefix: %CorePrefix%
+echo RootPath: %RootPath%
+if exist ```"%RootPath%```" (
+    cd /d ```"%RootPath%```"
+) else (
+    echo %CorePrefix% not found
+    echo Please check if SD-Trainer is installed, or if the CorePrefix is set correctly
+    pause
+    exit 1
+)
+if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
+    start /B .\hanamizuki.exe
+    cd /d ```"%CurrentPath%```"
+) else (
+    echo Hanamizuki not found
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
+    cd /d ```"%CurrentPath%```"
+    pause
+    exit 1
+)
+    `".Trim()
+
+    Set-Content -Encoding Default -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
+
+    Print-Msg `"检查绘世启动器运行环境`"
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
+        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`") {
+            Print-Msg `"尝试将 Python 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+            if (`$?) {
+                Print-Msg `"Python 路径移动成功`"
+            } else {
+                Print-Msg `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`"
+                Print-Msg `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+        }
+    }
+
+    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`") {
+            Print-Msg `"尝试将 Git 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+            if (`$?) {
+                Print-Msg `"Git 路径移动成功`"
+            } else {
+                Print-Msg `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`"
+                Print-Msg `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
+            }
+        } else {
+            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+        }
+    }
+
+    Print-Msg `"检查绘世启动器运行环境结束`"
 }
 
 
 # 获取指定路径的内核路径前缀
 function global:Get-Core-Prefix (`$to_path) {
-    `$from_path = `$Env:SD_TRAINER_SCRIPT_INSTALLER_ROOT
+    `$from_path = `$Env:SD_TRAINER_INSTALLER_ROOT
     `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
     `$to_uri = New-Object System.Uri(`$to_path.Trim('/').Trim('\').Replace('\', '/'))
     `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
@@ -9139,35 +9374,36 @@ Set-Alias python3 python
 Set-Alias python3.11 python
 
 
-# 列出 SD-Trainer-Script Installer 内置命令
+# 列出 SD-Trainer Installer 内置命令
 function global:List-CMD {
     Write-Host `"
 ==================================
-SD-Trainer-Script Installer created by licyk
+SD-Trainer Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ==================================
 
-当前可用的 SD-Trainer-Script Installer 内置命令：
+当前可用的 SD-Trainer Installer 内置命令：
 
     Update-uv
     Update-Aria2
-    Check-SD-Trainer-Script-Installer-Update
+    Check-SD-Trainer-Installer-Update
+    Install-Hanamizuki
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 SD-Trainer-Script Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 `"
 }
 
 
-# 显示 SD-Trainer-Script Installer 版本
-function Get-SD-Trainer-Script-Installer-Version {
-    `$ver = `$([string]`$Env:SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
+# 显示 SD-Trainer Installer 版本
+function Get-SD-Trainer-Installer-Version {
+    `$ver = `$([string]`$Env:SD_TRAINER_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer-Script Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -9294,15 +9530,18 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     PyPI-Mirror-Status
-    Print-Msg `"激活 SD-Trainer-Script Env`"
-    Print-Msg `"更多帮助信息可在 SD-Trainer-Script Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md`"
+    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
+    }
+    Print-Msg `"激活 SD-Trainer Env`"
+    Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
 }
 
 ###################
@@ -9324,12 +9563,12 @@ function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer-Script Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
-Print-Msg `"执行 SD-Trainer-Script Installer 激活环境脚本`"
+Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
 
@@ -9346,35 +9585,34 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 function Write-ReadMe {
     $content = "
 ====================================================================
-SD-Trainer-Script Installer created by licyk
+SD-Trainer Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ====================================================================
 ########## 使用帮助 ##########
 
-这是关于 SD-Trainer-Script 的简单使用文档。
+这是关于 SD-Trainer 的简单使用文档。
 
-使用 SD-Trainer-Script Installer 进行安装并安装成功后，将在当前目录生成 SD-Trainer-Script 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+使用 SD-Trainer Installer 进行安装并安装成功后，将在当前目录生成 SD-Trainer 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-- init.ps1：初始化 SD-Trainer-Script 运行环境。
-- train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
-- update.ps1：更新 SD-Trainer-Script。
-- download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
+- launch.ps1：启动 SD-Trainer。
+- update.ps1：更新 SD-Trainer。
+- download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-- switch_branch.ps1：切换 SD-Trainer-Script 分支。
-- settings.ps1：管理 SD-Trainer-Script Installer 的设置。
+- switch_branch.ps1：切换 SD-Trainer 分支。
+- settings.ps1：管理 SD-Trainer Installer 的设置。
 - terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 - activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- launch_sd_trainer_script_installer.ps1：获取最新的 SD-Trainer-Script Installer 安装脚本并运行。
+- launch_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本并运行。
 - configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
 
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- sd-scripts / core：SD-Trainer-Script 内核。
+- lora-scripts / core：SD-Trainer 内核。
 - models：使用模型下载脚本下载模型时模型的存放位置。
 
-详细的 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+详细的 SD-Trainer Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 
 其他的一些训练模型的教程：
 https://sd-moadel-doc.maozi.io
@@ -9386,6 +9624,7 @@ https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
 https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
 https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
 https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
+更多详细的帮助可在下面的链接查看。
 
 推荐的哔哩哔哩 UP 主：
 青龙圣者：https://space.bilibili.com/219296
@@ -9398,18 +9637,14 @@ https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-t
 ########## Github 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
-sd-scripts 项目地址：https://github.com/kohya-ss/sd-scripts
-SimpleTuner 项目地址：https://github.com/bghira/SimpleTuner
-ai-toolkit 项目地址：https://github.com/ostris/ai-toolkit
-finetrainers 项目地址：https://github.com/a-r-r-o-w/finetrainers
-diffusion-pipe 项目地址：https://github.com/tdrussell/diffusion-pipe
-musubi-tuner 项目地址：https://github.com/kohya-ss/musubi-tuner
+SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
+Kohya GUI 项目地址：https://github.com/bmaltais/kohya_ss
 
 
 ====================================================================
 ########## 用户协议 ##########
 
-使用该整合包代表您已阅读并同意以下用户协议：
+使用该软件代表您已阅读并同意以下用户协议：
 您不得实施包括但不限于以下行为，也不得为任何违反法律法规的行为提供便利：
     反对宪法所规定的基本原则的。
     危害国家安全，泄露国家秘密，颠覆国家政权，破坏国家统一的。
@@ -9436,24 +9671,24 @@ musubi-tuner 项目地址：https://github.com/kohya-ss/musubi-tuner
 # 写入管理脚本和文档
 function Write-Manager-Scripts {
     New-Item -ItemType Directory -Path "$InstallPath" -Force > $null
-    Write-Train-Script
-    Write-Library-Script
+    Write-Launch-Script
     Write-Update-Script
     Write-Switch-Branch-Script
-    Write-Launch-SD-Trainer-Script-Install-Script
+    Write-Launch-SD-Trainer-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
-    Write-SD-Trainer-Script-Installer-Settings-Script
+    Write-SD-Trainer-Installer-Settings-Script
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
     Write-Configure-Env-Script
+    Write-Hanamizuki-Script
 }
 
 
 # 将安装器配置文件复制到管理脚本路径
-function Copy-SD-Trainer-Script-Installer-Config {
-    Print-Msg "为 SD-Trainer-Script Installer 管理脚本复制 SD-Trainer-Script Installer 配置文件中"
+function Copy-SD-Trainer-Installer-Config {
+    Print-Msg "为 SD-Trainer Installer 管理脚本复制 SD-Trainer Installer 配置文件中"
 
     if ((!($DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
         Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$InstallPath"
@@ -9488,45 +9723,200 @@ function Copy-SD-Trainer-Script-Installer-Config {
 }
 
 
+# 写入启动绘世启动器脚本
+function Write-Hanamizuki-Script {
+    param (
+        [switch]$Force
+    )
+    $content = "
+@echo off
+echo Initialize configuration
+setlocal enabledelayedexpansion
+set CurrentPath=%~dp0
+set DefaultCorePrefix=lora-scripts
+if exist `"%~dp0%DefaultCorePrefix%`" (
+    set CorePrefix=%DefaultCorePrefix%
+) else (
+    set CorePrefix=core
+)
+set CorePrefixFile=%~dp0core_prefix.txt
+
+set ArgIndex=0
+set NextIsValue=0
+for %%i in (%*) do (
+    set /a ArgIndex+=1
+    if !NextIsValue!==1 (
+        set CorePrefix=%%i
+        set NextIsValue=0
+        goto :convert
+    ) else (
+        if `"%%i`"==`"-CorePrefix`" (
+            set NextIsValue=1
+        )
+    )
+)
+
+if exist `"%CorePrefixFile%`" (
+    for /f `"delims=`" %%i in ('powershell -command `"Get-Content -Path '%CorePrefixFile%'`"') do (
+        set CorePrefix=%%i
+        goto :convert
+    )
+)
+
+:convert
+for /f `"delims=`" %%i in ('powershell -command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
+    set CorePrefix=%%i
+    goto :continue
+)
+
+:continue
+set RootPath=%~dp0%CorePrefix%
+echo CorePrefix: %CorePrefix%
+echo RootPath: %RootPath%
+if exist `"%RootPath%`" (
+    cd /d `"%RootPath%`"
+) else (
+    echo %CorePrefix% not found
+    echo Please check if SD-Trainer is installed, or if the CorePrefix is set correctly
+    pause
+    exit 1
+)
+if exist .\hanamizuki.exe (
+    echo Launch Hanamizuki
+    start /B .\hanamizuki.exe
+    cd /d `"%CurrentPath%`"
+) else (
+    echo Hanamizuki not found
+    echo Try running terminal.ps1 to open the terminal and execute the Install-Hanamizuki command to install Hanamizuki
+    cd /d `"%CurrentPath%`"
+    pause
+    exit 1
+)
+    ".Trim()
+
+    if ((!($Force)) -and (!(Test-Path "$InstallPath/hanamizuki.bat"))) {
+        return
+    }
+
+    if (Test-Path "$InstallPath/hanamizuki.bat") {
+        Print-Msg "更新 hanamizuki.bat 中"
+    } else {
+        Print-Msg "生成 hanamizuki.bat 中"
+    }
+    Set-Content -Encoding Default -Path "$InstallPath/hanamizuki.bat" -Value $content
+}
+
+
+# 安装绘世启动器
+function Install-Hanamizuki {
+    $urls = @(
+        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe",
+        "https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe",
+        "https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe"
+    )
+    $i = 0
+
+    if (!($InstallHanamizuki)) {
+        return
+    }
+
+    New-Item -ItemType Directory -Path "$Env:CACHE_HOME" -Force > $null
+
+    if (Test-Path "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe") {
+        Print-Msg "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
+        Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
+    } else {
+        ForEach ($url in $urls) {
+            Print-Msg "下载绘世启动器中"
+            try {
+                Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
+                Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
+                Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
+                Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
+                break
+            }
+            catch {
+                $i += 1
+                if ($i -lt $urls.Length) {
+                    Print-Msg "重试下载绘世启动器中"
+                } else {
+                    Print-Msg "下载绘世启动器失败"
+                    return
+                }
+            }
+        }
+    }
+
+    Write-Hanamizuki-Script -Force
+
+    Print-Msg "检查绘世启动器运行环境"
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/python/python.exe")) {
+        if (Test-Path "$InstallPath/python") {
+            Print-Msg "尝试将 Python 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/python" "$InstallPath/$Env:CORE_PREFIX" -Force
+            if ($?) {
+                Print-Msg "Python 路径移动成功"
+            } else {
+                Print-Msg "Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境"
+                Print-Msg "请关闭所有占用 Python 的进程, 并重新运行该命令"
+            }
+        } else {
+            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD-Trainer Installer 修复环境"
+        }
+    }
+
+    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX/git/bin/git.exe")) {
+        if (Test-Path "$InstallPath/git") {
+            Print-Msg "尝试将 Git 移动至 $InstallPath\$Env:CORE_PREFIX 中"
+            Move-Item -Path "$InstallPath/git" "$InstallPath/$Env:CORE_PREFIX" -Force
+            if ($?) {
+                Print-Msg "Git 路径移动成功"
+            } else {
+                Print-Msg "Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境"
+                Print-Msg "请关闭所有占用 Git 的进程, 并重新运行该命令"
+            }
+        } else {
+            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD-Trainer Installer 修复环境"
+        }
+    }
+
+    Print-Msg "检查绘世启动器运行环境结束"
+}
+
+
 # 执行安装
 function Use-Install-Mode {
     Set-Proxy
     Set-uv
     PyPI-Mirror-Status
-    Print-Msg "启动 SD-Trainer-Script 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer-Script Installer, 更多的说明请阅读 SD-Trainer-Script Installer 使用文档"
-    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md"
+    Print-Msg "启动 SD-Trainer 安装程序"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
+    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
-    if ((Test-Path "$PSScriptRoot/install_sd_scripts.txt") -or ($InstallBranch -eq "sd_scripts")) {
-        Print-Msg "检测到 install_sd_scripts.txt 配置文件 / 命令行参数 -InstallBranch sd_scripts, 选择安装 kohya-ss/sd-scripts"
-    } elseif ((Test-Path "$PSScriptRoot/install_simple_tuner.txt") -or ($InstallBranch -eq "simple_tuner")) {
-        Print-Msg "检测到 install_simple_tuner.txt 配置文件 / 命令行参数 -InstallBranch simple_tuner, 选择安装 bghira/SimpleTuner"
-    } elseif ((Test-Path "$PSScriptRoot/install_ai_toolkit.txt") -or ($InstallBranch -eq "ai_toolkit")) {
-        Print-Msg "检测到 install_ai_toolkit.txt 配置文件 / 命令行参数 -InstallBranch ai_toolkit, 选择安装 ostris/ai-toolkit"
-    } elseif ((Test-Path "$PSScriptRoot/install_finetrainers.txt") -or ($InstallBranch -eq "finetrainers")) {
-        Print-Msg "检测到 install_finetrainers.txt 配置文件 / 命令行参数 -InstallBranch finetrainers, 选择安装 a-r-r-o-w/finetrainers"
-    } elseif ((Test-Path "$PSScriptRoot/install_diffusion_pipe.txt") -or ($InstallBranch -eq "diffusion_pipe")) {
-        Print-Msg "检测到 install_diffusion_pipe.txt 配置文件 / 命令行参数 -InstallBranch diffusion_pipe, 选择安装 tdrussell/diffusion-pipe"
-    } elseif ((Test-Path "$PSScriptRoot/install_musubi_tuner.txt") -or ($InstallBranch -eq "musubi_tuner")) {
-        Print-Msg "检测到 install_musubi_tuner.txt 配置文件 / 命令行参数 -InstallBranch musubi_tuner, 选择安装 kohya-ss/musubi-tuner"
+    if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
+        Print-Msg "检测到 install_sd_trainer.txt 配置文件 / 命令行参数 -InstallBranch sd_trainer, 选择安装 Akegarasu/SD-Trainer"
+    } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
+        Print-Msg "检测到 install_kohya_gui.txt 配置文件 / 命令行参数 -InstallBranch kohya_gui, 选择安装 bmaltais/Kohya GUI"
     } else {
-        Print-Msg "未指定安装的训练器, 默认选择安装 kohya-ss/sd-scripts"
+        Print-Msg "未指定安装的训练器, 默认选择安装 Akegarasu/SD-Trainer"
     }
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Copy-SD-Trainer-Script-Installer-Config
+    Copy-SD-Trainer-Installer-Config
 
     if ($BuildMode) {
         Use-Build-Mode
-        Print-Msg "SD-Trainer-Script 环境构建完成, 路径: $InstallPath"
+        Install-Hanamizuki
+        Print-Msg "SD-Trainer 环境构建完成, 路径: $InstallPath"
     } else {
-        Print-Msg "SD-Trainer-Script 安装结束, 安装路径为: $InstallPath"
+        Install-Hanamizuki
+        Print-Msg "SD-Trainer 安装结束, 安装路径为: $InstallPath"
     }
 
-    Print-Msg "帮助文档可在 SD-Trainer-Script 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer-Script Installer 使用文档"
-    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md"
-    Print-Msg "退出 SD-Trainer-Script Installer"
+    Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer Installer 使用文档"
+    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
+    Print-Msg "退出 SD-Trainer Installer"
 
     if (!($BuildMode)) {
         Read-Host | Out-Null
@@ -9588,7 +9978,7 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer-Script 分支切换脚本中"
+        Print-Msg "执行 SD-Trainer 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" @launch_args
     }
 
@@ -9603,7 +9993,7 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer-Script 更新脚本中"
+        Print-Msg "执行 SD-Trainer 更新脚本中"
         . "$InstallPath/update.ps1" @launch_args
     }
 
@@ -9619,12 +10009,14 @@ function Use-Build-Mode {
         if ($DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        if ($LaunchArg) { $launch_args.Add("-LaunchArg", $LaunchArg) }
+        if ($EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer-Script 启动脚本中"
-        . "$InstallPath/init.ps1" @launch_args
+        Print-Msg "执行 SD-Trainer 启动脚本中"
+        . "$InstallPath/launch.ps1" @launch_args
     }
 
     # 清理缓存
@@ -9690,54 +10082,50 @@ if '%errorlevel%' NEQ '0' (
 
 
 # 帮助信息
-function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
+function Get-SD-Trainer-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD-Trainer-Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer-Script 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer-Script 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD-Trainer 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer-Script Installer 的帮助信息
+        获取 SD-Trainer Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
-    -InstallPath <安装 SD-Trainer-Script 的绝对路径>
-        指定 SD-Trainer-Script Installer 安装 SD-Trainer-Script 的路径, 使用绝对路径表示
-        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer-Script Installer 安装 SD-Trainer-Script 到 D:\Donwload 这个路径
+    -InstallPath <安装 SD-Trainer 的绝对路径>
+        指定 SD-Trainer Installer 安装 SD-Trainer 的路径, 使用绝对路径表示
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
-    -InstallBranch <安装的 SD-Trainer-Script 分支>
-        指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts, simple_tuner, ai_toolkit, finetrainers, diffusion_pipe, musubi_tuner)
-        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"simple_tuner`", 这将指定 SD-Trainer-Script Installer 安装 bghira/SimpleTuner 分支
-        未指定该参数时, 默认安装 kohya-ss/sd-scripts 分支
+    -InstallBranch <安装的 SD-Trainer 分支>
+        指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
+        未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
         支持指定安装的分支如下:
-            sd_scripts:     kohya-ss/sd-scripts
-            simple_tuner:   bghira/SimpleTuner
-            ai_toolkit:     ostris/ai-toolkit
-            finetrainers:   a-r-r-o-w/finetrainers
-            diffusion_pipe: tdrussell/diffusion-pipe
-            musubi_tuner:   kohya-ss/musubi-tuner
+            sd_trainer:     Akegarasu/SD-Trainer
+            kohya_gui:      bmaltais/Kohya GUI
 
     -UseUpdateMode
-        指定 SD-Trainer-Script Installer 使用更新模式, 只对 SD-Trainer-Script Installer 的管理脚本进行更新
+        指定 SD-Trainer Installer 使用更新模式, 只对 SD-Trainer Installer 的管理脚本进行更新
 
     -DisablePyPIMirror
-        禁用 SD-Trainer-Script Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+        禁用 SD-Trainer Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer-Script Installer 自动设置代理服务器
+        禁用 SD-Trainer Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
-        禁用 SD-Trainer-Script Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableGithubMirror
-        禁用 SD-Trainer-Script Installer 自动设置 Github 镜像源
+        禁用 SD-Trainer Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -9760,34 +10148,34 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -BuildMode
-        启用 SD-Trainer-Script Installer 构建模式, 在基础安装流程结束后将调用 SD-Trainer-Script Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD-Trainer-Script Installer 的执行, 而是直接退出
-        当指定调用多个 SD-Trainer-Script Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+        启用 SD-Trainer Installer 构建模式, 在基础安装流程结束后将调用 SD-Trainer Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD-Trainer Installer 的执行, 而是直接退出
+        当指定调用多个 SD-Trainer Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - init.ps1                  (对应 -BuildWithLaunch 参数)
+            - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 update.ps1 脚本, 更新 SD-Trainer-Script 内核
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 update.ps1 脚本, 更新 SD-Trainer 内核
 
     -BuildWithLaunch
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 init.ps1 脚本, 执行启动 SD-Trainer-Script 前的环境检查流程, 但跳过启动 SD-Trainer-Script
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 launch.ps1 脚本, 执行启动 SD-Trainer 前的环境检查流程, 但跳过启动 SD-Trainer
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer-Script Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -BuildWitchBranch <SD-Trainer-Script 分支编号>
-        (需添加 -BuildMode 启用 SD-Trainer-Script Installer 构建模式) SD-Trainer-Script Installer 执行完基础安装流程后调用 SD-Trainer-Script Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer-Script 分支编号切换到对应的 SD-Trainer-Script 分支
-        SD-Trainer-Script 分支编号可运行 switch_branch.ps1 脚本进行查看
+    -BuildWitchBranch <SD-Trainer 分支编号>
+        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer 分支编号切换到对应的 SD-Trainer 分支
+        SD-Trainer 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -PyTorchPackage <PyTorch 软件包>
         (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
@@ -9795,29 +10183,38 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
     -xFormersPackage <xFormers 软件包>
         (需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
 
+    -InstallHanamizuki
+        安装绘世启动器, 并生成 hanamizuki.bat 用于启动绘世启动器
+
     -NoCleanCache
         安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 更新检查
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 更新检查
 
     -DisableHuggingFaceMirror
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+
+    -LaunchArg <SD-Trainer 启动参数>
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 设置 SD-Trainer 自定义启动参数, 如启用 --skip-prepare-environment 和 --dev, 则使用 -LaunchArg `"--skip-prepare-environment --dev`" 进行启用
+
+    -EnableShortcut
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 创建 SD-Trainer 启动快捷方式
 
     -DisableCUDAMalloc
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 检查 SD-Trainer-Script 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer-Script 环境中存在的问题无法被发现并修复
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 检查 SD-Trainer 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 自动应用新版本更新
+        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
 ".Trim()
 
     if ($Help) {
@@ -9830,8 +10227,8 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Get-SD-Trainer-Script-Installer-Version
-    Get-SD-Trainer-Script-Installer-Cmdlet-Help
+    Get-SD-Trainer-Installer-Version
+    Get-SD-Trainer-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
 
     if ($UseUpdateMode) {
@@ -9840,7 +10237,7 @@ function Main {
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($BuildMode) {
-            Print-Msg "SD-Trainer-Script Installer 构建模式已启用"
+            Print-Msg "SD-Trainer Installer 构建模式已启用"
         }
         Print-Msg "使用安装模式"
         Use-Install-Mode

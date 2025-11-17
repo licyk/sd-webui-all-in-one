@@ -1,7 +1,7 @@
 ﻿param (
     [switch]$Help,
     [string]$CorePrefix,
-    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer"),
+    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "Fooocus"),
     [string]$PyTorchMirrorType,
     [string]$InstallBranch,
     [switch]$UseUpdateMode,
@@ -18,6 +18,7 @@
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
     [int]$BuildWitchBranch,
+    [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
     [switch]$InstallHanamizuki,
@@ -34,7 +35,7 @@
     [switch]$DisableAutoApplyUpdate
 )
 & {
-    $prefix_list = @("core", "lora-scripts", "lora_scripts", "sd-trainer", "SD-Trainer", "sd_trainer", "lora-scripts", "lora-scripts-v1.5.1", "lora-scripts-v1.6.2", "lora-scripts-v1.7.3", "lora-scripts-v1.8.1", "lora-scripts-v1.9.0-cu124", "lora-scripts-v1.10.0", "lora-scripts-v1.12.0")
+    $prefix_list = @("core", "Fooocus", "fooocus", "fooocus_portable")
     if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($CorePrefix)) {
         if ($CorePrefix) {
             $origin_core_prefix = $CorePrefix
@@ -62,8 +63,8 @@
 # 有关 PowerShell 脚本保存编码的问题: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.4#the-byte-order-mark
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
-# SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 311
+# Fooocus Installer 版本和检查更新间隔
+$FOOOCUS_INSTALLER_VERSION = 204
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -121,13 +122,15 @@ $GITHUB_MIRROR_LIST = @(
 $UV_MINIMUM_VER = "0.9.9"
 # Aria2 最低版本
 $ARIA2_MINIMUM_VER = "1.37.0"
-# SD-Trainer 仓库地址
-$SD_TRAINER_REPO = if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
-    "https://github.com/Akegarasu/lora-scripts"
-} elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
-    "https://github.com/bmaltais/kohya_ss"
+# Fooocus 仓库地址
+$FOOOCUS_REPO = if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
+    "https://github.com/lllyasviel/Fooocus"
+} elseif ((Test-Path "$PSScriptRoot/install_fooocus_mre.txt") -or ($InstallBranch -eq "fooocus_mre")) {
+    "https://github.com/MoonRide303/Fooocus-MRE"
+} elseif ((Test-Path "$PSScriptRoot/install_ruined_fooocus.txt") -or ($InstallBranch -eq "ruined_fooocus")) {
+    "https://github.com/runew0lf/RuinedFooocus"
 } else {
-    "https://github.com/Akegarasu/lora-scripts"
+    "https://github.com/lllyasviel/Fooocus"
 }
 # PATH
 $PYTHON_PATH = "$InstallPath/python"
@@ -193,7 +196,7 @@ $Env:UV_PYTHON = "$InstallPath/python/python.exe"
 # 消息输出
 function Print-Msg ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
-    Write-Host "[SD-Trainer Installer]" -ForegroundColor Cyan -NoNewline
+    Write-Host "[Fooocus Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
     Write-Host "$msg"
 }
@@ -217,13 +220,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    $ver = $([string]$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    $ver = $([string]$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     $major = ($ver[0..($ver.Length - 3)])
     $minor = $ver[-2]
     $micro = $ver[-1]
-    Print-Msg "SD-Trainer Installer 版本: v${major}.${minor}.${micro}"
+    Print-Msg "Fooocus Installer 版本: v${major}.${minor}.${micro}"
 }
 
 
@@ -242,7 +245,7 @@ function Set-Proxy {
     $Env:NO_PROXY = "localhost,127.0.0.1,::1"
     # 检测是否禁用自动设置镜像源
     if ((Test-Path "$PSScriptRoot/disable_proxy.txt") -or ($DisableProxy)) {
-        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件 / 命令行参数 -DisableProxy, 禁用自动设置代理"
+        Print-Msg "检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理"
         return
     }
 
@@ -255,7 +258,7 @@ function Set-Proxy {
         }
         $Env:HTTP_PROXY = $proxy_value
         $Env:HTTPS_PROXY = $proxy_value
-        Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / 命令行参数 -UseCustomProxy, 已读取代理配置文件并设置代理"
+        Print-Msg "检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理"
     } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
         $proxy_addr = $($internet_setting.ProxyServer)
         # 提取代理地址
@@ -282,7 +285,7 @@ function Set-Proxy {
 # 设置 uv 的使用状态
 function Set-uv {
     if ((Test-Path "$PSScriptRoot/disable_uv.txt") -or ($DisableUV)) {
-        Print-Msg "检测到 disable_uv.txt 配置文件 / 命令行参数 -DisableUV, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
+        Print-Msg "检测到 disable_uv.txt 配置文件 / -DisableUV, 命令行参数 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         $Global:USE_UV = $false
     } else {
         Print-Msg "默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度"
@@ -379,7 +382,7 @@ function Install-Python {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Python 中"
             } else {
-                Print-Msg "Python 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+                Print-Msg "Python 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -428,7 +431,7 @@ function Install-Git {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Git 中"
             } else {
-                Print-Msg "Git 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+                Print-Msg "Git 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -474,7 +477,7 @@ function Install-Aria2 {
             if ($i -lt $urls.Length) {
                 Print-Msg "重试下载 Aria2 中"
             } else {
-                Print-Msg "Aria2 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+                Print-Msg "Aria2 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
                 if (!($BuildMode)) {
                     Read-Host | Out-Null
                 }
@@ -495,7 +498,7 @@ function Install-uv {
     if ($?) {
         Print-Msg "uv 下载成功"
     } else {
-        Print-Msg "uv 下载失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+        Print-Msg "uv 下载失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
         if (!($BuildMode)) {
             Read-Host | Out-Null
         }
@@ -516,7 +519,7 @@ function Set-Github-Mirror {
     git config --global core.longpaths true
 
     if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($DisableGithubMirror)) { # 禁用 Github 镜像源
-        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -DisableGithubMirror, 禁用 Github 镜像源"
+        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         return
     }
 
@@ -528,7 +531,7 @@ function Set-Github-Mirror {
             $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
         }
         git config --global url."$github_mirror".insteadOf "https://github.com"
-        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / 命令行参数 -UseCustomGithubMirror, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         return
     }
 
@@ -563,27 +566,34 @@ function Set-Github-Mirror {
 }
 
 
-# 安装 SD-Trainer
-function Install-SD-Trainer {
+# Git 仓库下载
+function Git-CLone {
+    param (
+        [String]$url,
+        [String]$path
+    )
+
+    $name = [System.IO.Path]::GetFileNameWithoutExtension("$url")
+    $folder_name = [System.IO.Path]::GetFileName("$path")
+    Print-Msg "检测 $name 是否已安装"
     $status = 0
-    if (!(Test-Path "$InstallPath/$Env:CORE_PREFIX")) {
+    if (!(Test-Path "$path")) {
         $status = 1
     } else {
-        $items = Get-ChildItem "$InstallPath/$Env:CORE_PREFIX"
+        $items = Get-ChildItem "$path"
         if ($items.Count -eq 0) {
             $status = 1
         }
     }
 
-    $path = "$InstallPath/$Env:CORE_PREFIX"
-    $cache_path = "$Env:CACHE_HOME/lora-scripts_tmp"
     if ($status -eq 1) {
-        Print-Msg "正在下载 SD-Trainer"
+        Print-Msg "正在下载 $name"
+        $cache_path = "$Env:CACHE_HOME/${folder_name}_tmp"
         # 清理缓存路径
         if (Test-Path "$cache_path") {
             Remove-Item -Path "$cache_path" -Force -Recurse
         }
-        git clone --recurse-submodules $SD_TRAINER_REPO "$cache_path"
+        git clone --recurse-submodules $url "$cache_path"
         if ($?) { # 检测是否下载成功
             # 清理空文件夹
             if (Test-Path "$path") {
@@ -593,29 +603,16 @@ function Install-SD-Trainer {
             # 将下载好的文件从缓存文件夹移动到指定路径
             New-Item -ItemType Directory -Path "$([System.IO.Path]::GetDirectoryName($path))" -Force > $null
             Move-Item -Path "$cache_path" -Destination "$path" -Force
-            Print-Msg "SD-Trainer 安装成功"
+            Print-Msg "$name 安装成功"
         } else {
-            Print-Msg "SD-Trainer 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+            Print-Msg "$name 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
             exit 1
         }
     } else {
-        Print-Msg "SD-Trainer 已安装"
-    }
-
-    Print-Msg "安装 SD-Trainer 子模块中"
-    git -C "$InstallPath/$Env:CORE_PREFIX" submodule init
-    git -C "$InstallPath/$Env:CORE_PREFIX" submodule update
-    if ($?) {
-        Print-Msg "SD-Trainer 子模块安装成功"
-    } else {
-        Print-Msg "SD-Trainer 子模块安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
-        if (!($BuildMode)) {
-            Read-Host | Out-Null
-        }
-        exit 1
+        Print-Msg "$name 已安装"
     }
 }
 
@@ -1238,7 +1235,7 @@ function Install-PyTorch {
         if ($?) {
             Print-Msg "PyTorch 安装成功"
         } else {
-            Print-Msg "PyTorch 安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+            Print-Msg "PyTorch 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
             if (!($BuildMode)) {
                 Read-Host | Out-Null
             }
@@ -1286,25 +1283,27 @@ function Install-PyTorch {
 }
 
 
-# 安装 SD-Trainer 依赖
-function Install-SD-Trainer-Dependence {
+# 安装 Fooocus 依赖
+function Install-Fooocus-Dependence {
     # 记录脚本所在路径
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/$Env:CORE_PREFIX"
-    Print-Msg "安装 SD-Trainer 依赖中"
+    $dep_path = "$InstallPath/$Env:CORE_PREFIX/requirements_versions.txt"
+
+    Print-Msg "安装 Fooocus 依赖中"
     if ($USE_UV) {
-        uv pip install -r requirements.txt
+        uv pip install -r "$dep_path"
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
-            python -m pip install -r requirements.txt
+            python -m pip install -r "$dep_path"
         }
     } else {
-        python -m pip install -r requirements.txt
+        python -m pip install -r "$dep_path"
     }
     if ($?) {
-        Print-Msg "SD-Trainer 依赖安装成功"
+        Print-Msg "Fooocus 依赖安装成功"
     } else {
-        Print-Msg "SD-Trainer 依赖安装失败, 终止 SD-Trainer 安装进程, 可尝试重新运行 SD-Trainer Installer 重试失败的安装"
+        Print-Msg "Fooocus 依赖安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装"
         Set-Location "$current_path"
         if (!($BuildMode)) {
             Read-Host | Out-Null
@@ -1312,6 +1311,716 @@ function Install-SD-Trainer-Dependence {
         exit 1
     }
     Set-Location "$current_path"
+}
+
+
+# 模型下载器
+function Model-Downloader ($download_list) {
+    $sum = $download_list.Count
+    for ($i = 0; $i -lt $download_list.Count; $i++) {
+        $content = $download_list[$i]
+        $url = $content[0]
+        $path = $content[1]
+        $file = $content[2]
+        $model_full_path = Join-Path -Path $path -ChildPath $file
+        if (Test-Path $model_full_path) {
+            Print-Msg "[$($i + 1)/$sum] $file 模型已存在于 $path 中"
+        } else {
+            Print-Msg "[$($i + 1)/$sum] 下载 $file 模型到 $path 中"
+            aria2c --file-allocation=none --summary-interval=0 --console-log-level=error -s 64 -c -x 16 -k 1M $url -d "$path" -o "$file"
+            if ($?) {
+                Print-Msg "[$($i + 1)/$sum] $file 下载成功"
+            } else {
+                Print-Msg "[$($i + 1)/$sum] $file 下载失败"
+            }
+        }
+    }
+}
+
+
+# 更新 Fooocus 预设文件
+function Update-Fooocus-Preset {
+    $fooocus_preset_json_content = @{
+        "default_model" = "Illustrious-XL-v1.0.safetensors"
+        "default_refiner" = "None"
+        "default_refiner_switch" = 0.8
+        "default_loras" = @(
+            @("None", 1.0),
+            @("None", 1.0),
+            @("None", 1.0),
+            @("None", 1.0),
+            @("None", 1.0)
+        )
+        "default_cfg_scale" = 5.0
+        "default_sample_sharpness" = 2.0
+        "default_sampler" = "euler_ancestral"
+        "default_scheduler" = "sgm_uniform"
+        "default_performance" = "Speed"
+        "default_prompt" = "`nmasterpiece,best quality,newest,"
+        "default_prompt_negative" = "low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anatomy,old,early,copyright name,watermark,artist name,signature,"
+        "default_styles" = @()
+        "default_image_number" = 1
+        "default_aspect_ratio" = "1344*1008"
+        "checkpoint_downloads" = @{
+            "Illustrious-XL-v1.0.safetensors" = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors"
+        }
+        "embeddings_downloads" = @{}
+        "lora_downloads" = @{}
+        "available_aspect_ratios" = @(
+            "704*1408", "704*1344", "768*1344", "768*1280", "832*1216", "1216*832", "832*1152", "896*1152", "896*1088", "960*1088", 
+            "960*1024", "1024*1024", "1024*960", "1088*960", "1088*896", "1152*896", "1152*832", "1216*832", "1280*768", "1344*768", 
+            "1344*704", "1408*704", "1472*704", "1536*640", "1600*640", "1664*576", "1728*576", "1920*1080", "1080*1920", "576*1024", 
+            "768*1024", "1024*576", "1024*768", "1024*1024", "2048*2048", "1536*864", "864*1536", "1472*828", "828*1472", "1344*756", 
+            "756*1344", "1344*1008", "1008*1344", "1536*1152", "1152*1536", "1472*1104", "1104*1472", "1920*640", "1920*824", "824*1920", 
+            "1920*768", "1536*768", "1488*640", "1680*720"
+        )
+        "default_save_metadata_to_images" = $true
+        "default_metadata_scheme" = "a1111"
+        "default_clip_skip" = 2
+        "default_black_out_nsfw" = $false
+        "metadata_created_by" = "Fooocus"
+        "default_developer_debug_mode_checkbox" = $true
+        "default_describe_apply_prompts_checkbox" = $false
+        "default_describe_content_type" = @(
+            "Art/Anime"
+        )
+    }
+
+    $fooocus_language_zh_json_content = @{
+        "Preview" = "预览"
+        "Gallery" = "相册"
+        "Generate" = "生成"
+        "Skip" = "跳过"
+        "Stop" = "停止"
+        "Input Image" = "图生图"
+        "Advanced" = "高级设置"
+        "Upscale or Variation" = "放大或重绘"
+        "Image Prompt" = "参考图"
+        "Inpaint or Outpaint (beta)" = "内部重绘或外部扩展（测试版）"
+        "Drag above image to here" = "将图像拖到这里"
+        "Upscale or Variation:" = "放大或重绘："
+        "Disabled" = "禁用"
+        "Vary (Subtle)" = "变化（微妙）"
+        "Vary (Strong)" = "变化（强烈）"
+        "Upscale (1.5x)" = "放大（1.5 倍）"
+        "Upscale (2x)" = "放大（2 倍）"
+        "Upscale (Fast 2x)" = "快速放大（2 倍）"
+        "📔 Document" = "📔 说明文档"
+        "Image" = "图像"
+        "Stop At" = "停止于"
+        "Weight" = "权重"
+        "Type" = "类型"
+        "PyraCanny" = "边缘检测"
+        "CPDS" = "深度结构检测"
+        "* `"Image Prompt`" is powered by Fooocus Image Mixture Engine (v1.0.1)." = "* `“图生图`”由 Fooocus 图像混合引擎提供支持（v1.0.1）。"
+        "The scaler multiplied to positive ADM (use 1.0 to disable)." = "正向 ADM 的缩放倍数（使用 1.0 禁用）。"
+        "The scaler multiplied to negative ADM (use 1.0 to disable)." = "反向 ADM 的缩放倍数（使用 1.0 禁用）。"
+        "When to end the guidance from positive/negative ADM." = "何时结束来自正向 / 反向 ADM 的指导。"
+        "Similar to the Control Mode in A1111 (use 0.0 to disable)." = "类似于 SD WebUI 中的控制模式（使用 0.0 禁用）。"
+        "Outpaint Expansion (" = "外部扩展 ("
+        "Outpaint" = "外部重绘"
+        "Left" = "向左扩展"
+        "Right" = "向右扩展"
+        "Top" = "向上扩展"
+        "Bottom" = "向下扩展"
+        "* `"Inpaint or Outpaint`" is powered by the sampler `"DPMPP Fooocus Seamless 2M SDE Karras Inpaint Sampler`" (beta)" = "* `“内部填充或外部填充`”由`“DPMPP Fooocus Seamless 2M SDE Karras Inpaint Sampler`”（测试版）采样器提供支持"
+        "Setting" = "设置"
+        "Style" = "样式"
+        "Performance" = "性能"
+        "Speed" = "均衡"
+        "Quality" = "质量"
+        "Extreme Speed" = "LCM 加速"
+        "Lightning" = "SDXL Lightning 加速"
+        "Hyper-SD" = "Hyper SD 加速"
+        "Aspect Ratios" = "宽高比"
+        "896×1152" = "896×1152"
+        "width × height" = "宽 × 高"
+        "704×1408" = "704×1408"
+        "704×1344" = "704×1344"
+        "768×1344" = "768×1344"
+        "768×1280" = "768×1280"
+        "832×1216" = "832×1216"
+        "832×1152" = "832×1152"
+        "896×1088" = "896×1088"
+        "960×1088" = "960×1088"
+        "960×1024" = "960×1024"
+        "1024×1024" = "1024×1024"
+        "1024×960" = "1024×960"
+        "1088×960" = "1088×960"
+        "1088×896" = "1088×896"
+        "1152×832" = "1152×832"
+        "1216×832" = "1216×832"
+        "1280×768" = "1280×768"
+        "1344×768" = "1344×768"
+        "1344×704" = "1344×704"
+        "1408×704" = "1408×704"
+        "1472×704" = "1472×704"
+        "1536×640" = "1536×640"
+        "1600×640" = "1600×640"
+        "1664×576" = "1664×576"
+        "1728×576" = "1728×576"
+        "Image Number" = "出图数量"
+        "Negative Prompt" = "反向提示词"
+        "Describing what you do not want to see." = "描述你不想看到的内容。"
+        "Random" = "随机种子"
+        "Seed" = "种子"
+        "📚 History Log" = "📚 历史记录"
+        "Image Style" = "图像风格"
+        "Fooocus V2" = "Fooocus V2 风格"
+        "Default (Slightly Cinematic)" = "默认（轻微的电影感）"
+        "Fooocus Masterpiece" = "Fooocus - 杰作"
+        "Random Style" = "随机风格"
+        "Fooocus Photograph" = "Fooocus - 照片"
+        "Fooocus Negative" = "Fooocus - 反向提示词"
+        "SAI 3D Model" = "SAI - 3D模型"
+        "SAI Analog Film" = "SAI - 模拟电影"
+        "SAI Anime" = "SAI - 动漫"
+        "SAI Cinematic" = "SAI - 电影片段"
+        "SAI Comic Book" = "SAI - 漫画"
+        "SAI Craft Clay" = "SAI - 工艺粘土"
+        "SAI Digital Art" = "SAI - 数字艺术"
+        "SAI Enhance" = "SAI - 增强"
+        "SAI Fantasy Art" = "SAI - 奇幻艺术"
+        "SAI Isometric" = "SAI - 等距风格"
+        "SAI Line Art" = "SAI - 线条艺术"
+        "SAI Lowpoly" = "SAI - 低多边形"
+        "SAI Neonpunk" = "SAI - 霓虹朋克"
+        "SAI Origami" = "SAI - 折纸"
+        "SAI Photographic" = "SAI - 摄影"
+        "SAI Pixel Art" = "SAI - 像素艺术"
+        "SAI Texture" = "SAI - 纹理"
+        "MRE Cinematic Dynamic" = "MRE - 史诗电影"
+        "MRE Spontaneous Picture" = "MRE - 自发图片"
+        "MRE Artistic Vision" = "MRE - 艺术视觉"
+        "MRE Dark Dream" = "MRE - 黑暗梦境"
+        "MRE Gloomy Art" = "MRE - 阴郁艺术"
+        "MRE Bad Dream" = "MRE - 噩梦"
+        "MRE Underground" = "MRE - 阴森地下"
+        "MRE Surreal Painting" = "MRE - 超现实主义绘画"
+        "MRE Dynamic Illustration" = "MRE - 动态插画"
+        "MRE Undead Art" = "MRE - 遗忘艺术家作品"
+        "MRE Elemental Art" = "MRE - 元素艺术"
+        "MRE Space Art" = "MRE - 空间艺术"
+        "MRE Ancient Illustration" = "MRE - 古代插图"
+        "MRE Brave Art" = "MRE - 勇敢艺术"
+        "MRE Heroic Fantasy" = "MRE - 英雄幻想"
+        "MRE Dark Cyberpunk" = "MRE - 黑暗赛博朋克"
+        "MRE Lyrical Geometry" = "MRE - 抒情几何抽象画"
+        "MRE Sumi E Symbolic" = "MRE - 墨绘长笔画"
+        "MRE Sumi E Detailed" = "MRE - 精细墨绘画"
+        "MRE Manga" = "MRE - 日本漫画"
+        "MRE Anime" = "MRE - 日本动画片"
+        "MRE Comic" = "MRE - 成人漫画书插画"
+        "Ads Advertising" = "广告 - 广告"
+        "Ads Automotive" = "广告 - 汽车"
+        "Ads Corporate" = "广告 - 企业品牌"
+        "Ads Fashion Editorial" = "广告 - 时尚编辑"
+        "Ads Food Photography" = "广告 - 美食摄影"
+        "Ads Gourmet Food Photography" = "广告 - 美食摄影"
+        "Ads Luxury" = "广告 - 奢侈品"
+        "Ads Real Estate" = "广告 - 房地产"
+        "Ads Retail" = "广告 - 零售"
+        "Artstyle Abstract" = "艺术风格 - 抽象"
+        "Artstyle Abstract Expressionism" = "艺术风格 - 抽象表现主义"
+        "Artstyle Art Deco" = "艺术风格 - 装饰艺术"
+        "Artstyle Art Nouveau" = "艺术风格 - 新艺术"
+        "Artstyle Constructivist" = "艺术风格 - 构造主义"
+        "Artstyle Cubist" = "艺术风格 - 立体主义"
+        "Artstyle Expressionist" = "艺术风格 - 表现主义"
+        "Artstyle Graffiti" = "艺术风格 - 涂鸦"
+        "Artstyle Hyperrealism" = "艺术风格 - 超写实主义"
+        "Artstyle Impressionist" = "艺术风格 - 印象派"
+        "Artstyle Pointillism" = "艺术风格 - 点彩派"
+        "Artstyle Pop Art" = "艺术风格 - 波普艺术"
+        "Artstyle Psychedelic" = "艺术风格 - 迷幻"
+        "Artstyle Renaissance" = "艺术风格 - 文艺复兴"
+        "Artstyle Steampunk" = "艺术风格 - 蒸汽朋克"
+        "Artstyle Surrealist" = "艺术风格 - 超现实主义"
+        "Artstyle Typography" = "艺术风格 - 字体设计"
+        "Artstyle Watercolor" = "艺术风格 - 水彩"
+        "Futuristic Biomechanical" = "未来主义 - 生物机械"
+        "Futuristic Biomechanical Cyberpunk" = "未来主义 - 生物机械 - 赛博朋克"
+        "Futuristic Cybernetic" = "未来主义 - 人机融合"
+        "Futuristic Cybernetic Robot" = "未来主义 - 人机融合 - 机器人"
+        "Futuristic Cyberpunk Cityscape" = "未来主义 - 赛博朋克城市"
+        "Futuristic Futuristic" = "未来主义 - 未来主义"
+        "Futuristic Retro Cyberpunk" = "未来主义 - 复古赛博朋克"
+        "Futuristic Retro Futurism" = "未来主义 - 复古未来主义"
+        "Futuristic Sci Fi" = "未来主义 - 科幻"
+        "Futuristic Vaporwave" = "未来主义 - 蒸汽波"
+        "Game Bubble Bobble" = "游戏 - 泡泡龙"
+        "Game Cyberpunk Game" = "游戏 - 赛博朋克游戏"
+        "Game Fighting Game" = "游戏 - 格斗游戏"
+        "Game Gta" = "游戏 - 侠盗猎车手"
+        "Game Mario" = "游戏 - 马里奥"
+        "Game Minecraft" = "游戏 - 我的世界"
+        "Game Pokemon" = "游戏 - 宝可梦"
+        "Game Retro Arcade" = "游戏 - 复古街机"
+        "Game Retro Game" = "游戏 - 复古游戏"
+        "Game Rpg Fantasy Game" = "游戏 - 角色扮演幻想游戏"
+        "Game Strategy Game" = "游戏 - 策略游戏"
+        "Game Streetfighter" = "游戏 - 街头霸王"
+        "Game Zelda" = "游戏 - 塞尔达传说"
+        "Misc Architectural" = "其他 - 建筑"
+        "Misc Disco" = "其他 - 迪斯科"
+        "Misc Dreamscape" = "其他 - 梦境"
+        "Misc Dystopian" = "其他 - 反乌托邦"
+        "Misc Fairy Tale" = "其他 - 童话故事"
+        "Misc Gothic" = "其他 - 哥特风"
+        "Misc Grunge" = "其他 - 垮掉的"
+        "Misc Horror" = "其他 - 恐怖"
+        "Misc Kawaii" = "其他 - 可爱"
+        "Misc Lovecraftian" = "其他 - 洛夫克拉夫特"
+        "Misc Macabre" = "其他 - 恐怖"
+        "Misc Manga" = "其他 - 漫画"
+        "Misc Metropolis" = "其他 - 大都市"
+        "Misc Minimalist" = "其他 - 极简主义"
+        "Misc Monochrome" = "其他 - 单色"
+        "Misc Nautical" = "其他 - 航海"
+        "Misc Space" = "其他 - 太空"
+        "Misc Stained Glass" = "其他 - 彩色玻璃"
+        "Misc Techwear Fashion" = "其他 - 科技时尚"
+        "Misc Tribal" = "其他 - 部落"
+        "Misc Zentangle" = "其他 - 禅绕画"
+        "Papercraft Collage" = "手工艺 - 拼贴"
+        "Papercraft Flat Papercut" = "手工艺 - 平面剪纸"
+        "Papercraft Kirigami" = "手工艺 - 切纸"
+        "Papercraft Paper Mache" = "手工艺 - 纸浆塑造"
+        "Papercraft Paper Quilling" = "手工艺 - 纸艺卷轴"
+        "Papercraft Papercut Collage" = "手工艺 - 剪纸拼贴"
+        "Papercraft Papercut Shadow Box" = "手工艺 - 剪纸影箱"
+        "Papercraft Stacked Papercut" = "手工艺 - 层叠剪纸"
+        "Papercraft Thick Layered Papercut" = "手工艺 - 厚层剪纸"
+        "Photo Alien" = "摄影 - 外星人"
+        "Photo Film Noir" = "摄影 - 黑色电影"
+        "Photo Glamour" = "摄影 - 魅力"
+        "Photo Hdr" = "摄影 - 高动态范围"
+        "Photo Iphone Photographic" = "摄影 - 苹果手机摄影"
+        "Photo Long Exposure" = "摄影 - 长曝光"
+        "Photo Neon Noir" = "摄影 - 霓虹黑色"
+        "Photo Silhouette" = "摄影 - 轮廓"
+        "Photo Tilt Shift" = "摄影 - 移轴"
+        "Cinematic Diva" = "电影女主角"
+        "Abstract Expressionism" = "抽象表现主义"
+        "Academia" = "学术"
+        "Action Figure" = "动作人偶"
+        "Adorable 3D Character" = "可爱的3D角色"
+        "Adorable Kawaii" = "可爱的卡哇伊"
+        "Art Deco" = "装饰艺术"
+        "Art Nouveau" = "新艺术，美丽艺术"
+        "Astral Aura" = "星体光环"
+        "Avant Garde" = "前卫"
+        "Baroque" = "巴洛克"
+        "Bauhaus Style Poster" = "包豪斯风格海报"
+        "Blueprint Schematic Drawing" = "蓝图示意图"
+        "Caricature" = "漫画"
+        "Cel Shaded Art" = "卡通渲染"
+        "Character Design Sheet" = "角色设计表"
+        "Classicism Art" = "古典主义艺术"
+        "Color Field Painting" = "色彩领域绘画"
+        "Colored Pencil Art" = "彩色铅笔艺术"
+        "Conceptual Art" = "概念艺术"
+        "Constructivism" = "建构主义"
+        "Cubism" = "立体主义"
+        "Dadaism" = "达达主义"
+        "Dark Fantasy" = "黑暗奇幻"
+        "Dark Moody Atmosphere" = "黑暗忧郁气氛"
+        "Dmt Art Style" = "迷幻艺术风格"
+        "Doodle Art" = "涂鸦艺术"
+        "Double Exposure" = "双重曝光"
+        "Dripping Paint Splatter Art" = "滴漆飞溅艺术"
+        "Expressionism" = "表现主义"
+        "Faded Polaroid Photo" = "褪色的宝丽来照片"
+        "Fauvism" = "野兽派"
+        "Flat 2d Art" = "平面 2D 艺术"
+        "Fortnite Art Style" = "堡垒之夜艺术风格"
+        "Futurism" = "未来派"
+        "Glitchcore" = "故障核心"
+        "Glo Fi" = "光明高保真"
+        "Googie Art Style" = "古吉艺术风格"
+        "Graffiti Art" = "涂鸦艺术"
+        "Harlem Renaissance Art" = "哈莱姆文艺复兴艺术"
+        "High Fashion" = "高级时装"
+        "Idyllic" = "田园诗般"
+        "Impressionism" = "印象派"
+        "Infographic Drawing" = "信息图表绘图"
+        "Ink Dripping Drawing" = "滴墨绘画"
+        "Japanese Ink Drawing" = "日式水墨画"
+        "Knolling Photography" = "规律摆放摄影"
+        "Light Cheery Atmosphere" = "轻松愉快的气氛"
+        "Logo Design" = "标志设计"
+        "Luxurious Elegance" = "奢华优雅"
+        "Macro Photography" = "微距摄影"
+        "Mandola Art" = "曼陀罗艺术"
+        "Marker Drawing" = "马克笔绘图"
+        "Medievalism" = "中世纪主义"
+        "Minimalism" = "极简主义"
+        "Neo Baroque" = "新巴洛克"
+        "Neo Byzantine" = "新拜占庭"
+        "Neo Futurism" = "新未来派"
+        "Neo Impressionism" = "新印象派"
+        "Neo Rococo" = "新洛可可"
+        "Neoclassicism" = "新古典主义"
+        "Op Art" = "欧普艺术"
+        "Ornate And Intricate" = "华丽而复杂"
+        "Pencil Sketch Drawing" = "铅笔素描"
+        "Pop Art 2" = "流行艺术2"
+        "Rococo" = "洛可可"
+        "Silhouette Art" = "剪影艺术"
+        "Simple Vector Art" = "简单矢量艺术"
+        "Sketchup" = "草图"
+        "Steampunk 2" = "赛博朋克2"
+        "Surrealism" = "超现实主义"
+        "Suprematism" = "至上主义"
+        "Terragen" = "地表风景"
+        "Tranquil Relaxing Atmosphere" = "宁静轻松的氛围"
+        "Sticker Designs" = "贴纸设计"
+        "Vibrant Rim Light" = "生动的边缘光"
+        "Volumetric Lighting" = "体积照明"
+        "Watercolor 2" = "水彩2"
+        "Whimsical And Playful" = "异想天开、俏皮"
+        "Fooocus Cinematic" = "Fooocus - 电影"
+        "Fooocus Enhance" = "Fooocus - 增强"
+        "Fooocus Sharp" = "Fooocus - 锐化"
+        "Mk Chromolithography" = "MK - 彩色平版印刷"
+        "Mk Cross Processing Print" = "MK - 交叉处理"
+        "Mk Dufaycolor Photograph" = "MK - 杜菲色"
+        "Mk Herbarium" = "MK - 标本"
+        "Mk Punk Collage" = "MK - 拼贴朋克"
+        "Mk Mosaic" = "MK - 马赛克"
+        "Mk Van Gogh" = "MK - 梵高"
+        "Mk Coloring Book" = "MK - 简笔画"
+        "Mk Singer Sargent" = "MK - 辛格·萨金特"
+        "Mk Pollock" = "MK - 波洛克"
+        "Mk Basquiat" = "MK - 巴斯奇亚"
+        "Mk Andy Warhol" = "MK - 安迪·沃霍尔"
+        "Mk Halftone Print" = "MK - 半色调"
+        "Mk Gond Painting" = "MK - 贡德艺术"
+        "Mk Albumen Print" = "MK - 蛋白银印相"
+        "Mk Inuit Carving" = "MK - 因纽特雕塑艺术"
+        "Mk Bromoil Print" = "MK - 溴油印"
+        "Mk Calotype Print" = "MK - 卡洛型"
+        "Mk Color Sketchnote" = "MK - 涂鸦"
+        "Mk Cibulak Porcelain" = "MK - 蓝洋葱"
+        "Mk Alcohol Ink Art" = "MK - 墨画"
+        "Mk One Line Art" = "MK - 单线艺术"
+        "Mk Blacklight Paint" = "MK - 黑白艺术"
+        "Mk Carnival Glass" = "MK - 彩虹色玻璃"
+        "Mk Cyanotype Print" = "MK - 蓝晒"
+        "Mk Cross Stitching" = "MK - 十字绣"
+        "Mk Encaustic Paint" = "MK - 热蜡画"
+        "Mk Embroidery" = "MK - 刺绣"
+        "Mk Gyotaku" = "MK - 鱼拓"
+        "Mk Luminogram" = "MK - 发光图"
+        "Mk Lite Brite Art" = "MK - 灯光创意"
+        "Mk Mokume Gane" = "MK - 木目金"
+        "Pebble Art" = "鹅卵石艺术"
+        "Mk Palekh" = "MK - 缩影"
+        "Mk Suminagashi" = "MK - 漂浮墨水"
+        "Mk Scrimshaw" = "MK - 斯克林肖"
+        "Mk Shibori" = "MK - 手工扎染"
+        "Mk Vitreous Enamel" = "MK - 搪瓷"
+        "Mk Ukiyo E" = "MK - 浮世绘"
+        "Mk Vintage Airline Poster" = "MK - 复古艺术"
+        "Mk Vintage Travel Poster" = "MK - 复古艺术旅行"
+        "Mk Bauhaus Style" = "MK - 包豪斯设计风格"
+        "Mk Afrofuturism" = "MK - 未来主义"
+        "Mk Atompunk" = "MK - 原子朋克"
+        "Mk Constructivism" = "MK - 建构"
+        "Mk Chicano Art" = "MK - 奇卡诺艺术"
+        "Mk De Stijl" = "MK - 荷兰风格"
+        "Mk Dayak Art" = "MK - 达雅克艺术"
+        "Mk Fayum Portrait" = "MK - 法尤姆风格"
+        "Mk Illuminated Manuscript" = "MK - 泥金装饰手抄"
+        "Mk Kalighat Painting" = "MK - 卡利加特绘画"
+        "Mk Madhubani Painting" = "MK - 马杜巴尼艺术"
+        "Mk Pictorialism" = "MK - 绘画摄影"
+        "Mk Pichwai Painting" = "MK - 皮切瓦伊"
+        "Mk Patachitra Painting" = "MK - 粘土艺术"
+        "Mk Samoan Art Inspired" = "MK - 萨摩亚艺术"
+        "Mk Tlingit Art" = "MK - 特林吉特艺术"
+        "Mk Adnate Style" = "MK - 具象艺术"
+        "Mk Ron English Style" = "MK - 罗恩·英格利斯"
+        "Mk Shepard Fairey Style" = "MK - 街头艺术"
+        "Fooocus Semi Realistic" = "Fooocus - 半现实风格"
+        "Mk Anthotype Print" = "MK - 花汁印相"
+        "Mk Aquatint Print" = "MK - 飞尘腐蚀版画"
+        "Model" = "模型"
+        "Base Model (SDXL only)" = "基础模型（只支持 SDXL）"
+        "Refiner (SDXL or SD 1.5)" = "精修模型 （支持 SDXL 或 SD 1.5）"
+        "None" = "无"
+        "LoRAs" = "LoRAs 模型"
+        "SDXL LoRA 1" = "SDXL LoRA 模型 1"
+        "SDXL LoRA 2" = "SDXL LoRA 模型 2"
+        "SDXL LoRA 3" = "SDXL LoRA 模型 3"
+        "SDXL LoRA 4" = "SDXL LoRA 模型 4"
+        "SDXL LoRA 5" = "SDXL LoRA 模型 5"
+        "LoRA 1" = "LoRA 模型 1"
+        "LoRA 2" = "LoRA 模型 2"
+        "LoRA 3" = "LoRA 模型 3"
+        "LoRA 4" = "LoRA 模型 4"
+        "LoRA 5" = "LoRA 模型 5"
+        "Refresh" = "Refresh"
+        "🔄 Refresh All Files" = "🔄 刷新全部文件"
+        "Sampling Sharpness" = "采样清晰度"
+        "Higher value means image and texture are sharper." = "值越大，图像和纹理越清晰。"
+        "Guidance Scale" = "提示词引导系数"
+        "Higher value means style is cleaner, vivider, and more artistic." = "提示词作用的强度，值越大，风格越干净、生动、更具艺术感。"
+        "Developer Debug Mode" = "开发者调试模式"
+        "Developer Debug Tools" = "开发者调试工具"
+        "Positive ADM Guidance Scaler" = "正向 ADM 引导系数"
+        "The scaler multiplied to positive ADM (use 1.0 to disable). " = "正向 ADM 引导的倍率 （使用 1.0 以禁用）。 "
+        "Negative ADM Guidance Scaler" = "负向 ADM 引导系数"
+        "The scaler multiplied to negative ADM (use 1.0 to disable). " = "负向 ADM 引导的倍率（使用 1.0 以禁用）。 "
+        "ADM Guidance End At Step" = "ADM 引导结束步长"
+        "When to end the guidance from positive/negative ADM. " = "正向 / 负向 ADM 结束引导的时间。 "
+        "Refiner swap method" = "Refiner 精炼模型交换方式"
+        "joint" = "joint 联合"
+        "separate" = "separate 分离"
+        "CFG Mimicking from TSNR" = "从 TSNR 模拟 CFG"
+        "Enabling Fooocus's implementation of CFG mimicking for TSNR (effective when real CFG > mimicked CFG)." = "启用 Fooocus 的 TSNR 模拟 CFG 的功能（当真实的 CFG 大于模拟的 CFG 时生效）。"
+        "Sampler" = "采样器"
+        "dpmpp_2m_sde_gpu" = "dpmpp_2m_sde_gpu"
+        "Only effective in non-inpaint mode." = "仅在非重绘模式下有效。"
+        "euler" = "euler"
+        "euler_ancestral" = "euler_ancestral"
+        "heun" = "heun"
+        "dpm_2" = "dpm_2"
+        "dpm_2_ancestral" = "dpm_2_ancestral"
+        "lms" = "lms"
+        "dpm_fast" = "dpm_fast"
+        "dpm_adaptive" = "dpm_adaptive"
+        "dpmpp_2s_ancestral" = "dpmpp_2s_ancestral"
+        "dpmpp_sde" = "dpmpp_sde"
+        "dpmpp_sde_gpu" = "dpmpp_sde_gpu"
+        "dpmpp_2m" = "dpmpp_2m"
+        "dpmpp_2m_sde" = "dpmpp_2m_sde"
+        "dpmpp_3m_sde" = "dpmpp_3m_sde"
+        "dpmpp_3m_sde_gpu" = "dpmpp_3m_sde_gpu"
+        "ddpm" = "ddpm"
+        "ddim" = "ddim"
+        "uni_pc" = "uni_pc"
+        "uni_pc_bh2" = "uni_pc_bh2"
+        "Scheduler" = "调度器"
+        "karras" = "karras"
+        "Scheduler of Sampler." = "采样器的调度器。"
+        "normal" = "normal"
+        "exponential" = "exponential"
+        "sgm_uniform" = "sgm_uniform"
+        "simple" = "simple"
+        "ddim_uniform" = "ddim_uniform"
+        "Forced Overwrite of Sampling Step" = "强制覆盖采样步长"
+        "Set as -1 to disable. For developer debugging." = "设为 -1 以禁用。用于开发者调试。"
+        "Forced Overwrite of Refiner Switch Step" = "强制重写精炼器开关步数"
+        "Forced Overwrite of Generating Width" = "强制覆盖生成宽度"
+        "Set as -1 to disable. For developer debugging. Results will be worse for non-standard numbers that SDXL is not trained on." = "设为 -1 以禁用。用于开发者调试。对于 SDXL 没有训练过的非标准数字，结果会差。"
+        "Forced Overwrite of Generating Height" = "强制覆盖生成高度"
+        "Forced Overwrite of Denoising Strength of `"Vary`"" = "强制覆盖`“变化`”的去噪强度"
+        "Set as negative number to disable. For developer debugging." = "设为负数以禁用。用于开发者调试。"
+        "Forced Overwrite of Denoising Strength of `"Upscale`"" = "强制覆盖`“放大`”去噪强度"
+        "Inpaint Engine" = "重绘引擎"
+        "v1" = "v1"
+        "Version of Fooocus inpaint model" = "重绘模型的版本选择"
+        "v2.5" = "v2.5"
+        "Control Debug" = "控制调试"
+        "Debug Preprocessors" = "启用预处理器结果展示"
+        "Mixing Image Prompt and Vary/Upscale" = "混合图生图和变化 / 放大"
+        "Mixing Image Prompt and Inpaint" = "混合图生图和重绘"
+        "Softness of ControlNet" = "ControlNet 控制权重"
+        "Similar to the Control Mode in A1111 (use 0.0 to disable). " = "类似于 SD WebUI 中的控制模式（使用 0.0 来禁用）。 "
+        "Canny" = "Canny 边缘检测算法"
+        "Canny Low Threshold" = "Canny 最低阈值"
+        "Canny High Threshold" = "Canny 最高阈值"
+        "FreeU" = "FreeU 提示词精准性优化"
+        "Enabled" = "启用"
+        "B1" = "B1"
+        "B2" = "B2"
+        "S1" = "S1"
+        "S2" = "S2"
+        "Type prompt here." = "在这里输入反向提示词（请用英文逗号分隔）"
+        "wheel" = "滚轮"
+        "Zoom canvas" = "画布缩放"
+        "Adjust brush size" = "调整笔刷尺寸"
+        "Reset zoom" = "画布复位"
+        "Fullscreen mode" = "全屏模式"
+        "Move canvas" = "移动画布"
+        "Overlap" = "图层重叠"
+        "Preset" = "预设配置"
+        "Output Format" = "图片保存格式"
+        "Type prompt here or paste parameters." = "在这里输入提示词（请用英文逗号分隔）"
+        "🔎 Type here to search styles ..." = "🔎 搜索风格预设 ..."
+        "Image Sharpness" = "图像锐化"
+        "Debug Tools" = "调试工具"
+        "Control" = "ControlNet 设置"
+        "See the results from preprocessors." = "显示预处理处理结果选项"
+        "Do not preprocess images. (Inputs are already canny/depth/cropped-face/etc.)" = "不对图像进行预处理 (导入的图像要求是 边缘控制图 / 深度图 / 面部特征图 / 其他)"
+        "Skip Preprocessors" = "禁用图片预处理"
+        "Inpaint" = "重绘设置"
+        "Debug Inpaint Preprocessing" = "启用重绘预处理功能调试"
+        "Disable initial latent in inpaint" = "禁用在重绘中初始化潜空间"
+        "Inpaint Denoising Strength" = "重绘幅度"
+        "Same as the denoising strength in A1111 inpaint. Only used in inpaint, not used in outpaint. (Outpaint always use 1.0)" = "该选项和 A1111 SD WebUI 中重绘功能的重绘幅度相同。该选项仅应用于图生图重绘功能中，在文生图中该设置无效（在文生图中该值为 1.0）"
+        "Inpaint Respective Field" = "重绘蒙版区域范围"
+        "The area to inpaint. Value 0 is same as `"Only Masked`" in A1111. Value 1 is same as `"Whole Image`" in A1111. Only used in inpaint, not used in outpaint. (Outpaint always use 1.0)" = "调整重绘区域的范围。该值为 0 时和 A1111 SD WebUI 中`“重绘区域`”选项的`“仅蒙版区域`”的效果相同，为 1 时和`“整张图片`”效果相同。该选项仅应用于图生图重绘功能中，在文生图中该设置无效（在文生图中该值为 1.0）"
+        "Mask Erode or Dilate" = "蒙版范围调整"
+        "Positive value will make white area in the mask larger, negative value will make white area smaller.(default is 0, always process before any mask invert)" = "正值将使蒙版中的白色区域变大，负值将使白色区域变小。（默认值为 0，始终在任何蒙版反转之前进行处理）"
+        "Enable Mask Upload" = "启用蒙版上传功能"
+        "Invert Mask" = "反转蒙版（重绘非蒙版内容）"
+        "ImagePrompt" = "图像作为提示次输入"
+        "FaceSwap" = "面部更改"
+        "Drag inpaint or outpaint image to here" = "导入需要重绘的图片"
+        "Inpaint or Outpaint" = "图片重绘"
+        "Method" = "功能"
+        "Inpaint or Outpaint (default)" = "图片重绘（默认）"
+        "Improve Detail (face, hand, eyes, etc.)" = "提升细节（面部，手，眼睛等）"
+        "Modify Content (add objects, change background, etc.)" = "修改内容（添加对象、更改背景等）"
+        "Outpaint Direction" = "图片扩充方向"
+        "Additional Prompt Quick List" = "附加提示词快速添加列表"
+        "Inpaint Additional Prompt" = "重绘附加提示词"
+        "Describe what you want to inpaint." = "描述你想要重绘的"
+        "* Powered by Fooocus Inpaint Engine" = "* 由 Fooocus 重绘引擎驱动"
+        "Describe" = "图像提示词反推"
+        "Drag any image to here" = "导入任意图片"
+        "Content Type" = "图片内容种类"
+        "Photograph" = "照片"
+        "Art/Anime" = "画作 / 动漫图片"
+        "Describe this Image into Prompt" = "反推图片的提示词"
+        "Metadata" = "图片信息查看"
+        "Drag any image generated by Fooocus here" = "导入由 Fooocus 生成的图片"
+        "Apply Metadata" = "应用图片信息"
+        "(Experimental) This may cause performance problems on some computers and certain internet conditions." = "（实验性）这可能会在某些计算机和某些互联网条件下导致性能问题。"
+        "Generate Image Grid for Each Batch" = "为每个批次生成图像网格"
+        "Disable preview during generation." = "在图片生成时禁用过程预览"
+        "Disable Preview" = "禁用预览"
+        "Disable intermediate results during generation, only show final gallery." = "在生成过程中禁用生成的中间结果，仅显示最终图库。"
+        "Disable Intermediate Results" = "禁用中间生成结果"
+        "Disable automatic seed increment when image number is > 1." = "当图片生成批次大于 1 时禁用种子增量"
+        "Disable seed increment" = "禁用种子增量"
+        "Read wildcards in order" = "按顺序读取通配符"
+        "Adds parameters to generated images allowing manual regeneration." = "在生成的图片中添加元数据（提示词信息等）便于复现原图"
+        "Save Metadata to Images" = "保存元数据到图像中"
+        "Metadata Scheme" = "元数据格式"
+        "Image Prompt parameters are not included. Use png and a1111 for compatibility with Civitai." = "使用默认设置时图片提示词参数不包括在内。使用 png 图片保存格式和 A1111 SD WebUI 的图片信息保存风格的图片更适合在 Civitai 进行分享。"
+        "fooocus (json)" = "Fooocus 风格（json）"
+        "a1111 (plain text)" = "A1111 SD WebUI 风格（纯文本）"
+        "Refiner Switch At" = "Refind 切换时机"
+        "Use 0.4 for SD1.5 realistic models; or 0.667 for SD1.5 anime models; or 0.8 for XL-refiners; or any value for switching two SDXL models." = "SD 1.5 真实模型使用 0.4，SD1.5 动漫模型为 0.667，XLRefind 机为 0.8，或用于切换两个 SDXL 模型的任何值。"
+        "Waiting for task to start ..." = "等待任务开始 ..."
+        "Connection errored out." = "连接超时"
+        "Error" = "错误"
+        "Loading..." = "加载中 ..."
+        "Moving model to GPU ..." = "将模型移至 GPU ..."
+        "Loading models ..." = "加载模型 ..."
+        "VAE encoding ..." = "VAE 编码 ..."
+        "Image processing ..." = "处理图像 ..."
+        "Processing prompts ..." = "处理提示词 ..."
+        "Download" = "下载"
+        "Downloading control models ..." = "下载 ControlNet 模型 ..."
+        "Loading control models ..." = "加载 ControlNet 模型 ..."
+        "processing" = "处理中"
+        "Downloading upscale models ..." = "下载放大模型 ..."
+        "Downloading inpainter ..." = "下载重绘模型 ..."
+        "Use via API" = "通过 API 调用"
+        "Lost connection due to leaving page. Rejoining queue..." = "由于离开页面而失去连接。正在重新加入队列 ..."
+        "Warning" = "警告"
+        "Finished Images" = "已完成的图像"
+        "On mobile, the connection can break if this tab is unfocused or the device sleeps, losing your position in queue." = "在移动端上，如果此选项卡无焦点或设备休眠，连接可能中断，从而失去队列中的位置。"
+        "Initializing ..." = "初始化 ..."
+        "Downloading LCM components ..." = "下载 LCM 组件 ..."
+        "Downloading Lightning components ..." = "下载 Lightning 组件 ..."
+        "Start drawing" = "开始涂鸦"
+        "VAE Inpaint encoding ..." = "VAE 重绘编码 ..."
+        "JSON.parse: unexpected character at line 2 column 1 of the JSON data" = "JSON 分析：JSON 数据中第 2 行第 1 列出现不期望字符"
+        "API documentation" = "API 文档"
+        "fn_index:" = "主要方法: "
+        "Use the" = "使用"
+        "Python library or the" = "Python 库或者"
+        "Javascript package to query the demo via API." = "Javascript 包来查询演示 API。"
+        "Unnamed Endpoints" = "未命名接口"
+        "Return Type(s)" = "返回类型"
+        "47 API endpoints" = "47 个 API 接口"
+        "copy" = "复制"
+        "copied!" = "已复制！"
+        "JSON.parse: unexpected character at line 1 column 1 of the JSON data" = "JAVA 解析：JSON 数据第 1 行第 1 列出现意外字符"
+        "Generate forever" = "无限生成"
+        "Downloading Hyper-SD components ..." = "下载 Hyper SD 组件中 ..."
+        "Inpaint brush color" = "重绘画笔颜色"
+        "CLIP Skip" = "CLIP 跳过层数"
+        "Bypass CLIP layers to avoid overfitting (use 1 to not skip any layers, 2 is recommended)." = "CLIP 跳过层数可避免过拟合的情况（使用 1 为不跳过任何层，2 为推荐值）"
+        "VAE" = "VAE 模型"
+        "Default (model)" = "默认（模型）"
+        "Use black image if NSFW is detected." = "当检测到图片存在 NSFW 内容时将屏蔽图片"
+        "Black Out NSFW" = "屏蔽 NSFW"
+        "For images created by Fooocus" = "导入由 Fooocus 生成的图片"
+        "- Zoom canvas" = " - 缩放画布"
+        "- Adjust brush size" = " - 调整画笔大小"
+        "- Undo last action" = "- 撤回上一次的操作"
+        "- Reset zoom" = " - 重置缩放"
+        "- Fullscreen mode" = " - 全屏模式"
+        "- Move canvas" = " - 移动画布"
+        "Image Size and Recommended Size" = "图片分辨率和推荐的生图分辨率"
+        "Enhance" = "增强"
+        "Enable" = "启用"
+        "Detection prompt" = "检测提示词"
+        "Use singular whenever possible" = "尽量使用单词进行描述"
+        "Describe what you want to detect." = "描述你想要检测的。"
+        "Detection Prompt Quick List" = "检测提示词快速选择列表"
+        "Enhancement positive prompt" = "增强正面提示词"
+        "Uses original prompt instead if empty." = "如果提示词为空，则使用原有的提示词。"
+        "Enhancement negative prompt" = "增强负面提示词"
+        "Uses original negative prompt instead if empty." = "如果提示词为空，则使用原有的负面提示词。"
+        "Detection" = "检测"
+        "Mask generation model" = "蒙版生成模型"
+        "SAM Options" = "SAM 模型选项"
+        "SAM model" = "SAM 模型"
+        "Box Threshold" = "箱体阈值"
+        "Text Threshold" = "文本阈值"
+        "Maximum number of detections" = "检测最大数量"
+        "Set to 0 to detect all" = "设置为 0 时检测所有"
+        "Version of Fooocus inpaint model. If set, use performance Quality or Speed (no performance LoRAs) for best results." = "Fooocus 重绘模型的版本。如果已设置，在性能选项选择质量或者均衡（无加速 LoRA）以达到最佳效果。"
+        "Positive value will make white area in the mask larger, negative value will make white area smaller. (default is 0, always processed before any mask invert)" = "该值为正值时会使遮罩中的白色区域变大，为负值时会使白色区域变小。（默认值为 0，并且在任何蒙版反转之前处理）"
+        "#1" = "单元 1"
+        "#2" = "单元 2"
+        "#3" = "单元 3"
+        "📔 Documentation" = "📔 文档"
+        "Use with Enhance, skips image generation" = "使用增强功能后，跳过图像生成"
+        "Settings" = "设置"
+        "Styles" = "风格"
+        "Fooocus Pony" = "Fooocus - 小马"
+        "Models" = "模型"
+        "Show enhance masks in preview and final results" = "在预览中展示增强蒙版和最后结果"
+        "Debug Enhance Masks" = "启用增强蒙版调试"
+        "Use GroundingDINO boxes instead of more detailed SAM masks" = "使用 GroundingDINO 箱体代替更多的细节 SAM 蒙版"
+        "Debug GroundingDINO" = "启用 GroundingDINO 调试"
+        "GroundingDINO Box Erode or Dilate" = "GroundingDINO 箱体侵蚀和扩张"
+        "Enable Advanced Masking Features" = "启用高级蒙版特性"
+        "Mask Upload" = "上传蒙版"
+        "Invert Mask When Generating" = "在生成时反转蒙版"
+        "Generate mask from image" = "为图像生成蒙版"
+        "Order of Processing" = "处理顺序"
+        "Use before to enhance small details and after to enhance large areas." = "在使用前可增强小细节，在使用后可增大面积。"
+        "Before First Enhancement" = "在第一次增强前"
+        "After Last Enhancement" = "在最后一次增强后"
+        "Save only final enhanced image" = "仅保存最后一次增强后的图像"
+        "Positive value will make white area in the mask larger, negative value will make white area smaller. (default is 0, processed before SAM)" = "该值为正值时会使遮罩中的白色区域变大，为负值时会使白色区域变小。（默认值为 0，并且在使用 SAM 之前处理）"
+        "Apply Styles" = "应用风格预设"
+    }
+
+    # 创建一个不带 BOM 的 UTF-8 编码器
+    $utf8_encoding = New-Object System.Text.UTF8Encoding($false)
+
+    $fooocus_preset_json_content = $fooocus_preset_json_content | ConvertTo-Json -Depth 4
+    $fooocus_language_zh_json_content = $fooocus_language_zh_json_content | ConvertTo-Json -Depth 4
+
+    Print-Msg "更新 Fooocus 预设文件"
+    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/presets/fooocus_installer.json", $false, $utf8_encoding)
+    $stream_writer.Write($fooocus_preset_json_content)
+    $stream_writer.Close()
+
+    Print-Msg "更新 Fooocus 翻译文件"
+    $stream_writer = [System.IO.StreamWriter]::new("$InstallPath/$Env:CORE_PREFIX/language/zh.json", $false, $utf8_encoding)
+    $stream_writer.Write($fooocus_language_zh_json_content)
+    $stream_writer.Close()
 }
 
 
@@ -1360,21 +2069,40 @@ function Check-Install {
     Check-uv-Version
 
     Set-Github-Mirror
-    Install-SD-Trainer
-    Install-PyTorch
-    Install-SD-Trainer-Dependence
 
-    # 设置默认启动参数
+    # Fooocus 核心
+    Git-CLone "$FOOOCUS_REPO" "$InstallPath/$Env:CORE_PREFIX"
+
+    Install-PyTorch
+    Install-Fooocus-Dependence
+
     if (!(Test-Path "$InstallPath/launch_args.txt")) {
-        Print-Msg "设置默认 SD-Trainer 启动参数"
-        if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
-            $content = "--skip-prepare-onnxruntime"
-        } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
-            $content = "--inbrowser --language zh-CN --noverify"
-        } else {
-            $content = "--skip-prepare-onnxruntime"
-        }
+        Print-Msg "设置默认 Fooocus 启动参数"
+        $content = "--language zh --preset fooocus_installer --disable-offload-from-vram --disable-analytics --always-download-new-model"
         Set-Content -Encoding UTF8 -Path "$InstallPath/launch_args.txt" -Value $content
+    }
+
+    Update-Fooocus-Preset
+
+    if ($NoPreDownloadModel) {
+        Print-Msg "检测到 -NoPreDownloadModel 命令行参数, 跳过下载模型"
+    } else {
+        Print-Msg "预下载模型中"
+        $model_list = New-Object System.Collections.ArrayList
+
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/vaeapp_sd15.pth", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "vaeapp_sd15.pth")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xlvaeapp.pth", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "xlvaeapp.pth")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/vae_approx/xl-to-v1_interposer-v4.0.safetensors", "$InstallPath/$Env:CORE_PREFIX/models/vae_approx", "xl-to-v1_interposer-v4.0.safetensors")) | Out-Null
+        $model_list.Add(@("https://modelscope.cn/models/licyks/fooocus-model/resolve/master/prompt_expansion/fooocus_expansion/pytorch_model.bin", "$InstallPath/$Env:CORE_PREFIX/models/prompt_expansion/fooocus_expansion", "pytorch_model.bin")) | Out-Null
+
+        $checkpoint_path = "$InstallPath/$Env:CORE_PREFIX/models/checkpoints"
+        $url = "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors"
+        $name = Split-Path -Path $url -Leaf
+        if ((!(Get-ChildItem -Path $checkpoint_path -Include "*.safetensors", "*.pth", "*.ckpt" -Recurse)) -or (Test-Path "$checkpoint_path/${name}.aria2")){
+            $model_list.Add(@("$url", "$checkpoint_path", "$name")) | Out-Null
+        }
+
+        Model-Downloader $model_list
     }
 
     # 清理缓存
@@ -1411,7 +2139,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -1436,8 +2164,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -1469,6 +2197,25 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghfast.top/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gh.api.99988866.xyz/https://github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
+)
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -1535,29 +2282,29 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式
+        启用 Fooocus Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer Installer 更新检查
+        禁用 Fooocus Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
@@ -1569,25 +2316,25 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
     -DisableUV
-        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
-    -LaunchArg <SD-Trainer 启动参数>
-        设置 SD-Trainer 自定义启动参数, 如启用 --disable-offload-from-vram 和 --disable-analytics, 则使用 -LaunchArg ```"--disable-offload-from-vram --disable-analytics```" 进行启用
+    -LaunchArg <Fooocus 启动参数>
+        设置 Fooocus 自定义启动参数, 如启用 --disable-offload-from-vram 和 --disable-analytics, 则使用 -LaunchArg ```"--disable-offload-from-vram --disable-analytics```" 进行启用
 
     -EnableShortcut
-        创建 SD-Trainer 启动快捷方式
+        创建 Fooocus 启动快捷方式
 
     -DisableCUDAMalloc
-        禁用 SD-Trainer Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        禁用 Fooocus Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        禁用 SD-Trainer Installer 检查 SD-Trainer 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer 环境中存在的问题无法被发现并修复
+        禁用 Fooocus Installer 检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer Installer 自动应用新版本更新
+        禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -1600,7 +2347,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -1624,13 +2371,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -1682,22 +2429,22 @@ except Exception as _:
 }
 
 
-# SD-Trainer Installer 更新检测
-function Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -1721,12 +2468,12 @@ function Check-SD-Trainer-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -1734,35 +2481,35 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+    if (`$latest_version -le `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            Print-Msg `"跳过 Fooocus Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 Fooocus Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -1916,8 +2663,8 @@ function Set-uv {
 }
 
 
-# SD-Trainer 启动参数
-function Get-SD-Trainer-Launch-Args {
+# Fooocus 启动参数
+function Get-Fooocus-Launch-Args {
     `$arguments = New-Object System.Collections.ArrayList
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$LaunchArg)) {
         if (`$LaunchArg) {
@@ -1939,42 +2686,44 @@ function Get-SD-Trainer-Launch-Args {
 }
 
 
-# 设置 SD-Trainer 的快捷启动方式
-function Create-SD-Trainer-Shortcut {
+# 设置 Fooocus 的快捷启动方式
+function Create-Fooocus-Shortcut {
     # 设置快捷方式名称
     if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
         `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
-            `$filename = `"SD-Trainer`"
-        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
-            `$filename = `"Kohya-GUI`"
+        if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
+            `$filename = `"Fooocus`"
+        } elseif ((`$branch -eq `"MoonRide303/Fooocus-MRE`") -or (`$branch -eq `"MoonRide303/Fooocus-MRE.git`")) {
+            `$filename = `"Fooocus-MRE`"
+        } elseif ((`$branch -eq `"runew0lf/RuinedFooocus`") -or (`$branch -eq `"runew0lf/RuinedFooocus.git`")) {
+            `$filename = `"RuinedFooocus`"
         } else {
-            `$filename = `"SD-Trainer`"
+            `$filename = `"Fooocus`"
         }
     } else {
-        `$filename = `"SD-Trainer`"
+        `$filename = `"Fooocus`"
     }
 
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/sd_trainer_icon.ico`"
-    `$shortcut_icon = `"`$PSScriptRoot/sd_trainer_icon.ico`"
+    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/gradio_icon.ico`"
+    `$shortcut_icon = `"`$PSScriptRoot/gradio_icon.ico`"
 
     if ((!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) -and (!(`$EnableShortcut))) {
         return
     }
 
-    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 SD-Trainer 快捷启动方式中`"
+    Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 Fooocus 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
-        Print-Msg `"获取 SD-Trainer 图标中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/sd_trainer_icon.ico`"
+        Print-Msg `"获取 Fooocus 图标中`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
         if (!(`$?)) {
-            Print-Msg `"获取 SD-Trainer 图标失败, 无法创建 SD-Trainer 快捷启动方式`"
+            Print-Msg `"获取 Fooocus 图标失败, 无法创建 Fooocus 快捷启动方式`"
             return
         }
     }
 
-    Print-Msg `"更新 SD-Trainer 快捷启动方式`"
+    Print-Msg `"更新 Fooocus 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
@@ -2141,8 +2890,8 @@ if __name__ == '__main__':
 }
 
 
-# 检查 SD-Trainer 依赖完整性
-function Check-SD-Trainer-Requirements {
+# 检查 Fooocus 依赖完整性
+function Check-Fooocus-Requirements {
     `$content = `"
 '''运行环境检查'''
 import re
@@ -3149,25 +3898,25 @@ if __name__ == '__main__':
     main()
 `".Trim()
 
-    Print-Msg `"检查 SD-Trainer 内核依赖完整性中`"
+    Print-Msg `"检查 Fooocus 内核依赖完整性中`"
     if (!(Test-Path `"`$Env:CACHE_HOME`")) {
         New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" > `$null
     }
-    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" -Value `$content
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/check_fooocus_requirement.py`" -Value `$content
 
     `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements_versions.txt`"
     if (!(Test-Path `"`$dep_path`")) {
         `$dep_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/requirements.txt`"
     }
     if (!(Test-Path `"`$dep_path`")) {
-        Print-Msg `"未检测到 SD-Trainer 依赖文件, 跳过依赖完整性检查`"
+        Print-Msg `"未检测到 Fooocus 依赖文件, 跳过依赖完整性检查`"
         return
     }
 
-    `$status = `$(python `"`$Env:CACHE_HOME/check_sd_trainer_requirement.py`" --requirement-path `"`$dep_path`")
+    `$status = `$(python `"`$Env:CACHE_HOME/check_fooocus_requirement.py`" --requirement-path `"`$dep_path`")
 
     if (`$status -eq `"False`") {
-        Print-Msg `"检测到 SD-Trainer 内核有依赖缺失, 安装 SD-Trainer 依赖中`"
+        Print-Msg `"检测到 Fooocus 内核有依赖缺失, 安装 Fooocus 依赖中`"
         if (`$USE_UV) {
             uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
@@ -3178,12 +3927,12 @@ if __name__ == '__main__':
             python -m pip install -r `"`$dep_path`"
         }
         if (`$?) {
-            Print-Msg `"SD-Trainer 依赖安装成功`"
+            Print-Msg `"Fooocus 依赖安装成功`"
         } else {
-            Print-Msg `"SD-Trainer 依赖安装失败, 这将会导致 SD-Trainer 缺失依赖无法正常运行`"
+            Print-Msg `"Fooocus 依赖安装失败, 这将会导致 Fooocus 缺失依赖无法正常运行`"
         }
     } else {
-        Print-Msg `"SD-Trainer 无缺失依赖`"
+        Print-Msg `"Fooocus 无缺失依赖`"
     }
 }
 
@@ -3443,19 +4192,8 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
 if __name__ == '__main__':
     arg = get_args()
     # print(need_install_ort_ver(not arg.ignore_ort_install))
-    print(need_install_ort_ver(False))
+    print(need_install_ort_ver())
 `".Trim()
-
-    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
-        `$array = `$git_remote -split `"/`"
-        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if (((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) -and (((!(Test-Path `"`$PSScriptRoot/launch_args.txt`")) -and (!(`$LaunchArg))) -or (((Test-Path `"`$PSScriptRoot/launch_args.txt`") -and (!(Select-String -Path `"`$PSScriptRoot/launch_args.txt`" -Pattern `"--skip-prepare-onnxruntime`"))) -and ((`$LaunchArg) -and (!(`$LaunchArg -match `"--skip-prepare-onnxruntime`")))))) {
-            Print-Msg `"检测到使用的是 Akegarasu/lora-scripts 分支, 并且未添加 --skip-prepare-onnxruntime 启动参数, SD-Trainer Installer 内置的 onnxruntime-gpu 检查将不再运行`"
-            Print-Msg `"如果需要使用 SD-Trainer Installer 提供的 onnxruntime-gpu 检查, 需要添加 --skip-prepare-onnxruntime 启动参数禁用 SD-Trainer 的 onnxruntime 检查功能, 可运行 settings.ps1 后进行启动参数设置进行添加`"
-            return
-        }
-    }
 
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
     `$status = `$(python -c `"`$content`")
@@ -3592,124 +4330,86 @@ function Check-MS-VCPP-Redistributable {
 }
 
 
-# 检查 accelerate 可执行文件可用性
-function Check-Accelerate-Executable-File {
-    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`") {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
-        `$array = `$git_remote -split `"/`"
-        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if (((`$branch -ne `"bmaltais/kohya_ss`") -and (`$branch -ne `"bmaltais/kohya_ss.git`"))) {
-            return
-        }
-    }
-
-    if (!(Get-Command accelerate -ErrorAction SilentlyContinue)) {
-        return
-    }
-
-    Print-Msg `"检查 accelerate 可执行文件可用性`"
-    accelerate --help > `$null 2>&1
-    if (`$?) {
-        Print-Msg `"accelerate 可执行文件可用`"
-        return
-    }
-
-    Print-Msg `"accelerate 不可用, 尝试重新安装中`"
-    `$content = `"
-from importlib.metadata import version
-
-try:
-    print('accelerate==' + version('accelerate'))
-except Exception as _:
-    print('accelerate')
-    `".Trim()
-    `$accelerate_package = `$(python -c `"`$content`")
-    python -m pip uninstall accelerate -y
-    if (`$USE_UV) {
-        uv pip install `$accelerate_package
-        if (!(`$?)) {
-            Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
-            python -m pip install `$accelerate_package
-        }
-    } else {
-        python -m pip install `$accelerate_package
-    }
-
-    if (`$?) {
-        Print-Msg `"accelerate 重新安装成功`"
-    } else {
-        Print-Msg `"accelerate 重新安装失败, 这可能导致部分功能异常`"
-    }
-}
-
-
-# 检查 SD-Trainer 运行环境
-function Check-SD-Trainer-Env {
+# 检查 Fooocus 运行环境
+function Check-Fooocus-Env {
     if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
-        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD-Trainer 运行环境检测, 这可能会导致 SD-Trainer 运行环境中存在的问题无法被发现并解决`"
+        Print-Msg `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Fooocus 运行环境检测, 这可能会导致 Fooocus 运行环境中存在的问题无法被发现并解决`"
         return
     } else {
-        Print-Msg `"检查 SD-Trainer 运行环境中`"
+        Print-Msg `"检查 Fooocus 运行环境中`"
     }
 
-    Check-Accelerate-Executable-File
-    Check-SD-Trainer-Requirements
+    Check-Fooocus-Requirements
     Fix-PyTorch
     Check-Onnxruntime-GPU
     Check-Numpy-Version
     Check-MS-VCPP-Redistributable
-    Print-Msg `"SD-Trainer 运行环境检查完成`"
+    Print-Msg `"Fooocus 运行环境检查完成`"
+}
+
+
+# 设置 Fooocus 的 HuggingFace 镜像
+function Get-Fooocus-HuggingFace-Mirror-Arg {
+    `$hf_mirror_arg = New-Object System.Collections.ArrayList
+
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if (!((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`"))) {
+            return `$hf_mirror_arg
+        }
+    }
+
+    if ((!(Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`")) -and (!(`$DisableHuggingFaceMirror))) {
+        `$hf_mirror_arg.Add(`"--hf-mirror`") | Out-Null
+        `$hf_mirror_arg.Add(`"`$Env:HF_ENDPOINT`") | Out-Null
+    }
+
+    return `$hf_mirror_arg
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Installer-Update
+        Check-Fooocus-Installer-Update
     }
     Set-HuggingFace-Mirror
     Set-uv
     PyPI-Mirror-Status
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    `$launch_args = Get-SD-Trainer-Launch-Args
+    `$launch_args = Get-Fooocus-Launch-Args
+    `$hf_mirror_arg = Get-Fooocus-HuggingFace-Mirror-Arg
     # 记录上次的路径
     `$current_path = `$(Get-Location).ToString()
     Set-Location `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
 
-    # 检测使用的启动脚本
-    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") {
-        `$launch_script = `"gui.py`"
-    } elseif (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`") {
-        `$launch_script = `"kohya_gui.py`"
-    } else {
-        `$launch_script = `"gui.py`"
-    }
-
-    Create-SD-Trainer-Shortcut
-    Check-SD-Trainer-Env
+    Create-Fooocus-Shortcut
+    Check-Fooocus-Env
     Set-PyTorch-CUDA-Memory-Alloc
+    Print-Msg `"启动 Fooocus 中`"
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过启动 SD-Trainer`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过启动 Fooocus`"
     } else {
-        Print-Msg `"启动 SD-Trainer 中`"
-        python `$launch_script.ToString() `$launch_args
+        python launch.py `$launch_args `$hf_mirror_arg
         `$req = `$?
         if (`$req) {
-            Print-Msg `"SD-Trainer 正常退出`"
+            Print-Msg `"Fooocus 正常退出`"
         } else {
-            Print-Msg `"SD-Trainer 出现异常, 已退出`"
+            Print-Msg `"Fooocus 出现异常, 已退出`"
         }
         Read-Host | Out-Null
     }
@@ -3746,7 +4446,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -3771,8 +4471,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -3889,35 +4589,35 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式
+        启用 Fooocus Installer 构建模式
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer Installer 更新检查
+        禁用 Fooocus Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer Installer 自动设置 Github 镜像源
+        禁用 Fooocus Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -3940,10 +4640,10 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer Installer 自动应用新版本更新
+        禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -3956,7 +4656,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -3980,13 +4680,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -4009,22 +4709,22 @@ function Fix-Git-Point-Off-Set {
 }
 
 
-# SD-Trainer Installer 更新检测
-function Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -4048,12 +4748,12 @@ function Check-SD-Trainer-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -4061,35 +4761,35 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+    if (`$latest_version -le `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            Print-Msg `"跳过 Fooocus Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 Fooocus Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -4198,24 +4898,24 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Installer-Update
+        Check-Fooocus-Installer-Update
     }
     Set-Github-Mirror
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
-    Print-Msg `"拉取 SD-Trainer 更新内容中`"
+    Print-Msg `"拉取 Fooocus 更新内容中`"
     Fix-Git-Point-Off-Set `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
     `$core_origin_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
     `$branch = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null).split(`"/`")[2]
@@ -4234,25 +4934,22 @@ function Main {
 
     git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" fetch --recurse-submodules --all
     if (`$?) {
-        Print-Msg `"应用 SD-Trainer 更新中`"
+        Print-Msg `"应用 Fooocus 更新中`"
         `$commit_hash = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" log `"`$remote_branch`" --max-count 1 --format=`"%h`")
         git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" reset --hard `"`$remote_branch`" --recurse-submodules
         `$core_latest_ver = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" show -s --format=`"%h %cd`" --date=format:`"%Y-%m-%d %H:%M:%S`")
 
         if (`$core_origin_ver -eq `$core_latest_ver) {
-            Print-Msg `"SD-Trainer 已为最新版`"
-            `$core_update_msg = `"已为最新版, 当前版本：`$core_origin_ver`"
+            Print-Msg `"Fooocus 已为最新版, 当前版本：`$core_origin_ver`"
         } else {
-            Print-Msg `"SD-Trainer 更新成功`"
-            `$core_update_msg = `"更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
+            Print-Msg `"Fooocus 更新成功, 版本：`$core_origin_ver -> `$core_latest_ver`"
         }
     } else {
-        Print-Msg `"拉取 SD-Trainer 更新内容失败`"
-        Print-Msg `"更新 SD-Trainer 失败, 请检查控制台日志。可尝试重新运行 SD-Traine Installer 更新脚本进行重试`"
+        Print-Msg `"拉取 Fooocus 更新内容失败`"
+        Print-Msg `"更新 Fooocus 失败, 请检查控制台日志。可尝试重新运行 Fooocus Installer 更新脚本进行重试`"
     }
 
-    Print-Msg `"退出 SD-Trainer 更新脚本`"
-
+    Print-Msg `"退出 Fooocus 更新脚本`"
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
     }
@@ -4289,7 +4986,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -4314,8 +5011,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -4432,39 +5129,39 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <SD-Trainer 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <Fooocus 分支编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式
+        启用 Fooocus Installer 构建模式
 
-    -BuildWitchBranch <SD-Trainer 分支编号>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer 分支编号切换到对应的 SD-Trainer 分支
-        SD-Trainer 分支编号可运行 switch_branch.ps1 脚本进行查看
+    -BuildWitchBranch <Fooocus 分支编号>
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
+        Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer Installer 更新检查
+        禁用 Fooocus Installer 更新检查
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableGithubMirror
-        禁用 SD-Trainer Installer自动设置 Github 镜像源
+        禁用 Fooocus Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -4487,10 +5184,10 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer Installer 自动应用新版本更新
+        禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -4503,7 +5200,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -4527,32 +5224,32 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
-# SD-Trainer Installer 更新检测
-function Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -4576,12 +5273,12 @@ function Check-SD-Trainer-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -4589,35 +5286,35 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+    if (`$latest_version -le `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            Print-Msg `"跳过 Fooocus Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 Fooocus Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -4724,8 +5421,8 @@ function Set-Github-Mirror {
 }
 
 
-# 获取 SD-Trainer 分支
-function Get-SD-Trainer-Branch {
+# 获取 Fooocus 分支
+function Get-Fooocus-Branch {
     `$remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
     `$ref = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" symbolic-ref --quiet HEAD 2> `$null)
     if (`$ref -eq `$null) {
@@ -4736,128 +5433,137 @@ function Get-SD-Trainer-Branch {
 }
 
 
-# 切换 SD-Trainer 分支
-function Switch-SD-Trainer-Branch (`$remote, `$branch, `$use_submod) {
-    `$sd_trainer_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
-    `$preview_url = `$(git -C `"`$sd_trainer_path`" remote get-url origin)
+# 切换 Fooocus 分支
+function Switch-Fooocus-Branch (`$remote, `$branch, `$use_submod) {
+    `$fooocus_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX`"
+    `$preview_url = `$(git -C `"`$fooocus_path`" remote get-url origin)
 
     Set-Github-Mirror # 设置 Github 镜像源
 
-    Print-Msg `"SD-Trainer 远程源替换: `$preview_url -> `$remote`"
-    git -C `"`$sd_trainer_path`" remote set-url origin `"`$remote`" # 替换远程源
+    Print-Msg `"Fooocus 远程源替换: `$preview_url -> `$remote`"
+    git -C `"`$fooocus_path`" remote set-url origin `"`$remote`" # 替换远程源
 
     # 处理 Git 子模块
     if (`$use_submod) {
-        Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
-        git -C `"`$sd_trainer_path`" submodule update --init --recursive
+        Print-Msg `"更新 Fooocus 的 Git 子模块信息`"
+        git -C `"`$fooocus_path`" submodule update --init --recursive
     } else {
-        Print-Msg `"禁用 SD-Trainer 的 Git 子模块`"
-        git -C `"`$sd_trainer_path`" submodule deinit --all -f
+        Print-Msg `"禁用 Fooocus 的 Git 子模块`"
+        git -C `"`$fooocus_path`" submodule deinit --all -f
     }
 
-    Print-Msg `"拉取 SD-Trainer 远程源更新`"
-    git -C `"`$sd_trainer_path`" fetch # 拉取远程源内容
+    Print-Msg `"拉取 Fooocus 远程源更新`"
+    git -C `"`$fooocus_path`" fetch # 拉取远程源内容
     if (`$?) {
         if (`$use_submod) {
             Print-Msg `"清理原有的 Git 子模块`"
-            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+            git -C `"`$fooocus_path`" submodule deinit --all -f
         }
-        Print-Msg `"切换 SD-Trainer 分支至 `$branch`"
+        Print-Msg `"切换 Fooocus 分支至 `$branch`"
 
         # 本地分支不存在时创建一个分支
-        git -C `"`$sd_trainer_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
+        git -C `"`$fooocus_path`" show-ref --verify --quiet `"refs/heads/`${branch}`"
         if (!(`$?)) {
-            git -C `"`$sd_trainer_path`" branch `"`${branch}`"
+            git -C `"`$fooocus_path`" branch `"`${branch}`"
         }
 
-        git -C `"`$sd_trainer_path`" checkout `"`${branch}`" --force # 切换分支
-        Print-Msg `"应用 SD-Trainer 远程源的更新`"
+        git -C `"`$fooocus_path`" checkout `"`${branch}`" --force # 切换分支
+        Print-Msg `"应用 Fooocus 远程源的更新`"
         if (`$use_submod) {
-            Print-Msg `"更新 SD-Trainer 的 Git 子模块信息`"
-            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`"
-            git -C `"`$sd_trainer_path`" submodule deinit --all -f
-            git -C `"`$sd_trainer_path`" submodule update --init --recursive
+            Print-Msg `"更新 Fooocus 的 Git 子模块信息`"
+            git -C `"`$fooocus_path`" reset --hard `"origin/`$branch`"
+            git -C `"`$fooocus_path`" submodule deinit --all -f
+            git -C `"`$fooocus_path`" submodule update --init --recursive
         }
         if (`$use_submod) {
-            git -C `"`$sd_trainer_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
+            git -C `"`$fooocus_path`" reset --recurse-submodules --hard `"origin/`$branch`" # 切换到最新的提交内容上
         } else {
-            git -C `"`$sd_trainer_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
+            git -C `"`$fooocus_path`" reset --hard `"origin/`$branch`" # 切换到最新的提交内容上
         }
-        Print-Msg `"切换 SD-Trainer 分支成功`"
+        Print-Msg `"切换 Fooocus 分支完成`"
+        `$global:status = `$true
     } else {
-        Print-Msg `"拉取 SD-Trainer 远程源更新失败, 取消分支切换`"
-        Print-Msg `"尝试回退 SD-Trainer 的更改`"
-        git -C `"`$sd_trainer_path`" remote set-url origin `"`$preview_url`"
+        Print-Msg `"拉取 Fooocus 远程源更新失败, 取消分支切换`"
+        Print-Msg `"尝试回退 Fooocus 的更改`"
+        git -C `"`$fooocus_path`" remote set-url origin `"`$preview_url`"
         if (`$use_submod) {
-            git -C `"`$sd_trainer_path`" submodule deinit --all -f
+            git -C `"`$fooocus_path`" submodule deinit --all -f
         } else {
-            git -C `"`$sd_trainer_path`" submodule update --init --recursive
+            git -C `"`$fooocus_path`" submodule update --init --recursive
         }
-        Print-Msg `"回退 SD-Trainer 分支更改完成`"
-        Print-Msg `"切换 SD-Trainer 分支更改失败, 可尝试重新运行 SD-Trainer 分支切换脚本`"
+        Print-Msg `"回退 Fooocus 分支更改完成`"
+        Print-Msg `"切换 Fooocus 分支更改失败`"
+        `$global:status = `$false
     }
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Installer-Update
+        Check-Fooocus-Installer-Update
     }
 
     if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         Read-Host | Out-Null
         return
     }
 
     `$content = `"
 -----------------------------------------------------
-- 1、Akegarasu - SD-Trainer 分支
-- 2、bmaltais - Kohya GUI 分支
+- 1、lllyasviel - Fooocus 分支
+- 2、runew0lf - RuinedFooocus 分支
+- 3、MoonRide303 - Fooocus-MRE 分支
 -----------------------------------------------------
 `".Trim()
 
     `$to_exit = 0
 
     while (`$True) {
-        Print-Msg `"SD-Trainer 分支列表`"
+        Print-Msg `"Fooocus 分支列表`"
         `$go_to = 0
         Write-Host `$content
-        Print-Msg `"当前 SD-Trainer 分支: `$(Get-SD-Trainer-Branch)`"
-        Print-Msg `"请选择 SD-Trainer 分支`"
-        Print-Msg `"提示:`"
-        Print-Msg `"1. 输入数字后回车, 或者输入 exit 退出 SD-Trainer 分支切换脚本`"
-        Print-Msg `"2. 切换分支后, 需要清除原来的启动参数, 因为 Akegarasu/SD-Trainer 分支的启动参数和 bmaltais/Kohya GUI 参数互不兼容, 可通过 settings.ps1 脚本中的启动参数设置进行清除`"
+        Print-Msg `"当前 Fooocus 分支: `$(Get-Fooocus-Branch)`"
+        Print-Msg `"请选择 Fooocus 分支`"
+        Print-Msg `"提示: 输入数字后回车, 或者输入 exit 退出 Fooocus 分支切换脚本`"
         if (`$BuildMode) {
+            `$go_to = 1
             `$arg = `$BuildWitchBranch
         } else {
-            `$arg = (Read-Host `"===========================================>`").Trim()
+            `$arg = (Read-Host `"========================================>`").Trim()
         }
 
         switch (`$arg) {
             1 {
-                `$remote = `"https://github.com/Akegarasu/lora-scripts`"
+                `$remote = `"https://github.com/lllyasviel/Fooocus`"
                 `$branch = `"main`"
-                `$branch_name = `"Akegarasu - SD-Trainer 分支`"
-                `$use_submod = `$true
+                `$branch_name = `"lllyasviel - Fooocus 分支`"
+                `$use_submod = `$false
                 `$go_to = 1
             }
             2 {
-                `$remote = `"https://github.com/bmaltais/kohya_ss`"
-                `$branch = `"master`"
-                `$branch_name = `"bmaltais - Kohya GUI 分支`"
-                `$use_submod = `$true
+                `$remote = `"https://github.com/runew0lf/RuinedFooocus`"
+                `$branch = `"main`"
+                `$branch_name = `"runew0lf - RuinedFooocus 分支`"
+                `$use_submod = `$false
+                `$go_to = 1
+            }
+            3 {
+                `$remote = `"https://github.com/MoonRide303/Fooocus-MRE`"
+                `$branch = `"moonride-main`"
+                `$branch_name = `"MoonRide303 - Fooocus-MRE 分支`"
+                `$use_submod = `$false
                 `$go_to = 1
             }
             exit {
-                Print-Msg `"退出 SD-Trainer 分支切换脚本`"
+                Print-Msg `"退出 Fooocus 分支切换脚本`"
                 `$to_exit = 1
                 `$go_to = 1
             }
@@ -4876,21 +5582,26 @@ function Main {
         exit 0
     }
 
-    Print-Msg `"是否切换 SD-Trainer 分支到 `$branch_name ?`"
+    Print-Msg `"是否切换 Fooocus 分支到 `$branch_name ?`"
     Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
     if (`$BuildMode) {
         `$operate = `"yes`"
     } else {
-        `$operate = (Read-Host `"===========================================>`").Trim()
+        `$operate = (Read-Host `"========================================>`").Trim()
     }
 
     if (`$operate -eq `"yes`" -or `$operate -eq `"y`" -or `$operate -eq `"YES`" -or `$operate -eq `"Y`") {
-        Print-Msg `"开始切换 SD-Trainer 分支`"
-        Switch-SD-Trainer-Branch `$remote `$branch `$use_submod
+        Print-Msg `"开始切换 Fooocus 分支`"
+        Switch-Fooocus-Branch `$remote `$branch `$use_submod
+        if (`$status) {
+            Print-Msg `"切换 Fooocus 分支成功`"
+        } else {
+            Print-Msg `"切换 Fooocus 分支失败, 可尝试重新运行 Fooocus 分支切换脚本`"
+        }
     } else {
-        Print-Msg `"取消切换 SD-Trainer 分支`"
+        Print-Msg `"取消切换 Fooocus 分支`"
     }
-    Print-Msg `"退出 SD-Trainer 分支切换脚本`"
+    Print-Msg `"退出 Fooocus 分支切换脚本`"
 
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
@@ -4912,7 +5623,7 @@ Main
 
 
 # 获取安装脚本
-function Write-Launch-SD-Trainer-Install-Script {
+function Write-Launch-Fooocus-Install-Script {
     $content = "
 param (
     [string]`$InstallPath,
@@ -4925,7 +5636,7 @@ param (
     [string]`$InstallBranch,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 if (-not `$InstallPath) {
     `$InstallPath = `$PSScriptRoot
 }
@@ -4935,19 +5646,19 @@ if (-not `$InstallPath) {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -4993,33 +5704,33 @@ function Set-Proxy {
 }
 
 
-# 下载 SD-Trainer Installer
-function Download-SD-Trainer-Installer {
+# 下载 Fooocus Installer
+function Download-Fooocus-Installer {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"正在下载最新的 SD-Trainer Installer 脚本`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/sd_trainer_installer.ps1`"
+        Print-Msg `"正在下载最新的 Fooocus Installer 脚本`"
+        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/fooocus_installer.ps1`"
         if (`$?) {
-            Print-Msg `"下载 SD-Trainer Installer 脚本成功`"
+            Print-Msg `"下载 Fooocus Installer 脚本成功`"
             break
         } else {
-            Print-Msg `"下载 SD-Trainer Installer 脚本失败`"
+            Print-Msg `"下载 Fooocus Installer 脚本失败`"
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试下载 SD-Trainer Installer 脚本`"
+                Print-Msg `"重试下载 Fooocus Installer 脚本`"
             } else {
-                Print-Msg `"下载 SD-Trainer Installer 脚本失败, 可尝试重新运行 SD-Trainer Installer 下载脚本`"
+                Print-Msg `"下载 Fooocus Installer 脚本失败, 可尝试重新运行 Fooocus Installer 下载脚本`"
                 return `$false
             }
         }
@@ -5069,15 +5780,19 @@ function Get-Local-Setting {
         `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
-        } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
-            `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
+        if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"fooocus`")
+        } elseif ((`$branch -eq `"MoonRide303/Fooocus-MRE`") -or (`$branch -eq `"MoonRide303/Fooocus-MRE.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"fooocus_mre`")
+        } elseif ((`$branch -eq `"runew0lf/RuinedFooocus`") -or (`$branch -eq `"runew0lf/RuinedFooocus.git`")) {
+            `$arg.Add(`"-InstallBranch`", `"ruined_fooocus`")
         }
-    } elseif ((Test-Path `"`$PSScriptRoot/install_sd_trainer.txt`") -or (`$InstallBranch -eq `"sd_trainer`")) {
-        `$arg.Add(`"-InstallBranch`", `"sd_trainer`")
-    } elseif ((Test-Path `"`$PSScriptRoot/install_kohya_gui.txt`") -or (`$InstallBranch -eq `"kohya_gui`")) {
-        `$arg.Add(`"-InstallBranch`", `"kohya_gui`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_fooocus.txt`") -or (`$InstallBranch -eq `"fooocus`")) {
+        `$arg.Add(`"-InstallBranch`", `"fooocus`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_fooocus_mre.txt`") -or (`$InstallBranch -eq `"fooocus_mre`")) {
+        `$arg.Add(`"-InstallBranch`", `"fooocus_mre`")
+    } elseif ((Test-Path `"`$PSScriptRoot/install_ruined_fooocus.txt`") -or (`$InstallBranch -eq `"ruined_fooocus`")) {
+        `$arg.Add(`"-InstallBranch`", `"ruined_fooocus`")
     }
 
     `$arg.Add(`"-InstallPath`", `$InstallPath)
@@ -5105,20 +5820,20 @@ function Get-ExtraArgs {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
+    Get-Fooocus-Installer-Version
     Set-Proxy
 
-    `$status = Download-SD-Trainer-Installer
+    `$status = Download-Fooocus-Installer
 
     if (`$status) {
-        Print-Msg `"运行 SD-Trainer Installer 中`"
+        Print-Msg `"运行 Fooocus Installer 中`"
         `$arg = Get-Local-Setting
         `$extra_args = Get-ExtraArgs
         try {
-            Invoke-Expression `"& ```"`$PSScriptRoot/cache/sd_trainer_installer.ps1```" `$extra_args @arg`"
+            Invoke-Expression `"& ```"`$PSScriptRoot/cache/fooocus_installer.ps1```" `$extra_args @arg`"
         }
         catch {
-            Print-Msg `"运行 SD-Trainer Installer 时出现了错误: `$_`"
+            Print-Msg `"运行 Fooocus Installer 时出现了错误: `$_`"
             Read-Host | Out-Null
         }
     } else {
@@ -5131,12 +5846,12 @@ function Main {
 Main
 ".Trim()
 
-    if (Test-Path "$InstallPath/launch_sd_trainer_installer.ps1") {
-        Print-Msg "更新 launch_sd_trainer_installer.ps1 中"
+    if (Test-Path "$InstallPath/launch_fooocus_installer.ps1") {
+        Print-Msg "更新 launch_fooocus_installer.ps1 中"
     } else {
-        Print-Msg "生成 launch_sd_trainer_installer.ps1 中"
+        Print-Msg "生成 launch_fooocus_installer.ps1 中"
     }
-    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_sd_trainer_installer.ps1" -Value $content
+    Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/launch_fooocus_installer.ps1" -Value $content
 }
 
 
@@ -5157,7 +5872,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -5182,8 +5897,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -5281,48 +5996,48 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式
+        启用 Fooocus Installer 构建模式
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式, 并且添加 -BuildWithTorch) 在 Fooocus Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
-        禁用 SD-Trainer Installer 更新检查
+        禁用 Fooocus Installer 更新检查
 
     -DisableUV
-        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer Installer 自动应用新版本更新
+        禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5335,7 +6050,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -5359,13 +6074,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -5379,22 +6094,22 @@ function PyPI-Mirror-Status {
 }
 
 
-# SD-Trainer Installer 更新检测
-function Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -5418,12 +6133,12 @@ function Check-SD-Trainer-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -5431,35 +6146,35 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+    if (`$latest_version -le `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            Print-Msg `"跳过 Fooocus Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 Fooocus Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -6667,14 +7382,14 @@ function List-PyTorch (`$pytorch_list) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Installer-Update
+        Check-Fooocus-Installer-Update
     }
     Set-uv
     PyPI-Mirror-Status
@@ -6708,11 +7423,11 @@ function Main {
         Print-Msg `"2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch`"
         Print-Msg `"3. 输入数字后回车, 或者输入 exit 退出 PyTorch 重装脚本`"
         if (`$BuildMode) {
-            Print-Msg `"SD-Trainer Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
+            Print-Msg `"Fooocus Installer 构建已启用, 指定安装的 PyTorch 序号: `$BuildWithTorch`"
             `$arg = `$BuildWithTorch
             `$go_to = 1
         } else {
-            `$arg = (Read-Host `"===========================================>`").Trim()
+            `$arg = (Read-Host `"========================================>`").Trim()
         }
 
         switch (`$arg) {
@@ -6780,7 +7495,7 @@ function Main {
             `$use_force_reinstall = `"no`"
         }
     } else {
-        `$use_force_reinstall = (Read-Host `"===========================================>`").Trim()
+        `$use_force_reinstall = (Read-Host `"========================================>`").Trim()
     }
 
     if (`$use_force_reinstall -eq `"yes`" -or `$use_force_reinstall -eq `"y`" -or `$use_force_reinstall -eq `"YES`" -or `$use_force_reinstall -eq `"Y`") {
@@ -6800,7 +7515,7 @@ function Main {
     if (`$BuildMode) {
         `$install_torch = `"yes`"
     } else {
-        `$install_torch = (Read-Host `"===========================================>`").Trim()
+        `$install_torch = (Read-Host `"========================================>`").Trim()
     }
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
@@ -6818,7 +7533,9 @@ function Main {
             Print-Msg `"安装 PyTorch 成功`"
         } else {
             Print-Msg `"安装 PyTorch 失败, 终止 PyTorch 重装进程`"
-            Read-Host | Out-Null
+            if (!(`$BuildMode)) {
+                Read-Host | Out-Null
+            }
             exit 1
         }
 
@@ -6842,7 +7559,9 @@ function Main {
                 Print-Msg `"安装 xFormers 成功`"
             } else {
                 Print-Msg `"安装 xFormers 失败, 终止 PyTorch 重装进程`"
-                Read-Host | Out-Null
+                if (!(`$BuildMode)) {
+                    Read-Host | Out-Null
+                }
                 exit 1
             }
         }
@@ -6851,7 +7570,6 @@ function Main {
     }
 
     Print-Msg `"退出 PyTorch 重装脚本`"
-
     if (!(`$BuildMode)) {
         Read-Host | Out-Null
     }
@@ -6886,7 +7604,7 @@ param (
     [switch]`$DisableAutoApplyUpdate
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -6911,8 +7629,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -7010,42 +7728,42 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式
+        启用 Fooocus Installer 构建模式
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
     -DisableUpdate
-        禁用 SD-Trainer Installer 更新检查
+        禁用 Fooocus Installer 更新检查
 
     -DisableAutoApplyUpdate
-        禁用 SD-Trainer Installer 自动应用新版本更新
+        禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7058,7 +7776,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -7082,13 +7800,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -7134,22 +7852,22 @@ function Set-Proxy {
 }
 
 
-# SD-Trainer Installer 更新检测
-function Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
     if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$DisableUpdate)) {
-        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD-Trainer Installer 的自动检查更新功能`"
+        Print-Msg `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 Fooocus Installer 的自动检查更新功能`"
         return
     }
 
@@ -7173,12 +7891,12 @@ function Check-SD-Trainer-Installer-Update {
     }
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -7186,35 +7904,35 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -le `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+    if (`$latest_version -le `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 已是最新版本`"
         return
     }
 
     if ((`$DisableAutoApplyUpdate) -or (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`")) {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用, 是否进行更新 (yes/no) ?`"
         Print-Msg `"提示: 输入 yes 确认或 no 取消 (默认为 no)`"
         `$arg = (Read-Host `"========================================>`").Trim()
         if (!(`$arg -eq `"yes`" -or `$arg -eq `"y`" -or `$arg -eq `"YES`" -or `$arg -eq `"Y`")) {
-            Print-Msg `"跳过 SD-Trainer Installer 更新`"
+            Print-Msg `"跳过 Fooocus Installer 更新`"
             return
         }
     } else {
-        Print-Msg `"检测到 SD-Trainer Installer 有新版本可用`"
+        Print-Msg `"检测到 Fooocus Installer 有新版本可用`"
     }
 
-    Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-    . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    Print-Msg `"调用 Fooocus Installer 进行更新中`"
+    . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
     `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-    Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+    Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
     exit 0
 }
@@ -7334,14 +8052,34 @@ function Get-Model-List {
     # SD 1.5
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/Counterfeit-V3.0_fp16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cetusMix_Whalefall2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cuteyukimixAdorable_neochapter3.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ekmix-pastel-fp16-no-ema.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ex2K_sse2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/kohakuV5_rev2.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinamix_meinaV11.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/oukaStar_10.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/rabbit_v6.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/sweetSugarSyndrome_rev15.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/AnythingV5Ink_ink.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinapastel_v6Pastel.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/qteamixQ_omegaFp16.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/tmndMix_tmndMixSPRAINBOW.safetensors`", `"SD 1.5`", `"checkpoints`")) | Out-Null
     # SD 2.1
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt`", `"SD 2.1`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors`", `"SD 2.1`", `"checkpoints`")) | Out-Null
     # SDXL
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/sd_xl_offset_example-lora_1.0.safetensors`", `"SDXL`", `"loras`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl_edit.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0-base.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
@@ -7394,31 +8132,299 @@ function Get-Model-List {
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxl12.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxlVPredV10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/omegaPonyXLAnime_v20.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animeIllustDiffusion_v061.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifuDiffusion_v10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifu-diffusion-v2.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/AnythingXL_xl.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/abyssorangeXLElse_v10.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animaPencilXL_v200.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/bluePencilXL_v401.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/nekorayxl_v06W3.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/CounterfeitXL-V1.0.safetensors`", `"SDXL`", `"checkpoints`")) | Out-Null
+    # SD 3
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips_t5xxlfp8.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_fp8_scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_turbo.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/emi3.safetensors`", `"SD 3`", `"checkpoints`")) | Out-Null
+    # SD 3 Text Encoder
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_g.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_l.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp16.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors`", `"SD 3 Text Encoder`", `"clip`")) | Out-Null
+    # HunyuanDiT
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/hunyuan_dit_1.2.safetensors`", `"HunyuanDiT`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/comfy_freeway_animation_hunyuan_dit_180w.safetensors`", `"HunyuanDiT`", `"checkpoints`")) | Out-Null
     # FLUX
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4-v2.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q2_K.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q3_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_1.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_1.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q6_K.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q8_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-F16.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors`", `"FLUX`", `"checkpoints`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q2_K.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q3_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_1.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_1.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_K_S.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q6_K.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q8_0.gguf`", `"FLUX`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-F16.gguf`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/jimmycarter-LibreFLUX.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors`", `"FLUX`", `"unet`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/shuttle-3-diffusion.safetensors`", `"FLUX`", `"unet`")) | Out-Null
+    # FLUX Text Encoder
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_L.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_M.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_S.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_M.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_S.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_M.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_S.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q6_K.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q8_0.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f16.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f32.gguf`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    # FLUX VAE
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`", `"FLUX VAE`", `"vae`")) | Out-Null
     # SD 1.5 VAE
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors`", `"SD 1.5 VAE`", `"vae`")) | Out-Null
     # SDXL VAE
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
     `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
-    # FLUX VAE
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors`", `"FLUX VAE`", `"vae`")) | Out-Null
-    # FLUX CLIP
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
-    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors`", `"FLUX Text Encoder`", `"clip`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors`", `"SDXL VAE`", `"vae`")) | Out-Null
+    # VAE approx
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt`", `"VAE approx`", `"vae_approx`")) | Out-Null
+    # Upscale
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/Codeformer/codeformer-v0.1.0.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/16xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x-ITF-SkinDiffDetail-Lite-v1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-BrightenRedux_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-YandereInpaint_375000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKDDetoon_97500_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Poisson-Detailed_108000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Uniform-Detailed_100000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x-UltraSharp.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_CountryRoads_377000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Fatality_Comix_260000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Siax_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-Artisoftject_210000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere-Lite_280k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere_300k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-YandereNeoXL_200k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKDSuperscale_Artisoft_120000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NickelbackFS_72000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Nickelback_70000G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_RealisticRescaler_100000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Valar_v1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_fatal_Anime_500000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_foolhardy_Remacri.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8xPSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Superscale_150000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Typescale_175k.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/A_ESRGAN_Single.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGAN.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGANx2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRNet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/ESRGAN_4x.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/LADDIER1_282500_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Neutral_115000_swaG.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharp_101000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharper_103000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Detailed_155000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Soft_190000_G.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/WaifuGAN_v3_30000.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/lollypop.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/sudo_rife4_269.662_testV1_scale1.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/detection_Resnet50_Final.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_bisenet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_parsenet.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus_anime_6B.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X2_64.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X4_64.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_CompressedSR_X4_48.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/SwinIR_4x.pth`", `"Upscale`", `"upscale_models`")) | Out-Null
+    # Embedding
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/EasyNegativeV2.safetensors`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist-anime.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-hands-5.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-image-v2-39000.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad_prompt_version2.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/ng_deepnegative_v1_75t.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/verybadimagenegative_v1.3.pt`", `"Embedding`", `"embeddings`")) | Out-Null
+    # SD 1.5 ControlNet
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_ip2p_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_shuffle_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1e_sd15_tile_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1p_sd15_depth_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_canny_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_inpaint_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_lineart_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_mlsd_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_normalbae_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_openpose_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_scribble_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_seg_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_softedge_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15s2_lineart_anime_fp16.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_brightness.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_illumination.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_qrcode_monster.safetensors`", `"SD 1.5 ControlNet`", `"controlnet`")) | Out-Null
+    # SDXL ControlNet
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/mistoLine_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/destitech-controlnet-inpaint-dreamer-sdxl.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/control-lora/resolve/master/control-lora-recolor-rank128-sdxl.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/xinsir-controlnet-union-sdxl-1.0-promax.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/kohakuXLControlnet_canny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/animagineXL40_canny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLCanny_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineart_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLDepth_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLSoftedge_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineartRrealistic_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLShuffle_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLOpenPose_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLTile_v10.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv0.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_canny_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_depth_midas_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_inpainting_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_tile_fp16.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsCanny.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidas.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartAnime.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsNormalMidas.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsSoftedgeHed.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsMangaLine.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartRealistic.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidasV11.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribbleHed.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribblePidinet.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_openposeModel.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsTile.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/NoobAI_Inpainting_ControlNet.safetensors`", `"SDXL ControlNet`", `"controlnet`")) | Out-Null
+    # SD 3.5 ControlNet
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_blur.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_canny.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_depth.safetensors`", `"SD 3.5 ControlNet`", `"controlnet`")) | Out-Null
+    # FLUX ControlNet
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-redux-dev.safetensors`", `"FLUX ControlNet`", `"style_models`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q3_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_1.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_1.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_K_S.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q6_K.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q8_0.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank128.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank256.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank32.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank4.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank64.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank8.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-F16-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q4_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q5_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q8_0-GGUF.gguf`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-lora.safetensors`", `"FLUX ControlNet`", `"loras`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev.safetensors`", `"FLUX ControlNet`", `"unet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-depth-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-hed-controlnet-v3.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Depth.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Upscaler.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-instantx-controlnet-union.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-mistoline.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-shakker-labs-controlnet-union-pro.safetensors`", `"FLUX ControlNet`", `"controlnet`")) | Out-Null
+    # CLIP Vision
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_g.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_h.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_vitl.pth`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/sigclip_vision_patch14_384.safetensors`", `"CLIP Vision`", `"clip_vision`")) | Out-Null
+    # IP Adapter
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_light.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_plus.pth`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_vit-G.safetensors`", `"SD 1.5 IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter-plus_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl_vit-h.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/noobIPAMARK1_mark1.safetensors`", `"SDXL IP Adapter`", `"ipadapter`")) | Out-Null
+    `$model_list.Add(@(`"https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors`", `"FLUX IP Adapter`", `"controlnet`")) | Out-Null
     # <<<<<<<<<< End
 
     return `$model_list
@@ -7503,7 +8509,7 @@ function Model-Downloader (`$download_list) {
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"===========================================>`").Trim()
+    return (Read-Host `"========================================>`").Trim()
 }
 
 
@@ -7541,16 +8547,22 @@ function Search-Model-List (`$model_list, `$key) {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     if (`$BuildMode) {
-        Print-Msg `"SD-Trainer Installer 构建模式已启用, 跳过 SD-Trainer Installer 更新检查`"
+        Print-Msg `"Fooocus Installer 构建模式已启用, 跳过 Fooocus Installer 更新检查`"
     } else {
-        Check-SD-Trainer-Installer-Update
+        Check-Fooocus-Installer-Update
     }
     Check-Aria2-Version
+
+    if (!(Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$PSScriptRoot\`$Env:CORE_PREFIX 未找到, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
+        Read-Host | Out-Null
+        return
+    }
 
     `$to_exit = 0
     `$go_to = 0
@@ -7613,7 +8625,7 @@ function Main {
                         `$content = `$model_list[(`$i - 1)]
                         `$url = `$content[0] # 下载链接
                         `$type = `$content[1] # 类型
-                        `$path = `"`$PSScriptRoot/models`" # 模型放置路径
+                        `$path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/models/`$(`$content[2])`" # 模型放置路径
                         # `$name = [System.IO.Path]::GetFileNameWithoutExtension(`$url) # 模型名称
                         `$name = [System.IO.Path]::GetFileName(`$url) # 模型名称
                         `$task = @(`$name, `$url, `$type, `$path)
@@ -7669,7 +8681,6 @@ function Main {
     } else {
         `$download_operate = Get-User-Input
     }
-
     if (`$download_operate -eq `"yes`" -or `$download_operate -eq `"y`" -or `$download_operate -eq `"YES`" -or `$download_operate -eq `"Y`") {
         Model-Downloader `$download_list
     }
@@ -7695,8 +8706,8 @@ Main
 }
 
 
-# SD-Trainer Installer 设置脚本
-function Write-SD-Trainer-Installer-Settings-Script {
+# Fooocus Installer 设置脚本
+function Write-Fooocus-Installer-Settings-Script {
     $content = "
 param (
     [switch]`$Help,
@@ -7706,7 +8717,7 @@ param (
     [string]`$UseCustomProxy
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -7731,8 +8742,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -7830,14 +8841,14 @@ param (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -7846,13 +8857,13 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7865,7 +8876,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 消息输出
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -7889,13 +8900,13 @@ function Get-Core-Prefix-Status {
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -7987,8 +8998,8 @@ function Get-Github-Mirror-Setting {
 }
 
 
-# 获取 SD-Trainer Installer 自动检测更新设置
-function Get-SD-Trainer-Installer-Auto-Check-Update-Setting {
+# 获取 Fooocus Installer 自动检测更新设置
+function Get-Fooocus-Installer-Auto-Check-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_update.txt`") {
         return `"禁用`"
     } else {
@@ -7997,8 +9008,8 @@ function Get-SD-Trainer-Installer-Auto-Check-Update-Setting {
 }
 
 
-# 获取 SD-Trainer Installer 自动应用更新设置
-function Get-SD-Trainer-Installer-Auto-Apply-Update-Setting {
+# 获取 Fooocus Installer 自动应用更新设置
+function Get-Fooocus-Installer-Auto-Apply-Update-Setting {
     if (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") {
         return `"禁用`"
     } else {
@@ -8037,9 +9048,9 @@ function Get-PyPI-Mirror-Setting {
 }
 
 
-# 获取 CUDA 内存分配器设置
-function Get-PyTorch-CUDA-Memory-Alloc-Setting {
-    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
+# 获取 Fooocus 运行环境检测配置
+function Get-Fooocus-Env-Check-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
         return `"启用`"
     } else {
         return `"禁用`"
@@ -8047,9 +9058,9 @@ function Get-PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
-# 获取 SD-Trainer 运行环境检测配置
-function Get-SD-Trainer-Env-Check-Setting {
-    if (!(Test-Path `"`$PSScriptRoot/disable_check_env.txt`")) {
+# 获取 CUDA 内存分配器设置
+function Get-PyTorch-CUDA-Memory-Alloc-Setting {
+    if (!(Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`")) {
         return `"启用`"
     } else {
         return `"禁用`"
@@ -8069,7 +9080,7 @@ function Get-Core-Prefix-Setting {
 
 # 获取用户输入
 function Get-User-Input {
-    return (Read-Host `"===========================================>`").Trim()
+    return (Read-Host `"========================================>`").Trim()
 }
 
 
@@ -8238,7 +9249,7 @@ function Update-Github-Mirror-Setting {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_gh_mirror.txt`" -Force -Recurse 2> `$null
                 Remove-Item -Path `"`$PSScriptRoot/gh_mirror.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 Github 镜像成功, 在更新 SD-Trainer 时将自动检测可用的 Github 镜像源并使用`"
+                Print-Msg `"启用 Github 镜像成功, 在更新 Fooocus 时将自动检测可用的 Github 镜像源并使用`"
                 break
             }
             2 {
@@ -8289,29 +9300,29 @@ function Update-Github-Mirror-Setting {
 }
 
 
-# SD-Trainer Installer 自动检查更新设置
-function Update-SD-Trainer-Installer-Auto-Check-Update-Setting {
+# Fooocus Installer 自动检查更新设置
+function Update-Fooocus-Installer-Auto-Check-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer Installer 自动检测更新设置: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"当前 Fooocus Installer 自动检测更新设置: `$(Get-Fooocus-Installer-Auto-Check-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer Installer 自动更新检查`"
-        Print-Msg `"2. 禁用 SD-Trainer Installer 自动更新检查`"
+        Print-Msg `"1. 启用 Fooocus Installer 自动更新检查`"
+        Print-Msg `"2. 禁用 Fooocus Installer 自动更新检查`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
-        Print-Msg `"警告: 当 SD-Trainer Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
+        Print-Msg `"警告: 当 Fooocus Installer 有重要更新(如功能性修复)时, 禁用自动更新检查后将得不到及时提示`"
 
         `$arg = Get-User-Input
 
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer Installer 自动更新检查成功`"
+                Print-Msg `"启用 Fooocus Installer 自动更新检查成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_update.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer Installer 自动更新检查成功`"
+                Print-Msg `"禁用 Fooocus Installer 自动更新检查成功`"
                 break
             }
             3 {
@@ -8330,14 +9341,14 @@ function Update-SD-Trainer-Installer-Auto-Check-Update-Setting {
 }
 
 
-# SD-Trainer Installer 自动应用更新设置
-function Update-SD-Trainer-Installer-Auto-Apply-Update-Setting {
+# Fooocus Installer 自动应用更新设置
+function Update-Fooocus-Installer-Auto-Apply-Update-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer Installer 自动应用更新设置: `$(Get-SD-Trainer-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"当前 Fooocus Installer 自动应用更新设置: `$(Get-Fooocus-Installer-Auto-Apply-Update-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer Installer 自动应用更新`"
-        Print-Msg `"2. 禁用 SD-Trainer Installer 自动应用更新`"
+        Print-Msg `"1. 启用 Fooocus Installer 自动应用更新`"
+        Print-Msg `"2. 禁用 Fooocus Installer 自动应用更新`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -8346,12 +9357,12 @@ function Update-SD-Trainer-Installer-Auto-Apply-Update-Setting {
         switch (`$arg) {
             1 {
                 Remove-Item -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer Installer 自动应用更新成功`"
+                Print-Msg `"启用 Fooocus Installer 自动应用更新成功`"
                 break
             }
             2 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/disable_auto_apply_update.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer Installer 自动应用更新成功`"
+                Print-Msg `"禁用 Fooocus Installer 自动应用更新成功`"
                 break
             }
             3 {
@@ -8370,14 +9381,14 @@ function Update-SD-Trainer-Installer-Auto-Apply-Update-Setting {
 }
 
 
-# SD-Trainer 启动参数设置
-function Update-SD-Trainer-Launch-Args-Setting {
+# Fooocus 启动参数设置
+function Update-Fooocus-Launch-Args-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前 SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"当前 Fooocus 启动参数: `$(Get-Launch-Args-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 设置 SD-Trainer 启动参数`"
-        Print-Msg `"2. 删除 SD-Trainer 启动参数`"
+        Print-Msg `"1. 设置 Fooocus 启动参数`"
+        Print-Msg `"2. 删除 Fooocus 启动参数`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -8385,20 +9396,17 @@ function Update-SD-Trainer-Launch-Args-Setting {
 
         switch (`$arg) {
             1 {
-                Print-Msg `"请输入 SD-Trainer 启动参数`"
-                Print-Msg `"提示:`"
-                Print-Msg `"1. 保存启动参数后原有的启动参数将被覆盖`"
-                Print-Msg `"2. SD-Trainer 可用的启动参数可阅读: https://github.com/Akegarasu/lora-scripts?tab=readme-ov-file#program-arguments`"
-                Print-Msg `"3. Kohya GUI 可用的启动参数可阅读: https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service`"
+                Print-Msg `"请输入 Fooocus 启动参数`"
+                Print-Msg `"提示: 保存启动参数后原有的启动参数将被覆盖, Fooocus 可用的启动参数可阅读: https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags`"
                 Print-Msg `"输入启动参数后回车保存`"
-                `$sd_trainer_launch_args = Get-User-Input
-                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$sd_trainer_launch_args
-                Print-Msg `"设置 SD-Trainer 启动参数成功, 使用的 SD-Trainer 启动参数为: `$sd_trainer_launch_args`"
+                `$fooocus_launch_args = Get-User-Input
+                Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$fooocus_launch_args
+                Print-Msg `"设置 Fooocus 启动参数成功, 使用的 Fooocus 启动参数为: `$fooocus_launch_args`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/launch_args.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"删除 SD-Trainer 启动参数成功`"
+                Print-Msg `"删除 Fooocus 启动参数成功`"
                 break
             }
             3 {
@@ -8417,14 +9425,14 @@ function Update-SD-Trainer-Launch-Args-Setting {
 }
 
 
-# 自动创建 SD-Trainer 快捷启动方式设置
+# 自动创建 Fooocus 快捷启动方式设置
 function Auto-Set-Launch-Shortcut-Setting {
     while (`$true) {
         `$go_to = 0
-        Print-Msg `"当前自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"当前自动创建 Fooocus 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用自动创建 SD-Trainer 快捷启动方式`"
-        Print-Msg `"2. 禁用自动创建 SD-Trainer 快捷启动方式`"
+        Print-Msg `"1. 启用自动创建 Fooocus 快捷启动方式`"
+        Print-Msg `"2. 禁用自动创建 Fooocus 快捷启动方式`"
         Print-Msg `"3. 返回`"
         Print-Msg `"提示: 输入数字后回车`"
 
@@ -8433,12 +9441,12 @@ function Auto-Set-Launch-Shortcut-Setting {
         switch (`$arg) {
             1 {
                 New-Item -ItemType File -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force > `$null
-                Print-Msg `"启用自动创建 SD-Trainer 快捷启动方式成功`"
+                Print-Msg `"启用自动创建 Fooocus 快捷启动方式成功`"
                 break
             }
             2 {
                 Remove-Item -Path `"`$PSScriptRoot/enable_shortcut.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"禁用自动创建 SD-Trainer 快捷启动方式成功`"
+                Print-Msg `"禁用自动创建 Fooocus 快捷启动方式成功`"
                 break
             }
             3 {
@@ -8537,6 +9545,46 @@ function PyTorch-CUDA-Memory-Alloc-Setting {
 }
 
 
+# Fooocus 运行环境检测设置
+function Fooocus-Env-Check-Setting {
+    while (`$true) {
+        `$go_to = 0
+        Print-Msg `"当前 Fooocus 运行环境检测设置: `$(Get-Fooocus-Env-Check-Setting)`"
+        Print-Msg `"可选操作:`"
+        Print-Msg `"1. 启用 Fooocus 运行环境检测`"
+        Print-Msg `"2. 禁用 Fooocus 运行环境检测`"
+        Print-Msg `"3. 返回`"
+        Print-Msg `"提示: 输入数字后回车`"
+
+        `$arg = Get-User-Input
+
+        switch (`$arg) {
+            1 {
+                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
+                Print-Msg `"启用 Fooocus 运行环境检测成功`"
+                break
+            }
+            2 {
+                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
+                Print-Msg `"禁用 Fooocus 运行环境检测成功`"
+                break
+            }
+            3 {
+                `$go_to = 1
+                break
+            }
+            Default {
+                Print-Msg `"输入有误, 请重试`"
+            }
+        }
+
+        if (`$go_to -eq 1) {
+            break
+        }
+    }
+}
+
+
 # 内核路径前缀设置
 function Update-Core-Prefix-Setting {
     while (`$true) {
@@ -8591,15 +9639,15 @@ function Update-Core-Prefix-Setting {
 }
 
 
-# 检查 SD-Trainer Installer 更新
-function Check-SD-Trainer-Installer-Update {
+# 检查 Fooocus Installer 更新
+function Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
@@ -8607,12 +9655,12 @@ function Check-SD-Trainer-Installer-Update {
     Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -8620,64 +9668,24 @@ function Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    if (`$latest_version -gt `$FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 有新版本可用`"
+        Print-Msg `"调用 Fooocus Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
         `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
-        Print-Msg `"更新结束, 重新启动 SD-Trainer Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
+        Print-Msg `"更新结束, 重新启动 Fooocus Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
         Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
         exit 0
     } else {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
-    }
-}
-
-
-# SD-Trainer 运行环境检测设置
-function SD-Trainer-Env-Check-Setting {
-    while (`$true) {
-        `$go_to = 0
-        Print-Msg `"当前 SD-Trainer 运行环境检测设置: `$(Get-SD-Trainer-Env-Check-Setting)`"
-        Print-Msg `"可选操作:`"
-        Print-Msg `"1. 启用 SD-Trainer 运行环境检测`"
-        Print-Msg `"2. 禁用 SD-Trainer 运行环境检测`"
-        Print-Msg `"3. 返回`"
-        Print-Msg `"提示: 输入数字后回车`"
-
-        `$arg = Get-User-Input
-
-        switch (`$arg) {
-            1 {
-                Remove-Item -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force -Recurse 2> `$null
-                Print-Msg `"启用 SD-Trainer 运行环境检测成功`"
-                break
-            }
-            2 {
-                New-Item -ItemType File -Path `"`$PSScriptRoot/disable_check_env.txt`" -Force > `$null
-                Print-Msg `"禁用 SD-Trainer 运行环境检测成功`"
-                break
-            }
-            3 {
-                `$go_to = 1
-                break
-            }
-            Default {
-                Print-Msg `"输入有误, 请重试`"
-            }
-        }
-
-        if (`$go_to -eq 1) {
-            break
-        }
+        Print-Msg `"Fooocus Installer 已是最新版本`"
     }
 }
 
@@ -8715,10 +9723,10 @@ function Check-Env {
         `$broken = 1
     }
 
-    if ((Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/gui.py`") -or (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/kohya_gui.py`")) {
-        `$sd_trainer_status = `"已安装`"
+    if (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/launch.py`") {
+        `$fooocus_status = `"已安装`"
     } else {
-        `$sd_trainer_status = `"未安装`"
+        `$fooocus_status = `"未安装`"
         `$broken = 1
     }
 
@@ -8746,27 +9754,27 @@ function Check-Env {
     Print-Msg `"Aria2: `$aria2_status`"
     Print-Msg `"PyTorch: `$torch_status`"
     Print-Msg `"xFormers: `$xformers_status`"
-    Print-Msg `"SD-Trainer: `$sd_trainer_status`"
+    Print-Msg `"Fooocus: `$fooocus_status`"
     Print-Msg `"-----------------------------------------------------`"
     if (`$broken -eq 1) {
-        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 SD-Trainer Installer 进行安装`"
+        Print-Msg `"检测到环境出现组件缺失, 可尝试运行 Fooocus Installer 进行安装`"
     } else {
         Print-Msg `"当前环境无缺失组件`"
     }
 }
 
 
-# 查看 SD-Trainer Installer 文档
-function Get-SD-Trainer-Installer-Help-Docs {
-    Print-Msg `"调用浏览器打开 SD-Trainer Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
+# 查看 Fooocus Installer 文档
+function Get-Fooocus-Installer-Help-Docs {
+    Print-Msg `"调用浏览器打开 Fooocus Installer 文档中`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md`"
 }
 
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
 
@@ -8778,32 +9786,32 @@ function Main {
         Print-Msg `"Python 包管理器: `$(Get-Python-Package-Manager-Setting)`"
         Print-Msg `"HuggingFace 镜像源设置: `$(Get-HuggingFace-Mirror-Setting)`"
         Print-Msg `"Github 镜像源设置: `$(Get-Github-Mirror-Setting)`"
-        Print-Msg `"SD-Trainer Installer 自动检查更新: `$(Get-SD-Trainer-Installer-Auto-Check-Update-Setting)`"
-        Print-Msg `"SD-Trainer Installer 自动应用更新: `$(Get-SD-Trainer-Installer-Auto-Apply-Update-Setting)`"
-        Print-Msg `"SD-Trainer 启动参数: `$(Get-Launch-Args-Setting)`"
-        Print-Msg `"自动创建 SD-Trainer 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
+        Print-Msg `"Fooocus Installer 自动检查更新: `$(Get-Fooocus-Installer-Auto-Check-Update-Setting)`"
+        Print-Msg `"Fooocus Installer 自动应用更新: `$(Get-Fooocus-Installer-Auto-Apply-Update-Setting)`"
+        Print-Msg `"Fooocus 启动参数: `$(Get-Launch-Args-Setting)`"
+        Print-Msg `"自动创建 Fooocus 快捷启动方式设置: `$(Get-Auto-Set-Launch-Shortcut-Setting)`"
         Print-Msg `"PyPI 镜像源设置: `$(Get-PyPI-Mirror-Setting)`"
         Print-Msg `"自动设置 CUDA 内存分配器设置: `$(Get-PyTorch-CUDA-Memory-Alloc-Setting)`"
-        Print-Msg `"SD-Trainer 运行环境检测设置: `$(Get-SD-Trainer-Env-Check-Setting)`"
-        Print-Msg `"SD-Trainer 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
+        Print-Msg `"Fooocus 运行环境检测设置: `$(Get-Fooocus-Env-Check-Setting)`"
+        Print-Msg `"Fooocus 内核路径前缀设置: `$(Get-Core-Prefix-Setting)`"
         Print-Msg `"-----------------------------------------------------`"
         Print-Msg `"可选操作:`"
         Print-Msg `"1. 进入代理设置`"
         Print-Msg `"2. 进入 Python 包管理器设置`"
         Print-Msg `"3. 进入 HuggingFace 镜像源设置`"
         Print-Msg `"4. 进入 Github 镜像源设置`"
-        Print-Msg `"5. 进入 SD-Trainer Installer 自动检查更新设置`"
-        Print-Msg `"6. 进入 SD-Trainer Installer 自动应用更新设置`"
-        Print-Msg `"7. 进入 SD-Trainer 启动参数设置`"
-        Print-Msg `"8. 进入自动创建 SD-Trainer 快捷启动方式设置`"
+        Print-Msg `"5. 进入 Fooocus Installer 自动检查更新设置`"
+        Print-Msg `"6. 进入 Fooocus Installer 自动应用更新设置`"
+        Print-Msg `"7. 进入 Fooocus 启动参数设置`"
+        Print-Msg `"8. 进入自动创建 Fooocus 快捷启动方式设置`"
         Print-Msg `"9. 进入 PyPI 镜像源设置`"
         Print-Msg `"10. 进入自动设置 CUDA 内存分配器设置`"
-        Print-Msg `"11. 进入 SD-Trainer 运行环境检测设置`"
-        Print-Msg `"12. 进入 SD-Trainer 内核路径前缀设置`"
-        Print-Msg `"13. 更新 SD-Trainer Installer 管理脚本`"
+        Print-Msg `"11. 进入 Fooocus 运行环境检测设置`"
+        Print-Msg `"12. 进入 Fooocus 内核路径前缀设置`"
+        Print-Msg `"13. 更新 Fooocus Installer 管理脚本`"
         Print-Msg `"14. 检查环境完整性`"
-        Print-Msg `"15. 查看 SD-Trainer Installer 文档`"
-        Print-Msg `"16. 退出 SD-Trainer Installer 设置`"
+        Print-Msg `"15. 查看 Fooocus Installer 文档`"
+        Print-Msg `"16. 退出 Fooocus Installer 设置`"
         Print-Msg `"提示: 输入数字后回车`"
         `$arg = Get-User-Input
         switch (`$arg) {
@@ -8824,15 +9832,15 @@ function Main {
                 break
             }
             5 {
-                Update-SD-Trainer-Installer-Auto-Check-Update-Setting
+                Update-Fooocus-Installer-Auto-Check-Update-Setting
                 break
             }
             6 {
-                Update-SD-Trainer-Installer-Auto-Apply-Update-Setting
+                Update-Fooocus-Installer-Auto-Apply-Update-Setting
                 break
             }
             7 {
-                Update-SD-Trainer-Launch-Args-Setting
+                Update-Fooocus-Launch-Args-Setting
                 break
             }
             8 {
@@ -8848,7 +9856,7 @@ function Main {
                 break
             }
             11 {
-                SD-Trainer-Env-Check-Setting
+                Fooocus-Env-Check-Setting
                 break
             }
             12 {
@@ -8856,7 +9864,7 @@ function Main {
                 break
             }
             13 {
-                Check-SD-Trainer-Installer-Update
+                Check-Fooocus-Installer-Update
                 break
             }
             14 {
@@ -8864,7 +9872,7 @@ function Main {
                 break
             }
             15 {
-                Get-SD-Trainer-Installer-Help-Docs
+                Get-Fooocus-Installer-Help-Docs
                 break
             }
             16 {
@@ -8878,7 +9886,7 @@ function Main {
         }
 
         if (`$go_to -eq 1) {
-            Print-Msg `"退出 SD-Trainer Installer 设置`"
+            Print-Msg `"退出 Fooocus Installer 设置`"
             break
         }
     }
@@ -8898,6 +9906,7 @@ Read-Host | Out-Null
     Set-Content -Encoding $PS_SCRIPT_ENCODING -Path "$InstallPath/settings.ps1" -Value $content
 }
 
+
 # 虚拟环境激活脚本
 function Write-Env-Activate-Script {
     $content = "
@@ -8905,15 +9914,15 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [string]`$UseCustomHuggingFaceMirror
 )
 & {
-    `$prefix_list = @(`"core`", `"lora-scripts`", `"lora_scripts`", `"sd-trainer`", `"SD-Trainer`", `"sd_trainer`", `"lora-scripts`", `"lora-scripts-v1.5.1`", `"lora-scripts-v1.6.2`", `"lora-scripts-v1.7.3`", `"lora-scripts-v1.8.1`", `"lora-scripts-v1.9.0-cu124`", `"lora-scripts-v1.10.0`", `"lora-scripts-v1.12.0`")
+    `$prefix_list = @(`"core`", `"Fooocus`", `"fooocus`", `"fooocus_portable`")
     if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
         if (`$CorePrefix) {
             `$origin_core_prefix = `$CorePrefix
@@ -8938,8 +9947,8 @@ param (
     }
     `$Env:CORE_PREFIX = `"core`"
 }
-# SD-Trainer Installer 版本和检查更新间隔
-`$Env:SD_TRAINER_INSTALLER_VERSION = $SD_TRAINER_INSTALLER_VERSION
+# Fooocus Installer 版本和检查更新间隔
+`$Env:FOOOCUS_INSTALLER_VERSION = $FOOOCUS_INSTALLER_VERSION
 `$Env:UPDATE_TIME_SPAN = $UPDATE_TIME_SPAN
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"$PIP_INDEX_ADDR`"
@@ -8971,6 +9980,25 @@ param (
 `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU128_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU129_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU129_NJU`"
 `$PIP_EXTRA_INDEX_MIRROR_CU130_NJU = `"$PIP_EXTRA_INDEX_MIRROR_CU130_NJU`"
+# Github 镜像源
+`$GITHUB_MIRROR_LIST = @(
+    `"https://ghfast.top/https://github.com`",
+    `"https://mirror.ghproxy.com/https://github.com`",
+    `"https://ghproxy.net/https://github.com`",
+    `"https://gh.api.99988866.xyz/https://github.com`",
+    `"https://gh-proxy.com/https://github.com`",
+    `"https://ghps.cc/https://github.com`",
+    `"https://gh.idayer.com/https://github.com`",
+    `"https://ghproxy.1888866.xyz/github.com`",
+    `"https://slink.ltd/https://github.com`",
+    `"https://github.boki.moe/github.com`",
+    `"https://github.moeyy.xyz/https://github.com`",
+    `"https://gh-proxy.net/https://github.com`",
+    `"https://gh-proxy.ygxz.in/https://github.com`",
+    `"https://wget.la/https://github.com`",
+    `"https://kkgithub.com`",
+    `"https://gitclone.com/github.com`"
+)
 # uv 最低版本
 `$UV_MINIMUM_VER = `"$UV_MINIMUM_VER`"
 # Aria2 最低版本
@@ -9033,19 +10061,19 @@ param (
 `$Env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$Env:SD_TRAINER_INSTALLER_ROOT = `$PSScriptRoot
+`$Env:FOOOCUS_INSTALLER_ROOT = `$PSScriptRoot
 
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     `$content = `"
 使用:
     .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
@@ -9053,20 +10081,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
-    -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableHuggingFaceMirror
-        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
-
-    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
-
     -DisableGithubMirror
-        禁用 SD-Trainer Installer自动设置 Github 镜像源
+        禁用 Fooocus Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -9088,8 +10104,20 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
             https://kkgithub.com
             https://gitclone.com/github.com
 
+    -DisableProxy
+        禁用 Fooocus Installer 自动设置代理服务器
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableHuggingFaceMirror
+        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+
+    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
+        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+
+
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9101,14 +10129,14 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[SD-Trainer Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[Fooocus Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
 # 消息输出
 function global:Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
@@ -9153,33 +10181,33 @@ function global:Update-Aria2 {
         }
     }
 
-    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:SD_TRAINER_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
+    Move-Item -Path `"`$Env:CACHE_HOME/aria2c.exe`" -Destination `"`$Env:FOOOCUS_INSTALLER_ROOT/git/bin/aria2c.exe`" -Force
     Print-Msg `"更新 Aria2 完成`"
 }
 
 
-# SD-Trainer Installer 更新检测
-function global:Check-SD-Trainer-Installer-Update {
+# Fooocus Installer 更新检测
+function global:Check-Fooocus-Installer-Update {
     # 可用的下载源
     `$urls = @(
-        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/sd_trainer_installer.ps1`",
-        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_installer/sd_trainer_installer.ps1`",
-        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/sd_trainer_installer.ps1`"
+        `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1`",
+        `"https://github.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitee.com/licyk/sd-webui-all-in-one/releases/download/fooocus_installer/fooocus_installer.ps1`",
+        `"https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1`"
     )
     `$i = 0
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
-    Set-Content -Encoding UTF8 -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
 
     ForEach (`$url in `$urls) {
-        Print-Msg `"检查 SD-Trainer Installer 更新中`"
+        Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
-                Get-Content `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" |
-                Select-String -Pattern `"SD_TRAINER_INSTALLER_VERSION`" |
+                Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
+                Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
             break
@@ -9187,23 +10215,23 @@ function global:Check-SD-Trainer-Installer-Update {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Print-Msg `"重试检查 SD-Trainer Installer 更新中`"
+                Print-Msg `"重试检查 Fooocus Installer 更新中`"
             } else {
-                Print-Msg `"检查 SD-Trainer Installer 更新失败`"
+                Print-Msg `"检查 Fooocus Installer 更新失败`"
                 return
             }
         }
     }
 
-    if (`$latest_version -gt `$Env:SD_TRAINER_INSTALLER_VERSION) {
-        Print-Msg `"SD-Trainer Installer 有新版本可用`"
-        Print-Msg `"调用 SD-Trainer Installer 进行更新中`"
-        . `"`$Env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$Env:SD_TRAINER_INSTALLER_ROOT`" -UseUpdateMode
-        Print-Msg `"更新结束, 需重新启动 SD-Trainer Installer 管理脚本以应用更新, 回车退出 SD-Trainer Installer 管理脚本`"
+    if (`$latest_version -gt `$Env:FOOOCUS_INSTALLER_VERSION) {
+        Print-Msg `"Fooocus Installer 有新版本可用`"
+        Print-Msg `"调用 Fooocus Installer 进行更新中`"
+        . `"`$Env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$Env:FOOOCUS_INSTALLER_ROOT`" -UseUpdateMode
+        Print-Msg `"更新结束, 需重新启动 Fooocus Installer 管理脚本以应用更新, 回车退出 Fooocus Installer 管理脚本`"
         Read-Host | Out-Null
         exit 0
     } else {
-        Print-Msg `"SD-Trainer Installer 已是最新版本`"
+        Print-Msg `"Fooocus Installer 已是最新版本`"
     }
 }
 
@@ -9217,23 +10245,23 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
-        Print-Msg `"内核路径 `$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 SD-Trainer 是否已正确安装, 或者尝试运行 SD-Trainer Installer 进行修复`"
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`")) {
+        Print-Msg `"内核路径 `$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 Fooocus 是否已正确安装, 或者尝试运行 Fooocus Installer 进行修复`"
         return
     }
 
     New-Item -ItemType Directory -Path `"`$Env:CACHE_HOME`" -Force > `$null
 
-    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
-        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`") {
+        Print-Msg `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
         Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
                 Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
-                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
-                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
+                Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
+                Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -9254,7 +10282,7 @@ function global:Install-Hanamizuki {
 echo Initialize configuration
 setlocal enabledelayedexpansion
 set CurrentPath=%~dp0
-set DefaultCorePrefix=lora-scripts
+set DefaultCorePrefix=Fooocus
 if exist ```"%~dp0%DefaultCorePrefix%```" (
     set CorePrefix=%DefaultCorePrefix%
 ) else (
@@ -9298,7 +10326,7 @@ if exist ```"%RootPath%```" (
     cd /d ```"%RootPath%```"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if SD-Trainer is installed, or if the CorePrefix is set correctly
+    echo Please check if Fooocus is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -9315,13 +10343,13 @@ if exist .\hanamizuki.exe (
 )
     `".Trim()
 
-    Set-Content -Encoding Default -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
+    Set-Content -Encoding Default -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Print-Msg `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
-        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`") {
-            Print-Msg `"尝试将 Python 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/python`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`")) {
+        if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/python`") {
+            Print-Msg `"尝试将 Python 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/python`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Python 路径移动成功`"
             } else {
@@ -9329,14 +10357,14 @@ if exist .\hanamizuki.exe (
                 Print-Msg `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
             }
         } else {
-            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+            Print-Msg `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 Fooocus Installer 修复环境`"
         }
     }
 
-    if (!(Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
-        if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`") {
-            Print-Msg `"尝试将 Git 移动至 `$Env:SD_TRAINER_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/git`" `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
+    if (!(Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/git/bin/git.exe`")) {
+        if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/git`") {
+            Print-Msg `"尝试将 Git 移动至 `$Env:FOOOCUS_INSTALLER_ROOT\`$Env:CORE_PREFIX 中`"
+            Move-Item -Path `"`$Env:FOOOCUS_INSTALLER_ROOT/git`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX`" -Force
             if (`$?) {
                 Print-Msg `"Git 路径移动成功`"
             } else {
@@ -9344,7 +10372,7 @@ if exist .\hanamizuki.exe (
                 Print-Msg `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
             }
         } else {
-            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD-Trainer Installer 修复环境`"
+            Print-Msg `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 Fooocus Installer 修复环境`"
         }
     }
 
@@ -9354,7 +10382,7 @@ if exist .\hanamizuki.exe (
 
 # 获取指定路径的内核路径前缀
 function global:Get-Core-Prefix (`$to_path) {
-    `$from_path = `$Env:SD_TRAINER_INSTALLER_ROOT
+    `$from_path = `$Env:FOOOCUS_INSTALLER_ROOT
     `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
     `$to_uri = New-Object System.Uri(`$to_path.Trim('/').Trim('\').Replace('\', '/'))
     `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
@@ -9374,36 +10402,36 @@ Set-Alias python3 python
 Set-Alias python3.11 python
 
 
-# 列出 SD-Trainer Installer 内置命令
+# 列出 Fooocus Installer 内置命令
 function global:List-CMD {
     Write-Host `"
 ==================================
-SD-Trainer Installer created by licyk
+Fooocus Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ==================================
 
-当前可用的 SD-Trainer Installer 内置命令：
+当前可用的 Fooocus Installer 内置命令：
 
     Update-uv
     Update-Aria2
-    Check-SD-Trainer-Installer-Update
+    Check-Fooocus-Installer-Update
     Install-Hanamizuki
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 SD-Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多帮助信息可在 Fooocus Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 `"
 }
 
 
-# 显示 SD-Trainer Installer 版本
-function Get-SD-Trainer-Installer-Version {
-    `$ver = `$([string]`$Env:SD_TRAINER_INSTALLER_VERSION).ToCharArray()
+# 显示 Fooocus Installer 版本
+function Get-Fooocus-Installer-Version {
+    `$ver = `$([string]`$Env:FOOOCUS_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
     `$minor = `$ver[-2]
     `$micro = `$ver[-1]
-    Print-Msg `"SD-Trainer Installer 版本: v`${major}.`${minor}.`${micro}`"
+    Print-Msg `"Fooocus Installer 版本: v`${major}.`${minor}.`${micro}`"
 }
 
 
@@ -9530,18 +10558,19 @@ function Set-Github-Mirror {
 
 function Main {
     Print-Msg `"初始化中`"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
     Set-Proxy
     Set-HuggingFace-Mirror
     Set-Github-Mirror
     PyPI-Mirror-Status
-    if (Test-Path `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
-        `$Env:UV_PYTHON = `"`$Env:SD_TRAINER_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
+    # 切换 uv 指定的 Python
+    if (Test-Path `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`") {
+        `$Env:UV_PYTHON = `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
-    Print-Msg `"激活 SD-Trainer Env`"
-    Print-Msg `"更多帮助信息可在 SD-Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md`"
+    Print-Msg `"激活 Fooocus Env`"
+    Print-Msg `"更多帮助信息可在 Fooocus Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md`"
 }
 
 ###################
@@ -9563,12 +10592,12 @@ function Write-Launch-Terminal-Script {
     $content = "
 function Print-Msg (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[SD-Trainer Installer]`" -ForegroundColor Cyan -NoNewline
+    Write-Host `"[Fooocus Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
-Print-Msg `"执行 SD-Trainer Installer 激活环境脚本`"
+Print-Msg `"执行 Fooocus Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
 
@@ -9585,60 +10614,46 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 function Write-ReadMe {
     $content = "
 ====================================================================
-SD-Trainer Installer created by licyk
+Fooocus Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ====================================================================
 ########## 使用帮助 ##########
 
-这是关于 SD-Trainer 的简单使用文档。
+这是关于 Fooocus 的简单使用文档。
 
-使用 SD-Trainer Installer 进行安装并安装成功后，将在当前目录生成 SD-Trainer 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+使用 Fooocus Installer 进行安装并安装成功后，将在当前目录生成 Fooocus 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-- launch.ps1：启动 SD-Trainer。
-- update.ps1：更新 SD-Trainer。
-- download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。
+- launch.ps1：启动 Fooocus。
+- update.ps1：更新 Fooocus。
+- download_models.ps1：下载模型的脚本，下载的模型将存放在 Fooocus 的模型文件夹中。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-- switch_branch.ps1：切换 SD-Trainer 分支。
-- settings.ps1：管理 SD-Trainer Installer 的设置。
+- switch_branch.ps1：切换 Fooocus 分支。
+- settings.ps1：管理 Fooocus Installer 的设置。
 - terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 - activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- launch_sd_trainer_installer.ps1：获取最新的 SD-Trainer Installer 安装脚本并运行。
+- launch_fooocus_installer.ps1：获取最新的 Fooocus Installer 安装脚本并运行。
 - configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
 
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- lora-scripts / core：SD-Trainer 内核。
-- models：使用模型下载脚本下载模型时模型的存放位置。
+- Fooocus / core：Fooocus 内核。
 
-详细的 SD-Trainer Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+详细的 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 
-其他的一些训练模型的教程：
-https://sd-moadel-doc.maozi.io
-https://rentry.org/59xed3
-https://civitai.com/articles/2056
-https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
-https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
-https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
-https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
-https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
-https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
-更多详细的帮助可在下面的链接查看。
-
-推荐的哔哩哔哩 UP 主：
-青龙圣者：https://space.bilibili.com/219296
-秋葉aaaki：https://space.bilibili.com/12566101
-琥珀青葉：https://space.bilibili.com/507303431
-观看这些 UP 主的视频可获得一些训练模型的教程。
+Fooocus 一些使用方法：
+https://github.com/lllyasviel/Fooocus/discussions/117
+https://github.com/lllyasviel/Fooocus/discussions/830
 
 
 ====================================================================
 ########## Github 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
-SD-Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
-Kohya GUI 项目地址：https://github.com/bmaltais/kohya_ss
+Fooocus 项目地址：https://github.com/lllyasviel/Fooocus
+Fooocus-MRE 项目地址：https://github.com/MoonRide303/Fooocus-MRE
+RuinedFooocus 项目地址：https://github.com/runew0lf/RuinedFooocus
 
 
 ====================================================================
@@ -9674,10 +10689,10 @@ function Write-Manager-Scripts {
     Write-Launch-Script
     Write-Update-Script
     Write-Switch-Branch-Script
-    Write-Launch-SD-Trainer-Install-Script
+    Write-Launch-Fooocus-Install-Script
     Write-PyTorch-ReInstall-Script
     Write-Download-Model-Script
-    Write-SD-Trainer-Installer-Settings-Script
+    Write-Fooocus-Installer-Settings-Script
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
     Write-ReadMe
@@ -9687,8 +10702,8 @@ function Write-Manager-Scripts {
 
 
 # 将安装器配置文件复制到管理脚本路径
-function Copy-SD-Trainer-Installer-Config {
-    Print-Msg "为 SD-Trainer Installer 管理脚本复制 SD-Trainer Installer 配置文件中"
+function Copy-Fooocus-Installer-Config {
+    Print-Msg "为 Fooocus Installer 管理脚本复制 Fooocus Installer 配置文件中"
 
     if ((!($DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
         Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$InstallPath"
@@ -9733,7 +10748,7 @@ function Write-Hanamizuki-Script {
 echo Initialize configuration
 setlocal enabledelayedexpansion
 set CurrentPath=%~dp0
-set DefaultCorePrefix=lora-scripts
+set DefaultCorePrefix=Fooocus
 if exist `"%~dp0%DefaultCorePrefix%`" (
     set CorePrefix=%DefaultCorePrefix%
 ) else (
@@ -9777,7 +10792,7 @@ if exist `"%RootPath%`" (
     cd /d `"%RootPath%`"
 ) else (
     echo %CorePrefix% not found
-    echo Please check if SD-Trainer is installed, or if the CorePrefix is set correctly
+    echo Please check if Fooocus is installed, or if the CorePrefix is set correctly
     pause
     exit 1
 )
@@ -9861,7 +10876,7 @@ function Install-Hanamizuki {
                 Print-Msg "请关闭所有占用 Python 的进程, 并重新运行该命令"
             }
         } else {
-            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD-Trainer Installer 修复环境"
+            Print-Msg "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 Fooocus Installer 修复环境"
         }
     }
 
@@ -9876,7 +10891,7 @@ function Install-Hanamizuki {
                 Print-Msg "请关闭所有占用 Git 的进程, 并重新运行该命令"
             }
         } else {
-            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD-Trainer Installer 修复环境"
+            Print-Msg "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 Fooocus Installer 修复环境"
         }
     }
 
@@ -9889,34 +10904,36 @@ function Use-Install-Mode {
     Set-Proxy
     Set-uv
     PyPI-Mirror-Status
-    Print-Msg "启动 SD-Trainer 安装程序"
-    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer Installer, 更多的说明请阅读 SD-Trainer Installer 使用文档"
-    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
+    Print-Msg "启动 Fooocus 安装程序"
+    Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 Fooocus Installer, 更多的说明请阅读 Fooocus Installer 使用文档"
+    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
-    if ((Test-Path "$PSScriptRoot/install_sd_trainer.txt") -or ($InstallBranch -eq "sd_trainer")) {
-        Print-Msg "检测到 install_sd_trainer.txt 配置文件 / 命令行参数 -InstallBranch sd_trainer, 选择安装 Akegarasu/SD-Trainer"
-    } elseif ((Test-Path "$PSScriptRoot/install_kohya_gui.txt") -or ($InstallBranch -eq "kohya_gui")) {
-        Print-Msg "检测到 install_kohya_gui.txt 配置文件 / 命令行参数 -InstallBranch kohya_gui, 选择安装 bmaltais/Kohya GUI"
+    if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
+        Print-Msg "检测到 install_fooocus.txt 配置文件 / -InstallBranch fooocus 命令行参数, 选择安装 lllyasviel/Fooocus"
+    } elseif ((Test-Path "$PSScriptRoot/install_fooocus_mre.txt") -or ($InstallBranch -eq "fooocus_mre")) {
+        Print-Msg "检测到 install_fooocus_mre.txt 配置文件 / -InstallBranch fooocus_mre 命令行参数, 选择安装 MoonRide303/Fooocus-MRE"
+    } elseif ((Test-Path "$PSScriptRoot/install_ruined_fooocus.txt") -or ($InstallBranch -eq "ruined_fooocus")) {
+        Print-Msg "检测到 install_ruined_fooocus.txt 配置文件 / -InstallBranch ruined_fooocus 命令行参数, 选择安装 runew0lf/RuinedFooocus"
     } else {
-        Print-Msg "未指定安装的训练器, 默认选择安装 Akegarasu/SD-Trainer"
+        Print-Msg "未指定安装的 Fooocus 分支, 默认选择安装 lllyasviel/Fooocus"
     }
     Check-Install
     Print-Msg "添加管理脚本和文档中"
     Write-Manager-Scripts
-    Copy-SD-Trainer-Installer-Config
+    Copy-Fooocus-Installer-Config
 
     if ($BuildMode) {
         Use-Build-Mode
         Install-Hanamizuki
-        Print-Msg "SD-Trainer 环境构建完成, 路径: $InstallPath"
+        Print-Msg "Fooocus 环境构建完成, 路径: $InstallPath"
     } else {
         Install-Hanamizuki
-        Print-Msg "SD-Trainer 安装结束, 安装路径为: $InstallPath"
+        Print-Msg "Fooocus 安装结束, 安装路径为: $InstallPath"
     }
 
-    Print-Msg "帮助文档可在 SD-Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer Installer 使用文档"
-    Print-Msg "SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md"
-    Print-Msg "退出 SD-Trainer Installer"
+    Print-Msg "帮助文档可在 Fooocus 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Fooocus Installer 使用文档"
+    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
+    Print-Msg "退出 Fooocus Installer"
 
     if (!($BuildMode)) {
         Read-Host | Out-Null
@@ -9978,7 +10995,7 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer 分支切换脚本中"
+        Print-Msg "执行 Fooocus 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" @launch_args
     }
 
@@ -9993,7 +11010,7 @@ function Use-Build-Mode {
         if ($UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $UseCustomGithubMirror) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer 更新脚本中"
+        Print-Msg "执行 Fooocus 更新脚本中"
         . "$InstallPath/update.ps1" @launch_args
     }
 
@@ -10015,7 +11032,7 @@ function Use-Build-Mode {
         if ($DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($CorePrefix) { $launch_args.Add("-CorePrefix", $CorePrefix) }
-        Print-Msg "执行 SD-Trainer 启动脚本中"
+        Print-Msg "执行 Fooocus 启动脚本中"
         . "$InstallPath/launch.ps1" @launch_args
     }
 
@@ -10082,50 +11099,51 @@ if '%errorlevel%' NEQ '0' (
 
 
 # 帮助信息
-function Get-SD-Trainer-Installer-Cmdlet-Help {
+function Get-Fooocus-Installer-Cmdlet-Help {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD-Trainer 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 SD-Trainer 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD-Trainer 分支编号>] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD-Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Fooocus 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Fooocus 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Fooocus 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Fooocus 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck] [-DisableAutoApplyUpdate]
 
 参数:
     -Help
-        获取 SD-Trainer Installer 的帮助信息
+        获取 Fooocus Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
         设置内核的路径前缀, 默认路径前缀为 core
 
-    -InstallPath <安装 SD-Trainer 的绝对路径>
-        指定 SD-Trainer Installer 安装 SD-Trainer 的路径, 使用绝对路径表示
-        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
+    -InstallPath <安装 Fooocus 的绝对路径>
+        指定 Fooocus Installer 安装 Fooocus 的路径, 使用绝对路径表示
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 Fooocus Installer 安装 Fooocus 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
 
-    -InstallBranch <安装的 SD-Trainer 分支>
-        指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)
-        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
-        未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
+    -InstallBranch <安装的 Fooocus 分支>
+        指定 Fooocus Installer 安装的 Fooocus 分支 (fooocus, fooocus_mre, ruined_fooocus)
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"fooocus_mre`", 这将指定 Fooocus Installer 安装 MoonRide303/Fooocus-MRE 分支
+        未指定该参数时, 默认安装 lllyasviel/Fooocus 分支
         支持指定安装的分支如下:
-            sd_trainer:     Akegarasu/SD-Trainer
-            kohya_gui:      bmaltais/Kohya GUI
+            fooocus:        lllyasviel/Fooocus
+            fooocus_mre:    MoonRide303/Fooocus-MRE
+            ruined_fooocus: runew0lf/RuinedFooocus
 
     -UseUpdateMode
-        指定 SD-Trainer Installer 使用更新模式, 只对 SD-Trainer Installer 的管理脚本进行更新
+        指定 Fooocus Installer 使用更新模式, 只对 Fooocus Installer 的管理脚本进行更新
 
     -DisablePyPIMirror
-        禁用 SD-Trainer Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+        禁用 Fooocus Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
-        禁用 SD-Trainer Installer 自动设置代理服务器
+        禁用 Fooocus Installer 自动设置代理服务器
 
     -UseCustomProxy <代理服务器地址>
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 
     -DisableUV
-        禁用 SD-Trainer Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+        禁用 Fooocus Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 
     -DisableGithubMirror
-        禁用 SD-Trainer Installer 自动设置 Github 镜像源
+        禁用 Fooocus Installer 自动设置 Github 镜像源
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
@@ -10148,8 +11166,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
     -BuildMode
-        启用 SD-Trainer Installer 构建模式, 在基础安装流程结束后将调用 SD-Trainer Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD-Trainer Installer 的执行, 而是直接退出
-        当指定调用多个 SD-Trainer Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+        启用 Fooocus Installer 构建模式, 在基础安装流程结束后将调用 Fooocus Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 Fooocus Installer 的执行, 而是直接退出
+        当指定调用多个 Fooocus Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
@@ -10157,25 +11175,28 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 update.ps1 脚本, 更新 SD-Trainer 内核
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 update.ps1 脚本, 更新 Fooocus 内核
 
     -BuildWithLaunch
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 launch.ps1 脚本, 执行启动 SD-Trainer 前的环境检查流程, 但跳过启动 SD-Trainer
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 launch.ps1 脚本, 执行启动 Fooocus 前的环境检查流程, 但跳过启动 Fooocus
 
     -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD-Trainer Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式, 并且添加 -BuildWithTorch) 在 Fooocus Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
     -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -BuildWitchBranch <SD-Trainer 分支编号>
-        (需添加 -BuildMode 启用 SD-Trainer Installer 构建模式) SD-Trainer Installer 执行完基础安装流程后调用 SD-Trainer Installer 的 switch_branch.ps1 脚本, 根据 SD-Trainer 分支编号切换到对应的 SD-Trainer 分支
-        SD-Trainer 分支编号可运行 switch_branch.ps1 脚本进行查看
+    -BuildWitchBranch <Fooocus 分支编号>
+        (需添加 -BuildMode 启用 Fooocus Installer 构建模式) Fooocus Installer 执行完基础安装流程后调用 Fooocus Installer 的 switch_branch.ps1 脚本, 根据 Fooocus 分支编号切换到对应的 Fooocus 分支
+        Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -NoPreDownloadModel
+        安装 Fooocus 时跳过预下载模型
 
     -PyTorchPackage <PyTorch 软件包>
         (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
@@ -10190,31 +11211,31 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         安装结束后保留下载 Python 软件包缓存
 
     -DisableUpdate
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 更新检查
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 更新检查
 
     -DisableHuggingFaceMirror
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 
     -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 
-    -LaunchArg <SD-Trainer 启动参数>
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 设置 SD-Trainer 自定义启动参数, 如启用 --skip-prepare-environment 和 --dev, 则使用 -LaunchArg `"--skip-prepare-environment --dev`" 进行启用
+    -LaunchArg <Fooocus 启动参数>
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 设置 Fooocus 自定义启动参数, 如启用 --in-browser 和 --async-cuda-allocation, 则使用 -LaunchArg `"--in-browser --async-cuda-allocation`" 进行启用
 
     -EnableShortcut
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 创建 SD-Trainer 启动快捷方式
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 创建 Fooocus 启动快捷方式
 
     -DisableCUDAMalloc
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 
     -DisableEnvCheck
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 检查 SD-Trainer 运行环境中存在的问题, 禁用后可能会导致 SD-Trainer 环境中存在的问题无法被发现并修复
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 检查 Fooocus 运行环境中存在的问题, 禁用后可能会导致 Fooocus 环境中存在的问题无法被发现并修复
 
     -DisableAutoApplyUpdate
-        (仅在 SD-Trainer Installer 构建模式下生效, 并且只作用于 SD-Trainer Installer 管理脚本) 禁用 SD-Trainer Installer 自动应用新版本更新
+        (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
 ".Trim()
 
     if ($Help) {
@@ -10227,8 +11248,8 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
 # 主程序
 function Main {
     Print-Msg "初始化中"
-    Get-SD-Trainer-Installer-Version
-    Get-SD-Trainer-Installer-Cmdlet-Help
+    Get-Fooocus-Installer-Version
+    Get-Fooocus-Installer-Cmdlet-Help
     Get-Core-Prefix-Status
 
     if ($UseUpdateMode) {
@@ -10237,7 +11258,7 @@ function Main {
         Set-Content -Encoding UTF8 -Path "$InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($BuildMode) {
-            Print-Msg "SD-Trainer Installer 构建模式已启用"
+            Print-Msg "Fooocus Installer 构建模式已启用"
         }
         Print-Msg "使用安装模式"
         Use-Install-Mode

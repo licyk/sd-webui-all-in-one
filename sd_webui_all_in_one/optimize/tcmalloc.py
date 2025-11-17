@@ -136,7 +136,7 @@ class TCMalloc:
             bool: TCMalloc (Colab) 配置结果
         """
         logger.info("配置 TCMalloc 内存优化")
-        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/libtcmalloc_minimal.so.4"
+        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/libtcmalloc_minimal.so.4"
         libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
         status = download_file(url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4")
         if status is None:
