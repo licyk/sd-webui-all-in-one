@@ -3,7 +3,7 @@ requires = ["setuptools", "pip", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sd_webui_all_in_one"
+name = "sd-webui-all-in-one"
 description = "支持部署多个 WebUI 的部署工具"
 requires-python = ">=3.10"
 readme = { content-type = "text/markdown", file = "README.md" }
