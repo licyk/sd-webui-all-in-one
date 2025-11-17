@@ -26,10 +26,9 @@ def in_jupyter() -> bool:
         if shell.__class__.__name__ == "ZMQInteractiveShell":
             return True
         # IPython 终端
-        elif shell.__class__.__name__ == "TerminalInteractiveShell":
+        if shell.__class__.__name__ == "TerminalInteractiveShell":
             return False
-        else:
-            return False
+        return True
     except NameError:
         # 没有 get_ipython, 不是 Jupyter
         return False
