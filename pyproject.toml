@@ -12,10 +12,13 @@ dynamic = ["version"]
 authors = [ {name = "licyk"} ]
 
 [tool.setuptools]
-packages = ["sd_webui_all_in_one", "sd_webui_all_in_one.subpackage"]
+packages = ["sd_webui_all_in_one"]
+
+[tool.setuptools.package-dir]
+sd_webui_all_in_one = "sd_webui_all_in_one"
 
 [tool.setuptools.dynamic]
-version = { attr = "sd_webui_all_in_one.VERSION" }
+version = { attr = "sd_webui_all_in_one.version.VERSION" }
 
 [tool.pylint]
 disable = [
