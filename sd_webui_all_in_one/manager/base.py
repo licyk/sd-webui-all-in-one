@@ -14,6 +14,7 @@ from sd_webui_all_in_one.utils import check_gpu, in_jupyter
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
+from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
 
 
 logger = get_logger(
@@ -72,7 +73,9 @@ class BaseManager:
         self.repo = RepoManager(hf_token, ms_token)
         self.tun = TunnelManager(workspace, port)
         self.tcmalloc = TCMalloc(workspace)
-        self.copy_files = copy_files  # 保持旧版的兼容性
+        self.copy_files = copy_files
+        self.import_kaggle_input = import_kaggle_input
+        self.display_model_and_dataset_dir = display_model_and_dataset_dir
 
     def restart_repo_manager(
         self,

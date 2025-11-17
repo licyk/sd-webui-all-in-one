@@ -12,7 +12,7 @@ def init_sd_webui_all_in_one_module(
 ) -> None:
     """SD WebUI All In One 模块下载工具"""
     if url is None:
-        url = "https://github.com/licyk/sd-webui-all-in-one@dev"
+        url = "https://github.com/licyk/sd-webui-all-in-one@main"
 
     cmd = f'"{sys.executable}" -m pip install git+"{url}"'
 

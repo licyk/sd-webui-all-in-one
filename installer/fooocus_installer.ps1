@@ -4198,6 +4198,11 @@ if __name__ == '__main__':
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
     `$status = `$(python -c `"`$content`")
 
+    # TODO: 暂时屏蔽 CUDA 13.0 的处理
+    if (`$status -eq `"cu130`") {
+        `$status = `"None`"
+    }
+
     `$need_reinstall_ort = `$false
     `$need_switch_mirror = `$false
     switch (`$status) {
