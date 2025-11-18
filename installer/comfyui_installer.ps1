@@ -2283,7 +2283,8 @@ if __name__ == '__main__':
 # 检查 ComfyUI 依赖完整性
 function Check-ComfyUI-Requirements {
     `$content = `"
-'''运行环境检查'''
+import inspect
+import platform
 import re
 import os
 import sys
@@ -2291,20 +2292,24 @@ import copy
 import logging
 import argparse
 import importlib.metadata
-from collections import namedtuple
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import Any, Callable, NamedTuple
 
 
 def get_args() -> argparse.Namespace:
-    '''获取命令行参数输入参数输入'''
-    parser = argparse.ArgumentParser(description='运行环境检查')
-    def normalized_filepath(filepath): return str(
-        Path(filepath).absolute().as_posix())
+    ```"```"```"获取命令行参数输入参数输入```"```"```"
+    parser = argparse.ArgumentParser(description=```"运行环境检查```")
+
+    def _normalized_filepath(filepath):
+        return Path(filepath).absolute().as_posix()
 
     parser.add_argument(
-        '--requirement-path', type=normalized_filepath, default=None, help='依赖文件路径')
-    parser.add_argument('--debug-mode', action='store_true', help='显示调试信息')
+        ```"--requirement-path```",
+        type=_normalized_filepath,
+        default=None,
+        help=```"依赖文件路径```",
+    )
+    parser.add_argument(```"--debug-mode```", action=```"store_true```", help=```"显示调试信息```")
 
     return parser.parse_args()
 
@@ -2312,591 +2317,1334 @@ def get_args() -> argparse.Namespace:
 COMMAND_ARGS = get_args()
 
 
-class ColoredFormatter(logging.Formatter):
-    '''Logging 格式化'''
+class LoggingColoredFormatter(logging.Formatter):
+    ```"```"```"Logging 格式化类
+
+    Attributes:
+        color (bool): 是否启用日志颜色
+        COLORS (dict[str, str]): 颜色类型字典
+    ```"```"```"
+
     COLORS = {
-        'DEBUG': '\033[0;36m',          # CYAN
-        'INFO': '\033[0;32m',           # GREEN
-        'WARNING': '\033[0;33m',        # YELLOW
-        'ERROR': '\033[0;31m',          # RED
-        'CRITICAL': '\033[0;37;41m',    # WHITE ON RED
-        'RESET': '\033[0m',             # RESET COLOR
+        ```"DEBUG```": ```"\033[0;36m```",  # CYAN
+        ```"INFO```": ```"\033[0;32m```",  # GREEN
+        ```"WARNING```": ```"\033[0;33m```",  # YELLOW
+        ```"ERROR```": ```"\033[0;31m```",  # RED
+        ```"CRITICAL```": ```"\033[0;37;41m```",  # WHITE ON RED
+        ```"RESET```": ```"\033[0m```",  # RESET COLOR
     }
 
-    def format(self, record):
+    def __init__(
+        self,
+        fmt: str | None = None,
+        datefmt: str | None = None,
+        color: bool | None = True,
+    ) -> None:
+        ```"```"```"Logging 初始化
+
+        Args:
+            fmt (str | None): 日志消息的格式字符串
+            datefmt (str | None): 日期 / 时间的显示格式
+            color (bool | None): 是否启用彩色日志输出. 默认为 True
+        ```"```"```"
+        super().__init__(fmt, datefmt)
+        self.color = color
+
+    def format(self, record: logging.LogRecord) -> str:
         colored_record = copy.copy(record)
         levelname = colored_record.levelname
-        seq = self.COLORS.get(levelname, self.COLORS['RESET'])
-        colored_record.levelname = '{}{}{}'.format(
-            seq, levelname, self.COLORS['RESET'])
+
+        if self.color:
+            seq = self.COLORS.get(levelname, self.COLORS[```"RESET```"])
+            colored_record.levelname = f```"{seq}{levelname}{self.COLORS['RESET']}```"
+
         return super().format(colored_record)
 
 
 def get_logger(
-    name: str,
-    level: int = logging.INFO,
+    name: str | None = None, level: int | None = logging.INFO, color: bool | None = True
 ) -> logging.Logger:
-    '''获取 Loging 对象
+    ```"```"```"获取 Loging 对象
 
-    参数:
-        name (str):
-            Logging 名称
+    Args:
+        name (str | None): Logging 名称
+        level (int | None): 日志级别
+        color (bool | None): 是否启用彩色日志
+    Returns:
+        logging.Logger: Logging 对象
+    ```"```"```"
+    stack = inspect.stack()
+    calling_filename = os.path.basename(stack[1].filename)
+    if name is None:
+        name = calling_filename
 
+    _logger = logging.getLogger(name)
+    _logger.propagate = False
 
-    '''
-    logger = logging.getLogger(name)
-    logger.propagate = False
-
-    if not logger.handlers:
+    if not _logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(
-            ColoredFormatter(
-                '[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s', '%H:%M:%S'
+            LoggingColoredFormatter(
+                r```"[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s```",
+                r```"%Y-%m-%d %H:%M:%S```",
+                color=color,
             )
         )
-        logger.addHandler(handler)
+        _logger.addHandler(handler)
 
-    logger.setLevel(level)
-    logger.debug('Logger initialized.')
+    _logger.setLevel(level)
+    _logger.debug(```"Logger 初始化完成```")
 
-    return logger
+    return _logger
 
 
 logger = get_logger(
-    'Env Checker',
-    logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO
+    name=```"Requirement Checker```",
+    level=logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO,
 )
 
 
-# 提取版本标识符组件的正则表达式
-# ref:
-# https://peps.python.org/pep-0440
-# https://packaging.python.org/en/latest/specifications/version-specifiers
-VERSION_PATTERN = r'''
-    v?
-    (?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_\.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
-            [-_\.]?
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<post>                                         # post release
-            (?:-(?P<post_n1>[0-9]+))
-            |
-            (?:
+class PyWhlVersionComponent(NamedTuple):
+    ```"```"```"Python 版本号组件
+
+    参考: https://peps.python.org/pep-0440
+
+    Attributes:
+        epoch (int): 版本纪元号, 用于处理不兼容的重大更改, 默认为 0
+        release (list[int]): 发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]
+        pre_l (str | None): 预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等
+        pre_n (int | None): 预发布版本编号, 与预发布标签配合使用
+        post_n1 (int | None): 后发布版本编号, 格式如 1.0-1 中的数字
+        post_l (str | None): 后发布标签, 如 'post', 'rev', 'r' 等
+        post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字
+        dev_l (str | None): 开发版本标签, 通常为 'dev'
+        dev_n (int | None): 开发版本编号, 如 dev1 中的数字
+        local (str | None): 本地版本标识符, 加号后面的部分
+        is_wildcard (bool): 标记是否包含通配符, 用于版本范围匹配
+    ```"```"```"
+
+    epoch: int
+    ```"```"```"版本纪元号, 用于处理不兼容的重大更改, 默认为 0```"```"```"
+
+    release: list[int]
+    ```"```"```"发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]```"```"```"
+
+    pre_l: str | None
+    ```"```"```"预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等```"```"```"
+
+    pre_n: int | None
+    ```"```"```"预发布版本编号, 与预发布标签配合使用```"```"```"
+
+    post_n1: int | None
+    ```"```"```"后发布版本编号, 格式如 1.0-1 中的数字```"```"```"
+
+    post_l: str | None
+    ```"```"```"后发布标签, 如 'post', 'rev', 'r' 等```"```"```"
+
+    post_n2: int | None
+    ```"```"```"post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字```"```"```"
+
+    dev_l: str | None
+    ```"```"```"开发版本标签, 通常为 'dev'```"```"```"
+
+    dev_n: int | None
+    ```"```"```"开发版本编号, 如 dev1 中的数字```"```"```"
+
+    local: str | None
+    ```"```"```"本地版本标识符, 加号后面的部分```"```"```"
+
+    is_wildcard: bool
+    ```"```"```"标记是否包含通配符, 用于版本范围匹配```"```"```"
+
+
+class PyWhlVersionComparison:
+    ```"```"```"Python 版本号比较工具
+
+    使用:
+    ````````````python
+    # 常规版本匹配
+    PyWhlVersionComparison(```"2.0.0```") < PyWhlVersionComparison(```"2.3.0+cu118```") # True
+    PyWhlVersionComparison(```"2.0```") > PyWhlVersionComparison(```"0.9```") # True
+    PyWhlVersionComparison(```"1.3```") <= PyWhlVersionComparison(```"1.2.2```") # False
+
+    # 通配符版本匹配, 需要在不包含通配符的版本对象中使用 ~ 符号
+    PyWhlVersionComparison(```"1.0*```") == ~PyWhlVersionComparison(```"1.0a1```") # True
+    PyWhlVersionComparison(```"0.9*```") == ~PyWhlVersionComparison(```"1.0```") # False
+    ````````````
+
+    Attributes:
+        VERSION_PATTERN (str): 提去 Wheel 版本号的正则表达式
+        WHL_VERSION_PARSE_REGEX (re.Pattern): 编译后的用于解析 Wheel 版本号的工具
+        version (str): 版本号字符串
+    ```"```"```"
+
+    def __init__(self, version: str) -> None:
+        ```"```"```"初始化 Python 版本号比较工具
+
+        Args:
+            version (str): 版本号字符串
+        ```"```"```"
+        self.version = version
+
+    def __lt__(self, other: object) -> bool:
+        ```"```"```"实现 < 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_lt_v2(self.version, other.version)
+
+    def __gt__(self, other: object) -> bool:
+        ```"```"```"实现 > 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_gt_v2(self.version, other.version)
+
+    def __le__(self, other: object) -> bool:
+        ```"```"```"实现 <= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_le_v2(self.version, other.version)
+
+    def __ge__(self, other: object) -> bool:
+        ```"```"```"实现 >= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_ge_v2(self.version, other.version)
+
+    def __eq__(self, other: object) -> bool:
+        ```"```"```"实现 == 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_eq_v2(self.version, other.version)
+
+    def __ne__(self, other: object) -> bool:
+        ```"```"```"实现 != 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return not self.is_v1_eq_v2(self.version, other.version)
+
+    def __invert__(self) -> ```"PyWhlVersionMatcher```":
+        ```"```"```"使用 ~ 操作符实现兼容性版本匹配 (~= 的语义)
+
+        Returns:
+            PyWhlVersionMatcher: 兼容性版本匹配器
+        ```"```"```"
+        return PyWhlVersionMatcher(self.version)
+
+    # 提取版本标识符组件的正则表达式
+    # ref:
+    # https://peps.python.org/pep-0440
+    # https://packaging.python.org/en/latest/specifications/version-specifiers
+    VERSION_PATTERN = r```"```"```"
+        v?
+        (?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
                 [-_\.]?
-                (?P<post_l>post|rev|r)
+                (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
                 [-_\.]?
-                (?P<post_n2>[0-9]+)?
-            )
-        )?
-        (?P<dev>                                          # dev release
-            [-_\.]?
-            (?P<dev_l>dev)
-            [-_\.]?
-            (?P<dev_n>[0-9]+)?
-        )?
-    )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
-'''
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_\.]?
+                    (?P<post_l>post|rev|r)
+                    [-_\.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_\.]?
+                (?P<dev_l>dev)
+                [-_\.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+    ```"```"```"
 
-
-# 编译正则表达式
-package_version_parse_regex = re.compile(
-    r'^\s*' + VERSION_PATTERN + r'\s*$',
-    re.VERBOSE | re.IGNORECASE,
-)
-
-
-# 定义版本组件的命名元组
-VersionComponent = namedtuple(
-    'VersionComponent', [
-        'epoch',
-        'release',
-        'pre_l',
-        'pre_n',
-        'post_n1',
-        'post_l',
-        'post_n2',
-        'dev_l',
-        'dev_n',
-        'local',
-        'is_wildcard'
-    ]
-)
-
-
-def parse_version(version_str: str) -> VersionComponent:
-    '''解释 Python 软件包版本号
-
-    参数:
-        version_str (str):
-            Python 软件包版本号
-
-    返回值:
-        VersionComponent: 版本组件的命名元组
-
-    异常:
-        ValueError: 如果 Python 版本号不符合 PEP440 规范
-    '''
-    # 检测并剥离通配符
-    wildcard = version_str.endswith('.*') or version_str.endswith('*')
-    clean_str = version_str.rstrip(
-        '*').rstrip('.') if wildcard else version_str
-
-    match = package_version_parse_regex.match(clean_str)
-    if not match:
-        logger.error(f'未知的版本号字符串: {version_str}')
-        raise ValueError(f'Invalid version string: {version_str}')
-
-    components = match.groupdict()
-
-    # 处理 release 段 (允许空字符串)
-    release_str = components['release'] or '0'
-    release_segments = [int(seg) for seg in release_str.split('.')]
-
-    # 构建命名元组
-    return VersionComponent(
-        epoch=int(components['epoch'] or 0),
-        release=release_segments,
-        pre_l=components['pre_l'],
-        pre_n=int(components['pre_n']) if components['pre_n'] else None,
-        post_n1=int(components['post_n1']) if components['post_n1'] else None,
-        post_l=components['post_l'],
-        post_n2=int(components['post_n2']) if components['post_n2'] else None,
-        dev_l=components['dev_l'],
-        dev_n=int(components['dev_n']) if components['dev_n'] else None,
-        local=components['local'],
-        is_wildcard=wildcard
+    # 编译正则表达式
+    WHL_VERSION_PARSE_REGEX = re.compile(
+        r```"^\s*```" + VERSION_PATTERN + r```"\s*$```",
+        re.VERBOSE | re.IGNORECASE,
     )
 
+    def parse_version(self, version_str: str) -> PyWhlVersionComponent:
+        ```"```"```"解释 Python 软件包版本号
 
-def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
+        Args:
+            version_str (str): Python 软件包版本号
 
-    参数:
-        v1 (VersionComponent):
-            第 1 个 Python 版本号标识符组件
-        v2 (VersionComponent):
-            第 2 个 Python 版本号标识符组件
+        Returns:
+            PyWhlVersionComponent: 版本组件的命名元组
 
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
+        Raises:
+            ValueError: 如果 Python 版本号不符合 PEP440 规范
+        ```"```"```"
+        # 检测并剥离通配符
+        wildcard = version_str.endswith(```".*```") or version_str.endswith(```"*```")
+        clean_str = version_str.rstrip(```"*```").rstrip(```".```") if wildcard else version_str
 
-    # 比较 epoch
-    if v1.epoch != v2.epoch:
-        return v1.epoch - v2.epoch
+        match = self.WHL_VERSION_PARSE_REGEX.match(clean_str)
+        if not match:
+            logger.debug(```"未知的版本号字符串: %s```", version_str)
+            raise ValueError(f```"未知的版本号字符串: {version_str}```")
 
-    # 对其 release 长度, 缺失部分补 0
-    if len(v1.release) != len(v2.release):
-        for _ in range(abs(len(v1.release) - len(v2.release))):
-            if len(v1.release) < len(v2.release):
-                v1.release.append(0)
-            else:
-                v2.release.append(0)
+        components = match.groupdict()
 
-    # 比较 release
-    for n1, n2 in zip(v1.release, v2.release):
-        if n1 != n2:
-            return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小 ?
-    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
-    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
-    # 但 0.15.0 和 0.15 实际上是一样的版本
-    # if len(v1.release) != len(v2.release):
-    #     return len(v1.release) - len(v2.release)
+        # 处理 release 段 (允许空字符串)
+        release_str = components[```"release```"] or ```"0```"
+        release_segments = [int(seg) for seg in release_str.split(```".```")]
 
-    # 比较 pre-release
-    if v1.pre_l and not v2.pre_l:
-        return -1  # pre-release 小于正常版本
-    elif not v1.pre_l and v2.pre_l:
-        return 1
-    elif v1.pre_l and v2.pre_l:
-        pre_order = {
-            'a': 0,
-            'b': 1,
-            'c': 2,
-            'rc': 3,
-            'alpha': 0,
-            'beta': 1,
-            'pre': 0,
-            'preview': 0
-        }
-        if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
-            return pre_order[v1.pre_l] - pre_order[v2.pre_l]
-        elif v1.pre_n is not None and v2.pre_n is not None:
-            return v1.pre_n - v2.pre_n
-        elif v1.pre_n is None and v2.pre_n is not None:
-            return -1
-        elif v1.pre_n is not None and v2.pre_n is None:
-            return 1
+        # 构建命名元组
+        return PyWhlVersionComponent(
+            epoch=int(components[```"epoch```"] or 0),
+            release=release_segments,
+            pre_l=components[```"pre_l```"],
+            pre_n=int(components[```"pre_n```"]) if components[```"pre_n```"] else None,
+            post_n1=int(components[```"post_n1```"]) if components[```"post_n1```"] else None,
+            post_l=components[```"post_l```"],
+            post_n2=int(components[```"post_n2```"]) if components[```"post_n2```"] else None,
+            dev_l=components[```"dev_l```"],
+            dev_n=int(components[```"dev_n```"]) if components[```"dev_n```"] else None,
+            local=components[```"local```"],
+            is_wildcard=wildcard,
+        )
 
-    # 比较 post-release
-    if v1.post_n1 is not None:
-        post_n1 = v1.post_n1
-    elif v1.post_l:
-        post_n1 = int(v1.post_n2) if v1.post_n2 else 0
-    else:
-        post_n1 = 0
+    def compare_version_objects(
+        self, v1: PyWhlVersionComponent, v2: PyWhlVersionComponent
+    ) -> int:
+        ```"```"```"比较两个版本字符串 Python 软件包版本号
 
-    if v2.post_n1 is not None:
-        post_n2 = v2.post_n1
-    elif v2.post_l:
-        post_n2 = int(v2.post_n2) if v2.post_n2 else 0
-    else:
-        post_n2 = 0
+        Args:
+            v1 (PyWhlVersionComponent): 第 1 个 Python 版本号标识符组件
+            v2 (PyWhlVersionComponent): 第 2 个 Python 版本号标识符组件
 
-    if post_n1 != post_n2:
-        return post_n1 - post_n2
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回````1````, 小于则返回````-1````, 如果相等则返回````0````
+        ```"```"```"
 
-    # 比较 dev-release
-    if v1.dev_l and not v2.dev_l:
-        return -1  # dev-release 小于 post-release 或正常版本
-    elif not v1.dev_l and v2.dev_l:
-        return 1
-    elif v1.dev_l and v2.dev_l:
-        if v1.dev_n is not None and v2.dev_n is not None:
-            return v1.dev_n - v2.dev_n
-        elif v1.dev_n is None and v2.dev_n is not None:
-            return -1
-        elif v1.dev_n is not None and v2.dev_n is None:
-            return 1
+        # 比较 epoch
+        if v1.epoch != v2.epoch:
+            return v1.epoch - v2.epoch
 
-    # 比较 local version
-    if v1.local and not v2.local:
-        return -1  # local version 小于 dev-release 或正常版本
-    elif not v1.local and v2.local:
-        return 1
-    elif v1.local and v2.local:
-        local1 = v1.local.split('.')
-        local2 = v2.local.split('.')
-        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
-        if len(local1) != len(local2):
-            for _ in range(abs(len(local1) - len(local2))):
-                if len(local1) < len(local2):
-                    local1.append(0)
+        # 对其 release 长度, 缺失部分补 0
+        if len(v1.release) != len(v2.release):
+            for _ in range(abs(len(v1.release) - len(v2.release))):
+                if len(v1.release) < len(v2.release):
+                    v1.release.append(0)
                 else:
-                    local2.append(0)
-        for l1, l2 in zip(local1, local2):
-            if l1.isdigit() and l2.isdigit():
-                l1, l2 = int(l1), int(l2)
-            if l1 != l2:
-                return (l1 > l2) - (l1 < l2)
-        return len(local1) - len(local2)
+                    v2.release.append(0)
 
-    return 0  # 版本相同
+        # 比较 release
+        for n1, n2 in zip(v1.release, v2.release):
+            if n1 != n2:
+                return n1 - n2
+        # 如果 release 长度不同, 较短的版本号视为较小 ?
+        # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+        # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+        # 但 0.15.0 和 0.15 实际上是一样的版本
+        # if len(v1.release) != len(v2.release):
+        #     return len(v1.release) - len(v2.release)
 
+        # 比较 pre-release
+        if v1.pre_l and not v2.pre_l:
+            return -1  # pre-release 小于正常版本
+        elif not v1.pre_l and v2.pre_l:
+            return 1
+        elif v1.pre_l and v2.pre_l:
+            pre_order = {
+                ```"a```": 0,
+                ```"b```": 1,
+                ```"c```": 2,
+                ```"rc```": 3,
+                ```"alpha```": 0,
+                ```"beta```": 1,
+                ```"pre```": 0,
+                ```"preview```": 0,
+            }
+            if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
+                return pre_order[v1.pre_l] - pre_order[v2.pre_l]
+            elif v1.pre_n is not None and v2.pre_n is not None:
+                return v1.pre_n - v2.pre_n
+            elif v1.pre_n is None and v2.pre_n is not None:
+                return -1
+            elif v1.pre_n is not None and v2.pre_n is None:
+                return 1
 
-def compare_versions(version1: str, version2: str) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
+        # 比较 post-release
+        if v1.post_n1 is not None:
+            post_n1 = v1.post_n1
+        elif v1.post_l:
+            post_n1 = int(v1.post_n2) if v1.post_n2 else 0
+        else:
+            post_n1 = 0
 
-    参数:
-        version1 (str):
-            版本号 1
-        version2 (str):
-            版本号 2
+        if v2.post_n1 is not None:
+            post_n2 = v2.post_n1
+        elif v2.post_l:
+            post_n2 = int(v2.post_n2) if v2.post_n2 else 0
+        else:
+            post_n2 = 0
 
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
-    v1 = parse_version(version1)
-    v2 = parse_version(version2)
-    return compare_version_objects(v1, v2)
+        if post_n1 != post_n2:
+            return post_n1 - post_n2
 
+        # 比较 dev-release
+        if v1.dev_l and not v2.dev_l:
+            return -1  # dev-release 小于 post-release 或正常版本
+        elif not v1.dev_l and v2.dev_l:
+            return 1
+        elif v1.dev_l and v2.dev_l:
+            if v1.dev_n is not None and v2.dev_n is not None:
+                return v1.dev_n - v2.dev_n
+            elif v1.dev_n is None and v2.dev_n is not None:
+                return -1
+            elif v1.dev_n is not None and v2.dev_n is None:
+                return 1
 
-def compatible_version_matcher(spec_version: str):
-    '''PEP 440 兼容性版本匹配 (~= 操作符)
+        # 比较 local version
+        if v1.local and not v2.local:
+            return -1  # local version 小于 dev-release 或正常版本
+        elif not v1.local and v2.local:
+            return 1
+        elif v1.local and v2.local:
+            local1 = v1.local.split(```".```")
+            local2 = v2.local.split(```".```")
+            # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+            if len(local1) != len(local2):
+                for _ in range(abs(len(local1) - len(local2))):
+                    if len(local1) < len(local2):
+                        local1.append(0)
+                    else:
+                        local2.append(0)
+            for l1, l2 in zip(local1, local2):
+                if l1.isdigit() and l2.isdigit():
+                    l1, l2 = int(l1), int(l2)
+                if l1 != l2:
+                    return (l1 > l2) - (l1 < l2)
+            return len(local1) - len(local2)
 
-    返回值:
-        _is_compatible(version_str: str) -> bool: 一个接受 version_str (str) 参数的判断函数
-    '''
-    # 解析规范版本
-    spec = parse_version(spec_version)
+        return 0  # 版本相同
 
-    # 获取有效release段（去除末尾的零）
-    clean_release = []
-    for num in spec.release:
-        if num != 0 or (clean_release and clean_release[-1] != 0):
-            clean_release.append(num)
+    def compare_versions(self, version1: str, version2: str) -> int:
+        ```"```"```"比较两个版本字符串 Python 软件包版本号
 
-    # 确定最低版本和前缀匹配规则
-    if len(clean_release) == 0:
-        logger.error('解析到错误的兼容性发行版本号')
-        raise ValueError('Invalid version for compatible release clause')
+        Args:
+            version1 (str): 版本号 1
+            version2 (str): 版本号 2
 
-    # 生成前缀匹配模板（忽略后缀）
-    prefix_length = len(clean_release) - 1
-    if prefix_length == 0:
-        # 处理类似 ~= 2 的情况（实际 PEP 禁止，但这里做容错）
-        prefix_pattern = [spec.release[0]]
-        min_version = parse_version(f'{spec.release[0]}')
-    else:
-        prefix_pattern = list(spec.release[:prefix_length])
-        min_version = spec
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回````1````, 小于则返回````-1````, 如果相等则返回````0````
+        ```"```"```"
+        v1 = self.parse_version(version1)
+        v2 = self.parse_version(version2)
+        return self.compare_version_objects(v1, v2)
 
-    def _is_compatible(version_str: str) -> bool:
-        target = parse_version(version_str)
+    def compatible_version_matcher(self, spec_version: str) -> Callable[[str], bool]:
+        ```"```"```"PEP 440 兼容性版本匹配 (~= 操作符)
 
-        # 主版本前缀检查
-        target_prefix = target.release[:len(prefix_pattern)]
-        if target_prefix != prefix_pattern:
+        Returns:
+            (Callable[[str], bool]): 一个接受 version_str (````str````) 参数的判断函数
+        ```"```"```"
+        # 解析规范版本
+        spec = self.parse_version(spec_version)
+
+        # 获取有效 release 段 (去除末尾的零)
+        clean_release = []
+        for num in spec.release:
+            if num != 0 or (clean_release and clean_release[-1] != 0):
+                clean_release.append(num)
+
+        # 确定最低版本和前缀匹配规则
+        if len(clean_release) == 0:
+            logger.debug(```"解析到错误的兼容性发行版本号```")
+            raise ValueError(```"解析到错误的兼容性发行版本号```")
+
+        # 生成前缀匹配模板 (忽略后缀)
+        prefix_length = len(clean_release) - 1
+        if prefix_length == 0:
+            # 处理类似 ~= 2 的情况 (实际 PEP 禁止, 但这里做容错)
+            prefix_pattern = [spec.release[0]]
+            min_version = self.parse_version(f```"{spec.release[0]}```")
+        else:
+            prefix_pattern = list(spec.release[:prefix_length])
+            min_version = spec
+
+        def _is_compatible(version_str: str) -> bool:
+            target = self.parse_version(version_str)
+
+            # 主版本前缀检查
+            target_prefix = target.release[: len(prefix_pattern)]
+            if target_prefix != prefix_pattern:
+                return False
+
+            # 最低版本检查 (自动忽略 pre/post/dev 后缀)
+            return self.compare_version_objects(target, min_version) >= 0
+
+        return _is_compatible
+
+    def version_match(self, spec: str, version: str) -> bool:
+        ```"```"```"PEP 440 版本前缀匹配
+
+        Args:
+            spec (str): 版本匹配表达式 (e.g. '1.1.*')
+            version (str): 需要检测的实际版本号 (e.g. '1.1a1')
+
+        Returns:
+            bool: 是否匹配
+        ```"```"```"
+        # 分离通配符和本地版本
+        spec_parts = spec.split(```"+```", 1)
+        spec_main = spec_parts[0].rstrip(```".*```")  # 移除通配符
+        has_wildcard = spec.endswith(```".*```") and ```"+```" not in spec
+
+        # 解析规范版本 (不带通配符)
+        try:
+            spec_ver = self.parse_version(spec_main)
+        except ValueError:
             return False
 
-        # 最低版本检查 (自动忽略 pre/post/dev 后缀)
-        return compare_version_objects(target, min_version) >= 0
+        # 解析目标版本 (忽略本地版本)
+        target_ver = self.parse_version(version.split(```"+```", 1)[0])
 
-    return _is_compatible
+        # 前缀匹配规则
+        if has_wildcard:
+            # 生成补零后的 release 段
+            spec_release = spec_ver.release.copy()
+            while len(spec_release) < len(target_ver.release):
+                spec_release.append(0)
+
+            # 比较前 N 个 release 段 (N 为规范版本长度)
+            return (
+                target_ver.release[: len(spec_ver.release)] == spec_ver.release
+                and target_ver.epoch == spec_ver.epoch
+            )
+        else:
+            # 严格匹配时使用原比较函数
+            return self.compare_versions(spec_main, version) == 0
+
+    def is_v1_ge_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于或等于 v2
+
+        例如:
+        ````````````
+        1.1, 1.0 -> True
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号大于或等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) >= 0
+
+    def is_v1_gt_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于 v2
+
+        例如:
+        ````````````
+        1.1, 1.0 -> True
+        1.0, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号大于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) > 0
+
+    def is_v1_eq_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否等于 v2
+
+        例如:
+        ````````````
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        1.1, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            ````bool````: 如果 v1 版本号等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) == 0
+
+    def is_v1_lt_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否小于 v2
+
+        例如:
+        ````````````
+        0.9, 1.0 -> True
+        1.0, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号小于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) < 0
+
+    def is_v1_le_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否小于或等于 v2
+
+        例如:
+        ````````````
+        0.9, 1.0 -> True
+        1.0, 1.0 -> True
+        1.1, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号小于或等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) <= 0
+
+    def is_v1_c_eq_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
+
+        例如:
+        ````````````
+        1.0*, 1.0a1 -> True
+        0.9*, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号等于 v2 版本号则返回````True````
+        ```"```"```"
+        func = self.compatible_version_matcher(v1)
+        return func(v2)
 
 
-def version_match(spec: str, version: str) -> bool:
-    '''PEP 440 版本前缀匹配
+class PyWhlVersionMatcher:
+    ```"```"```"Python 兼容性版本匹配器, 用于实现 ~= 操作符的语义
 
-    参数:
-        spec (str): 版本匹配表达式 (e.g. '1.1.*')
-        version (str): 需要检测的实际版本号 (e.g. '1.1a1')
+    Attributes:
+        spec_version (str): 版本号
+        comparison (PyWhlVersionComparison): Python 版本号比较工具
+        _matcher_func (Callable[[str], bool]): 兼容性版本匹配函数
+    ```"```"```"
 
-    返回值:
-        bool: 是否匹配
-    '''
-    # 分离通配符和本地版本
-    spec_parts = spec.split('+', 1)
-    spec_main = spec_parts[0].rstrip('.*')  # 移除通配符
-    has_wildcard = spec.endswith('.*') and '+' not in spec
+    def __init__(self, spec_version: str) -> None:
+        ```"```"```"初始化 Python 兼容性版本匹配器
 
-    # 解析规范版本 (不带通配符)
-    try:
-        spec_ver = parse_version(spec_main)
-    except ValueError:
-        return False
+        Args:
+            spec_version (str): 版本号
+        ```"```"```"
+        self.spec_version = spec_version
+        self.comparison = PyWhlVersionComparison(spec_version)
+        self._matcher_func = self.comparison.compatible_version_matcher(spec_version)
 
-    # 解析目标版本 (忽略本地版本)
-    target_ver = parse_version(version.split('+', 1)[0])
+    def __eq__(self, other: object) -> bool:
+        ```"```"```"实现 ~version == other_version 的语义
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        ```"```"```"
+        if isinstance(other, str):
+            return self._matcher_func(other)
+        elif isinstance(other, PyWhlVersionComparison):
+            return self._matcher_func(other.version)
+        elif isinstance(other, PyWhlVersionMatcher):
+            # 允许 ~v1 == ~v2 的比较 (比较规范版本)
+            return self.spec_version == other.spec_version
+        return NotImplemented
 
-    # 前缀匹配规则
-    if has_wildcard:
-        # 生成补零后的 release 段
-        spec_release = spec_ver.release.copy()
-        while len(spec_release) < len(target_ver.release):
-            spec_release.append(0)
+    def __repr__(self) -> str:
+        return f```"~{self.spec_version}```"
 
-        # 比较前 N 个 release 段 (N 为规范版本长度)
-        return (
-            target_ver.release[:len(spec_ver.release)] == spec_ver.release
-            and target_ver.epoch == spec_ver.epoch
-        )
+
+class ParsedPyWhlRequirement(NamedTuple):
+    ```"```"```"解析后的依赖声明信息
+
+    参考: https://peps.python.org/pep-0508
+    ```"```"```"
+
+    name: str
+    ```"```"```"软件包名称```"```"```"
+
+    extras: list[str]
+    ```"```"```"extras 列表，例如 ['fred', 'bar']```"```"```"
+
+    specifier: list[tuple[str, str]] | str
+    ```"```"```"版本约束列表或 URL 地址
+
+    如果是版本依赖，则为版本约束列表，例如 [('>=', '1.0'), ('<', '2.0')]
+    如果是 URL 依赖，则为 URL 字符串，例如 'http://example.com/package.tar.gz'
+    ```"```"```"
+
+    marker: Any
+    ```"```"```"环境标记表达式，用于条件依赖```"```"```"
+
+
+class Parser:
+    ```"```"```"语法解析器
+
+    Attributes:
+        text (str): 待解析的字符串
+        pos (int): 字符起始位置
+        len (int): 字符串长度
+    ```"```"```"
+
+    def __init__(self, text: str) -> None:
+        ```"```"```"初始化解析器
+
+        Args:
+            text (str): 要解析的文本
+        ```"```"```"
+        self.text = text
+        self.pos = 0
+        self.len = len(text)
+
+    def peek(self) -> str:
+        ```"```"```"查看当前位置的字符但不移动指针
+
+        Returns:
+            str: 当前位置的字符，如果到达末尾则返回空字符串
+        ```"```"```"
+        if self.pos < self.len:
+            return self.text[self.pos]
+        return ```"```"
+
+    def consume(self, expected: str | None = None) -> str:
+        ```"```"```"消耗当前字符并移动指针
+
+        Args:
+            expected (str | None): 期望的字符，如果提供但不匹配会抛出异常
+
+        Returns:
+            str: 实际消耗的字符
+
+        Raises:
+            ValueError: 当字符不匹配或到达文本末尾时
+        ```"```"```"
+        if self.pos >= self.len:
+            raise ValueError(f```"不期望的输入内容结尾, 期望: {expected}```")
+
+        char = self.text[self.pos]
+        if expected and char != expected:
+            raise ValueError(f```"期望 '{expected}', 得到 '{char}' 在位置 {self.pos}```")
+
+        self.pos += 1
+        return char
+
+    def skip_whitespace(self):
+        ```"```"```"跳过空白字符（空格和制表符）```"```"```"
+        while self.pos < self.len and self.text[self.pos] in ```" \t```":
+            self.pos += 1
+
+    def match(self, pattern: str) -> str | None:
+        ```"```"```"尝试匹配指定模式, 成功则移动指针
+
+        Args:
+            pattern (str): 要匹配的模式字符串
+
+        Returns:
+            (str | None): 匹配成功的字符串, 否则为 None
+        ```"```"```"
+        # 跳过空格再匹配
+        original_pos = self.pos
+        self.skip_whitespace()
+
+        if self.text.startswith(pattern, self.pos):
+            result = self.text[self.pos : self.pos + len(pattern)]
+            self.pos += len(pattern)
+            return result
+
+        # 如果没有匹配，恢复位置
+        self.pos = original_pos
+        return None
+
+    def read_while(self, condition) -> str:
+        ```"```"```"读取满足条件的字符序列
+
+        Args:
+            condition: 判断字符是否满足条件的函数
+
+        Returns:
+            str: 满足条件的字符序列
+        ```"```"```"
+        start = self.pos
+        while self.pos < self.len and condition(self.text[self.pos]):
+            self.pos += 1
+        return self.text[start : self.pos]
+
+    def eof(self) -> bool:
+        ```"```"```"检查是否到达文本末尾
+
+        Returns:
+            bool: 如果到达末尾返回 True, 否则返回 False
+        ```"```"```"
+        return self.pos >= self.len
+
+
+class RequirementParser(Parser):
+    ```"```"```"Python 软件包解析工具
+
+    Attributes:
+        bindings (dict[str, str] | None): 解析语法
+    ```"```"```"
+
+    def __init__(self, text: str, bindings: dict[str, str] | None = None):
+        ```"```"```"初始化依赖声明解析器
+
+        Args:
+            text (str): 覫解析的依赖声明文本
+            bindings (dict[str, str] | None): 环境变量绑定字典
+        ```"```"```"
+        super().__init__(text)
+        self.bindings = bindings or {}
+
+    def parse(self) -> ParsedPyWhlRequirement:
+        ```"```"```"解析依赖声明，返回 (name, extras, version_specs / url, marker)
+
+        Returns:
+            ParsedPyWhlRequirement: 解析结果元组
+        ```"```"```"
+        self.skip_whitespace()
+
+        # 首先解析名称
+        name = self.parse_identifier()
+        self.skip_whitespace()
+
+        # 解析 extras
+        extras = []
+        if self.peek() == ```"[```":
+            extras = self.parse_extras()
+            self.skip_whitespace()
+
+        # 检查是 URL 依赖还是版本依赖
+        if self.peek() == ```"@```":
+            # URL依赖
+            self.consume(```"@```")
+            self.skip_whitespace()
+            url = self.parse_url()
+            self.skip_whitespace()
+
+            # 解析可选的 marker
+            marker = None
+            if self.match(```";```"):
+                marker = self.parse_marker()
+
+            return ParsedPyWhlRequirement(name, extras, url, marker)
+        else:
+            # 版本依赖
+            versions = []
+            # 检查是否有版本约束 (不是以分号开头)
+            if not self.eof() and self.peek() not in (```";```", ```",```"):
+                versions = self.parse_versionspec()
+                self.skip_whitespace()
+
+            # 解析可选的 marker
+            marker = None
+            if self.match(```";```"):
+                marker = self.parse_marker()
+
+            return ParsedPyWhlRequirement(name, extras, versions, marker)
+
+    def parse_identifier(self) -> str:
+        ```"```"```"解析标识符
+
+        Returns:
+            str: 解析得到的标识符
+        ```"```"```"
+
+        def is_identifier_char(c):
+            return c.isalnum() or c in ```"-_.```"
+
+        result = self.read_while(is_identifier_char)
+        if not result:
+            raise ValueError(```"应为预期标识符```")
+        return result
+
+    def parse_extras(self) -> list[str]:
+        ```"```"```"解析 extras 列表
+
+        Returns:
+            list[str]: extras 列表
+        ```"```"```"
+        self.consume(```"[```")
+        self.skip_whitespace()
+
+        extras = []
+        if self.peek() != ```"]```":
+            extras.append(self.parse_identifier())
+            self.skip_whitespace()
+
+            while self.match(```",```"):
+                self.skip_whitespace()
+                extras.append(self.parse_identifier())
+                self.skip_whitespace()
+
+        self.consume(```"]```")
+        return extras
+
+    def parse_versionspec(self) -> list[tuple[str, str]]:
+        ```"```"```"解析版本约束
+
+        Returns:
+            list[tuple[str, str]]: 版本约束列表
+        ```"```"```"
+        if self.match(```"(```"):
+            versions = self.parse_version_many()
+            self.consume(```")```")
+            return versions
+        else:
+            return self.parse_version_many()
+
+    def parse_version_many(self) -> list[tuple[str, str]]:
+        ```"```"```"解析多个版本约束
+
+        Returns:
+            list[tuple[str, str]]: 多个版本约束组成的列表
+        ```"```"```"
+        versions = [self.parse_version_one()]
+        self.skip_whitespace()
+
+        while self.match(```",```"):
+            self.skip_whitespace()
+            versions.append(self.parse_version_one())
+            self.skip_whitespace()
+
+        return versions
+
+    def parse_version_one(self) -> tuple[str, str]:
+        ```"```"```"解析单个版本约束
+
+        Returns:
+            tuple[str, str]: (操作符, 版本号) 元组
+        ```"```"```"
+        op = self.parse_version_cmp()
+        self.skip_whitespace()
+        version = self.parse_version()
+        return (op, version)
+
+    def parse_version_cmp(self) -> str:
+        ```"```"```"解析版本比较操作符
+
+        Returns:
+            str: 版本比较操作符
+
+        Raises:
+            ValueError: 当找不到有效的版本比较操作符时
+        ```"```"```"
+        operators = [```"<=```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```", ```"<```", ```">```"]
+
+        for op in operators:
+            if self.match(op):
+                return op
+
+        raise ValueError(f```"预期在位置 {self.pos} 处出现版本比较符```")
+
+    def parse_version(self) -> str:
+        ```"```"```"解析版本号
+
+        Returns:
+            str: 版本号字符串
+
+        Raises:
+            ValueError: 当找不到有效版本号时
+        ```"```"```"
+
+        def is_version_char(c):
+            return c.isalnum() or c in ```"-_.*+!```"
+
+        version = self.read_while(is_version_char)
+        if not version:
+            raise ValueError(```"期望为版本字符串```")
+        return version
+
+    def parse_url(self) -> str:
+        ```"```"```"解析 URL (简化版本)
+
+        Returns:
+            str: URL 字符串
+
+        Raises:
+            ValueError: 当找不到有效 URL 时
+        ```"```"```"
+        # 读取直到遇到空白或分号
+        start = self.pos
+        while self.pos < self.len and self.text[self.pos] not in ```" \t;```":
+            self.pos += 1
+        url = self.text[start : self.pos]
+
+        if not url:
+            raise ValueError(```"@ 后的预期 URL```")
+
+        return url
+
+    def parse_marker(self) -> Any:
+        ```"```"```"解析 marker 表达式
+
+        Returns:
+            Any: 解析后的 marker 表达式
+        ```"```"```"
+        self.skip_whitespace()
+        return self.parse_marker_or()
+
+    def parse_marker_or(self) -> Any:
+        ```"```"```"解析 OR 表达式
+
+        Returns:
+            Any: 解析后的 OR 表达式
+        ```"```"```"
+        left = self.parse_marker_and()
+        self.skip_whitespace()
+
+        if self.match(```"or```"):
+            self.skip_whitespace()
+            right = self.parse_marker_or()
+            return (```"or```", left, right)
+
+        return left
+
+    def parse_marker_and(self) -> Any:
+        ```"```"```"解析 AND 表达式
+
+        Returns:
+            Any: 解析后的 AND 表达式
+        ```"```"```"
+        left = self.parse_marker_expr()
+        self.skip_whitespace()
+
+        if self.match(```"and```"):
+            self.skip_whitespace()
+            right = self.parse_marker_and()
+            return (```"and```", left, right)
+
+        return left
+
+    def parse_marker_expr(self) -> Any:
+        ```"```"```"解析基础 marker 表达式
+
+        Returns:
+            Any: 解析后的基础表达式
+        ```"```"```"
+        self.skip_whitespace()
+
+        if self.peek() == ```"(```":
+            self.consume(```"(```")
+            expr = self.parse_marker()
+            self.consume(```")```")
+            return expr
+
+        left = self.parse_marker_var()
+        self.skip_whitespace()
+
+        op = self.parse_marker_op()
+        self.skip_whitespace()
+
+        right = self.parse_marker_var()
+
+        return (op, left, right)
+
+    def parse_marker_var(self) -> str:
+        ```"```"```"解析 marker 变量
+
+        Returns:
+            str: 解析得到的变量值
+        ```"```"```"
+        self.skip_whitespace()
+
+        # 检查是否是环境变量
+        env_vars = [
+            ```"python_version```",
+            ```"python_full_version```",
+            ```"os_name```",
+            ```"sys_platform```",
+            ```"platform_release```",
+            ```"platform_system```",
+            ```"platform_version```",
+            ```"platform_machine```",
+            ```"platform_python_implementation```",
+            ```"implementation_name```",
+            ```"implementation_version```",
+            ```"extra```",
+        ]
+
+        for var in env_vars:
+            if self.match(var):
+                # 返回绑定的值，如果不存在则返回变量名
+                return self.bindings.get(var, var)
+
+        # 否则解析为字符串
+        return self.parse_python_str()
+
+    def parse_marker_op(self) -> str:
+        ```"```"```"解析 marker 操作符
+
+        Returns:
+            str: marker 操作符
+
+        Raises:
+            ValueError: 当找不到有效操作符时
+        ```"```"```"
+        # 版本比较操作符
+        version_ops = [```"<=```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```", ```"<```", ```">```"]
+        for op in version_ops:
+            if self.match(op):
+                return op
+
+        # in 操作符
+        if self.match(```"in```"):
+            return ```"in```"
+
+        # not in 操作符
+        if self.match(```"not```"):
+            self.skip_whitespace()
+            if self.match(```"in```"):
+                return ```"not in```"
+            raise ValueError(```"预期在 'not' 之后出现 'in'```")
+
+        raise ValueError(f```"在位置 {self.pos} 处应出现标记运算符```")
+
+    def parse_python_str(self) -> str:
+        ```"```"```"解析 Python 字符串
+
+        Returns:
+            str: 解析得到的字符串
+        ```"```"```"
+        self.skip_whitespace()
+
+        if self.peek() == '```"':
+            return self.parse_quoted_string('```"')
+        elif self.peek() == ```"'```":
+            return self.parse_quoted_string(```"'```")
+        else:
+            # 如果没有引号，读取标识符
+            return self.parse_identifier()
+
+    def parse_quoted_string(self, quote: str) -> str:
+        ```"```"```"解析引号字符串
+
+        Args:
+            quote (str): 引号字符
+
+        Returns:
+            str: 解析得到的字符串
+
+        Raises:
+            ValueError: 当字符串未正确闭合时
+        ```"```"```"
+        self.consume(quote)
+        result = []
+
+        while self.pos < self.len and self.text[self.pos] != quote:
+            if self.text[self.pos] == ```"\\```":  # 处理转义
+                self.pos += 1
+                if self.pos < self.len:
+                    result.append(self.text[self.pos])
+                    self.pos += 1
+            else:
+                result.append(self.text[self.pos])
+                self.pos += 1
+
+        if self.pos >= self.len:
+            raise ValueError(f```"未闭合的字符串字面量，预期为 '{quote}'```")
+
+        self.consume(quote)
+        return ```"```".join(result)
+
+
+def format_full_version(info: str) -> str:
+    ```"```"```"格式化完整的版本信息
+
+    Args:
+        info (str): 版本信息
+
+    Returns:
+        str: 格式化后的版本字符串
+    ```"```"```"
+    version = f```"{info.major}.{info.minor}.{info.micro}```"
+    kind = info.releaselevel
+    if kind != ```"final```":
+        version += kind[0] + str(info.serial)
+    return version
+
+
+def get_parse_bindings() -> dict[str, str]:
+    ```"```"```"获取用于解析 Python 软件包名的语法
+
+    Returns:
+        (dict[str, str]): 解析 Python 软件包名的语法字典
+    ```"```"```"
+    # 创建环境变量绑定
+    if hasattr(sys, ```"implementation```"):
+        implementation_version = format_full_version(sys.implementation.version)
+        implementation_name = sys.implementation.name
     else:
-        # 严格匹配时使用原比较函数
-        return compare_versions(spec_main, version) == 0
+        implementation_version = ```"0```"
+        implementation_name = ```"```"
 
-
-def is_v1_ge_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于或等于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) >= 0
-
-
-def is_v1_gt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) > 0
-
-
-def is_v1_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) == 0
-
-
-def is_v1_lt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) < 0
-
-
-def is_v1_le_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于或等于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> True
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) <= 0
-
-
-def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0*, 1.0a1 -> True
-            0.9*, 1.0 -> False
-    '''
-    func = compatible_version_matcher(v1)
-    return func(v2)
+    bindings = {
+        ```"implementation_name```": implementation_name,
+        ```"implementation_version```": implementation_version,
+        ```"os_name```": os.name,
+        ```"platform_machine```": platform.machine(),
+        ```"platform_python_implementation```": platform.python_implementation(),
+        ```"platform_release```": platform.release(),
+        ```"platform_system```": platform.system(),
+        ```"platform_version```": platform.version(),
+        ```"python_full_version```": platform.python_version(),
+        ```"python_version```": ```".```".join(platform.python_version_tuple()[:2]),
+        ```"sys_platform```": sys.platform,
+    }
+    return bindings
 
 
 def version_string_is_canonical(version: str) -> bool:
-    '''判断版本号标识符是否符合标准
+    ```"```"```"判断版本号标识符是否符合标准
 
-    参数:
-        version (str):
-            版本号字符串
-
-    返回值:
-        bool: 如果版本号标识符符合 PEP 440 标准, 则返回True
-
-    '''
-    return re.match(
-        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$',
-        version,
-    ) is not None
+    Args:
+        version (str): 版本号字符串
+    Returns:
+        bool: 如果版本号标识符符合 PEP 440 标准, 则返回````True````
+    ```"```"```"
+    return (
+        re.match(
+            r```"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$```",
+            version,
+        )
+        is not None
+    )
 
 
 def is_package_has_version(package: str) -> bool:
-    '''检查 Python 软件包是否指定版本号
+    ```"```"```"检查 Python 软件包是否指定版本号
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
-    返回值:
-        bool: 如果 Python 软件包存在版本声明, 如torch==2.3.0, 则返回True
-    '''
+    Returns:
+        bool: 如果 Python 软件包存在版本声明, 如````torch==2.3.0````, 则返回````True````
+    ```"```"```"
     return package != (
-        package.replace('===', '')
-        .replace('~=', '')
-        .replace('!=', '')
-        .replace('<=', '')
-        .replace('>=', '')
-        .replace('<', '')
-        .replace('>', '')
-        .replace('==', '')
+        package.replace(```"===```", ```"```")
+        .replace(```"~=```", ```"```")
+        .replace(```"!=```", ```"```")
+        .replace(```"<=```", ```"```")
+        .replace(```">=```", ```"```")
+        .replace(```"<```", ```"```")
+        .replace(```">```", ```"```")
+        .replace(```"==```", ```"```")
     )
 
 
 def get_package_name(package: str) -> str:
-    '''获取 Python 软件包的包名, 去除末尾的版本声明
+    ```"```"```"获取 Python 软件包的包名, 去除末尾的版本声明
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
-    返回值:
+    Returns:
         str: 返回去除版本声明后的 Python 软件包名
-    '''
+    ```"```"```"
     return (
-        package.split('===')[0]
-        .split('~=')[0]
-        .split('!=')[0]
-        .split('<=')[0]
-        .split('>=')[0]
-        .split('<')[0]
-        .split('>')[0]
-        .split('==')[0]
+        package.split(```"===```")[0]
+        .split(```"~=```")[0]
+        .split(```"!=```")[0]
+        .split(```"<=```")[0]
+        .split(```">=```")[0]
+        .split(```"<```")[0]
+        .split(```">```")[0]
+        .split(```"==```")[0]
         .strip()
     )
 
 
 def get_package_version(package: str) -> str:
-    '''获取 Python 软件包的包版本号
+    ```"```"```"获取 Python 软件包的包版本号
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
     返回值:
         str: 返回 Python 软件包的包版本号
-    '''
+    ```"```"```"
     return (
-        package.split('===').pop()
-        .split('~=').pop()
-        .split('!=').pop()
-        .split('<=').pop()
-        .split('>=').pop()
-        .split('<').pop()
-        .split('>').pop()
-        .split('==').pop()
+        package.split(```"===```")
+        .pop()
+        .split(```"~=```")
+        .pop()
+        .split(```"!=```")
+        .pop()
+        .split(```"<=```")
+        .pop()
+        .split(```">=```")
+        .pop()
+        .split(```"<```")
+        .pop()
+        .split(```">```")
+        .pop()
+        .split(```"==```")
+        .pop()
         .strip()
     )
 
 
-WHEEL_PATTERN = r'''
+WHEEL_PATTERN = r```"```"```"
     ^                           # 字符串开始
     (?P<distribution>[^-]+)     # 包名 (匹配第一个非连字符段)
     -                           # 分隔符
@@ -2911,287 +3659,489 @@ WHEEL_PATTERN = r'''
     -                           # 分隔符
     (?P<platform>[^-]+)         # 平台标签
     \.whl$                      # 固定后缀
-'''
+```"```"```"
+```"```"```"解析 Python Wheel 名的的正则表达式```"```"```"
+
+REPLACE_PACKAGE_NAME_DICT = {
+    ```"sam2```": ```"SAM-2```",
+}
+```"```"```"Python 软件包名替换表```"```"```"
 
 
 def parse_wheel_filename(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 distribution 名称
+    ```"```"```"解析 Python wheel 文件名并返回 distribution 名称
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Returns:
         str: distribution 名称, 例如 pydantic
-
-    异常:
+    Raises:
         ValueError: 如果文件名不符合 PEP491 规范
-    '''
+    ```"```"```"
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('distribution')
+        logger.debug(```"未知的 Wheel 文件名: %s```", filename)
+        raise ValueError(f```"未知的 Wheel 文件名: {filename}```")
+    return match.group(```"distribution```")
 
 
 def parse_wheel_version(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 version 名称
+    ```"```"```"解析 Python wheel 文件名并返回 version 名称
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Returns:
         str: version 名称, 例如 1.10.15
-
-    异常:
+    Raises:
         ValueError: 如果文件名不符合 PEP491 规范
-    '''
+    ```"```"```"
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('version')
+        logger.debug(```"未知的 Wheel 文件名: %s```", filename)
+        raise ValueError(f```"未知的 Wheel 文件名: {filename}```")
+    return match.group(```"version```")
 
 
 def parse_wheel_to_package_name(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 <distribution>==<version>
+    ```"```"```"解析 Python wheel 文件名并返回 <distribution>==<version>
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
-    返回值:
+    Returns:
         str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
-    '''
+    ```"```"```"
     distribution = parse_wheel_filename(filename)
     version = parse_wheel_version(filename)
-    return f'{distribution}=={version}'
+    return f```"{distribution}=={version}```"
 
 
 def remove_optional_dependence_from_package(filename: str) -> str:
-    '''移除 Python 软件包声明中可选依赖
+    ```"```"```"移除 Python 软件包声明中可选依赖
 
-    参数:
-        filename (str):
-            Python 软件包名
+    Args:
+        filename (str): Python 软件包名
 
-    返回值:
+    Returns:
         str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
-    '''
-    return re.sub(r'\[.*?\]', '', filename)
+    ```"```"```"
+    return re.sub(r```"\[.*?\]```", ```"```", filename)
 
 
-def parse_requirement_list(requirements: list) -> list:
-    '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
+def get_correct_package_name(name: str) -> str:
+    ```"```"```"将原 Python 软件包名替换成正确的 Python 软件包名
 
-    参数:
-        requirements (list):
-            Python 软件包名声明列表
-            e.g:
-            python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers[torch]==0.10.2',
-                'NUMPY',
-                '-e .',
-                '--index-url https://pypi.python.org/simple',
-                '--extra-index-url https://download.pytorch.org/whl/cu124',
-                '--find-links https://download.pytorch.org/whl/torch_stable.html',
-                '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
-                'git+https://github.com/WASasquatch/img2texture.git',
-                'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
-                'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
-                'protobuf<5,>=4.25.3',
-            ]
-            
+    Args:
+        name (str): 原 Python 软件包名
+    Returns:
+        str: 替换成正确的软件包名, 如果原有包名正确则返回原包名
+    ```"```"```"
+    return REPLACE_PACKAGE_NAME_DICT.get(name, name)
 
-    返回值:
-        list: 将 Python 软件包名声明列表解析成标准声明列表
-        e.g. 上述例子中的软件包名声明列表将解析成:
-        python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers==0.10.2',
-                'numpy',
-                'mgds',
-                'img2texture',
-                'pydantic==1.10.15',
-                'prodigy-plus-schedule-free==1.9.1',
-                'protobuf<5',
-                'protobuf>=4.25.3',
-            ]
-            
-    '''
-    package_list = []
-    canonical_package_list = []
-    requirement: str
+
+def parse_requirement(
+    text: str,
+    bindings: dict[str, str],
+) -> ParsedPyWhlRequirement:
+    ```"```"```"解析依赖声明的主函数
+
+    Args:
+        text (str): 依赖声明文本
+        bindings (dict[str, str]): 解析 Python 软件包名的语法字典
+
+    Returns:
+        ParsedPyWhlRequirement: 解析结果元组
+    ```"```"```"
+    parser = RequirementParser(text, bindings)
+    return parser.parse()
+
+
+def evaluate_marker(marker: Any) -> bool:
+    ```"```"```"评估 marker 表达式, 判断当前环境是否符合要求
+
+    Args:
+        marker (Any): marker 表达式
+    Returns:
+        bool: 评估结果
+    ```"```"```"
+    if marker is None:
+        return True
+
+    if isinstance(marker, tuple):
+        op = marker[0]
+
+        if op in (```"and```", ```"or```"):
+            left = evaluate_marker(marker[1])
+            right = evaluate_marker(marker[2])
+
+            if op == ```"and```":
+                return left and right
+            else:  # 'or'
+                return left or right
+        else:
+            # 处理比较操作
+            left = marker[1]
+            right = marker[2]
+
+            if op in [```"<```", ```"<=```", ```">```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```"]:
+                try:
+                    left_ver = PyWhlVersionComparison(str(left).lower())
+                    right_ver = PyWhlVersionComparison(str(right).lower())
+
+                    if op == ```"<```":
+                        return left_ver < right_ver
+                    elif op == ```"<=```":
+                        return left_ver <= right_ver
+                    elif op == ```">```":
+                        return left_ver > right_ver
+                    elif op == ```">=```":
+                        return left_ver >= right_ver
+                    elif op == ```"==```":
+                        return left_ver == right_ver
+                    elif op == ```"!=```":
+                        return left_ver != right_ver
+                    elif op == ```"~=```":
+                        return left_ver >= ~right_ver
+                    elif op == ```"===```":
+                        # 任意相等, 直接比较字符串
+                        return str(left).lower() == str(right).lower()
+                except Exception:
+                    # 如果版本比较失败, 回退到字符串比较
+                    left_str = str(left).lower()
+                    right_str = str(right).lower()
+                    if op == ```"<```":
+                        return left_str < right_str
+                    elif op == ```"<=```":
+                        return left_str <= right_str
+                    elif op == ```">```":
+                        return left_str > right_str
+                    elif op == ```">=```":
+                        return left_str >= right_str
+                    elif op == ```"==```":
+                        return left_str == right_str
+                    elif op == ```"!=```":
+                        return left_str != right_str
+                    elif op == ```"~=```":
+                        # 简化处理
+                        return left_str >= right_str
+                    elif op == ```"===```":
+                        return left_str == right_str
+
+            # 处理 in 和 not in 操作
+            elif op == ```"in```":
+                # 将右边按逗号分割, 检查左边是否在其中
+                values = [v.strip() for v in str(right).lower().split(```",```")]
+                return str(left).lower() in values
+
+            elif op == ```"not in```":
+                # 将右边按逗号分割, 检查左边是否不在其中
+                values = [v.strip() for v in str(right).lower().split(```",```")]
+                return str(left).lower() not in values
+
+    return False
+
+
+def parse_requirement_to_list(text: str) -> list[str]:
+    ```"```"```"解析依赖声明并返回依赖列表
+
+    Args:
+        text (str): 依赖声明
+    Returns:
+        list[str]: 解析后的依赖声明表
+    ```"```"```"
+    try:
+        bindings = get_parse_bindings()
+        name, _, version_specs, marker = parse_requirement(text, bindings)
+    except Exception as e:
+        logger.debug(```"解析失败: %s```", e)
+        return []
+
+    # 检查marker条件
+    if not evaluate_marker(marker):
+        return []
+
+    # 构建依赖列表
+    dependencies = []
+
+    # 如果是 URL 依赖
+    if isinstance(version_specs, str):
+        # URL 依赖只返回包名
+        dependencies.append(name)
+    else:
+        # 版本依赖
+        if version_specs:
+            # 有版本约束, 为每个约束创建一个依赖项
+            for op, version in version_specs:
+                dependencies.append(f```"{name}{op}{version}```")
+        else:
+            # 没有版本约束, 只返回包名
+            dependencies.append(name)
+
+    return dependencies
+
+
+def parse_requirement_list(requirements: list[str]) -> list[str]:
+    ```"```"```"将 Python 软件包声明列表解析成标准 Python 软件包名列表
+
+    例如有以下的 Python 软件包声明列表:
+    ````````````python
+    requirements = [
+        'torch==2.3.0',
+        'diffusers[torch]==0.10.2',
+        'NUMPY',
+        '-e .',
+        '--index-url https://pypi.python.org/simple',
+        '--extra-index-url https://download.pytorch.org/whl/cu124',
+        '--find-links https://download.pytorch.org/whl/torch_stable.html',
+        '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
+        'git+https://github.com/WASasquatch/img2texture.git',
+        'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
+        'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
+        'protobuf<5,>=4.25.3',
+    ]
+    ````````````
+
+    上述例子中的软件包名声明列表将解析成:
+    ````````````python
+        requirements = [
+            'torch==2.3.0',
+            'diffusers==0.10.2',
+            'numpy',
+            'mgds',
+            'img2texture',
+            'pydantic==1.10.15',
+            'prodigy-plus-schedule-free==1.9.1',
+            'protobuf<5',
+            'protobuf>=4.25.3',
+        ]
+    ````````````
+
+    Args:
+        requirements (list[str]): Python 软件包名声明列表
+
+    Returns:
+        list[str]: 将 Python 软件包名声明列表解析成标准声明列表
+    ```"```"```"
+
+    def _extract_repo_name(url_string: str) -> str | None:
+        ```"```"```"从包含 Git 仓库 URL 的字符串中提取仓库名称
+
+        Args:
+            url_string (str): 包含 Git 仓库 URL 的字符串
+
+        Returns:
+            (str | None): 提取到的仓库名称, 如果未找到则返回 None
+        ```"```"```"
+        # 模式1: 匹配 git+https:// 或 git+ssh:// 开头的 URL
+        # 模式2: 匹配直接以 git+ 开头的 URL
+        patterns = [
+            # 匹配 git+protocol://host/path/to/repo.git 格式
+            r```"git\+[a-z]+://[^/]+/(?:[^/]+/)*([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 匹配 git+https://host/owner/repo.git 格式
+            r```"git\+https://[^/]+/[^/]+/([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 匹配 git+ssh://git@host:owner/repo.git 格式
+            r```"git\+ssh://git@[^:]+:[^/]+/([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 通用模式: 匹配最后一个斜杠后的内容, 直到遇到 @ 或 .git 或字符串结束
+            r```"/([^/@]+?)(?:\.git)?(?:@|$)```",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url_string)
+            if match:
+                return match.group(1)
+
+        return None
+
+    package_list: list[str] = []
+    canonical_package_list: list[str] = []
     for requirement in requirements:
-        requirement = requirement.strip()
-        logger.debug('原始 Python 软件包名: %s', requirement)
+        # 清理注释内容
+        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
+        requirement = re.sub(r```"\s*#.*$```", ```"```", requirement).strip()
+        logger.debug(```"原始 Python 软件包名: %s```", requirement)
 
         if (
             requirement is None
-            or requirement == ''
-            or requirement.startswith('#')
-            or '# skip_verify' in requirement
-            or requirement.startswith('--index-url')
-            or requirement.startswith('--extra-index-url')
-            or requirement.startswith('--find-links')
-            or requirement.startswith('-e .')
+            or requirement == ```"```"
+            or requirement.startswith(```"#```")
+            or ```"# skip_verify```" in requirement
+            or requirement.startswith(```"--index-url```")
+            or requirement.startswith(```"--extra-index-url```")
+            or requirement.startswith(```"--find-links```")
+            or requirement.startswith(```"-e .```")
+            or requirement.startswith(```"-r ```")
         ):
             continue
 
         # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
         # git+https://github.com/WASasquatch/img2texture.git -> img2texture
         # git+https://github.com/deepghs/waifuc -> waifuc
-        if requirement.startswith('-e git+http') or requirement.startswith('git+http'):
-            egg_match = re.search(r'egg=([^#&]+)', requirement)
+        # -e git+https://github.com/Nerogar/mgds.git@2c67a5a -> mgds
+        # git+ssh://git@github.com:licyk/sd-webui-all-in-one@dev -> sd-webui-all-in-one
+        # git+https://gitlab.com/user/my-project.git@main -> my-project
+        # git+ssh://git@bitbucket.org:team/repo-name.git@develop -> repo-name
+        # https://github.com/another/repo.git -> repo
+        # git@github.com:user/repository.git -> repository
+        if (
+            requirement.startswith(```"-e git+http```")
+            or requirement.startswith(```"git+http```")
+            or requirement.startswith(```"-e git+ssh://```")
+            or requirement.startswith(```"git+ssh://```")
+        ):
+            egg_match = re.search(r```"egg=([^#&]+)```", requirement)
             if egg_match:
-                package_list.append(egg_match.group(1).split('-')[0])
+                package_list.append(egg_match.group(1).split(```"-```")[0])
+                continue
+
+            repo_name_match = _extract_repo_name(requirement)
+            if repo_name_match is not None:
+                package_list.append(repo_name_match)
                 continue
 
             package_name = os.path.basename(requirement)
-            package_name = package_name.split(
-                '.git')[0] if package_name.endswith('.git') else package_name
+            package_name = (
+                package_name.split(```".git```")[0]
+                if package_name.endswith(```".git```")
+                else package_name
+            )
             package_list.append(package_name)
             continue
 
         # https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl -> pydantic==1.10.15
-        if requirement.startswith('https://') or requirement.startswith('http://'):
-            package_name = parse_wheel_to_package_name(
-                os.path.basename(requirement))
+        if requirement.startswith(```"https://```") or requirement.startswith(```"http://```"):
+            package_name = parse_wheel_to_package_name(os.path.basename(requirement))
             package_list.append(package_name)
             continue
 
         # 常规 Python 软件包声明
-        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
-        cleaned_requirements = re.sub(
-            r'\s*#.*$', '', requirement).strip().split(',')
-        if len(cleaned_requirements) > 1:
-            package_name = get_package_name(cleaned_requirements[0].strip())
-            for package_name_with_version_marked in cleaned_requirements:
+        # 解析版本列表
+        possble_requirement = parse_requirement_to_list(requirement)
+        if len(possble_requirement) == 0:
+            continue
+        elif len(possble_requirement) == 1:
+            requirement = possble_requirement[0]
+        else:
+            requirements_list = parse_requirement_list(possble_requirement)
+            package_list += requirements_list
+            continue
+
+        multi_requirements = requirement.split(```",```")
+        if len(multi_requirements) > 1:
+            package_name = get_package_name(multi_requirements[0].strip())
+            for package_name_with_version_marked in multi_requirements:
                 version_symbol = str.replace(
-                    package_name_with_version_marked, package_name, '', 1)
+                    package_name_with_version_marked, package_name, ```"```", 1
+                )
                 format_package_name = remove_optional_dependence_from_package(
-                    f'{package_name}{version_symbol}'.strip())
+                    f```"{package_name}{version_symbol}```".strip()
+                )
                 package_list.append(format_package_name)
         else:
             format_package_name = remove_optional_dependence_from_package(
-                cleaned_requirements[0].strip())
+                multi_requirements[0].strip()
+            )
             package_list.append(format_package_name)
 
     # 处理包名大小写并统一成小写
     for p in package_list:
-        p: str = p.lower().strip()
-        logger.debug('预处理后的 Python 软件包名: %s', p)
+        p = p.lower().strip()
+        logger.debug(```"预处理后的 Python 软件包名: %s```", p)
         if not is_package_has_version(p):
-            logger.debug('%s 无版本声明', p)
-            canonical_package_list.append(p)
+            logger.debug(```"%s 无版本声明```", p)
+            new_p = get_correct_package_name(p)
+            logger.debug(```"包名处理: %s -> %s```", p, new_p)
+            canonical_package_list.append(new_p)
             continue
 
         if version_string_is_canonical(get_package_version(p)):
             canonical_package_list.append(p)
         else:
-            logger.debug('%s 软件包名的版本不符合标准', p)
+            logger.debug(```"%s 软件包名的版本不符合标准```", p)
 
     return canonical_package_list
 
 
-def remove_duplicate_object_from_list(origin: list) -> list:
-    '''对list进行去重
+def read_packages_from_requirements_file(file_path: str | Path) -> list[str]:
+    ```"```"```"从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
-    参数:
-        origin (list):
-            原始的list
+    Args:
+        file_path (str | Path): requirements.txt 文件路径
 
-    返回值:
-        list: 去重后的list, e.g. [1, 2, 3, 2] -> [1, 2, 3]
-    '''
-    return list(set(origin))
-
-
-def read_packages_from_requirements_file(file_path: Union[str, Path]) -> list:
-    '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
-
-    参数:
-        file_path (str, Path):
-            requirements.txt 文件路径
-
-    返回值:
-        list: 从 requirements.txt 文件中读取的 Python 软件包声明列表
-    '''
+    Returns:
+        list[str]: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+    ```"```"```"
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, ```"r```", encoding=```"utf-8```") as f:
             return f.readlines()
     except Exception as e:
-        logger.error('打开 %s 时出现错误: %s\n请检查文件是否出现损坏', file_path, e)
+        logger.debug(```"打开 %s 时出现错误: %s\n请检查文件是否出现损坏```", file_path, e)
         return []
 
 
-def get_package_version_from_library(package_name: str) -> Union[str, None]:
-    '''获取已安装的 Python 软件包版本号
+def get_package_version_from_library(package_name: str) -> str | None:
+    ```"```"```"获取已安装的 Python 软件包版本号
 
-    参数:
-        package_name (str):
+    Args:
+        package_name (str): Python 软件包名
 
-    返回值:
-        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回None
-    '''
+    Returns:
+        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回````None````
+    ```"```"```"
     try:
         ver = importlib.metadata.version(package_name)
-    except:
+    except Exception as _:
         ver = None
 
     if ver is None:
         try:
             ver = importlib.metadata.version(package_name.lower())
-        except:
+        except Exception as _:
             ver = None
 
     if ver is None:
         try:
-            ver = importlib.metadata.version(package_name.replace('_', '-'))
-        except:
+            ver = importlib.metadata.version(package_name.replace(```"_```", ```"-```"))
+        except Exception as _:
             ver = None
 
     return ver
 
 
 def is_package_installed(package: str) -> bool:
-    '''判断 Python 软件包是否已安装在环境中
+    ```"```"```"判断 Python 软件包是否已安装在环境中
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
-    返回值:
-        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回False
-    '''
+    Returns:
+        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回````False````
+    ```"```"```"
     # 分割 Python 软件包名和版本号
-    if '===' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('===')]
-    elif '~=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('~=')]
-    elif '!=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('!=')]
-    elif '<=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<=')]
-    elif '>=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>=')]
-    elif '<' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<')]
-    elif '>' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>')]
-    elif '==' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('==')]
+    if ```"===```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"===```")]
+    elif ```"~=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"~=```")]
+    elif ```"!=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"!=```")]
+    elif ```"<=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"<=```")]
+    elif ```">=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```">=```")]
+    elif ```"<```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"<```")]
+    elif ```">```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```">```")]
+    elif ```"==```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"==```")]
     else:
         pkg_name, pkg_version = package.strip(), None
 
     env_pkg_version = get_package_version_from_library(pkg_name)
     logger.debug(
-        '已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s',
-        pkg_name, env_pkg_version, pkg_version
+        ```"已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s```",
+        pkg_name,
+        env_pkg_version,
+        pkg_version,
     )
 
     if env_pkg_version is None:
@@ -3199,70 +4149,90 @@ def is_package_installed(package: str) -> bool:
 
     if pkg_version is not None:
         # ok = env_pkg_version === / == pkg_version
-        if '===' in package or '==' in package:
-            logger.debug('包含条件: === / ==')
-            if is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s == %s', env_pkg_version, pkg_version)
+        if ```"===```" in package or ```"==```" in package:
+            logger.debug(```"包含条件: === / ==```")
+            logger.debug(```"%s == %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) == PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s == %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version ~= pkg_version
-        if '~=' in package:
-            logger.debug('包含条件: ~=')
-            if is_v1_c_eq_v2(pkg_version, env_pkg_version):
-                logger.debug('%s ~= %s', pkg_version, env_pkg_version)
+        if ```"~=```" in package:
+            logger.debug(```"包含条件: ~=```")
+            logger.debug(```"%s ~= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) == ~PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s == %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version != pkg_version
-        if '!=' in package:
-            logger.debug('包含条件: !=')
-            if not is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s != %s', env_pkg_version, pkg_version)
+        if ```"!=```" in package:
+            logger.debug(```"包含条件: !=```")
+            logger.debug(```"%s != %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) != PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s != %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version <= pkg_version
-        if '<=' in package:
-            logger.debug('包含条件: <=')
-            if is_v1_le_v2(env_pkg_version, pkg_version):
-                logger.debug('%s <= %s', env_pkg_version, pkg_version)
+        if ```"<=```" in package:
+            logger.debug(```"包含条件: <=```")
+            logger.debug(```"%s <= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) <= PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s <= %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version >= pkg_version
-        if '>=' in package:
-            logger.debug('包含条件: >=')
-            if is_v1_ge_v2(env_pkg_version, pkg_version):
-                logger.debug('%s >= %s', env_pkg_version, pkg_version)
+        if ```">=```" in package:
+            logger.debug(```"包含条件: >=```")
+            logger.debug(```"%s >= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) >= PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s >= %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version < pkg_version
-        if '<' in package:
-            logger.debug('包含条件: <')
-            if is_v1_lt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s < %s', env_pkg_version, pkg_version)
+        if ```"<```" in package:
+            logger.debug(```"包含条件: <```")
+            logger.debug(```"%s < %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) < PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s < %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
         # ok = env_pkg_version > pkg_version
-        if '>' in package:
-            logger.debug('包含条件: >')
-            if is_v1_gt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s > %s', env_pkg_version, pkg_version)
+        if ```">```" in package:
+            logger.debug(```"包含条件: >```")
+            logger.debug(```"%s > %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) > PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s > %s 条件成立```", env_pkg_version, pkg_version)
                 return True
 
-        logger.debug('%s 需要安装', package)
+        logger.debug(```"%s 需要安装```", package)
         return False
 
     return True
 
 
-def validate_requirements(requirement_path: Union[str, Path]) -> bool:
-    '''检测环境依赖是否完整
+def validate_requirements(requirement_path: str | Path) -> bool:
+    ```"```"```"检测环境依赖是否完整
 
-    参数:
-        requirement_path (str, Path):
-            依赖文件路径
+    Args:
+        requirement_path (str | Path): 依赖文件路径
 
-    返回值:
-        bool: 如果有缺失依赖则返回False
-    '''
+    Returns:
+        bool: 如果有缺失依赖则返回````False````
+    ```"```"```"
     origin_requires = read_packages_from_requirements_file(requirement_path)
     requires = parse_requirement_list(origin_requires)
     for package in requires:
@@ -3276,15 +4246,15 @@ def main() -> None:
     requirement_path = COMMAND_ARGS.requirement_path
 
     if not os.path.isfile(requirement_path):
-        logger.error('依赖文件未找到, 无法检查运行环境')
+        logger.error(```"依赖文件未找到, 无法检查运行环境```")
         sys.exit(1)
 
-    logger.debug('检测运行环境中')
+    logger.debug(```"检测运行环境中```")
     print(validate_requirements(requirement_path))
-    logger.debug('环境检查完成')
+    logger.debug(```"环境检查完成```")
 
 
-if __name__ == '__main__':
+if __name__ == ```"__main__```":
     main()
 `".Trim()
 
@@ -3330,32 +4300,42 @@ if __name__ == '__main__':
 # 检查 ComfyUI 环境中组件依赖
 function Check-ComfyUI-Env-Requirements {
     `$content = `"
-'''ComfyUI 运行环境检查'''
-import re
-import os
-import sys
-import copy
-import logging
 import argparse
+import platform
+import sys
+import os
+import re
+import copy
+import inspect
+import logging
 import importlib.metadata
-from collections import namedtuple
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import Any, Callable, NamedTuple, TypedDict
 
 
 def get_args() -> argparse.Namespace:
-    '''获取命令行参数输入参数输入'''
-    parser = argparse.ArgumentParser(description='ComfyUI 运行环境检查')
-    def normalized_filepath(filepath): return str(
-        Path(filepath).absolute().as_posix())
+    ```"```"```"获取命令行参数输入参数输入```"```"```"
+    parser = argparse.ArgumentParser(description=```"ComfyUI 运行环境检查```")
+
+    def _normalized_filepath(filepath):
+        return Path(filepath).absolute().as_posix()
 
     parser.add_argument(
-        '--comfyui-path', type=normalized_filepath, default=None, help='ComfyUI 路径')
-    parser.add_argument('--conflict-depend-notice-path', type=normalized_filepath,
-                        default=None, help='保存 ComfyUI 扩展依赖冲突信息的文件路径')
-    parser.add_argument('--requirement-list-path', type=normalized_filepath,
-                        default=None, help='保存 ComfyUI 需要安装扩展依赖的路径列表')
-    parser.add_argument('--debug-mode', action='store_true', help='显示调试信息')
+        ```"--comfyui-path```", type=_normalized_filepath, default=None, help=```"ComfyUI 路径```"
+    )
+    parser.add_argument(
+        ```"--conflict-depend-notice-path```",
+        type=_normalized_filepath,
+        default=None,
+        help=```"保存 ComfyUI 扩展依赖冲突信息的文件路径```",
+    )
+    parser.add_argument(
+        ```"--requirement-list-path```",
+        type=_normalized_filepath,
+        default=None,
+        help=```"保存 ComfyUI 需要安装扩展依赖的路径列表```",
+    )
+    parser.add_argument(```"--debug-mode```", action=```"store_true```", help=```"显示调试信息```")
 
     return parser.parse_args()
 
@@ -3363,591 +4343,1494 @@ def get_args() -> argparse.Namespace:
 COMMAND_ARGS = get_args()
 
 
-class ColoredFormatter(logging.Formatter):
-    '''Logging 格式化'''
+class LoggingColoredFormatter(logging.Formatter):
+    ```"```"```"Logging 格式化类
+
+    Attributes:
+        color (bool): 是否启用日志颜色
+        COLORS (dict[str, str]): 颜色类型字典
+    ```"```"```"
+
     COLORS = {
-        'DEBUG': '\033[0;36m',          # CYAN
-        'INFO': '\033[0;32m',           # GREEN
-        'WARNING': '\033[0;33m',        # YELLOW
-        'ERROR': '\033[0;31m',          # RED
-        'CRITICAL': '\033[0;37;41m',    # WHITE ON RED
-        'RESET': '\033[0m',             # RESET COLOR
+        ```"DEBUG```": ```"\033[0;36m```",  # CYAN
+        ```"INFO```": ```"\033[0;32m```",  # GREEN
+        ```"WARNING```": ```"\033[0;33m```",  # YELLOW
+        ```"ERROR```": ```"\033[0;31m```",  # RED
+        ```"CRITICAL```": ```"\033[0;37;41m```",  # WHITE ON RED
+        ```"RESET```": ```"\033[0m```",  # RESET COLOR
     }
 
-    def format(self, record):
+    def __init__(
+        self,
+        fmt: str | None = None,
+        datefmt: str | None = None,
+        color: bool | None = True,
+    ) -> None:
+        ```"```"```"Logging 初始化
+
+        Args:
+            fmt (str | None): 日志消息的格式字符串
+            datefmt (str | None): 日期 / 时间的显示格式
+            color (bool | None): 是否启用彩色日志输出. 默认为 True
+        ```"```"```"
+        super().__init__(fmt, datefmt)
+        self.color = color
+
+    def format(self, record: logging.LogRecord) -> str:
         colored_record = copy.copy(record)
         levelname = colored_record.levelname
-        seq = self.COLORS.get(levelname, self.COLORS['RESET'])
-        colored_record.levelname = '{}{}{}'.format(
-            seq, levelname, self.COLORS['RESET'])
+
+        if self.color:
+            seq = self.COLORS.get(levelname, self.COLORS[```"RESET```"])
+            colored_record.levelname = f```"{seq}{levelname}{self.COLORS['RESET']}```"
+
         return super().format(colored_record)
 
 
 def get_logger(
-    name: str,
-    level: int = logging.INFO,
+    name: str | None = None, level: int | None = logging.INFO, color: bool | None = True
 ) -> logging.Logger:
-    '''获取 Loging 对象
+    ```"```"```"获取 Loging 对象
 
-    参数:
-        name (str):
-            Logging 名称
+    Args:
+        name (str | None): Logging 名称
+        level (int | None): 日志级别
+        color (bool | None): 是否启用彩色日志
+    Returns:
+        logging.Logger: Logging 对象
+    ```"```"```"
+    stack = inspect.stack()
+    calling_filename = os.path.basename(stack[1].filename)
+    if name is None:
+        name = calling_filename
 
+    _logger = logging.getLogger(name)
+    _logger.propagate = False
 
-    '''
-    logger = logging.getLogger(name)
-    logger.propagate = False
-
-    if not logger.handlers:
+    if not _logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(
-            ColoredFormatter(
-                '[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s', '%H:%M:%S'
+            LoggingColoredFormatter(
+                r```"[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s```",
+                r```"%Y-%m-%d %H:%M:%S```",
+                color=color,
             )
         )
-        logger.addHandler(handler)
+        _logger.addHandler(handler)
 
-    logger.setLevel(level)
-    logger.debug('Logger initialized.')
+    _logger.setLevel(level)
+    _logger.debug(```"Logger 初始化完成```")
 
-    return logger
+    return _logger
 
 
 logger = get_logger(
-    'ComfyUI Env Checker',
-    logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO
+    name=```"ComfyUI Env Checker```",
+    level=logging.DEBUG if COMMAND_ARGS.debug_mode else logging.INFO,
 )
 
 
-# 提取版本标识符组件的正则表达式
-# ref:
-# https://peps.python.org/pep-0440
-# https://packaging.python.org/en/latest/specifications/version-specifiers
-VERSION_PATTERN = r'''
-    v?
-    (?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_\.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
-            [-_\.]?
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<post>                                         # post release
-            (?:-(?P<post_n1>[0-9]+))
-            |
-            (?:
-                [-_\.]?
-                (?P<post_l>post|rev|r)
-                [-_\.]?
-                (?P<post_n2>[0-9]+)?
-            )
-        )?
-        (?P<dev>                                          # dev release
-            [-_\.]?
-            (?P<dev_l>dev)
-            [-_\.]?
-            (?P<dev_n>[0-9]+)?
-        )?
-    )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
-'''
+def remove_duplicate_object_from_list(origin: list[Any]) -> list[Any]:
+    ```"```"```"对````list````进行去重
+
+    例如: [1, 2, 3, 2] -> [1, 2, 3]
+
+    Args:
+        origin (list[Any]): 原始的````list````
+
+    Returns:
+        list[Any]: 去重后的````list````
+    ```"```"```"
+    return list(set(origin))
 
 
-# 编译正则表达式
-package_version_parse_regex = re.compile(
-    r'^\s*' + VERSION_PATTERN + r'\s*$',
-    re.VERBOSE | re.IGNORECASE,
-)
+def get_package_version_from_library(package_name: str) -> str | None:
+    ```"```"```"获取已安装的 Python 软件包版本号
 
+    Args:
+        package_name (str): Python 软件包名
 
-# 定义版本组件的命名元组
-VersionComponent = namedtuple(
-    'VersionComponent', [
-        'epoch',
-        'release',
-        'pre_l',
-        'pre_n',
-        'post_n1',
-        'post_l',
-        'post_n2',
-        'dev_l',
-        'dev_n',
-        'local',
-        'is_wildcard'
-    ]
-)
-
-
-def parse_version(version_str: str) -> VersionComponent:
-    '''解释 Python 软件包版本号
-
-    参数:
-        version_str (str):
-            Python 软件包版本号
-
-    返回值:
-        VersionComponent: 版本组件的命名元组
-
-    异常:
-        ValueError: 如果 Python 版本号不符合 PEP440 规范
-    '''
-    # 检测并剥离通配符
-    wildcard = version_str.endswith('.*') or version_str.endswith('*')
-    clean_str = version_str.rstrip(
-        '*').rstrip('.') if wildcard else version_str
-
-    match = package_version_parse_regex.match(clean_str)
-    if not match:
-        logger.error(f'未知的版本号字符串: {version_str}')
-        raise ValueError(f'Invalid version string: {version_str}')
-
-    components = match.groupdict()
-
-    # 处理 release 段 (允许空字符串)
-    release_str = components['release'] or '0'
-    release_segments = [int(seg) for seg in release_str.split('.')]
-
-    # 构建命名元组
-    return VersionComponent(
-        epoch=int(components['epoch'] or 0),
-        release=release_segments,
-        pre_l=components['pre_l'],
-        pre_n=int(components['pre_n']) if components['pre_n'] else None,
-        post_n1=int(components['post_n1']) if components['post_n1'] else None,
-        post_l=components['post_l'],
-        post_n2=int(components['post_n2']) if components['post_n2'] else None,
-        dev_l=components['dev_l'],
-        dev_n=int(components['dev_n']) if components['dev_n'] else None,
-        local=components['local'],
-        is_wildcard=wildcard
-    )
-
-
-def compare_version_objects(v1: VersionComponent, v2: VersionComponent) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
-
-    参数:
-        v1 (VersionComponent):
-            第 1 个 Python 版本号标识符组件
-        v2 (VersionComponent):
-            第 2 个 Python 版本号标识符组件
-
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
-
-    # 比较 epoch
-    if v1.epoch != v2.epoch:
-        return v1.epoch - v2.epoch
-
-    # 对其 release 长度, 缺失部分补 0
-    if len(v1.release) != len(v2.release):
-        for _ in range(abs(len(v1.release) - len(v2.release))):
-            if len(v1.release) < len(v2.release):
-                v1.release.append(0)
-            else:
-                v2.release.append(0)
-
-    # 比较 release
-    for n1, n2 in zip(v1.release, v2.release):
-        if n1 != n2:
-            return n1 - n2
-    # 如果 release 长度不同，较短的版本号视为较小 ?
-    # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
-    # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
-    # 但 0.15.0 和 0.15 实际上是一样的版本
-    # if len(v1.release) != len(v2.release):
-    #     return len(v1.release) - len(v2.release)
-
-    # 比较 pre-release
-    if v1.pre_l and not v2.pre_l:
-        return -1  # pre-release 小于正常版本
-    elif not v1.pre_l and v2.pre_l:
-        return 1
-    elif v1.pre_l and v2.pre_l:
-        pre_order = {
-            'a': 0,
-            'b': 1,
-            'c': 2,
-            'rc': 3,
-            'alpha': 0,
-            'beta': 1,
-            'pre': 0,
-            'preview': 0
-        }
-        if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
-            return pre_order[v1.pre_l] - pre_order[v2.pre_l]
-        elif v1.pre_n is not None and v2.pre_n is not None:
-            return v1.pre_n - v2.pre_n
-        elif v1.pre_n is None and v2.pre_n is not None:
-            return -1
-        elif v1.pre_n is not None and v2.pre_n is None:
-            return 1
-
-    # 比较 post-release
-    if v1.post_n1 is not None:
-        post_n1 = v1.post_n1
-    elif v1.post_l:
-        post_n1 = int(v1.post_n2) if v1.post_n2 else 0
-    else:
-        post_n1 = 0
-
-    if v2.post_n1 is not None:
-        post_n2 = v2.post_n1
-    elif v2.post_l:
-        post_n2 = int(v2.post_n2) if v2.post_n2 else 0
-    else:
-        post_n2 = 0
-
-    if post_n1 != post_n2:
-        return post_n1 - post_n2
-
-    # 比较 dev-release
-    if v1.dev_l and not v2.dev_l:
-        return -1  # dev-release 小于 post-release 或正常版本
-    elif not v1.dev_l and v2.dev_l:
-        return 1
-    elif v1.dev_l and v2.dev_l:
-        if v1.dev_n is not None and v2.dev_n is not None:
-            return v1.dev_n - v2.dev_n
-        elif v1.dev_n is None and v2.dev_n is not None:
-            return -1
-        elif v1.dev_n is not None and v2.dev_n is None:
-            return 1
-
-    # 比较 local version
-    if v1.local and not v2.local:
-        return -1  # local version 小于 dev-release 或正常版本
-    elif not v1.local and v2.local:
-        return 1
-    elif v1.local and v2.local:
-        local1 = v1.local.split('.')
-        local2 = v2.local.split('.')
-        # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
-        if len(local1) != len(local2):
-            for _ in range(abs(len(local1) - len(local2))):
-                if len(local1) < len(local2):
-                    local1.append(0)
-                else:
-                    local2.append(0)
-        for l1, l2 in zip(local1, local2):
-            if l1.isdigit() and l2.isdigit():
-                l1, l2 = int(l1), int(l2)
-            if l1 != l2:
-                return (l1 > l2) - (l1 < l2)
-        return len(local1) - len(local2)
-
-    return 0  # 版本相同
-
-
-def compare_versions(version1: str, version2: str) -> int:
-    '''比较两个版本字符串 Python 软件包版本号
-
-    参数:
-        version1 (str):
-            版本号 1
-        version2 (str):
-            版本号 2
-
-    返回值:
-        int: 如果版本号 1 大于 版本号 2, 则返回1, 小于则返回-1, 如果相等则返回0
-    '''
-    v1 = parse_version(version1)
-    v2 = parse_version(version2)
-    return compare_version_objects(v1, v2)
-
-
-def compatible_version_matcher(spec_version: str):
-    '''PEP 440 兼容性版本匹配 (~= 操作符)
-
-    返回值:
-        _is_compatible(version_str: str) -> bool: 一个接受 version_str (str) 参数的判断函数
-    '''
-    # 解析规范版本
-    spec = parse_version(spec_version)
-
-    # 获取有效release段 (去除末尾的零)
-    clean_release = []
-    for num in spec.release:
-        if num != 0 or (clean_release and clean_release[-1] != 0):
-            clean_release.append(num)
-
-    # 确定最低版本和前缀匹配规则
-    if len(clean_release) == 0:
-        logger.error('解析到错误的兼容性发行版本号')
-        raise ValueError('Invalid version for compatible release clause')
-
-    # 生成前缀匹配模板 (忽略后缀)
-    prefix_length = len(clean_release) - 1
-    if prefix_length == 0:
-        # 处理类似 ~= 2 的情况 (实际 PEP 禁止，但这里做容错)
-        prefix_pattern = [spec.release[0]]
-        min_version = parse_version(f'{spec.release[0]}')
-    else:
-        prefix_pattern = list(spec.release[:prefix_length])
-        min_version = spec
-
-    def _is_compatible(version_str: str) -> bool:
-        target = parse_version(version_str)
-
-        # 主版本前缀检查
-        target_prefix = target.release[:len(prefix_pattern)]
-        if target_prefix != prefix_pattern:
-            return False
-
-        # 最低版本检查 (自动忽略 pre/post/dev 后缀)
-        return compare_version_objects(target, min_version) >= 0
-
-    return _is_compatible
-
-
-def version_match(spec: str, version: str) -> bool:
-    '''PEP 440 版本前缀匹配
-
-    参数:
-        spec (str): 版本匹配表达式 (e.g. '1.1.*')
-        version (str): 需要检测的实际版本号 (e.g. '1.1a1')
-
-    返回值:
-        bool: 是否匹配
-    '''
-    # 分离通配符和本地版本
-    spec_parts = spec.split('+', 1)
-    spec_main = spec_parts[0].rstrip('.*')  # 移除通配符
-    has_wildcard = spec.endswith('.*') and '+' not in spec
-
-    # 解析规范版本 (不带通配符)
+    Returns:
+        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回````None````
+    ```"```"```"
     try:
-        spec_ver = parse_version(spec_main)
-    except ValueError:
+        ver = importlib.metadata.version(package_name)
+    except Exception as _:
+        ver = None
+
+    if ver is None:
+        try:
+            ver = importlib.metadata.version(package_name.lower())
+        except Exception as _:
+            ver = None
+
+    if ver is None:
+        try:
+            ver = importlib.metadata.version(package_name.replace(```"_```", ```"-```"))
+        except Exception as _:
+            ver = None
+
+    return ver
+
+
+def is_package_installed(package: str) -> bool:
+    ```"```"```"判断 Python 软件包是否已安装在环境中
+
+    Args:
+        package (str): Python 软件包名
+
+    Returns:
+        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回````False````
+    ```"```"```"
+    # 分割 Python 软件包名和版本号
+    if ```"===```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"===```")]
+    elif ```"~=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"~=```")]
+    elif ```"!=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"!=```")]
+    elif ```"<=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"<=```")]
+    elif ```">=```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```">=```")]
+    elif ```"<```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"<```")]
+    elif ```">```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```">```")]
+    elif ```"==```" in package:
+        pkg_name, pkg_version = [x.strip() for x in package.split(```"==```")]
+    else:
+        pkg_name, pkg_version = package.strip(), None
+
+    env_pkg_version = get_package_version_from_library(pkg_name)
+    logger.debug(
+        ```"已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s```",
+        pkg_name,
+        env_pkg_version,
+        pkg_version,
+    )
+
+    if env_pkg_version is None:
         return False
 
-    # 解析目标版本 (忽略本地版本)
-    target_ver = parse_version(version.split('+', 1)[0])
+    if pkg_version is not None:
+        # ok = env_pkg_version === / == pkg_version
+        if ```"===```" in package or ```"==```" in package:
+            logger.debug(```"包含条件: === / ==```")
+            logger.debug(```"%s == %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) == PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s == %s 条件成立```", env_pkg_version, pkg_version)
+                return True
 
-    # 前缀匹配规则
-    if has_wildcard:
-        # 生成补零后的 release 段
-        spec_release = spec_ver.release.copy()
-        while len(spec_release) < len(target_ver.release):
-            spec_release.append(0)
+        # ok = env_pkg_version ~= pkg_version
+        if ```"~=```" in package:
+            logger.debug(```"包含条件: ~=```")
+            logger.debug(```"%s ~= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) == ~PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s == %s 条件成立```", env_pkg_version, pkg_version)
+                return True
 
-        # 比较前 N 个 release 段 (N 为规范版本长度)
-        return (
-            target_ver.release[:len(spec_ver.release)] == spec_ver.release
-            and target_ver.epoch == spec_ver.epoch
+        # ok = env_pkg_version != pkg_version
+        if ```"!=```" in package:
+            logger.debug(```"包含条件: !=```")
+            logger.debug(```"%s != %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) != PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s != %s 条件成立```", env_pkg_version, pkg_version)
+                return True
+
+        # ok = env_pkg_version <= pkg_version
+        if ```"<=```" in package:
+            logger.debug(```"包含条件: <=```")
+            logger.debug(```"%s <= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) <= PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s <= %s 条件成立```", env_pkg_version, pkg_version)
+                return True
+
+        # ok = env_pkg_version >= pkg_version
+        if ```">=```" in package:
+            logger.debug(```"包含条件: >=```")
+            logger.debug(```"%s >= %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) >= PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s >= %s 条件成立```", env_pkg_version, pkg_version)
+                return True
+
+        # ok = env_pkg_version < pkg_version
+        if ```"<```" in package:
+            logger.debug(```"包含条件: <```")
+            logger.debug(```"%s < %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) < PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s < %s 条件成立```", env_pkg_version, pkg_version)
+                return True
+
+        # ok = env_pkg_version > pkg_version
+        if ```">```" in package:
+            logger.debug(```"包含条件: >```")
+            logger.debug(```"%s > %s ?```", env_pkg_version, pkg_version)
+            if PyWhlVersionComparison(env_pkg_version) > PyWhlVersionComparison(
+                pkg_version
+            ):
+                logger.debug(```"%s > %s 条件成立```", env_pkg_version, pkg_version)
+                return True
+
+        logger.debug(```"%s 需要安装```", package)
+        return False
+
+    return True
+
+
+class PyWhlVersionComponent(NamedTuple):
+    ```"```"```"Python 版本号组件
+
+    参考: https://peps.python.org/pep-0440
+
+    Attributes:
+        epoch (int): 版本纪元号, 用于处理不兼容的重大更改, 默认为 0
+        release (list[int]): 发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]
+        pre_l (str | None): 预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等
+        pre_n (int | None): 预发布版本编号, 与预发布标签配合使用
+        post_n1 (int | None): 后发布版本编号, 格式如 1.0-1 中的数字
+        post_l (str | None): 后发布标签, 如 'post', 'rev', 'r' 等
+        post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字
+        dev_l (str | None): 开发版本标签, 通常为 'dev'
+        dev_n (int | None): 开发版本编号, 如 dev1 中的数字
+        local (str | None): 本地版本标识符, 加号后面的部分
+        is_wildcard (bool): 标记是否包含通配符, 用于版本范围匹配
+    ```"```"```"
+
+    epoch: int
+    ```"```"```"版本纪元号, 用于处理不兼容的重大更改, 默认为 0```"```"```"
+
+    release: list[int]
+    ```"```"```"发布版本号段, 主版本号的数字部分, 如 [1, 2, 3]```"```"```"
+
+    pre_l: str | None
+    ```"```"```"预发布标签, 包括 'a', 'b', 'rc', 'alpha' 等```"```"```"
+
+    pre_n: int | None
+    ```"```"```"预发布版本编号, 与预发布标签配合使用```"```"```"
+
+    post_n1: int | None
+    ```"```"```"后发布版本编号, 格式如 1.0-1 中的数字```"```"```"
+
+    post_l: str | None
+    ```"```"```"后发布标签, 如 'post', 'rev', 'r' 等```"```"```"
+
+    post_n2: int | None
+    ```"```"```"post_n2 (int | None): 后发布版本编号, 格式如 1.0-post1 中的数字```"```"```"
+
+    dev_l: str | None
+    ```"```"```"开发版本标签, 通常为 'dev'```"```"```"
+
+    dev_n: int | None
+    ```"```"```"开发版本编号, 如 dev1 中的数字```"```"```"
+
+    local: str | None
+    ```"```"```"本地版本标识符, 加号后面的部分```"```"```"
+
+    is_wildcard: bool
+    ```"```"```"标记是否包含通配符, 用于版本范围匹配```"```"```"
+
+
+class PyWhlVersionComparison:
+    ```"```"```"Python 版本号比较工具
+
+    使用:
+    ````````````python
+    # 常规版本匹配
+    PyWhlVersionComparison(```"2.0.0```") < PyWhlVersionComparison(```"2.3.0+cu118```") # True
+    PyWhlVersionComparison(```"2.0```") > PyWhlVersionComparison(```"0.9```") # True
+    PyWhlVersionComparison(```"1.3```") <= PyWhlVersionComparison(```"1.2.2```") # False
+
+    # 通配符版本匹配, 需要在不包含通配符的版本对象中使用 ~ 符号
+    PyWhlVersionComparison(```"1.0*```") == ~PyWhlVersionComparison(```"1.0a1```") # True
+    PyWhlVersionComparison(```"0.9*```") == ~PyWhlVersionComparison(```"1.0```") # False
+    ````````````
+
+    Attributes:
+        VERSION_PATTERN (str): 提去 Wheel 版本号的正则表达式
+        WHL_VERSION_PARSE_REGEX (re.Pattern): 编译后的用于解析 Wheel 版本号的工具
+        version (str): 版本号字符串
+    ```"```"```"
+
+    def __init__(self, version: str) -> None:
+        ```"```"```"初始化 Python 版本号比较工具
+
+        Args:
+            version (str): 版本号字符串
+        ```"```"```"
+        self.version = version
+
+    def __lt__(self, other: object) -> bool:
+        ```"```"```"实现 < 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_lt_v2(self.version, other.version)
+
+    def __gt__(self, other: object) -> bool:
+        ```"```"```"实现 > 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_gt_v2(self.version, other.version)
+
+    def __le__(self, other: object) -> bool:
+        ```"```"```"实现 <= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本小于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_le_v2(self.version, other.version)
+
+    def __ge__(self, other: object) -> bool:
+        ```"```"```"实现 >= 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本大于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_ge_v2(self.version, other.version)
+
+    def __eq__(self, other: object) -> bool:
+        ```"```"```"实现 == 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return self.is_v1_eq_v2(self.version, other.version)
+
+    def __ne__(self, other: object) -> bool:
+        ```"```"```"实现 != 符号的版本比较
+
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        ```"```"```"
+        if not isinstance(other, PyWhlVersionComparison):
+            return NotImplemented
+        return not self.is_v1_eq_v2(self.version, other.version)
+
+    def __invert__(self) -> ```"PyWhlVersionMatcher```":
+        ```"```"```"使用 ~ 操作符实现兼容性版本匹配 (~= 的语义)
+
+        Returns:
+            PyWhlVersionMatcher: 兼容性版本匹配器
+        ```"```"```"
+        return PyWhlVersionMatcher(self.version)
+
+    # 提取版本标识符组件的正则表达式
+    # ref:
+    # https://peps.python.org/pep-0440
+    # https://packaging.python.org/en/latest/specifications/version-specifiers
+    VERSION_PATTERN = r```"```"```"
+        v?
+        (?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
+                [-_\.]?
+                (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+                [-_\.]?
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_\.]?
+                    (?P<post_l>post|rev|r)
+                    [-_\.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_\.]?
+                (?P<dev_l>dev)
+                [-_\.]?
+                (?P<dev_n>[0-9]+)?
+            )?
         )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+    ```"```"```"
+
+    # 编译正则表达式
+    WHL_VERSION_PARSE_REGEX = re.compile(
+        r```"^\s*```" + VERSION_PATTERN + r```"\s*$```",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def parse_version(self, version_str: str) -> PyWhlVersionComponent:
+        ```"```"```"解释 Python 软件包版本号
+
+        Args:
+            version_str (str): Python 软件包版本号
+
+        Returns:
+            PyWhlVersionComponent: 版本组件的命名元组
+
+        Raises:
+            ValueError: 如果 Python 版本号不符合 PEP440 规范
+        ```"```"```"
+        # 检测并剥离通配符
+        wildcard = version_str.endswith(```".*```") or version_str.endswith(```"*```")
+        clean_str = version_str.rstrip(```"*```").rstrip(```".```") if wildcard else version_str
+
+        match = self.WHL_VERSION_PARSE_REGEX.match(clean_str)
+        if not match:
+            logger.debug(```"未知的版本号字符串: %s```", version_str)
+            raise ValueError(f```"未知的版本号字符串: {version_str}```")
+
+        components = match.groupdict()
+
+        # 处理 release 段 (允许空字符串)
+        release_str = components[```"release```"] or ```"0```"
+        release_segments = [int(seg) for seg in release_str.split(```".```")]
+
+        # 构建命名元组
+        return PyWhlVersionComponent(
+            epoch=int(components[```"epoch```"] or 0),
+            release=release_segments,
+            pre_l=components[```"pre_l```"],
+            pre_n=int(components[```"pre_n```"]) if components[```"pre_n```"] else None,
+            post_n1=int(components[```"post_n1```"]) if components[```"post_n1```"] else None,
+            post_l=components[```"post_l```"],
+            post_n2=int(components[```"post_n2```"]) if components[```"post_n2```"] else None,
+            dev_l=components[```"dev_l```"],
+            dev_n=int(components[```"dev_n```"]) if components[```"dev_n```"] else None,
+            local=components[```"local```"],
+            is_wildcard=wildcard,
+        )
+
+    def compare_version_objects(
+        self, v1: PyWhlVersionComponent, v2: PyWhlVersionComponent
+    ) -> int:
+        ```"```"```"比较两个版本字符串 Python 软件包版本号
+
+        Args:
+            v1 (PyWhlVersionComponent): 第 1 个 Python 版本号标识符组件
+            v2 (PyWhlVersionComponent): 第 2 个 Python 版本号标识符组件
+
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回````1````, 小于则返回````-1````, 如果相等则返回````0````
+        ```"```"```"
+
+        # 比较 epoch
+        if v1.epoch != v2.epoch:
+            return v1.epoch - v2.epoch
+
+        # 对其 release 长度, 缺失部分补 0
+        if len(v1.release) != len(v2.release):
+            for _ in range(abs(len(v1.release) - len(v2.release))):
+                if len(v1.release) < len(v2.release):
+                    v1.release.append(0)
+                else:
+                    v2.release.append(0)
+
+        # 比较 release
+        for n1, n2 in zip(v1.release, v2.release):
+            if n1 != n2:
+                return n1 - n2
+        # 如果 release 长度不同, 较短的版本号视为较小 ?
+        # 但是这样是行不通的! 比如 0.15.0 和 0.15, 处理后就会变成 [0, 15, 0] 和 [0, 15]
+        # 计算结果就会变成 len([0, 15, 0]) > len([0, 15])
+        # 但 0.15.0 和 0.15 实际上是一样的版本
+        # if len(v1.release) != len(v2.release):
+        #     return len(v1.release) - len(v2.release)
+
+        # 比较 pre-release
+        if v1.pre_l and not v2.pre_l:
+            return -1  # pre-release 小于正常版本
+        elif not v1.pre_l and v2.pre_l:
+            return 1
+        elif v1.pre_l and v2.pre_l:
+            pre_order = {
+                ```"a```": 0,
+                ```"b```": 1,
+                ```"c```": 2,
+                ```"rc```": 3,
+                ```"alpha```": 0,
+                ```"beta```": 1,
+                ```"pre```": 0,
+                ```"preview```": 0,
+            }
+            if pre_order[v1.pre_l] != pre_order[v2.pre_l]:
+                return pre_order[v1.pre_l] - pre_order[v2.pre_l]
+            elif v1.pre_n is not None and v2.pre_n is not None:
+                return v1.pre_n - v2.pre_n
+            elif v1.pre_n is None and v2.pre_n is not None:
+                return -1
+            elif v1.pre_n is not None and v2.pre_n is None:
+                return 1
+
+        # 比较 post-release
+        if v1.post_n1 is not None:
+            post_n1 = v1.post_n1
+        elif v1.post_l:
+            post_n1 = int(v1.post_n2) if v1.post_n2 else 0
+        else:
+            post_n1 = 0
+
+        if v2.post_n1 is not None:
+            post_n2 = v2.post_n1
+        elif v2.post_l:
+            post_n2 = int(v2.post_n2) if v2.post_n2 else 0
+        else:
+            post_n2 = 0
+
+        if post_n1 != post_n2:
+            return post_n1 - post_n2
+
+        # 比较 dev-release
+        if v1.dev_l and not v2.dev_l:
+            return -1  # dev-release 小于 post-release 或正常版本
+        elif not v1.dev_l and v2.dev_l:
+            return 1
+        elif v1.dev_l and v2.dev_l:
+            if v1.dev_n is not None and v2.dev_n is not None:
+                return v1.dev_n - v2.dev_n
+            elif v1.dev_n is None and v2.dev_n is not None:
+                return -1
+            elif v1.dev_n is not None and v2.dev_n is None:
+                return 1
+
+        # 比较 local version
+        if v1.local and not v2.local:
+            return -1  # local version 小于 dev-release 或正常版本
+        elif not v1.local and v2.local:
+            return 1
+        elif v1.local and v2.local:
+            local1 = v1.local.split(```".```")
+            local2 = v2.local.split(```".```")
+            # 和 release 的处理方式一致, 对其 local version 长度, 缺失部分补 0
+            if len(local1) != len(local2):
+                for _ in range(abs(len(local1) - len(local2))):
+                    if len(local1) < len(local2):
+                        local1.append(0)
+                    else:
+                        local2.append(0)
+            for l1, l2 in zip(local1, local2):
+                if l1.isdigit() and l2.isdigit():
+                    l1, l2 = int(l1), int(l2)
+                if l1 != l2:
+                    return (l1 > l2) - (l1 < l2)
+            return len(local1) - len(local2)
+
+        return 0  # 版本相同
+
+    def compare_versions(self, version1: str, version2: str) -> int:
+        ```"```"```"比较两个版本字符串 Python 软件包版本号
+
+        Args:
+            version1 (str): 版本号 1
+            version2 (str): 版本号 2
+
+        Returns:
+            int: 如果版本号 1 大于 版本号 2, 则返回````1````, 小于则返回````-1````, 如果相等则返回````0````
+        ```"```"```"
+        v1 = self.parse_version(version1)
+        v2 = self.parse_version(version2)
+        return self.compare_version_objects(v1, v2)
+
+    def compatible_version_matcher(self, spec_version: str) -> Callable[[str], bool]:
+        ```"```"```"PEP 440 兼容性版本匹配 (~= 操作符)
+
+        Returns:
+            (Callable[[str], bool]): 一个接受 version_str (````str````) 参数的判断函数
+        ```"```"```"
+        # 解析规范版本
+        spec = self.parse_version(spec_version)
+
+        # 获取有效 release 段 (去除末尾的零)
+        clean_release = []
+        for num in spec.release:
+            if num != 0 or (clean_release and clean_release[-1] != 0):
+                clean_release.append(num)
+
+        # 确定最低版本和前缀匹配规则
+        if len(clean_release) == 0:
+            logger.debug(```"解析到错误的兼容性发行版本号```")
+            raise ValueError(```"解析到错误的兼容性发行版本号```")
+
+        # 生成前缀匹配模板 (忽略后缀)
+        prefix_length = len(clean_release) - 1
+        if prefix_length == 0:
+            # 处理类似 ~= 2 的情况 (实际 PEP 禁止, 但这里做容错)
+            prefix_pattern = [spec.release[0]]
+            min_version = self.parse_version(f```"{spec.release[0]}```")
+        else:
+            prefix_pattern = list(spec.release[:prefix_length])
+            min_version = spec
+
+        def _is_compatible(version_str: str) -> bool:
+            target = self.parse_version(version_str)
+
+            # 主版本前缀检查
+            target_prefix = target.release[: len(prefix_pattern)]
+            if target_prefix != prefix_pattern:
+                return False
+
+            # 最低版本检查 (自动忽略 pre/post/dev 后缀)
+            return self.compare_version_objects(target, min_version) >= 0
+
+        return _is_compatible
+
+    def version_match(self, spec: str, version: str) -> bool:
+        ```"```"```"PEP 440 版本前缀匹配
+
+        Args:
+            spec (str): 版本匹配表达式 (e.g. '1.1.*')
+            version (str): 需要检测的实际版本号 (e.g. '1.1a1')
+
+        Returns:
+            bool: 是否匹配
+        ```"```"```"
+        # 分离通配符和本地版本
+        spec_parts = spec.split(```"+```", 1)
+        spec_main = spec_parts[0].rstrip(```".*```")  # 移除通配符
+        has_wildcard = spec.endswith(```".*```") and ```"+```" not in spec
+
+        # 解析规范版本 (不带通配符)
+        try:
+            spec_ver = self.parse_version(spec_main)
+        except ValueError:
+            return False
+
+        # 解析目标版本 (忽略本地版本)
+        target_ver = self.parse_version(version.split(```"+```", 1)[0])
+
+        # 前缀匹配规则
+        if has_wildcard:
+            # 生成补零后的 release 段
+            spec_release = spec_ver.release.copy()
+            while len(spec_release) < len(target_ver.release):
+                spec_release.append(0)
+
+            # 比较前 N 个 release 段 (N 为规范版本长度)
+            return (
+                target_ver.release[: len(spec_ver.release)] == spec_ver.release
+                and target_ver.epoch == spec_ver.epoch
+            )
+        else:
+            # 严格匹配时使用原比较函数
+            return self.compare_versions(spec_main, version) == 0
+
+    def is_v1_ge_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于或等于 v2
+
+        例如:
+        ````````````
+        1.1, 1.0 -> True
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号大于或等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) >= 0
+
+    def is_v1_gt_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于 v2
+
+        例如:
+        ````````````
+        1.1, 1.0 -> True
+        1.0, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号大于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) > 0
+
+    def is_v1_eq_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否等于 v2
+
+        例如:
+        ````````````
+        1.0, 1.0 -> True
+        0.9, 1.0 -> False
+        1.1, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            ````bool````: 如果 v1 版本号等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) == 0
+
+    def is_v1_lt_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否小于 v2
+
+        例如:
+        ````````````
+        0.9, 1.0 -> True
+        1.0, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号小于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) < 0
+
+    def is_v1_le_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否小于或等于 v2
+
+        例如:
+        ````````````
+        0.9, 1.0 -> True
+        1.0, 1.0 -> True
+        1.1, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号小于或等于 v2 版本号则返回````True````
+        ```"```"```"
+        return self.compare_versions(v1, v2) <= 0
+
+    def is_v1_c_eq_v2(self, v1: str, v2: str) -> bool:
+        ```"```"```"查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
+
+        例如:
+        ````````````
+        1.0*, 1.0a1 -> True
+        0.9*, 1.0 -> False
+        ````````````
+
+        Args:
+            v1 (str): 第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
+            v2 (str): 第 2 个 Python 软件包版本号
+
+        Returns:
+            bool: 如果 v1 版本号等于 v2 版本号则返回````True````
+        ```"```"```"
+        func = self.compatible_version_matcher(v1)
+        return func(v2)
+
+
+class PyWhlVersionMatcher:
+    ```"```"```"Python 兼容性版本匹配器, 用于实现 ~= 操作符的语义
+
+    Attributes:
+        spec_version (str): 版本号
+        comparison (PyWhlVersionComparison): Python 版本号比较工具
+        _matcher_func (Callable[[str], bool]): 兼容性版本匹配函数
+    ```"```"```"
+
+    def __init__(self, spec_version: str) -> None:
+        ```"```"```"初始化 Python 兼容性版本匹配器
+
+        Args:
+            spec_version (str): 版本号
+        ```"```"```"
+        self.spec_version = spec_version
+        self.comparison = PyWhlVersionComparison(spec_version)
+        self._matcher_func = self.comparison.compatible_version_matcher(spec_version)
+
+    def __eq__(self, other: object) -> bool:
+        ```"```"```"实现 ~version == other_version 的语义
+        Args:
+            other (object): 用于比较的对象
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        ```"```"```"
+        if isinstance(other, str):
+            return self._matcher_func(other)
+        elif isinstance(other, PyWhlVersionComparison):
+            return self._matcher_func(other.version)
+        elif isinstance(other, PyWhlVersionMatcher):
+            # 允许 ~v1 == ~v2 的比较 (比较规范版本)
+            return self.spec_version == other.spec_version
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return f```"~{self.spec_version}```"
+
+
+class ParsedPyWhlRequirement(NamedTuple):
+    ```"```"```"解析后的依赖声明信息
+
+    参考: https://peps.python.org/pep-0508
+    ```"```"```"
+
+    name: str
+    ```"```"```"软件包名称```"```"```"
+
+    extras: list[str]
+    ```"```"```"extras 列表，例如 ['fred', 'bar']```"```"```"
+
+    specifier: list[tuple[str, str]] | str
+    ```"```"```"版本约束列表或 URL 地址
+
+    如果是版本依赖，则为版本约束列表，例如 [('>=', '1.0'), ('<', '2.0')]
+    如果是 URL 依赖，则为 URL 字符串，例如 'http://example.com/package.tar.gz'
+    ```"```"```"
+
+    marker: Any
+    ```"```"```"环境标记表达式，用于条件依赖```"```"```"
+
+
+class Parser:
+    ```"```"```"语法解析器
+
+    Attributes:
+        text (str): 待解析的字符串
+        pos (int): 字符起始位置
+        len (int): 字符串长度
+    ```"```"```"
+
+    def __init__(self, text: str) -> None:
+        ```"```"```"初始化解析器
+
+        Args:
+            text (str): 要解析的文本
+        ```"```"```"
+        self.text = text
+        self.pos = 0
+        self.len = len(text)
+
+    def peek(self) -> str:
+        ```"```"```"查看当前位置的字符但不移动指针
+
+        Returns:
+            str: 当前位置的字符，如果到达末尾则返回空字符串
+        ```"```"```"
+        if self.pos < self.len:
+            return self.text[self.pos]
+        return ```"```"
+
+    def consume(self, expected: str | None = None) -> str:
+        ```"```"```"消耗当前字符并移动指针
+
+        Args:
+            expected (str | None): 期望的字符，如果提供但不匹配会抛出异常
+
+        Returns:
+            str: 实际消耗的字符
+
+        Raises:
+            ValueError: 当字符不匹配或到达文本末尾时
+        ```"```"```"
+        if self.pos >= self.len:
+            raise ValueError(f```"不期望的输入内容结尾, 期望: {expected}```")
+
+        char = self.text[self.pos]
+        if expected and char != expected:
+            raise ValueError(f```"期望 '{expected}', 得到 '{char}' 在位置 {self.pos}```")
+
+        self.pos += 1
+        return char
+
+    def skip_whitespace(self):
+        ```"```"```"跳过空白字符（空格和制表符）```"```"```"
+        while self.pos < self.len and self.text[self.pos] in ```" \t```":
+            self.pos += 1
+
+    def match(self, pattern: str) -> str | None:
+        ```"```"```"尝试匹配指定模式, 成功则移动指针
+
+        Args:
+            pattern (str): 要匹配的模式字符串
+
+        Returns:
+            (str | None): 匹配成功的字符串, 否则为 None
+        ```"```"```"
+        # 跳过空格再匹配
+        original_pos = self.pos
+        self.skip_whitespace()
+
+        if self.text.startswith(pattern, self.pos):
+            result = self.text[self.pos : self.pos + len(pattern)]
+            self.pos += len(pattern)
+            return result
+
+        # 如果没有匹配，恢复位置
+        self.pos = original_pos
+        return None
+
+    def read_while(self, condition) -> str:
+        ```"```"```"读取满足条件的字符序列
+
+        Args:
+            condition: 判断字符是否满足条件的函数
+
+        Returns:
+            str: 满足条件的字符序列
+        ```"```"```"
+        start = self.pos
+        while self.pos < self.len and condition(self.text[self.pos]):
+            self.pos += 1
+        return self.text[start : self.pos]
+
+    def eof(self) -> bool:
+        ```"```"```"检查是否到达文本末尾
+
+        Returns:
+            bool: 如果到达末尾返回 True, 否则返回 False
+        ```"```"```"
+        return self.pos >= self.len
+
+
+class RequirementParser(Parser):
+    ```"```"```"Python 软件包解析工具
+
+    Attributes:
+        bindings (dict[str, str] | None): 解析语法
+    ```"```"```"
+
+    def __init__(self, text: str, bindings: dict[str, str] | None = None):
+        ```"```"```"初始化依赖声明解析器
+
+        Args:
+            text (str): 覫解析的依赖声明文本
+            bindings (dict[str, str] | None): 环境变量绑定字典
+        ```"```"```"
+        super().__init__(text)
+        self.bindings = bindings or {}
+
+    def parse(self) -> ParsedPyWhlRequirement:
+        ```"```"```"解析依赖声明，返回 (name, extras, version_specs / url, marker)
+
+        Returns:
+            ParsedPyWhlRequirement: 解析结果元组
+        ```"```"```"
+        self.skip_whitespace()
+
+        # 首先解析名称
+        name = self.parse_identifier()
+        self.skip_whitespace()
+
+        # 解析 extras
+        extras = []
+        if self.peek() == ```"[```":
+            extras = self.parse_extras()
+            self.skip_whitespace()
+
+        # 检查是 URL 依赖还是版本依赖
+        if self.peek() == ```"@```":
+            # URL依赖
+            self.consume(```"@```")
+            self.skip_whitespace()
+            url = self.parse_url()
+            self.skip_whitespace()
+
+            # 解析可选的 marker
+            marker = None
+            if self.match(```";```"):
+                marker = self.parse_marker()
+
+            return ParsedPyWhlRequirement(name, extras, url, marker)
+        else:
+            # 版本依赖
+            versions = []
+            # 检查是否有版本约束 (不是以分号开头)
+            if not self.eof() and self.peek() not in (```";```", ```",```"):
+                versions = self.parse_versionspec()
+                self.skip_whitespace()
+
+            # 解析可选的 marker
+            marker = None
+            if self.match(```";```"):
+                marker = self.parse_marker()
+
+            return ParsedPyWhlRequirement(name, extras, versions, marker)
+
+    def parse_identifier(self) -> str:
+        ```"```"```"解析标识符
+
+        Returns:
+            str: 解析得到的标识符
+        ```"```"```"
+
+        def is_identifier_char(c):
+            return c.isalnum() or c in ```"-_.```"
+
+        result = self.read_while(is_identifier_char)
+        if not result:
+            raise ValueError(```"应为预期标识符```")
+        return result
+
+    def parse_extras(self) -> list[str]:
+        ```"```"```"解析 extras 列表
+
+        Returns:
+            list[str]: extras 列表
+        ```"```"```"
+        self.consume(```"[```")
+        self.skip_whitespace()
+
+        extras = []
+        if self.peek() != ```"]```":
+            extras.append(self.parse_identifier())
+            self.skip_whitespace()
+
+            while self.match(```",```"):
+                self.skip_whitespace()
+                extras.append(self.parse_identifier())
+                self.skip_whitespace()
+
+        self.consume(```"]```")
+        return extras
+
+    def parse_versionspec(self) -> list[tuple[str, str]]:
+        ```"```"```"解析版本约束
+
+        Returns:
+            list[tuple[str, str]]: 版本约束列表
+        ```"```"```"
+        if self.match(```"(```"):
+            versions = self.parse_version_many()
+            self.consume(```")```")
+            return versions
+        else:
+            return self.parse_version_many()
+
+    def parse_version_many(self) -> list[tuple[str, str]]:
+        ```"```"```"解析多个版本约束
+
+        Returns:
+            list[tuple[str, str]]: 多个版本约束组成的列表
+        ```"```"```"
+        versions = [self.parse_version_one()]
+        self.skip_whitespace()
+
+        while self.match(```",```"):
+            self.skip_whitespace()
+            versions.append(self.parse_version_one())
+            self.skip_whitespace()
+
+        return versions
+
+    def parse_version_one(self) -> tuple[str, str]:
+        ```"```"```"解析单个版本约束
+
+        Returns:
+            tuple[str, str]: (操作符, 版本号) 元组
+        ```"```"```"
+        op = self.parse_version_cmp()
+        self.skip_whitespace()
+        version = self.parse_version()
+        return (op, version)
+
+    def parse_version_cmp(self) -> str:
+        ```"```"```"解析版本比较操作符
+
+        Returns:
+            str: 版本比较操作符
+
+        Raises:
+            ValueError: 当找不到有效的版本比较操作符时
+        ```"```"```"
+        operators = [```"<=```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```", ```"<```", ```">```"]
+
+        for op in operators:
+            if self.match(op):
+                return op
+
+        raise ValueError(f```"预期在位置 {self.pos} 处出现版本比较符```")
+
+    def parse_version(self) -> str:
+        ```"```"```"解析版本号
+
+        Returns:
+            str: 版本号字符串
+
+        Raises:
+            ValueError: 当找不到有效版本号时
+        ```"```"```"
+
+        def is_version_char(c):
+            return c.isalnum() or c in ```"-_.*+!```"
+
+        version = self.read_while(is_version_char)
+        if not version:
+            raise ValueError(```"期望为版本字符串```")
+        return version
+
+    def parse_url(self) -> str:
+        ```"```"```"解析 URL (简化版本)
+
+        Returns:
+            str: URL 字符串
+
+        Raises:
+            ValueError: 当找不到有效 URL 时
+        ```"```"```"
+        # 读取直到遇到空白或分号
+        start = self.pos
+        while self.pos < self.len and self.text[self.pos] not in ```" \t;```":
+            self.pos += 1
+        url = self.text[start : self.pos]
+
+        if not url:
+            raise ValueError(```"@ 后的预期 URL```")
+
+        return url
+
+    def parse_marker(self) -> Any:
+        ```"```"```"解析 marker 表达式
+
+        Returns:
+            Any: 解析后的 marker 表达式
+        ```"```"```"
+        self.skip_whitespace()
+        return self.parse_marker_or()
+
+    def parse_marker_or(self) -> Any:
+        ```"```"```"解析 OR 表达式
+
+        Returns:
+            Any: 解析后的 OR 表达式
+        ```"```"```"
+        left = self.parse_marker_and()
+        self.skip_whitespace()
+
+        if self.match(```"or```"):
+            self.skip_whitespace()
+            right = self.parse_marker_or()
+            return (```"or```", left, right)
+
+        return left
+
+    def parse_marker_and(self) -> Any:
+        ```"```"```"解析 AND 表达式
+
+        Returns:
+            Any: 解析后的 AND 表达式
+        ```"```"```"
+        left = self.parse_marker_expr()
+        self.skip_whitespace()
+
+        if self.match(```"and```"):
+            self.skip_whitespace()
+            right = self.parse_marker_and()
+            return (```"and```", left, right)
+
+        return left
+
+    def parse_marker_expr(self) -> Any:
+        ```"```"```"解析基础 marker 表达式
+
+        Returns:
+            Any: 解析后的基础表达式
+        ```"```"```"
+        self.skip_whitespace()
+
+        if self.peek() == ```"(```":
+            self.consume(```"(```")
+            expr = self.parse_marker()
+            self.consume(```")```")
+            return expr
+
+        left = self.parse_marker_var()
+        self.skip_whitespace()
+
+        op = self.parse_marker_op()
+        self.skip_whitespace()
+
+        right = self.parse_marker_var()
+
+        return (op, left, right)
+
+    def parse_marker_var(self) -> str:
+        ```"```"```"解析 marker 变量
+
+        Returns:
+            str: 解析得到的变量值
+        ```"```"```"
+        self.skip_whitespace()
+
+        # 检查是否是环境变量
+        env_vars = [
+            ```"python_version```",
+            ```"python_full_version```",
+            ```"os_name```",
+            ```"sys_platform```",
+            ```"platform_release```",
+            ```"platform_system```",
+            ```"platform_version```",
+            ```"platform_machine```",
+            ```"platform_python_implementation```",
+            ```"implementation_name```",
+            ```"implementation_version```",
+            ```"extra```",
+        ]
+
+        for var in env_vars:
+            if self.match(var):
+                # 返回绑定的值，如果不存在则返回变量名
+                return self.bindings.get(var, var)
+
+        # 否则解析为字符串
+        return self.parse_python_str()
+
+    def parse_marker_op(self) -> str:
+        ```"```"```"解析 marker 操作符
+
+        Returns:
+            str: marker 操作符
+
+        Raises:
+            ValueError: 当找不到有效操作符时
+        ```"```"```"
+        # 版本比较操作符
+        version_ops = [```"<=```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```", ```"<```", ```">```"]
+        for op in version_ops:
+            if self.match(op):
+                return op
+
+        # in 操作符
+        if self.match(```"in```"):
+            return ```"in```"
+
+        # not in 操作符
+        if self.match(```"not```"):
+            self.skip_whitespace()
+            if self.match(```"in```"):
+                return ```"not in```"
+            raise ValueError(```"预期在 'not' 之后出现 'in'```")
+
+        raise ValueError(f```"在位置 {self.pos} 处应出现标记运算符```")
+
+    def parse_python_str(self) -> str:
+        ```"```"```"解析 Python 字符串
+
+        Returns:
+            str: 解析得到的字符串
+        ```"```"```"
+        self.skip_whitespace()
+
+        if self.peek() == '```"':
+            return self.parse_quoted_string('```"')
+        elif self.peek() == ```"'```":
+            return self.parse_quoted_string(```"'```")
+        else:
+            # 如果没有引号，读取标识符
+            return self.parse_identifier()
+
+    def parse_quoted_string(self, quote: str) -> str:
+        ```"```"```"解析引号字符串
+
+        Args:
+            quote (str): 引号字符
+
+        Returns:
+            str: 解析得到的字符串
+
+        Raises:
+            ValueError: 当字符串未正确闭合时
+        ```"```"```"
+        self.consume(quote)
+        result = []
+
+        while self.pos < self.len and self.text[self.pos] != quote:
+            if self.text[self.pos] == ```"\\```":  # 处理转义
+                self.pos += 1
+                if self.pos < self.len:
+                    result.append(self.text[self.pos])
+                    self.pos += 1
+            else:
+                result.append(self.text[self.pos])
+                self.pos += 1
+
+        if self.pos >= self.len:
+            raise ValueError(f```"未闭合的字符串字面量，预期为 '{quote}'```")
+
+        self.consume(quote)
+        return ```"```".join(result)
+
+
+def format_full_version(info: str) -> str:
+    ```"```"```"格式化完整的版本信息
+
+    Args:
+        info (str): 版本信息
+
+    Returns:
+        str: 格式化后的版本字符串
+    ```"```"```"
+    version = f```"{info.major}.{info.minor}.{info.micro}```"
+    kind = info.releaselevel
+    if kind != ```"final```":
+        version += kind[0] + str(info.serial)
+    return version
+
+
+def get_parse_bindings() -> dict[str, str]:
+    ```"```"```"获取用于解析 Python 软件包名的语法
+
+    Returns:
+        (dict[str, str]): 解析 Python 软件包名的语法字典
+    ```"```"```"
+    # 创建环境变量绑定
+    if hasattr(sys, ```"implementation```"):
+        implementation_version = format_full_version(sys.implementation.version)
+        implementation_name = sys.implementation.name
     else:
-        # 严格匹配时使用原比较函数
-        return compare_versions(spec_main, version) == 0
+        implementation_version = ```"0```"
+        implementation_name = ```"```"
 
-
-def is_v1_ge_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于或等于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) >= 0
-
-
-def is_v1_gt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号大于 v2 版本号则返回True
-        e.g.:
-            1.1, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) > 0
-
-
-def is_v1_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0, 1.0 -> True
-            0.9, 1.0 -> False
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) == 0
-
-
-def is_v1_lt_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) < 0
-
-
-def is_v1_le_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否小于或等于 v2
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号小于或等于 v2 版本号则返回True
-        e.g.:
-            0.9, 1.0 -> True
-            1.0, 1.0 -> True
-            1.1, 1.0 -> False
-    '''
-    return compare_versions(v1, v2) <= 0
-
-
-def is_v1_c_eq_v2(v1: str, v2: str) -> bool:
-    '''查看 Python 版本号 v1 是否大于等于 v2, (兼容性版本匹配)
-
-    参数:
-        v1 (str):
-            第 1 个 Python 软件包版本号, 该版本由 ~= 符号指定
-
-        v2 (str):
-            第 2 个 Python 软件包版本号
-
-    返回值:
-        bool: 如果 v1 版本号等于 v2 版本号则返回True
-        e.g.:
-            1.0*, 1.0a1 -> True
-            0.9*, 1.0 -> False
-    '''
-    func = compatible_version_matcher(v1)
-    return func(v2)
+    bindings = {
+        ```"implementation_name```": implementation_name,
+        ```"implementation_version```": implementation_version,
+        ```"os_name```": os.name,
+        ```"platform_machine```": platform.machine(),
+        ```"platform_python_implementation```": platform.python_implementation(),
+        ```"platform_release```": platform.release(),
+        ```"platform_system```": platform.system(),
+        ```"platform_version```": platform.version(),
+        ```"python_full_version```": platform.python_version(),
+        ```"python_version```": ```".```".join(platform.python_version_tuple()[:2]),
+        ```"sys_platform```": sys.platform,
+    }
+    return bindings
 
 
 def version_string_is_canonical(version: str) -> bool:
-    '''判断版本号标识符是否符合标准
+    ```"```"```"判断版本号标识符是否符合标准
 
-    参数:
-        version (str):
-            版本号字符串
-
-    返回值:
-        bool: 如果版本号标识符符合 PEP 440 标准, 则返回True
-
-    '''
-    return re.match(
-        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$',
-        version,
-    ) is not None
+    Args:
+        version (str): 版本号字符串
+    Returns:
+        bool: 如果版本号标识符符合 PEP 440 标准, 则返回````True````
+    ```"```"```"
+    return (
+        re.match(
+            r```"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$```",
+            version,
+        )
+        is not None
+    )
 
 
 def is_package_has_version(package: str) -> bool:
-    '''检查 Python 软件包是否指定版本号
+    ```"```"```"检查 Python 软件包是否指定版本号
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
-    返回值:
-        bool: 如果 Python 软件包存在版本声明, 如torch==2.3.0, 则返回True
-    '''
+    Returns:
+        bool: 如果 Python 软件包存在版本声明, 如````torch==2.3.0````, 则返回````True````
+    ```"```"```"
     return package != (
-        package.replace('===', '')
-        .replace('~=', '')
-        .replace('!=', '')
-        .replace('<=', '')
-        .replace('>=', '')
-        .replace('<', '')
-        .replace('>', '')
-        .replace('==', '')
+        package.replace(```"===```", ```"```")
+        .replace(```"~=```", ```"```")
+        .replace(```"!=```", ```"```")
+        .replace(```"<=```", ```"```")
+        .replace(```">=```", ```"```")
+        .replace(```"<```", ```"```")
+        .replace(```">```", ```"```")
+        .replace(```"==```", ```"```")
     )
 
 
 def get_package_name(package: str) -> str:
-    '''获取 Python 软件包的包名, 去除末尾的版本声明
+    ```"```"```"获取 Python 软件包的包名, 去除末尾的版本声明
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
-    返回值:
+    Returns:
         str: 返回去除版本声明后的 Python 软件包名
-    '''
+    ```"```"```"
     return (
-        package.split('===')[0]
-        .split('~=')[0]
-        .split('!=')[0]
-        .split('<=')[0]
-        .split('>=')[0]
-        .split('<')[0]
-        .split('>')[0]
-        .split('==')[0]
+        package.split(```"===```")[0]
+        .split(```"~=```")[0]
+        .split(```"!=```")[0]
+        .split(```"<=```")[0]
+        .split(```">=```")[0]
+        .split(```"<```")[0]
+        .split(```">```")[0]
+        .split(```"==```")[0]
         .strip()
     )
 
 
 def get_package_version(package: str) -> str:
-    '''获取 Python 软件包的包版本号
+    ```"```"```"获取 Python 软件包的包版本号
 
-    参数:
-        package (str):
-            Python 软件包名
+    Args:
+        package (str): Python 软件包名
 
     返回值:
         str: 返回 Python 软件包的包版本号
-    '''
+    ```"```"```"
     return (
-        package.split('===').pop()
-        .split('~=').pop()
-        .split('!=').pop()
-        .split('<=').pop()
-        .split('>=').pop()
-        .split('<').pop()
-        .split('>').pop()
-        .split('==').pop()
+        package.split(```"===```")
+        .pop()
+        .split(```"~=```")
+        .pop()
+        .split(```"!=```")
+        .pop()
+        .split(```"<=```")
+        .pop()
+        .split(```">=```")
+        .pop()
+        .split(```"<```")
+        .pop()
+        .split(```">```")
+        .pop()
+        .split(```"==```")
+        .pop()
         .strip()
     )
 
 
-WHEEL_PATTERN = r'''
+WHEEL_PATTERN = r```"```"```"
     ^                           # 字符串开始
     (?P<distribution>[^-]+)     # 包名 (匹配第一个非连字符段)
     -                           # 分隔符
@@ -3962,314 +5845,514 @@ WHEEL_PATTERN = r'''
     -                           # 分隔符
     (?P<platform>[^-]+)         # 平台标签
     \.whl$                      # 固定后缀
-'''
+```"```"```"
+```"```"```"解析 Python Wheel 名的的正则表达式```"```"```"
+
+REPLACE_PACKAGE_NAME_DICT = {
+    ```"sam2```": ```"SAM-2```",
+}
+```"```"```"Python 软件包名替换表```"```"```"
 
 
 def parse_wheel_filename(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 distribution 名称
+    ```"```"```"解析 Python wheel 文件名并返回 distribution 名称
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Returns:
         str: distribution 名称, 例如 pydantic
-
-    异常:
+    Raises:
         ValueError: 如果文件名不符合 PEP491 规范
-    '''
+    ```"```"```"
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('distribution')
+        logger.debug(```"未知的 Wheel 文件名: %s```", filename)
+        raise ValueError(f```"未知的 Wheel 文件名: {filename}```")
+    return match.group(```"distribution```")
 
 
 def parse_wheel_version(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 version 名称
+    ```"```"```"解析 Python wheel 文件名并返回 version 名称
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
-
-    返回值:
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Returns:
         str: version 名称, 例如 1.10.15
-
-    异常:
+    Raises:
         ValueError: 如果文件名不符合 PEP491 规范
-    '''
+    ```"```"```"
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
-        logger.error('未知的 Wheel 文件名: %s', filename)
-        raise ValueError(f'Invalid wheel filename: {filename}')
-    return match.group('version')
+        logger.debug(```"未知的 Wheel 文件名: %s```", filename)
+        raise ValueError(f```"未知的 Wheel 文件名: {filename}```")
+    return match.group(```"version```")
 
 
 def parse_wheel_to_package_name(filename: str) -> str:
-    '''解析 Python wheel 文件名并返回 <distribution>==<version>
+    ```"```"```"解析 Python wheel 文件名并返回 <distribution>==<version>
 
-    参数:
-        filename (str):
-            wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+    Args:
+        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
 
-    返回值:
+    Returns:
         str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
-    '''
+    ```"```"```"
     distribution = parse_wheel_filename(filename)
     version = parse_wheel_version(filename)
-    return f'{distribution}=={version}'
+    return f```"{distribution}=={version}```"
 
 
 def remove_optional_dependence_from_package(filename: str) -> str:
-    '''移除 Python 软件包声明中可选依赖
+    ```"```"```"移除 Python 软件包声明中可选依赖
 
-    参数:
-        filename (str):
-            Python 软件包名
+    Args:
+        filename (str): Python 软件包名
 
-    返回值:
+    Returns:
         str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
-    '''
-    return re.sub(r'\[.*?\]', '', filename)
+    ```"```"```"
+    return re.sub(r```"\[.*?\]```", ```"```", filename)
 
 
-def parse_requirement_list(requirements: list) -> list:
-    '''将 Python 软件包声明列表解析成标准 Python 软件包名列表
+def get_correct_package_name(name: str) -> str:
+    ```"```"```"将原 Python 软件包名替换成正确的 Python 软件包名
 
-    参数:
-        requirements (list):
-            Python 软件包名声明列表
-            e.g:
-            python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers[torch]==0.10.2',
-                'NUMPY',
-                '-e .',
-                '--index-url https://pypi.python.org/simple',
-                '--extra-index-url https://download.pytorch.org/whl/cu124',
-                '--find-links https://download.pytorch.org/whl/torch_stable.html',
-                '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
-                'git+https://github.com/WASasquatch/img2texture.git',
-                'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
-                'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
-                'protobuf<5,>=4.25.3',
-            ]
-            
+    Args:
+        name (str): 原 Python 软件包名
+    Returns:
+        str: 替换成正确的软件包名, 如果原有包名正确则返回原包名
+    ```"```"```"
+    return REPLACE_PACKAGE_NAME_DICT.get(name, name)
 
-    返回值:
-        list: 将 Python 软件包名声明列表解析成标准声明列表
-        e.g. 上述例子中的软件包名声明列表将解析成:
-        python
-            requirements = [
-                'torch==2.3.0',
-                'diffusers==0.10.2',
-                'numpy',
-                'mgds',
-                'img2texture',
-                'pydantic==1.10.15',
-                'prodigy-plus-schedule-free==1.9.1',
-                'protobuf<5',
-                'protobuf>=4.25.3',
-            ]
-            
-    '''
-    package_list = []
-    canonical_package_list = []
-    requirement: str
+
+def parse_requirement(
+    text: str,
+    bindings: dict[str, str],
+) -> ParsedPyWhlRequirement:
+    ```"```"```"解析依赖声明的主函数
+
+    Args:
+        text (str): 依赖声明文本
+        bindings (dict[str, str]): 解析 Python 软件包名的语法字典
+
+    Returns:
+        ParsedPyWhlRequirement: 解析结果元组
+    ```"```"```"
+    parser = RequirementParser(text, bindings)
+    return parser.parse()
+
+
+def evaluate_marker(marker: Any) -> bool:
+    ```"```"```"评估 marker 表达式, 判断当前环境是否符合要求
+
+    Args:
+        marker (Any): marker 表达式
+    Returns:
+        bool: 评估结果
+    ```"```"```"
+    if marker is None:
+        return True
+
+    if isinstance(marker, tuple):
+        op = marker[0]
+
+        if op in (```"and```", ```"or```"):
+            left = evaluate_marker(marker[1])
+            right = evaluate_marker(marker[2])
+
+            if op == ```"and```":
+                return left and right
+            else:  # 'or'
+                return left or right
+        else:
+            # 处理比较操作
+            left = marker[1]
+            right = marker[2]
+
+            if op in [```"<```", ```"<=```", ```">```", ```">=```", ```"==```", ```"!=```", ```"~=```", ```"===```"]:
+                try:
+                    left_ver = PyWhlVersionComparison(str(left).lower())
+                    right_ver = PyWhlVersionComparison(str(right).lower())
+
+                    if op == ```"<```":
+                        return left_ver < right_ver
+                    elif op == ```"<=```":
+                        return left_ver <= right_ver
+                    elif op == ```">```":
+                        return left_ver > right_ver
+                    elif op == ```">=```":
+                        return left_ver >= right_ver
+                    elif op == ```"==```":
+                        return left_ver == right_ver
+                    elif op == ```"!=```":
+                        return left_ver != right_ver
+                    elif op == ```"~=```":
+                        return left_ver >= ~right_ver
+                    elif op == ```"===```":
+                        # 任意相等, 直接比较字符串
+                        return str(left).lower() == str(right).lower()
+                except Exception:
+                    # 如果版本比较失败, 回退到字符串比较
+                    left_str = str(left).lower()
+                    right_str = str(right).lower()
+                    if op == ```"<```":
+                        return left_str < right_str
+                    elif op == ```"<=```":
+                        return left_str <= right_str
+                    elif op == ```">```":
+                        return left_str > right_str
+                    elif op == ```">=```":
+                        return left_str >= right_str
+                    elif op == ```"==```":
+                        return left_str == right_str
+                    elif op == ```"!=```":
+                        return left_str != right_str
+                    elif op == ```"~=```":
+                        # 简化处理
+                        return left_str >= right_str
+                    elif op == ```"===```":
+                        return left_str == right_str
+
+            # 处理 in 和 not in 操作
+            elif op == ```"in```":
+                # 将右边按逗号分割, 检查左边是否在其中
+                values = [v.strip() for v in str(right).lower().split(```",```")]
+                return str(left).lower() in values
+
+            elif op == ```"not in```":
+                # 将右边按逗号分割, 检查左边是否不在其中
+                values = [v.strip() for v in str(right).lower().split(```",```")]
+                return str(left).lower() not in values
+
+    return False
+
+
+def parse_requirement_to_list(text: str) -> list[str]:
+    ```"```"```"解析依赖声明并返回依赖列表
+
+    Args:
+        text (str): 依赖声明
+    Returns:
+        list[str]: 解析后的依赖声明表
+    ```"```"```"
+    try:
+        bindings = get_parse_bindings()
+        name, _, version_specs, marker = parse_requirement(text, bindings)
+    except Exception as e:
+        logger.debug(```"解析失败: %s```", e)
+        return []
+
+    # 检查marker条件
+    if not evaluate_marker(marker):
+        return []
+
+    # 构建依赖列表
+    dependencies = []
+
+    # 如果是 URL 依赖
+    if isinstance(version_specs, str):
+        # URL 依赖只返回包名
+        dependencies.append(name)
+    else:
+        # 版本依赖
+        if version_specs:
+            # 有版本约束, 为每个约束创建一个依赖项
+            for op, version in version_specs:
+                dependencies.append(f```"{name}{op}{version}```")
+        else:
+            # 没有版本约束, 只返回包名
+            dependencies.append(name)
+
+    return dependencies
+
+
+def parse_requirement_list(requirements: list[str]) -> list[str]:
+    ```"```"```"将 Python 软件包声明列表解析成标准 Python 软件包名列表
+
+    例如有以下的 Python 软件包声明列表:
+    ````````````python
+    requirements = [
+        'torch==2.3.0',
+        'diffusers[torch]==0.10.2',
+        'NUMPY',
+        '-e .',
+        '--index-url https://pypi.python.org/simple',
+        '--extra-index-url https://download.pytorch.org/whl/cu124',
+        '--find-links https://download.pytorch.org/whl/torch_stable.html',
+        '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
+        'git+https://github.com/WASasquatch/img2texture.git',
+        'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
+        'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
+        'protobuf<5,>=4.25.3',
+    ]
+    ````````````
+
+    上述例子中的软件包名声明列表将解析成:
+    ````````````python
+        requirements = [
+            'torch==2.3.0',
+            'diffusers==0.10.2',
+            'numpy',
+            'mgds',
+            'img2texture',
+            'pydantic==1.10.15',
+            'prodigy-plus-schedule-free==1.9.1',
+            'protobuf<5',
+            'protobuf>=4.25.3',
+        ]
+    ````````````
+
+    Args:
+        requirements (list[str]): Python 软件包名声明列表
+
+    Returns:
+        list[str]: 将 Python 软件包名声明列表解析成标准声明列表
+    ```"```"```"
+
+    def _extract_repo_name(url_string: str) -> str | None:
+        ```"```"```"从包含 Git 仓库 URL 的字符串中提取仓库名称
+
+        Args:
+            url_string (str): 包含 Git 仓库 URL 的字符串
+
+        Returns:
+            (str | None): 提取到的仓库名称, 如果未找到则返回 None
+        ```"```"```"
+        # 模式1: 匹配 git+https:// 或 git+ssh:// 开头的 URL
+        # 模式2: 匹配直接以 git+ 开头的 URL
+        patterns = [
+            # 匹配 git+protocol://host/path/to/repo.git 格式
+            r```"git\+[a-z]+://[^/]+/(?:[^/]+/)*([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 匹配 git+https://host/owner/repo.git 格式
+            r```"git\+https://[^/]+/[^/]+/([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 匹配 git+ssh://git@host:owner/repo.git 格式
+            r```"git\+ssh://git@[^:]+:[^/]+/([^/@]+?)(?:\.git)?(?:@|$)```",
+            # 通用模式: 匹配最后一个斜杠后的内容, 直到遇到 @ 或 .git 或字符串结束
+            r```"/([^/@]+?)(?:\.git)?(?:@|$)```",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url_string)
+            if match:
+                return match.group(1)
+
+        return None
+
+    package_list: list[str] = []
+    canonical_package_list: list[str] = []
     for requirement in requirements:
-        requirement = requirement.strip()
-        logger.debug('原始 Python 软件包名: %s', requirement)
+        # 清理注释内容
+        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
+        requirement = re.sub(r```"\s*#.*$```", ```"```", requirement).strip()
+        logger.debug(```"原始 Python 软件包名: %s```", requirement)
 
         if (
             requirement is None
-            or requirement == ''
-            or requirement.startswith('#')
-            or '# skip_verify' in requirement
-            or requirement.startswith('--index-url')
-            or requirement.startswith('--extra-index-url')
-            or requirement.startswith('--find-links')
-            or requirement.startswith('-e .')
+            or requirement == ```"```"
+            or requirement.startswith(```"#```")
+            or ```"# skip_verify```" in requirement
+            or requirement.startswith(```"--index-url```")
+            or requirement.startswith(```"--extra-index-url```")
+            or requirement.startswith(```"--find-links```")
+            or requirement.startswith(```"-e .```")
+            or requirement.startswith(```"-r ```")
         ):
             continue
 
         # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
         # git+https://github.com/WASasquatch/img2texture.git -> img2texture
         # git+https://github.com/deepghs/waifuc -> waifuc
-        if requirement.startswith('-e git+http') or requirement.startswith('git+http'):
-            egg_match = re.search(r'egg=([^#&]+)', requirement)
+        # -e git+https://github.com/Nerogar/mgds.git@2c67a5a -> mgds
+        # git+ssh://git@github.com:licyk/sd-webui-all-in-one@dev -> sd-webui-all-in-one
+        # git+https://gitlab.com/user/my-project.git@main -> my-project
+        # git+ssh://git@bitbucket.org:team/repo-name.git@develop -> repo-name
+        # https://github.com/another/repo.git -> repo
+        # git@github.com:user/repository.git -> repository
+        if (
+            requirement.startswith(```"-e git+http```")
+            or requirement.startswith(```"git+http```")
+            or requirement.startswith(```"-e git+ssh://```")
+            or requirement.startswith(```"git+ssh://```")
+        ):
+            egg_match = re.search(r```"egg=([^#&]+)```", requirement)
             if egg_match:
-                package_list.append(egg_match.group(1).split('-')[0])
+                package_list.append(egg_match.group(1).split(```"-```")[0])
+                continue
+
+            repo_name_match = _extract_repo_name(requirement)
+            if repo_name_match is not None:
+                package_list.append(repo_name_match)
                 continue
 
             package_name = os.path.basename(requirement)
-            package_name = package_name.split(
-                '.git')[0] if package_name.endswith('.git') else package_name
+            package_name = (
+                package_name.split(```".git```")[0]
+                if package_name.endswith(```".git```")
+                else package_name
+            )
             package_list.append(package_name)
             continue
 
         # https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl -> pydantic==1.10.15
-        if requirement.startswith('https://') or requirement.startswith('http://'):
-            package_name = parse_wheel_to_package_name(
-                os.path.basename(requirement))
+        if requirement.startswith(```"https://```") or requirement.startswith(```"http://```"):
+            package_name = parse_wheel_to_package_name(os.path.basename(requirement))
             package_list.append(package_name)
             continue
 
         # 常规 Python 软件包声明
-        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
-        cleaned_requirements = re.sub(
-            r'\s*#.*$', '', requirement).strip().split(',')
-        if len(cleaned_requirements) > 1:
-            package_name = get_package_name(cleaned_requirements[0].strip())
-            for package_name_with_version_marked in cleaned_requirements:
+        # 解析版本列表
+        possble_requirement = parse_requirement_to_list(requirement)
+        if len(possble_requirement) == 0:
+            continue
+        elif len(possble_requirement) == 1:
+            requirement = possble_requirement[0]
+        else:
+            requirements_list = parse_requirement_list(possble_requirement)
+            package_list += requirements_list
+            continue
+
+        multi_requirements = requirement.split(```",```")
+        if len(multi_requirements) > 1:
+            package_name = get_package_name(multi_requirements[0].strip())
+            for package_name_with_version_marked in multi_requirements:
                 version_symbol = str.replace(
-                    package_name_with_version_marked, package_name, '', 1)
+                    package_name_with_version_marked, package_name, ```"```", 1
+                )
                 format_package_name = remove_optional_dependence_from_package(
-                    f'{package_name}{version_symbol}'.strip())
+                    f```"{package_name}{version_symbol}```".strip()
+                )
                 package_list.append(format_package_name)
         else:
             format_package_name = remove_optional_dependence_from_package(
-                cleaned_requirements[0].strip())
+                multi_requirements[0].strip()
+            )
             package_list.append(format_package_name)
 
-    # 处理包名大小写并统一成小写, 并去除前后空格
+    # 处理包名大小写并统一成小写
     for p in package_list:
-        p: str = p.lower().strip()
-        logger.debug('预处理后的 Python 软件包名: %s', p)
+        p = p.lower().strip()
+        logger.debug(```"预处理后的 Python 软件包名: %s```", p)
         if not is_package_has_version(p):
-            logger.debug('%s 无版本声明', p)
-            canonical_package_list.append(p)
+            logger.debug(```"%s 无版本声明```", p)
+            new_p = get_correct_package_name(p)
+            logger.debug(```"包名处理: %s -> %s```", p, new_p)
+            canonical_package_list.append(new_p)
             continue
 
         if version_string_is_canonical(get_package_version(p)):
             canonical_package_list.append(p)
         else:
-            logger.debug('%s 软件包名的版本不符合标准', p)
+            logger.debug(```"%s 软件包名的版本不符合标准```", p)
 
     return canonical_package_list
 
 
-def remove_duplicate_object_from_list(origin: list) -> list:
-    '''对list进行去重
+def read_packages_from_requirements_file(file_path: str | Path) -> list[str]:
+    ```"```"```"从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
-    参数:
-        origin (list):
-            原始的list
+    Args:
+        file_path (str | Path): requirements.txt 文件路径
 
-    返回值:
-        list: 去重后的list, e.g. [1, 2, 3, 2] -> [1, 2, 3]
-    '''
-    return list(set(origin))
-
-
-def read_packages_from_requirements_file(file_path: Union[str, Path]) -> list:
-    '''从 requirements.txt 文件中读取 Python 软件包版本声明列表
-
-    参数:
-        file_path (str, Path):
-            requirements.txt 文件路径
-
-    返回值:
-        list: 从 requirements.txt 文件中读取的 Python 软件包声明列表
-    '''
+    Returns:
+        list[str]: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+    ```"```"```"
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, ```"r```", encoding=```"utf-8```") as f:
             return f.readlines()
     except Exception as e:
-        logger.error('打开 %s 时出现错误: %s\n请检查文件是否出现损坏', file_path, e)
+        logger.debug(```"打开 %s 时出现错误: %s\n请检查文件是否出现损坏```", file_path, e)
         return []
 
 
-def get_package_version_from_library(package_name: str) -> Union[str, None]:
-    '''获取已安装的 Python 软件包版本号
-
-    参数:
-        package_name (str):
-
-    返回值:
-        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回None
-    '''
-    try:
-        ver = importlib.metadata.version(package_name)
-    except:
-        ver = None
-
-    if ver is None:
-        try:
-            ver = importlib.metadata.version(package_name.lower())
-        except:
-            ver = None
-
-    if ver is None:
-        try:
-            ver = importlib.metadata.version(package_name.replace('_', '-'))
-        except:
-            ver = None
-
-    return ver
-
-
 class ComponentEnvironmentDetails(TypedDict):
-    '''ComfyUI 组件的环境信息结构'''
-    requirement_path: str           # 依赖文件路径
-    is_disabled: bool               # 组件是否禁用
-    requires: list[str]             # 需要的依赖列表
-    has_missing_requires: bool      # 是否存在缺失依赖
-    missing_requires: list[str]     # 具体缺失的依赖项
-    has_conflict_requires: bool     # 是否存在冲突依赖
-    conflict_requires: list[str]    # 具体冲突的依赖项
+    ```"```"```"ComfyUI 组件的环境信息结构
+
+    Attributes:
+        requirement_path (str): 依赖文件路径
+        is_disabled (bool): 组件是否禁用
+        requires (list[str]): 需要的依赖列表
+        has_missing_requires (bool): 是否存在缺失依赖
+        missing_requires (list[str]): 具体缺失的依赖项
+        has_conflict_requires (bool): 是否存在冲突依赖
+        conflict_requires (list[str]): 具体冲突的依赖项
+    ```"```"```"
+
+    requirement_path: str
+    ```"```"```"依赖文件路径```"```"```"
+
+    is_disabled: bool
+    ```"```"```"组件是否禁用```"```"```"
+
+    requires: list[str]
+    ```"```"```"需要的依赖列表```"```"```"
+
+    has_missing_requires: bool
+    ```"```"```"是否存在缺失依赖```"```"```"
+
+    missing_requires: list[str]
+    ```"```"```"具体缺失的依赖项```"```"```"
+
+    has_conflict_requires: bool
+    ```"```"```"是否存在冲突依赖```"```"```"
+
+    conflict_requires: list[str]
+    ```"```"```"具体冲突的依赖项```"```"```"
 
 
-ComfyUIEnvironmentComponent = dict[
-    str, ComponentEnvironmentDetails
-]  # ComfyUI 环境组件表字典
+ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
+```"```"```"ComfyUI 环境组件表字典```"```"```"
 
 
 def create_comfyui_environment_dict(
-    comfyui_path: Union[str, Path],
+    comfyui_path: str | Path,
 ) -> ComfyUIEnvironmentComponent:
-    '''创建 ComfyUI 环境组件表字典
+    ```"```"```"创建 ComfyUI 环境组件表字典
 
-    参数:
-        comfyui_path (str, Path):
-            ComfyUI 根路径
+    Args:
+        comfyui_path (str | Path): ComfyUI 根路径
 
-    返回值:
+    Returns:
         ComfyUIEnvironmentComponent: ComfyUI 环境组件表字典
-    '''
+    ```"```"```"
+    comfyui_path = (
+        Path(comfyui_path)
+        if not isinstance(comfyui_path, Path) and comfyui_path is not None
+        else comfyui_path
+    )
     comfyui_env_data: ComfyUIEnvironmentComponent = {
-        'ComfyUI': {
-            'requirement_path': os.path.join(comfyui_path, 'requirements.txt'),
-            'is_disabled': False,
-            'requires': [],
-            'has_missing_requires': False,
-            'missing_requires': [],
-            'has_conflict_requires': False,
-            'conflict_requires': [],
+        ```"ComfyUI```": {
+            ```"requirement_path```": (comfyui_path / ```"requirements.txt```").as_posix(),
+            ```"is_disabled```": False,
+            ```"requires```": [],
+            ```"has_missing_requires```": False,
+            ```"missing_requires```": [],
+            ```"has_conflict_requires```": False,
+            ```"conflict_requires```": [],
         },
     }
-    custom_nodes_path = os.path.join(comfyui_path, 'custom_nodes')
-    for custom_node in os.listdir(custom_nodes_path):
-        if os.path.isfile(os.path.join(custom_nodes_path, custom_node)):
+
+    custom_nodes_path = comfyui_path / ```"custom_nodes```"
+    for custom_node in custom_nodes_path.iterdir():
+        if custom_node.is_file():
             continue
 
-        custom_node_requirement_path = os.path.join(
-            custom_nodes_path, custom_node, 'requirements.txt')
-        custom_node_is_disabled = True if custom_node.endswith(
-            '.disabled') else False
+        custom_node_requirement_path = custom_node / ```"requirements.txt```"
+        custom_node_is_disabled = (
+            True if custom_node.parent.as_posix().endswith(```".disabled```") else False
+        )
 
-        comfyui_env_data[custom_node] = {
-            'requirement_path': (
-                custom_node_requirement_path
-                if os.path.exists(custom_node_requirement_path)
+        comfyui_env_data[custom_node.name] = {
+            ```"requirement_path```": (
+                custom_node_requirement_path.as_posix()
+                if custom_node_requirement_path.exists()
                 else None
             ),
-            'is_disabled': custom_node_is_disabled,
-            'requires': [],
-            'has_missing_requires': False,
-            'missing_requires': [],
-            'has_conflict_requires': False,
-            'conflict_requires': [],
+            ```"is_disabled```": custom_node_is_disabled,
+            ```"requires```": [],
+            ```"has_missing_requires```": False,
+            ```"missing_requires```": [],
+            ```"has_conflict_requires```": False,
+            ```"conflict_requires```": [],
         }
 
     return comfyui_env_data
@@ -4278,79 +6361,60 @@ def create_comfyui_environment_dict(
 def update_comfyui_environment_dict(
     env_data: ComfyUIEnvironmentComponent,
     component_name: str,
-    requirement_path: Optional[str] = None,
-    is_disabled: Optional[bool] = None,
-    requires: Optional[list[str]] = None,
-    has_missing_requires: Optional[bool] = None,
-    missing_requires: Optional[list[str]] = None,
-    has_conflict_requires: Optional[bool] = None,
-    conflict_requires: Optional[list[str]] = None,
+    requirement_path: str | None = None,
+    is_disabled: bool | None = None,
+    requires: list[str] | None = None,
+    has_missing_requires: bool | None = None,
+    missing_requires: list[str] | None = None,
+    has_conflict_requires: bool | None = None,
+    conflict_requires: list[str] | None = None,
 ) -> None:
-    '''更新 ComfyUI 环境组件表字典
+    ```"```"```"更新 ComfyUI 环境组件表字典
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-        component_name (str):
-            ComfyUI 组件名称
-
-        requirement_path (str, None):
-            ComfyUI 组件依赖文件路径
-
-        is_disabled (bool, None):
-            ComfyUI 组件是否被禁用
-
-        requires (list[str], None):
-            ComfyUI 组件需要的依赖列表
-
-        has_missing_requires (bool, None):
-            ComfyUI 组件是否存在缺失依赖
-
-        missing_requires (list[str], None):
-            ComfyUI 组件缺失依赖列表
-
-        has_conflict_requires (bool, None):
-            ComfyUI 组件是否存在冲突依赖
-
-        conflict_requires (list[str], None):
-            ComfyUI 组件冲突依赖列表
-    '''
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+        component_name (str): ComfyUI 组件名称
+        requirement_path (str | None): ComfyUI 组件依赖文件路径
+        is_disabled (bool | None): ComfyUI 组件是否被禁用
+        requires (list[str] | None): ComfyUI 组件需要的依赖列表
+        has_missing_requires (bool | None): ComfyUI 组件是否存在缺失依赖
+        missing_requires (list[str] | None): ComfyUI 组件缺失依赖列表
+        has_conflict_requires (bool | None): ComfyUI 组件是否存在冲突依赖
+        conflict_requires (list[str] | None): ComfyUI 组件冲突依赖列表
+    ```"```"```"
     env_data[component_name] = {
-        'requirement_path': (
+        ```"requirement_path```": (
             requirement_path
             if requirement_path
-            else env_data.get(component_name).get('requirement_path')
+            else env_data.get(component_name).get(```"requirement_path```")
         ),
-        'is_disabled': (
+        ```"is_disabled```": (
             is_disabled
             if is_disabled
-            else env_data.get(component_name).get('is_disabled')
+            else env_data.get(component_name).get(```"is_disabled```")
         ),
-        'requires': (
-            requires
-            if requires
-            else env_data.get(component_name).get('requires')
+        ```"requires```": (
+            requires if requires else env_data.get(component_name).get(```"requires```")
         ),
-        'has_missing_requires': (
+        ```"has_missing_requires```": (
             has_missing_requires
             if has_missing_requires
-            else env_data.get(component_name).get('has_missing_requires')
+            else env_data.get(component_name).get(```"has_missing_requires```")
         ),
-        'missing_requires': (
+        ```"missing_requires```": (
             missing_requires
             if missing_requires
-            else env_data.get(component_name).get('missing_requires')
+            else env_data.get(component_name).get(```"missing_requires```")
         ),
-        'has_conflict_requires': (
+        ```"has_conflict_requires```": (
             has_conflict_requires
             if has_conflict_requires
-            else env_data.get(component_name).get('has_conflict_requires')
+            else env_data.get(component_name).get(```"has_conflict_requires```")
         ),
-        'conflict_requires': (
+        ```"conflict_requires```": (
             conflict_requires
             if conflict_requires
-            else env_data.get(component_name).get('conflict_requires')
+            else env_data.get(component_name).get(```"conflict_requires```")
         ),
     }
 
@@ -4358,23 +6422,20 @@ def update_comfyui_environment_dict(
 def update_comfyui_component_requires_list(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
+    ```"```"```"更新 ComfyUI 环境组件表字典, 根据字典中的 requirement_path 确定 Python 软件包版本声明文件, 并解析后写入 requires 字段
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+    ```"```"```"
     for component_name, details in env_data.items():
-        if details.get('is_disabled'):
+        if details.get(```"is_disabled```"):
             continue
 
-        requirement_path = details.get('requirement_path')
+        requirement_path = details.get(```"requirement_path```")
         if requirement_path is None:
             continue
 
-        origin_requires = read_packages_from_requirements_file(
-            requirement_path
-        )
+        origin_requires = read_packages_from_requirements_file(requirement_path)
         requires = parse_requirement_list(origin_requires)
         update_comfyui_environment_dict(
             env_data=env_data,
@@ -4386,17 +6447,16 @@ def update_comfyui_component_requires_list(
 def update_comfyui_component_missing_requires_list(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
+    ```"```"```"更新 ComfyUI 环境组件表字典, 根据字典中的 requires 检查缺失的 Python 软件包, 并保存到 missing_requires 字段和设置 has_missing_requires 状态
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+    ```"```"```"
     for component_name, details in env_data.items():
-        if details.get('is_disabled'):
+        if details.get(```"is_disabled```"):
             continue
 
-        requires = details.get('requires')
+        requires = details.get(```"requires```")
         has_missing_requires = False
         missing_requires = []
 
@@ -4414,35 +6474,27 @@ def update_comfyui_component_missing_requires_list(
 
 
 def update_comfyui_component_conflict_requires_list(
-    env_data: ComfyUIEnvironmentComponent,
-    conflict_package_list: list
+    env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]
 ) -> None:
-    '''更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
+    ```"```"```"更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-
-        conflict_package_list (list):
-            冲突的 Python 软件包列表
-    '''
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+        conflict_package_list (list[str]): 冲突的 Python 软件包列表
+    ```"```"```"
     for component_name, details in env_data.items():
-        if details.get('is_disabled'):
+        if details.get(```"is_disabled```"):
             continue
 
-        requires = details.get('requires')
+        requires = details.get(```"requires```")
         has_conflict_requires = False
-        conflict_requires = []
+        conflict_requires: list[str] = []
 
         for conflict_package in conflict_package_list:
             for package in requires:
-                if (
-                    is_package_has_version(package)
-                    and
-                    get_package_name(
-                        conflict_package
-                    ) == get_package_name(package)
-                ):
+                if is_package_has_version(package) and get_package_name(
+                    conflict_package
+                ) == get_package_name(package):
                     has_conflict_requires = True
                     conflict_requires.append(package)
 
@@ -4456,200 +6508,104 @@ def update_comfyui_component_conflict_requires_list(
 
 def get_comfyui_component_requires_list(
     env_data: ComfyUIEnvironmentComponent,
-) -> list:
-    '''从 ComfyUI 环境组件表字典读取所有组件的 requires
+) -> list[str]:
+    ```"```"```"从 ComfyUI 环境组件表字典读取所有组件的 requires
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-    返回值:
-        list: ComfyUI 环境组件的 Python 软件包列表
-    '''
+    Returns:
+        list[str]: ComfyUI 环境组件的 Python 软件包列表
+    ```"```"```"
     package_list = []
     for _, details in env_data.items():
-        if details.get('is_disabled'):
+        if details.get(```"is_disabled```"):
             continue
 
-        package_list += details.get('requires')
+        package_list += details.get(```"requires```")
 
     return remove_duplicate_object_from_list(package_list)
 
 
 def statistical_need_install_require_component(
     env_data: ComfyUIEnvironmentComponent,
-) -> list:
-    '''根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
+) -> list[str]:
+    ```"```"```"根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-    返回值:
-        list: ComfyUI 环境组件的依赖文件路径列表
-    '''
+    Returns:
+        list[str]: ComfyUI 环境组件的依赖文件路径列表
+    ```"```"```"
     requirement_list = []
     for _, details in env_data.items():
-        if (
-            details.get('has_missing_requires')
-            or details.get('has_conflict_requires')
-        ):
-            requirement_list.append(
-                Path(details.get('requirement_path')).as_posix())
+        if details.get(```"has_missing_requires```") or details.get(```"has_conflict_requires```"):
+            requirement_list.append(Path(details.get(```"requirement_path```")).as_posix())
 
     return requirement_list
 
 
 def statistical_has_conflict_component(
-    env_data: ComfyUIEnvironmentComponent,
-    conflict_package_list: list
-) -> list:
-    '''根据 ComfyUI 环境组件表字典中的 has_conflict_requires 字段确认需要安装依赖的列表
+    env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]
+) -> str:
+    ```"```"```"根据 ComfyUI 环境组件表字典中的 conflict_requires 字段统计冲突的组件信息
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
 
-    返回值:
-        list: ComfyUI 环境组件的依赖文件路径列表
-    '''
+    Returns:
+        str: ComfyUI 环境冲突的组件信息列表
+    ```"```"```"
     content = []
+    # 统一成下划线
+    conflict_package_list = remove_duplicate_object_from_list(
+        [x.replace(```"-```", ```"_```") for x in conflict_package_list]
+    )
     for conflict_package in conflict_package_list:
-        content.append(get_package_name(f'{conflict_package}:'))
+        content.append(get_package_name(f```"{conflict_package}:```"))
         for component_name, details in env_data.items():
-            for conflict_component_package in details.get('conflict_requires'):
-                if get_package_name(conflict_component_package) == conflict_package:
-                    content.append(
-                        f' - {component_name}: {conflict_component_package}')
-
-    return content[:-1] if len(content) > 0 and content[-1] == '' else content
-
-
-def is_package_installed(package: str) -> bool:
-    '''判断 Python 软件包是否已安装在环境中
-
-    参数:
-        package (str):
-            Python 软件包名
-
-    返回值:
-        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回False
-    '''
-    # 分割 Python 软件包名和版本号
-    if '===' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('===')]
-    elif '~=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('~=')]
-    elif '!=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('!=')]
-    elif '<=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<=')]
-    elif '>=' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>=')]
-    elif '<' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('<')]
-    elif '>' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('>')]
-    elif '==' in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split('==')]
-    else:
-        pkg_name, pkg_version = package.strip(), None
-
-    env_pkg_version = get_package_version_from_library(pkg_name)
-    logger.debug(
-        '已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s',
-        pkg_name, env_pkg_version, pkg_version
+            for conflict_component_package in details.get(```"conflict_requires```"):
+                # 将中划线统一成下划线再对比
+                conflict_component_package_format = get_package_name(
+                    conflict_component_package
+                ).replace(```"-```", ```"_```")
+                conflict_package_format = conflict_package.replace(```"-```", ```"_```")
+                if conflict_component_package_format == conflict_package_format:
+                    content.append(f```" - {component_name}: {conflict_component_package}```")
+        content.append(```"```")
+    return ```"\n```".join(
+        [
+            str(x)
+            for x in (
+                content[:-1] if len(content) > 0 and content[-1] == ```"```" else content
+            )
+        ]
     )
 
-    if env_pkg_version is None:
-        logger.debug('%s 未安装到环境中', package)
-        return False
 
-    if pkg_version is not None:
-        # ok = env_pkg_version === / == pkg_version
-        if '===' in package or '==' in package:
-            logger.debug('包含条件: === / ==')
-            if is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s == %s', env_pkg_version, pkg_version)
-                return True
+def fitter_has_version_package(package_list: list[str]) -> list[str]:
+    ```"```"```"过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
 
-        # ok = env_pkg_version ~= pkg_version
-        if '~=' in package:
-            logger.debug('包含条件: ~=')
-            if is_v1_c_eq_v2(pkg_version, env_pkg_version):
-                logger.debug('%s ~= %s', pkg_version, env_pkg_version)
-                return True
+    Args:
+        package_list (list[str]): Python 软件包列表
 
-        # ok = env_pkg_version != pkg_version
-        if '!=' in package:
-            logger.debug('包含条件: !=')
-            if not is_v1_eq_v2(env_pkg_version, pkg_version):
-                logger.debug('%s != %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version <= pkg_version
-        if '<=' in package:
-            logger.debug('包含条件: <=')
-            if is_v1_le_v2(env_pkg_version, pkg_version):
-                logger.debug('%s <= %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version >= pkg_version
-        if '>=' in package:
-            logger.debug('包含条件: >=')
-            if is_v1_ge_v2(env_pkg_version, pkg_version):
-                logger.debug('%s >= %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version < pkg_version
-        if '<' in package:
-            logger.debug('包含条件: <')
-            if is_v1_lt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s < %s', env_pkg_version, pkg_version)
-                return True
-
-        # ok = env_pkg_version > pkg_version
-        if '>' in package:
-            logger.debug('包含条件: >')
-            if is_v1_gt_v2(env_pkg_version, pkg_version):
-                logger.debug('%s > %s', env_pkg_version, pkg_version)
-                return True
-
-        logger.debug('%s 需要安装正确版本', package)
-        return False
-
-    return True
-
-
-def fitter_has_version_package(package_list: list) -> list:
-    '''过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
-
-    参数:
-        package_list (list):
-            Python 软件包列表
-
-    返回值:
-        list: 仅包含版本号的 Python 软件包列表
-    '''
-    return [
-        p for p in package_list
-        if is_package_has_version(p)
-    ]
+    Returns:
+        list[str]: 仅包含版本号的 Python 软件包列表
+    ```"```"```"
+    return [p for p in package_list if is_package_has_version(p)]
 
 
 def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
-    '''检测 Python 软件包版本号声明是否存在冲突
+    ```"```"```"检测 Python 软件包版本号声明是否存在冲突
 
-    参数:
-        pkg1 (str):
-            第 1 个 Python 软件包名称
+    Args:
+        pkg1 (str): 第 1 个 Python 软件包名称
+        pkg2 (str): 第 2 个 Python 软件包名称
 
-        pkg2 (str):
-            第 2 个 Python 软件包名称
-
-    返回值:
-        bool: 如果 Python 软件包版本声明出现冲突则返回True
-    '''
+    Returns:
+        bool: 如果 Python 软件包版本声明出现冲突则返回````True````
+    ```"```"```"
     # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
     for i in range(2):
         if i == 1:
@@ -4661,111 +6617,115 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
         ver1 = get_package_version(pkg1)
         ver2 = get_package_version(pkg2)
         logger.debug(
-            '冲突依赖检测: pkg1: %s, pkg2: %s, ver1: %s, ver2: %s',
-            pkg1, pkg2, ver1, ver2)
+            ```"冲突依赖检测: pkg1: %s, pkg2: %s, ver1: %s, ver2: %s```",
+            pkg1,
+            pkg2,
+            ver1,
+            ver2,
+        )
 
         # >=, <=
-        if '>=' in pkg1 and '<=' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
+        if ```">=```" in pkg1 and ```"<=```" in pkg2:
+            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s > %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >=, <
-        if '>=' in pkg1 and '<' in pkg2 and '=' not in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
+        if ```">=```" in pkg1 and ```"<```" in pkg2 and ```"=```" not in pkg2:
+            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s >= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >, <=
-        if '>' in pkg1 and '=' not in pkg1 and '<=' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
+        if ```">```" in pkg1 and ```"=```" not in pkg1 and ```"<=```" in pkg2:
+            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s >= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >, <
-        if '>' in pkg1 and '=' not in pkg1 and '<' in pkg2 and '=' not in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
+        if ```">```" in pkg1 and ```"=```" not in pkg1 and ```"<```" in pkg2 and ```"=```" not in pkg2:
+            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s >= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >, ==
-        if '>' in pkg1 and '=' not in pkg1 and '==' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
+        if ```">```" in pkg1 and ```"=```" not in pkg1 and ```"==```" in pkg2:
+            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s >= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >=, ==
-        if '>=' in pkg1 and '==' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
+        if ```">=```" in pkg1 and ```"==```" in pkg2:
+            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s > %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # <, ==
-        if '<' in pkg1 and '=' not in pkg1 and '==' in pkg2:
-            if is_v1_le_v2(ver1, ver2):
+        if ```"<```" in pkg1 and ```"=```" not in pkg1 and ```"==```" in pkg2:
+            if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s <= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s <= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # <=, ==
-        if '<=' in pkg1 and '==' in pkg2:
-            if is_v1_lt_v2(ver1, ver2):
+        if ```"<=```" in pkg1 and ```"==```" in pkg2:
+            if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s < %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s < %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # !=, ==
-        if '!=' in pkg1 and '==' in pkg2:
-            if is_v1_eq_v2(ver1, ver2):
+        if ```"!=```" in pkg1 and ```"==```" in pkg2:
+            if PyWhlVersionComparison(ver1) == PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s == %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s == %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >, ~=
-        if '>' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
-            if is_v1_ge_v2(ver1, ver2):
+        if ```">```" in pkg1 and ```"=```" not in pkg1 and ```"~=```" in pkg2:
+            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s >= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s >= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # >=, ~=
-        if '>=' in pkg1 and '~=' in pkg2:
-            if is_v1_gt_v2(ver1, ver2):
+        if ```">=```" in pkg1 and ```"~=```" in pkg2:
+            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s > %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # <, ~=
-        if '<' in pkg1 and '=' not in pkg1 and '~=' in pkg2:
-            if is_v1_le_v2(ver1, ver2):
+        if ```"<```" in pkg1 and ```"=```" not in pkg1 and ```"~=```" in pkg2:
+            if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s <= %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s <= %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # <=, ~=
-        if '<=' in pkg1 and '~=' in pkg2:
-            if is_v1_lt_v2(ver1, ver2):
+        if ```"<=```" in pkg1 and ```"~=```" in pkg2:
+            if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s < %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s < %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # !=, ~=
@@ -4778,11 +6738,11 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
         #         return True
 
         # ~=, == / ~=, ===
-        if ('~=' in pkg1 and '==' in pkg2) or ('~=' in pkg1 and '===' in pkg2):
-            if is_v1_gt_v2(ver1, ver2):
+        if (```"~=```" in pkg1 and ```"==```" in pkg2) or (```"~=```" in pkg1 and ```"===```" in pkg2):
+            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s > %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s > %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
         # ~=, ~=
@@ -4795,33 +6755,32 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
         #         return True
 
         # ==, == / ===, ===
-        if ('==' in pkg1 and '==' in pkg2) or ('===' in pkg1 and '===' in pkg2):
-            if not is_v1_eq_v2(ver1, ver2):
+        if (```"==```" in pkg1 and ```"==```" in pkg2) or (```"===```" in pkg1 and ```"===```" in pkg2):
+            if PyWhlVersionComparison(ver1) != PyWhlVersionComparison(ver2):
                 logger.debug(
-                    '冲突依赖: %s, %s, 版本冲突: %s != %s',
-                    pkg1, pkg2, ver1, ver2)
+                    ```"冲突依赖: %s, %s, 版本冲突: %s != %s```", pkg1, pkg2, ver1, ver2
+                )
                 return True
 
     return False
 
 
-def detect_conflict_package_from_list(package_list: list) -> list:
-    '''检测 Python 软件包版本声明列表中存在冲突的软件包
+def detect_conflict_package_from_list(package_list: list[str]) -> list[str]:
+    ```"```"```"检测 Python 软件包版本声明列表中存在冲突的软件包
 
-    参数:
-        package_list (list):
-            Python 软件包版本声明列表
+    Args:
+        package_list (list[str]): Python 软件包版本声明列表
 
-    返回值:
-        list: 冲突的 Python 软件包列表
-    '''
+    Returns:
+        list[str]: 冲突的 Python 软件包列表
+    ```"```"```"
     conflict_package = []
     for i in package_list:
         for j in package_list:
-            if (
-                get_package_name(i) == get_package_name(j)
-                and detect_conflict_package(i, j)
-            ):
+            # 截取包名并将包名中的中划线统一成下划线
+            pkg1 = get_package_name(i).replace(```"-```", ```"_```")
+            pkg2 = get_package_name(j).replace(```"-```", ```"_```")
+            if pkg1 == pkg2 and detect_conflict_package(i, j):
                 conflict_package.append(get_package_name(i))
 
     return remove_duplicate_object_from_list(conflict_package)
@@ -4830,118 +6789,70 @@ def detect_conflict_package_from_list(package_list: list) -> list:
 def display_comfyui_environment_dict(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
-    '''列出 ComfyUI 环境组件字典内容
+    ```"```"```"列出 ComfyUI 环境组件字典内容
 
-    参数:
-        env_data (ComfyUIEnvironmentComponent):
-            ComfyUI 环境组件表字典
-    '''
-    logger.debug('ComfyUI 环境组件表')
+    Args:
+        env_data (ComfyUIEnvironmentComponent): ComfyUI 环境组件表字典
+    ```"```"```"
+    logger.debug(```"ComfyUI 环境组件表```")
     for component_name, details in env_data.items():
-        logger.debug(
-            'Component: %s', component_name
-        )
-        logger.debug(
-            ' - requirement_path: %s', details['requirement_path']
-        )
-        logger.debug(
-            ' - is_disabled: %s', details['is_disabled']
-        )
-        logger.debug(
-            ' - requires: %s', details['requires']
-        )
-        logger.debug(
-            ' - has_missing_requires: %s', details['has_missing_requires']
-        )
-        logger.debug(
-            ' - missing_requires: %s', details['missing_requires']
-        )
-        logger.debug(
-            ' - has_conflict_requires: %s', details['has_conflict_requires']
-        )
-        logger.debug(
-            ' - conflict_requires: %s', details['conflict_requires']
-        )
+        logger.debug(```"Component: %s```", component_name)
+        logger.debug(```" - requirement_path: %s```", details[```"requirement_path```"])
+        logger.debug(```" - is_disabled: %s```", details[```"is_disabled```"])
+        logger.debug(```" - requires: %s```", details[```"requires```"])
+        logger.debug(```" - has_missing_requires: %s```", details[```"has_missing_requires```"])
+        logger.debug(```" - missing_requires: %s```", details[```"missing_requires```"])
+        logger.debug(```" - has_conflict_requires: %s```", details[```"has_conflict_requires```"])
+        logger.debug(```" - conflict_requires: %s```", details[```"conflict_requires```"])
         print()
 
 
-def display_check_result(
-    requirement_list: list,
-    conflict_result: list
-) -> None:
-    '''显示 ComfyUI 运行环境检查结果
+def display_check_result(requirement_list: list[str], conflict_result: str) -> None:
+    ```"```"```"显示 ComfyUI 运行环境检查结果
 
-    参数:
-        requirement_list (list):
-            ComfyUI 组件依赖文件路径列表
-
-        conflict_result (list):
-            冲突组件统计信息
-    '''
+    Args:
+        requirement_list (list[str]): ComfyUI 组件依赖文件路径列表
+        conflict_result (str): 冲突组件统计信息
+    ```"```"```"
     if len(requirement_list) > 0:
-        logger.debug('需要安装 ComfyUI 组件列表')
+        logger.debug(```"需要安装 ComfyUI 组件列表```")
         for requirement in requirement_list:
-            component_name = requirement.split('/')[-2]
-            logger.debug('%s:', component_name)
-            logger.debug(' - %s', requirement)
+            component_name = requirement.split(```"/```")[-2]
+            logger.debug(```"%s:```", component_name)
+            logger.debug(```" - %s```", requirement)
         print()
 
     if len(conflict_result) > 0:
-        logger.debug('ComfyUI 冲突组件')
-        for text in conflict_result:
-            logger.debug(text)
-        print()
+        logger.debug(```"ComfyUI 冲突组件: \n%s```", conflict_result)
 
 
-def write_content_to_file(
-        content: list,
-        path: Union[str, Path]
-) -> None:
-    '''将内容列表写入到文件中
+def process_comfyui_env_analysis(
+    comfyui_root_path: Path | str,
+) -> (
+    tuple[dict[str, ComponentEnvironmentDetails], list[str], str]
+    | tuple[None, None, None]
+):
+    ```"```"```"分析 ComfyUI 环境
 
-    参数:
-        content (list):
-            内容列表
+    Args:
+        comfyui_root_path (Path | str): ComfyUI 根目录
+    Returns:
+        (tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]):
+            ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
+    ```"```"```"
+    comfyui_root_path = (
+        Path(comfyui_root_path)
+        if not isinstance(comfyui_root_path, Path) and comfyui_root_path is not None
+        else comfyui_root_path
+    )
+    if not (comfyui_root_path / ```"requirements.txt```").exists():
+        logger.error(```"ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整```")
+        return None, None, None
 
-        path (str, Path):
-            保存内容的路径
-    '''
-    if len(content) == 0:
-        return
+    if not (comfyui_root_path / ```"custom_nodes```").exists():
+        logger.error(```"ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整```")
+        return None, None, None
 
-    dir_path = os.path.dirname(path)
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path, exist_ok=True)
-
-    try:
-        logger.debug('写入文件到 %s', path)
-        with open(path, 'w', encoding='utf-8') as f:
-            for item in content:
-                f.write(item + '\n')
-    except Exception as e:
-        logger.error('写入文件到 %s 时出现了错误: %s', path, e)
-
-
-def main() -> None:
-    comfyui_root_path = COMMAND_ARGS.comfyui_path
-    comfyui_conflict_notice = COMMAND_ARGS.conflict_depend_notice_path
-    comfyui_requirement_path = COMMAND_ARGS.requirement_list_path
-    debug_mode = COMMAND_ARGS.debug_mode
-
-    if not os.path.exists(os.path.join(comfyui_root_path, 'requirements.txt')):
-        logger.error('ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整')
-        sys.exit(1)
-
-    if not os.path.exists(os.path.join(comfyui_root_path, 'custom_nodes')):
-        logger.error('ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整')
-        sys.exit(1)
-
-    if not comfyui_conflict_notice or not comfyui_requirement_path:
-        logger.error(
-            '未配置 --conflict-depend-notice-path / --requirement-list-path, 无法进行环境检测')
-        sys.exit(1)
-
-    logger.debug('检测 ComfyUI 环境中')
     env_data = create_comfyui_environment_dict(comfyui_root_path)
     update_comfyui_component_requires_list(env_data)
     update_comfyui_component_missing_requires_list(env_data)
@@ -4951,15 +6862,67 @@ def main() -> None:
     update_comfyui_component_conflict_requires_list(env_data, conflict_pkg)
     req_list = statistical_need_install_require_component(env_data)
     conflict_info = statistical_has_conflict_component(env_data, conflict_pkg)
+    return env_data, req_list, conflict_info
+
+
+def write_content_to_file(
+    content: list[str],
+    path: str | Path,
+) -> None:
+    ```"```"```"将内容列表写入到文件中
+
+    Args:
+        content (list[str]): 内容列表
+        path (str | Path): 保存内容的路径
+    ```"```"```"
+    if len(content) == 0:
+        return
+
+    dir_path = os.path.dirname(path)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+
+    try:
+        logger.debug(```"写入文件到 %s```", path)
+        with open(path, ```"w```", encoding=```"utf-8```") as f:
+            for item in content:
+                f.write(item + ```"\n```")
+    except Exception as e:
+        logger.error(```"写入文件到 %s 时出现了错误: %s```", path, e)
+
+
+def main() -> None:
+    ```"```"```"主函数```"```"```"
+    comfyui_root_path = COMMAND_ARGS.comfyui_path
+    comfyui_conflict_notice = COMMAND_ARGS.conflict_depend_notice_path
+    comfyui_requirement_path = COMMAND_ARGS.requirement_list_path
+    debug_mode = COMMAND_ARGS.debug_mode
+
+    if not os.path.exists(os.path.join(comfyui_root_path, ```"requirements.txt```")):
+        logger.error(```"ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整```")
+        sys.exit(1)
+
+    if not os.path.exists(os.path.join(comfyui_root_path, ```"custom_nodes```")):
+        logger.error(```"ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整```")
+        sys.exit(1)
+
+    if not comfyui_conflict_notice or not comfyui_requirement_path:
+        logger.error(
+            ```"未配置 --conflict-depend-notice-path / --requirement-list-path, 无法进行环境检测```"
+        )
+        sys.exit(1)
+
+    logger.debug(```"检测 ComfyUI 环境中```")
+    env_data, req_list, conflict_info = process_comfyui_env_analysis(comfyui_root_path)
     write_content_to_file(conflict_info, comfyui_conflict_notice)
     write_content_to_file(req_list, comfyui_requirement_path)
     if debug_mode:
         display_comfyui_environment_dict(env_data)
         display_check_result(req_list, conflict_info)
-    logger.debug('ComfyUI 环境检查完成')
+    logger.debug(```"ComfyUI 环境检查完成```")
 
 
-if __name__ == '__main__':
+if __name__ == ```"__main__```":
     main()
 `".Trim()
 
@@ -5045,35 +7008,215 @@ function Check-Onnxruntime-GPU {
 import re
 import sys
 import argparse
-import importlib.metadata
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+import importlib.metadata
 
 
 def get_args() -> argparse.Namespace:
-    '''获取命令行参数
+    ```"```"```"获取命令行参数
 
     :return argparse.Namespace: 命令行参数命名空间
-    '''
+    ```"```"```"
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--ignore-ort-install', action='store_true', help='忽略 onnxruntime-gpu 未安装的状态, 强制进行检查')
+    parser.add_argument(
+        ```"--ignore-ort-install```",
+        action=```"store_true```",
+        help=```"忽略 onnxruntime-gpu 未安装的状态, 强制进行检查```",
+    )
 
     return parser.parse_args()
 
 
-def get_onnxruntime_version_file() -> Path | None:
-    '''获取记录 onnxruntime 版本的文件路径
+class CommonVersionComparison:
+    ```"```"```"常规版本号比较工具
 
-    :return Path | None: 记录 onnxruntime 版本的文件路径
-    '''
-    package = 'onnxruntime-gpu'
-    version_file = 'onnxruntime/capi/version_info.py'
+    使用:
+    ````````````python
+    CommonVersionComparison(```"1.0```") != CommonVersionComparison(```"1.0```") # False
+    CommonVersionComparison(```"1.0.1```") > CommonVersionComparison(```"1.0```") # True
+    CommonVersionComparison(```"1.0a```") < CommonVersionComparison(```"1.0```") # True
+    ````````````
+
+    Attributes:
+        version (str | int | float): 版本号字符串
+    ```"```"```"
+
+    def __init__(self, version: str | int | float) -> None:
+        ```"```"```"常规版本号比较工具初始化
+
+        Args:
+            version (str | int | float): 版本号字符串
+        ```"```"```"
+        self.version = version
+
+    def __lt__(self, other: object) -> bool:
+        ```"```"```"实现 < 符号的版本比较
+
+        Returns:
+            bool: 如果此版本小于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) < 0
+
+    def __gt__(self, other: object) -> bool:
+        ```"```"```"实现 > 符号的版本比较
+
+        Returns:
+            bool: 如果此版本大于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) > 0
+
+    def __le__(self, other: object) -> bool:
+        ```"```"```"实现 <= 符号的版本比较
+
+        Returns:
+            bool: 如果此版本小于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) <= 0
+
+    def __ge__(self, other: object) -> bool:
+        ```"```"```"实现 >= 符号的版本比较
+
+        Returns:
+            bool: 如果此版本大于等于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) >= 0
+
+    def __eq__(self, other: object) -> bool:
+        ```"```"```"实现 == 符号的版本比较
+
+        Returns:
+            bool: 如果此版本等于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) == 0
+
+    def __ne__(self, other: object) -> bool:
+        ```"```"```"实现 != 符号的版本比较
+
+        Returns:
+            bool: 如果此版本不等于另一个版本
+        ```"```"```"
+        if not isinstance(other, CommonVersionComparison):
+            return NotImplemented
+        return self.compare_versions(self.version, other.version) != 0
+
+    def compare_versions(
+        self, version1: str | int | float, version2: str | int | float
+    ) -> int:
+        ```"```"```"对比两个版本号大小
+
+        Args:
+            version1 (str | int | float): 第一个版本号
+            version2 (str | int | float): 第二个版本号
+        Returns:
+            int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
+        ```"```"```"
+        version1 = str(version1)
+        version2 = str(version2)
+
+        # 移除构建元数据（+之后的部分）
+        v1_main = version1.split(```"+```", maxsplit=1)[0]
+        v2_main = version2.split(```"+```", maxsplit=1)[0]
+
+        # 分离主版本号和预发布版本（支持多种分隔符）
+        def _split_version(v):
+            # 先尝试用 -, _, . 分割预发布版本
+            # 匹配主版本号部分和预发布部分
+            match = re.match(r```"^([0-9]+(?:\.[0-9]+)*)([-_.].*)?$```", v)
+            if match:
+                release = match.group(1)
+                pre = match.group(2)[1:] if match.group(2) else ```"```"  # 去掉分隔符
+                return release, pre
+            return v, ```"```"
+
+        v1_release, v1_pre = _split_version(v1_main)
+        v2_release, v2_pre = _split_version(v2_main)
+
+        # 将版本号拆分成数字列表
+        try:
+            nums1 = [int(x) for x in v1_release.split(```".```") if x]
+            nums2 = [int(x) for x in v2_release.split(```".```") if x]
+        except Exception as _:
+            return 0
+
+        # 补齐版本号长度
+        max_len = max(len(nums1), len(nums2))
+        nums1 += [0] * (max_len - len(nums1))
+        nums2 += [0] * (max_len - len(nums2))
+
+        # 比较版本号
+        for i in range(max_len):
+            if nums1[i] > nums2[i]:
+                return 1
+            elif nums1[i] < nums2[i]:
+                return -1
+
+        # 如果主版本号相同, 比较预发布版本
+        if v1_pre and not v2_pre:
+            return -1  # 预发布版本 < 正式版本
+        elif not v1_pre and v2_pre:
+            return 1  # 正式版本 > 预发布版本
+        elif v1_pre and v2_pre:
+            if v1_pre > v2_pre:
+                return 1
+            elif v1_pre < v2_pre:
+                return -1
+            else:
+                return 0
+        else:
+            return 0  # 版本号相同
+
+
+class OrtType(str, Enum):
+    ```"```"```"onnxruntime-gpu 的类型
+
+    版本说明:
+    - CU130: CU13.x
+    - CU121CUDNN8: CUDA 12.1 + cuDNN8
+    - CU121CUDNN9: CUDA 12.1 + cuDNN9
+    - CU118: CUDA 11.8
+
+    PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的
+
+    Attributes:
+        CU130 (str): CUDA 13.x 版本的 onnxruntime-gpu
+        CU121CUDNN8 (str): CUDA 12.1 + cuDNN 8 版本的 onnxruntime-gpu
+        CU121CUDNN9 (str): CUDA 12.1 + cuDNN 9 版本的 onnxruntime-gpu
+        CU118 (str): CUDA 11.8 版本的 onnxruntime-gpu
+    ```"```"```"
+
+    CU130 = ```"cu130```"
+    CU121CUDNN8 = ```"cu121cudnn8```"
+    CU121CUDNN9 = ```"cu121cudnn9```"
+    CU118 = ```"cu118```"
+
+    def __str__(self):
+        return self.value
+
+
+def get_onnxruntime_version_file() -> Path | None:
+    ```"```"```"获取记录 onnxruntime 版本的文件路径
+
+    Returns:
+        (Path | None): 记录 onnxruntime 版本的文件路径
+    ```"```"```"
+    package = ```"onnxruntime-gpu```"
+    version_file = ```"onnxruntime/capi/version_info.py```"
     try:
-        util = [
-            p for p in importlib.metadata.files(package)
-            if version_file in str(p)
-        ][0]
+        util = [p for p in importlib.metadata.files(package) if version_file in str(p)][
+            0
+        ]
         info_path = Path(util.locate())
     except Exception as _:
         info_path = None
@@ -5082,20 +7225,21 @@ def get_onnxruntime_version_file() -> Path | None:
 
 
 def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
-    '''获取 onnxruntime 支持的 CUDA, cuDNN 版本
+    ```"```"```"获取 onnxruntime 支持的 CUDA, cuDNN 版本
 
-    :return tuple[str | None, str | None]: onnxruntime 支持的 CUDA, cuDNN 版本
-    '''
+    Returns:
+        (tuple[str | None, str | None]): onnxruntime 支持的 CUDA, cuDNN 版本
+    ```"```"```"
     ver_path = get_onnxruntime_version_file()
     cuda_ver = None
     cudnn_ver = None
     try:
-        with open(ver_path, 'r', encoding='utf8') as f:
+        with open(ver_path, ```"r```", encoding=```"utf8```") as f:
             for line in f:
-                if 'cuda_version' in line:
-                    cuda_ver = get_value_from_variable(line, 'cuda_version')
-                if 'cudnn_version' in line:
-                    cudnn_ver = get_value_from_variable(line, 'cudnn_version')
+                if ```"cuda_version```" in line:
+                    cuda_ver = get_value_from_variable(line, ```"cuda_version```")
+                if ```"cudnn_version```" in line:
+                    cudnn_ver = get_value_from_variable(line, ```"cudnn_version```")
     except Exception as _:
         pass
 
@@ -5103,68 +7247,28 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
 
 
 def get_value_from_variable(content: str, var_name: str) -> str | None:
-    '''从字符串 (Python 代码片段) 中找出指定字符串变量的值
+    ```"```"```"从字符串 (Python 代码片段) 中找出指定字符串变量的值
 
-    :param content(str): 待查找的内容
-    :param var_name(str): 待查找的字符串变量
-    :return str | None: 返回字符串变量的值
-    '''
-    pattern = fr'^\s*{var_name}\s*=\s*.*\s*$'
-    match = re.findall(pattern, content, flags=re.MULTILINE)
-    if match:
-        match_str = ''.join(re.findall(r'[\d.]+', match[0].split('=').pop().strip()))
-    return match_str if len(match_str) != 0 else None
-
-
-def compare_versions(version1: str, version2: str) -> int:
-    '''对比两个版本号大小
-
-    :param version1(str): 第一个版本号
-    :param version2(str): 第二个版本号
-    :return int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
-    '''
-    version1 = str(version1)
-    version2 = str(version2)
-    # 将版本号拆分成数字列表
-    try:
-        nums1 = (
-            re.sub(r'[a-zA-Z]+', '', version1)
-            .replace('-', '.')
-            .replace('_', '.')
-            .replace('+', '.')
-            .split('.')
-        )
-        nums2 = (
-            re.sub(r'[a-zA-Z]+', '', version2)
-            .replace('-', '.')
-            .replace('_', '.')
-            .replace('+', '.')
-            .split('.')
-        )
-    except Exception as _:
-        return 0
-
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0  # 如果版本号 1 的位数不够, 则补 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0  # 如果版本号 2 的位数不够, 则补 0
-
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1  # 版本号 1 更大
-        else:
-            return -1  # 版本号 2 更大
-
-    return 0  # 版本号相同
+    Args:
+        content (str): 待查找的内容
+        var_name (str): 待查找的字符串变量
+    Returns:
+        (str | None): 返回字符串变量的值
+    ```"```"```"
+    pattern = rf'{var_name}\s*=\s*```"([^```"]+)```"'
+    match = re.search(pattern, content)
+    return match.group(1) if match else None
 
 
 def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
-    '''获取 Torch 的本体, CUDA, cuDNN 版本
+    ```"```"```"获取 Torch 的本体, CUDA, cuDNN 版本
 
-    :return tuple[str | None, str | None, str | None]: Torch, CUDA, cuDNN 版本
-    '''
+    Returns:
+        (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
+    ```"```"```"
     try:
         import torch
+
         torch_ver = torch.__version__
         cuda_ver = torch.version.cuda
         cudnn_ver = torch.backends.cudnn.version()
@@ -5177,42 +7281,21 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         return None, None, None
 
 
-class OrtType(str, Enum):
-    '''onnxruntime-gpu 的类型
-
-    版本说明:
-    - CU130: CU13.x
-    - CU121CUDNN8: CUDA 12.1 + cuDNN8
-    - CU121CUDNN9: CUDA 12.1 + cuDNN9
-    - CU118: CUDA 11.8
-    '''
-
-    CU130 = 'cu130'
-    CU121CUDNN8 = 'cu121cudnn8'
-    CU121CUDNN9 = 'cu121cudnn9'
-    CU118 = 'cu118'
-
-    def __str__(self):
-        return self.value
-
-
 def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
-    '''判断需要安装的 onnxruntime 版本
+    ```"```"```"判断需要安装的 onnxruntime 版本
 
-    :param ignore_ort_install(bool): 当 onnxruntime 未安装时跳过检查
-    :return OrtType: 需要安装的 onnxruntime-gpu 类型
-    '''
+    Args:
+        ignore_ort_install (bool): 当 onnxruntime 未安装时跳过检查
+    Returns:
+        OrtType: 需要安装的 onnxruntime-gpu 类型
+    ```"```"```"
     # 检测是否安装了 Torch
     torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver()
     # 缺少 Torch / CUDA / cuDNN 版本时取消判断
-    if (
-        torch_ver is None
-        or cuda_ver is None
-        or cuddn_ver is None
-    ):
+    if torch_ver is None or cuda_ver is None or cuddn_ver is None:
         if not ignore_ort_install:
             try:
-                _ = importlib.metadata.version('onnxruntime-gpu')
+                _ = importlib.metadata.version(```"onnxruntime-gpu```")
             except Exception as _:
                 # onnxruntime-gpu 没有安装时
                 return OrtType.CU121CUDNN9
@@ -5228,24 +7311,38 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         # 当 onnxruntime 已安装
 
         # 判断 Torch 中的 CUDA 版本
-        if compare_versions(cuda_ver, '13.0') >= 0:
-            # CUDA > 13.0
-            if compare_versions(ort_support_cuda_ver, '13.0') < 0:
+        if CommonVersionComparison(cuda_ver) >= CommonVersionComparison(```"13.0```"):
+            # CUDA >= 13.0
+            if CommonVersionComparison(ort_support_cuda_ver) < CommonVersionComparison(
+                ```"13.0```"
+            ):
                 return OrtType.CU130
             else:
                 return None
-        elif compare_versions(cuda_ver, '12.0') >= 0 and compare_versions(ort_support_cuda_ver, '13.0') < 0:
-            # CUDA >= 12.0
+        elif (
+            CommonVersionComparison(```"12.0```")
+            <= CommonVersionComparison(cuda_ver)
+            < CommonVersionComparison(```"13.0```")
+        ):
+            # 12.0 =< CUDA < 13.0
 
             # 比较 onnxtuntime 支持的 CUDA 版本是否和 Torch 中所带的 CUDA 版本匹配
-            if compare_versions(ort_support_cuda_ver, '12.0') >= 0:
+            if (
+                CommonVersionComparison(```"12.0```")
+                <= CommonVersionComparison(ort_support_cuda_ver)
+                < CommonVersionComparison(```"13.0```")
+            ):
                 # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
 
                 # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
-                if compare_versions(ort_support_cudnn_ver, cuddn_ver) > 0:
+                if CommonVersionComparison(
+                    ort_support_cudnn_ver
+                ) > CommonVersionComparison(cuddn_ver):
                     # ort cuDNN 版本 > torch cuDNN 版本
                     return OrtType.CU121CUDNN8
-                elif compare_versions(ort_support_cudnn_ver, cuddn_ver) < 0:
+                elif CommonVersionComparison(
+                    ort_support_cudnn_ver
+                ) < CommonVersionComparison(cuddn_ver):
                     # ort cuDNN 版本 < torch cuDNN 版本
                     return OrtType.CU121CUDNN9
                 else:
@@ -5253,13 +7350,15 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
                     return None
             else:
                 # CUDA 版本非 12.x, 不匹配
-                if compare_versions(cuddn_ver, '8') > 0:
+                if CommonVersionComparison(cuddn_ver) > CommonVersionComparison(```"8```"):
                     return OrtType.CU121CUDNN9
                 else:
                     return OrtType.CU121CUDNN8
         else:
             # CUDA <= 11.8
-            if compare_versions(ort_support_cuda_ver, '12.0') < 0:
+            if CommonVersionComparison(ort_support_cuda_ver) < CommonVersionComparison(
+                ```"12.0```"
+            ):
                 return None
             else:
                 return OrtType.CU118
@@ -5267,22 +7366,26 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
         if ignore_ort_install:
             return None
 
-        if sys.platform != 'win32':
+        if sys.platform != ```"win32```":
             # 非 Windows 平台未在 Onnxruntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
             # 所以需要跳过检查, 直接给出版本
             try:
-                _ = importlib.metadata.version('onnxruntime-gpu')
+                _ = importlib.metadata.version(```"onnxruntime-gpu```")
                 return None
             except Exception as _:
                 # onnxruntime-gpu 没有安装时
                 return OrtType.CU130
 
-        if compare_versions(cuda_ver, '13.0') >= 0:
+        if CommonVersionComparison(cuda_ver) >= CommonVersionComparison(```"13.0```"):
             # CUDA >= 13.x
             return OrtType.CU130
-        elif compare_versions(cuda_ver, '12.0') >= 0 and compare_versions(cuda_ver, '13.0') < 0:
+        elif (
+            CommonVersionComparison(```"12.0```")
+            <= CommonVersionComparison(cuda_ver)
+            < CommonVersionComparison(```"13.0```")
+        ):
             # 12.0 <= CUDA < 13.0
-            if compare_versions(cuddn_ver, '8') > 0:
+            if CommonVersionComparison(cuddn_ver) > CommonVersionComparison(```"8```"):
                 return OrtType.CU121CUDNN9
             else:
                 return OrtType.CU121CUDNN8
@@ -5291,14 +7394,20 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
             return OrtType.CU118
 
 
-if __name__ == '__main__':
+def main() -> None:
+    ```"```"```"主函数```"```"```"
     arg = get_args()
     # print(need_install_ort_ver(not arg.ignore_ort_install))
     print(need_install_ort_ver())
+
+
+if __name__ == ```"__main__```":
+    main()
 `".Trim()
 
     Print-Msg `"检查 onnxruntime-gpu 版本问题中`"
-    `$status = `$(python -c `"`$content`")
+    Set-Content -Encoding UTF8 -Path `"`$Env:CACHE_HOME/onnxruntime_gpu_check.py`" -Value `$content
+    `$status = `$(python `"`$Env:CACHE_HOME/onnxruntime_gpu_check.py`")
 
     # TODO: 暂时屏蔽 CUDA 13.0 的处理
     if (`$status -eq `"cu130`") {
