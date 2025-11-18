@@ -282,7 +282,7 @@ class SDTrainerManager(BaseManager):
         install_requirements(
             path=requirements_path,
             use_uv=use_uv,
-            cwd=sd_trainer_path.parent,
+            cwd=sd_trainer_path,
         )
         if model_list is not None:
             self.get_sd_model_from_list(model_list)

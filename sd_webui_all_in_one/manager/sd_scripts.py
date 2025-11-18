@@ -184,7 +184,7 @@ class SDScriptsManager(BaseManager):
         install_requirements(
             path=requirement_path,
             use_uv=use_uv,
-            cwd=sd_scripts_path.parent,
+            cwd=sd_scripts_path,
         )
         # 安装使用 sd-scripts 进行训练所需的其他软件包
         logger.info("安装其他 Python 模块中")

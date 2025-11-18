@@ -334,7 +334,7 @@ class ComfyUIManager(BaseManager):
         install_requirements(
             path=requirements_path,
             use_uv=use_uv,
-            cwd=comfyui_path.parent,
+            cwd=comfyui_path,
         )
         self.install_config(comfyui_setting)
         if model_list is not None:

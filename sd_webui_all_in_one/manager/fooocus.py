@@ -392,7 +392,7 @@ class FooocusManager(BaseManager):
         install_requirements(
             path=requirements_path,
             use_uv=use_uv,
-            cwd=fooocus_path.parent,
+            cwd=fooocus_path,
         )
         self.install_config(
             preset=fooocus_preset,
