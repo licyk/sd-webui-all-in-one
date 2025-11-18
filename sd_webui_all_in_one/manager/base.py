@@ -10,7 +10,7 @@ from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.repo_manager import RepoManager
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
-from sd_webui_all_in_one.utils import check_gpu, in_jupyter
+from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_up
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
@@ -36,6 +36,8 @@ class BaseManager:
         copy_files (Callable): 文件复制函数引用
         import_kaggle_input (Callable): Kaggle Input 导入函数引用
         display_model_and_dataset_dir (Callable): 展示模型 / 数据集目录函数引用
+        clear_up (Callable): 清理 Jupyter 输出函数引用
+        download_file (Callable): 文件下载函数引用
     """
 
     def __init__(
@@ -64,6 +66,8 @@ class BaseManager:
         self.copy_files = copy_files
         self.import_kaggle_input = import_kaggle_input
         self.display_model_and_dataset_dir = display_model_and_dataset_dir
+        self.clear_up = clear_up
+        self.download_file = download_file
 
     def restart_repo_manager(
         self,

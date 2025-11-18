@@ -3,7 +3,7 @@
 import sys
 import warnings
 import subprocess
-from importlib.metadata import version
+import importlib.metadata
 
 
 def init_sd_webui_all_in_one_module(
@@ -18,7 +18,7 @@ def init_sd_webui_all_in_one_module(
 
     if not force_download:
         try:
-            _ = version("sd-webui-all-in-one")
+            _ = importlib.metadata.version("sd-webui-all-in-one")
             print("SD WebUI All In One 已安装")
             return
         except Exception:
