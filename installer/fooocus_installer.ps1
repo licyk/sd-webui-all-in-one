@@ -64,7 +64,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 205
+$FOOOCUS_INSTALLER_VERSION = 206
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -2334,7 +2334,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5764,7 +5764,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -6308,7 +6308,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7158,7 +7158,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -8884,7 +8884,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9984,7 +9984,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -10888,7 +10888,7 @@ function Check-Env {
 # 查看 Fooocus Installer 文档
 function Get-Fooocus-Installer-Help-Docs {
     Print-Msg `"调用浏览器打开 Fooocus Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md`"
 }
 
 
@@ -11238,7 +11238,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -11541,7 +11541,7 @@ Github：https://github.com/licyk
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 Fooocus Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多帮助信息可在 Fooocus Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 `"
 }
 
@@ -11691,7 +11691,7 @@ function Main {
         `$Env:UV_PYTHON = `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/python/python.exe`"
     }
     Print-Msg `"激活 Fooocus Env`"
-    Print-Msg `"更多帮助信息可在 Fooocus Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md`"
+    Print-Msg `"更多帮助信息可在 Fooocus Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md`"
 }
 
 ###################
@@ -11761,7 +11761,7 @@ Github：https://github.com/licyk
 - git：Git 的存放路径。
 - Fooocus / core：Fooocus 内核。
 
-详细的 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+详细的 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 
 Fooocus 一些使用方法：
 https://github.com/lllyasviel/Fooocus/discussions/117
@@ -12027,7 +12027,7 @@ function Use-Install-Mode {
     PyPI-Mirror-Status
     Print-Msg "启动 Fooocus 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 Fooocus Installer, 更多的说明请阅读 Fooocus Installer 使用文档"
-    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
+    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
     if ((Test-Path "$PSScriptRoot/install_fooocus.txt") -or ($InstallBranch -eq "fooocus")) {
         Print-Msg "检测到 install_fooocus.txt 配置文件 / -InstallBranch fooocus 命令行参数, 选择安装 lllyasviel/Fooocus"
@@ -12053,7 +12053,7 @@ function Use-Install-Mode {
     }
 
     Print-Msg "帮助文档可在 Fooocus 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Fooocus Installer 使用文档"
-    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md"
+    Print-Msg "Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md"
     Print-Msg "退出 Fooocus Installer"
 
     if (!($BuildMode)) {
@@ -12356,7 +12356,7 @@ function Get-Fooocus-Installer-Cmdlet-Help {
         (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 禁用 Fooocus Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/fooocus_installer.md
+更多的帮助信息请阅读 Fooocus Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 ".Trim()
 
     if ($Help) {

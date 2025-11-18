@@ -60,7 +60,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 200
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 201
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1437,7 +1437,7 @@ Set-Location `$PSScriptRoot
 # `${PYTHON_EXEC}             Python 解释器路径
 # 
 # 下方可编写训练代码
-# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 # 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
 #################################################
 
@@ -1646,7 +1646,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5052,7 +5052,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5599,7 +5599,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -6486,7 +6486,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -8204,7 +8204,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9009,7 +9009,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -9801,7 +9801,7 @@ function Check-Env {
 # 查看 SD-Trainer-Script Installer 文档
 function Get-SD-Trainer-Script-Installer-Help-Docs {
     Print-Msg `"调用浏览器打开 SD-Trainer-Script Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`"
 }
 
 
@@ -10119,7 +10119,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
             https://gitclone.com/github.com
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -10277,7 +10277,7 @@ Github：https://github.com/licyk
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 SD-Trainer-Script Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多帮助信息可在 SD-Trainer-Script Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 `"
 }
 
@@ -10423,7 +10423,7 @@ function Main {
     Set-Github-Mirror
     PyPI-Mirror-Status
     Print-Msg `"激活 SD-Trainer-Script Env`"
-    Print-Msg `"更多帮助信息可在 SD-Trainer-Script Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md`"
+    Print-Msg `"更多帮助信息可在 SD-Trainer-Script Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`"
 }
 
 ###################
@@ -10478,7 +10478,7 @@ Github：https://github.com/licyk
 使用 SD-Trainer-Script Installer 进行安装并安装成功后，将在当前目录生成 SD-Trainer-Script 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
 - init.ps1：初始化 SD-Trainer-Script 运行环境。
-- train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+- train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 - update.ps1：更新 SD-Trainer-Script。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
@@ -10495,7 +10495,7 @@ Github：https://github.com/licyk
 - sd-scripts / core：SD-Trainer-Script 内核。
 - models：使用模型下载脚本下载模型时模型的存放位置。
 
-详细的 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+详细的 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 
 其他的一些训练模型的教程：
 https://sd-moadel-doc.maozi.io
@@ -10616,7 +10616,7 @@ function Use-Install-Mode {
     PyPI-Mirror-Status
     Print-Msg "启动 SD-Trainer-Script 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD-Trainer-Script Installer, 更多的说明请阅读 SD-Trainer-Script Installer 使用文档"
-    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md"
+    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
     if ((Test-Path "$PSScriptRoot/install_sd_scripts.txt") -or ($InstallBranch -eq "sd_scripts")) {
         Print-Msg "检测到 install_sd_scripts.txt 配置文件 / 命令行参数 -InstallBranch sd_scripts, 选择安装 kohya-ss/sd-scripts"
@@ -10646,7 +10646,7 @@ function Use-Install-Mode {
     }
 
     Print-Msg "帮助文档可在 SD-Trainer-Script 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD-Trainer-Script Installer 使用文档"
-    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md"
+    Print-Msg "SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
     Print-Msg "退出 SD-Trainer-Script Installer"
 
     if (!($BuildMode)) {
@@ -10938,7 +10938,7 @@ function Get-SD-Trainer-Script-Installer-Cmdlet-Help {
         (仅在 SD-Trainer-Script Installer 构建模式下生效, 并且只作用于 SD-Trainer-Script Installer 管理脚本) 禁用 SD-Trainer-Script Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md
+更多的帮助信息请阅读 SD-Trainer-Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 ".Trim()
 
     if ($Help) {

@@ -58,7 +58,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 287
+$INVOKEAI_INSTALLER_VERSION = 288
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1386,7 +1386,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -2786,7 +2786,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -3933,7 +3933,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -4693,7 +4693,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -5710,7 +5710,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -6969,7 +6969,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -7820,7 +7820,7 @@ function Check-Env {
 # 查看 InvokeAI Installer 文档
 function Get-InvokeAI-Installer-Help-Docs {
     Print-Msg `"调用浏览器打开 InvokeAI Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md`"
 }
 
 
@@ -8161,7 +8161,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `".Trim()
 
     if (`$Help) {
@@ -8481,7 +8481,7 @@ Github：https://github.com/licyk
     Get-Core-Prefix
     List-CMD
 
-更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多帮助信息可在 InvokeAI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 `"
 }
 
@@ -8597,7 +8597,7 @@ function Main {
     Set-HuggingFace-Mirror
     PyPI-Mirror-Status
     Print-Msg `"激活 InvokeAI Env`"
-    Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md`"
+    Print-Msg `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md`"
 }
 
 ###################
@@ -8668,7 +8668,7 @@ Github：https://github.com/licyk
 - invokeai：InvokeAI 存放模型、图片、配置文件等的文件夹。
 - models：使用模型下载脚本下载模型时模型的存放位置。
 
-详细的 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+详细的 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 
 InvokeAI 的使用教程：
 SDNote：https://sdnote.netlify.app/guide/invokeai/
@@ -8765,7 +8765,7 @@ function Use-Install-Mode {
     PyPI-Mirror-Status
     Print-Msg "启动 InvokeAI 安装程序"
     Print-Msg "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
-    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md"
     Print-Msg "即将进行安装的路径: $InstallPath"
     Check-Install
     Print-Msg "添加管理脚本和文档中"
@@ -8780,7 +8780,7 @@ function Use-Install-Mode {
     }
 
     Print-Msg "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
-    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md"
+    Print-Msg "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md"
     Print-Msg "退出 InvokeAI Installer"
 
     if (!($BuildMode)) {
@@ -9055,7 +9055,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 自动应用新版本更新
 
 
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/invokeai_installer.md
+更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 ".Trim()
 
     if ($Help) {
