@@ -66,7 +66,6 @@ ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
 """ComfyUI 环境组件表字典"""
 
 
-@staticmethod
 def create_comfyui_environment_dict(
     comfyui_path: str | Path,
 ) -> ComfyUIEnvironmentComponent:
@@ -112,7 +111,6 @@ def create_comfyui_environment_dict(
     return comfyui_env_data
 
 
-@staticmethod
 def update_comfyui_environment_dict(
     env_data: ComfyUIEnvironmentComponent,
     component_name: str,
@@ -148,7 +146,6 @@ def update_comfyui_environment_dict(
     }
 
 
-@staticmethod
 def update_comfyui_component_requires_list(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
@@ -174,7 +171,6 @@ def update_comfyui_component_requires_list(
         )
 
 
-@staticmethod
 def update_comfyui_component_missing_requires_list(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
@@ -204,7 +200,6 @@ def update_comfyui_component_missing_requires_list(
         )
 
 
-@staticmethod
 def update_comfyui_component_conflict_requires_list(env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]) -> None:
     """更新 ComfyUI 环境组件表字典, 根据 conflicconflict_package_listt_package 检查 ComfyUI 组件冲突的 Python 软件包, 并保存到 conflict_requires 字段和设置 has_conflict_requires 状态
 
@@ -234,7 +229,6 @@ def update_comfyui_component_conflict_requires_list(env_data: ComfyUIEnvironment
         )
 
 
-@staticmethod
 def get_comfyui_component_requires_list(
     env_data: ComfyUIEnvironmentComponent,
 ) -> list[str]:
@@ -256,7 +250,6 @@ def get_comfyui_component_requires_list(
     return remove_duplicate_object_from_list(package_list)
 
 
-@staticmethod
 def statistical_need_install_require_component(
     env_data: ComfyUIEnvironmentComponent,
 ) -> list[str]:
@@ -276,7 +269,6 @@ def statistical_need_install_require_component(
     return requirement_list
 
 
-@staticmethod
 def statistical_has_conflict_component(env_data: ComfyUIEnvironmentComponent, conflict_package_list: list[str]) -> str:
     """根据 ComfyUI 环境组件表字典中的 conflict_requires 字段统计冲突的组件信息
 
@@ -302,7 +294,6 @@ def statistical_has_conflict_component(env_data: ComfyUIEnvironmentComponent, co
     return "\n".join([str(x) for x in (content[:-1] if len(content) > 0 and content[-1] == "" else content)])
 
 
-@staticmethod
 def fitter_has_version_package(package_list: list[str]) -> list[str]:
     """过滤不包含版本的 Python 软件包, 仅保留包含版本号声明的 Python 软件包
 
@@ -315,7 +306,6 @@ def fitter_has_version_package(package_list: list[str]) -> list[str]:
     return [p for p in package_list if is_package_has_version(p)]
 
 
-@staticmethod
 def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
     """检测 Python 软件包版本号声明是否存在冲突
 
@@ -455,7 +445,6 @@ def detect_conflict_package(pkg1: str, pkg2: str) -> bool:
     return False
 
 
-@staticmethod
 def detect_conflict_package_from_list(package_list: list[str]) -> list[str]:
     """检测 Python 软件包版本声明列表中存在冲突的软件包
 
@@ -477,7 +466,6 @@ def detect_conflict_package_from_list(package_list: list[str]) -> list[str]:
     return remove_duplicate_object_from_list(conflict_package)
 
 
-@staticmethod
 def display_comfyui_environment_dict(
     env_data: ComfyUIEnvironmentComponent,
 ) -> None:
@@ -499,7 +487,6 @@ def display_comfyui_environment_dict(
         print()
 
 
-@staticmethod
 def display_check_result(requirement_list: list[str], conflict_result: str) -> None:
     """显示 ComfyUI 运行环境检查结果
 
@@ -519,7 +506,6 @@ def display_check_result(requirement_list: list[str], conflict_result: str) -> N
         logger.debug("ComfyUI 冲突组件: \n%s", conflict_result)
 
 
-@staticmethod
 def process_comfyui_env_analysis(comfyui_root_path: Path | str) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]:
     """分析 ComfyUI 环境
 
@@ -550,7 +536,6 @@ def process_comfyui_env_analysis(comfyui_root_path: Path | str) -> tuple[dict[st
     return env_data, req_list, conflict_info
 
 
-@staticmethod
 def comfyui_conflict_analyzer(
     comfyui_root_path: Path | str,
     install_conflict_component_requirement: bool | None = False,
