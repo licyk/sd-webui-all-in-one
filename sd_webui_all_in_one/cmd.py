@@ -69,6 +69,8 @@ def run_cmd(
             display_mode = "terminal"
 
     cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
+    logger.debug("执行命令时使用的显示模式: %s", display_mode)
+    logger.debug("使用的输出模式: %s", ("实时输出" if live else "非实时输出"))
 
     if live:
         if display_mode == "jupyter":
@@ -111,7 +113,12 @@ def run_cmd(
 命令: {command_to_exec}
 错误代码: {result.returncode}""")
 
-            return result.stdout.decode(encoding="utf8", errors="ignore")
+            try:
+                # 当 subprocess.run() 使用 PIPE 捕获输出时, result 才有输出内容
+                return result.stdout.decode(encoding="utf8", errors="ignore")
+            except Exception:
+                # 未使用 PIPE 时 subprocess.run() 可以实时输出内容, 但是 result 将为 None
+                return None
 
         logger.warning("未知的显示模式: %s, 将切换到非实时输出模式", display_mode)
 
