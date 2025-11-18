@@ -7,7 +7,10 @@ from typing import Any, NamedTuple
 
 
 class ParsedPyWhlRequirement(NamedTuple):
-    """解析后的依赖声明信息"""
+    """解析后的依赖声明信息
+
+    参考: https://peps.python.org/pep-0508
+    """
 
     name: str
     """软件包名称"""
