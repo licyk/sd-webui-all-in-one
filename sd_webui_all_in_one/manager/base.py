@@ -8,7 +8,7 @@ from typing import Literal
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.repo_manager import RepoManager
-from sd_webui_all_in_one.downloader import download_file
+from sd_webui_all_in_one.downloader import download_file, download_archive_and_unpack
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
 from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_up
 from sd_webui_all_in_one.colab_tools import is_colab_environment
@@ -38,6 +38,7 @@ class BaseManager:
         display_model_and_dataset_dir (Callable): 展示模型 / 数据集目录函数引用
         clear_up (Callable): 清理 Jupyter 输出函数引用
         download_file (Callable): 文件下载函数引用
+        download_archive_and_unpack (Callable): 下载压缩包并解压的函数引用
     """
 
     def __init__(
@@ -68,6 +69,7 @@ class BaseManager:
         self.display_model_and_dataset_dir = display_model_and_dataset_dir
         self.clear_up = clear_up
         self.download_file = download_file
+        self.download_archive_and_unpack = download_archive_and_unpack
 
     def restart_repo_manager(
         self,
