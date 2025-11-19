@@ -318,6 +318,9 @@ class FooocusManager(BaseManager):
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
+        huggingface_token: str | None = None,
+        modelscope_token: str | None = None,
+        update_core: bool | None = True,
         *args,
         **kwargs,
     ) -> None:
@@ -343,6 +346,9 @@ class FooocusManager(BaseManager):
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None): 配置 HuggingFace Token
+            modelscope_token (str | None): 配置 ModelScope Token
+            update_core (bool | None): 安装时更新内核和扩展
         Raises:
             Exception: GPU 不可用
         """
@@ -382,7 +388,8 @@ class FooocusManager(BaseManager):
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
         git_warpper.clone(fooocus_repo, fooocus_path)
-        git_warpper.update(fooocus_path)
+        if update_core:
+            git_warpper.update(fooocus_path)
         install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
@@ -397,6 +404,10 @@ class FooocusManager(BaseManager):
         self.install_config(
             preset=fooocus_preset,
             translation=fooocus_translation,
+        )
+        self.restart_repo_manager(
+            hf_token=huggingface_token,
+            ms_token=modelscope_token,
         )
         if enable_tcmalloc:
             self.tcmalloc.configure_tcmalloc()

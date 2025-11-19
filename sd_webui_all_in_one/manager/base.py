@@ -16,6 +16,7 @@ from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.file_manager import remove_files
 
 
 logger = get_logger(
@@ -41,6 +42,7 @@ class BaseManager:
         download_file (Callable): 文件下载函数引用
         download_archive_and_unpack (Callable): 下载压缩包并解压的函数引用
         run_cmd (Callable): Shell 命令执行函数引用
+        remove_files (Callable): 删除文件函数引用
     """
 
     def __init__(
@@ -73,6 +75,7 @@ class BaseManager:
         self.download_file = download_file
         self.download_archive_and_unpack = download_archive_and_unpack
         self.run_cmd = run_cmd
+        self.remove_files = remove_files
 
     def restart_repo_manager(
         self,

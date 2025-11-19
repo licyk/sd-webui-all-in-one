@@ -282,6 +282,9 @@ class SDWebUIManager(BaseManager):
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
+        huggingface_token: str | None = None,
+        modelscope_token: str | None = None,
+        update_core: bool | None = True,
         *args,
         **kwargs,
     ) -> None:
@@ -308,6 +311,9 @@ class SDWebUIManager(BaseManager):
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None): 配置 HuggingFace Token
+            modelscope_token (str | None): 配置 ModelScope Token
+            update_core (bool | None): 安装时更新内核和扩展
         Raises:
             Exception: GPU 不可用
         """
@@ -344,8 +350,9 @@ class SDWebUIManager(BaseManager):
         git_warpper.clone(sd_webui_repo, sd_webui_path)
         if extension_list is not None:
             self.install_extensions_from_list(extension_list)
-        git_warpper.update(sd_webui_path)
-        self.update_extensions()
+        if update_core:
+            git_warpper.update(sd_webui_path)
+            self.update_extensions()
         if sd_webui_branch is not None:
             git_warpper.switch_branch(
                 path=sd_webui_path,
@@ -370,6 +377,10 @@ class SDWebUIManager(BaseManager):
         )
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
+        self.restart_repo_manager(
+            hf_token=huggingface_token,
+            ms_token=modelscope_token,
+        )
         if enable_tcmalloc:
             self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
