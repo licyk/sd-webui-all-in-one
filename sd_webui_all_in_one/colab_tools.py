@@ -48,3 +48,24 @@ def mount_google_drive(path: Path | str) -> bool:
     else:
         logger.info("Google Drive 已挂载")
         return True
+
+
+def get_colab_secret(key: str) -> str | None:
+    """获取 Colab 密钥
+
+    Args:
+        key (str): 密钥名称
+    Returns:
+        (str | None): 密钥名称对应的值
+    """
+    try:
+        from google.colab import userdata
+    except Exception as e:
+        logger.error("导入 Colab 工具失败, 无法获取 Colab Secret: %s", e)
+        return None
+
+    try:
+        return userdata.get(key)
+    except Exception as e:
+        logger.error("密钥 %s 不存在", e)
+        return None
