@@ -15,6 +15,7 @@ from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
+from sd_webui_all_in_one.cmd import run_cmd
 
 
 logger = get_logger(
@@ -39,6 +40,7 @@ class BaseManager:
         clear_up (Callable): 清理 Jupyter 输出函数引用
         download_file (Callable): 文件下载函数引用
         download_archive_and_unpack (Callable): 下载压缩包并解压的函数引用
+        run_cmd (Callable): Shell 命令执行函数引用
     """
 
     def __init__(
@@ -70,6 +72,7 @@ class BaseManager:
         self.clear_up = clear_up
         self.download_file = download_file
         self.download_archive_and_unpack = download_archive_and_unpack
+        self.run_cmd = run_cmd
 
     def restart_repo_manager(
         self,
