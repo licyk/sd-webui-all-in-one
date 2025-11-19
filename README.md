@@ -74,6 +74,7 @@ _✨快速部署，简单易用_
 >[!Caution]
 >Kaggle 不允许上传 NSFW 的内容，尝试上传包含 NSFW 图片的训练集将导致 Kaggle 账号被封禁！
 
+
 ## SD Scripts Colab Jupyter NoteBook
 [sd_scripts_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_scripts_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_scripts_colab.ipynb))：适用于 Colab 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts)，**自己写来玩的，还有用来开发和测试管理核心**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
@@ -90,6 +91,9 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 [hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb))：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+>[!Caution]
+>Kaggle 不允许上传 NSFW 的内容，尝试上传包含 NSFW 图片的训练集将导致 Kaggle 账号被封禁！
 
 
 ## Stable Diffusion WebUI Colab NoteBook
