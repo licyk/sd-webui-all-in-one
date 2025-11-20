@@ -55,6 +55,7 @@ def aria2(
             [
                 "aria2c",
                 "--console-log-level=error",
+                "--summary-interval=30",
                 "-c",
                 "-x",
                 "16",

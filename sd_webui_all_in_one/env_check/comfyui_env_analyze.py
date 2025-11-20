@@ -566,11 +566,14 @@ def comfyui_conflict_analyzer(
             logger.info("忽略警告并继续启动 ComfyUI")
             return
 
+    task_sum = len(req_list)
+    count = 0
     for req in req_list:
+        count += 1
         req_path = Path(req)
         name = req_path.parent.name
         installer_script = req_path / "install.py"
-        logger.info("安装 %s 的依赖中", name)
+        logger.info("[%s/%s] 安装 %s 的依赖中", count, task_sum, name)
         try:
             install_requirements(
                 path=req,
@@ -578,16 +581,16 @@ def comfyui_conflict_analyzer(
                 cwd=req_path.parent,
             )
         except Exception as e:
-            logger.error("安装 %s 的依赖失败: %s", name, e)
+            logger.error("[%s/%s] 安装 %s 的依赖失败: %s", count, task_sum, name, e)
 
         if installer_script.is_file():
-            logger.info("执行 %s 的安装脚本中", name)
+            logger.info("[%s/%s] 执行 %s 的安装脚本中", count, task_sum, name)
             try:
                 run_cmd(
                     [Path(sys.executable).as_posix(), installer_script.as_posix()],
                     cwd=req_path.parent,
                 )
             except Exception as e:
-                logger.info("执行 %s 的安装脚本时发生错误: %s", name, e)
+                logger.info("[%s/%s] 执行 %s 的安装脚本时发生错误: %s", count, task_sum, name, e)
 
     logger.info("ComfyUI 环境检查完成")
