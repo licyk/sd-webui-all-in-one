@@ -56,6 +56,9 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
             command = [*modified_command, *_args]
 
         logger.debug("处理后的命令: %s", command)
-        return subprocess.__original_run(command, **kwargs)
+        try:
+            return subprocess.__original_run(command, **kwargs)
+        except Exception:
+            return subprocess.__original_run(*args, **kwargs)
 
     subprocess.run = patched_run
