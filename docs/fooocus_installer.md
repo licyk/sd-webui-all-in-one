@@ -478,15 +478,9 @@ D:/Fooocus
 ## 重装 Python 环境
 如果 Python 环境出现严重损坏，可以将`Fooocus/python`和`Fooocus/Fooocus/python`文件夹删除，然后运行`launch_fooocus_installer.ps1`重新构建 Python 环境。
 
->[!IMPORTANT]  
->如果需要使用绘世启动器，在重装 Python 完成后，还需要运行[命令的使用](#命令的使用)中[安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)的命令，保证绘世启动器能够正常识别到 Python 环境。
-
 
 ## 重装 Git
 将`Fooocus/git`和`Fooocus/Fooocus/git`文件夹删除，然后运行`launch_fooocus_installer.ps1`重新下载 Git。
-
->[!IMPORTANT]  
->如果需要使用绘世启动器，在重装 Git 完成后，还需要运行[命令的使用](#命令的使用)中[安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)的命令，保证绘世启动器能够正常识别到 Git 环境。
 
 
 ## 重装 PyTorch
