@@ -188,6 +188,11 @@ class InvokeAIComponentManager:
         pytorch_mirror = self.get_pytorch_mirror_url(pytorch_mirror_type)
         pytorch_package = self.get_pytorch_for_invokeai()
         xformers_package = self.get_xformers_for_invokeai()
+        logger.debug("InvokeAI 所需的 PyTorch 版本: %s", torch_ver)
+        logger.debug("InvokeAI 使用的 PyTorch 镜像源类型: %s", pytorch_mirror_type)
+        logger.debug("PyTorch 镜像源: %s", pytorch_mirror)
+        logger.debug("安装的 PyTorch: %s", pytorch_package)
+        logger.debug("安装的 xFormers: %s", xformers_package)
         pytorch_package_args = []
         if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm62", "other"]:
             for i in pytorch_package.split():
