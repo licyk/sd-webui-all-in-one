@@ -164,7 +164,7 @@ class SDTrainerManager(BaseManager):
         requirement_path = sd_trainer_path / requirements_file
         py_dependency_checker(requirement_path=requirement_path, name="SD Trainer", use_uv=use_uv)
         fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+        check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=False)
         check_numpy(use_uv=use_uv)
         self.check_protobuf(use_uv=use_uv)
 
