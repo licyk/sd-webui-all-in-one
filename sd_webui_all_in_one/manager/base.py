@@ -1,6 +1,7 @@
 """管理工具基础类"""
 
 import re
+import os
 import subprocess
 import shlex
 from pathlib import Path
@@ -13,7 +14,7 @@ from sd_webui_all_in_one.downloader import download_file, download_archive_and_u
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
 from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_up
 from sd_webui_all_in_one.colab_tools import is_colab_environment
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
 from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
@@ -77,6 +78,12 @@ class BaseManager:
         self.download_archive_and_unpack = download_archive_and_unpack
         self.run_cmd = run_cmd
         self.remove_files = remove_files
+        logger.debug("配置 SD WebUI All In One 补丁模块")
+        if "PYTHONPATH" in os.environ and os.environ["PYTHONPATH"]:
+            os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix() + os.environ["PYTHONPATH"]
+        else:
+            os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix()
+        logger.debug("PYTHONPATH: %s", os.getenv("PYTHONPATH"))
 
     def restart_repo_manager(
         self,

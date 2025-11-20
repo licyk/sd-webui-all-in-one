@@ -2,6 +2,7 @@
 
 import os
 import logging
+from pathlib import Path
 
 LOGGER_NAME = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_NAME", "SD WebUI All In One")
 """日志器名字"""
@@ -50,3 +51,9 @@ PYTORCH_MIRROR_DICT = {
     "cu130": "https://download.pytorch.org/whl/cu130",
 }
 """PyTorch 镜像源字典"""
+
+ROOT_PATH = Path(__file__).parent
+"""SD WebUI All In One 根目录"""
+
+SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
+"""SD WebUI All In One 补丁目录"""
