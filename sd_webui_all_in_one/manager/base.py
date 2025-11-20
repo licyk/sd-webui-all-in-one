@@ -80,7 +80,7 @@ class BaseManager:
         self.remove_files = remove_files
         logger.debug("配置 SD WebUI All In One 补丁模块")
         if "PYTHONPATH" in os.environ and os.environ["PYTHONPATH"]:
-            os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix() + os.environ["PYTHONPATH"]
+            os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix() + os.pathsep + os.environ["PYTHONPATH"]
         else:
             os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix()
         logger.debug("PYTHONPATH: %s", os.getenv("PYTHONPATH"))
