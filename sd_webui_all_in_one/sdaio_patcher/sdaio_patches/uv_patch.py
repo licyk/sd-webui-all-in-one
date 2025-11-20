@@ -1,9 +1,6 @@
-import sys
-import copy
 import shlex
 import subprocess
 from functools import wraps
-from pathlib import Path
 
 from sdaio_utils.logger import get_logger
 from sdaio_utils.config import LOGGER_LEVEL, LOGGER_COLOR
@@ -16,48 +13,46 @@ logger = get_logger(
 )
 
 
-BAD_FLAGS = ("--prefer-binary", "-I", "--ignore-installed")
-
-
-def patch_uv_to_subprocess() -> None:
+def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
     """使用 subprocess 执行 Pip 时替换成 uv"""
     if hasattr(subprocess, "__original_run"):
         return
 
     logger.debug("启用 uv patch")
-    try:
-        subprocess.run(["uv", "-V"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    except FileNotFoundError:
-        subprocess.run([Path(sys.executable).as_posix(), "-m", "pip", "install", "uv"])
-
     subprocess.__original_run = subprocess.run
 
     @wraps(subprocess.__original_run)
     def patched_run(*args, **kwargs):
-        _kwargs = copy.copy(kwargs)
         if args:
             command, *_args = args
         else:
-            command, _args = _kwargs.pop("args", ""), ()
+            command, _args = kwargs.pop("args", ""), ()
 
         if isinstance(command, str):
             command = shlex.split(command)
         else:
             command = [arg.strip() for arg in command]
 
-        if not isinstance(command, list) or "pip" not in command:
-            return subprocess.__original_run(*args, **kwargs)
+        assert isinstance(command, list)
+
+        if "pip" not in command:
+            return subprocess.__original_run([*command, *_args], **kwargs)
 
         cmd = command[command.index("pip") + 1 :]
 
-        cmd = [arg for arg in cmd if arg not in BAD_FLAGS]
+        bad_flags = ("--prefer-binary", "--ignore-installed", "-I")
+        cmd = [arg for arg in cmd if arg not in bad_flags]
 
-        modified_command = ["uv", "pip", *cmd]
+        modified_command: list[str] = ["uv", "pip", *cmd]
 
-        cmd_str = shlex.join([*modified_command, *_args])
-        result = subprocess.__original_run(cmd_str, **_kwargs)
-        if result.returncode != 0:
-            return subprocess.__original_run(*args, **kwargs)
-        return result
+        if symlink:
+            modified_command.extend(["--link-mode", "symlink"])
+
+        if kwargs.get("shell", False):
+            command = shlex.join([*modified_command, *_args])
+        else:
+            command = [*modified_command, *_args]
+
+        return subprocess.__original_run(command, **kwargs)
 
     subprocess.run = patched_run
