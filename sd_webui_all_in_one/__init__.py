@@ -14,6 +14,8 @@
 禁用彩色日志可设置环境变量`SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR=0`
 
 设置日志器的名称可通过环境变量`SD_WEBUI_ALL_IN_ONE_LOGGER_NAME=<日志器名称>`进行设置
+
+如果需要禁用补丁可设置环境变量`SD_WEBUI_ALL_IN_ONE_PATCHER=0`
 """
 
 from sd_webui_all_in_one.logger import get_logger

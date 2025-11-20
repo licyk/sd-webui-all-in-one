@@ -57,3 +57,6 @@ ROOT_PATH = Path(__file__).parent
 
 SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
 """SD WebUI All In One 补丁目录"""
+
+SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") not in ["0", "False", "false", "None", "none", "null"]
+"""是否 SD WebUI All In One 启用补丁"""

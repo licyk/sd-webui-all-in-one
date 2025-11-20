@@ -1,5 +1,4 @@
 import shlex
-import sys
 import subprocess
 from functools import wraps
 
@@ -50,12 +49,11 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
             modified_command.extend(["--link-mode", "symlink"])
 
         if kwargs.get("shell", False):
+            logger.debug("使用命令字符串")
             command = shlex.join([*modified_command, *_args])
         else:
-            if sys.platform != "win32":
-                command = shlex.join([*modified_command, *_args])
-            else:
-                command = [*modified_command, *_args]
+            logger.debug("使用命令列表")
+            command = [*modified_command, *_args]
 
         logger.debug("处理后的命令: %s", command)
         return subprocess.__original_run(command, **kwargs)
