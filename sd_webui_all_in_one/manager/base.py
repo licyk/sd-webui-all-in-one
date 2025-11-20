@@ -2,6 +2,7 @@
 
 import re
 import subprocess
+import shlex
 from pathlib import Path
 from typing import Literal
 
@@ -212,7 +213,7 @@ class BaseManager:
                 src_is_file=is_file,
             )
 
-    def parse_arguments(self, launch_args: str) -> list[str]:
+    def parse_cmd_str_to_list(self, launch_args: str) -> list[str]:
         """解析命令行参数字符串，返回参数列表
 
         Args:
@@ -240,11 +241,21 @@ class BaseManager:
 
         return arguments
 
+    def parse_cmd_list_to_str(self, cmd_list: list[str]) -> str:
+        """将命令列表转换为命令字符串
+
+        Args:
+            cmd_list (list[str]): 命令列表
+        Returns:
+            str: 命令字符串
+        """
+        return shlex.join(cmd_list)
+
     def launch(
         self,
         name: str,
         base_path: Path | str,
-        cmd: list[str],
+        cmd: list[str] | str,
         display_mode: Literal["terminal", "jupyter"] | None = None,
     ) -> None:
         """启动 WebUI
@@ -252,7 +263,7 @@ class BaseManager:
         Args:
             name (str): 启动的名称
             base_path (Path | str): 启动时得的根目录
-            params (list[str] | str | None): 启动 WebUI 的参数
+            cmd (list[str] | str | None): 启动 WebUI 的参数
             display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
         """
 

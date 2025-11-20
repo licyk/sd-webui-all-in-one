@@ -218,6 +218,26 @@ class ComfyUIManager(BaseManager):
         check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         check_numpy(use_uv=use_uv)
 
+    def get_launch_command(
+        self,
+        params: list[str] | str | None = None,
+    ) -> str:
+        """获取 ComfyUI 启动命令
+
+        Args:
+            params (list[str] | str | None): 启动 ComfyUI 的参数
+        Returns:
+            str: 完整的启动 ComfyUI 的命令
+        """
+        comfyui_path = self.workspace / self.workfolder
+        cmd = [Path(sys.executable).as_posix(), (comfyui_path / "main.py").as_posix()]
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_cmd_str_to_list(params)
+            else:
+                cmd += params
+        return self.parse_cmd_list_to_str(cmd)
+
     def run(
         self,
         params: list[str] | str | None = None,
@@ -229,17 +249,10 @@ class ComfyUIManager(BaseManager):
             params (list[str] | str | None): 启动 ComfyUI 的参数
             display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
         """
-        comfyui_path = self.workspace / self.workfolder
-        cmd = [Path(sys.executable).as_posix(), (comfyui_path / "main.py").as_posix()]
-        if params is not None:
-            if isinstance(params, str):
-                cmd += self.parse_arguments(params)
-            else:
-                cmd += params
         self.launch(
             name="ComfyUI",
-            base_path=comfyui_path.parent,
-            cmd=cmd,
+            base_path=self.workspace / self.workfolder,
+            cmd=self.get_launch_command(params),
             display_mode=display_mode,
         )
 
