@@ -42,7 +42,7 @@ _✨快速部署，简单易用_
 ***
 
 # SD WebUI All In One Notebook
-支持部署不同 WebUI 的各种 Notebook，支持部署的 WebUI 如下：
+支持部署不同 WebUI 的各种 Notebook，基于 [SD WebUI All In One](https://github.com/licyk/sd-webui-all-in-one/tree/main/sd_webui_all_in_one) 内核，支持部署的 WebUI 如下：
 
 - [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 - [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)

@@ -70,7 +70,7 @@ jobs:
           Set-Location -Path "${{ github.workspace }}/sd_next/core"
           & "${{ github.workspace }}/sd_next/core/python/python.exe" `
             "${{ github.workspace }}/sd_next/core/launch.py" `
-            --exit `
+            --test `
             --skip-torch `
             --use-cpu all
 
