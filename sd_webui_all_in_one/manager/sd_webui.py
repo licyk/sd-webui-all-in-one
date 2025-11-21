@@ -225,12 +225,12 @@ class SDWebUIManager(BaseManager):
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
+        install_extension_requirements(sd_webui_base_path=sd_webui_path)
         py_dependency_checker(
             requirement_path=requirement_path,
             name="Stable Diffusion WebUI",
             use_uv=use_uv,
         )
-        install_extension_requirements(sd_webui_base_path=sd_webui_path)
         fix_torch_libomp()
         check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         check_numpy(use_uv=use_uv)
