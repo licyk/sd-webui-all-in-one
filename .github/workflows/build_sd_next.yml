@@ -61,6 +61,19 @@ jobs:
             -TempPath "${{ github.workspace }}/temp" `
             -InstallPath "${{ github.workspace }}/sd_next/core/extensions/sd-webui-openpose-editor/dist"
 
+      - name: Launch SD Next to init component
+        shell: pwsh
+        env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          Set-Location -Path "${{ github.workspace }}/sd_next"
+          & "${{ github.workspace }}/sd_next/core/python/python.exe" `
+            "${{ github.workspace }}/sd_next/core/launch.py" `
+            --exit `
+            --skip-torch `
+            --use-cpu all
+
       - name: Launch to complete dependencies
         shell: pwsh
         run: |

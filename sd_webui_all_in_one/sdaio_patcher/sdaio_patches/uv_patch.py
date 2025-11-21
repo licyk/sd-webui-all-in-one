@@ -1,3 +1,5 @@
+"""uv 补丁, 将调用 subprocess.run() 时执行的 Pip 命令替换成 uv"""
+
 import shlex
 import sys
 import subprocess
@@ -19,6 +21,7 @@ def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str
 
     Args:
         command (list[str] | str): 原始命令
+        shell (bool): 是否调用 Shell
     Returns:
         (list[str] | str): 处理后的命令
     """
@@ -45,9 +48,9 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
         return
 
     logger.debug("启用 uv patch")
-    subprocess.__original_run = subprocess.run
+    subprocess.__original_run = subprocess.run  # pylint: disable=protected-access
 
-    @wraps(subprocess.__original_run)
+    @wraps(subprocess.__original_run)  # pylint: disable=protected-access
     def patched_run(*args, **kwargs):
         if args:
             command, *_args = args
@@ -62,7 +65,7 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
         assert isinstance(command, list)
 
         if "pip" not in command:
-            return subprocess.__original_run(preprocess_command([*command, *_args], shell=kwargs.get("shell", False)), **kwargs)
+            return subprocess.__original_run(preprocess_command([*command, *_args], shell=kwargs.get("shell", False)), **kwargs)  # pylint: disable=protected-access
 
         cmd = command[command.index("pip") + 1 :]
 
@@ -79,6 +82,6 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
             shell=kwargs.get("shell", False),
         )
 
-        return subprocess.__original_run(command, **kwargs)
+        return subprocess.__original_run(command, **kwargs)  # pylint: disable=protected-access
 
     subprocess.run = patched_run

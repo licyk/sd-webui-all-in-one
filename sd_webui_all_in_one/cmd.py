@@ -62,6 +62,7 @@ def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str
 
     Args:
         command (list[str] | str): 原始命令
+        shell (bool): 是否调用 Shell
     Returns:
         (list[str] | str): 处理后的命令
     """
