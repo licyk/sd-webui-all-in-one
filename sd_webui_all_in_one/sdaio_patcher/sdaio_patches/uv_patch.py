@@ -1,4 +1,5 @@
 import shlex
+import sys
 import subprocess
 from functools import wraps
 
@@ -11,6 +12,31 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str:
+    """针对不同平台对命令进行预处理
+
+    Args:
+        command (list[str] | str): 原始命令
+    Returns:
+        (list[str] | str): 处理后的命令
+    """
+    if sys.platform == "win32":
+        # Windows
+        # 字符串命令和列表命令都可行
+        return command
+    else:
+        # Linux / MacOS
+        if shell:
+            # 使用字符串命令
+            if isinstance(command, list):
+                return shlex.join(command)
+            return command
+        # 使用列表命令
+        if isinstance(command, str):
+            return shlex.split(command)
+        return command
 
 
 def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
@@ -48,12 +74,10 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
         if symlink:
             modified_command.extend(["--link-mode", "symlink"])
 
-        if kwargs.get("shell", False):
-            logger.debug("使用命令字符串")
-            command = shlex.join([*modified_command, *_args])
-        else:
-            logger.debug("使用命令列表")
-            command = [*modified_command, *_args]
+        command = preprocess_command(
+            command=[*modified_command, *_args],
+            shell=kwargs.get("shell", False),
+        )
 
         logger.debug("处理后的命令: %s", command)
         try:

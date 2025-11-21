@@ -1,4 +1,42 @@
-"""Shell 命令执行器"""
+"""Shell 命令执行器
+
+不同平台下 subprocess 的执行结果不一致, 以下为不同平台的测试结果:
+```
+Test Platform: linux
+Case 1: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> Success
+Case 2: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> Failed
+Case 3: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> Failed
+Case 4: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> Success
+Case 5: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> Success
+Case 6: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> Failed
+Case 7: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> Failed
+Case 8: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> Success
+
+Test Platform: win32
+Case 1: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': False} -> Success
+Case 2: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': True} -> Success
+Case 3: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': False} -> Success
+Case 4: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': True} -> Success
+Case 5: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': False} -> Success
+Case 6: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': True} -> Success
+Case 7: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': False} -> Success
+Case 8: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': True} -> Success
+
+Test Platform: darwin
+Case 1: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> Success
+Case 2: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> Failed
+Case 3: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> Failed
+Case 4: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> Success
+Case 5: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> Success
+Case 6: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> Failed
+Case 7: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> Failed
+Case 8: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> Success
+```
+
+- 对于 Linux 平台, 当使用 Shell=True 时, 应使用字符串命令; Shell=False 时, 使用列表命令
+- 对于 Windows 平台, 当使用 Shell=True / Shell=False 时, 使用字符串命令和列表命令都可行
+- 对于 MacOS 平台, 当使用 Shell=True 时, 应使用字符串命令; Shell=False 时, 使用列表命令 (行为和 Linux 中的一致)
+"""
 
 import os
 import sys
@@ -17,6 +55,31 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str:
+    """针对不同平台对命令进行预处理
+
+    Args:
+        command (list[str] | str): 原始命令
+    Returns:
+        (list[str] | str): 处理后的命令
+    """
+    if sys.platform == "win32":
+        # Windows
+        # 字符串命令和列表命令都可行
+        return command
+    else:
+        # Linux / MacOS
+        if shell:
+            # 使用字符串命令
+            if isinstance(command, list):
+                return shlex.join(command)
+            return command
+        # 使用列表命令
+        if isinstance(command, str):
+            return shlex.split(command)
+        return command
 
 
 def run_cmd(
@@ -55,12 +118,7 @@ def run_cmd(
     if custom_env is None:
         custom_env = os.environ
 
-    if sys.platform == "win32":
-        # 在 Windows 平台上不使用 shlex 处理成字符串
-        command_to_exec = command
-    else:
-        # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
-        command_to_exec = shlex.join(command) if isinstance(command, list) else command
+    command_to_exec = preprocess_command(command=command, shell=shell)
 
     if display_mode is None:
         if in_jupyter():
