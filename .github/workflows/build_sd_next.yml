@@ -67,7 +67,7 @@ jobs:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          Set-Location -Path "${{ github.workspace }}/sd_next"
+          Set-Location -Path "${{ github.workspace }}/sd_next/core"
           & "${{ github.workspace }}/sd_next/core/python/python.exe" `
             "${{ github.workspace }}/sd_next/core/launch.py" `
             --exit `

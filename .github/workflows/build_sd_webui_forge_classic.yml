@@ -65,13 +65,14 @@ jobs:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         run: |
-          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_classic"
+          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_classic/core"
           & "${{ github.workspace }}/sd_webui_forge_classic/core/python/python.exe" `
             "${{ github.workspace }}/sd_webui_forge_classic/core/launch.py" `
             --exit `
             --skip-torch-cuda-test `
             --use-cpu all `
-            --skip-version-check
+            --skip-version-check `
+            --skip-python-version-check
 
       - name: Launch to complete dependencies
         shell: pwsh
