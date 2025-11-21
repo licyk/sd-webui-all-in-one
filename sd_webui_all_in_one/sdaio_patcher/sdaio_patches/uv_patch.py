@@ -79,10 +79,6 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
             shell=kwargs.get("shell", False),
         )
 
-        logger.debug("处理后的命令: %s", command)
-        try:
-            return subprocess.__original_run(command, **kwargs)
-        except Exception:
-            return subprocess.__original_run(*args, **kwargs)
+        return subprocess.__original_run(command, **kwargs)
 
     subprocess.run = patched_run
