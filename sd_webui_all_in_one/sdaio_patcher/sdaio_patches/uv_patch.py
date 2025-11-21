@@ -62,7 +62,7 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
         assert isinstance(command, list)
 
         if "pip" not in command:
-            return subprocess.__original_run([*command, *_args], **kwargs)
+            return subprocess.__original_run(preprocess_command([*command, *_args], shell=kwargs.get("shell", False)), **kwargs)
 
         cmd = command[command.index("pip") + 1 :]
 
