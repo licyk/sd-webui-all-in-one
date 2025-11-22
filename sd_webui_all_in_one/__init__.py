@@ -21,13 +21,13 @@
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_NAME, LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.version import VERSION
-from sd_webui_all_in_one.manager.base import BaseManager
-from sd_webui_all_in_one.manager.sd_webui import SDWebUIManager
-from sd_webui_all_in_one.manager.comfyui import ComfyUIManager
-from sd_webui_all_in_one.manager.fooocus import FooocusManager
-from sd_webui_all_in_one.manager.invokeai import InvokeAIManager
-from sd_webui_all_in_one.manager.sd_trainer import SDTrainerManager
-from sd_webui_all_in_one.manager.sd_scripts import SDScriptsManager
+from sd_webui_all_in_one.manager.base_manager import BaseManager
+from sd_webui_all_in_one.manager.sd_webui_manager import SDWebUIManager
+from sd_webui_all_in_one.manager.comfyui_manager import ComfyUIManager
+from sd_webui_all_in_one.manager.fooocus_manager import FooocusManager
+from sd_webui_all_in_one.manager.invokeai_manager import InvokeAIManager
+from sd_webui_all_in_one.manager.sd_trainer_manager import SDTrainerManager
+from sd_webui_all_in_one.manager.sd_scripts_manager import SDScriptsManager
 
 logger = get_logger(
     name=LOGGER_NAME,

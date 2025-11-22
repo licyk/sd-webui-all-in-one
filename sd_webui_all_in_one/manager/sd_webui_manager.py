@@ -9,7 +9,7 @@ from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.downloader import download_file
-from sd_webui_all_in_one.manager.base import BaseManager
+from sd_webui_all_in_one.manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
@@ -225,12 +225,12 @@ class SDWebUIManager(BaseManager):
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
-        install_extension_requirements(sd_webui_base_path=sd_webui_path)
         py_dependency_checker(
             requirement_path=requirement_path,
             name="Stable Diffusion WebUI",
             use_uv=use_uv,
         )
+        install_extension_requirements(sd_webui_base_path=sd_webui_path)
         fix_torch_libomp()
         check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
         check_numpy(use_uv=use_uv)
