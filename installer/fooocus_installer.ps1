@@ -64,7 +64,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # Fooocus Installer 版本和检查更新间隔
-$FOOOCUS_INSTALLER_VERSION = 207
+$FOOOCUS_INSTALLER_VERSION = 208
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -374,7 +374,7 @@ function Install-Python {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Python"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-amd64.zip"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/python-amd64.zip"
             break
         }
         catch {
@@ -423,7 +423,7 @@ function Install-Git {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Git"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/PortableGit.zip"
             break
         }
         catch {
@@ -469,7 +469,7 @@ function Install-Aria2 {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Aria2"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/aria2c.exe"
             break
         }
         catch {
@@ -2470,7 +2470,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -2716,7 +2716,7 @@ function Create-Fooocus-Shortcut {
     Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 Fooocus 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
         Print-Msg `"获取 Fooocus 图标中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
+        Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$PSScriptRoot/gradio_icon.ico`"
         if (!(`$?)) {
             Print-Msg `"获取 Fooocus 图标失败, 无法创建 Fooocus 快捷启动方式`"
             return
@@ -5871,7 +5871,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -6396,7 +6396,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -6841,7 +6841,7 @@ function Download-Fooocus-Installer {
 
     ForEach (`$url in `$urls) {
         Print-Msg `"正在下载最新的 Fooocus Installer 脚本`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/fooocus_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$PSScriptRoot/cache/fooocus_installer.ps1`"
         if (`$?) {
             Print-Msg `"下载 Fooocus Installer 脚本成功`"
             break
@@ -7256,7 +7256,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -9014,7 +9014,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -9139,7 +9139,7 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
     ForEach (`$url in `$urls) {
         Print-Msg `"下载 Aria2 中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$aria2_tmp_path`"
             break
         }
         catch {
@@ -10778,7 +10778,7 @@ function Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -11288,7 +11288,7 @@ function global:Update-Aria2 {
     ForEach (`$url in `$urls) {
         Print-Msg `"下载 Aria2 中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$aria2_tmp_path`"
             break
         }
         catch {
@@ -11325,7 +11325,7 @@ function global:Check-Fooocus-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 Fooocus Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/fooocus_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/fooocus_installer.ps1`" |
                 Select-String -Pattern `"FOOOCUS_INSTALLER_VERSION`" |
@@ -11380,7 +11380,7 @@ function global:Install-Hanamizuki {
         ForEach (`$url in `$urls) {
             Print-Msg `"下载绘世启动器中`"
             try {
-                Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
+                Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`"
                 Move-Item -Path `"`$Env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`" -Force
                 Print-Msg `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$Env:FOOOCUS_INSTALLER_ROOT/`$Env:CORE_PREFIX/hanamizuki.exe`"))`"
                 Print-Msg `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
@@ -11965,7 +11965,7 @@ function Install-Hanamizuki {
         ForEach ($url in $urls) {
             Print-Msg "下载绘世启动器中"
             try {
-                Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
+                Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/hanamizuki_tmp.exe"
                 Move-Item -Path "$Env:CACHE_HOME/hanamizuki_tmp.exe" "$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe" -Force
                 Print-Msg "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$InstallPath/$Env:CORE_PREFIX/hanamizuki.exe"))"
                 Print-Msg "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"

@@ -58,7 +58,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 288
+$INVOKEAI_INSTALLER_VERSION = 289
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -336,7 +336,7 @@ function Install-Python {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Python"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/python-amd64.zip"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/python-amd64.zip"
             break
         }
         catch {
@@ -385,7 +385,7 @@ function Install-Git {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Git"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/PortableGit.zip"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/PortableGit.zip"
             break
         }
         catch {
@@ -431,7 +431,7 @@ function Install-Aria2 {
     ForEach ($url in $urls) {
         Print-Msg "正在下载 Aria2"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/aria2c.exe"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/aria2c.exe"
             break
         }
         catch {
@@ -1059,7 +1059,7 @@ function Install-LibPatchMatch {
     ForEach ($url in $urls) {
         Print-Msg "下载 libpatchmatch_windows_amd64.dll 中"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/libpatchmatch_windows_amd64.dll"
             break
         }
         catch {
@@ -1089,7 +1089,7 @@ function Install-OpenCVWorld {
     ForEach ($url in $urls) {
         Print-Msg "下载 opencv_world460.dll 中"
         try {
-            Invoke-WebRequest -Uri $url -OutFile "$Env:CACHE_HOME/opencv_world460.dll"
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$Env:CACHE_HOME/opencv_world460.dll"
             break
         }
         catch {
@@ -1484,7 +1484,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -1749,7 +1749,7 @@ function Create-InvokeAI-Shortcut {
     Print-Msg `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 InvokeAI 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
         Print-Msg `"获取 InvokeAI 图标中`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/invokeai_icon.ico`"
+        Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$PSScriptRoot/invokeai_icon.ico`"
         if (!(`$?)) {
             Print-Msg `"获取 InvokeAI 图标失败, 无法创建 InvokeAI 快捷启动方式`"
             return
@@ -2884,7 +2884,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -4040,7 +4040,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -4411,7 +4411,7 @@ function Download-InvokeAI-Installer {
 
     ForEach (`$url in `$urls) {
         Print-Msg `"正在下载最新的 InvokeAI Installer 脚本`"
-        Invoke-WebRequest -Uri `$url -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
+        Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$PSScriptRoot/cache/invokeai_installer.ps1`"
         if (`$?) {
             Print-Msg `"下载 InvokeAI Installer 脚本成功`"
             break
@@ -5258,7 +5258,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -5840,7 +5840,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -5965,7 +5965,7 @@ print(aria2_need_update('`$ARIA2_MINIMUM_VER'))
     ForEach (`$url in `$urls) {
         Print-Msg `"下载 Aria2 中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$aria2_tmp_path`"
             break
         }
         catch {
@@ -7669,7 +7669,7 @@ function Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
@@ -8211,7 +8211,7 @@ function global:Update-Aria2 {
     ForEach (`$url in `$urls) {
         Print-Msg `"下载 Aria2 中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$aria2_tmp_path`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$aria2_tmp_path`"
             break
         }
         catch {
@@ -8248,7 +8248,7 @@ function global:Check-InvokeAI-Installer-Update {
     ForEach (`$url in `$urls) {
         Print-Msg `"检查 InvokeAI Installer 更新中`"
         try {
-            Invoke-WebRequest -Uri `$url -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
+            Invoke-WebRequest -Uri `$url -UseBasicParsing -OutFile `"`$Env:CACHE_HOME/invokeai_installer.ps1`"
             `$latest_version = [int]`$(
                 Get-Content `"`$Env:CACHE_HOME/invokeai_installer.ps1`" |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
