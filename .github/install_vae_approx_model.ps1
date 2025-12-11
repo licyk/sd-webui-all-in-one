@@ -18,6 +18,11 @@ ForEach ($url in $model_list) {
         Write-Host "$filename 已存在于 $vae_approx_path"
     } else {
         Write-Host "下载 $filename 到 $vae_approx_path 中"
-        Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $model_path
+            $web_request_params = @{
+            Uri = $url
+            UseBasicParsing = $true
+            OutFile = $model_path
+        }
+        Invoke-WebRequest @web_request_params
     }
 }

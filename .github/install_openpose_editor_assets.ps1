@@ -14,7 +14,12 @@ if (!(Test-Path $temp_path)) {
 }
 
 try {
-    Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $archive_path
+    $web_request_params = @{
+        Uri = $url
+        UseBasicParsing = $true
+        OutFile = $archive_path
+    }
+    Invoke-WebRequest @web_request_params
     Expand-Archive -Path $archive_path -DestinationPath $expand_path -Force
     Move-Item -Path $expand_path -Destination $install_path -Force
 }

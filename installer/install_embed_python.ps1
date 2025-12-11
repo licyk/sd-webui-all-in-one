@@ -53,15 +53,20 @@ function Install-Python {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.10.11-embed-amd64.zip"
 
     # 下载 Python
-    Print-Msg "正在下载 Python"
-    Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip"
-    if ($?) { # 检测是否下载成功并解压
+    try {
+        $web_request_params = @{
+            Uri = $url
+            UseBasicParsing = $true
+            OutFile = "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip"
+        }
+        Print-Msg "正在下载 Python"
+        Invoke-WebRequest @web_request_params
         Print-Msg "正在解压 Python"
         Expand-Archive -Path "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/python" -Force
         Remove-Item -Path "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip"
         Modify-PythonPath
         Print-Msg "Python 安装成功"
-    } else {
+    } catch {
         Print-Msg "Python 安装失败, 可重新运行安装脚本重试失败的安装"
         Read-Host | Out-Null
         exit 1
@@ -82,9 +87,14 @@ function Install-Pip {
     $url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/get-pip.py"
 
     # 下载 get-pip.py
-    Print-Msg "正在下载 get-pip.py"
-    Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile "$PSScriptRoot/python/cache/get-pip.py"
-    if ($?) { # 检测是否下载成功
+    try {
+        Print-Msg "正在下载 get-pip.py"
+        $web_request_params = @{
+            Uri = $url
+            UseBasicParsing = $true
+            OutFile = "$PSScriptRoot/python/cache/get-pip.py"
+        }
+        Invoke-WebRequest @web_request_params
         # 执行 get-pip.py
         Print-Msg "通过 get-pip.py 安装 Pip 中"
         python "$PSScriptRoot/python/cache/get-pip.py"
@@ -97,7 +107,7 @@ function Install-Pip {
             Read-Host | Out-Null
             exit 1
         }
-    } else {
+    } catch {
         Print-Msg "下载 get-pip.py 失败"
         Print-Msg "Pip 安装失败, 可重新运行安装脚本重试失败的安装"
         Read-Host | Out-Null
