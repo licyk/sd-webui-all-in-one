@@ -66,7 +66,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD WebUI Installer 版本和检查更新间隔
-$SD_WEBUI_INSTALLER_VERSION = 279
+$SD_WEBUI_INSTALLER_VERSION = 280
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -5252,6 +5252,16 @@ if ver > 1:
 else:
     print(False)
 `".Trim()
+
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+        `$array = `$git_remote -split `"/`"
+        `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
+        if ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
+            Print-Msg `"当前 Stable Diffusion WebUI 分支为 vladmandic/SD.NEXT, 跳过 Numpy 版本检测`"
+            return
+        }
+    }
 
     Print-Msg `"检查 Numpy 版本中`"
     `$status = `$(python -c `"`$content`")
