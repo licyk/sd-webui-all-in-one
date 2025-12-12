@@ -60,7 +60,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer-Script Installer 版本和检查更新间隔
-$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 203
+$SD_TRAINER_SCRIPT_INSTALLER_VERSION = 204
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -6103,6 +6103,32 @@ param (
     [string]`$InstallBranch,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
+& {
+    `$prefix_list = @(`"core`", `"sd-scripts`", `"SimpleTuner`", `"ai-toolkit`", `"finetrainers`", `"diffusion-pipe`", `"musubi-tuner`")
+    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
+        if (`$CorePrefix) {
+            `$origin_core_prefix = `$CorePrefix
+        } else {
+            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+        }
+        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$to_path = `$origin_core_prefix
+            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
+            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        }
+        `$Env:CORE_PREFIX = `$origin_core_prefix
+        return
+    }
+    ForEach (`$i in `$prefix_list) {
+        if (Test-Path `"`$PSScriptRoot/`$i`") {
+            `$Env:CORE_PREFIX = `$i
+            return
+        }
+    }
+    `$Env:CORE_PREFIX = `"core`"
+}
 `$SD_TRAINER_SCRIPT_INSTALLER_VERSION = $SD_TRAINER_SCRIPT_INSTALLER_VERSION
 if (-not `$InstallPath) {
     `$InstallPath = `$PSScriptRoot
