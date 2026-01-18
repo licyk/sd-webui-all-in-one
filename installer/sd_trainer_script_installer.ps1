@@ -1164,8 +1164,8 @@ function Get-PyTorch-And-xFormers-Package {
 
     switch ($appropriate_cuda_version) {
         cu130 {
-            $pytorch_package = "torch==2.9.0+cu130 torchvision==0.24.0+cu130 torchaudio==2.9.0+cu130"
-            $xformers_package = "xformers==0.0.33"
+            $pytorch_package = "torch==2.9.1+cu130 torchvision==0.24.1+cu130 torchaudio==2.9.1+cu130"
+            $xformers_package = "xformers==0.0.33.post2"
             break
         }
         cu129 {
@@ -1174,13 +1174,13 @@ function Get-PyTorch-And-xFormers-Package {
             break
         }
         cu128 {
-            $pytorch_package = "torch==2.9.0+cu128 torchvision==0.24.0+cu128 torchaudio==2.9.0+cu128"
-            $xformers_package = "xformers==0.0.33"
+            $pytorch_package = "torch==2.9.1+cu128 torchvision==0.24.1+cu128 torchaudio==2.9.1+cu128"
+            $xformers_package = "xformers==0.0.33.post2"
             break
         }
         cu126 {
-            $pytorch_package = "torch==2.9.0+cu126 torchvision==0.24.0+cu126 torchaudio==2.9.0+cu126"
-            $xformers_package = "xformers==0.0.33"
+            $pytorch_package = "torch==2.9.1+cu126 torchvision==0.24.1+cu126 torchaudio==2.9.1+cu126"
+            $xformers_package = "xformers==0.0.33.post2"
             break
         }
         cu124 {
@@ -7851,6 +7851,74 @@ function Get-PyTorch-List {
         `"supported`" = `"cu130`" -in `$supported_type
         `"torch`" = `"torch==2.9.0+cu130 torchvision==0.24.0+cu130 torchaudio==2.9.0+cu130`"
         `"xformers`" = `"xformers==0.0.33`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU130_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU130
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.9.1 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.9.1+cpu torchvision==0.24.1+cpu torchaudio==2.9.1+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.9.1 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
+        `"torch`" = `"torch==2.9.1+xpu torchvision==0.24.1+xpu torchaudio==2.9.1+xpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.9.1 (CUDA 12.6)`"
+        `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
+        `"torch`" = `"torch==2.9.1+cu126 torchvision==0.24.1+cu126 torchaudio==2.9.1+cu126`"
+        `"xformers`" = `"xformers==0.0.33.post2`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.9.1 (CUDA 12.8)`"
+        `"type`" = `"cu128`"
+        `"supported`" = `"cu128`" -in `$supported_type
+        `"torch`" = `"torch==2.9.1+cu128 torchvision==0.24.1+cu128 torchaudio==2.9.1+cu128`"
+        `"xformers`" = `"xformers==0.0.33.post2`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.9.1 (CUDA 13.0)`"
+        `"type`" = `"cu130`"
+        `"supported`" = `"cu130`" -in `$supported_type
+        `"torch`" = `"torch==2.9.1+cu130 torchvision==0.24.1+cu130 torchaudio==2.9.1+cu130`"
+        `"xformers`" = `"xformers==0.0.33.post2`"
         `"index_mirror`" = if (`$USE_PIP_MIRROR) {
             `$PIP_EXTRA_INDEX_MIRROR_CU130_NJU
         } else {
