@@ -45,6 +45,6 @@ ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
 [tool.ruff]
 line-length = 180
 indent-width = 4
-ignore = [
+lint.ignore = [
     "E402" # module-import-not-at-top-of-file
 ]
