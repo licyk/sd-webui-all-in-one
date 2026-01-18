@@ -33,6 +33,32 @@ logger = get_logger(
 class SDWebUIManager(BaseManager):
     """Stable Diffusion WebUI 管理工具"""
 
+    def __init__(
+        self,
+        workspace: str | Path,
+        workfolder: str,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+        port: int | None = 9090,
+    ) -> None:
+        """管理工具初始化
+
+        Args:
+            workspace (str | Path): 工作区路径
+            workfolder (str): 工作区的文件夹名称
+            hf_token (str | None): HuggingFace Token
+            ms_token (str | None): ModelScope Token
+            port (int | None): 内网穿透端口
+        """
+        super().__init__(
+            workspace=workspace,
+            workfolder=workfolder,
+            hf_token=hf_token,
+            ms_token=ms_token,
+            port=port,
+        )
+        os.environ["STABLE_DIFFUSION_REPO"] = "https://github.com/licyk/stablediffusion"
+
     def mount_drive(
         self,
         extras: list[dict[str, str | bool]] = None,
@@ -212,6 +238,36 @@ class SDWebUIManager(BaseManager):
             else:
                 logger.info("更新 %s 扩展失败", i.name)
 
+    def fix_stable_diffusion_invaild_repo_url(self) -> None:
+        """修复 Stable Diffusion WebUI 无效的组件仓库源"""
+        logger.info("检查 Stable Diffusion WebUI 无效组件仓库源")
+        stable_diffusion_path = self.workspace / self.workfolder / "repositories" / "stable-diffusion-stability-ai"
+        new_repo_url = "https://github.com/licyk/stablediffusion"
+        if not git_warpper.is_git_repo(stable_diffusion_path):
+            return
+
+        custom_env = os.environ.copy()
+        custom_env.pop("GIT_CONFIG_GLOBAL", None)
+        try:
+            repo_url = self.run_cmd(
+                ["git", "-C", str(stable_diffusion_path), "remote", "get-url", "origin"],
+                custom_env=custom_env,
+                live=False,
+            )
+        except Exception:
+            return
+
+        if repo_url in ["https://github.com/Stability-AI/stablediffusion.git", "https://github.com/Stability-AI/stablediffusion"]:
+            try:
+                self.run_cmd(
+                    ["git", "-C", str(stable_diffusion_path), "remote", "set-url", "origin", new_repo_url],
+                    custom_env=custom_env,
+                    live=False,
+                )
+                logger.info("替换仓库源: %s -> %s", repo_url, new_repo_url)
+            except Exception as e:
+                logger.error("修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: %s", e)
+
     def check_env(
         self,
         use_uv: bool | None = True,
@@ -225,6 +281,7 @@ class SDWebUIManager(BaseManager):
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / requirements_file
+        self.fix_stable_diffusion_invaild_repo_url()
         py_dependency_checker(
             requirement_path=requirement_path,
             name="Stable Diffusion WebUI",
