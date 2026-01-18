@@ -4,13 +4,33 @@
 
 _✨快速部署，简单易用_
   <p align="center">
-    <img src="https://img.shields.io/github/stars/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
-    <a href="https://github.com/licyk/sd-webui-all-in-one/issues"><img src="https://img.shields.io/github/issues/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues"></a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/commits/dev"><img src="https://flat.badgen.net/github/last-commit/licyk/sd-webui-all-in-one/dev?icon=github&color=green&label=last%20dev%20commit" alt="Commit"></a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml/badge.svg" alt="Sync"></a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml/badge.svg" alt="Lint"></a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml/badge.svg" alt="Check Installer Version"></a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml"><img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+    <a href="https://github.com/licyk/ani2xcur-cli/stargazers" style="margin: 2px;">
+      <img src="https://img.shields.io/github/stars/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/issues">
+      <img src="https://img.shields.io/github/issues/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/commits/dev">
+      <img src="https://flat.badgen.net/github/last-commit/licyk/sd-webui-all-in-one/dev?icon=github&color=green&label=last%20dev%20commit" alt="Commit">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml/badge.svg" alt="Sync">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml/badge.svg" alt="Lint">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml/badge.svg" alt="Check Installer Version">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/release.yml/badge.svg" alt="Release">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pypi-release.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pypi-release.yml/badge.svg" alt="PyPI Release">
+    </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml/badge.svg" alt="Ruff Lint">
+    </a>
   </p>
 
 </div>
