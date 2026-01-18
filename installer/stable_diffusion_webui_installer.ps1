@@ -5308,6 +5308,31 @@ function Check-MS-VCPP-Redistributable {
 }
 
 
+# 检查 Stable Diffusion WebUI 无效组件仓库源
+function Check-Stable-Diffusion-WebUI-Invaild-Repo-Url {
+    Print-Msg `"检查 Stable Diffusion WebUI 无效组件仓库源`"
+    `$Env:STABLE_DIFFUSION_REPO = `"https://github.com/licyk/stablediffusion`"
+
+    if (!(Get-Command git -ErrorAction SilentlyContinue)) {
+        return
+    }
+    `$stable_diffusion_path = `"`$PSScriptRoot/`$Env:CORE_PREFIX/repositories/stable-diffusion-stability-ai`"
+
+    if (!(Test-Path `"`$stable_diffusion_path/.git`")) {
+        return
+    }
+
+    `$origin_git_config_path = `$Env:GIT_CONFIG_GLOBAL
+    `$Env:GIT_CONFIG_GLOBAL = `$null
+    `$repo_url = `$(git -C `"`$stable_diffusion_path`" remote get-url origin)
+    `$Env:GIT_CONFIG_GLOBAL = `$origin_git_config_path
+    if (`$repo_url -in @(`"https://github.com/Stability-AI/stablediffusion.git`", `"https://github.com/Stability-AI/stablediffusion`")) {
+        git -C `"`$stable_diffusion_path`" remote set-url origin `"`$Env:STABLE_DIFFUSION_REPO`"
+        Print-Msg `"替换仓库源: `${repo_url} -> `${Env:STABLE_DIFFUSION_REPO}`"
+    }
+}
+
+
 # 检查 Stable Diffusion WebUI 运行环境
 function Check-Stable-Diffusion-WebUI-Env {
     if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$DisableEnvCheck)) {
@@ -5317,6 +5342,7 @@ function Check-Stable-Diffusion-WebUI-Env {
         Print-Msg `"检查 Stable Diffusion WebUI 运行环境中`"
     }
 
+    Check-Stable-Diffusion-WebUI-Invaild-Repo-Url
     Check-Stable-Diffusion-WebUI-Requirements
     Check-Stable-Diffusion-WebUI-Env-Requirements
     Fix-PyTorch
