@@ -2,260 +2,88 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - installer/sd_trainer_installer.ps1
-      - installer/invokeai_installer.ps1
-      - installer/comfyui_installer.ps1
-      - installer/stable_diffusion_webui_installer.ps1
-      - installer/fooocus_installer.ps1
-      - installer/sd_trainer_script_installer.ps1
-      - installer/install_embed_python.ps1
-      - installer/configure_env.bat
-      - config/fooocus_config.json
-      - config/fooocus_path_config_kaggle.json
-      - config/fooocus_zh_cn.json
-      - config/libtcmalloc_minimal.so.4
-      - config/sd_webui_config.json
-      - config/comfy.settings.json
-      - config/sd_webui_requirements_versions.txt
-      - config/sd_webui_forge_requirements_versions.txt
-      - config/sd_webui_forge_classic_requirements_versions.txt
-      - notebook/sd_scripts_kaggle.ipynb
-      - sd_scripts_ipynb_core.py
-      - notebook/sd_scripts_colab.ipynb
-      - notebook/sd_webui_all_in_one_colab.ipynb
-      - notebook/sd_webui_all_in_one.ipynb
-      - notebook/sd_trainer_kaggle.ipynb
-      - notebook/fooocus_colab.ipynb
-      - notebook/fooocus_kaggle.ipynb
-      - notebook/hdm_train_kaggle.ipynb
-      - notebook/comfyui_colab.ipynb
-      - notebook/invokeai_colab.ipynb
-      - notebook/stable_diffusion_webui_colab.ipynb
-      - notebook/sd_trainer_colab.ipynb
-  delete:
-  create:
+      - 'installer/**'
+      - 'config/**'
+      - 'notebook/**'
+      - 'sd_scripts_ipynb_core.py'
   workflow_dispatch:
 
 jobs:
-  Release-To-Github:
+  Release-Task:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SD-Trainer-Installer
+            gh_tag: sd_trainer_installer
+            gt_id: 408873
+            files: installer/sd_trainer_installer.ps1
+          - name: InvokeAI-Installer
+            gh_tag: invokeai_installer
+            gt_id: 402883
+            files: installer/invokeai_installer.ps1
+          - name: ComfyUI-Installer
+            gh_tag: comfyui_installer
+            gt_id: 447269
+            files: installer/comfyui_installer.ps1
+          - name: SD-WebUI-Installer
+            gh_tag: stable_diffusion_webui_installer
+            gt_id: 452051
+            files: installer/stable_diffusion_webui_installer.ps1
+          - name: Fooocus-Installer
+            gh_tag: fooocus_installer
+            gt_id: 467150
+            files: installer/fooocus_installer.ps1
+          - name: SD-Trainer-Script
+            gh_tag: sd_trainer_script_installer
+            gt_id: 461216
+            files: installer/sd_trainer_script_installer.ps1
+          - name: Archive-Configs
+            gh_tag: archive
+            gt_id: 435278
+            files: |
+              installer/configure_env.bat
+              installer/install_embed_python.ps1
+              config/**
+          - name: Notebooks
+            gh_tag: archive
+            gt_id: 435278
+            files: |
+              notebook/*.ipynb
+              sd_scripts_ipynb_core.py
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
-      - name: List files in the repository
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install Python dependencies
         run: |
-          ls "${{ github.workspace }}"
+          pip install requests requests-toolbelt --break-system-packages
 
-      - name: Release SD-Trainer Installer
+      - name: Release ${{ matrix.name }} to GitHub
         shell: bash
         env:
-          github_release_tag: sd_trainer_installer
-          github_files: |
-            installer/sd_trainer_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
+          GITHUB_TOKEN: ${{ github.token }}
+          github_release_tag: ${{ matrix.gh_tag }}
+          github_files: ${{ matrix.files }}
+        run: bash "${{ github.workspace }}/.github/github_release.sh"
 
-      - name: Release InvokeAI Installer
+      - name: Release ${{ matrix.name }} to Gitee
         shell: bash
         env:
-          github_release_tag: invokeai_installer
-          github_files: |
-            installer/invokeai_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release ComfyUI Installer
-        shell: bash
-        env:
-          github_release_tag: comfyui_installer
-          github_files: |
-            installer/comfyui_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release SD WebUI Installer
-        shell: bash
-        env:
-          github_release_tag: stable_diffusion_webui_installer
-          github_files: |
-            installer/stable_diffusion_webui_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release Fooocus Installer
-        shell: bash
-        env:
-          github_release_tag: fooocus_installer
-          github_files: |
-            installer/fooocus_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release SD-Trainer-Script Installer
-        shell: bash
-        env:
-          github_release_tag: sd_trainer_script_installer
-          github_files: |
-            installer/sd_trainer_script_installer.ps1
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release config
-        shell: bash
-        env:
-          github_release_tag: archive
-          github_files: |
-            installer/configure_env.bat
-            installer/install_embed_python.ps1
-            config/fooocus_config.json
-            config/fooocus_path_config_kaggle.json
-            config/fooocus_zh_cn.json
-            config/libtcmalloc_minimal.so.4
-            config/sd_webui_config.json
-            config/comfy.settings.json
-            config/sd_webui_requirements_versions.txt
-            config/sd_webui_forge_requirements_versions.txt
-            config/sd_webui_forge_classic_requirements_versions.txt
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-      - name: Release Jupyter Notebook
-        shell: bash
-        env:
-          github_release_tag: archive
-          github_files: |
-            notebook/sd_scripts_kaggle.ipynb
-            sd_scripts_ipynb_core.py
-            notebook/sd_scripts_colab.ipynb
-            notebook/sd_webui_all_in_one_colab.ipynb
-            notebook/sd_webui_all_in_one.ipynb
-            notebook/sd_trainer_kaggle.ipynb
-            notebook/fooocus_colab.ipynb
-            notebook/fooocus_kaggle.ipynb
-            notebook/hdm_train_kaggle.ipynb
-            notebook/comfyui_colab.ipynb
-            notebook/invokeai_colab.ipynb
-            notebook/stable_diffusion_webui_colab.ipynb
-            notebook/sd_trainer_colab.ipynb
-        run: |
-          bash "${{ github.workspace }}/.github/github_release.sh"
-
-  Release-To-Gitee:
-    # tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
-    # fork: https://github.com/licyk/action-gitee-release
-    # Gitee release id: https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
-    runs-on: ubuntu-latest
-    env:
-      gitee_owner: licyk
-      gitee_repo: sd-webui-all-in-one
-      gitee_token: ${{ secrets.gitee_token }}
-      gitee_upload_retry_times: 3
-    steps:
-      - uses: actions/checkout@v4
-      - name: List files in the repository
-        run: |
-          ls "${{ github.workspace }}"
-
-      - name: Config release Gitee script requirements
-        shell: bash
-        run: |
-          pip install requests requests-toolbelt --break-system-package
-
-      - name: Release config to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 435278
-          gitee_files: |
-            installer/configure_env.bat
-            config/fooocus_config.json
-            config/fooocus_path_config_kaggle.json
-            config/fooocus_zh_cn.json
-            config/libtcmalloc_minimal.so.4
-            config/sd_webui_config.json
-            installer/install_embed_python.ps1
-            config/comfy.settings.json
-            config/sd_webui_requirements_versions.txt
-            config/sd_webui_forge_requirements_versions.txt
-            config/sd_webui_forge_classic_requirements_versions.txt
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release Jupyter Notebook to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 435278
-          gitee_files: |
-            notebook/sd_scripts_kaggle.ipynb
-            sd_scripts_ipynb_core.py
-            notebook/sd_scripts_colab.ipynb
-            notebook/sd_webui_all_in_one_colab.ipynb
-            notebook/sd_webui_all_in_one.ipynb
-            notebook/sd_trainer_kaggle.ipynb
-            notebook/fooocus_colab.ipynb
-            notebook/fooocus_kaggle.ipynb
-            notebook/hdm_train_kaggle.ipynb
-            notebook/comfyui_colab.ipynb
-            notebook/invokeai_colab.ipynb
-            notebook/stable_diffusion_webui_colab.ipynb
-            notebook/sd_trainer_colab.ipynb
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release SD-Trainer Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 408873
-          gitee_files: |
-            installer/sd_trainer_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release InvokeAI Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 402883
-          gitee_files: |
-            installer/invokeai_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release ComfyUI Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 447269
-          gitee_files: |
-            installer/comfyui_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release SD WebUI Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 452051
-          gitee_files: |
-            installer/stable_diffusion_webui_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release Fooocus Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 467150
-          gitee_files: |
-            installer/fooocus_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
-
-      - name: Release SD-Trainer-Script Installer to Gitee
-        shell: bash
-        env:
-          gitee_release_id: 461216
-          gitee_files: |
-            installer/sd_trainer_script_installer.ps1
-        run: |
-          python "${{ github.workspace }}/.github/gitee_release.py"
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_upload_retry_times: 3
+          gitee_release_id: ${{ matrix.gt_id }}
+          gitee_files: ${{ matrix.files }}
+        run: python "${{ github.workspace }}/.github/gitee_release.py"

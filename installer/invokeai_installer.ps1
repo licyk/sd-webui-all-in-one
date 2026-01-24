@@ -58,7 +58,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # InvokeAI Installer 版本和检查更新间隔
-$INVOKEAI_INSTALLER_VERSION = 293
+$INVOKEAI_INSTALLER_VERSION = 294
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -722,8 +722,19 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu129'
-    if compare_versions(torch_ver, '2.9.0') >= 0:
-        # torch >= 2.9.0: default cu130
+    if compare_versions(torch_ver, '2.9.0') >= 0 and compare_versions(torch_ver, '2.10.0') < 0:
+        # 2.9.0 <= torch < 2.10.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
+    if compare_versions(torch_ver, '2.10.0') >= 0:
+        # torch >= 2.10.0: default cu130
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
                 return 'cu128'
@@ -2815,7 +2826,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\`$(`$script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129, cu130
 
     -DisableAutoApplyUpdate
         禁用 InvokeAI Installer 自动应用新版本更新
@@ -3301,8 +3312,19 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu129'
-    if compare_versions(torch_ver, '2.9.0') >= 0:
-        # torch >= 2.9.0: default cu130
+    if compare_versions(torch_ver, '2.9.0') >= 0 and compare_versions(torch_ver, '2.10.0') < 0:
+        # 2.9.0 <= torch < 2.10.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
+    if compare_versions(torch_ver, '2.10.0') >= 0:
+        # torch >= 2.10.0: default cu130
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
                 return 'cu128'
@@ -4763,7 +4785,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\`$(`$script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129, cu130
 
     -DisableAutoApplyUpdate
         禁用 InvokeAI Installer 自动应用新版本更新
@@ -5079,8 +5101,19 @@ def get_pytorch_mirror_type(
             return 'xpu'
         if has_gpus:
             return 'cu129'
-    if compare_versions(torch_ver, '2.9.0') >= 0:
-        # torch >= 2.9.0: default cu130
+    if compare_versions(torch_ver, '2.9.0') >= 0 and compare_versions(torch_ver, '2.10.0') < 0:
+        # 2.9.0 <= torch < 2.10.0: default cu130
+        if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
+                return 'cu128'
+            if compare_versions(str(int(cuda_support_ver * 10)), 'cu126') >= 0:
+                return 'cu126'
+        if use_xpu and has_xpu:
+            return 'xpu'
+        if has_gpus:
+            return 'cu130'
+    if compare_versions(torch_ver, '2.10.0') >= 0:
+        # torch >= 2.10.0: default cu130
         if compare_versions(str(int(cuda_support_ver * 10)), 'cu130') < 0:
             if compare_versions(str(int(cuda_support_ver * 10)), 'cu128') >= 0:
                 return 'cu128'
@@ -9073,7 +9106,7 @@ function Get-InvokeAI-Installer-Cmdlet-Help {
         例如: .\$($script:MyInvocation.MyCommand.Name) -InvokeAIPackage InvokeAI==5.0.2, 这将指定 InvokeAI Installer 安装 InvokeAI 5.0.2
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129, cu130
 
     -UseUpdateMode
         指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新

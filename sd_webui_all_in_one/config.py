@@ -42,6 +42,7 @@ PYTORCH_MIRROR_DICT = {
     "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
     "rocm63": "https://download.pytorch.org/whl/rocm6.3",
     "rocm64": "https://download.pytorch.org/whl/rocm6.4",
+    "rocm71": "https://download.pytorch.org/whl/rocm7.1",
     "cu118": "https://download.pytorch.org/whl/cu118",
     "cu121": "https://download.pytorch.org/whl/cu121",
     "cu124": "https://download.pytorch.org/whl/cu124",
@@ -51,6 +52,26 @@ PYTORCH_MIRROR_DICT = {
     "cu130": "https://download.pytorch.org/whl/cu130",
 }
 """PyTorch 镜像源字典"""
+
+PYTORCH_MIRROR_NJU_DICT = {
+    "other": "https://mirror.nju.edu.cn/pytorch/whl",
+    "cpu": "https://mirror.nju.edu.cn/pytorch/whl/cpu",
+    "xpu": "https://mirror.nju.edu.cn/pytorch/whl/xpu",
+    "rocm61": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.1",
+    "rocm62": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2",
+    "rocm624": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4",
+    "rocm63": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.3",
+    "rocm64": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.4",
+    "rocm71": "https://mirror.nju.edu.cn/pytorch/whl/rocm7.1",
+    "cu118": "https://mirror.nju.edu.cn/pytorch/whl/cu118",
+    "cu121": "https://mirror.nju.edu.cn/pytorch/whl/cu121",
+    "cu124": "https://mirror.nju.edu.cn/pytorch/whl/cu124",
+    "cu126": "https://mirror.nju.edu.cn/pytorch/whl/cu126",
+    "cu128": "https://mirror.nju.edu.cn/pytorch/whl/cu128",
+    "cu129": "https://mirror.nju.edu.cn/pytorch/whl/cu129",
+    "cu130": "https://mirror.nju.edu.cn/pytorch/whl/cu130",
+}
+"""PyTorch 国内镜像源 (NJU) 字典"""
 
 ROOT_PATH = Path(__file__).parent
 """SD WebUI All In One 根目录"""

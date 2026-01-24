@@ -63,7 +63,7 @@
 # 在 PowerShell 5 中 UTF8 为 UTF8 BOM, 而在 PowerShell 7 中 UTF8 为 UTF8, 并且多出 utf8BOM 这个单独的选项: https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.5#-encoding
 $PS_SCRIPT_ENCODING = if ($PSVersionTable.PSVersion.Major -le 5) { "UTF8" } else { "utf8BOM" }
 # SD-Trainer Installer 版本和检查更新间隔
-$SD_TRAINER_INSTALLER_VERSION = 319
+$SD_TRAINER_INSTALLER_VERSION = 320
 $UPDATE_TIME_SPAN = 3600
 # PyPI 镜像源
 $PIP_INDEX_ADDR = "https://mirrors.cloud.tencent.com/pypi/simple"
@@ -1159,8 +1159,8 @@ function Get-PyTorch-And-xFormers-Package {
 
     switch ($appropriate_cuda_version) {
         cu130 {
-            $pytorch_package = "torch==2.9.1+cu130 torchvision==0.24.1+cu130 torchaudio==2.9.1+cu130"
-            $xformers_package = "xformers==0.0.33.post2"
+            $pytorch_package = "torch==2.10.0+cu130 torchvision==0.25.0+cu130 torchaudio==2.10.0+cu130"
+            $xformers_package = "xformers==0.0.34"
             break
         }
         cu129 {
@@ -1169,13 +1169,13 @@ function Get-PyTorch-And-xFormers-Package {
             break
         }
         cu128 {
-            $pytorch_package = "torch==2.9.1+cu128 torchvision==0.24.1+cu128 torchaudio==2.9.1+cu128"
-            $xformers_package = "xformers==0.0.33.post2"
+            $pytorch_package = "torch==2.10.0+cu128 torchvision==0.25.0+cu128 torchaudio==2.10.0+cu128"
+            $xformers_package = "xformers==0.0.34"
             break
         }
         cu126 {
-            $pytorch_package = "torch==2.9.1+cu126 torchvision==0.24.1+cu126 torchaudio==2.9.1+cu126"
-            $xformers_package = "xformers==0.0.33.post2"
+            $pytorch_package = "torch==2.10.0+cu126 torchvision==0.25.0+cu126 torchaudio==2.10.0+cu126"
+            $xformers_package = "xformers==0.0.34"
             break
         }
         cu124 {
@@ -7883,6 +7883,74 @@ function Get-PyTorch-List {
         `"extra_index_mirror`" = `"`"
         `"find_links`" = `"`"
     }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.10.0 (CPU)`"
+        `"type`" = `"cpu`"
+        `"supported`" = `"cpu`" -in `$supported_type
+        `"torch`" = `"torch==2.10.0+cpu torchvision==0.25.0+cpu torchaudio==2.10.0+cpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.10.0 (Intel Arc)`"
+        `"type`" = `"xpu`"
+        `"supported`" = `"xpu`" -in `$supported_type
+        `"torch`" = `"torch==2.10.0+xpu torchvision==0.25.0+xpu torchaudio==2.10.0+xpu`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_XPU
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.10.0 (CUDA 12.6)`"
+        `"type`" = `"cu126`"
+        `"supported`" = `"cu126`" -in `$supported_type
+        `"torch`" = `"torch==2.10.0+cu126 torchvision==0.25.0+cu126 torchaudio==2.10.0+cu126`"
+        `"xformers`" = `"xformers==0.0.34`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU126
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.10.0 (CUDA 12.8)`"
+        `"type`" = `"cu128`"
+        `"supported`" = `"cu128`" -in `$supported_type
+        `"torch`" = `"torch==2.10.0+cu128 torchvision==0.25.0+cu128 torchaudio==2.10.0+cu128`"
+        `"xformers`" = `"xformers==0.0.34`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU128
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
+    `$pytorch_list.Add(@{
+        `"name`" = `"Torch 2.10.0 (CUDA 13.0)`"
+        `"type`" = `"cu130`"
+        `"supported`" = `"cu130`" -in `$supported_type
+        `"torch`" = `"torch==2.10.0+cu130 torchvision==0.25.0+cu130 torchaudio==2.10.0+cu130`"
+        `"xformers`" = `"xformers==0.0.34`"
+        `"index_mirror`" = if (`$USE_PIP_MIRROR) {
+            `$PIP_EXTRA_INDEX_MIRROR_CU130_NJU
+        } else {
+            `$PIP_EXTRA_INDEX_MIRROR_CU130
+        }
+        `"extra_index_mirror`" = `"`"
+        `"find_links`" = `"`"
+    }) | Out-Null
     # <<<<<<<<<< End
     return `$pytorch_list
 }
@@ -11395,7 +11463,7 @@ function Get-SD-Trainer-Installer-Cmdlet-Help {
         例如: .\$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD-Trainer Installer 安装 SD-Trainer 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cpu, xpu, cu11x, cu118, cu121, cu124, cu126, cu128, cu129, cu130
 
     -InstallBranch <安装的 SD-Trainer 分支>
         指定 SD-Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer, kohya_gui)

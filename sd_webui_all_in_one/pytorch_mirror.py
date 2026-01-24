@@ -4,16 +4,20 @@ import re
 import subprocess
 from typing import Literal
 
-from sd_webui_all_in_one.config import PYTORCH_MIRROR_DICT
+from sd_webui_all_in_one.config import PYTORCH_MIRROR_DICT, PYTORCH_MIRROR_NJU_DICT
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 
 
-def get_pytorch_mirror_dict() -> dict[str, str]:
+def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str]:
     """获取 PyTorch 镜像源字典
 
+    Args:
+        use_cn_mirror (bool | None): 是否使用国内镜像 (NJU)
     Returns:
         (dict[str, str]): PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm61" 等), 值为对应的 PyTorch wheel 下载地址
     """
+    if use_cn_mirror:
+        PYTORCH_MIRROR_NJU_DICT.copy()
     return PYTORCH_MIRROR_DICT.copy()
 
 
@@ -84,7 +88,7 @@ def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
     # cu126: 2.6.0 ~ 2.7.1
     # cu128: 2.7.0 ~ 2.7.1
     # cu129: 2.8.0
-    # cu130: 2.9.0 ~
+    # cu130: 2.9.0 ~ 2.10.0
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
@@ -134,8 +138,16 @@ def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
             if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("126"):
                 return "cu126"
         return "cu129"
-    if torch_version >= CommonVersionComparison("2.9.0"):
-        # torch >= 2.9.0: default cu130
+    if CommonVersionComparison("2.9.0") <= torch_version < CommonVersionComparison("2.10.0"):
+        # 2.9.0 <= torch < 2.10.0: default cu130
+        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("130"):
+            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
+                return "cu128"
+            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("126"):
+                return "cu126"
+        return "cu130"
+    if CommonVersionComparison("2.10.0") <= torch_version:
+        # torch >= 2.10.0: default cu130
         if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("130"):
             if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
                 return "cu128"
@@ -170,11 +182,14 @@ def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
     if CommonVersionComparison("2.7.0") <= torch_version < CommonVersionComparison("2.8.0"):
         # 2.7.0 <= torch < 2.8.0
         return "rocm63"
-    if torch_version >= CommonVersionComparison("2.8.0"):
-        # torch >= 2.8.0
+    if CommonVersionComparison("2.8.0") <= torch_version < CommonVersionComparison("2.10.0"):
+        # 2.8.0 <= torch < 2.10.0
         return "rocm64"
+    if CommonVersionComparison("2.10.0") <= torch_version:
+        # 2.10.0 <= torch
+        return "rocm71"
 
-    return "rocm64"
+    return "rocm71"
 
 
 def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
