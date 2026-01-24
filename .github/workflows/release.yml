@@ -67,7 +67,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install requests requests-toolbelt --break-system-packages
+          pip install requests requests-toolbelt
 
       - name: Release ${{ matrix.name }} to GitHub
         shell: bash

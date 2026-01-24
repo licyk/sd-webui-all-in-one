@@ -3,30 +3,14 @@
 import sys
 import warnings
 import subprocess
-import importlib.metadata
 
 
-def init_sd_webui_all_in_one_module(
-    url: str | None = None,
-    force_download: bool | None = False,
-) -> None:
+def init_sd_webui_all_in_one_module() -> None:
     """SD WebUI All In One 模块下载工具"""
-    if url is None:
-        url = "https://github.com/licyk/sd-webui-all-in-one@main"
-
-    cmd = f'"{sys.executable}" -m pip install git+"{url}"'
-
-    if not force_download:
-        try:
-            _ = importlib.metadata.version("sd-webui-all-in-one")
-            print("SD WebUI All In One 已安装")
-            return
-        except Exception:
-            pass
 
     print("安装 SD WebUI All In One 中")
     with subprocess.Popen(
-        cmd,
+        f'"{sys.executable}" -m pip install sd-webui-all-in-one --upgrade',
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         bufsize=1,
