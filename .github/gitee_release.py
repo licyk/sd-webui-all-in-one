@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # coding:utf-8
+# tools: https://github.com/nICEnnnnnnnLee/action-gitee-release
+# fork: https://github.com/licyk/action-gitee-release
+# Gitee release id: https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
 import os, glob
 import requests,json,time
 from requests_toolbelt import MultipartEncoder
