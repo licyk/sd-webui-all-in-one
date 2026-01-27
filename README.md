@@ -56,6 +56,7 @@ _✨快速部署，简单易用_
   - [Fooocus Installer](#fooocus-installer)
   - [SD-Trainer Installer](#sd-trainer-installer)
   - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
+  - [Qwen TTS WebUI Installer](#qwen-tts-webui-installer)
   - [Python Installer](#python-installer)
   - [Installer 自动化构建状态](#installer-自动化构建状态)
 
@@ -241,6 +242,12 @@ Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) 
 详细的说明[点击此处](docs/sd_trainer_script_installer.md)阅读。
 
 
+## Qwen TTS WebUI Installer
+Windows 平台一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的脚本，包含启动，管理 Qwen TTS WebUI 的工具。
+
+详细的说明[点击此处](docs/qwen_tts_webui_installer.md)阅读。
+
+
 ## Python Installer
 [install_embed_python.ps1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/install_embed_python.ps1)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/installer/install_embed_python.ps1))：Windows 平台一键安装便携式 Python，可用做测试。
 
@@ -260,3 +267,4 @@ Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) 
 |Build [Kohya GUI](https://github.com/bmaltais/kohya_ss) Portable|[![Build Kohya GUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml)|
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
+|Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
