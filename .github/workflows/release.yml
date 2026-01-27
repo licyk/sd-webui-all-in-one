@@ -42,7 +42,7 @@ jobs:
             gt_id: 461216
             files: installer/sd_trainer_script_installer.ps1
           - name: Qwen-TTS-WebUI-Installer
-            gt_tag: qwen_tts_webui_installer
+            gh_tag: qwen_tts_webui_installer
             gt_id:  573107
             files: installer/qwen_tts_webui_installer.ps1
           - name: Archive-Configs
