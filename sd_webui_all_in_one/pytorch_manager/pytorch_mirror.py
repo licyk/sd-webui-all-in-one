@@ -4,8 +4,9 @@ import re
 import subprocess
 from typing import Literal
 
-from sd_webui_all_in_one.config import PYTORCH_MIRROR_DICT, PYTORCH_MIRROR_NJU_DICT
+from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_MIRROR_NJU_DICT
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
+from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_MIRROR_DICT
 
 
 def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str]:
@@ -276,7 +277,7 @@ def get_env_pytorch_type() -> str:
     except Exception as _:
         return "cuda"
 
-    torch_type = torch_ver.split("+").pop()
+    torch_type = torch_ver.split("+")[-1]
 
     if torch_ver in torch_ipex_legacy_ver_list:
         return "xpu"

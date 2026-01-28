@@ -3,7 +3,7 @@
 import os
 import importlib.metadata
 from pathlib import Path
-from typing_extensions import Literal
+from typing import Literal
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.manager.base_manager import BaseManager
@@ -18,7 +18,7 @@ from sd_webui_all_in_one.env import configure_env_var, configure_pip
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.package_analyzer.ver_cmp import version_decrement, version_increment
-from sd_webui_all_in_one.pytorch_mirror import get_pytorch_mirror_dict, get_pytorch_mirror_type
+from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_pytorch_mirror_dict, get_pytorch_mirror_type
 from sd_webui_all_in_one.env_manager import install_manager_depend, install_pytorch, pip_install
 from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, get_package_version, is_package_has_version
 

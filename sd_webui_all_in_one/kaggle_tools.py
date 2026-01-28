@@ -22,7 +22,7 @@ def get_kaggle_secret(key: str) -> str | None:
         (str | None): Kaggle Secret 名称对应的密钥
     """
     try:
-        from kaggle_secrets import UserSecretsClient
+        from kaggle_secrets import UserSecretsClient  # pylint: disable=import-error  # type: ignore
     except Exception as e:
         logger.error("无法导入 Kaggle 工具, 获取 Kaggle Secret 失败: %s", e)
         return None
