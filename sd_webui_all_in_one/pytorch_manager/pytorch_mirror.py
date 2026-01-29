@@ -113,59 +113,59 @@ def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
         return "cu118"
     if CommonVersionComparison("2.3.0") <= torch_version < CommonVersionComparison("2.4.1"):
         # 2.3.0 <= torch < 2.4.1: default cu121
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("121"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("118"):
+        if cuda_support_version < CommonVersionComparison("121"):
+            if cuda_support_version >= CommonVersionComparison("118"):
                 return "cu118"
         return "cu121"
     if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.6.0"):
         # 2.4.0 <= torch < 2.6.0: default cu124
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("124"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("121"):
+        if cuda_support_version < CommonVersionComparison("124"):
+            if cuda_support_version >= CommonVersionComparison("121"):
                 return "cu121"
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("118"):
+            if cuda_support_version >= CommonVersionComparison("118"):
                 return "cu118"
         return "cu124"
     if CommonVersionComparison("2.6.0") <= torch_version < CommonVersionComparison("2.7.0"):
         # 2.6.0 <= torch < 2.7.0: default cu126
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("126"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("124"):
+        if cuda_support_version < CommonVersionComparison("126"):
+            if cuda_support_version >= CommonVersionComparison("124"):
                 return "cu124"
         if CommonVersionComparison(cuda_comp_cap) > CommonVersionComparison("10.0"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
+            if cuda_support_version >= CommonVersionComparison("128"):
                 return "cu128"
         return "cu126"
     if CommonVersionComparison("2.7.0") <= torch_version < CommonVersionComparison("2.8.0"):
         # 2.7.0 <= torch < 2.8.0: default cu128
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("128"):
-            if CommonVersionComparison(cuda_support_version) > CommonVersionComparison("126"):
+        if cuda_support_version < CommonVersionComparison("128"):
+            if cuda_support_version > CommonVersionComparison("126"):
                 return "cu126"
         return "cu128"
     if CommonVersionComparison("2.8.0") <= torch_version < CommonVersionComparison("2.9.0"):
         # 2.8.0 <= torch < 2.9.0: default cu129
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("129"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
+        if cuda_support_version < CommonVersionComparison("129"):
+            if cuda_support_version >= CommonVersionComparison("128"):
                 return "cu128"
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("126"):
+            if cuda_support_version >= CommonVersionComparison("126"):
                 return "cu126"
         return "cu129"
     if CommonVersionComparison("2.9.0") <= torch_version < CommonVersionComparison("2.10.0"):
         # 2.9.0 <= torch < 2.10.0: default cu130
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("130"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
+        if cuda_support_version < CommonVersionComparison("130"):
+            if cuda_support_version >= CommonVersionComparison("128"):
                 return "cu128"
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("126"):
+            if cuda_support_version >= CommonVersionComparison("126"):
                 return "cu126"
         return "cu130"
     if CommonVersionComparison("2.10.0") <= torch_version:
         # torch >= 2.10.0: default cu130
-        if CommonVersionComparison(cuda_support_version) < CommonVersionComparison("130"):
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("128"):
+        if cuda_support_version < CommonVersionComparison("130"):
+            if cuda_support_version >= CommonVersionComparison("128"):
                 return "cu128"
-            if CommonVersionComparison(cuda_support_version) >= CommonVersionComparison("126"):
+            if cuda_support_version >= CommonVersionComparison("126"):
                 return "cu126"
         return "cu130"
 
-    return "cu129"
+    return "cu130"
 
 
 def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
