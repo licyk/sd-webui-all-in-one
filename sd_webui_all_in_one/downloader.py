@@ -28,6 +28,7 @@ def aria2(
     url: str,
     path: Path | str | None = None,
     save_name: str | None = None,
+    progress: bool | None = True,
 ) -> Path:
     """Aria2 下载工具
 
@@ -35,6 +36,7 @@ def aria2(
         url (str): 文件下载链接
         path (Path | str | None): 下载文件的路径, 为`None`时使用当前路径
         save_name (str | None): 保存的文件名, 为`None`时使用`url`提取保存的文件名
+        progress (bool | None): 是否启用下载进度条
     Returns:
         Path: 下载成功时返回文件路径, 否则返回`None`
     Raises:
@@ -68,7 +70,8 @@ def aria2(
                 path.as_posix(),
                 "-o",
                 save_name,
-            ]
+            ],
+            live=progress,
         )
         return save_path
     except Exception as e:
@@ -80,7 +83,7 @@ def load_file_from_url(
     url: str,
     *,
     model_dir: Path | str | None = None,
-    progress: bool | None = False,
+    progress: bool | None = True,
     file_name: str | None = None,
     hash_prefix: str | None = None,
     re_download: bool | None = False,
@@ -169,6 +172,7 @@ def download_file(
     save_name: str | None = None,
     tool: Literal["aria2", "requests"] = "aria2",
     retry: int | None = 3,
+    progress: bool | None = True,
 ) -> Path | None:
     """下载文件工具
 
@@ -178,6 +182,7 @@ def download_file(
         save_name (str | None): 文件保存名称, 当为`None`时从`url`中解析文件名
         tool (Literal["aria2", "requests"]): 下载工具
         retry (int | None): 重试下载的次数
+        progress (bool | None): 是否启用下载进度条
     Returns:
         (Path | None): 保存的文件路径
     """
@@ -193,6 +198,7 @@ def download_file(
                     url=url,
                     path=path,
                     save_name=save_name,
+                    progress=progress,
                 )
                 if output is None:
                     continue
@@ -202,6 +208,7 @@ def download_file(
                     url=url,
                     model_dir=path,
                     file_name=save_name,
+                    progress=progress,
                 )
                 if output is None:
                     continue

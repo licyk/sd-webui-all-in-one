@@ -1,12 +1,21 @@
 """PyTorch 镜像管理工具"""
 
+import json
 import re
+import shutil
 import subprocess
-from typing import Literal
+import sys
+from typing import Literal, TypedDict
 
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_MIRROR_NJU_DICT
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_MIRROR_DICT
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYTORCH_MIRROR_DICT,
+    PYTORCH_MIRROR_NJU_DICT,
+    PYTORCH_DOWNLOAD_DICT,
+    PyTorchVersionInfoList,
+    PyTorchVersionInfo,
+    PYTORCH_DEVICE_LIST,
+)
 
 
 def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str]:
@@ -295,3 +304,273 @@ def get_env_pytorch_type() -> str:
         return "cpu"
 
     return "cuda"
+
+
+class GPUDeviceInfo(TypedDict, total=False):
+    """显卡信息"""
+
+    Name: str
+    """显卡名称"""
+
+    AdapterCompatibility: str | None
+    """显卡兼容能力 (类型)"""
+
+    AdapterRAM: str | None
+    """显卡显存大小"""
+
+    DriverVersion: str | None
+    """驱动版本"""
+
+
+def get_windows_gpu_list() -> list[GPUDeviceInfo]:
+    """获取 Windows 上的显卡列表
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    try:
+        cmd = ["powershell", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpus = json.loads(result.stdout)
+        if isinstance(gpus, dict):
+            gpus = [gpus]
+
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append(
+                {
+                    "Name": gpu.get("Name", None),
+                    "AdapterCompatibility": gpu.get("AdapterCompatibility", None),
+                    "AdapterRAM": gpu.get("AdapterRAM", None),
+                    "DriverVersion": gpu.get("DriverVersion", None),
+                }
+            )
+        return gpu_info
+    except Exception as _:
+        return []
+
+
+def get_lshw_gpus() -> list[GPUDeviceInfo]:
+    """通过 lshw 获取 GPU 信息
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    if not shutil.which("lshw"):
+        return []
+
+    try:
+        cmd = ["lshw", "-C", "display", "-json"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(result.stdout)
+        gpus = [data] if isinstance(data, dict) else data
+
+        gpu_info: list[GPUDeviceInfo] = []
+        for gpu in gpus:
+            gpu_info.append(
+                {
+                    "Name": gpu.get("product"),
+                    "AdapterCompatibility": gpu.get("vendor"),
+                    "AdapterRAM": str(gpu.get("size")) if gpu.get("size") else None,
+                    "DriverVersion": gpu.get("configuration", {}).get("driver"),
+                }
+            )
+        return gpu_info
+    except Exception:
+        return []
+
+
+def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
+    """通过 nvidia-smi 获取 NVIDIA 显卡精确信息
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    if not shutil.which("nvidia-smi"):
+        return []
+
+    try:
+        cmd = ["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv,noheader,nounits"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpu_info: list[GPUDeviceInfo] = []
+        for line in result.stdout.strip().split("\n"):
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            gpu_info.append(
+                {
+                    "Name": parts[0],
+                    "AdapterCompatibility": "NVIDIA",
+                    "AdapterRAM": str(int(parts[1]) * 1024 * 1024) if parts[1].isdigit() else None,
+                    "DriverVersion": parts[2],
+                }
+            )
+        return gpu_info
+    except Exception:
+        return []
+
+
+def get_lspci_gpus() -> list[GPUDeviceInfo]:
+    """通过 lspci 获取显卡信息
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    if not shutil.which("lspci"):
+        return []
+
+    try:
+        cmd = ["lspci", "-vmm", "-d", "::0300"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        gpu_info: list[GPUDeviceInfo] = []
+        devices = result.stdout.strip().split("\n\n")
+        for dev in devices:
+            info = {line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip() for line in dev.split("\n") if ":" in line}
+            gpu_info.append(
+                {
+                    "Name": info.get("Device"),
+                    "AdapterCompatibility": info.get("Vendor"),
+                    "AdapterRAM": None,
+                    "DriverVersion": info.get("Driver"),
+                }
+            )
+        return gpu_info
+    except Exception:
+        return []
+
+
+def get_linux_gpu_list() -> list[GPUDeviceInfo]:
+    """获取 Linux 上的显卡列表
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    all_gpus: list[GPUDeviceInfo] = []
+
+    all_gpus.extend(get_nvidia_smi_gpus())
+    all_gpus.extend(get_lshw_gpus())
+    all_gpus.extend(get_lspci_gpus())
+
+    unique_gpus: GPUDeviceInfo = {}
+
+    for gpu in all_gpus:
+        name = gpu.get("Name")
+        if not name:
+            continue
+
+        norm_name = name.strip().lower()
+
+        if norm_name not in unique_gpus:
+            unique_gpus[norm_name] = gpu
+        else:
+            existing = unique_gpus[norm_name]
+            for key in ["AdapterCompatibility", "AdapterRAM", "DriverVersion"]:
+                if not existing.get(key) and gpu.get(key):
+                    existing[key] = gpu[key]
+
+    return list(unique_gpus.values())
+
+
+def get_gpu_list() -> list[GPUDeviceInfo]:
+    """获取当前平台上的 GPU 列表
+
+    Args:
+        list[GPUDeviceInfo]:
+            显卡信息列表
+    """
+    if sys.platform == "win32":
+        return get_windows_gpu_list()
+    elif sys.platform == "linux":
+        return get_linux_gpu_list()
+    else:
+        return []
+
+
+def get_avaliable_pytorch_device_type() -> list[str]:
+    """获取当前设备上可用的 PyTorch 设备类型
+
+    Returns:
+        list[str]:
+            可用的 PyTorch 设备类型列表
+    """
+    gpu_list = get_gpu_list()
+    cuda_comp_cap = get_cuda_comp_cap()
+    cuda_support_ver = get_cuda_version()
+    device_list = ["cpu", "all"]
+
+    has_gpus = any(
+        x
+        for x in gpu_list
+        if "Intel" in x.get("AdapterCompatibility", "") or "NVIDIA" in x.get("AdapterCompatibility", "") or "Advanced Micro Devices" in x.get("AdapterCompatibility", "")
+    )
+    has_nvidia_gpu = any(
+        x
+        for x in gpu_list
+        if "NVIDIA" in x.get("AdapterCompatibility", "")
+        and (x.get("Name", "").startswith("NVIDIA") or x.get("Name", "").startswith("GeForce") or x.get("Name", "").startswith("Tesla") or x.get("Name", "").startswith("Quadro"))
+    )
+    has_intel_xpu = any(
+        x
+        for x in gpu_list
+        if "Intel" in x.get("AdapterCompatibility", "") and (x.get("Name", "").startswith("Intel(R) Arc") or x.get("Name", "").startswith("Intel(R) Core Ultra"))
+    )
+    has_amd_gpu = any(x for x in gpu_list if "Advanced Micro Devices" in x.get("AdapterCompatibility", "") and x.get("Name", "").startswith("AMD Radeon"))
+
+    if has_gpus:
+        device_list.append("directml")
+
+    if has_nvidia_gpu:
+        if CommonVersionComparison(cuda_comp_cap) < CommonVersionComparison("10.0"):
+            for ver in PYTORCH_DEVICE_LIST:
+                if not ver.startswith("cu"):
+                    continue
+
+                if CommonVersionComparison(ver) >= CommonVersionComparison(str(int(12.8 * 10))):
+                    device_list.append(ver)
+        else:
+            for ver in PYTORCH_DEVICE_LIST:
+                if not ver.startswith("cu"):
+                    continue
+
+                if CommonVersionComparison(ver) <= CommonVersionComparison(str(int(cuda_support_ver * 10))):
+                    device_list.append(ver)
+
+    if has_intel_xpu:
+        device_list.append("xpu")
+        device_list.append("ipex_legacy_arc")
+
+    if has_amd_gpu and sys.platform == "linux":
+        for ver in PYTORCH_DEVICE_LIST:
+            if not ver.startswith("rocm"):
+                continue
+
+            device_list.append(ver)
+
+    return device_list
+
+
+def export_pytorch_list() -> PyTorchVersionInfoList:
+    """导出 PyTorch 版本列表
+
+    Returns:
+        PyTorchVersionInfoList:
+            PyTorch 版本列表
+    """
+    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
+    device_list = set(get_avaliable_pytorch_device_type())
+    new_pytorch_list: list[PyTorchVersionInfo] = []
+
+    for i in pytorch_list:
+        supported = False
+        if i["dtype"] in device_list:
+            supported = True
+
+        i["supported"] = supported
+        new_pytorch_list.append(i)
+
+    return new_pytorch_list

@@ -212,6 +212,7 @@ class FooocusManager(BaseManager):
                 "path": sd_model_path,
                 "save_name": i,
                 "tool": sd_model_downloader,
+                "progress": True if sd_model_downloader == "aria2" else False,
             }
             for i in sd_model_list
         ]
@@ -221,6 +222,7 @@ class FooocusManager(BaseManager):
                 "path": lora_path,
                 "save_name": i,
                 "tool": lora_downloader,
+                "progress": True if lora_downloader == "aria2" else False,
             }
             for i in lora_list
         ]
@@ -230,6 +232,7 @@ class FooocusManager(BaseManager):
                 "path": vae_path,
                 "save_name": i,
                 "tool": vae_downloader,
+                "progress": True if vae_downloader == "aria2" else False,
             }
             for i in vae_list
         ]
@@ -239,6 +242,7 @@ class FooocusManager(BaseManager):
                 "path": embedding_path,
                 "save_name": i,
                 "tool": embedding_downloader,
+                "progress": True if embedding_downloader == "aria2" else False,
             }
             for i in embedding_list
         ]

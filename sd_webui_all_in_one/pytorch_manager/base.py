@@ -4,6 +4,7 @@ from typing import (
     TypedDict,
     TypeAlias,
     Literal,
+    get_args,
 )
 
 PYTORCH_MIRROR_DICT = {
@@ -110,6 +111,8 @@ PyTorchDeviceType: TypeAlias = Literal[
 ]
 """PyTorch 支持的设备类型"""
 
+PYTORCH_DEVICE_LIST: list[str] = list(get_args(PyTorchDeviceType))
+"""PyTorch 支持的设备类型列表"""
 
 class PyTorchMirrorType(TypedDict, total=False):
     """PyTorch 镜像源类型"""
