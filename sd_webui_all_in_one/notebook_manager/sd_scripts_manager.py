@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp

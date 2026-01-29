@@ -1,43 +1,43 @@
-"""Fooocus 管理工具"""
+"""ComfyUI 管理工具"""
 
 import os
 import sys
-import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env import configure_env_var, configure_pip
-from sd_webui_all_in_one.downloader import MultiThreadDownloader, download_file
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import comfyui_conflict_analyzer
 from sd_webui_all_in_one.env_manager import install_manager_depend, install_pytorch, install_requirements
 
 
 logger = get_logger(
-    name="Fooocus Manager",
+    name="ComfyUI Manager",
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
 
 
-class FooocusManager(BaseManager):
-    """Fooocus 管理工具"""
+class ComfyUIManager(BaseManager):
+    """ComfyUI 管理工具"""
 
     def mount_drive(
         self,
         extras: list[dict[str, str | bool]] = None,
     ) -> None:
-        """挂载 Google Drive 并创建 Fooocus 输出文件夹
+        """挂载 Google Drive 并创建 ComfyUI 输出文件夹
 
         挂载额外目录需要使用`link_dir`指定要挂载的路径, 并且使用相对路径指定
 
@@ -53,7 +53,7 @@ class FooocusManager(BaseManager):
             {"link_dir": "extra_model_paths.yaml", "is_file": True},
         ]
         ```
-        默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
+        默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
 
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
@@ -69,19 +69,18 @@ class FooocusManager(BaseManager):
             if not mount_google_drive(drive_path):
                 raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
 
-        drive_output = drive_path / "MyDrive" / "fooocus_output"
-        fooocus_path = self.workspace / self.workfolder
+        drive_output = drive_path / "MyDrive" / "comfyui_output"
+        comfyui_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
-            {"link_dir": "outputs"},
-            {"link_dir": "presets"},
-            {"link_dir": "language"},
-            {"link_dir": "wildcards"},
-            {"link_dir": "config.txt", "is_file": True},
+            {"link_dir": "output"},
+            {"link_dir": "user"},
+            {"link_dir": "input"},
+            {"link_dir": "extra_model_paths.yaml", "is_file": True},
         ]
         if extras is not None:
             links += extras
         self.link_to_google_drive(
-            base_dir=fooocus_path,
+            base_dir=comfyui_path,
             drive_path=drive_output,
             links=links,
         )
@@ -99,7 +98,7 @@ class FooocusManager(BaseManager):
             filename (str | None): 模型下载后保存的名称
             model_type (str | None): 模型的类型
         Returns:
-            (Path | None): 模型保存路径
+            Path | None: 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -131,145 +130,88 @@ class FooocusManager(BaseManager):
 
     def install_config(
         self,
-        preset: str | None = None,
-        translation: str | None = None,
+        setting: str | None = None,
     ) -> None:
-        """下载 Fooocus 配置文件
+        """下载 ComfyUI 配置文件
 
         Args:
-            preset (str | None): Fooocus 预设文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/presets/custom.json`
-            path_config (str | None): Fooocus 路径配置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.txt`
-            translation (str | None): Fooocus 翻译文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/language/zh.json`
+            setting ( str| None): ComfyUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/user/default/comfy.settings.json`
         """
-        path = self.workspace / self.workfolder
-        preset_path = path / "presets"
-        language_path = path / "language"
+        setting_path = self.workspace / self.workfolder / "user" / "default"
         logger.info("下载配置文件")
-        if preset is not None:
-            download_file(url=preset, path=preset_path, save_name="custom.json")
-        if translation is not None:
-            download_file(url=translation, path=language_path, save_name="zh.json")
+        if setting is not None:
+            download_file(
+                url=setting,
+                path=setting_path,
+                save_name="comfy.settings.json",
+            )
 
-    def pre_download_model(
+    def install_custom_node(
         self,
-        path: str | Path,
-        thread_num: int | None = 16,
-        downloader: Literal["aria2", "request", "mix"] = "mix",
-    ) -> None:
-        """根据 Fooocus 配置文件预下载模型
+        custom_node: str,
+    ) -> Path | None:
+        """安装 ComfyUI 自定义节点
 
         Args:
-            path (str | Path): Fooocus 配置文件路径
-            thread_num (int | None): 下载模型的线程数
-            downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的下载器 (`aria2`, `request`, `mix`)
+            custom_node (str): 自定义节点下载地址
+        Returns:
+            (Path | None): 自定义节点安装路径
         """
-        path = Path(path) if not isinstance(path, Path) and path is not None else path
-        if path.exists():
-            try:
-                with open(path, "r", encoding="utf8") as file:
-                    data = json.load(file)
-            except Exception as e:
-                logger.warning("打开 Fooocus 配置文件时出现错误: %s", e)
-                data = {}
-        else:
-            data = {}
+        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
+        name = os.path.basename(custom_node)
+        install_path = custom_node_path / name
+        logger.info("安装 %s 自定义节点中", name)
+        p = git_warpper.clone(repo=custom_node, path=install_path)
+        if p is not None:
+            logger.info("安装 %s 自定义节点完成", name)
+            return p
+        logger.error("安装 %s 自定义节点失败", name)
+        return None
 
-        if downloader == "aria2":
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "aria2"
-            lora_downloader = "aria2"
-        elif downloader == "requests":
-            sd_model_downloader = "requests"
-            vae_downloader = "requests"
-            embedding_downloader = "requests"
-            lora_downloader = "requests"
-        elif downloader == "mix":
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "requests"
-            lora_downloader = "requests"
-        else:
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "aria2"
-            lora_downloader = "aria2"
+    def install_custom_nodes_from_list(
+        self,
+        custom_node_list: list[str],
+    ) -> None:
+        """安装 ComfyUI 自定义节点
 
-        sd_model_list: dict[str, str] = data.get("checkpoint_downloads", {})
-        lora_list: dict[str, str] = data.get("lora_downloads", {})
-        vae_list: dict[str, str] = data.get("vae_downloads", {})
-        embedding_list: dict[str, str] = data.get("embeddings_downloads", {})
-        fooocus_path = self.workspace / self.workfolder
-        sd_model_path = fooocus_path / "models" / "checkpoints"
-        lora_path = fooocus_path / "models" / "loras"
-        vae_path = fooocus_path / "models" / "vae"
-        embedding_path = fooocus_path / "models" / "embeddings"
+        Args:
+            custom_node_list (list[str]): 自定义节点列表
+        """
+        logger.info("安装 ComfyUI 自定义节点中")
+        for node in custom_node_list:
+            self.install_custom_node(node)
+        logger.info("安装 ComfyUI 自定义节点完成")
 
-        downloader_params: list[dict[str, Any]] = []
-        downloader_params += [
-            {
-                "url": sd_model_list.get(i),
-                "path": sd_model_path,
-                "save_name": i,
-                "tool": sd_model_downloader,
-                "progress": True if sd_model_downloader == "aria2" else False,
-            }
-            for i in sd_model_list
-        ]
-        downloader_params += [
-            {
-                "url": lora_list.get(i),
-                "path": lora_path,
-                "save_name": i,
-                "tool": lora_downloader,
-                "progress": True if lora_downloader == "aria2" else False,
-            }
-            for i in lora_list
-        ]
-        downloader_params += [
-            {
-                "url": vae_list.get(i),
-                "path": vae_path,
-                "save_name": i,
-                "tool": vae_downloader,
-                "progress": True if vae_downloader == "aria2" else False,
-            }
-            for i in vae_list
-        ]
-        downloader_params += [
-            {
-                "url": embedding_list.get(i),
-                "path": embedding_path,
-                "save_name": i,
-                "tool": embedding_downloader,
-                "progress": True if embedding_downloader == "aria2" else False,
-            }
-            for i in embedding_list
-        ]
-
-        model_downloader = MultiThreadDownloader(
-            download_func=download_file,
-            download_kwargs_list=downloader_params,
-        )
-        model_downloader.start(num_threads=thread_num)
-        logger.info("预下载 Fooocus 模型完成")
+    def update_custom_nodes(self) -> None:
+        """更新 ComfyUI 自定义节点"""
+        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
+        custom_node_list = [x for x in custom_node_path.iterdir() if x.is_dir() and (x / ".git").is_dir()]
+        for i in custom_node_list:
+            logger.info("更新 %s 自定义节点中", i.name)
+            if git_warpper.update(i):
+                logger.info("更新 %s 自定义节点成功", i.name)
+            else:
+                logger.info("更新 %s 自定义节点失败", i.name)
 
     def check_env(
         self,
         use_uv: bool | None = True,
-        requirements_file: str | None = "requirements_versions.txt",
+        install_conflict_component_requirement: bool | None = True,
+        requirements_file: str | None = "requirements.txt",
     ) -> None:
-        """检查 Fooocus 运行环境
+        """检查 ComfyUI 运行环境
 
         Args:
             use_uv (bool | None): 使用 uv 安装依赖
+            install_conflict_component_requirement (bool | None): 检测到冲突依赖时是否按顺序安装组件依赖
             requirements_file (str | None): 依赖文件名
         """
-        sd_webui_path = self.workspace / self.workfolder
-        requirement_path = sd_webui_path / requirements_file
-        py_dependency_checker(
-            requirement_path=requirement_path,
-            name="Fooocus",
+        comfyui_path = self.workspace / self.workfolder
+        requirement_path = comfyui_path / requirements_file
+        py_dependency_checker(requirement_path=requirement_path, name="ComfyUI", use_uv=use_uv)
+        comfyui_conflict_analyzer(
+            comfyui_root_path=comfyui_path,
+            install_conflict_component_requirement=install_conflict_component_requirement,
             use_uv=use_uv,
         )
         fix_torch_libomp()
@@ -280,15 +222,15 @@ class FooocusManager(BaseManager):
         self,
         params: list[str] | str | None = None,
     ) -> str:
-        """获取 Fooocus 启动命令
+        """获取 ComfyUI 启动命令
 
         Args:
-            params (list[str] | str | None): 启动 Fooocus 的参数
+            params (list[str] | str | None): 启动 ComfyUI 的参数
         Returns:
-            str: 完整的启动 Fooocus 的命令
+            str: 完整的启动 ComfyUI 的命令
         """
-        fooocus_path = self.workspace / self.workfolder
-        cmd = [Path(sys.executable).as_posix(), (fooocus_path / "launch.py").as_posix()]
+        comfyui_path = self.workspace / self.workfolder
+        cmd = [Path(sys.executable).as_posix(), (comfyui_path / "main.py").as_posix()]
         if params is not None:
             if isinstance(params, str):
                 cmd += self.parse_cmd_str_to_list(params)
@@ -301,14 +243,14 @@ class FooocusManager(BaseManager):
         params: list[str] | str | None = None,
         display_mode: Literal["terminal", "jupyter"] | None = None,
     ) -> None:
-        """启动 Fooocus
+        """启动 ComfyUI
 
         Args:
-            params (list[str] | str | None): Fooocus 启动参数
+            params (list[str] | str | None): 启动 ComfyUI 的参数
             display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
         """
         self.launch(
-            name="Fooocus",
+            name="ComfyUI",
             base_path=self.workspace / self.workfolder,
             cmd=self.get_launch_command(params),
             display_mode=display_mode,
@@ -325,12 +267,11 @@ class FooocusManager(BaseManager):
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
         pytorch_mirror: str | None = None,
-        fooocus_repo: str | None = None,
-        fooocus_requirements: str | None = None,
-        fooocus_preset: str | None = None,
-        fooocus_translation: str | None = None,
-        model_downloader: Literal["aria2", "request", "mix"] = "mix",
-        download_model_thread: int | None = 16,
+        comfyui_repo: str | None = None,
+        comfyui_requirements: str | None = None,
+        comfyui_setting: str | None = None,
+        custom_node_list: list[str] | None = None,
+        model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -341,7 +282,7 @@ class FooocusManager(BaseManager):
         *args,
         **kwargs,
     ) -> None:
-        """安装 Fooocus
+        """安装 ComfyUI
 
         Args:
             torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
@@ -353,12 +294,11 @@ class FooocusManager(BaseManager):
             github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None): HuggingFace 镜像源链接
             pytorch_mirror (str | None): PyTorch 镜像源链接
-            fooocus_repo (str | None): Fooocus 仓库地址
-            fooocus_requirements (str | None): Fooocus 依赖文件名
-            fooocus_preset (str | None): Fooocus 预设文件下载链接
-            fooocus_translation (str | None): Fooocus 翻译文件下载地址
-            model_downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的模型下载器
-            download_model_thread (int | None): 预下载模型的线程
+            comfyui_repo (str | None): ComfyUI 仓库地址
+            comfyui_requirements (str | None): ComfyUI 依赖文件名
+            comfyui_setting (str | None): ComfyUI 设置文件下载链接
+            custom_node_list (list[str] | None): 自定义节点列表
+            model_list (list[dict[str, str]] | None): 模型下载列表
             check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
@@ -370,27 +310,22 @@ class FooocusManager(BaseManager):
             Exception: GPU 不可用
         """
         warning_unexpected_params(
-            message="FooocusManager.install() 接收到不期望参数, 请检查参数输入是否正确",
+            message="ComfyUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
             args=args,
             kwargs=kwargs,
         )
-        logger.info("开始安装 Fooocus")
+        logger.info("开始安装 ComfyUI")
         if custom_sys_pkg_cmd is False:
             custom_sys_pkg_cmd = []
         elif custom_sys_pkg_cmd is True:
             custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
-        fooocus_path = self.workspace / self.workfolder
-        fooocus_repo = "https://github.com/lllyasviel/Fooocus" if fooocus_repo is None else fooocus_repo
-        fooocus_preset = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_config.json" if fooocus_preset is None else fooocus_preset
-        fooocus_translation = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_zh_cn.json" if fooocus_translation is None else fooocus_translation
-        requirements_path = fooocus_path / ("requirements_versions.txt" if fooocus_requirements is None else fooocus_requirements)
-        config_file = fooocus_path / "presets" / "custom.json"
+        comfyui_path = self.workspace / self.workfolder
+        comfyui_repo = "https://github.com/comfyanonymous/ComfyUI" if comfyui_repo is None else comfyui_repo
+        comfyui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/comfy.settings.json" if comfyui_setting is None else comfyui_setting
+        requirements_path = comfyui_path / ("requirements.txt" if comfyui_requirements is None else comfyui_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
-        logger.info("Fooocus 内核分支: %s", fooocus_repo)
-        logger.info("Fooocus 预设配置: %s", fooocus_preset)
-        logger.info("Fooocus 翻译配置: %s", fooocus_translation)
         set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -404,9 +339,12 @@ class FooocusManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        git_warpper.clone(fooocus_repo, fooocus_path)
+        git_warpper.clone(comfyui_repo, comfyui_path)
+        if custom_node_list is not None:
+            self.install_custom_nodes_from_list(custom_node_list)
         if update_core:
-            git_warpper.update(fooocus_path)
+            git_warpper.update(comfyui_path)
+            self.update_custom_nodes()
         install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
@@ -416,12 +354,11 @@ class FooocusManager(BaseManager):
         install_requirements(
             path=requirements_path,
             use_uv=use_uv,
-            cwd=fooocus_path,
+            cwd=comfyui_path,
         )
-        self.install_config(
-            preset=fooocus_preset,
-            translation=fooocus_translation,
-        )
+        self.install_config(comfyui_setting)
+        if model_list is not None:
+            self.get_sd_model_from_list(model_list)
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
@@ -430,9 +367,4 @@ class FooocusManager(BaseManager):
             self.tcmalloc.configure_tcmalloc()
         if enable_cuda_malloc:
             set_cuda_malloc()
-        self.pre_download_model(
-            path=config_file,
-            thread_num=download_model_thread,
-            downloader=model_downloader,
-        )
-        logger.info("Fooocus 安装完成")
+        logger.info("ComfyUI 安装完成")
