@@ -1,4 +1,4 @@
-from typing import TypedDict, Literal, TypeAlias
+from typing import TypedDict, Literal, TypeAlias, get_args
 
 SupportedWebUiType: TypeAlias = Literal[
     "sd_webui",
@@ -8,6 +8,10 @@ SupportedWebUiType: TypeAlias = Literal[
     "sd_trainer",
     "sd_scripts",
 ]
+"""支持的 WebUI 类型"""
+
+SUPPORTED_WEBUI_LIST: list[str] = list(get_args(SupportedWebUiType))
+"""支持的 WebUI 类型列表"""
 
 
 class ModelSavePath(TypedDict, total=False):
@@ -42,11 +46,18 @@ class ModelDownloadUrl(TypedDict, total=False):
     """模型下载地址 (ModelScope)"""
 
 
+ModelDownloadUrlType: TypeAlias = Literal["huggingface", "modelscope"]
+"""模型下载源类型"""
+
+
 class ModelCard(TypedDict):
     """模型下载信息"""
 
     name: str
     """模型名称"""
+
+    filename: str
+    """模型的保存名字"""
 
     url: ModelDownloadUrl
     """模型下载链接"""
@@ -68,7 +79,8 @@ ModelCardList = list[ModelCard]
 MODEL_DOWNLOAD_DICT: ModelCardList = [
     # SD 1.5
     {
-        "name": "v1-5-pruned-emaonly.safetensors",
+        "name": "v1-5-pruned-emaonly",
+        "filename": "v1-5-pruned-emaonly.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/v1-5-pruned-emaonly.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/v1-5-pruned-emaonly.safetensors",
@@ -92,7 +104,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animefull-final-pruned.safetensors",
+        "name": "animefull-final-pruned",
+        "filename": "animefull-final-pruned.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/animefull-final-pruned.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/animefull-final-pruned.safetensors",
@@ -116,7 +129,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "nai1-artist_all_in_one_merge.safetensors",
+        "name": "nai1-artist_all_in_one_merge",
+        "filename": "nai1-artist_all_in_one_merge.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/nai1-artist_all_in_one_merge.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/nai1-artist_all_in_one_merge.safetensors",
@@ -140,7 +154,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Counterfeit-V3.0_fp16.safetensors",
+        "name": "Counterfeit-V3.0_fp16",
+        "filename": "Counterfeit-V3.0_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/Counterfeit-V3.0_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/Counterfeit-V3.0_fp16.safetensors",
@@ -164,7 +179,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "cetusMix_Whalefall2.safetensors",
+        "name": "cetusMix_Whalefall2",
+        "filename": "cetusMix_Whalefall2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/cetusMix_Whalefall2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cetusMix_Whalefall2.safetensors",
@@ -188,7 +204,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "cuteyukimixAdorable_neochapter3.safetensors",
+        "name": "cuteyukimixAdorable_neochapter3",
+        "filename": "cuteyukimixAdorable_neochapter3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/cuteyukimixAdorable_neochapter3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/cuteyukimixAdorable_neochapter3.safetensors",
@@ -212,7 +229,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ekmix-pastel-fp16-no-ema.safetensors",
+        "name": "ekmix-pastel-fp16-no-ema",
+        "filename": "ekmix-pastel-fp16-no-ema.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/ekmix-pastel-fp16-no-ema.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ekmix-pastel-fp16-no-ema.safetensors",
@@ -236,7 +254,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ex2K_sse2.safetensors",
+        "name": "ex2K_sse2",
+        "filename": "ex2K_sse2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/ex2K_sse2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/ex2K_sse2.safetensors",
@@ -260,7 +279,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohakuV5_rev2.safetensors",
+        "name": "kohakuV5_rev2",
+        "filename": "kohakuV5_rev2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/kohakuV5_rev2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/kohakuV5_rev2.safetensors",
@@ -284,7 +304,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "meinamix_meinaV11.safetensors",
+        "name": "meinamix_meinaV11",
+        "filename": "meinamix_meinaV11.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/meinamix_meinaV11.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinamix_meinaV11.safetensors",
@@ -308,7 +329,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "oukaStar_10.safetensors",
+        "name": "oukaStar_10",
+        "filename": "oukaStar_10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/oukaStar_10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/oukaStar_10.safetensors",
@@ -332,7 +354,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors",
+        "name": "pastelMixStylizedAnime_pastelMixPrunedFP16",
+        "filename": "pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/pastelMixStylizedAnime_pastelMixPrunedFP16.safetensors",
@@ -356,7 +379,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "rabbit_v6.safetensors",
+        "name": "rabbit_v6",
+        "filename": "rabbit_v6.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/rabbit_v6.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/rabbit_v6.safetensors",
@@ -380,7 +404,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sweetSugarSyndrome_rev15.safetensors",
+        "name": "sweetSugarSyndrome_rev15",
+        "filename": "sweetSugarSyndrome_rev15.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/sweetSugarSyndrome_rev15.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/sweetSugarSyndrome_rev15.safetensors",
@@ -404,7 +429,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "AnythingV5Ink_ink.safetensors",
+        "name": "AnythingV5Ink_ink",
+        "filename": "AnythingV5Ink_ink.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/AnythingV5Ink_ink.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/AnythingV5Ink_ink.safetensors",
@@ -428,7 +454,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors",
+        "name": "bartstyledbBlueArchiveArtStyleFineTunedModel_v10",
+        "filename": "bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/bartstyledbBlueArchiveArtStyleFineTunedModel_v10.safetensors",
@@ -452,7 +479,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "meinapastel_v6Pastel.safetensors",
+        "name": "meinapastel_v6Pastel",
+        "filename": "meinapastel_v6Pastel.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/meinapastel_v6Pastel.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/meinapastel_v6Pastel.safetensors",
@@ -476,7 +504,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "qteamixQ_omegaFp16.safetensors",
+        "name": "qteamixQ_omegaFp16",
+        "filename": "qteamixQ_omegaFp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/qteamixQ_omegaFp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/qteamixQ_omegaFp16.safetensors",
@@ -500,7 +529,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "tmndMix_tmndMixSPRAINBOW.safetensors",
+        "name": "tmndMix_tmndMixSPRAINBOW",
+        "filename": "tmndMix_tmndMixSPRAINBOW.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_1.5/tmndMix_tmndMixSPRAINBOW.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_1.5/tmndMix_tmndMixSPRAINBOW.safetensors",
@@ -525,7 +555,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 2.1
     {
-        "name": "v2-1_768-ema-pruned.safetensors",
+        "name": "v2-1_768-ema-pruned",
+        "filename": "v2-1_768-ema-pruned.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_2.1/v2-1_768-ema-pruned.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/v2-1_768-ema-pruned.safetensors",
@@ -549,7 +580,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "wd-1-4-anime_e2.ckpt",
+        "name": "wd-1-4-anime_e2",
+        "filename": "wd-1-4-anime_e2.ckpt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_2.1/wd-1-4-anime_e2.ckpt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-1-4-anime_e2.ckpt",
@@ -573,7 +605,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "wd-mofu-fp16.safetensors",
+        "name": "wd-mofu-fp16",
+        "filename": "wd-mofu-fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sd_2.1/wd-mofu-fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sd_2.1/wd-mofu-fp16.safetensors",
@@ -598,7 +631,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SDXL
     {
-        "name": "sd_xl_offset_example-lora_1.0.safetensors",
+        "name": "sd_xl_offset_example-lora_1.0",
+        "filename": "sd_xl_offset_example-lora_1.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/sd_xl_offset_example-lora_1.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/sd_xl_offset_example-lora_1.0.safetensors",
@@ -622,7 +656,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd_xl_base_1.0_0.9vae.safetensors",
+        "name": "sd_xl_base_1.0_0.9vae",
+        "filename": "sd_xl_base_1.0_0.9vae.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_base_1.0_0.9vae.safetensors",
@@ -646,7 +681,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd_xl_refiner_1.0_0.9vae.safetensors",
+        "name": "sd_xl_refiner_1.0_0.9vae",
+        "filename": "sd_xl_refiner_1.0_0.9vae.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_refiner_1.0_0.9vae.safetensors",
@@ -670,7 +706,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd_xl_turbo_1.0_fp16.safetensors",
+        "name": "sd_xl_turbo_1.0_fp16",
+        "filename": "sd_xl_turbo_1.0_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_turbo_1.0_fp16.safetensors",
@@ -694,7 +731,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "cosxl.safetensors",
+        "name": "cosxl",
+        "filename": "cosxl.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/cosxl.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl.safetensors",
@@ -718,7 +756,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "cosxl_edit.safetensors",
+        "name": "cosxl_edit",
+        "filename": "cosxl_edit.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/cosxl_edit.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/cosxl_edit.safetensors",
@@ -742,7 +781,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-3.0-base.safetensors",
+        "name": "animagine-xl-3.0-base",
+        "filename": "animagine-xl-3.0-base.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-3.0-base.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0-base.safetensors",
@@ -766,7 +806,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-3.0.safetensors",
+        "name": "animagine-xl-3.0",
+        "filename": "animagine-xl-3.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-3.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.0.safetensors",
@@ -790,7 +831,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-3.1.safetensors",
+        "name": "animagine-xl-3.1",
+        "filename": "animagine-xl-3.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-3.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-3.1.safetensors",
@@ -814,7 +856,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-4.0.safetensors",
+        "name": "animagine-xl-4.0",
+        "filename": "animagine-xl-4.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-4.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0.safetensors",
@@ -838,7 +881,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-4.0-opt.safetensors",
+        "name": "animagine-xl-4.0-opt",
+        "filename": "animagine-xl-4.0-opt.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-4.0-opt.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-opt.safetensors",
@@ -862,7 +906,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagine-xl-4.0-zero.safetensors",
+        "name": "animagine-xl-4.0-zero",
+        "filename": "animagine-xl-4.0-zero.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animagine-xl-4.0-zero.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animagine-xl-4.0-zero.safetensors",
@@ -886,7 +931,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "holodayo-xl-2.1.safetensors",
+        "name": "holodayo-xl-2.1",
+        "filename": "holodayo-xl-2.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/holodayo-xl-2.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/holodayo-xl-2.1.safetensors",
@@ -910,7 +956,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kivotos-xl-2.0.safetensors",
+        "name": "kivotos-xl-2.0",
+        "filename": "kivotos-xl-2.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kivotos-xl-2.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kivotos-xl-2.0.safetensors",
@@ -934,7 +981,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "clandestine-xl-1.0.safetensors",
+        "name": "clandestine-xl-1.0",
+        "filename": "clandestine-xl-1.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/clandestine-xl-1.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/clandestine-xl-1.0.safetensors",
@@ -958,7 +1006,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "UrangDiffusion-1.1.safetensors",
+        "name": "UrangDiffusion-1.1",
+        "filename": "UrangDiffusion-1.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/UrangDiffusion-1.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/UrangDiffusion-1.1.safetensors",
@@ -982,7 +1031,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "RaeDiffusion-XL-v2.safetensors",
+        "name": "RaeDiffusion-XL-v2",
+        "filename": "RaeDiffusion-XL-v2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/RaeDiffusion-XL-v2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/RaeDiffusion-XL-v2.safetensors",
@@ -1006,7 +1056,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd_xl_anime_V52.safetensors",
+        "name": "sd_xl_anime_V52",
+        "filename": "sd_xl_anime_V52.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sd_xl_anime_V52.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sd_xl_anime_V52.safetensors",
@@ -1030,7 +1081,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohaku-xl-delta-rev1.safetensors",
+        "name": "kohaku-xl-delta-rev1",
+        "filename": "kohaku-xl-delta-rev1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kohaku-xl-delta-rev1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-delta-rev1.safetensors",
@@ -1054,7 +1106,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohakuXLEpsilon_rev1.safetensors",
+        "name": "kohakuXLEpsilon_rev1",
+        "filename": "kohakuXLEpsilon_rev1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohakuXLEpsilon_rev1.safetensors",
@@ -1078,7 +1131,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohaku-xl-epsilon-rev2.safetensors",
+        "name": "kohaku-xl-epsilon-rev2",
+        "filename": "kohaku-xl-epsilon-rev2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev2.safetensors",
@@ -1102,7 +1156,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohaku-xl-epsilon-rev3.safetensors",
+        "name": "kohaku-xl-epsilon-rev3",
+        "filename": "kohaku-xl-epsilon-rev3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-epsilon-rev3.safetensors",
@@ -1126,7 +1181,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohaku-xl-zeta.safetensors",
+        "name": "kohaku-xl-zeta",
+        "filename": "kohaku-xl-zeta.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/kohaku-xl-zeta.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/kohaku-xl-zeta.safetensors",
@@ -1150,7 +1206,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "starryXLV52_v52.safetensors",
+        "name": "starryXLV52_v52",
+        "filename": "starryXLV52_v52.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/starryXLV52_v52.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/starryXLV52_v52.safetensors",
@@ -1174,7 +1231,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "heartOfAppleXL_v20.safetensors",
+        "name": "heartOfAppleXL_v20",
+        "filename": "heartOfAppleXL_v20.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/heartOfAppleXL_v20.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v20.safetensors",
@@ -1198,7 +1256,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "heartOfAppleXL_v30.safetensors",
+        "name": "heartOfAppleXL_v30",
+        "filename": "heartOfAppleXL_v30.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/heartOfAppleXL_v30.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/heartOfAppleXL_v30.safetensors",
@@ -1222,7 +1281,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors",
+        "name": "baxlBartstylexlBlueArchiveFlatCelluloid_xlv1",
+        "filename": "baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBartstylexlBlueArchiveFlatCelluloid_xlv1.safetensors",
@@ -1246,7 +1306,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors",
+        "name": "baxlBlueArchiveFlatCelluloidStyle_xlv3",
+        "filename": "baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/baxlBlueArchiveFlatCelluloidStyle_xlv3.safetensors",
@@ -1270,7 +1331,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sanaexlAnimeV10_v10.safetensors",
+        "name": "sanaexlAnimeV10_v10",
+        "filename": "sanaexlAnimeV10_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sanaexlAnimeV10_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v10.safetensors",
@@ -1294,7 +1356,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sanaexlAnimeV10_v11.safetensors",
+        "name": "sanaexlAnimeV10_v11",
+        "filename": "sanaexlAnimeV10_v11.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/sanaexlAnimeV10_v11.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/sanaexlAnimeV10_v11.safetensors",
@@ -1318,7 +1381,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "SanaeXL-Anime-v1.2-aesthetic.safetensors",
+        "name": "SanaeXL-Anime-v1.2-aesthetic",
+        "filename": "SanaeXL-Anime-v1.2-aesthetic.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/SanaeXL-Anime-v1.2-aesthetic.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.2-aesthetic.safetensors",
@@ -1342,7 +1406,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "SanaeXL-Anime-v1.3-aesthetic.safetensors",
+        "name": "SanaeXL-Anime-v1.3-aesthetic",
+        "filename": "SanaeXL-Anime-v1.3-aesthetic.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/SanaeXL-Anime-v1.3-aesthetic.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/SanaeXL-Anime-v1.3-aesthetic.safetensors",
@@ -1366,7 +1431,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v0.1.safetensors",
+        "name": "Illustrious-XL-v0.1",
+        "filename": "Illustrious-XL-v0.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v0.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1.safetensors",
@@ -1390,7 +1456,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v0.1-GUIDED.safetensors",
+        "name": "Illustrious-XL-v0.1-GUIDED",
+        "filename": "Illustrious-XL-v0.1-GUIDED.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v0.1-GUIDED.safetensors",
@@ -1414,7 +1481,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v1.0.safetensors",
+        "name": "Illustrious-XL-v1.0",
+        "filename": "Illustrious-XL-v1.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v1.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.0.safetensors",
@@ -1438,7 +1506,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v1.1.safetensors",
+        "name": "Illustrious-XL-v1.1",
+        "filename": "Illustrious-XL-v1.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v1.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v1.1.safetensors",
@@ -1462,7 +1531,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v2.0-stable.safetensors",
+        "name": "Illustrious-XL-v2.0-stable",
+        "filename": "Illustrious-XL-v2.0-stable.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0-stable.safetensors",
@@ -1486,7 +1556,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Illustrious-XL-v2.0.safetensors",
+        "name": "Illustrious-XL-v2.0",
+        "filename": "Illustrious-XL-v2.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/Illustrious-XL-v2.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/Illustrious-XL-v2.0.safetensors",
@@ -1510,7 +1581,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "jruTheJourneyRemains_v25XL.safetensors",
+        "name": "jruTheJourneyRemains_v25XL",
+        "filename": "jruTheJourneyRemains_v25XL.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/jruTheJourneyRemains_v25XL.safetensors",
@@ -1534,7 +1606,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "PVCStyleModelMovable_illustriousxl10.safetensors",
+        "name": "PVCStyleModelMovable_illustriousxl10",
+        "filename": "PVCStyleModelMovable_illustriousxl10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_illustriousxl10.safetensors",
@@ -1558,7 +1631,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "miaomiaoHarem_v15a.safetensors",
+        "name": "miaomiaoHarem_v15a",
+        "filename": "miaomiaoHarem_v15a.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/miaomiaoHarem_v15a.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/miaomiaoHarem_v15a.safetensors",
@@ -1582,7 +1656,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "waiNSFWIllustrious_v80.safetensors",
+        "name": "waiNSFWIllustrious_v80",
+        "filename": "waiNSFWIllustrious_v80.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/waiNSFWIllustrious_v80.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/waiNSFWIllustrious_v80.safetensors",
@@ -1606,7 +1681,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "tIllunai3_v4.safetensors",
+        "name": "tIllunai3_v4",
+        "filename": "tIllunai3_v4.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/tIllunai3_v4.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tIllunai3_v4.safetensors",
@@ -1630,7 +1706,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_earlyAccessVersion.safetensors",
+        "name": "noobaiXLNAIXL_earlyAccessVersion",
+        "filename": "noobaiXLNAIXL_earlyAccessVersion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_earlyAccessVersion.safetensors",
@@ -1654,7 +1731,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_epsilonPred05Version.safetensors",
+        "name": "noobaiXLNAIXL_epsilonPred05Version",
+        "filename": "noobaiXLNAIXL_epsilonPred05Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_epsilonPred05Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred05Version.safetensors",
@@ -1678,7 +1756,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_epsilonPred075.safetensors",
+        "name": "noobaiXLNAIXL_epsilonPred075",
+        "filename": "noobaiXLNAIXL_epsilonPred075.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred075.safetensors",
@@ -1702,7 +1781,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_epsilonPred077.safetensors",
+        "name": "noobaiXLNAIXL_epsilonPred077",
+        "filename": "noobaiXLNAIXL_epsilonPred077.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_epsilonPred077.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred077.safetensors",
@@ -1726,7 +1806,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_epsilonPred10Version.safetensors",
+        "name": "noobaiXLNAIXL_epsilonPred10Version",
+        "filename": "noobaiXLNAIXL_epsilonPred10Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred10Version.safetensors",
@@ -1750,7 +1831,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_epsilonPred11Version.safetensors",
+        "name": "noobaiXLNAIXL_epsilonPred11Version",
+        "filename": "noobaiXLNAIXL_epsilonPred11Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_epsilonPred11Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_epsilonPred11Version.safetensors",
@@ -1774,7 +1856,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPredTestVersion.safetensors",
+        "name": "noobaiXLNAIXL_vPredTestVersion",
+        "filename": "noobaiXLNAIXL_vPredTestVersion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPredTestVersion.safetensors",
@@ -1798,7 +1881,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred05Version.safetensors",
+        "name": "noobaiXLNAIXL_vPred05Version",
+        "filename": "noobaiXLNAIXL_vPred05Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred05Version.safetensors",
@@ -1822,7 +1906,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred06Version.safetensors",
+        "name": "noobaiXLNAIXL_vPred06Version",
+        "filename": "noobaiXLNAIXL_vPred06Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred06Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred06Version.safetensors",
@@ -1846,7 +1931,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred065SVersion.safetensors",
+        "name": "noobaiXLNAIXL_vPred065SVersion",
+        "filename": "noobaiXLNAIXL_vPred065SVersion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred065SVersion.safetensors",
@@ -1870,7 +1956,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred075SVersion.safetensors",
+        "name": "noobaiXLNAIXL_vPred075SVersion",
+        "filename": "noobaiXLNAIXL_vPred075SVersion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred075SVersion.safetensors",
@@ -1894,7 +1981,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred09RVersion.safetensors",
+        "name": "noobaiXLNAIXL_vPred09RVersion",
+        "filename": "noobaiXLNAIXL_vPred09RVersion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred09RVersion.safetensors",
@@ -1918,7 +2006,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLNAIXL_vPred10Version.safetensors",
+        "name": "noobaiXLNAIXL_vPred10Version",
+        "filename": "noobaiXLNAIXL_vPred10Version.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors",
@@ -1942,7 +2031,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ChenkinNoob-XL-V0.1.safetensors",
+        "name": "ChenkinNoob-XL-V0.1",
+        "filename": "ChenkinNoob-XL-V0.1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/ChenkinNoob-XL-V0.1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ChenkinNoob-XL-V0.1.safetensors",
@@ -1966,7 +2056,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ChenkinNoob-XL-V0.2.safetensors",
+        "name": "ChenkinNoob-XL-V0.2",
+        "filename": "ChenkinNoob-XL-V0.2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/ChenkinNoob-XL-V0.2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ChenkinNoob-XL-V0.2.safetensors",
@@ -1990,7 +2081,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "PVCStyleModelMovable_nbxl12.safetensors",
+        "name": "PVCStyleModelMovable_nbxl12",
+        "filename": "PVCStyleModelMovable_nbxl12.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/PVCStyleModelMovable_nbxl12.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxl12.safetensors",
@@ -2014,7 +2106,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "PVCStyleModelMovable_nbxlVPredV10.safetensors",
+        "name": "PVCStyleModelMovable_nbxlVPredV10",
+        "filename": "PVCStyleModelMovable_nbxlVPredV10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/PVCStyleModelMovable_nbxlVPredV10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/PVCStyleModelMovable_nbxlVPredV10.safetensors",
@@ -2038,7 +2131,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors",
+        "name": "ponyDiffusionV6XL_v6StartWithThisOne",
+        "filename": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ponyDiffusionV6XL_v6StartWithThisOne.safetensors",
@@ -2062,7 +2156,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "pdForAnime_v20.safetensors",
+        "name": "pdForAnime_v20",
+        "filename": "pdForAnime_v20.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/pdForAnime_v20.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/pdForAnime_v20.safetensors",
@@ -2086,7 +2181,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "tPonynai3_v51WeightOptimized.safetensors",
+        "name": "tPonynai3_v51WeightOptimized",
+        "filename": "tPonynai3_v51WeightOptimized.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/tPonynai3_v51WeightOptimized.safetensors",
@@ -2110,7 +2206,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "omegaPonyXLAnime_v20.safetensors",
+        "name": "omegaPonyXLAnime_v20",
+        "filename": "omegaPonyXLAnime_v20.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/omegaPonyXLAnime_v20.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/omegaPonyXLAnime_v20.safetensors",
@@ -2134,7 +2231,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animeIllustDiffusion_v061.safetensors",
+        "name": "animeIllustDiffusion_v061",
+        "filename": "animeIllustDiffusion_v061.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animeIllustDiffusion_v061.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animeIllustDiffusion_v061.safetensors",
@@ -2158,7 +2256,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "artiwaifuDiffusion_v10.safetensors",
+        "name": "artiwaifuDiffusion_v10",
+        "filename": "artiwaifuDiffusion_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/artiwaifuDiffusion_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifuDiffusion_v10.safetensors",
@@ -2182,7 +2281,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "artiwaifu-diffusion-v2.safetensors",
+        "name": "artiwaifu-diffusion-v2",
+        "filename": "artiwaifu-diffusion-v2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/artiwaifu-diffusion-v2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/artiwaifu-diffusion-v2.safetensors",
@@ -2206,7 +2306,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "AnythingXL_xl.safetensors",
+        "name": "AnythingXL_xl",
+        "filename": "AnythingXL_xl.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/AnythingXL_xl.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/AnythingXL_xl.safetensors",
@@ -2230,7 +2331,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "abyssorangeXLElse_v10.safetensors",
+        "name": "abyssorangeXLElse_v10",
+        "filename": "abyssorangeXLElse_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/abyssorangeXLElse_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/abyssorangeXLElse_v10.safetensors",
@@ -2254,7 +2356,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animaPencilXL_v200.safetensors",
+        "name": "animaPencilXL_v200",
+        "filename": "animaPencilXL_v200.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/animaPencilXL_v200.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/animaPencilXL_v200.safetensors",
@@ -2278,7 +2381,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bluePencilXL_v401.safetensors",
+        "name": "bluePencilXL_v401",
+        "filename": "bluePencilXL_v401.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/bluePencilXL_v401.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/bluePencilXL_v401.safetensors",
@@ -2302,7 +2406,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "nekorayxl_v06W3.safetensors",
+        "name": "nekorayxl_v06W3",
+        "filename": "nekorayxl_v06W3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/nekorayxl_v06W3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/nekorayxl_v06W3.safetensors",
@@ -2326,7 +2431,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "CounterfeitXL-V1.0.safetensors",
+        "name": "CounterfeitXL-V1.0",
+        "filename": "CounterfeitXL-V1.0.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/CounterfeitXL-V1.0.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/CounterfeitXL-V1.0.safetensors",
@@ -2351,7 +2457,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 3
     {
-        "name": "sd3_medium.safetensors",
+        "name": "sd3_medium",
+        "filename": "sd3_medium.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3_medium.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium.safetensors",
@@ -2375,7 +2482,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3_medium_incl_clips.safetensors",
+        "name": "sd3_medium_incl_clips",
+        "filename": "sd3_medium_incl_clips.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3_medium_incl_clips.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips.safetensors",
@@ -2399,7 +2507,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3_medium_incl_clips_t5xxlfp8.safetensors",
+        "name": "sd3_medium_incl_clips_t5xxlfp8",
+        "filename": "sd3_medium_incl_clips_t5xxlfp8.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3_medium_incl_clips_t5xxlfp8.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3_medium_incl_clips_t5xxlfp8.safetensors",
@@ -2423,7 +2532,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_large.safetensors",
+        "name": "sd3.5_large",
+        "filename": "sd3.5_large.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3.5_large.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large.safetensors",
@@ -2447,7 +2557,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_large_fp8_scaled.safetensors",
+        "name": "sd3.5_large_fp8_scaled",
+        "filename": "sd3.5_large_fp8_scaled.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3.5_large_fp8_scaled.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_fp8_scaled.safetensors",
@@ -2471,7 +2582,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_large_turbo.safetensors",
+        "name": "sd3.5_large_turbo",
+        "filename": "sd3.5_large_turbo.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3.5_large_turbo.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_large_turbo.safetensors",
@@ -2495,7 +2607,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_medium.safetensors",
+        "name": "sd3.5_medium",
+        "filename": "sd3.5_medium.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3.5_medium.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium.safetensors",
@@ -2519,7 +2632,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors",
+        "name": "sd3.5_medium_incl_clips_t5xxlfp8scaled",
+        "filename": "sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/sd3.5_medium_incl_clips_t5xxlfp8scaled.safetensors",
@@ -2543,7 +2657,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "emi3.safetensors",
+        "name": "emi3",
+        "filename": "emi3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/emi3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/emi3.safetensors",
@@ -2568,7 +2683,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 3 Text Encoder
     {
-        "name": "clip_g.safetensors",
+        "name": "clip_g",
+        "filename": "clip_g.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/text_encoders/clip_g.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_g.safetensors",
@@ -2586,7 +2702,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "clip_l.safetensors",
+        "name": "clip_l",
+        "filename": "clip_l.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/text_encoders/clip_l.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/clip_l.safetensors",
@@ -2604,7 +2721,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5xxl_fp16.safetensors",
+        "name": "t5xxl_fp16",
+        "filename": "t5xxl_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/text_encoders/t5xxl_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp16.safetensors",
@@ -2622,7 +2740,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5xxl_fp8_e4m3fn.safetensors",
+        "name": "t5xxl_fp8_e4m3fn",
+        "filename": "t5xxl_fp8_e4m3fn.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/text_encoders/t5xxl_fp8_e4m3fn.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn.safetensors",
@@ -2640,7 +2759,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5xxl_fp8_e4m3fn_scaled.safetensors",
+        "name": "t5xxl_fp8_e4m3fn_scaled",
+        "filename": "t5xxl_fp8_e4m3fn_scaled.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-3-model/resolve/main/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-3-model/resolve/master/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
@@ -2659,7 +2779,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # HunyuanDiT
     {
-        "name": "hunyuan_dit_1.2.safetensors",
+        "name": "hunyuan_dit_1.2",
+        "filename": "hunyuan_dit_1.2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/comfyui-extension-models/resolve/main/hunyuan_dit_comfyui/hunyuan_dit_1.2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/hunyuan_dit_1.2.safetensors",
@@ -2673,7 +2794,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "comfy_freeway_animation_hunyuan_dit_180w.safetensors",
+        "name": "comfy_freeway_animation_hunyuan_dit_180w",
+        "filename": "comfy_freeway_animation_hunyuan_dit_180w.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/comfyui-extension-models/resolve/main/hunyuan_dit_comfyui/comfy_freeway_animation_hunyuan_dit_180w.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/comfyui-extension-models/resolve/master/hunyuan_dit_comfyui/comfy_freeway_animation_hunyuan_dit_180w.safetensors",
@@ -2688,7 +2810,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # FLUX
     {
-        "name": "flux1-dev.safetensors",
+        "name": "flux1-dev",
+        "filename": "flux1-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev.safetensors",
@@ -2710,7 +2833,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-fp8.safetensors",
+        "name": "flux1-dev-fp8",
+        "filename": "flux1-dev-fp8.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-fp8.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-fp8.safetensors",
@@ -2732,7 +2856,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux_dev_fp8_scaled_diffusion_model.safetensors",
+        "name": "flux_dev_fp8_scaled_diffusion_model",
+        "filename": "flux_dev_fp8_scaled_diffusion_model.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux_dev_fp8_scaled_diffusion_model.safetensors",
@@ -2754,7 +2879,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-bnb-nf4-v2.safetensors",
+        "name": "flux1-dev-bnb-nf4-v2",
+        "filename": "flux1-dev-bnb-nf4-v2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-bnb-nf4-v2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4-v2.safetensors",
@@ -2776,7 +2902,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-bnb-nf4.safetensors",
+        "name": "flux1-dev-bnb-nf4",
+        "filename": "flux1-dev-bnb-nf4.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-bnb-nf4.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-bnb-nf4.safetensors",
@@ -2798,7 +2925,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q2_K.gguf",
+        "name": "flux1-dev-Q2_K",
+        "filename": "flux1-dev-Q2_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q2_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q2_K.gguf",
@@ -2820,7 +2948,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q3_K_S.gguf",
+        "name": "flux1-dev-Q3_K_S",
+        "filename": "flux1-dev-Q3_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q3_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q3_K_S.gguf",
@@ -2842,7 +2971,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q4_0.gguf",
+        "name": "flux1-dev-Q4_0",
+        "filename": "flux1-dev-Q4_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q4_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_0.gguf",
@@ -2864,7 +2994,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q4_1.gguf",
+        "name": "flux1-dev-Q4_1",
+        "filename": "flux1-dev-Q4_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q4_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_1.gguf",
@@ -2886,7 +3017,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q4_K_S.gguf",
+        "name": "flux1-dev-Q4_K_S",
+        "filename": "flux1-dev-Q4_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q4_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q4_K_S.gguf",
@@ -2908,7 +3040,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q5_0.gguf",
+        "name": "flux1-dev-Q5_0",
+        "filename": "flux1-dev-Q5_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q5_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_0.gguf",
@@ -2930,7 +3063,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q5_1.gguf",
+        "name": "flux1-dev-Q5_1",
+        "filename": "flux1-dev-Q5_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q5_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_1.gguf",
@@ -2952,7 +3086,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q5_K_S.gguf",
+        "name": "flux1-dev-Q5_K_S",
+        "filename": "flux1-dev-Q5_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q5_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q5_K_S.gguf",
@@ -2974,7 +3109,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q6_K.gguf",
+        "name": "flux1-dev-Q6_K",
+        "filename": "flux1-dev-Q6_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q6_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q6_K.gguf",
@@ -2996,7 +3132,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-Q8_0.gguf",
+        "name": "flux1-dev-Q8_0",
+        "filename": "flux1-dev-Q8_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-Q8_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-Q8_0.gguf",
@@ -3018,7 +3155,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-F16.gguf",
+        "name": "flux1-dev-F16",
+        "filename": "flux1-dev-F16.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-F16.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-F16.gguf",
@@ -3040,7 +3178,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell.safetensors",
+        "name": "flux1-schnell",
+        "filename": "flux1-schnell.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell.safetensors",
@@ -3062,7 +3201,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-fp8.safetensors",
+        "name": "flux1-schnell-fp8",
+        "filename": "flux1-schnell-fp8.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-fp8.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-fp8.safetensors",
@@ -3084,7 +3224,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q2_K.gguf",
+        "name": "flux1-schnell-Q2_K",
+        "filename": "flux1-schnell-Q2_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q2_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q2_K.gguf",
@@ -3106,7 +3247,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q3_K_S.gguf",
+        "name": "flux1-schnell-Q3_K_S",
+        "filename": "flux1-schnell-Q3_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q3_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q3_K_S.gguf",
@@ -3128,7 +3270,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q4_0.gguf",
+        "name": "flux1-schnell-Q4_0",
+        "filename": "flux1-schnell-Q4_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q4_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_0.gguf",
@@ -3150,7 +3293,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q4_1.gguf",
+        "name": "flux1-schnell-Q4_1",
+        "filename": "flux1-schnell-Q4_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q4_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_1.gguf",
@@ -3172,7 +3316,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q4_K_S.gguf",
+        "name": "flux1-schnell-Q4_K_S",
+        "filename": "flux1-schnell-Q4_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q4_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q4_K_S.gguf",
@@ -3194,7 +3339,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q5_0.gguf",
+        "name": "flux1-schnell-Q5_0",
+        "filename": "flux1-schnell-Q5_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q5_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_0.gguf",
@@ -3216,7 +3362,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q5_1.gguf",
+        "name": "flux1-schnell-Q5_1",
+        "filename": "flux1-schnell-Q5_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q5_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_1.gguf",
@@ -3238,7 +3385,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q5_K_S.gguf",
+        "name": "flux1-schnell-Q5_K_S",
+        "filename": "flux1-schnell-Q5_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q5_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q5_K_S.gguf",
@@ -3260,7 +3408,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q6_K.gguf",
+        "name": "flux1-schnell-Q6_K",
+        "filename": "flux1-schnell-Q6_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q6_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q6_K.gguf",
@@ -3282,7 +3431,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-Q8_0.gguf",
+        "name": "flux1-schnell-Q8_0",
+        "filename": "flux1-schnell-Q8_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-Q8_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-Q8_0.gguf",
@@ -3304,7 +3454,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-schnell-F16.gguf",
+        "name": "flux1-schnell-F16",
+        "filename": "flux1-schnell-F16.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-schnell-F16.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-schnell-F16.gguf",
@@ -3326,7 +3477,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ashen0209-flux1-dev2pro.safetensors",
+        "name": "ashen0209-flux1-dev2pro",
+        "filename": "ashen0209-flux1-dev2pro.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/ashen0209-flux1-dev2pro.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/ashen0209-flux1-dev2pro.safetensors",
@@ -3348,7 +3500,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "jimmycarter-LibreFLUX.safetensors",
+        "name": "jimmycarter-LibreFLUX",
+        "filename": "jimmycarter-LibreFLUX.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/jimmycarter-LibreFLUX.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/jimmycarter-LibreFLUX.safetensors",
@@ -3370,7 +3523,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "nyanko7-flux-dev-de-distill.safetensors",
+        "name": "nyanko7-flux-dev-de-distill",
+        "filename": "nyanko7-flux-dev-de-distill.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/nyanko7-flux-dev-de-distill.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/nyanko7-flux-dev-de-distill.safetensors",
@@ -3392,7 +3546,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "shuttle-3-diffusion.safetensors",
+        "name": "shuttle-3-diffusion",
+        "filename": "shuttle-3-diffusion.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/shuttle-3-diffusion.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/shuttle-3-diffusion.safetensors",
@@ -3414,7 +3569,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-krea-dev_fp8_scaled.safetensors",
+        "name": "flux1-krea-dev_fp8_scaled",
+        "filename": "flux1-krea-dev_fp8_scaled.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-krea-dev_fp8_scaled.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev_fp8_scaled.safetensors",
@@ -3436,7 +3592,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-krea-dev.safetensors",
+        "name": "flux1-krea-dev",
+        "filename": "flux1-krea-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-krea-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-krea-dev.safetensors",
@@ -3458,7 +3615,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-kontext_fp8_scaled.safetensors",
+        "name": "flux1-dev-kontext_fp8_scaled",
+        "filename": "flux1-dev-kontext_fp8_scaled.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-dev-kontext_fp8_scaled.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-dev-kontext_fp8_scaled.safetensors",
@@ -3480,7 +3638,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-kontext-dev.safetensors",
+        "name": "flux1-kontext-dev",
+        "filename": "flux1-kontext-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/flux1-kontext-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/flux1-kontext-dev.safetensors",
@@ -3502,7 +3661,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "chroma-unlocked-v50.safetensors",
+        "name": "chroma-unlocked-v50",
+        "filename": "chroma-unlocked-v50.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_1/chroma-unlocked-v50.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_1/chroma-unlocked-v50.safetensors",
@@ -3525,7 +3685,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # FLUX Text Encoder
     {
-        "name": "clip_l.safetensors",
+        "name": "clip_l",
+        "filename": "clip_l.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/clip_l.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/clip_l.safetensors",
@@ -3543,7 +3704,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5xxl_fp16.safetensors",
+        "name": "t5xxl_fp16",
+        "filename": "t5xxl_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5xxl_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp16.safetensors",
@@ -3561,7 +3723,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5xxl_fp8_e4m3fn.safetensors",
+        "name": "t5xxl_fp8_e4m3fn",
+        "filename": "t5xxl_fp8_e4m3fn.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5xxl_fp8_e4m3fn.safetensors",
@@ -3579,7 +3742,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q3_K_L.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q3_K_L",
+        "filename": "t5-v1_1-xxl-encoder-Q3_K_L.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_L.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_L.gguf",
@@ -3597,7 +3761,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q3_K_M.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q3_K_M",
+        "filename": "t5-v1_1-xxl-encoder-Q3_K_M.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_M.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_M.gguf",
@@ -3615,7 +3780,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q3_K_S.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q3_K_S",
+        "filename": "t5-v1_1-xxl-encoder-Q3_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q3_K_S.gguf",
@@ -3633,7 +3799,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q4_K_M.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q4_K_M",
+        "filename": "t5-v1_1-xxl-encoder-Q4_K_M.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_M.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_M.gguf",
@@ -3651,7 +3818,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q4_K_S.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q4_K_S",
+        "filename": "t5-v1_1-xxl-encoder-Q4_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q4_K_S.gguf",
@@ -3669,7 +3837,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q5_K_M.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q5_K_M",
+        "filename": "t5-v1_1-xxl-encoder-Q5_K_M.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_M.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_M.gguf",
@@ -3687,7 +3856,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q5_K_S.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q5_K_S",
+        "filename": "t5-v1_1-xxl-encoder-Q5_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q5_K_S.gguf",
@@ -3705,7 +3875,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q6_K.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q6_K",
+        "filename": "t5-v1_1-xxl-encoder-Q6_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q6_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q6_K.gguf",
@@ -3723,7 +3894,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+        "name": "t5-v1_1-xxl-encoder-Q8_0",
+        "filename": "t5-v1_1-xxl-encoder-Q8_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-Q8_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-Q8_0.gguf",
@@ -3741,7 +3913,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-f16.gguf",
+        "name": "t5-v1_1-xxl-encoder-f16",
+        "filename": "t5-v1_1-xxl-encoder-f16.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-f16.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f16.gguf",
@@ -3759,7 +3932,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "t5-v1_1-xxl-encoder-f32.gguf",
+        "name": "t5-v1_1-xxl-encoder-f32",
+        "filename": "t5-v1_1-xxl-encoder-f32.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_text_encoders/t5-v1_1-xxl-encoder-f32.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_text_encoders/t5-v1_1-xxl-encoder-f32.gguf",
@@ -3778,7 +3952,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # FLUX VAE
     {
-        "name": "ae.safetensors",
+        "name": "ae",
+        "filename": "ae.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux-model/resolve/main/flux_vae/ae.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux-model/resolve/master/flux_vae/ae.safetensors",
@@ -3801,7 +3976,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 1.5 VAE
     {
-        "name": "vae-ft-ema-560000-ema-pruned.safetensors",
+        "name": "vae-ft-ema-560000-ema-pruned",
+        "filename": "vae-ft-ema-560000-ema-pruned.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-ema-560000-ema-pruned.safetensors",
@@ -3825,7 +4001,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "vae-ft-mse-840000-ema-pruned.safetensors",
+        "name": "vae-ft-mse-840000-ema-pruned",
+        "filename": "vae-ft-mse-840000-ema-pruned.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/sd_1.5/vae-ft-mse-840000-ema-pruned.safetensors",
@@ -3850,7 +4027,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SDXL VAE
     {
-        "name": "sdxl_vae.safetensors",
+        "name": "sdxl_vae",
+        "filename": "sdxl_vae.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_vae.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_vae.safetensors",
@@ -3874,7 +4052,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sdxl_fp16_fix_vae.safetensors",
+        "name": "sdxl_fp16_fix_vae",
+        "filename": "sdxl_fp16_fix_vae.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors",
@@ -3899,7 +4078,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # VAE approx
     {
-        "name": "model.pt",
+        "name": "model",
+        "filename": "model.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/model.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/model.pt",
@@ -3919,7 +4099,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "vaeapprox-sdxl.pt",
+        "name": "vaeapprox-sdxl",
+        "filename": "vaeapprox-sdxl.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sdxl.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sdxl.pt",
@@ -3939,7 +4120,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "vaeapprox-sd3.pt",
+        "name": "vaeapprox-sd3",
+        "filename": "vaeapprox-sd3.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-vae/resolve/main/vae-approx/vaeapprox-sd3.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/vae-approx/vaeapprox-sd3.pt",
@@ -3960,7 +4142,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # Upscale
     {
-        "name": "codeformer-v0.1.0.pth",
+        "name": "codeformer-v0.1.0",
+        "filename": "codeformer-v0.1.0.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/Codeformer/codeformer-v0.1.0.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/Codeformer/codeformer-v0.1.0.pth",
@@ -3980,7 +4163,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_2_x2.pth",
+        "name": "DAT_2_x2",
+        "filename": "DAT_2_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_2_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x2.pth",
@@ -4000,7 +4184,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_2_x3.pth",
+        "name": "DAT_2_x3",
+        "filename": "DAT_2_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_2_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x3.pth",
@@ -4020,7 +4205,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_2_x4.pth",
+        "name": "DAT_2_x4",
+        "filename": "DAT_2_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_2_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_2_x4.pth",
@@ -4040,7 +4226,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_S_x2.pth",
+        "name": "DAT_S_x2",
+        "filename": "DAT_S_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_S_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x2.pth",
@@ -4060,7 +4247,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_S_x3.pth",
+        "name": "DAT_S_x3",
+        "filename": "DAT_S_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_S_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x3.pth",
@@ -4080,7 +4268,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_S_x4.pth",
+        "name": "DAT_S_x4",
+        "filename": "DAT_S_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_S_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_S_x4.pth",
@@ -4100,7 +4289,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_light_x2.pth",
+        "name": "DAT_light_x2",
+        "filename": "DAT_light_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_light_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x2.pth",
@@ -4120,7 +4310,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_light_x3.pth",
+        "name": "DAT_light_x3",
+        "filename": "DAT_light_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_light_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x3.pth",
@@ -4140,7 +4331,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_light_x4.pth",
+        "name": "DAT_light_x4",
+        "filename": "DAT_light_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_light_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_light_x4.pth",
@@ -4160,7 +4352,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_x2.pth",
+        "name": "DAT_x2",
+        "filename": "DAT_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x2.pth",
@@ -4180,7 +4373,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_x3.pth",
+        "name": "DAT_x3",
+        "filename": "DAT_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x3.pth",
@@ -4200,7 +4394,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "DAT_x4.pth",
+        "name": "DAT_x4",
+        "filename": "DAT_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/DAT/DAT_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/DAT/DAT_x4.pth",
@@ -4220,7 +4415,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "16xPSNR.pth",
+        "name": "16xPSNR",
+        "filename": "16xPSNR.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/16xPSNR.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/16xPSNR.pth",
@@ -4240,7 +4436,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x-ITF-SkinDiffDetail-Lite-v1.pth",
+        "name": "1x-ITF-SkinDiffDetail-Lite-v1",
+        "filename": "1x-ITF-SkinDiffDetail-Lite-v1.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x-ITF-SkinDiffDetail-Lite-v1.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x-ITF-SkinDiffDetail-Lite-v1.pth",
@@ -4260,7 +4457,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x_NMKD-BrightenRedux_200k.pth",
+        "name": "1x_NMKD-BrightenRedux_200k",
+        "filename": "1x_NMKD-BrightenRedux_200k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x_NMKD-BrightenRedux_200k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-BrightenRedux_200k.pth",
@@ -4280,7 +4478,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x_NMKD-YandereInpaint_375000_G.pth",
+        "name": "1x_NMKD-YandereInpaint_375000_G",
+        "filename": "1x_NMKD-YandereInpaint_375000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x_NMKD-YandereInpaint_375000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKD-YandereInpaint_375000_G.pth",
@@ -4300,7 +4499,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x_NMKDDetoon_97500_G.pth",
+        "name": "1x_NMKDDetoon_97500_G",
+        "filename": "1x_NMKDDetoon_97500_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x_NMKDDetoon_97500_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NMKDDetoon_97500_G.pth",
@@ -4320,7 +4520,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x_NoiseToner-Poisson-Detailed_108000_G.pth",
+        "name": "1x_NoiseToner-Poisson-Detailed_108000_G",
+        "filename": "1x_NoiseToner-Poisson-Detailed_108000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x_NoiseToner-Poisson-Detailed_108000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Poisson-Detailed_108000_G.pth",
@@ -4340,7 +4541,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "1x_NoiseToner-Uniform-Detailed_100000_G.pth",
+        "name": "1x_NoiseToner-Uniform-Detailed_100000_G",
+        "filename": "1x_NoiseToner-Uniform-Detailed_100000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/1x_NoiseToner-Uniform-Detailed_100000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/1x_NoiseToner-Uniform-Detailed_100000_G.pth",
@@ -4360,7 +4562,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x-UltraSharp.pth",
+        "name": "4x-UltraSharp",
+        "filename": "4x-UltraSharp.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x-UltraSharp.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x-UltraSharp.pth",
@@ -4380,7 +4583,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4xPSNR.pth",
+        "name": "4xPSNR",
+        "filename": "4xPSNR.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4xPSNR.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4xPSNR.pth",
@@ -4400,7 +4604,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_CountryRoads_377000_G.pth",
+        "name": "4x_CountryRoads_377000_G",
+        "filename": "4x_CountryRoads_377000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_CountryRoads_377000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_CountryRoads_377000_G.pth",
@@ -4420,7 +4625,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_Fatality_Comix_260000_G.pth",
+        "name": "4x_Fatality_Comix_260000_G",
+        "filename": "4x_Fatality_Comix_260000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_Fatality_Comix_260000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Fatality_Comix_260000_G.pth",
@@ -4440,7 +4646,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-Siax_200k.pth",
+        "name": "4x_NMKD-Siax_200k",
+        "filename": "4x_NMKD-Siax_200k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-Siax_200k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Siax_200k.pth",
@@ -4460,7 +4667,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-Superscale-Artisoftject_210000_G.pth",
+        "name": "4x_NMKD-Superscale-Artisoftject_210000_G",
+        "filename": "4x_NMKD-Superscale-Artisoftject_210000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-Superscale-Artisoftject_210000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-Artisoftject_210000_G.pth",
@@ -4480,7 +4688,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-Superscale-SP_178000_G.pth",
+        "name": "4x_NMKD-Superscale-SP_178000_G",
+        "filename": "4x_NMKD-Superscale-SP_178000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth",
@@ -4500,7 +4709,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-UltraYandere-Lite_280k.pth",
+        "name": "4x_NMKD-UltraYandere-Lite_280k",
+        "filename": "4x_NMKD-UltraYandere-Lite_280k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-UltraYandere-Lite_280k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere-Lite_280k.pth",
@@ -4520,7 +4730,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-UltraYandere_300k.pth",
+        "name": "4x_NMKD-UltraYandere_300k",
+        "filename": "4x_NMKD-UltraYandere_300k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-UltraYandere_300k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-UltraYandere_300k.pth",
@@ -4540,7 +4751,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKD-YandereNeoXL_200k.pth",
+        "name": "4x_NMKD-YandereNeoXL_200k",
+        "filename": "4x_NMKD-YandereNeoXL_200k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKD-YandereNeoXL_200k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKD-YandereNeoXL_200k.pth",
@@ -4560,7 +4772,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NMKDSuperscale_Artisoft_120000_G.pth",
+        "name": "4x_NMKDSuperscale_Artisoft_120000_G",
+        "filename": "4x_NMKDSuperscale_Artisoft_120000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NMKDSuperscale_Artisoft_120000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NMKDSuperscale_Artisoft_120000_G.pth",
@@ -4580,7 +4793,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_NickelbackFS_72000_G.pth",
+        "name": "4x_NickelbackFS_72000_G",
+        "filename": "4x_NickelbackFS_72000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_NickelbackFS_72000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_NickelbackFS_72000_G.pth",
@@ -4600,7 +4814,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_Nickelback_70000G.pth",
+        "name": "4x_Nickelback_70000G",
+        "filename": "4x_Nickelback_70000G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_Nickelback_70000G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Nickelback_70000G.pth",
@@ -4620,7 +4835,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_RealisticRescaler_100000_G.pth",
+        "name": "4x_RealisticRescaler_100000_G",
+        "filename": "4x_RealisticRescaler_100000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_RealisticRescaler_100000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_RealisticRescaler_100000_G.pth",
@@ -4640,7 +4856,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_Valar_v1.pth",
+        "name": "4x_Valar_v1",
+        "filename": "4x_Valar_v1.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_Valar_v1.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_Valar_v1.pth",
@@ -4660,7 +4877,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_fatal_Anime_500000_G.pth",
+        "name": "4x_fatal_Anime_500000_G",
+        "filename": "4x_fatal_Anime_500000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_fatal_Anime_500000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_fatal_Anime_500000_G.pth",
@@ -4680,7 +4898,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_foolhardy_Remacri.pth",
+        "name": "4x_foolhardy_Remacri",
+        "filename": "4x_foolhardy_Remacri.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/4x_foolhardy_Remacri.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/4x_foolhardy_Remacri.pth",
@@ -4700,7 +4919,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "8xPSNR.pth",
+        "name": "8xPSNR",
+        "filename": "8xPSNR.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/8xPSNR.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8xPSNR.pth",
@@ -4720,7 +4940,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "8x_NMKD-Superscale_150000_G.pth",
+        "name": "8x_NMKD-Superscale_150000_G",
+        "filename": "8x_NMKD-Superscale_150000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/8x_NMKD-Superscale_150000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Superscale_150000_G.pth",
@@ -4740,7 +4961,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "8x_NMKD-Typescale_175k.pth",
+        "name": "8x_NMKD-Typescale_175k",
+        "filename": "8x_NMKD-Typescale_175k.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/8x_NMKD-Typescale_175k.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/8x_NMKD-Typescale_175k.pth",
@@ -4760,7 +4982,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "A_ESRGAN_Single.pth",
+        "name": "A_ESRGAN_Single",
+        "filename": "A_ESRGAN_Single.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/A_ESRGAN_Single.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/A_ESRGAN_Single.pth",
@@ -4780,7 +5003,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "BSRGAN.pth",
+        "name": "BSRGAN",
+        "filename": "BSRGAN.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/BSRGAN.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGAN.pth",
@@ -4800,7 +5024,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "BSRGANx2.pth",
+        "name": "BSRGANx2",
+        "filename": "BSRGANx2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/BSRGANx2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRGANx2.pth",
@@ -4820,7 +5045,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "BSRNet.pth",
+        "name": "BSRNet",
+        "filename": "BSRNet.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/BSRNet.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/BSRNet.pth",
@@ -4840,7 +5066,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ESRGAN_4x.pth",
+        "name": "ESRGAN_4x",
+        "filename": "ESRGAN_4x.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/ESRGAN_4x.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/ESRGAN_4x.pth",
@@ -4860,7 +5087,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "LADDIER1_282500_G.pth",
+        "name": "LADDIER1_282500_G",
+        "filename": "LADDIER1_282500_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/LADDIER1_282500_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/LADDIER1_282500_G.pth",
@@ -4880,7 +5108,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_UniversalUpscalerV2-Neutral_115000_swaG.pth",
+        "name": "4x_UniversalUpscalerV2-Neutral_115000_swaG",
+        "filename": "4x_UniversalUpscalerV2-Neutral_115000_swaG.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Neutral_115000_swaG.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Neutral_115000_swaG.pth",
@@ -4900,7 +5129,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_UniversalUpscalerV2-Sharp_101000_G.pth",
+        "name": "4x_UniversalUpscalerV2-Sharp_101000_G",
+        "filename": "4x_UniversalUpscalerV2-Sharp_101000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharp_101000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharp_101000_G.pth",
@@ -4920,7 +5150,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_UniversalUpscalerV2-Sharper_103000_G.pth",
+        "name": "4x_UniversalUpscalerV2-Sharper_103000_G",
+        "filename": "4x_UniversalUpscalerV2-Sharper_103000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharper_103000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/4x_UniversalUpscalerV2-Sharper_103000_G.pth",
@@ -4940,7 +5171,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_UniversalUpscaler-Detailed_155000_G.pth",
+        "name": "4x_UniversalUpscaler-Detailed_155000_G",
+        "filename": "4x_UniversalUpscaler-Detailed_155000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Detailed_155000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Detailed_155000_G.pth",
@@ -4960,7 +5192,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "4x_UniversalUpscaler-Soft_190000_G.pth",
+        "name": "4x_UniversalUpscaler-Soft_190000_G",
+        "filename": "4x_UniversalUpscaler-Soft_190000_G.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Soft_190000_G.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/UniversalUpscaler/Legacy/4x_UniversalUpscaler-Soft_190000_G.pth",
@@ -4980,7 +5213,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "WaifuGAN_v3_30000.pth",
+        "name": "WaifuGAN_v3_30000",
+        "filename": "WaifuGAN_v3_30000.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/WaifuGAN_v3_30000.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/WaifuGAN_v3_30000.pth",
@@ -5000,7 +5234,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "lollypop.pth",
+        "name": "lollypop",
+        "filename": "lollypop.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/lollypop.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/lollypop.pth",
@@ -5020,7 +5255,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sudo_rife4_269.662_testV1_scale1.pth",
+        "name": "sudo_rife4_269.662_testV1_scale1",
+        "filename": "sudo_rife4_269.662_testV1_scale1.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/ESRGAN/sudo_rife4_269.662_testV1_scale1.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/ESRGAN/sudo_rife4_269.662_testV1_scale1.pth",
@@ -5040,7 +5276,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "GFPGANv1.3.pth",
+        "name": "GFPGANv1.3",
+        "filename": "GFPGANv1.3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/GFPGAN/GFPGANv1.3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.3.pth",
@@ -5060,7 +5297,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "GFPGANv1.4.pth",
+        "name": "GFPGANv1.4",
+        "filename": "GFPGANv1.4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/GFPGAN/GFPGANv1.4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/GFPGANv1.4.pth",
@@ -5080,7 +5318,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "detection_Resnet50_Final.pth",
+        "name": "detection_Resnet50_Final",
+        "filename": "detection_Resnet50_Final.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/GFPGAN/detection_Resnet50_Final.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/detection_Resnet50_Final.pth",
@@ -5100,7 +5339,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "parsing_bisenet.pth",
+        "name": "parsing_bisenet",
+        "filename": "parsing_bisenet.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/GFPGAN/parsing_bisenet.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_bisenet.pth",
@@ -5120,7 +5360,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "parsing_parsenet.pth",
+        "name": "parsing_parsenet",
+        "filename": "parsing_parsenet.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/GFPGAN/parsing_parsenet.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/GFPGAN/parsing_parsenet.pth",
@@ -5140,7 +5381,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "RealESRGAN_x4plus.pth",
+        "name": "RealESRGAN_x4plus",
+        "filename": "RealESRGAN_x4plus.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/RealESRGAN/RealESRGAN_x4plus.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus.pth",
@@ -5160,7 +5402,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "RealESRGAN_x4plus_anime_6B.pth",
+        "name": "RealESRGAN_x4plus_anime_6B",
+        "filename": "RealESRGAN_x4plus_anime_6B.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/RealESRGAN/RealESRGAN_x4plus_anime_6B.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/RealESRGAN/RealESRGAN_x4plus_anime_6B.pth",
@@ -5180,7 +5423,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x2",
+        "filename": "001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
@@ -5200,7 +5444,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth",
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x3",
+        "filename": "001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x3.pth",
@@ -5220,7 +5465,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth",
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x4",
+        "filename": "001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth",
@@ -5240,7 +5486,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth",
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x8",
+        "filename": "001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DF2K_s64w8_SwinIR-M_x8.pth",
@@ -5260,7 +5507,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth",
+        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x2",
+        "filename": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x2.pth",
@@ -5280,7 +5528,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth",
+        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x3",
+        "filename": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x3.pth",
@@ -5300,7 +5549,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
+        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x4",
+        "filename": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
@@ -5320,7 +5570,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth",
+        "name": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x8",
+        "filename": "001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x8.pth",
@@ -5340,7 +5591,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth",
+        "name": "003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema",
+        "filename": "003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFOWMFC_s64w8_SwinIR-L_x4_GAN-with-dict-keys-params-and-params_ema.pth",
@@ -5360,7 +5612,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth",
+        "name": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema",
+        "filename": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN-with-dict-keys-params-and-params_ema.pth",
@@ -5380,7 +5633,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Swin2SR_ClassicalSR_X2_64.pth",
+        "name": "Swin2SR_ClassicalSR_X2_64",
+        "filename": "Swin2SR_ClassicalSR_X2_64.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/Swin2SR_ClassicalSR_X2_64.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X2_64.pth",
@@ -5400,7 +5654,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Swin2SR_ClassicalSR_X4_64.pth",
+        "name": "Swin2SR_ClassicalSR_X4_64",
+        "filename": "Swin2SR_ClassicalSR_X4_64.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/Swin2SR_ClassicalSR_X4_64.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_ClassicalSR_X4_64.pth",
@@ -5420,7 +5675,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Swin2SR_CompressedSR_X4_48.pth",
+        "name": "Swin2SR_CompressedSR_X4_48",
+        "filename": "Swin2SR_CompressedSR_X4_48.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/Swin2SR_CompressedSR_X4_48.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_CompressedSR_X4_48.pth",
@@ -5440,7 +5696,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth",
+        "name": "Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR",
+        "filename": "Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/Swin2SR_RealworldSR_X4_64_BSRGAN_PSNR.pth",
@@ -5460,7 +5717,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "SwinIR_4x.pth",
+        "name": "SwinIR_4x",
+        "filename": "SwinIR_4x.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/SwinIR_4x.pth",
             "modelscope": "https://modelscope.cn/models/licyks/sd-upscaler-models/resolve/master/SwinIR/SwinIR_4x.pth",
@@ -5481,7 +5739,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # Embedding
     {
-        "name": "EasyNegativeV2.safetensors",
+        "name": "EasyNegativeV2",
+        "filename": "EasyNegativeV2.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/EasyNegativeV2.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/EasyNegativeV2.safetensors",
@@ -5501,7 +5760,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bad-artist-anime.pt",
+        "name": "bad-artist-anime",
+        "filename": "bad-artist-anime.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/bad-artist-anime.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist-anime.pt",
@@ -5521,7 +5781,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bad-artist.pt",
+        "name": "bad-artist",
+        "filename": "bad-artist.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/bad-artist.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-artist.pt",
@@ -5541,7 +5802,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bad-hands-5.pt",
+        "name": "bad-hands-5",
+        "filename": "bad-hands-5.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/bad-hands-5.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-hands-5.pt",
@@ -5561,7 +5823,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bad-image-v2-39000.pt",
+        "name": "bad-image-v2-39000",
+        "filename": "bad-image-v2-39000.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/bad-image-v2-39000.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad-image-v2-39000.pt",
@@ -5581,7 +5844,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "bad_prompt_version2.pt",
+        "name": "bad_prompt_version2",
+        "filename": "bad_prompt_version2.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/bad_prompt_version2.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/bad_prompt_version2.pt",
@@ -5601,7 +5865,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ng_deepnegative_v1_75t.pt",
+        "name": "ng_deepnegative_v1_75t",
+        "filename": "ng_deepnegative_v1_75t.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/ng_deepnegative_v1_75t.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/ng_deepnegative_v1_75t.pt",
@@ -5621,7 +5886,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "verybadimagenegative_v1.3.pt",
+        "name": "verybadimagenegative_v1.3",
+        "filename": "verybadimagenegative_v1.3.pt",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd-embeddings/resolve/main/sd_1.5/verybadimagenegative_v1.3.pt",
             "modelscope": "https://modelscope.cn/models/licyks/sd-embeddings/resolve/master/sd_1.5/verybadimagenegative_v1.3.pt",
@@ -5642,7 +5908,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 1.5 ControlNet
     {
-        "name": "control_v11e_sd15_ip2p_fp16.safetensors",
+        "name": "control_v11e_sd15_ip2p_fp16",
+        "filename": "control_v11e_sd15_ip2p_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11e_sd15_ip2p_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_ip2p_fp16.safetensors",
@@ -5662,7 +5929,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11e_sd15_shuffle_fp16.safetensors",
+        "name": "control_v11e_sd15_shuffle_fp16",
+        "filename": "control_v11e_sd15_shuffle_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11e_sd15_shuffle_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11e_sd15_shuffle_fp16.safetensors",
@@ -5682,7 +5950,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11f1e_sd15_tile_fp16.safetensors",
+        "name": "control_v11f1e_sd15_tile_fp16",
+        "filename": "control_v11f1e_sd15_tile_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11f1e_sd15_tile_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1e_sd15_tile_fp16.safetensors",
@@ -5702,7 +5971,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11f1p_sd15_depth_fp16.safetensors",
+        "name": "control_v11f1p_sd15_depth_fp16",
+        "filename": "control_v11f1p_sd15_depth_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11f1p_sd15_depth_fp16.safetensors",
@@ -5722,7 +5992,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_canny_fp16.safetensors",
+        "name": "control_v11p_sd15_canny_fp16",
+        "filename": "control_v11p_sd15_canny_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_canny_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_canny_fp16.safetensors",
@@ -5742,7 +6013,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_inpaint_fp16.safetensors",
+        "name": "control_v11p_sd15_inpaint_fp16",
+        "filename": "control_v11p_sd15_inpaint_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_inpaint_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_inpaint_fp16.safetensors",
@@ -5762,7 +6034,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_lineart_fp16.safetensors",
+        "name": "control_v11p_sd15_lineart_fp16",
+        "filename": "control_v11p_sd15_lineart_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_lineart_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_lineart_fp16.safetensors",
@@ -5782,7 +6055,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_mlsd_fp16.safetensors",
+        "name": "control_v11p_sd15_mlsd_fp16",
+        "filename": "control_v11p_sd15_mlsd_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_mlsd_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_mlsd_fp16.safetensors",
@@ -5802,7 +6076,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_normalbae_fp16.safetensors",
+        "name": "control_v11p_sd15_normalbae_fp16",
+        "filename": "control_v11p_sd15_normalbae_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_normalbae_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_normalbae_fp16.safetensors",
@@ -5822,7 +6097,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_openpose_fp16.safetensors",
+        "name": "control_v11p_sd15_openpose_fp16",
+        "filename": "control_v11p_sd15_openpose_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_openpose_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_openpose_fp16.safetensors",
@@ -5842,7 +6118,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_scribble_fp16.safetensors",
+        "name": "control_v11p_sd15_scribble_fp16",
+        "filename": "control_v11p_sd15_scribble_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_scribble_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_scribble_fp16.safetensors",
@@ -5862,7 +6139,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_seg_fp16.safetensors",
+        "name": "control_v11p_sd15_seg_fp16",
+        "filename": "control_v11p_sd15_seg_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_seg_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_seg_fp16.safetensors",
@@ -5882,7 +6160,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15_softedge_fp16.safetensors",
+        "name": "control_v11p_sd15_softedge_fp16",
+        "filename": "control_v11p_sd15_softedge_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15_softedge_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15_softedge_fp16.safetensors",
@@ -5902,7 +6181,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v11p_sd15s2_lineart_anime_fp16.safetensors",
+        "name": "control_v11p_sd15s2_lineart_anime_fp16",
+        "filename": "control_v11p_sd15s2_lineart_anime_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v11p_sd15s2_lineart_anime_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v11p_sd15s2_lineart_anime_fp16.safetensors",
@@ -5922,7 +6202,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v1p_sd15_brightness.safetensors",
+        "name": "control_v1p_sd15_brightness",
+        "filename": "control_v1p_sd15_brightness.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v1p_sd15_brightness.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_brightness.safetensors",
@@ -5942,7 +6223,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v1p_sd15_illumination.safetensors",
+        "name": "control_v1p_sd15_illumination",
+        "filename": "control_v1p_sd15_illumination.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v1p_sd15_illumination.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_illumination.safetensors",
@@ -5962,7 +6244,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control_v1p_sd15_qrcode_monster.safetensors",
+        "name": "control_v1p_sd15_qrcode_monster",
+        "filename": "control_v1p_sd15_qrcode_monster.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/control_v1p_sd15_qrcode_monster.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/control_v1p_sd15_qrcode_monster.safetensors",
@@ -5983,7 +6266,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SDXL ControlNet
     {
-        "name": "monster-labs-control_v1p_sdxl_qrcode_monster.safetensors",
+        "name": "monster-labs-control_v1p_sdxl_qrcode_monster",
+        "filename": "monster-labs-control_v1p_sdxl_qrcode_monster.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/monster-labs-control_v1p_sdxl_qrcode_monster.safetensors",
@@ -6003,7 +6287,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "mistoLine_fp16.safetensors",
+        "name": "mistoLine_fp16",
+        "filename": "mistoLine_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/mistoLine_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/mistoLine_fp16.safetensors",
@@ -6023,7 +6308,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "destitech-controlnet-inpaint-dreamer-sdxl.safetensors",
+        "name": "destitech-controlnet-inpaint-dreamer-sdxl",
+        "filename": "destitech-controlnet-inpaint-dreamer-sdxl.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/destitech-controlnet-inpaint-dreamer-sdxl.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/destitech-controlnet-inpaint-dreamer-sdxl.safetensors",
@@ -6043,7 +6329,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "control-lora-recolor-rank128-sdxl.safetensors",
+        "name": "control-lora-recolor-rank128-sdxl",
+        "filename": "control-lora-recolor-rank128-sdxl.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/control-lora/resolve/main/control-lora-recolor-rank128-sdxl.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/control-lora/resolve/master/control-lora-recolor-rank128-sdxl.safetensors",
@@ -6063,7 +6350,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "xinsir-controlnet-union-sdxl-1.0-promax.safetensors",
+        "name": "xinsir-controlnet-union-sdxl-1.0-promax",
+        "filename": "xinsir-controlnet-union-sdxl-1.0-promax.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/xinsir-controlnet-union-sdxl-1.0-promax.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/xinsir-controlnet-union-sdxl-1.0-promax.safetensors",
@@ -6083,7 +6371,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "kohakuXLControlnet_canny.safetensors",
+        "name": "kohakuXLControlnet_canny",
+        "filename": "kohakuXLControlnet_canny.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/kohakuXLControlnet_canny.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/kohakuXLControlnet_canny.safetensors",
@@ -6103,7 +6392,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "animagineXL40_canny.safetensors",
+        "name": "animagineXL40_canny",
+        "filename": "animagineXL40_canny.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/animagineXL40_canny.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/animagineXL40_canny.safetensors",
@@ -6123,7 +6413,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLCanny_v10.safetensors",
+        "name": "illustriousXLCanny_v10",
+        "filename": "illustriousXLCanny_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLCanny_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLCanny_v10.safetensors",
@@ -6143,7 +6434,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLLineart_v10.safetensors",
+        "name": "illustriousXLLineart_v10",
+        "filename": "illustriousXLLineart_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLLineart_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineart_v10.safetensors",
@@ -6163,7 +6455,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLDepth_v10.safetensors",
+        "name": "illustriousXLDepth_v10",
+        "filename": "illustriousXLDepth_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLDepth_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLDepth_v10.safetensors",
@@ -6183,7 +6476,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLSoftedge_v10.safetensors",
+        "name": "illustriousXLSoftedge_v10",
+        "filename": "illustriousXLSoftedge_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLSoftedge_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLSoftedge_v10.safetensors",
@@ -6203,7 +6497,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLLineartRrealistic_v10.safetensors",
+        "name": "illustriousXLLineartRrealistic_v10",
+        "filename": "illustriousXLLineartRrealistic_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLLineartRrealistic_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLLineartRrealistic_v10.safetensors",
@@ -6223,7 +6518,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLShuffle_v10.safetensors",
+        "name": "illustriousXLShuffle_v10",
+        "filename": "illustriousXLShuffle_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLShuffle_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLShuffle_v10.safetensors",
@@ -6243,7 +6539,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLOpenPose_v10.safetensors",
+        "name": "illustriousXLOpenPose_v10",
+        "filename": "illustriousXLOpenPose_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLOpenPose_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLOpenPose_v10.safetensors",
@@ -6263,7 +6560,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLTile_v10.safetensors",
+        "name": "illustriousXLTile_v10",
+        "filename": "illustriousXLTile_v10.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLTile_v10.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLTile_v10.safetensors",
@@ -6283,7 +6581,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLv0.1_inpainting_fp16.safetensors",
+        "name": "illustriousXLv0.1_inpainting_fp16",
+        "filename": "illustriousXLv0.1_inpainting_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLv0.1_inpainting_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv0.1_inpainting_fp16.safetensors",
@@ -6303,7 +6602,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLv1.1_canny_fp16.safetensors",
+        "name": "illustriousXLv1.1_canny_fp16",
+        "filename": "illustriousXLv1.1_canny_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLv1.1_canny_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_canny_fp16.safetensors",
@@ -6323,7 +6623,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLv1.1_depth_midas_fp16.safetensors",
+        "name": "illustriousXLv1.1_depth_midas_fp16",
+        "filename": "illustriousXLv1.1_depth_midas_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLv1.1_depth_midas_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_depth_midas_fp16.safetensors",
@@ -6343,7 +6644,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLv1.1_inpainting_fp16.safetensors",
+        "name": "illustriousXLv1.1_inpainting_fp16",
+        "filename": "illustriousXLv1.1_inpainting_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLv1.1_inpainting_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_inpainting_fp16.safetensors",
@@ -6363,7 +6665,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "illustriousXLv1.1_tile_fp16.safetensors",
+        "name": "illustriousXLv1.1_tile_fp16",
+        "filename": "illustriousXLv1.1_tile_fp16.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/illustriousXLv1.1_tile_fp16.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/illustriousXLv1.1_tile_fp16.safetensors",
@@ -6383,7 +6686,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsCanny.safetensors",
+        "name": "noobaiXLControlnet_epsCanny",
+        "filename": "noobaiXLControlnet_epsCanny.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsCanny.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsCanny.safetensors",
@@ -6403,7 +6707,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsDepthMidas.safetensors",
+        "name": "noobaiXLControlnet_epsDepthMidas",
+        "filename": "noobaiXLControlnet_epsDepthMidas.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsDepthMidas.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidas.safetensors",
@@ -6423,7 +6728,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsLineartAnime.safetensors",
+        "name": "noobaiXLControlnet_epsLineartAnime",
+        "filename": "noobaiXLControlnet_epsLineartAnime.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsLineartAnime.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartAnime.safetensors",
@@ -6443,7 +6749,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsNormalMidas.safetensors",
+        "name": "noobaiXLControlnet_epsNormalMidas",
+        "filename": "noobaiXLControlnet_epsNormalMidas.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsNormalMidas.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsNormalMidas.safetensors",
@@ -6463,7 +6770,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsSoftedgeHed.safetensors",
+        "name": "noobaiXLControlnet_epsSoftedgeHed",
+        "filename": "noobaiXLControlnet_epsSoftedgeHed.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsSoftedgeHed.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsSoftedgeHed.safetensors",
@@ -6483,7 +6791,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsMangaLine.safetensors",
+        "name": "noobaiXLControlnet_epsMangaLine",
+        "filename": "noobaiXLControlnet_epsMangaLine.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsMangaLine.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsMangaLine.safetensors",
@@ -6503,7 +6812,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsLineartRealistic.safetensors",
+        "name": "noobaiXLControlnet_epsLineartRealistic",
+        "filename": "noobaiXLControlnet_epsLineartRealistic.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsLineartRealistic.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsLineartRealistic.safetensors",
@@ -6523,7 +6833,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsDepthMidasV11.safetensors",
+        "name": "noobaiXLControlnet_epsDepthMidasV11",
+        "filename": "noobaiXLControlnet_epsDepthMidasV11.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsDepthMidasV11.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsDepthMidasV11.safetensors",
@@ -6543,7 +6854,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsScribbleHed.safetensors",
+        "name": "noobaiXLControlnet_epsScribbleHed",
+        "filename": "noobaiXLControlnet_epsScribbleHed.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsScribbleHed.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribbleHed.safetensors",
@@ -6563,7 +6875,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsScribblePidinet.safetensors",
+        "name": "noobaiXLControlnet_epsScribblePidinet",
+        "filename": "noobaiXLControlnet_epsScribblePidinet.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsScribblePidinet.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsScribblePidinet.safetensors",
@@ -6583,7 +6896,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_openposeModel.safetensors",
+        "name": "noobaiXLControlnet_openposeModel",
+        "filename": "noobaiXLControlnet_openposeModel.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_openposeModel.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_openposeModel.safetensors",
@@ -6603,7 +6917,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobaiXLControlnet_epsTile.safetensors",
+        "name": "noobaiXLControlnet_epsTile",
+        "filename": "noobaiXLControlnet_epsTile.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsTile.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsTile.safetensors",
@@ -6623,7 +6938,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "NoobAI_Inpainting_ControlNet.safetensors",
+        "name": "NoobAI_Inpainting_ControlNet",
+        "filename": "NoobAI_Inpainting_ControlNet.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/NoobAI_Inpainting_ControlNet.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/NoobAI_Inpainting_ControlNet.safetensors",
@@ -6644,7 +6960,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 3.5 ControlNet
     {
-        "name": "sd3.5_large_controlnet_blur.safetensors",
+        "name": "sd3.5_large_controlnet_blur",
+        "filename": "sd3.5_large_controlnet_blur.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd3_controlnet/resolve/main/sd3.5_large_controlnet_blur.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_blur.safetensors",
@@ -6664,7 +6981,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_large_controlnet_canny.safetensors",
+        "name": "sd3.5_large_controlnet_canny",
+        "filename": "sd3.5_large_controlnet_canny.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd3_controlnet/resolve/main/sd3.5_large_controlnet_canny.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_canny.safetensors",
@@ -6684,7 +7002,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "sd3.5_large_controlnet_depth.safetensors",
+        "name": "sd3.5_large_controlnet_depth",
+        "filename": "sd3.5_large_controlnet_depth.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd3_controlnet/resolve/main/sd3.5_large_controlnet_depth.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd3_controlnet/resolve/master/sd3.5_large_controlnet_depth.safetensors",
@@ -6705,7 +7024,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # FLUX ControlNet
     {
-        "name": "flux1-redux-dev.safetensors",
+        "name": "flux1-redux-dev",
+        "filename": "flux1-redux-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-redux-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-redux-dev.safetensors",
@@ -6719,7 +7039,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev.safetensors",
+        "name": "flux1-fill-dev",
+        "filename": "flux1-fill-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev.safetensors",
@@ -6735,7 +7056,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q3_K_S.gguf",
+        "name": "flux1-fill-dev-Q3_K_S",
+        "filename": "flux1-fill-dev-Q3_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q3_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q3_K_S.gguf",
@@ -6751,7 +7073,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q4_0.gguf",
+        "name": "flux1-fill-dev-Q4_0",
+        "filename": "flux1-fill-dev-Q4_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q4_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_0.gguf",
@@ -6767,7 +7090,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q4_1.gguf",
+        "name": "flux1-fill-dev-Q4_1",
+        "filename": "flux1-fill-dev-Q4_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q4_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_1.gguf",
@@ -6783,7 +7107,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q4_K_S.gguf",
+        "name": "flux1-fill-dev-Q4_K_S",
+        "filename": "flux1-fill-dev-Q4_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q4_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q4_K_S.gguf",
@@ -6799,7 +7124,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q5_0.gguf",
+        "name": "flux1-fill-dev-Q5_0",
+        "filename": "flux1-fill-dev-Q5_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q5_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_0.gguf",
@@ -6815,7 +7141,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q5_1.gguf",
+        "name": "flux1-fill-dev-Q5_1",
+        "filename": "flux1-fill-dev-Q5_1.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q5_1.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_1.gguf",
@@ -6831,7 +7158,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q5_K_S.gguf",
+        "name": "flux1-fill-dev-Q5_K_S",
+        "filename": "flux1-fill-dev-Q5_K_S.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q5_K_S.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q5_K_S.gguf",
@@ -6847,7 +7175,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q6_K.gguf",
+        "name": "flux1-fill-dev-Q6_K",
+        "filename": "flux1-fill-dev-Q6_K.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q6_K.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q6_K.gguf",
@@ -6863,7 +7192,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-Q8_0.gguf",
+        "name": "flux1-fill-dev-Q8_0",
+        "filename": "flux1-fill-dev-Q8_0.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-Q8_0.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-Q8_0.gguf",
@@ -6879,7 +7209,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-fp16-F16-GGUF.gguf",
+        "name": "flux1-fill-dev-fp16-F16-GGUF",
+        "filename": "flux1-fill-dev-fp16-F16-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-fp16-F16-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-F16-GGUF.gguf",
@@ -6895,7 +7226,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-fp16-Q4_0-GGUF.gguf",
+        "name": "flux1-fill-dev-fp16-Q4_0-GGUF",
+        "filename": "flux1-fill-dev-fp16-Q4_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-fp16-Q4_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q4_0-GGUF.gguf",
@@ -6911,7 +7243,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-fp16-Q5_0-GGUF.gguf",
+        "name": "flux1-fill-dev-fp16-Q5_0-GGUF",
+        "filename": "flux1-fill-dev-fp16-Q5_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-fp16-Q5_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q5_0-GGUF.gguf",
@@ -6927,7 +7260,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-fp16-Q8_0-GGUF.gguf",
+        "name": "flux1-fill-dev-fp16-Q8_0-GGUF",
+        "filename": "flux1-fill-dev-fp16-Q8_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-fp16-Q8_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-fp16-Q8_0-GGUF.gguf",
@@ -6943,7 +7277,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank128.safetensors",
+        "name": "flux1-fill-dev-lora-rank128",
+        "filename": "flux1-fill-dev-lora-rank128.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank128.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank128.safetensors",
@@ -6959,7 +7294,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank256.safetensors",
+        "name": "flux1-fill-dev-lora-rank256",
+        "filename": "flux1-fill-dev-lora-rank256.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank256.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank256.safetensors",
@@ -6975,7 +7311,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank32.safetensors",
+        "name": "flux1-fill-dev-lora-rank32",
+        "filename": "flux1-fill-dev-lora-rank32.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank32.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank32.safetensors",
@@ -6991,7 +7328,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank4.safetensors",
+        "name": "flux1-fill-dev-lora-rank4",
+        "filename": "flux1-fill-dev-lora-rank4.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank4.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank4.safetensors",
@@ -7007,7 +7345,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank64.safetensors",
+        "name": "flux1-fill-dev-lora-rank64",
+        "filename": "flux1-fill-dev-lora-rank64.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank64.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank64.safetensors",
@@ -7023,7 +7362,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-fill-dev-lora-rank8.safetensors",
+        "name": "flux1-fill-dev-lora-rank8",
+        "filename": "flux1-fill-dev-lora-rank8.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-fill-dev-lora-rank8.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-fill-dev-lora-rank8.safetensors",
@@ -7039,7 +7379,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev-lora.safetensors",
+        "name": "flux1-canny-dev-lora",
+        "filename": "flux1-canny-dev-lora.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev-lora.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-lora.safetensors",
@@ -7055,7 +7396,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev.safetensors",
+        "name": "flux1-canny-dev",
+        "filename": "flux1-canny-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev.safetensors",
@@ -7071,7 +7413,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev-fp16-F16-GGUF.gguf",
+        "name": "flux1-canny-dev-fp16-F16-GGUF",
+        "filename": "flux1-canny-dev-fp16-F16-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev-fp16-F16-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-F16-GGUF.gguf",
@@ -7087,7 +7430,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev-fp16-Q4_0-GGUF.gguf",
+        "name": "flux1-canny-dev-fp16-Q4_0-GGUF",
+        "filename": "flux1-canny-dev-fp16-Q4_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev-fp16-Q4_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q4_0-GGUF.gguf",
@@ -7103,7 +7447,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev-fp16-Q5_0-GGUF.gguf",
+        "name": "flux1-canny-dev-fp16-Q5_0-GGUF",
+        "filename": "flux1-canny-dev-fp16-Q5_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev-fp16-Q5_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q5_0-GGUF.gguf",
@@ -7119,7 +7464,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-canny-dev-fp16-Q8_0-GGUF.gguf",
+        "name": "flux1-canny-dev-fp16-Q8_0-GGUF",
+        "filename": "flux1-canny-dev-fp16-Q8_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-canny-dev-fp16-Q8_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-canny-dev-fp16-Q8_0-GGUF.gguf",
@@ -7135,7 +7481,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev-fp16-F16-GGUF.gguf",
+        "name": "flux1-depth-dev-fp16-F16-GGUF",
+        "filename": "flux1-depth-dev-fp16-F16-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev-fp16-F16-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-F16-GGUF.gguf",
@@ -7151,7 +7498,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev-fp16-Q4_0-GGUF.gguf",
+        "name": "flux1-depth-dev-fp16-Q4_0-GGUF",
+        "filename": "flux1-depth-dev-fp16-Q4_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev-fp16-Q4_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q4_0-GGUF.gguf",
@@ -7167,7 +7515,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev-fp16-Q5_0-GGUF.gguf",
+        "name": "flux1-depth-dev-fp16-Q5_0-GGUF",
+        "filename": "flux1-depth-dev-fp16-Q5_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev-fp16-Q5_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q5_0-GGUF.gguf",
@@ -7183,7 +7532,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev-fp16-Q8_0-GGUF.gguf",
+        "name": "flux1-depth-dev-fp16-Q8_0-GGUF",
+        "filename": "flux1-depth-dev-fp16-Q8_0-GGUF.gguf",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev-fp16-Q8_0-GGUF.gguf",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-fp16-Q8_0-GGUF.gguf",
@@ -7199,7 +7549,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev-lora.safetensors",
+        "name": "flux1-depth-dev-lora",
+        "filename": "flux1-depth-dev-lora.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev-lora.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev-lora.safetensors",
@@ -7215,7 +7566,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-depth-dev.safetensors",
+        "name": "flux1-depth-dev",
+        "filename": "flux1-depth-dev.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-depth-dev.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-depth-dev.safetensors",
@@ -7231,7 +7583,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-xlabs-canny-controlnet-v3.safetensors",
+        "name": "flux1-xlabs-canny-controlnet-v3",
+        "filename": "flux1-xlabs-canny-controlnet-v3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-xlabs-canny-controlnet-v3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-canny-controlnet-v3.safetensors",
@@ -7251,7 +7604,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-xlabs-depth-controlnet-v3.safetensors",
+        "name": "flux1-xlabs-depth-controlnet-v3",
+        "filename": "flux1-xlabs-depth-controlnet-v3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-xlabs-depth-controlnet-v3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-depth-controlnet-v3.safetensors",
@@ -7271,7 +7625,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-xlabs-hed-controlnet-v3.safetensors",
+        "name": "flux1-xlabs-hed-controlnet-v3",
+        "filename": "flux1-xlabs-hed-controlnet-v3.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-xlabs-hed-controlnet-v3.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-hed-controlnet-v3.safetensors",
@@ -7291,7 +7646,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-jasperai-Controlnet-Depth.safetensors",
+        "name": "flux1-dev-jasperai-Controlnet-Depth",
+        "filename": "flux1-dev-jasperai-Controlnet-Depth.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-jasperai-Controlnet-Depth.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Depth.safetensors",
@@ -7311,7 +7667,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors",
+        "name": "flux1-dev-jasperai-Controlnet-Surface-Normals",
+        "filename": "flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Surface-Normals.safetensors",
@@ -7331,7 +7688,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-jasperai-Controlnet-Upscaler.safetensors",
+        "name": "flux1-dev-jasperai-Controlnet-Upscaler",
+        "filename": "flux1-dev-jasperai-Controlnet-Upscaler.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-jasperai-Controlnet-Upscaler.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-jasperai-Controlnet-Upscaler.safetensors",
@@ -7351,7 +7709,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-instantx-controlnet-union.safetensors",
+        "name": "flux1-dev-instantx-controlnet-union",
+        "filename": "flux1-dev-instantx-controlnet-union.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-instantx-controlnet-union.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-instantx-controlnet-union.safetensors",
@@ -7371,7 +7730,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-mistoline.safetensors",
+        "name": "flux1-dev-mistoline",
+        "filename": "flux1-dev-mistoline.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-mistoline.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-mistoline.safetensors",
@@ -7391,7 +7751,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "flux1-dev-shakker-labs-controlnet-union-pro.safetensors",
+        "name": "flux1-dev-shakker-labs-controlnet-union-pro",
+        "filename": "flux1-dev-shakker-labs-controlnet-union-pro.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-dev-shakker-labs-controlnet-union-pro.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-dev-shakker-labs-controlnet-union-pro.safetensors",
@@ -7412,7 +7773,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # CLIP Vision
     {
-        "name": "clip_g.pth",
+        "name": "clip_g",
+        "filename": "clip_g.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1_annotator/resolve/main/clip_vision/clip_g.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_g.pth",
@@ -7432,7 +7794,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "clip_h.pth",
+        "name": "clip_h",
+        "filename": "clip_h.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1_annotator/resolve/main/clip_vision/clip_h.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_h.pth",
@@ -7452,7 +7815,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "clip_vitl.pth",
+        "name": "clip_vitl",
+        "filename": "clip_vitl.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1_annotator/resolve/main/clip_vision/clip_vitl.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1_annotator/resolve/master/clip_vision/clip_vitl.pth",
@@ -7473,7 +7837,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SD 1.5 IP Adapter
     {
-        "name": "ip-adapter_sd15.pth",
+        "name": "ip-adapter_sd15",
+        "filename": "ip-adapter_sd15.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sd15.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15.pth",
@@ -7493,7 +7858,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ip-adapter_sd15_light.pth",
+        "name": "ip-adapter_sd15_light",
+        "filename": "ip-adapter_sd15_light.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sd15_light.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_light.pth",
@@ -7513,7 +7879,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ip-adapter_sd15_plus.pth",
+        "name": "ip-adapter_sd15_plus",
+        "filename": "ip-adapter_sd15_plus.pth",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sd15_plus.pth",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_plus.pth",
@@ -7533,7 +7900,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ip-adapter_sd15_vit-G.safetensors",
+        "name": "ip-adapter_sd15_vit-G",
+        "filename": "ip-adapter_sd15_vit-G.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sd15_vit-G.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sd15_vit-G.safetensors",
@@ -7554,7 +7922,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # SDXL IP Adapter
     {
-        "name": "ip-adapter-plus_sdxl_vit-h.safetensors",
+        "name": "ip-adapter-plus_sdxl_vit-h",
+        "filename": "ip-adapter-plus_sdxl_vit-h.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter-plus_sdxl_vit-h.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter-plus_sdxl_vit-h.safetensors",
@@ -7574,7 +7943,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ip-adapter_sdxl.safetensors",
+        "name": "ip-adapter_sdxl",
+        "filename": "ip-adapter_sdxl.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sdxl.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl.safetensors",
@@ -7594,7 +7964,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "noobIPAMARK1_mark1.safetensors",
+        "name": "noobIPAMARK1_mark1",
+        "filename": "noobIPAMARK1_mark1.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/noobIPAMARK1_mark1.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/noobIPAMARK1_mark1.safetensors",
@@ -7614,7 +7985,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
-        "name": "ip-adapter_sdxl_vit-h.safetensors",
+        "name": "ip-adapter_sdxl_vit-h",
+        "filename": "ip-adapter_sdxl_vit-h.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/controlnet_v1.1/resolve/main/ip-adapter_sdxl_vit-h.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/controlnet_v1.1/resolve/master/ip-adapter_sdxl_vit-h.safetensors",
@@ -7635,7 +8007,8 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
     },
     # FLUX IP Adapter
     {
-        "name": "flux1-xlabs-ip-adapter.safetensors",
+        "name": "flux1-xlabs-ip-adapter",
+        "filename": "flux1-xlabs-ip-adapter.safetensors",
         "url": {
             "huggingface": "https://huggingface.co/licyk/flux_controlnet/resolve/main/flux1-xlabs-ip-adapter.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/flux_controlnet/resolve/master/flux1-xlabs-ip-adapter.safetensors",

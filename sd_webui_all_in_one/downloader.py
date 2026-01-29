@@ -10,7 +10,7 @@ import traceback
 from pathlib import Path
 from urllib.parse import urlparse
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, TypeAlias
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
@@ -23,6 +23,8 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+DownloadToolType: TypeAlias = Literal["aria2", "requests"]
+"""可用的下载器类型"""
 
 def aria2(
     url: str,
@@ -170,7 +172,7 @@ def download_file(
     url: str,
     path: str | Path = None,
     save_name: str | None = None,
-    tool: Literal["aria2", "requests"] = "aria2",
+    tool: DownloadToolType | None = "aria2",
     retry: int | None = 3,
     progress: bool | None = True,
 ) -> Path | None:
@@ -180,7 +182,7 @@ def download_file(
         url (str): 文件下载链接
         path (Path | str): 文件下载路径
         save_name (str | None): 文件保存名称, 当为`None`时从`url`中解析文件名
-        tool (Literal["aria2", "requests"]): 下载工具
+        tool (DownloadToolType | None): 下载工具
         retry (int | None): 重试下载的次数
         progress (bool | None): 是否启用下载进度条
     Returns:
