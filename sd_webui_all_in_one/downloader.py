@@ -16,7 +16,7 @@ from typing import Any, Callable, Literal, TypeAlias
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
-from sd_webui_all_in_one.retry_decorator import retry
+from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.file_operations.archive_manager import extract_archive
 
 
@@ -186,7 +186,7 @@ def compare_sha256(
     return hash_sha256.hexdigest().startswith(hash_prefix.strip().lower())
 
 
-@retry(times=3, delay=1.0, catch_exceptions=(IOError, RuntimeError, ValueError), raise_exception=RuntimeError)
+@retryable(times=3, delay=1.0, catch_exceptions=(IOError, RuntimeError, ValueError), raise_exception=RuntimeError)
 def download_executer(
     url: str,
     path: Path,
