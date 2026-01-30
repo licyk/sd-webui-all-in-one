@@ -4,7 +4,6 @@ import os
 import uuid
 import stat
 import shutil
-import traceback
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
@@ -17,81 +16,246 @@ logger = get_logger(
 )
 
 
-def remove_files(path: str | Path) -> bool:
-    """文件删除工具
+def remove_files(
+    path: Path,
+) -> None:
+    """文件删除工具, 支持删除只读文件和非空文件夹
 
     Args:
-        path (str | Path): 要删除的文件路径
-    Returns:
-        bool: 删除结果
+        path (str):
+            要删除的文件或目录路径
+
+    Raises:
+        ValueError:
+            路径不存在时
+        OSError:
+            删除过程中的系统错误
     """
 
-    def _handle_remove_readonly(_func, _path, _):
+    if not path.exists():
+        logger.error("路径不存在: '%s'", path)
+        raise ValueError(f"要删除的 {path} 路径不存在")
+
+    def _handle_remove_readonly(
+        func,
+        path_str,
+        _,
+    ) -> None:
         """处理只读文件的错误处理函数"""
-        if os.path.exists(_path):
-            os.chmod(_path, stat.S_IWRITE)
-            _func(_path)
+        if os.path.exists(path_str):
+            os.chmod(path_str, stat.S_IWRITE)
+            func(path_str)
 
     try:
-        path_obj = Path(path)
-        if path_obj.is_file():
-            os.chmod(path_obj, stat.S_IWRITE)
-            path_obj.unlink()
-            return True
-        if path_obj.is_dir():
-            shutil.rmtree(path_obj, onerror=_handle_remove_readonly)
-            return True
+        if path.is_file() or path.is_symlink():
+            # 处理文件或符号链接
+            os.chmod(path, stat.S_IWRITE)
+            path.unlink()
 
-        logger.error("路径不存在: %s", path)
-        return False
-    except Exception as e:
-        logger.error("删除失败: %s", e)
-        return False
+        elif path.is_dir():
+            # 处理文件夹
+            shutil.rmtree(path, onerror=_handle_remove_readonly)
+
+    except OSError as e:
+        logger.error("删除失败: '%s' - 原因: %s", path, e)
+        raise e
 
 
-def copy_files(src: Path | str, dst: Path | str) -> bool:
+def copy_files(
+    src: Path,
+    dst: Path,
+) -> None:
     """复制文件或目录
 
     Args:
-        src (Path | str): 源文件路径
-        dst (Path | str): 复制文件到指定的路径
-    Returns:
-        bool: 复制结果
+        src (Path):
+            源文件路径
+        dst (Path):
+            复制文件到指定的路径
+
+    Raises:
+        PermissionError:
+            没有权限复制文件时
+        OSError:
+            复制文件失败时
+        FileNotFoundError:
+            源文件未找到时
+        ValueError:
+            路径逻辑错误（如循环复制）时
     """
     try:
-        src_path = Path(src)
-        dst_path = Path(dst)
+        # 转换为绝对路径以进行准确的路径比对
+        src_path = src.resolve()
+        dst_path = dst.resolve()
 
         # 检查源是否存在
         if not src_path.exists():
-            logger.error("源路径不存在: %s", src)
-            return False
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
 
-        # 如果目标是目录, 创建完整路径
-        if dst_path.is_dir():
+        # 防止递归复制（例如将目录复制到其自身的子目录中）
+        if src_path.is_dir() and dst_path.is_relative_to(src_path):
+            logger.error("不能将目录复制到自身或其子目录中: '%s'", src)
+            raise ValueError(f"不能将目录复制到自身或其子目录中: {src}")
+
+        # 如果目标是已存在的目录, 则在其下创建同名项
+        if dst_path.exists() and dst_path.is_dir():
             dst_file = dst_path / src_path.name
         else:
             dst_file = dst_path
 
-        # 确保目标目录存在
+        # 确保目标父目录存在
         dst_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # 复制文件
+        # 复制操作
         if src_path.is_file():
-            shutil.copy2(src, dst_file)
+            # copy2 会尽量保留文件元数据
+            shutil.copy2(src_path, dst_file)
         else:
-            # 如果是目录, 使用 copytree
-            if dst_file.exists():
-                shutil.rmtree(dst_file)
-            shutil.copytree(src, dst_file)
+            # symlinks=True: 保留软链接本身而非复制指向的内容
+            # dirs_exist_ok=True: 实现合并逻辑，如果目标目录已存在则覆盖同名文件
+            try:
+                shutil.copytree(src_path, dst_file, symlinks=True, dirs_exist_ok=True)
+            except shutil.Error:
+                # Linux 中遇到已存在的软链接会导致失败, 则使用 symlinks=False 重试
+                shutil.copytree(src_path, dst_file, symlinks=False, dirs_exist_ok=True)
 
-        return True
     except PermissionError as e:
         logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
-        return False
-    except Exception as e:
+        raise e
+    except OSError as e:
         logger.error("复制失败: %s", e)
-        return False
+        raise e
+
+
+def move_files(
+    src: Path,
+    dst: Path,
+) -> None:
+    """移动文件或目录
+
+    Args:
+        src (Path):
+            源路径
+        dst (Path):
+            目标路径
+
+    Raises:
+        FileNotFoundError:
+            源路径不存在时
+        PermissionError:
+            权限不足以移动文件时
+        OSError:
+            移动文件失败时
+    """
+    try:
+        src_path = src.resolve()
+        dst_path = dst.resolve()
+
+        if not src_path.exists():
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path == dst_path:
+            return
+
+        # 确定目的路径
+        if dst_path.exists() and dst_path.is_dir():
+            final_dst = dst_path / src_path.name
+        else:
+            final_dst = dst_path
+
+        if src_path.is_file() or src_path.is_symlink():
+            if final_dst.is_file():
+                remove_files(final_dst)
+
+            final_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src_path), str(final_dst))
+            return
+
+        if src_path.is_dir():
+            if not final_dst.exists():
+                final_dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(src_path), str(final_dst))
+            elif not final_dst.is_dir():
+                remove_files(final_dst)
+                shutil.move(str(src_path), str(final_dst))
+            else:
+                logger.debug("目标目录已存在，执行合并操作: '%s' -> '%s'", src_path, final_dst)
+                for item in src_path.iterdir():
+                    move_files(item, final_dst / item.name)
+
+                if src_path.exists():
+                    src_path.rmdir()
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("移动失败: %s", e)
+        raise e
+
+
+def get_file_list(
+    path: Path,
+    resolve: bool | None = False,
+    max_depth: int | None = -1,
+    show_progress: bool | None = True,
+    include_dirs: bool | None = False,
+) -> list[Path]:
+    """获取当前路径下的所有文件（和可选的目录）的绝对路径
+
+    Args:
+        path (Path): 要获取列表的目录
+        resolve (bool | None): 将路径进行完全解析, 包括链接路径
+        max_depth (int | None): 最大遍历深度, -1 表示不限制深度, 0 表示只遍历当前目录
+        show_progress (bool | None): 是否显示 tqdm 进度条
+        include_dirs (bool | None): 是否在结果中包含目录路径
+    Returns:
+        (list[Path]): 路径列表的绝对路径
+    """
+    from tqdm import tqdm
+
+    if not path or not path.exists():
+        return []
+
+    if path.is_file():
+        return [path.resolve() if resolve else path.absolute()]
+
+    base_depth = len(path.resolve().parts)
+
+    file_list: list[Path] = []
+    with tqdm(desc=f"扫描目录 {path}", position=0, leave=True, disable=not show_progress) as dir_pbar:
+        with tqdm(desc="发现条目数", position=1, leave=True, disable=not show_progress) as file_pbar:
+            for root, dirs, files in os.walk(path):
+                root_path = Path(root)
+                current_depth = len(root_path.resolve().parts) - base_depth
+
+                # 超过最大深度则阻止继续向下遍历
+                if max_depth != -1 and current_depth >= max_depth:
+                    # 如果需要包含目录, 虽然停止深挖, 但当前层的目录仍可加入
+                    if include_dirs:
+                        for d in dirs:
+                            dir_path = root_path / d
+                            file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
+                            file_pbar.update(1)
+                    dirs.clear()
+                else:
+                    # 如果启用，将当前层级的目录加入列表
+                    if include_dirs:
+                        for d in dirs:
+                            dir_path = root_path / d
+                            file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
+                            file_pbar.update(1)
+
+                for file in files:
+                    file_path = root_path / file
+                    file_list.append(file_path.resolve() if resolve else file_path.absolute())
+                    file_pbar.update(1)
+
+                dir_pbar.update(1)
+
+    return file_list
 
 
 def generate_dir_tree(
@@ -179,48 +343,20 @@ def recursive_tree_builder(
             counts[1] += 1
 
 
-def get_file_list(path: Path | str, resolve: bool | None = False) -> list[Path]:
-    """获取当前路径下的所有文件的绝对路径
-
-    Args:
-        path (Path | str): 要获取文件列表的目录
-        resolve (bool | None): 将路径进行完全解析, 包括链接路径
-    Returns:
-        list[Path]: 文件列表的绝对路径
-    """
-    path = Path(path) if not isinstance(path, Path) and path is not None else path
-
-    if not path.exists():
-        return []
-
-    if path.is_file():
-        return [path.resolve() if resolve else path.absolute()]
-
-    file_list: list[Path] = []
-    for root, _, files in os.walk(path):
-        for file in files:
-            file_path = Path(root) / file
-            file_list.append(file_path.resolve() if resolve else file_path.absolute())
-
-    return file_list
-
-
-def get_sync_files(src_path: Path | str, dst_path: Path | str) -> list[Path]:
+def get_sync_files(
+    src_path: Path,
+    dst_path: Path,
+) -> list[Path]:
     """获取需要进行同步的文件列表 (增量同步)
 
     Args:
-        src_path (Path | str): 同步文件的源路径
-        dst_path (Path | str): 同步文件到的路径
+        src_path (Path): 同步文件的源路径
+        dst_path (Path): 同步文件到的路径
+
     Returns:
         list[Path]: 要进行同步的文件
     """
     from tqdm import tqdm
-
-    if not isinstance(src_path, Path) and src_path is not None:
-        src_path = Path(src_path)
-
-    if not isinstance(dst_path, Path) and dst_path is not None:
-        dst_path = Path(dst_path)
 
     src_is_file = src_path.is_file()
     src_files = get_file_list(src_path)
@@ -243,8 +379,14 @@ def sync_files(src_path: Path, dst_path: Path) -> None:
     """同步文件 (增量同步)
 
     Args:
-        src_path (Path): 同步文件的源路径
-        dst_path (Path): 同步文件到的路径
+        src_path (Path):
+            同步文件的源路径
+        dst_path (Path):
+            同步文件到的路径
+
+    Raises:
+        RuntimeError:
+            同步文件发生错误时
     """
     from tqdm import tqdm
 
@@ -258,8 +400,7 @@ def sync_files(src_path: Path, dst_path: Path) -> None:
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(file, dst)
-        except Exception as e:
-            traceback.print_exc()
+        except (shutil.Error, PermissionError, IsADirectoryError, OSError) as e:
             logger.error("同步 %s 到 %s 时发生错误: %s", file, dst, e)
             if dst.exists():
                 logger.warning("删除未复制完成的文件: %s", dst)
@@ -267,13 +408,14 @@ def sync_files(src_path: Path, dst_path: Path) -> None:
                     os.remove(dst)
                 except Exception as e1:
                     logger.error("删除未复制完成的文件失败: %s", e1)
+            raise RuntimeError(f"同步 '{src_path}' 到 '{dst_path}' 时发生错误: {e}") from e
 
     logger.info("同步文件完成")
 
 
 def sync_files_and_create_symlink(
-    src_path: Path | str,
-    link_path: Path | str,
+    src_path: Path,
+    link_path: Path,
     src_is_file: bool | None = False,
 ) -> None:
     """同步文件并创建软链接
@@ -289,12 +431,13 @@ def sync_files_and_create_symlink(
     链接路径清理完成后, 在链接路径为源路径创建软链接
 
     Args:
-        src_path (Path | str): 源路径
-        link_path (Path | str): 软链接路径
-        src_is_file (bool | None): 源路径是否为文件
+        src_path (Path):
+            源路径
+        link_path (Path):
+            软链接路径
+        src_is_file (bool | None):
+            源路径是否为文件
     """
-    src_path = Path(src_path) if not isinstance(src_path, Path) and src_path is not None else src_path
-    link_path = Path(link_path) if not isinstance(link_path, Path) and link_path is not None else link_path
     logger.info("链接路径: %s -> %s", src_path, link_path)
     try:
         if src_is_file:
@@ -314,5 +457,28 @@ def sync_files_and_create_symlink(
                     link_path.parent / str(uuid.uuid4()),
                 )
         link_path.symlink_to(src_path)
-    except Exception as e:
+    except (shutil.Error, PermissionError, IsADirectoryError, OSError, RuntimeError) as e:
         logger.error("创建 %s -> %s 的路径链接失败: %s", src_path, link_path, e)
+        raise RuntimeError(f"创建 '{src_path}' -> '{link_path}' 的路径链接时发生错误: {e}") from e
+
+
+def is_folder_empty(path: Path) -> None:
+    """
+    判断给定路径的文件夹是否为空
+
+    Args:
+        path (Path):
+            文件夹路径
+
+    Returns:
+        bool:
+            如果文件夹为空返回 True, 否则返回 False
+
+    Raises:
+        ValueError: 当目录不存在或者不是有效目录时
+    """
+
+    if not path.is_dir():
+        raise ValueError(f"路径 '{path}' 不是有效的目录或不存在")
+
+    return next(path.iterdir(), None) is None
