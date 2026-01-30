@@ -11,16 +11,18 @@ import tarfile
 import secrets
 import platform
 import threading
-import traceback
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import TypedDict
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.cmd import preprocess_command
 
 
 logger = get_logger(
@@ -30,45 +32,87 @@ logger = get_logger(
 )
 
 
+class TunnelUrl(TypedDict, total=False):
+    """内网穿透的地址"""
+
+    local_url: str
+    """被端口映射的本地访问地址"""
+
+    cloudflare: str | None
+    """CloudFlare 内网穿透地址"""
+
+    ngrok: str | None
+    """Ngrok 内网穿透地址"""
+
+    remote_moe: str | None
+    """remote.moe 内网穿透地址"""
+
+    localhost_run: str | None
+    """localhost.run 内网穿透地址"""
+
+    gradio: str | None
+    """Gradio 内网穿透地址"""
+
+    pinggy_io: str | None
+    """pinggy.io 内网穿透地址"""
+
+    zrok: str | None
+    """Zrok 内网穿透地址"""
+
+
 class TunnelManager:
     """内网穿透工具
 
     Attributes:
-        workspace (Path | str): 工作区路径
-        port (int): 要进行端口映射的端口
+        workspace (Path):
+            工作区路径
+        port (int):
+            要进行端口映射的端口
     """
 
-    def __init__(self, workspace: Path | str, port: int) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        port: int,
+    ) -> None:
         """内网穿透工具初始化
 
         Args:
-            workspace (Path | str): 工作区路径
-            port (int): 要进行端口映射的端口
+            workspace (Path):
+                工作区路径
+            port (int):
+                要进行端口映射的端口
         """
-        self.workspace = Path(workspace)
+        self.workspace = workspace
         self.port = port
 
-    def ngrok(self, ngrok_token: str | None = None) -> str | None:
+    def ngrok(self, ngrok_token: str) -> str:
         """使用 Ngrok 内网穿透
 
         Args:
-            ngrok_token (str | None): Ngrok 账号 Token
+            ngrok_token (str):
+                Ngrok 账号 Token
+
         Returns:
-            (str | None): Ngrok 内网穿透生成的访问地址
+            str: Ngrok 内网穿透生成的访问地址
+
+        Raises:
+            RuntimeError:
+                启动 Ngrok 内网穿透失败时
         """
-        if ngrok_token is None:
-            logger.warning("缺少 Ngrok Token, 取消启动 Ngrok 内网穿透")
-            return None
+
         logger.info("启动 Ngrok 内网穿透")
         try:
             from pyngrok import conf, ngrok
-        except Exception as _:
+            from pyngrok.exception import PyngrokError
+        except ImportError:
             try:
                 pip_install("pyngrok")
                 from pyngrok import conf, ngrok
-            except Exception as e:
+                from pyngrok.exception import PyngrokError
+            except (RuntimeError, ImportError) as e:
                 logger.error("安装 Ngrok 内网穿透模块失败: %s", e)
-                return None
+                raise RuntimeError(f"安装 Ngrok 内网穿透模块失败: {e}") from e
 
         try:
             conf.get_default().auth_token = ngrok_token
@@ -81,26 +125,33 @@ class TunnelManager:
             else:
                 logger.info("Ngrok 内网穿透启动完成")
                 return ssh_tunnels[0].public_url
-        except Exception as e:
+        except PyngrokError as e:
             logger.error("启动 Ngrok 内网穿透时出现了错误: %s", e)
-            return None
+            raise RuntimeError(f"启动 Ngrok 内网穿透时出现了错误: {e}") from e
 
-    def cloudflare(self) -> str | None:
+    def cloudflare(
+        self,
+    ) -> str:
         """使用 CloudFlare 内网穿透
 
         Returns:
-            (str | None): CloudFlare 内网穿透生成的访问地址
+            str:
+                CloudFlare 内网穿透生成的访问地址
+
+        Raises:
+            RuntimeError:
+                启动 Ngrok 内网穿透失败时
         """
         logger.info("启动 CloudFlare 内网穿透")
         try:
             from pycloudflared import try_cloudflare
-        except Exception as _:
+        except ImportError:
             try:
                 pip_install("pycloudflared")
                 from pycloudflared import try_cloudflare
-            except Exception as e:
+            except (RuntimeError, ImportError) as e:
                 logger.error("安装 CloudFlare 内网穿透失败: %s", e)
-                return None
+                raise RuntimeError(f"安装 CloudFlare 内网穿透模块失败: {e}") from e
 
         try:
             tunnel_url = try_cloudflare(self.port).tunnel
@@ -108,24 +159,28 @@ class TunnelManager:
             return tunnel_url
         except Exception as e:
             logger.error("启动 CloudFlare 内网穿透时出现了错误: %s", e)
-            return None
+            raise RuntimeError(f"启动 CloudFlare 内网穿透时出现了错误: {e}") from e
 
-    def gradio(self) -> str | None:
+    def gradio(self) -> str:
         """使用 Gradio 进行内网穿透
 
         Returns:
-            (str | None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+            str: 使用内网穿透得到的访问地址
+
+        Raises:
+            RuntimeError:
+                启动 Ngrok 内网穿透失败时
         """
         logger.info("启动 Gradio 内网穿透")
         try:
             from gradio_tunneling.main import setup_tunnel
-        except Exception as _:
+        except ImportError:
             try:
                 pip_install("gradio-tunneling")
                 from gradio_tunneling.main import setup_tunnel
-            except Exception as e:
+            except (RuntimeError, ImportError) as e:
                 logger.error("安装 Gradio Tunneling 内网穿透时出现了错误: %s", e)
-                return None
+                raise RuntimeError(f"安装 Gradio Tunneling 内网穿透模块失败: {e}") from e
 
         try:
             tunnel_url = setup_tunnel(
@@ -138,13 +193,14 @@ class TunnelManager:
             return tunnel_url
         except Exception as e:
             logger.error("启动 Gradio 内网穿透时出现错误: %s", e)
-            return None
+            raise RuntimeError(f"启动 Gradio 内网穿透时出现了错误: {e}") from e
 
-    def gen_key(self, path: Path | str) -> bool:
+    def gen_key(self, path: Path) -> bool:
         """生成 SSH 密钥
 
         Args:
-            path (str | Path): 生成 SSH 密钥的路径
+            path (Path):
+                生成 SSH 密钥的路径
         Returns:
             bool: 生成成功时返回`True`
         """
@@ -155,26 +211,35 @@ class TunnelManager:
             subprocess.run(args, check=True)
             path.chmod(0o600)
             return True
-        except Exception as e:
+        except RuntimeError as e:
             logger.error("生成 SSH 密钥失败: %s", e)
             return False
 
     def ssh_tunnel(
         self,
-        launch_args: list,
+        launch_args: list[str],
         host_pattern: re.Pattern[str],
         line_limit: int,
-    ) -> str | None:
+    ) -> str:
         """使用 SSH 进行内网穿透
 
         基础 SSH 命令为: `ssh -o StrictHostKeyChecking=no -i <ssh_path>`
 
         Args:
-            launch_args (list): 启动 SSH 内网穿透的参数
-            host_pattern (re.Pattern[str]): 用于匹配内网穿透地址的正则表达式
-            line_limit (int): 内网穿透地址所在的输出行数
+            launch_args (list[str]):
+                启动 SSH 内网穿透的参数
+            host_pattern (re.Pattern[str]):
+                用于匹配内网穿透地址的正则表达式
+            line_limit (int):
+                内网穿透地址所在的输出行数
+
         Returns:
-            (str | None): 内网穿透地址
+            str:
+                内网穿透地址
+
+        Raises:
+            RuntimeError:
+                启动内网穿透失败时
         """
         ssh_name = "id_rsa"
         ssh_path = self.workspace / ssh_name
@@ -192,12 +257,7 @@ class TunnelManager:
             "-i",
             ssh_path.as_posix(),
         ] + launch_args
-        if sys.platform == "win32":
-            # 在 Windows 平台上不使用 shlex 处理成字符串
-            command_to_exec = command
-        else:
-            # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
-            command_to_exec = shlex.join(command) if isinstance(command, list) else command
+        command_to_exec = preprocess_command(command, shell=True)
 
         tunnel = subprocess.Popen(
             command_to_exec,
@@ -231,20 +291,23 @@ class TunnelManager:
                 url_match = host_pattern.search(line)
                 if url_match:
                     return url_match.group("url")
-            except queue.Empty:
+            except queue.Empty as e:
                 logger.error("未捕获到指定输出, 输出内容列表: %s", lines)
-                break
+                raise RuntimeError("运行 SSH 进程时未捕获到输出") from e
             except Exception as e:
                 logger.error("运行 SSH 进程时发生错误: %s", e)
-                break
+                raise RuntimeError(f"运行 SSH 进程时发生错误: {e}") from e
 
-        return None
+        raise RuntimeError("未捕获到内网穿透地址")
 
-    def localhost_run(self) -> str | None:
+    def localhost_run(
+        self,
+    ) -> str:
         """使用 localhost.run 进行内网穿透
 
         Returns:
-            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+            str:
+                使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 localhost.run 内网穿透")
         urls = self.ssh_tunnel(
@@ -252,17 +315,17 @@ class TunnelManager:
             host_pattern=re.compile(r"(?P<url>https?://\S+\.lhr\.life)"),
             line_limit=27,
         )
-        if urls is not None:
-            logger.info("localhost.run 内网穿透启动完成")
-            return urls
-        logger.error("启动 localhost.run 内网穿透失败")
-        return None
+        logger.info("localhost.run 内网穿透启动完成")
+        return urls
 
-    def remote_moe(self) -> str | None:
+    def remote_moe(
+        self,
+    ) -> str:
         """使用 remote.moe 进行内网穿透
 
         Returns:
-            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+            str:
+                使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 remote.moe 内网穿透")
         urls = self.ssh_tunnel(
@@ -270,17 +333,17 @@ class TunnelManager:
             host_pattern=re.compile(r"(?P<url>https?://\S+\.remote\.moe)"),
             line_limit=10,
         )
-        if urls is not None:
-            logger.info("remote.moe 内网穿透启动完成")
-            return urls
-        logger.error("启动 remote.moe 内网穿透失败")
-        return None
+        logger.info("remote.moe 内网穿透启动完成")
+        return urls
 
-    def pinggy_io(self) -> str | None:
+    def pinggy_io(
+        self,
+    ) -> str:
         """使用 pinggy.io 进行内网穿透
 
         Returns:
-            return (str|None): 使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
+            str:
+                使用内网穿透得到的访问地址, 如果启动内网穿透失败则不返回地址
         """
         logger.info("启动 pinggy.io 内网穿透")
         urls = self.ssh_tunnel(
@@ -294,11 +357,18 @@ class TunnelManager:
         logger.error("启动 pinggy.io 内网穿透失败")
         return None
 
-    def get_latest_zrok_release(self) -> list[str] | None:
+    def get_latest_zrok_release(
+        self,
+    ) -> list[str]:
         """获取最新的 Zrok 发行内容下载列表
 
         Returns:
-            (list[str] | None): 获取到的发行版下载列表 (`[<文件名>, <下载链接>]`)
+            (list[str] | None):
+                获取到的发行版下载列表 (`[<文件名>, <下载链接>]`)
+
+        Raises:
+            FileNotFoundError:
+                获取 Zrok 发行版本列表失败时
         """
         import requests
 
@@ -310,21 +380,26 @@ class TunnelManager:
         response = requests.get(url=url, data=data)
         res = response.json()
         if response.status_code < 200 or response.status_code > 300:
-            logger.info("获取 Zrok 发行版本列表失败")
-            return None
+            logger.error("获取 Zrok 发行版本列表失败")
+            raise FileNotFoundError("获取 Zrok 发行版本列表失败")
 
         file_list = []
         for i in res.get("assets"):
             file_list.append([i.get("name"), i.get("browser_download_url")])
         return file_list
 
-    def get_appropriate_zrok_package(self, packages: list[str]) -> tuple[str, str] | None:
+    def get_appropriate_zrok_package(self, packages: list[str]) -> tuple[str, str]:
         """获取适合当前平台的 Zrok 版本
 
         Args:
             packages (list[str]): 发行版下载列表
+
         Returns:
-            (tuple[str, str] | None): 文件名和下载链接
+            (tuple[str, str]): 文件名和下载链接
+
+        Raises:
+            OSError:
+                未找到适合当前平台的 Zrok 时
         """
 
         def _get_current_platform_and_arch() -> tuple[str, str]:
@@ -364,13 +439,17 @@ class TunnelManager:
                     return p, url
 
         logger.error("未找到适合当前平台的 Zrok")
-        return None, None
+        raise OSError("未找到适合当前平台的 Zrok")
 
-    def install_zrok(self) -> Path | None:
+    def install_zrok(self) -> Path:
         """安装 Zrok
 
         Returns:
-            (Path | None): Zrok 可执行文件路径, 安装失败时则返回`None`
+            Path: Zrok 可执行文件路径
+
+        Raises:
+            RuntimeError:
+                Zrok 安装失败时
         """
         if sys.platform == "win32":
             bin_extension_name = ".exe"
@@ -383,7 +462,7 @@ class TunnelManager:
                 run_cmd([zrok_bin.as_posix(), "version"], live=False)
                 logger.info("Zrok 已安装")
                 return zrok_bin
-            except Exception as _:
+            except RuntimeError:
                 pass
 
         logger.info("安装 Zrok 中")
@@ -391,25 +470,16 @@ class TunnelManager:
             shutil.move(zrok_bin, zrok_bin.parent / f"zrok_{uuid.uuid4()}")
 
         release = self.get_latest_zrok_release()
-        if release is None:
-            logger.error("获取 Zrok 发行版信息失败, 无法安装 Zrok")
-            return None
-
         package_name, download_url = self.get_appropriate_zrok_package(release)
-        if package_name is None:
-            return None
 
         with TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
-            zrok_archive_file = download_file(
-                url=download_url,
-                path=tmp_dir,
-                save_name=package_name,
-            )
-            if zrok_archive_file is None:
-                logger.error("Zrok 安装包下载失败")
-                return None
             try:
+                zrok_archive_file = download_file(
+                    url=download_url,
+                    path=tmp_dir,
+                    save_name=package_name,
+                )
                 with tarfile.open(zrok_archive_file, "r:gz") as tar:
                     tar.extractall(path=tmp_dir)
                 zrok_bin_in_tmp_dir = tmp_dir / f"zrok{bin_extension_name}"
@@ -417,21 +487,24 @@ class TunnelManager:
                 logger.info("Zrok 安装成功")
                 return zrok_bin
             except Exception as e:
-                traceback.print_exc()
                 logger.error("Zrok 安装失败: %s", e)
-                return None
+                raise RuntimeError(f"Zrok 安装时发生错误: {e}") from e
 
-    def zrok(self, zrok_token: str | None = None) -> str | None:
+    def zrok(self, zrok_token: str) -> str:
         """启动 Zrok 内网穿透
 
         Args:
-            zrok_token (str | None): Zrok Token
+            zrok_token (str):
+                Zrok Token
+
         Returns:
-            (str | None): Zrok 内网穿透地址
+            str:
+                Zrok 内网穿透地址
+
+        Raises:
+            RuntimeError:
+                启动 Zrok 内网穿透失败时
         """
-        if zrok_token is None:
-            logger.warning("缺少 Zrok Token, 取消启动 Zrok 内网穿透")
-            return None
 
         logger.info("启动 Zrok 内网穿透中")
         zrok_bin = self.install_zrok()
@@ -442,25 +515,20 @@ class TunnelManager:
         logger.info("初始化 Zrok 配置")
         try:
             run_cmd([zrok_bin.as_posix(), "disable"], live=False)
-        except Exception as _:
+        except RuntimeError as _:
             pass
 
         try:
             run_cmd([zrok_bin.as_posix(), "enable", zrok_token])
             logger.info("Zrok 配置初始化完成")
-        except Exception as e:
+        except RuntimeError as e:
             logger.error("初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: %s", e)
-            return None
+            raise RuntimeError(f"初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: {e}") from e
 
         host_pattern = re.compile(r"(?P<url>https?://\S+\.share\.zrok\.io)")
 
         command = [zrok_bin.as_posix(), "share", "public", str(self.port), "--headless"]
-        if sys.platform == "win32":
-            # 在 Windows 平台上不使用 shlex 处理成字符串
-            command_to_exec = command
-        else:
-            # 把列表转换为字符串, 避免 subprocss 只把使用列表第一个元素作为命令
-            command_to_exec = shlex.join(command) if isinstance(command, list) else command
+        command_to_exec = preprocess_command(command, shell=True)
 
         tunnel = subprocess.Popen(
             command_to_exec,
@@ -504,7 +572,7 @@ class TunnelManager:
                     break
 
         logger.error("启动 Zrok 内网穿透失败")
-        return None
+        raise RuntimeError("启动 Zrok 内网穿透失败")
 
     def start_tunnel(
         self,
@@ -517,66 +585,64 @@ class TunnelManager:
         use_pinggy_io: bool | None = False,
         use_zrok: bool | None = False,
         zrok_token: str | None = None,
-        message: str | None = None,
-    ) -> dict[str, str]:
+        check: bool | None = True,
+    ) -> TunnelUrl:
         """启动内网穿透
 
         Args:
-            use_ngrok (bool | None): 启用 Ngrok 内网穿透
-            ngrok_token (str | None): Ngrok 账号 Token
-            use_cloudflare (bool | None): 启用 CloudFlare 内网穿透
-            use_remote_moe (bool | None): 启用 remote.moe 内网穿透
-            use_localhost_run (bool | None): 使用 localhost.run 内网穿透
-            use_gradio (bool | None): 使用 Gradio 内网穿透
-            use_pinggy_io (bool | None): 使用 pinggy.io 内网穿透
-            use_zrok (bool | None): 使用 Zrok 内网穿透
-            zrok_token (str | None): Zrok 账号 Token
-            message (str | None): 描述信息
+            use_ngrok (bool | None):
+                启用 Ngrok 内网穿透
+            ngrok_token (str | None):
+                Ngrok 账号 Token
+            use_cloudflare (bool | None):
+                启用 CloudFlare 内网穿透
+            use_remote_moe (bool | None):
+                启用 remote.moe 内网穿透
+            use_localhost_run (bool | None):
+                使用 localhost.run 内网穿透
+            use_gradio (bool | None):
+                使用 Gradio 内网穿透
+            use_pinggy_io (bool | None):
+                使用 pinggy.io 内网穿透
+            use_zrok (bool | None):
+                使用 Zrok 内网穿透
+            zrok_token (str | None):
+                Zrok 账号 Token
+            check (bool | None):
+                检查内网穿透是否启动成功
+
         Returns:
-            (dict[str, str]): 内网穿透地址
+            TunnelUrl: 内网穿透地址
+
+        Raises:
+            AggregateError:
+                `check=True` 且启动内网穿透发生错误时
         """
 
-        if any(
-            [
-                use_cloudflare,
-                use_ngrok and ngrok_token,
-                use_remote_moe,
-                use_localhost_run,
-                use_gradio,
-                use_pinggy_io,
-                use_zrok,
-            ]
-        ):
-            logger.info("启动内网穿透")
-        else:
-            return
+        tunnel_url: TunnelUrl = {"local_url": f"http://127.0.0.1:{self.port}"}
+        errors: list[Exception] = []
 
-        cloudflare_url = self.cloudflare() if use_cloudflare else None
-        ngrok_url = self.ngrok(ngrok_token) if use_ngrok and ngrok_token else None
-        remote_moe_url = self.remote_moe() if use_remote_moe else None
-        localhost_run_url = self.localhost_run() if use_localhost_run else None
-        gradio_url = self.gradio() if use_gradio else None
-        pinggy_io_url = self.pinggy_io() if use_pinggy_io else None
-        zrok_url = self.zrok(zrok_token) if use_zrok and zrok_token else None
+        tasks = [
+            (use_cloudflare, "cloudflare", self.cloudflare, []),
+            (use_ngrok, "ngrok", self.ngrok, [ngrok_token] if ngrok_token else None),
+            (use_remote_moe, "remote_moe", self.remote_moe, []),
+            (use_localhost_run, "localhost_run", self.localhost_run, []),
+            (use_gradio, "gradio", self.gradio, []),
+            (use_pinggy_io, "pinggy_io", self.pinggy_io, []),
+            (use_zrok, "zrok", self.zrok, [zrok_token] if zrok_token else None),
+        ]
 
-        logger.info("http://127.0.0.1:%s 的内网穿透地址", self.port)
-        print("==================================================================================")
-        if message is not None:
-            print(f"{message}")
-        print(f":: CloudFlare: {cloudflare_url}")
-        print(f":: Ngrok: {ngrok_url}")
-        print(f":: remote.moe: {remote_moe_url}")
-        print(f":: localhost_run: {localhost_run_url}")
-        print(f":: Gradio: {gradio_url}")
-        print(f":: pinggy.io: {pinggy_io_url}")
-        print(f":: Zrok: {zrok_url}")
-        print("==================================================================================")
-        return {
-            "cloudflare": cloudflare_url,
-            "ngrok": ngrok_url,
-            "remote_moe": remote_moe_url,
-            "localhost_run": localhost_run_url,
-            "gradio": gradio_url,
-            "pinggy_io": pinggy_io_url,
-            "zrok": zrok_url,
-        }
+        for enabled, key, func, args in tasks:
+            if not enabled or args is None:
+                continue
+
+            try:
+                tunnel_url[key] = func(*args)
+            except Exception as e:
+                if check:
+                    errors.append(e)
+
+        if errors:
+            raise AggregateError(f"内网穿透启动部分失败，共 {len(errors)} 个错误。", errors)
+
+        return tunnel_url
