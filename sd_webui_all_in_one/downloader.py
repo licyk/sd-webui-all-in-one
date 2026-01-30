@@ -1,4 +1,5 @@
 """文件下载工具"""
+
 import os
 import time
 import queue
@@ -15,6 +16,7 @@ from typing import Any, Callable, Literal, TypeAlias
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.retry_decorator import retry
 
 
 logger = get_logger(
@@ -26,26 +28,33 @@ logger = get_logger(
 DownloadToolType: TypeAlias = Literal["aria2", "requests"]
 """可用的下载器类型"""
 
+
 def aria2(
     url: str,
-    path: Path | str | None = None,
+    path: Path | None = None,
     save_name: str | None = None,
     progress: bool | None = True,
 ) -> Path:
     """Aria2 下载工具
 
     Args:
-        url (str): 文件下载链接
-        path (Path | str | None): 下载文件的路径, 为`None`时使用当前路径
-        save_name (str | None): 保存的文件名, 为`None`时使用`url`提取保存的文件名
-        progress (bool | None): 是否启用下载进度条
+        url (str):
+            文件下载链接
+        path (Path | None):
+            下载文件的路径, 为`None`时使用当前路径
+        save_name (str | None):
+            保存的文件名, 为`None`时使用`url`提取保存的文件名
+        progress (bool | None):
+            是否启用下载进度条
+
     Returns:
-        Path: 下载成功时返回文件路径, 否则返回`None`
+        Path: 下载成功时返回文件路径
+
     Raises:
         RuntimeError: 下载出现错误
     """
     if path is None:
-        path = os.getcwd()
+        path = Path().cwd()
 
     path = Path(path) if not isinstance(path, Path) and path is not None else path
     if save_name is None:
@@ -76,53 +85,58 @@ def aria2(
             live=progress,
         )
         return save_path
-    except Exception as e:
+    except RuntimeError as e:
         logger.error("下载 %s 时发生错误: %s", url, e)
         raise RuntimeError(e) from e
 
 
-def load_file_from_url(
+def download_file_from_url(
     url: str,
-    *,
-    model_dir: Path | str | None = None,
-    progress: bool | None = True,
+    save_path: Path | None = None,
     file_name: str | None = None,
+    progress: bool | None = True,
     hash_prefix: str | None = None,
     re_download: bool | None = False,
-):
+) -> Path:
     """使用 requrests 库下载文件
 
     Args:
-        url (str): 下载链接
-        model_dir (Path | str | None): 下载路径
-        progress (bool | None): 是否启用下载进度条
-        file_name (str | None): 保存的文件名, 如果为`None`则从`url`中提取文件
-        hash_prefix (str | None): sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
-        re_download (bool): 强制重新下载文件
+        url (str):
+            下载链接
+        save_path (Path | None):
+            下载路径
+        file_name (str | None):
+            保存的文件名, 如果为`None`则从`url`中提取文件
+        progress (bool | None):
+            是否启用下载进度条
+        hash_prefix (str | None):
+            sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
+        re_download (bool):
+            强制重新下载文件
+
     Returns:
         Path: 下载的文件路径
+
     Raises:
         ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
     """
     import requests
     from tqdm import tqdm
 
-    if model_dir is None:
-        model_dir = os.getcwd()
-
-    model_dir = Path(model_dir) if not isinstance(model_dir, Path) and model_dir is not None else model_dir
+    if save_path is None:
+        save_path = Path.cwd()
 
     if not file_name:
         parts = urlparse(url)
-        file_name = os.path.basename(parts.path)
+        file_name = Path(parts.path).name
 
-    cached_file = model_dir.resolve() / file_name
+    cached_file = save_path.resolve() / file_name
 
     if re_download or not cached_file.exists():
-        model_dir.mkdir(parents=True, exist_ok=True)
-        temp_file = model_dir / f"{file_name}.tmp"
-        logger.info("下载 %s 到 %s 中", file_name, cached_file)
-        response = requests.get(url, stream=True)
+        save_path.mkdir(parents=True, exist_ok=True)
+        temp_file = save_path / f"{file_name}.tmp"
+        logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
+        response = requests.get(url, stream=True, timeout=60)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
         with tqdm(
@@ -139,18 +153,21 @@ def load_file_from_url(
                         progress_bar.update(len(chunk))
 
         if hash_prefix and not compare_sha256(temp_file, hash_prefix):
-            logger.error("%s 的哈希值不匹配, 正在删除临时文件", temp_file)
+            logger.error("'%s' 的哈希值不匹配, 正在删除临时文件", temp_file)
             temp_file.unlink()
             raise ValueError(f"文件哈希值与预期的哈希前缀不匹配: {hash_prefix}")
 
         temp_file.rename(cached_file)
-        logger.info("%s 下载完成", file_name)
+        logger.info("'%s' 下载完成", file_name)
     else:
-        logger.info("%s 已存在于 %s 中", file_name, cached_file)
+        logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
     return cached_file
 
 
-def compare_sha256(file_path: str | Path, hash_prefix: str) -> bool:
+def compare_sha256(
+    file_path: str | Path,
+    hash_prefix: str,
+) -> bool:
     """检查文件的 sha256 哈希值是否与给定的前缀匹配
 
     Args:
@@ -168,66 +185,75 @@ def compare_sha256(file_path: str | Path, hash_prefix: str) -> bool:
     return hash_sha256.hexdigest().startswith(hash_prefix.strip().lower())
 
 
+@retry(times=3, delay=1.0, catch_exceptions=(IOError, RuntimeError, ValueError), raise_exception=RuntimeError)
+def download_executer(
+    url: str,
+    path: Path,
+    save_name: str | None,
+    tool: str,
+    progress: bool,
+) -> Path:
+    """底层下载执行器
+
+    Args:
+        url (str):
+            下载链接
+        path (Path):
+            保存路径
+        save_name (str | None):
+            保存名称
+        tool (str):
+            工具名称
+        progress (bool):
+            是否显示进度
+
+    Returns:
+        (Path):
+            成功返回路径
+    """
+    if tool == "aria2":
+        return aria2(url=url, path=path, save_name=save_name, progress=progress)
+    elif tool == "requests":
+        return download_file_from_url(url=url, save_path=path, file_name=save_name, progress=progress)
+    return None
+
+
 def download_file(
     url: str,
-    path: str | Path = None,
+    path: Path | None = None,
     save_name: str | None = None,
-    tool: DownloadToolType | None = "aria2",
-    retry: int | None = 3,
-    progress: bool | None = True,
-) -> Path | None:
+    tool: str | None = "aria2",
+    progress: bool = True,
+) -> Path:
     """下载文件工具
 
     Args:
         url (str): 文件下载链接
         path (Path | str): 文件下载路径
-        save_name (str | None): 文件保存名称, 当为`None`时从`url`中解析文件名
-        tool (DownloadToolType | None): 下载工具
-        retry (int | None): 重试下载的次数
-        progress (bool | None): 是否启用下载进度条
+        save_name (str | None): 文件保存名称
+        tool (str | None): 下载工具
+        retry_count (int): 重试下载的次数
+        progress (bool): 是否启用下载进度条
+
     Returns:
-        (Path | None): 保存的文件路径
+        (Path): 保存的文件路径
     """
-    if tool == "aria2" and shutil.which("aria2c") is None:
-        logger.warning("未安装 Aria2, 无法使用 Aria2 进行下载, 将切换到 requests 进行下载任务")
-        tool = "requests"
-    count = 0
-    while count < retry:
-        count += 1
-        try:
-            if tool == "aria2":
-                output = aria2(
-                    url=url,
-                    path=path,
-                    save_name=save_name,
-                    progress=progress,
-                )
-                if output is None:
-                    continue
-                return output
-            elif tool == "requests":
-                output = load_file_from_url(
-                    url=url,
-                    model_dir=path,
-                    file_name=save_name,
-                    progress=progress,
-                )
-                if output is None:
-                    continue
-                return output
-            else:
-                logger.error("未知下载工具: %s", tool)
-                return None
-        except Exception as e:
-            logger.error("[%s/%s] 下载 %s 出现错误: %s", count, retry, url, e)
+    download_path = Path(path)
+    download_path.mkdir(parents=True, exist_ok=True)
 
-        if count < retry:
-            logger.warning("[%s/%s] 重试下载 %s 中", count, retry, url)
-        else:
-            return None
+    selected_tool = str(tool)
+    if selected_tool == "aria2" and shutil.which("aria2c") is None:
+        logger.warning("未安装 Aria2, 将切换到 requests 进行下载")
+        selected_tool = "requests"
+
+    return download_executer(url=url, path=download_path, save_name=save_name, tool=selected_tool, progress=progress)
 
 
-def download_archive_and_unpack(url: str, local_dir: Path | str, name: str | None = None, retry: int | None = 3) -> Path | None:
+def download_archive_and_unpack(
+    url: str,
+    local_dir: Path | str,
+    name: str | None = None,
+) -> Path:
     """下载压缩包并解压到指定路径
 
     Args:
@@ -236,7 +262,7 @@ def download_archive_and_unpack(url: str, local_dir: Path | str, name: str | Non
         name (str | None): 下载文件保存的名称, 为`None`时从`url`解析文件名
         retry (int | None): 重试下载的次数
     Returns:
-        (Path | None): 下载成功并解压成功时返回路径
+        (Path): 下载成功并解压成功时返回路径
     """
     with TemporaryDirectory() as tmp_dir:
         path = Path(tmp_dir)
@@ -247,7 +273,9 @@ def download_archive_and_unpack(url: str, local_dir: Path | str, name: str | Non
 
         archive_format = Path(name).suffix  # 压缩包格式
         origin_file_path = download_file(  # 下载文件
-            url=url, path=path, save_name=name, retry=retry
+            url=url,
+            path=path,
+            save_name=name,
         )
 
         if origin_file_path is not None:
@@ -304,15 +332,24 @@ class MultiThreadDownloader:
     """通用多线程下载器
 
     Attributes:
-        download_func (Callable): 执行下载任务的函数
-        download_args_list (list[Any]): 传入下载函数的位置参数列表
-        download_kwargs_list (list[dict[str, Any]]): 传入下载函数的关键字参数列表
-        queue (queue.Queue): 任务队列, 用于存储待执行的下载任务
-        total_tasks (int): 总的下载任务数
-        completed_count (int): 已完成的任务数
-        lock (threading.Lock): 线程锁, 用于保护对计数器的访问
-        retry (int | None): 重试次数
-        start_time (datetime.datetime | None): 下载开始时间
+        download_func (Callable):
+            执行下载任务的函数
+        download_args_list (list[Any]):
+            传入下载函数的位置参数列表
+        download_kwargs_list (list[dict[str, Any]]):
+            传入下载函数的关键字参数列表
+        queue (queue.Queue):
+            任务队列, 用于存储待执行的下载任务
+        total_tasks (int):
+            总的下载任务数
+        completed_count (int):
+            已完成的任务数
+        lock (threading.Lock):
+            线程锁, 用于保护对计数器的访问
+        retry (int | None):
+            重试次数
+        start_time (datetime.datetime | None):
+            下载开始时间
     """
 
     def __init__(
@@ -439,7 +476,7 @@ class MultiThreadDownloader:
     def start(
         self,
         num_threads: int | None = 16,
-        retry: int | None = 3,
+        retry_count: int | None = 3,
     ) -> None:
         """启动多线程下载器
 
@@ -449,7 +486,7 @@ class MultiThreadDownloader:
         """
 
         # 将重试次数作为属性传递给下载函数
-        self.retry = retry
+        self.retry = retry_count
 
         threads: list[threading.Thread] = []
         self.start_time = datetime.datetime.now()

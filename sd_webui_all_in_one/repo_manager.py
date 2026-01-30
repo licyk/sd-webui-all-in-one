@@ -639,7 +639,7 @@ class RepoManager:
         files_downloader = MultiThreadDownloader(download_func=hf_hub_download, download_kwargs_list=download_task)
         files_downloader.start(
             num_threads=num_threads,
-            retry=retry,
+            retry_count=retry,
         )
 
     def download_files_from_modelscope(
@@ -690,5 +690,5 @@ class RepoManager:
         files_downloader = MultiThreadDownloader(download_func=snapshot_download, download_kwargs_list=download_task)
         files_downloader.start(
             num_threads=num_threads,
-            retry=retry,
+            retry_count=retry,
         )

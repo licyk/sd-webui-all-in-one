@@ -259,18 +259,17 @@ def get_file_list(
 
 
 def generate_dir_tree(
-    start_path: str | Path,
+    start_path: Path,
     max_depth: int | None = None,
     show_hidden: bool | None = False,
 ) -> None:
     """生成并打印目录树
 
     Args:
-        start_path (str | Path): 要开始遍历的根目录路径
+        start_path (Path): 要开始遍历的根目录路径
         max_depth (int | None): 要遍历的最大深度
         show_hidden (bool | None): 是否显示隐藏文件
     """
-    start_path = Path(start_path) if not isinstance(start_path, Path) and start_path is not None else start_path
     if not start_path.is_dir():
         logger.error("目录 %s 不存在", start_path)
         return
