@@ -353,6 +353,71 @@ print(is_uv_need_update())
 }
 
 
+# 检查 SD WebUI ALL In One 内核版本
+function Check-SD-WebUI-All-In-One-Version {
+    $content = "
+import re
+from importlib.metadata import version
+
+
+def compare_versions(version1: str, version2: str) -> int:
+    version1 = str(version1)
+    version2 = str(version2)
+    try:
+        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
+        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
+    except Exception:
+        return 0
+
+    for i in range(max(len(nums1), len(nums2))):
+        num1 = int(nums1[i]) if i < len(nums1) else 0
+        num2 = int(nums2[i]) if i < len(nums2) else 0
+
+        if num1 == num2:
+            continue
+        elif num1 > num2:
+            return 1
+        else:
+            return -1
+
+    return 0
+
+
+def is_core_need_update(uv_minimum_ver: str) -> bool:
+    try:
+        core_ver = version('sd-webui-all-in-one')
+    except Exception:
+        return True
+
+    if compare_versions(core_ver, core_minimum_ver) < 0:
+        return True
+    else:
+        return False
+
+
+if __name__ == '__main__':
+    print(is_core_need_update('$CORE_MINIMUM_VER'))
+".Trim()
+
+    Print-Msg "检测 SD WebUI All In One 内核是否需要更新"
+    $status = $(python -c "$content")
+    if ($status -eq "True") {
+        Print-Msg "更新 SD WebUI All In One 内核中"
+        python -m pip install -U "sd-webui-all-in-one>=$CORE_MINIMUM_VER"
+        if ($?) {
+            $Global:CORE_IS_AVALIABLE = $true
+            Print-Msg "SD WebUI All In One 内核更新成功"
+        } else {
+            $Global:CORE_IS_AVALIABLE = $false
+            Print-Msg "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用"
+        }
+    } else {
+        $Global:CORE_IS_AVALIABLE = $true
+        Print-Msg "SD WebUI All In One 内核无需更新"
+    }
+}
+
+
 # 下载并解压 Python
 function Install-Python {
     $urls = @(
@@ -1231,7 +1296,7 @@ function Install-PyTorch {
     python -m pip show torch --quiet 2> $null
     if (!($?)) {
         Print-Msg "安装 PyTorch 中"
-        if ($USE_UV) {
+        if ($Global:USE_UV) {
             uv pip install $pytorch_package.ToString().Split()
             if (!($?)) {
                 Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
@@ -1258,7 +1323,7 @@ function Install-PyTorch {
     if (!($?)) {
         if ($xformers_package) {
             Print-Msg "安装 xFormers 中"
-            if ($USE_UV) {
+            if ($Global:USE_UV) {
                 uv pip install $xformers_package.ToString().Split() --no-deps
                 if (!($?)) {
                     Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
@@ -1297,7 +1362,7 @@ function Install-ComfyUI-Dependence {
     $current_path = $(Get-Location).ToString()
     Set-Location "$InstallPath/$Env:CORE_PREFIX"
     Print-Msg "安装 ComfyUI 依赖中"
-    if ($USE_UV) {
+    if ($Global:USE_UV) {
         uv pip install -r requirements.txt
         if (!($?)) {
             Print-Msg "检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装"
@@ -1363,6 +1428,7 @@ function Check-Install {
         Install-uv
     }
     Check-uv-Version
+    Check-SD-WebUI-All-In-One-Version
 
     Set-Github-Mirror
     $comfyui_path = "$InstallPath/$Env:CORE_PREFIX"
@@ -4302,7 +4368,7 @@ if __name__ == ```"__main__```":
 
     if (`$status -eq `"False`") {
         Print-Msg `"检测到 ComfyUI 内核有依赖缺失, 安装 ComfyUI 依赖中`"
-        if (`$USE_UV) {
+        if (`$Global:USE_UV) {
             uv pip install -r `"`$dep_path`"
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
@@ -6998,7 +7064,7 @@ if __name__ == ```"__main__```":
         `$name = Split-Path `$(Split-Path `$path -Parent) -Leaf
 
         Print-Msg `"[`$(`$i + 1)/`$sum] 安装 `$name 组件依赖中`"
-        if (`$USE_UV) {
+        if (`$Global:USE_UV) {
             uv pip install -r `"`$path`"
             if (!(`$?)) {
                 Print-Msg `"[`$(`$i + 1)/`$sum] 检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
@@ -7482,7 +7548,7 @@ if __name__ == ```"__main__```":
         python -m pip uninstall onnxruntime-gpu -y
 
         Print-Msg `"重新安装 onnxruntime-gpu 中`"
-        if (`$USE_UV) {
+        if (`$Global:USE_UV) {
             uv pip install `$ort_version
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
@@ -7531,7 +7597,7 @@ else:
 
     if (`$status -eq `"True`") {
         Print-Msg `"检测到 Numpy 版本大于 1, 这可能导致部分组件出现异常, 尝试重装中`"
-        if (`$USE_UV) {
+        if (`$Global:USE_UV) {
             uv pip install `"numpy==1.26.4`"
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
@@ -10852,7 +10918,7 @@ function Main {
 
     if (`$install_torch -eq `"yes`" -or `$install_torch -eq `"y`" -or `$install_torch -eq `"YES`" -or `$install_torch -eq `"Y`") {
         Print-Msg `"重装 PyTorch 中`"
-        if (`$USE_UV) {
+        if (`$Global:USE_UV) {
             uv pip install `$torch_ver.ToString().Split() `$force_reinstall_arg
             if (!(`$?)) {
                 Print-Msg `"检测到 uv 安装 Python 软件包失败, 尝试回滚至 Pip 重试 Python 软件包安装`"
@@ -10873,7 +10939,7 @@ function Main {
 
         if (`$null -ne `$xformers_ver) {
             Print-Msg `"重装 xFormers 中`"
-            if (`$USE_UV) {
+            if (`$Global:USE_UV) {
                 `$current_xf_ver = Get-xFormers-Version
                 if (`$xformers_ver.Split(`"=`")[-1] -ne `$current_xf_ver) {
                     Print-Msg `"卸载原有 xFormers 中`"

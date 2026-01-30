@@ -73,6 +73,7 @@ def retryable(
 
                     return cast(T, result)
                 except catch_exc as e: # pylint: disable=catching-non-exception
+                    err = e
                     # 判断是否是内部信号触发的
                     error_msg = str(e) if isinstance(e, RetrySignalError) else f"{type(e).__name__}: {e}"
                     logger.error("[%s/%s] %s 出现错误: %s", count, actual_times, target_info, error_msg)
