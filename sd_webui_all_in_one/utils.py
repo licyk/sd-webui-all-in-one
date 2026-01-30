@@ -35,7 +35,7 @@ def in_jupyter() -> bool:
         return False
 
 
-def clear_up() -> bool:
+def clear_jupyter_output() -> None:
     """清理 Jupyter Notebook 输出内容
 
     Returns:
@@ -43,12 +43,9 @@ def clear_up() -> bool:
     """
     try:
         from IPython.display import clear_output
-
         clear_output(wait=False)
-        return True
     except Exception as e:
-        logger.error("清理 Jupyter Notebook 输出内容失败: %s", e)
-        return False
+        raise RuntimeError(f"清理 Jupyter Notebook 输出内容失败: {e}") from e
 
 
 def check_gpu() -> bool:
@@ -56,9 +53,16 @@ def check_gpu() -> bool:
 
     Returns:
         bool: 当有可用 GPU 时返回`True`
+
+    ImportError:
+
     """
+    # TODO: 替换成 get_avaliable_pytorch_device_type() 的实现
     logger.info("检查当前环境是否有 GPU 可用")
-    import tensorflow as tf
+    try:
+        import tensorflow as tf
+    except ImportError as e:
+        raise ImportError("tensorflow 未安装, 无法检测是否有可用的 GPU") from e
 
     if tf.test.gpu_device_name():
         logger.info("有可用的 GPU")

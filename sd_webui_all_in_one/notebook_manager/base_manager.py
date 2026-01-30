@@ -13,7 +13,7 @@ from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.repo_manager import RepoManager
 from sd_webui_all_in_one.downloader import download_file, download_archive_and_unpack
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
-from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_up
+from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_jupyter_output
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, SD_WEBUI_ALL_IN_ONE_PATCHER_PATH, SD_WEBUI_ALL_IN_ONE_PATCHER
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, sync_files_and_create_symlink
@@ -74,7 +74,7 @@ class BaseManager:
         self.copy_files = copy_files
         self.import_kaggle_input = import_kaggle_input
         self.display_model_and_dataset_dir = display_model_and_dataset_dir
-        self.clear_up = clear_up
+        self.clear_up = clear_jupyter_output
         self.download_file = download_file
         self.download_archive_and_unpack = download_archive_and_unpack
         self.run_cmd = run_cmd
