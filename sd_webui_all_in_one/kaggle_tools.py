@@ -35,15 +35,14 @@ def get_kaggle_secret(key: str) -> str | None:
 
 
 def import_kaggle_input(
-    output_path: Path | str,
+    output_path: Path,
 ) -> None:
     """从 Kaggle Input 文件夹中导入文件
 
     Args:
-        output_path (Path|str): 导出文件的路径
+        output_path (Path): 导出文件的路径
     """
     kaggle_input_path = Path("/kaggle/input")
-    output_path = Path(output_path) if not isinstance(output_path, Path) and output_path is not None else output_path
     logger.info("从 Kaggle Input 导入文件: %s -> %s", kaggle_input_path, output_path)
     if kaggle_input_path.is_dir() and any(kaggle_input_path.iterdir()):
         count = 0
@@ -58,21 +57,19 @@ def import_kaggle_input(
 
 
 def display_model_and_dataset_dir(
-    model_path: Path | str = None,
-    dataset_path: Path | str = None,
+    model_path: Path = None,
+    dataset_path: Path = None,
     recursive: bool | None = False,
     show_hidden: bool | None = True,
 ) -> None:
     """列出模型文件夹和数据集文件夹的文件列表
 
     Args:
-        model_path (Path | str | None): 要展示的路径
-        dataset_path (Path | str | None): 要展示的路径
+        model_path (Path | None): 要展示的路径
+        dataset_path (Path | None): 要展示的路径
         recursive (bool | None): 递归显示子目录的内容
         show_hidden (bool | None)`: 显示隐藏文件
     """
-    model_path = Path(model_path) if not isinstance(model_path, Path) and model_path is not None else model_path
-    dataset_path = Path(dataset_path) if not isinstance(dataset_path, Path) and dataset_path is not None else dataset_path
     if model_path is not None and model_path.is_dir():
         logger.info("模型目录中的文件列表")
         generate_dir_tree(

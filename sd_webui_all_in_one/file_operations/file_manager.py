@@ -436,6 +436,10 @@ def sync_files_and_create_symlink(
             软链接路径
         src_is_file (bool | None):
             源路径是否为文件
+
+    Raises:
+        RuntimeError:
+            链接文件发生错误时
     """
     logger.info("链接路径: %s -> %s", src_path, link_path)
     try:

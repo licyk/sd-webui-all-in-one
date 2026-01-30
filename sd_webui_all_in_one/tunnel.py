@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.env_manager import pip_install
+from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 

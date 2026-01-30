@@ -15,12 +15,12 @@ from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
-from sd_webui_all_in_one.env import configure_env_var, configure_pip
+from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import comfyui_conflict_analyzer
-from sd_webui_all_in_one.env_manager import install_manager_depend, install_pytorch, install_requirements
+from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements
 
 
 logger = get_logger(
@@ -348,7 +348,7 @@ class ComfyUIManager(BaseManager):
         install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
-            pytorch_mirror=pytorch_mirror,
+            custom_env=pytorch_mirror,
             use_uv=use_uv,
         )
         install_requirements(

@@ -139,6 +139,7 @@ def set_github_mirror(mirror: str | list[str] | None = None, config_path: Path |
             logger.error("设置 Github 镜像源时发生错误: %s", e)
     elif isinstance(mirror, list):
         with TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
             mirror_test_path = tmp_dir / "__github_mirror_test__"
             custon_env = os.environ.copy()
             custon_env.pop("GIT_CONFIG_GLOBAL", None)

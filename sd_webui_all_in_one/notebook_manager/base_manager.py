@@ -4,6 +4,7 @@ import re
 import os
 import subprocess
 import shlex
+import traceback
 from pathlib import Path
 from typing import Literal
 
@@ -15,10 +16,10 @@ from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
 from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_up
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, SD_WEBUI_ALL_IN_ONE_PATCHER_PATH, SD_WEBUI_ALL_IN_ONE_PATCHER
-from sd_webui_all_in_one.file_manager import copy_files, sync_files_and_create_symlink
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.file_manager import remove_files
+from sd_webui_all_in_one.file_operations.file_manager import remove_files
 
 
 logger = get_logger(
@@ -109,7 +110,6 @@ class BaseManager:
         path: str | Path,
         filename: str | None = None,
         tool: Literal["aria2", "request"] = "aria2",
-        retry: int | None = 3,
     ) -> Path | None:
         """下载模型文件到本地中
 
@@ -118,13 +118,18 @@ class BaseManager:
             path (str | Path): 模型文件下载到本地的路径
             filename (str | None): 指定下载的模型文件名称
             tool (Literal["aria2", "request"]): 下载工具
-            retry (int | None): 重试下载的次数, 默认为 3
+
         Returns:
             (Path | None): 文件保存路径
         """
-        return download_file(url=url, path=path, save_name=filename, tool=tool, retry=retry)
+        try:
+            return download_file(url=url, path=path, save_name=filename, tool=tool)
+        except Exception as e:
+            traceback.print_exc()
+            logger.error("下载 '%s' 到 '%s' 时发生错误: %s", url, path, e)
+            return None
 
-    def get_model_from_list(self, path: str | Path, model_list: list[str, int], retry: int | None = 3) -> None:
+    def get_model_from_list(self, path: str | Path, model_list: list[str, int]) -> None:
         """从模型列表下载模型
 
         `model_list`需要指定模型下载的链接和下载状态, 例如
@@ -146,7 +151,6 @@ class BaseManager:
         Args:
             path (str | Path): 将模型下载到的本地路径
             model_list (list[str | int]): 模型列表
-            retry (int | None): 重试下载的次数, 默认为 3
         """
         for model in model_list:
             try:
@@ -158,9 +162,9 @@ class BaseManager:
                 continue
             if status >= 1:
                 if filename is None:
-                    self.get_model(url=url, path=path, retry=retry)
+                    self.get_model(url=url, path=path)
                 else:
-                    self.get_model(url=url, path=path, filename=filename, retry=retry)
+                    self.get_model(url=url, path=path, filename=filename)
 
     def check_avaliable_gpu(self) -> bool:
         """检测当前环境是否有 GPU
@@ -215,11 +219,15 @@ class BaseManager:
             if is_file and (not full_link_path.exists() and not full_drive_path.exists()):
                 # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
                 continue
-            sync_files_and_create_symlink(
-                src_path=full_drive_path,
-                link_path=full_link_path,
-                src_is_file=is_file,
-            )
+            try:
+                sync_files_and_create_symlink(
+                    src_path=full_drive_path,
+                    link_path=full_link_path,
+                    src_is_file=is_file,
+                )
+            except Exception as e:
+                traceback.print_exc()
+                logger.error("链接文件时发生错误: %s", e)
 
     def parse_cmd_str_to_list(self, launch_args: str) -> list[str]:
         """解析命令行参数字符串，返回参数列表
@@ -230,30 +238,14 @@ class BaseManager:
         Returns:
             list[str]: 解析后的参数列表
         """
-        if not launch_args:
-            return []
-
-        # 去除首尾空格
-        trimmed_args = launch_args.strip()
-
-        # 如果参数数量 <= 1, 使用简单分割
-        if len(trimmed_args.split()) <= 1:
-            arguments = trimmed_args.split()
-        else:
-            # 使用正则表达式处理复杂情况 (包含引号的参数)
-            pattern = r'("[^"]*"|\'[^\']*\'|\S+)'
-            matches = re.findall(pattern, trimmed_args)
-
-            # 去除参数两端的引号
-            arguments = [match.strip("\"'") for match in matches]
-
-        return arguments
+        return shlex.split(launch_args)
 
     def parse_cmd_list_to_str(self, cmd_list: list[str]) -> str:
         """将命令列表转换为命令字符串
 
         Args:
             cmd_list (list[str]): 命令列表
+
         Returns:
             str: 命令字符串
         """
