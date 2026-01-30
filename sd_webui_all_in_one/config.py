@@ -13,6 +13,9 @@ LOGGER_LEVEL = int(os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", str(logging.INF
 LOGGER_COLOR = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR") not in ["0", "False", "false", "None", "none", "null"]
 """日志颜色"""
 
+RETRY_TIMES = os.getenv("SD_WEBUI_ALL_IN_ONE_RETRY_TIMES", str(3))
+"""重试次数"""
+
 DEFAULT_ENV_VARS = [
     ["TF_CPP_MIN_LOG_LEVEL", "3"],
     ["BITSANDBYTES_NOWELCOME", "1"],

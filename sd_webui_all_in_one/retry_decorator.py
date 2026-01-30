@@ -28,6 +28,10 @@ def retryable(
 ) -> Callable[[Callable[P, T | None]], Callable[..., T]]:
     """通用的重试装饰器
 
+    该装饰器会为原函数注入以下参数:
+        - retry_times (int | None): 重试次数
+        - retry_delay (float | None): 重试延迟
+
     Args:
         times (int | None):
             最大重试次数
@@ -39,6 +43,8 @@ def retryable(
             需要捕获并触发重试的异常类型
         raise_exception (type[Exception]):
             超过重试次数后抛出的异常类型
+        retry_on_none (bool | None):
+            是否在返回 None 时触发重试
 
     Returns:
         (Callable[[Callable[P, T | None]], Callable[..., T]]):

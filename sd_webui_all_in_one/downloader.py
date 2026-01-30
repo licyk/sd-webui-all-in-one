@@ -15,9 +15,10 @@ from typing import Any, Callable, Literal, TypeAlias
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, RETRY_TIMES
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.file_operations.archive_manager import extract_archive
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 
 
 logger = get_logger(
@@ -186,7 +187,13 @@ def compare_sha256(
     return hash_sha256.hexdigest().startswith(hash_prefix.strip().lower())
 
 
-@retryable(times=3, delay=1.0, catch_exceptions=(IOError, RuntimeError, ValueError), raise_exception=RuntimeError)
+@retryable(
+    times=RETRY_TIMES,
+    describe="执行下载器",
+    catch_exceptions=(IOError, RuntimeError, ValueError),
+    raise_exception=(RuntimeError),
+    retry_on_none=False,
+)
 def download_executer(
     url: str,
     path: Path,
@@ -314,6 +321,8 @@ class MultiThreadDownloader:
             重试次数
         start_time (datetime.datetime | None):
             下载开始时间
+        error_list (list[Exception]):
+            错误列表
     """
 
     def __init__(
@@ -366,8 +375,9 @@ class MultiThreadDownloader:
         self.total_tasks = max(len(download_args_list or []), len(download_kwargs_list or []))  # 记录总的下载任务数 (以参数列表长度为准)
         self.completed_count = 0  # 记录已完成的任务数
         self.lock = threading.Lock()  # 创建锁以保护对计数器的访问
-        self.retry = None
-        self.start_time = None
+        self.retry: int | None = None
+        self.start_time: datetime.datetime | None = None
+        self.error_list: list[Exception] = []
 
     def worker(
         self,
@@ -386,18 +396,13 @@ class MultiThreadDownloader:
                     self.download_func(*args, **kwargs)
                     break
                 except Exception as e:
+                    self.error_list.append(e)
                     traceback.print_exc()
-                    logger.error(
-                        "[%s/%s] 执行 %s 时发生错误: %s",
-                        count,
-                        self.retry,
-                        self.download_func,
-                        e,
-                    )
+                    logger.error("[%s/%s] 执行 %s 时发生错误: %s", count, self.retry, self.download_func, e)
                     if count < self.retry:
                         logger.warning("[%s/%s] 重试执行中", count, self.retry)
                     else:
-                        logger.error("[%s/%s] %s 已达到最大重试次数", count, self.retry, self.download_func.__name__)
+                        logger.error("[%s/%s] %s 已达到最大重试次数", count, self.retry, self.download_func)
 
             self.queue.task_done()
             with self.lock:  # 访问共享资源时加锁
@@ -445,6 +450,10 @@ class MultiThreadDownloader:
         Args:
             num_threads (int): 下载线程数, 默认为 16
             retry (int): 重试次数, 默认为 3
+
+        Raises:
+            AggregateError:
+                下载任务出现错误时
         """
 
         # 将重试次数作为属性传递给下载函数
@@ -483,3 +492,8 @@ class MultiThreadDownloader:
 
         for thread in threads:
             thread.join()
+
+        if self.error_list:
+            raise AggregateError("执行多线程下载任务时发生了错误", self.error_list)
+        else:
+            logger.info("多线程下载任务运行结束")
