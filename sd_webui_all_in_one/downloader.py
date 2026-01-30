@@ -17,6 +17,7 @@ from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.retry_decorator import retry
+from sd_webui_all_in_one.file_operations.archive_manager import extract_archive
 
 
 logger = get_logger(
@@ -208,7 +209,7 @@ def download_executer(
             是否显示进度
 
     Returns:
-        (Path):
+        Path:
             成功返回路径
     """
     if tool == "aria2":
@@ -236,7 +237,7 @@ def download_file(
         progress (bool): 是否启用下载进度条
 
     Returns:
-        (Path): 保存的文件路径
+        Path: 保存的文件路径
     """
     download_path = Path(path)
     download_path.mkdir(parents=True, exist_ok=True)
@@ -251,81 +252,44 @@ def download_file(
 
 def download_archive_and_unpack(
     url: str,
-    local_dir: Path | str,
+    local_dir: Path,
     name: str | None = None,
-) -> Path:
+) -> None:
     """下载压缩包并解压到指定路径
 
     Args:
-        url (str): 压缩包下载链接, 压缩包只支持`zip`,`7z`,`tar`格式
-        local_dir (Path | str): 下载路径
-        name (str | None): 下载文件保存的名称, 为`None`时从`url`解析文件名
-        retry (int | None): 重试下载的次数
-    Returns:
-        (Path): 下载成功并解压成功时返回路径
+        url (str):
+            压缩包下载链接, 压缩包支持的格式: .zip, .7z, .rar, .tar, .tar.Z, .tar.lz, .tar.lzma, .tar.bz2, .tar.7z, .tar.gz, .tar.xz, .tar.zst
+        local_dir (Path):
+            下载路径
+        name (str | None):
+            下载文件保存的名称, 为`None`时从`url`解析文件名
+
+    Raises:
+        RuntimeError:
+            下载并解压压缩包时发生错误时
     """
     with TemporaryDirectory() as tmp_dir:
         path = Path(tmp_dir)
-        local_dir = Path(local_dir) if not isinstance(local_dir, Path) and local_dir is not None else local_dir
         if name is None:
             parts = urlparse(url)
             name = os.path.basename(parts.path)
 
-        archive_format = Path(name).suffix  # 压缩包格式
-        origin_file_path = download_file(  # 下载文件
-            url=url,
-            path=path,
-            save_name=name,
-        )
-
-        if origin_file_path is not None:
-            # 解压文件
+        try:
+            origin_file_path = download_file(
+                url=url,
+                path=path,
+                save_name=name,
+            )
             logger.info("解压 %s 到 %s 中", name, local_dir)
-            try:
-                if archive_format == ".7z":
-                    run_cmd(
-                        [
-                            "7z",
-                            "x",
-                            origin_file_path.as_posix(),
-                            f"-o{local_dir.as_posix()}",
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                elif archive_format == ".zip":
-                    run_cmd(
-                        [
-                            "unzip",
-                            origin_file_path.as_posix(),
-                            "-d",
-                            local_dir.as_posix(),
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                elif archive_format == ".tar":
-                    run_cmd(
-                        [
-                            "tar",
-                            "-xvf",
-                            origin_file_path.as_posix(),
-                            "-C",
-                            local_dir.as_posix(),
-                        ]
-                    )
-                    logger.info("%s 解压完成, 路径: %s", name, local_dir)
-                    return local_dir
-                else:
-                    logger.error("%s 的格式不支持解压", name)
-                    return None
-            except Exception as e:
-                logger.error("解压 %s 时发生错误: %s", name, e)
-                traceback.print_exc()
-                return None
-        else:
-            logger.error("%s 下载失败", name)
-            return None
+            extract_archive(
+                archive_path=origin_file_path,
+                extract_to=local_dir,
+            )
+            logger.info("%s 解压完成, 路径: %s", name, local_dir)
+        except Exception as e:
+            logger.error("解压 %s 时发生错误: %s", name, e)
+            raise RuntimeError(f"下载 {name} 并解压压缩包时发生错误: {e}") from e
 
 
 class MultiThreadDownloader:
@@ -405,7 +369,9 @@ class MultiThreadDownloader:
         self.retry = None
         self.start_time = None
 
-    def worker(self) -> None:
+    def worker(
+        self,
+    ) -> None:
         """工作线程函数, 执行下载任务"""
         while True:
             task = self.queue.get()
@@ -430,13 +396,17 @@ class MultiThreadDownloader:
                     )
                     if count < self.retry:
                         logger.warning("[%s/%s] 重试执行中", count, self.retry)
+                    else:
+                        logger.error("[%s/%s] %s 已达到最大重试次数", count, self.retry, self.download_func.__name__)
 
             self.queue.task_done()
             with self.lock:  # 访问共享资源时加锁
                 self.completed_count += 1
                 self.print_progress()  # 打印进度
 
-    def print_progress(self) -> None:
+    def print_progress(
+        self,
+    ) -> None:
         """进度条显示"""
         progress = (self.completed_count / self.total_tasks) * 100
         current_time = datetime.datetime.now()
@@ -463,15 +433,7 @@ class MultiThreadDownloader:
         else:
             formatted_estimated_time = "N/A"
 
-        logger.info(
-            "下载进度: %.2f%% | %d/%d [%s<%s, %.2f it/s]",
-            progress,
-            self.completed_count,
-            self.total_tasks,
-            formatted_time,
-            formatted_estimated_time,
-            speed,
-        )
+        logger.info("下载进度: %.2f%% | %d/%d [%s<%s, %.2f it/s]", progress, self.completed_count, self.total_tasks, formatted_time, formatted_estimated_time, speed)
 
     def start(
         self,

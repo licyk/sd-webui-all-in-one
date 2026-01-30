@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from sd_webui_all_in_one.file_manager import copy_files, generate_dir_tree
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, generate_dir_tree
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 
