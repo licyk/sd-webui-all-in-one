@@ -75,7 +75,7 @@ def download_model(
         count += 1
         name = model["name"]
         filename = model["filename"]
-        save_dir = base_path / model["save_dir"]
+        save_dir = base_path / model["save_dir"][dtype]
         url = model["url"][download_resource_type]
         logger.info("[%s/%s] 下载 %s 到 %s 中", count, sums, name, save_dir)
         try:

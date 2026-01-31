@@ -1,31 +1,813 @@
-def install_sd_webui() -> None: ...
+from typing import TypedDict, Literal, TypeAlias, get_args
+from pathlib import Path
+
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.base_manager.base import prepare_pytorch_install_info, clone_repo, install_pytorch_for_webui, get_pypi_mirror_config, pre_download_model_for_webui
+from sd_webui_all_in_one.pkg_manager import install_requirements
+from sd_webui_all_in_one import git_warpper
+
+logger = get_logger(
+    name="SD WebUI Manager",
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
+SDWebUiBranchType: TypeAlias = Literal[
+    "sd_webui_main",
+    "sd_webui_dev",
+    "sd_webui_forge",
+    "sd_webui_reforge_main",
+    "sd_webui_reforge_dev",
+    "sd_webui_forge_classic",
+    "sd_webui_forge_neo",
+    "sd_webui_amdgpu",
+    "sd_next_main",
+    "sd_next_dev",
+]
+"""Stable Diffusion WebUI 分支类型"""
+
+SD_WEBUI_BRANCH_LIST: list[str] = list(get_args(SDWebUiBranchType))
+"""Stable Diffusion WebUI 分支类型列表"""
 
 
-def check_sd_webui_env() -> None: ...
+class SDWebUiBranchInfo(TypedDict):
+    """Stable Diffusion WebUI 分支信息"""
+
+    name: str
+    """Stable Diffusion WebUI 分支名称"""
+
+    dtype: SDWebUiBranchType
+    """Stable Diffusion WebUI 分支类型"""
+
+    url: str
+    """Stable Diffusion WebUI 分支的 Git 仓库地址"""
+
+    branch: str
+    """Stable Diffusion WebUI 的 Git 分支名称"""
+
+    use_submodule: bool
+    """Stable Diffusion WebUI 分支中是否包含 Git 子模块"""
 
 
-def launch_sd_webui() -> None: ...
+SD_WEBUI_BRANCH_INFO_DICT: list[SDWebUiBranchInfo] = [
+    {
+        "name": "AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支",
+        "dtype": "sd_webui_main",
+        "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+        "branch": "master",
+        "use_submodule": False,
+    },
+    {
+        "name": "AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支",
+        "dtype": "sd_webui_dev",
+        "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+        "branch": "dev",
+        "use_submodule": False,
+    },
+    {
+        "name": "lllyasviel - Stable-Diffusion-WebUI-Forge 分支",
+        "dtype": "sd_webui_forge",
+        "url": "https://github.com/lllyasviel/stable-diffusion-webui-forge",
+        "branch": "main",
+        "use_submodule": False,
+    },
+    {
+        "name": "Panchovix - Stable-Diffusion-WebUI-reForge 主分支",
+        "dtype": "sd_webui_reforge_main",
+        "url": "https://github.com/Panchovix/stable-diffusion-webui-reForge",
+        "branch": "main",
+        "use_submodule": False,
+    },
+    {
+        "name": "Panchovix - Stable-Diffusion-WebUI-reForge 测试分支",
+        "dtype": "sd_webui_reforge_dev",
+        "url": "https://github.com/Panchovix/stable-diffusion-webui-reForge",
+        "branch": "dev_upstream",
+        "use_submodule": False,
+    },
+    {
+        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支",
+        "dtype": "sd_webui_forge_classic",
+        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
+        "branch": "classic",
+        "use_submodule": False,
+    },
+    {
+        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支",
+        "dtype": "sd_webui_forge_neo",
+        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
+        "branch": "neo",
+        "use_submodule": False,
+    },
+    {
+        "name": "lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支",
+        "dtype": "sd_webui_amdgpu",
+        "url": "https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu",
+        "branch": "master",
+        "use_submodule": False,
+    },
+    {
+        "name": "vladmandic - SD.NEXT 主分支",
+        "dtype": "sd_next_main",
+        "url": "https://github.com/vladmandic/sdnext",
+        "branch": "master",
+        "use_submodule": True,
+    },
+    {
+        "name": "vladmandic - SD.NEXT 测试分支",
+        "dtype": "sd_next_dev",
+        "url": "https://github.com/vladmandic/sdnext",
+        "branch": "dev",
+        "use_submodule": True,
+    },
+]
+"""Stable Diffusion WebUI 分支信息字典"""
 
 
-def install_extension() -> None: ...
+class SDWebUiExtensionInfo(TypedDict):
+    """Stable Diffusion WebUI 扩展 / 组件信息"""
+
+    name: str
+    """Stable Diffusion WebUI 扩展 / 组件名称"""
+
+    url: str
+    """Stable Diffusion WebUI 扩展 / 组件的 Git 仓库地址"""
+
+    save_dir: str
+    """Stable Diffusion WebUI 扩展 / 组件安装路径 (使用相对路径, 初始位置为 WebUI 的根目录)"""
+
+    supported_branch: list[SDWebUiBranchType]
+    """Stable Diffusion WebUI 扩展 / 组件支持的分支类型"""
 
 
-def set_extensions_status() -> None: ...
+SDWebUiExtensionInfoList = list[SDWebUiExtensionInfo]
+"""Stable Diffusion WebUI 扩展 / 组件信息列表"""
+
+SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
+    {
+        "name": "ultimate-upscale-for-automatic1111",
+        "url": "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111",
+        "save_dir": "extensions/ultimate-upscale-for-automatic1111",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "a1111-sd-webui-tagcomplete",
+        "url": "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete",
+        "save_dir": "extensions/a1111-sd-webui-tagcomplete",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "adetailer",
+        "url": "https://github.com/Bing-su/adetailer",
+        "save_dir": "extensions/adetailer",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-infinite-image-browsing",
+        "url": "https://github.com/zanllp/sd-webui-infinite-image-browsing",
+        "save_dir": "extensions/sd-webui-infinite-image-browsing",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-openpose-editor",
+        "url": "https://github.com/huchenlei/sd-webui-openpose-editor",
+        "save_dir": "extensions/sd-webui-openpose-editor",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-prompt-all-in-one",
+        "url": "https://github.com/Physton/sd-webui-prompt-all-in-one",
+        "save_dir": "extensions/sd-webui-prompt-all-in-one",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-wd14-tagger",
+        "url": "https://github.com/licyk/sd-webui-wd14-tagger",
+        "save_dir": "extensions/sd-webui-wd14-tagger",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "stable-diffusion-webui-localization-zh_Hans",
+        "url": "https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans",
+        "save_dir": "extensions/stable-diffusion-webui-localization-zh_Hans",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-mosaic-outpaint",
+        "url": "https://github.com/Haoming02/sd-webui-mosaic-outpaint",
+        "save_dir": "extensions/sd-webui-mosaic-outpaint",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-resource-monitor",
+        "url": "https://github.com/Haoming02/sd-webui-resource-monitor",
+        "save_dir": "extensions/sd-webui-resource-monitor",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-tcd-sampler",
+        "url": "https://github.com/licyk/sd-webui-tcd-sampler",
+        "save_dir": "extensions/sd-webui-tcd-sampler",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "advanced_euler_sampler_extension",
+        "url": "https://github.com/licyk/advanced_euler_sampler_extension",
+        "save_dir": "extensions/advanced_euler_sampler_extension",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "sd-webui-regional-prompter",
+        "url": "https://github.com/hako-mikan/sd-webui-regional-prompter",
+        "save_dir": "extensions/sd-webui-regional-prompter",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "sd-webui-model-converter",
+        "url": "https://github.com/Akegarasu/sd-webui-model-converter",
+        "save_dir": "extensions/sd-webui-model-converter",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-controlnet",
+        "url": "https://github.com/Mikubill/sd-webui-controlnet",
+        "save_dir": "extensions/sd-webui-controlnet",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "multidiffusion-upscaler-for-automatic1111",
+        "url": "https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111",
+        "save_dir": "extensions/multidiffusion-upscaler-for-automatic1111",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "sd-dynamic-thresholding",
+        "url": "https://github.com/mcmonkeyprojects/sd-dynamic-thresholding",
+        "save_dir": "extensions/sd-dynamic-thresholding",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-lora-block-weight",
+        "url": "https://github.com/hako-mikan/sd-webui-lora-block-weight",
+        "save_dir": "extensions/sd-webui-lora-block-weight",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "stable-diffusion-webui-model-toolkit",
+        "url": "https://github.com/arenasys/stable-diffusion-webui-model-toolkit",
+        "save_dir": "extensions/stable-diffusion-webui-model-toolkit",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "a1111-sd-webui-haku-img",
+        "url": "https://github.com/licyk/a1111-sd-webui-haku-img",
+        "save_dir": "extensions/a1111-sd-webui-haku-img",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd-webui-supermerger",
+        "url": "https://github.com/hako-mikan/sd-webui-supermerger",
+        "save_dir": "extensions/sd-webui-supermerger",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+        ],
+    },
+    {
+        "name": "sd-webui-segment-anything",
+        "url": "https://github.com/continue-revolution/sd-webui-segment-anything",
+        "save_dir": "extensions/sd-webui-segment-anything",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sd_forge_hypertile_svd_z123",
+        "url": "https://github.com/licyk/sd_forge_hypertile_svd_z123",
+        "save_dir": "extensions/sd_forge_hypertile_svd_z123",
+        "supported_branch": [
+            "sd_webui_forge",
+        ],
+    },
+    {
+        "name": "sd-forge-layerdiffuse",
+        "url": "https://github.com/lllyasviel/sd-forge-layerdiffuse",
+        "save_dir": "extensions/sd-forge-layerdiffuse",
+        "supported_branch": [
+            "sd_webui_forge",
+        ],
+    },
+    {
+        "name": "sd-webui-licyk-style-image",
+        "url": "https://github.com/licyk/sd-webui-licyk-style-image",
+        "save_dir": "extensions/sd-webui-licyk-style-image",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "sdwebui-close-confirmation-dialogue",
+        "url": "https://github.com/w-e-w/sdwebui-close-confirmation-dialogue",
+        "save_dir": "extensions/sdwebui-close-confirmation-dialogue",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "stable-diffusion-webui-zoomimage",
+        "url": "https://github.com/viyiviyi/stable-diffusion-webui-zoomimage",
+        "save_dir": "extensions/stable-diffusion-webui-zoomimage",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+]
+"""Stable Diffusion WebUI 扩展信息字典"""
+
+SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
+    {
+        "name": "BLIP",
+        "url": "https://github.com/salesforce/BLIP",
+        "save_dir": "repositories/BLIP",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "stablediffusion",
+        "url": "https://github.com/licyk/stablediffusion",
+        "save_dir": "repositories/stable-diffusion-stability-ai",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "generative-models",
+        "url": "https://github.com/Stability-AI/generative-models",
+        "save_dir": "repositories/generative-models",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "k-diffusion",
+        "url": "https://github.com/crowsonkb/k-diffusion",
+        "save_dir": "repositories/k-diffusion",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "stable-diffusion-webui-assets",
+        "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets",
+        "save_dir": "repositories/stable-diffusion-webui-assets",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
+        "name": "huggingface_guess",
+        "url": "https://github.com/lllyasviel/huggingface_guess",
+        "save_dir": "repositories/huggingface_guess",
+        "supported_branch": [
+            "sd_webui_forge",
+        ],
+    },
+    {
+        "name": "google_blockly_prototypes",
+        "url": "https://github.com/lllyasviel/google_blockly_prototypes",
+        "save_dir": "repositories/google_blockly_prototypes",
+        "supported_branch": [
+            "sd_webui_forge",
+        ],
+    },
+]
+"""Stable Diffusion WebUI 组件信息字典"""
 
 
-def list_extensions() -> None: ...
+def install_sd_webui(
+    sd_webui_path: Path,
+    pytorch_mirror_type: PyTorchDeviceType | None = None,
+    custom_pytorch_package: str | None = None,
+    custom_xformers_package: str | None = None,
+    use_cn_pypi_mirror: bool | None = True,
+    use_uv: bool | None = True,
+    install_branch: SDWebUiBranchType | None = None,
+    no_pre_download_extension: bool | None = False,
+    no_pre_download_model: bool | None = False,
+    use_cn_model_mirror: bool | None = True,
+) -> None:
+    """安装 Stable Diffusion WebUI"""
+    logger.info("准备 Stable Diffusion WebUI 安装配置")
+
+    # 准备 Stable Diffusion WebUI 安装分支信息
+    if install_branch is None:
+        install_branch = SD_WEBUI_BRANCH_LIST[0]
+
+    if install_branch not in SD_WEBUI_BRANCH_LIST:
+        raise ValueError(f"未知的 Stable Diffusion WebUI 类型: {install_branch}")
+
+    for info in SD_WEBUI_BRANCH_INFO_DICT:
+        if info["dtype"] == install_branch:
+            branch_info = info
+            break
+
+    # 准备 PyTorch 安装信息
+    pytorch_package, xformers_package, custom_env_pytorch = prepare_pytorch_install_info(
+        pytorch_mirror_type=pytorch_mirror_type,
+        custom_pytorch_package=custom_pytorch_package,
+        custom_xformers_package=custom_xformers_package,
+        use_cn_mirror=use_cn_pypi_mirror,
+    )
+
+    # 准备扩展 / 组件安装信息
+    sd_weui_extension_list = [
+        x
+        for x in SD_WEBUI_EXTENSION_INFO_DICT
+        if install_branch in x["supported_branch"]
+        and not no_pre_download_extension
+    ]
+    sd_webui_repository_list = [
+        x
+        for x in SD_WEBUI_REPOSITORY_INFO_DICT
+        if install_branch in x["supported_branch"]
+    ]
+
+    # 准备安装依赖的 PyPI 镜像源
+    custom_env = get_pypi_mirror_config(use_cn_pypi_mirror)
+
+    logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
+    logger.debug("安装的 xformers: %s", xformers_package)
+    logger.debug("安装的扩展信息: %s", sd_weui_extension_list)
+    logger.debug("安装的组件信息: %s", sd_webui_repository_list)
+
+    logger.info("Stable Diffusion WebUI 安装配置准备完成")
+    logger.info("开始安装 Stable Diffusion WebUI, 安装路径: %s", sd_webui_path)
+    logger.info("安装的 Stable Diffusion WebUI 分支: '%s'", branch_info["name"])
+
+    logger.info("安装 Stable Diffusion WebUI 内核中")
+    clone_repo(
+        repo=branch_info["url"],
+        path=sd_webui_path,
+    )
+
+    logger.info("切换 Stable Diffusion WebUI 分支中")
+    git_warpper.switch_branch(
+        path=sd_webui_path,
+        branch=branch_info["branch"],
+        new_url=branch_info["url"],
+        recurse_submodules=branch_info["use_submodule"],
+    )
+
+    if sd_webui_repository_list:
+        logger.info("安装 Stable Diffusion WebUI 组件中")
+        for info in sd_webui_repository_list:
+            clone_repo(
+                repo=info["url"],
+                path=sd_webui_path / info["save_dir"],
+            )
+
+    if sd_weui_extension_list:
+        logger.info("安装 Stable Diffusion WebUI 扩展中")
+        for info in sd_weui_extension_list:
+            clone_repo(
+                repo=info["url"],
+                path=sd_webui_path / info["save_dir"],
+            )
+
+    install_pytorch_for_webui(
+        pytorch_package=pytorch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env_pytorch,
+        use_uv=use_uv,
+    )
+
+    requirements_version_path = sd_webui_path / "requirements_version.txt"
+    requirements_path = sd_webui_path / "requirements.txt"
+
+    if not requirements_path.is_file() and requirements_version_path.is_file():
+        raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查 Stable Diffusion WebUI 文件是否完整")
+
+    logger.info("安装 Stable Diffusion WebUI 依赖中")
+    install_requirements(
+        path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
+        use_uv=use_uv,
+        custom_env=custom_env,
+        cwd=sd_webui_path,
+    )
+
+    if not no_pre_download_model:
+        pre_download_model_for_webui(
+            dtype="sd_webui",
+            model_path=sd_webui_path / "models" / "Stable-diffusion",
+            webui_base_path=sd_webui_path,
+            model_name="ChenkinNoob-XL-V0.2",
+            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+        )
+    
+    logger.info("安装 Stable Diffusion WebUI 完成")
 
 
-def uninstall_extension() -> None: ...
+
+def check_sd_webui_env(
+    sd_webui_path: Path,
+) -> None: ...
 
 
-def install_model_from_library() -> None: ...
+def launch_sd_webui(
+    sd_webui_path: Path,
+) -> None: ...
 
 
-def install_model_from_url() -> None: ...
+def install_extension(
+    sd_webui_path: Path,
+) -> None: ...
 
 
-def list_models() -> None: ...
+def set_extensions_status(
+    sd_webui_path: Path,
+) -> None: ...
 
 
-def uninstall_model() -> None: ...
+def list_extensions(
+    sd_webui_path: Path,
+) -> None: ...
+
+
+def uninstall_extension(
+    sd_webui_path: Path,
+) -> None: ...
+
+
+def install_model_from_library(
+    sd_webui_path: Path,
+) -> None: ...
+
+
+def install_model_from_url(
+    sd_webui_path: Path,
+) -> None: ...
+
+
+def list_models(
+    sd_webui_path: Path,
+) -> None: ...
+
+
+def uninstall_model(
+    sd_webui_path: Path,
+) -> None: ...

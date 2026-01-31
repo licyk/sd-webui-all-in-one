@@ -7,11 +7,11 @@ import lzma
 from pathlib import Path
 from typing import Iterable
 
-from ani2xcur.config import (
+from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
 )
-from ani2xcur.logger import get_logger
+from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name="Archive Manager",

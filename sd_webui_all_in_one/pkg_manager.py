@@ -39,6 +39,7 @@ def pip_install(
         custom_env = os.environ.copy()
 
     if use_uv:
+        custom_env["UV_PYTHON"] = sys.executable
         try:
             run_cmd(["uv", "--version"], live=False, custom_env=custom_env)
         except RuntimeError:

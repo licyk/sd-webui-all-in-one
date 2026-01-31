@@ -193,7 +193,7 @@ def get_git_repo_current_remote_branch(
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
 
     try:
-        return run_cmd([git_exec.as_posix(), "rev-parse", "--abbrev-ref", "--symbolic-full-name", r"@{u}"], live=False).strip()
+        return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "rev-parse", "--abbrev-ref", "--symbolic-full-name", r"'@{u}'"], live=False).strip()
     except RuntimeError as e:
         logger.debug("'%s' 仓库的当前所在分支无对应的远程分支: %s", path, e)
         return None
@@ -318,6 +318,35 @@ def get_current_branch(
         return None
 
 
+def get_current_branch_remote(
+    path: Path,
+) -> str | None:
+    """获取 Git 仓库的当前分支所属的远程源名称
+
+    Args:
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        (str | None):
+            仓库当前分支所属的远程源名称, 获取失败时返回`None`
+
+    Raises:
+        ValueError:
+            所指路径不是有效的 Git 仓库时
+    """
+    git_exec = get_git_exec()
+    if not is_git_repo(path):
+        raise ValueError(f"'{path}' 不是有效的 Git 仓库")
+
+    try:
+        current_branch = get_current_branch(path)
+        return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "config", f"branch.{current_branch}.remote"], live=False).strip()
+    except RuntimeError as e:
+        logger.error("获取 %s 当前分支所属的远程源名称失败: %s", path, e)
+        return None
+
+
 def check_local_branch_exists(
     path: Path,
     branch: str,
@@ -376,11 +405,11 @@ def switch_branch(
     custom_env = os.environ.copy()
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
     try:
-        current_remote_branch = get_git_repo_current_remote_branch(path)
+        current_remote_branch = get_current_branch_remote(path)
         if current_remote_branch is None:
             current_url = None
         else:
-            current_url = run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "remote", "get-url", current_remote_branch], custom_env=custom_env, live=False)
+            current_url = run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "remote", "get-url", current_remote_branch], custom_env=custom_env, live=False).strip()
     except RuntimeError as e:
         current_url = None
         logger.warning("获取 %s 原有的远程源失败: %s", path, e)

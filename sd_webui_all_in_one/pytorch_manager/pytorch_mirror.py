@@ -8,6 +8,8 @@ import sys
 from typing import Literal, TypedDict
 
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
+from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
 from sd_webui_all_in_one.pytorch_manager.base import (
     PYTORCH_MIRROR_DICT,
     PYTORCH_MIRROR_NJU_DICT,
@@ -15,6 +17,8 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchVersionInfoList,
     PyTorchVersionInfo,
     PYTORCH_DEVICE_LIST,
+    PyTorchDeviceType,
+    PyTorchDeviceTypeCategory,
 )
 
 
@@ -24,7 +28,7 @@ def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str
     Args:
         use_cn_mirror (bool | None): 是否使用国内镜像 (NJU)
     Returns:
-        (dict[str, str]): PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm61" 等), 值为对应的 PyTorch wheel 下载地址
+        (dict[str, str]): PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm6.1" 等), 值为对应的 PyTorch wheel 下载地址
     """
     if use_cn_mirror:
         PYTORCH_MIRROR_NJU_DICT.copy()
@@ -182,24 +186,24 @@ def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
         return "other"
     if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.5.0"):
         # 2.4.0 <= torch < 2.5.0
-        return "rocm61"
+        return "rocm6.1"
     if CommonVersionComparison("2.5.0") <= torch_version < CommonVersionComparison("2.6.0"):
         # 2.5.0 <= torch < 2.6.0
-        return "rocm62"
+        return "rocm6.2"
     if CommonVersionComparison("2.6.0") <= torch_version < CommonVersionComparison("2.7.0"):
         # 2.6.0 <= torch < 2.7.0
-        return "rocm624"
+        return "rocm6.2.4"
     if CommonVersionComparison("2.7.0") <= torch_version < CommonVersionComparison("2.8.0"):
         # 2.7.0 <= torch < 2.8.0
-        return "rocm63"
+        return "rocm6.3"
     if CommonVersionComparison("2.8.0") <= torch_version < CommonVersionComparison("2.10.0"):
         # 2.8.0 <= torch < 2.10.0
-        return "rocm64"
+        return "rocm6.4"
     if CommonVersionComparison("2.10.0") <= torch_version:
         # 2.10.0 <= torch
-        return "rocm71"
+        return "rocm7.1"
 
-    return "rocm71"
+    return "rocm7.1"
 
 
 def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
@@ -242,12 +246,12 @@ def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
     return "cpu"
 
 
-def get_pytorch_mirror_type(torch_ver: str, device_type: Literal["cuda", "rocm", "xpu", "cpu"]) -> str:
+def get_pytorch_mirror_type(torch_ver: str, device_type: PyTorchDeviceTypeCategory) -> str:
     """获取 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本号
-        device_type (Literal["cuda", "rocm", "xpu", "cpu"]): 显卡类型
+        device_type (PyTorchDeviceTypeCategory): 显卡类型
     Returns:
         str: PyTorch 镜像源类型
     """
@@ -266,11 +270,11 @@ def get_pytorch_mirror_type(torch_ver: str, device_type: Literal["cuda", "rocm",
     return "other"
 
 
-def get_env_pytorch_type() -> str:
+def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
     """获取当前环境中 PyTorch 版本号对应的类型
 
     Returns:
-        str: PyTorch 类型 (cuda, rocm, xpu, cpu)
+        PyTorchDeviceTypeCategory: PyTorch 类型 (cuda, rocm, xpu, cpu)
     """
     torch_ipex_legacy_ver_list = [
         "2.0.0a0+gite9ebda2",
@@ -491,6 +495,83 @@ def get_gpu_list() -> list[GPUDeviceInfo]:
         return []
 
 
+def has_gpus(
+    gpu_list: list[GPUDeviceInfo],
+) -> bool:
+    """检测 GPU 列表中是否包含可用的显卡
+
+    Args:
+        gpu_list (list[GPUDeviceInfo]):
+            GPU 列表
+
+    Returns:
+        bool:
+            当列表中存在可用显卡时则返回 True
+    """
+    return any(
+        x
+        for x in gpu_list
+        if "Intel" in x.get("AdapterCompatibility", "") or "NVIDIA" in x.get("AdapterCompatibility", "") or "Advanced Micro Devices" in x.get("AdapterCompatibility", "")
+    )
+
+
+def has_nvidia_gpu(
+    gpu_list: list[GPUDeviceInfo],
+) -> bool:
+    """检测 GPU 列表中是否包含可用的 Nvidia 显卡
+
+    Args:
+        gpu_list (list[GPUDeviceInfo]):
+            GPU 列表
+
+    Returns:
+        bool:
+            当列表中存在可用的 Nvidia 显卡时则返回 True
+    """
+    return any(
+        x
+        for x in gpu_list
+        if "NVIDIA" in x.get("AdapterCompatibility", "")
+        and (x.get("Name", "").startswith("NVIDIA") or x.get("Name", "").startswith("GeForce") or x.get("Name", "").startswith("Tesla") or x.get("Name", "").startswith("Quadro"))
+    )
+
+
+def has_intel_xpu(
+    gpu_list: list[GPUDeviceInfo],
+) -> bool:
+    """检测 GPU 列表中是否包含可用的 Intel 显卡
+
+    Args:
+        gpu_list (list[GPUDeviceInfo]):
+            GPU 列表
+
+    Returns:
+        bool:
+            当列表中存在可用的 Intel 显卡时则返回 True
+    """
+    return any(
+        x
+        for x in gpu_list
+        if "Intel" in x.get("AdapterCompatibility", "") and (x.get("Name", "").startswith("Intel(R) Arc") or x.get("Name", "").startswith("Intel(R) Core Ultra"))
+    )
+
+
+def has_amd_gpu(
+    gpu_list: list[GPUDeviceInfo],
+) -> bool:
+    """检测 GPU 列表中是否包含可用的 AMD 显卡
+
+    Args:
+        gpu_list (list[GPUDeviceInfo]):
+            GPU 列表
+
+    Returns:
+        bool:
+            当列表中存在可用的 AMD 显卡时则返回 True
+    """
+    return any(x for x in gpu_list if "Advanced Micro Devices" in x.get("AdapterCompatibility", "") and x.get("Name", "").startswith("AMD Radeon"))
+
+
 def get_avaliable_pytorch_device_type() -> list[str]:
     """获取当前设备上可用的 PyTorch 设备类型
 
@@ -503,28 +584,15 @@ def get_avaliable_pytorch_device_type() -> list[str]:
     cuda_support_ver = get_cuda_version()
     device_list = ["cpu", "all"]
 
-    has_gpus = any(
-        x
-        for x in gpu_list
-        if "Intel" in x.get("AdapterCompatibility", "") or "NVIDIA" in x.get("AdapterCompatibility", "") or "Advanced Micro Devices" in x.get("AdapterCompatibility", "")
-    )
-    has_nvidia_gpu = any(
-        x
-        for x in gpu_list
-        if "NVIDIA" in x.get("AdapterCompatibility", "")
-        and (x.get("Name", "").startswith("NVIDIA") or x.get("Name", "").startswith("GeForce") or x.get("Name", "").startswith("Tesla") or x.get("Name", "").startswith("Quadro"))
-    )
-    has_intel_xpu = any(
-        x
-        for x in gpu_list
-        if "Intel" in x.get("AdapterCompatibility", "") and (x.get("Name", "").startswith("Intel(R) Arc") or x.get("Name", "").startswith("Intel(R) Core Ultra"))
-    )
-    has_amd_gpu = any(x for x in gpu_list if "Advanced Micro Devices" in x.get("AdapterCompatibility", "") and x.get("Name", "").startswith("AMD Radeon"))
+    gpu_avaliable = has_gpus(gpu_list)
+    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
+    intel_xpu_avaliable = has_intel_xpu(gpu_list)
+    amd_gpu_avaliable = has_amd_gpu(gpu_list)
 
-    if has_gpus:
+    if gpu_avaliable:
         device_list.append("directml")
 
-    if has_nvidia_gpu:
+    if nvidia_gpu_avaliable:
         if CommonVersionComparison(cuda_comp_cap) < CommonVersionComparison("10.0"):
             for ver in PYTORCH_DEVICE_LIST:
                 if not ver.startswith("cu"):
@@ -540,11 +608,11 @@ def get_avaliable_pytorch_device_type() -> list[str]:
                 if CommonVersionComparison(ver) <= CommonVersionComparison(str(int(cuda_support_ver * 10))):
                     device_list.append(ver)
 
-    if has_intel_xpu:
+    if intel_xpu_avaliable:
         device_list.append("xpu")
         device_list.append("ipex_legacy_arc")
 
-    if has_amd_gpu and sys.platform == "linux":
+    if amd_gpu_avaliable and sys.platform == "linux":
         for ver in PYTORCH_DEVICE_LIST:
             if not ver.startswith("rocm"):
                 continue
@@ -563,7 +631,7 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
     """
     pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
     device_list = set(get_avaliable_pytorch_device_type())
-    new_pytorch_list: list[PyTorchVersionInfo] = []
+    new_pytorch_list: PyTorchVersionInfoList = []
 
     for i in pytorch_list:
         supported = False
@@ -574,3 +642,136 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
         new_pytorch_list.append(i)
 
     return new_pytorch_list
+
+
+def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
+    """检测当前的设备并获取适配当前设备的 PyTorch 类型
+
+    Returns:
+        PyTorchDeviceType:
+            支持当前设备的 PyTorch 类型
+    """
+    gpu_list = get_gpu_list()
+    cuda_comp_cap = get_cuda_comp_cap()
+    cuda_support_ver = get_cuda_version()
+
+    gpu_avaliable = has_gpus(gpu_list)
+    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
+    intel_xpu_avaliable = has_intel_xpu(gpu_list)
+    amd_gpu_avaliable = has_amd_gpu(gpu_list)
+
+    if not gpu_avaliable:
+        return "cpu"
+
+    if nvidia_gpu_avaliable:
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.0"):
+            return "cu130"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.9"):
+            return "cu129"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.8"):
+            return "cu128"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.6"):
+            return "cu126"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.4"):
+            return "cu124"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.1"):
+            return "cu121"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("11.8"):
+            return "cu118"
+        if CommonVersionComparison(cuda_comp_cap) >= CommonVersionComparison("10.0"):
+            return "cu130"
+
+    if intel_xpu_avaliable:
+        return "xpu"
+
+    if amd_gpu_avaliable and sys.platform == "linux":
+        return "rocm7.1"
+
+    return "cpu"
+
+def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
+    """检测当前的设备并获取大致的 PyTorch 设备分类类型 (不带版本号)
+
+    Returns:
+        PyTorchDeviceTypeCategory: 
+            支持当前设备的通用类型
+    """
+    gpu_list = get_gpu_list()
+    gpu_avaliable = has_gpus(gpu_list)
+    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
+    intel_xpu_avaliable = has_intel_xpu(gpu_list)
+    amd_gpu_avaliable = has_amd_gpu(gpu_list)
+
+    if not gpu_avaliable:
+        return "cpu"
+
+    if nvidia_gpu_avaliable:
+        return "cuda"
+
+    if intel_xpu_avaliable:
+        return "xpu"
+
+    if amd_gpu_avaliable and sys.platform == "linux":
+        return "rocm"
+
+    return "cpu"
+
+
+def find_latest_pytorch_info(dtype: PyTorchDeviceType) -> PyTorchVersionInfo:
+    """根据 PyTorch 类型在 PyTorch 版本下载信息列表中查找适合该类型的最新版本的 PyTorch 下载信息
+
+    Args:
+        dtype (PyTorchDeviceType):
+            PyTorch 支持的设备类型
+
+    Returns:
+        PyTorchVersionInfo:
+            PyTorch 版本下载信息
+
+    Raises:
+        ValueError:
+            PyTorch 支持的设备类型无效时
+    """
+    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
+    pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
+    if not pytorch_info_list:
+        raise ValueError(f"PyTorch 类型不存在: '{dtype}'")
+
+    latest_info = pytorch_info_list[0]
+
+    for info in pytorch_info_list:
+        current_torch = info["torch_ver"].split()[0]
+        history_torch = latest_info["torch_ver"].split()[0]
+        current_ver = get_package_version(current_torch) if is_package_has_version(current_torch) else "0.0"
+        history_ver = get_package_version(history_torch) if is_package_has_version(history_torch) else "0.0"
+        if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
+            latest_info = info
+
+    return latest_info
+
+
+def get_pytorch_mirror(
+    dtype: PyTorchDeviceType,
+    use_cn_mirror: bool | None = False,
+) -> str:
+    """根据 PyTorch 类型获取对应的 PyTorch 镜像源
+
+    Args:
+        dtype (PyTorchDeviceType):
+            PyTorch 支持的设备类型
+        use_cn_mirror (bool | None):
+            是否使用国内镜像源
+
+    Returns:
+        str:
+            PyTorch 镜像源
+
+    Raises:
+        ValueError:
+            未找到对应的 PyTorch 镜像源时
+    """
+    url = PYTORCH_MIRROR_NJU_DICT.get(dtype) if use_cn_mirror else PYTORCH_MIRROR_DICT.get(dtype)
+    if url is None:
+        raise ValueError(f"未找到 '{dtype}' 对应的 PyTorch 镜像源")
+
+    return url

@@ -203,7 +203,7 @@ class InvokeAIComponentManager:
         logger.debug("安装的 PyTorch: %s", pytorch_package)
         logger.debug("安装的 xFormers: %s", xformers_package)
         pytorch_package_args = []
-        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm62", "other"]:
+        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm6.2", "other"]:
             for i in pytorch_package.split():
                 pytorch_package_args.append(i.strip())
         else:

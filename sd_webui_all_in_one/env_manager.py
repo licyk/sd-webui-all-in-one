@@ -69,7 +69,7 @@ def generate_uv_and_pip_env_mirror_config(
             `PIP_EXTRA_INDEX_URL`, `UV_INDEX` 环境变量配置
         find_links (str | list[str] | None):
             `PIP_FIND_LINKS`, `UV_FIND_LINKS` 环境变量配置
-        origin_env (dict[str, str]):
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Returns:
@@ -97,7 +97,7 @@ def generate_uv_and_pip_env_mirror_config(
 
     if extra_index_url is not None:
         logger.debug("配置 PIP_EXTRA_INDEX_URL, UV_INDEX")
-        if isinstance(index_url, list):
+        if isinstance(extra_index_url, list):
             pip_extra_index_url_str = " ".join([x.strip() for x in extra_index_url if x.strip() != ""])
         else:
             pip_extra_index_url_str = " ".join([x.strip() for x in extra_index_url.split() if x.strip() != ""])
@@ -111,7 +111,7 @@ def generate_uv_and_pip_env_mirror_config(
 
     if find_links is not None:
         logger.debug("配置 PIP_FIND_LINKS, UV_FIND_LINKS")
-        if isinstance(index_url, list):
+        if isinstance(find_links, list):
             pip_find_links_str = " ".join([x.strip() for x in find_links if x.strip() != ""])
             uv_find_links_str = ",".join([x.strip() for x in find_links if x.strip() != ""])
         else:

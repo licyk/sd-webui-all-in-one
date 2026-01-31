@@ -11,16 +11,16 @@ PYTORCH_MIRROR_DICT = {
     "other": "https://download.pytorch.org/whl",
     "cpu": "https://download.pytorch.org/whl/cpu",
     "xpu": "https://download.pytorch.org/whl/xpu",
-    "rocm542": "https://download.pytorch.org/whl/rocm5.4.2",
-    "rocm56": "https://download.pytorch.org/whl/rocm5.6",
-    "rocm57": "https://download.pytorch.org/whl/rocm5.7",
-    "rocm60": "https://download.pytorch.org/whl/rocm6.0",
-    "rocm61": "https://download.pytorch.org/whl/rocm6.1",
-    "rocm62": "https://download.pytorch.org/whl/rocm6.2",
-    "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
-    "rocm63": "https://download.pytorch.org/whl/rocm6.3",
-    "rocm64": "https://download.pytorch.org/whl/rocm6.4",
-    "rocm71": "https://download.pytorch.org/whl/rocm7.1",
+    "rocm5.4.2": "https://download.pytorch.org/whl/rocm5.4.2",
+    "rocm5.6": "https://download.pytorch.org/whl/rocm5.6",
+    "rocm5.7": "https://download.pytorch.org/whl/rocm5.7",
+    "rocm6.0": "https://download.pytorch.org/whl/rocm6.0",
+    "rocm6.1": "https://download.pytorch.org/whl/rocm6.1",
+    "rocm6.2": "https://download.pytorch.org/whl/rocm6.2",
+    "rocm6.2.4": "https://download.pytorch.org/whl/rocm6.2.4",
+    "rocm6.3": "https://download.pytorch.org/whl/rocm6.3",
+    "rocm6.4": "https://download.pytorch.org/whl/rocm6.4",
+    "rocm7.1": "https://download.pytorch.org/whl/rocm7.1",
     "cu113": "https://download.pytorch.org/whl/cu113",
     "cu117": "https://download.pytorch.org/whl/cu117",
     "cu118": "https://download.pytorch.org/whl/cu118",
@@ -37,16 +37,16 @@ PYTORCH_MIRROR_NJU_DICT = {
     "other": "https://mirror.nju.edu.cn/pytorch/whl",
     "cpu": "https://mirror.nju.edu.cn/pytorch/whl/cpu",
     "xpu": "https://mirror.nju.edu.cn/pytorch/whl/xpu",
-    "rocm542": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2",
-    "rocm56": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.6",
-    "rocm57": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.7",
-    "rocm60": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.0",
-    "rocm61": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.1",
-    "rocm62": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2",
-    "rocm624": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4",
-    "rocm63": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.3",
-    "rocm64": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.4",
-    "rocm71": "https://mirror.nju.edu.cn/pytorch/whl/rocm7.1",
+    "rocm5.4.2": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2",
+    "rocm5.6": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.6",
+    "rocm5.7": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.7",
+    "rocm6.0": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.0",
+    "rocm6.1": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.1",
+    "rocm6.2": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2",
+    "rocm6.2.4": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4",
+    "rocm6.3": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.3",
+    "rocm6.4": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.4",
+    "rocm7.1": "https://mirror.nju.edu.cn/pytorch/whl/rocm7.1",
     "cu113": "https://mirror.nju.edu.cn/pytorch/whl/cu113",
     "cu117": "https://mirror.nju.edu.cn/pytorch/whl/cu117",
     "cu118": "https://mirror.nju.edu.cn/pytorch/whl/cu118",
@@ -93,16 +93,16 @@ PyTorchDeviceType: TypeAlias = Literal[
     "cu128",
     "cu129",
     "cu130",
-    "rocm542",
-    "rocm56",
-    "rocm57",
-    "rocm60",
-    "rocm61",
-    "rocm62",
-    "rocm624",
-    "rocm63",
-    "rocm64",
-    "rocm71",
+    "rocm5.4.2",
+    "rocm5.6",
+    "rocm5.7",
+    "rocm6.0",
+    "rocm6.1",
+    "rocm6.2",
+    "rocm6.2.4",
+    "rocm6.3",
+    "rocm6.4",
+    "rocm7.1",
     "xpu",
     "ipex_legacy_arc",
     "cpu",
@@ -113,6 +113,9 @@ PyTorchDeviceType: TypeAlias = Literal[
 
 PYTORCH_DEVICE_LIST: list[str] = list(get_args(PyTorchDeviceType))
 """PyTorch 支持的设备类型列表"""
+
+PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "cpu"]
+"""PyTorch 支持的设备类型 (不带版本号)"""
 
 class PyTorchMirrorType(TypedDict, total=False):
     """PyTorch 镜像源类型"""
@@ -485,13 +488,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.0.1 (ROCm 5.4.2)",
-        "dtype": "rocm542",
+        "dtype": "rocm5.4.2",
         "platform": ["linux"],
         "torch_ver": "torch==2.0.1+rocm5.4.2 torchvision==0.15.2+rocm5.4.2 torchaudio==2.0.1+rocm5.4.2",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm542"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm542"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.4.2"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.4.2"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -542,13 +545,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.1.0 (ROCm 5.6)",
-        "dtype": "rocm56",
+        "dtype": "rocm5.6",
         "platform": ["linux"],
         "torch_ver": "torch==2.1.0+rocm5.6 torchvision==0.16.0+rocm5.6 torchaudio==2.1.0+rocm5.6",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm56"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm56"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.6"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.6"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -656,13 +659,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.1.1 (ROCm 5.6)",
-        "dtype": "rocm56",
+        "dtype": "rocm5.6",
         "platform": ["linux"],
         "torch_ver": "torch==2.1.1+rocm5.6 torchvision==0.16.1+rocm5.6 torchaudio==2.1.1+rocm5.6",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm56"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm56"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.6"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.6"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -751,13 +754,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.1.2 (ROCm 5.6)",
-        "dtype": "rocm56",
+        "dtype": "rocm5.6",
         "platform": ["linux"],
         "torch_ver": "torch==2.1.2+rocm5.6 torchvision==0.16.2+rocm5.6 torchaudio==2.1.2+rocm5.6",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm56"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm56"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.6"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.6"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -846,13 +849,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.2.0 (ROCm 5.7)",
-        "dtype": "rocm57",
+        "dtype": "rocm5.7",
         "platform": ["linux"],
         "torch_ver": "torch==2.2.0+rocm5.7 torchvision==0.17.0+rocm5.7 torchaudio==2.2.0+rocm5.7",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm57"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm57"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.7"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.7"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -960,13 +963,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.2.1 (ROCm 5.7)",
-        "dtype": "rocm57",
+        "dtype": "rocm5.7",
         "platform": ["linux"],
         "torch_ver": "torch==2.2.1+rocm5.7 torchvision==0.17.1+rocm5.7 torchaudio==2.2.1+rocm5.7",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm57"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm57"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.7"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.7"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1055,13 +1058,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.2.2 (ROCm 5.7)",
-        "dtype": "rocm57",
+        "dtype": "rocm5.7",
         "platform": ["linux"],
         "torch_ver": "torch==2.2.2+rocm5.7 torchvision==0.17.2+rocm5.7 torchaudio==2.2.2+rocm5.7",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm57"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm57"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm5.7"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm5.7"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1150,13 +1153,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.3.0 (ROCm 6.0)",
-        "dtype": "rocm60",
+        "dtype": "rocm6.0",
         "platform": ["linux"],
         "torch_ver": "torch==2.3.0+rocm6.0 torchvision==0.18.0+rocm6.0 torchaudio==2.3.0+rocm6.0",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm60"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm60"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.0"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.0"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1264,13 +1267,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.3.1 (ROCm 6.0)",
-        "dtype": "rocm60",
+        "dtype": "rocm6.0",
         "platform": ["linux"],
         "torch_ver": "torch==2.3.1+rocm6.0 torchvision==0.18.1+rocm6.0 torchaudio==2.3.1+rocm6.0",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm60"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm60"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.0"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.0"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1359,13 +1362,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.4.0 (ROCm 6.0)",
-        "dtype": "rocm60",
+        "dtype": "rocm6.0",
         "platform": ["linux"],
         "torch_ver": "torch==2.4.0+rocm6.0 torchvision==0.19.0+rocm6.0 torchaudio==2.4.0+rocm6.0",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm60"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm60"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.0"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.0"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1473,13 +1476,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.4.1 (ROCm 6.1) + xFormers 0.0.28.post1",
-        "dtype": "rocm61",
+        "dtype": "rocm6.1",
         "platform": ["linux"],
         "torch_ver": "torch==2.4.1+rocm6.1 torchvision==0.19.1+rocm6.1 torchaudio==2.4.1+rocm6.1",
         "xformers_ver": "xformers===0.0.28.post1",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm61"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm61"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.1"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.1"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1587,13 +1590,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.5.0 (ROCm 6.2)",
-        "dtype": "rocm62",
+        "dtype": "rocm6.2",
         "platform": ["linux"],
         "torch_ver": "torch==2.5.0+rocm6.2 torchvision==0.20.0+rocm6.2 torchaudio==2.5.0+rocm6.2",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm62"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm62"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.2"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.2"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1606,13 +1609,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.5.0 (ROCm 6.1) + xFormers 0.0.28.post2",
-        "dtype": "rocm61",
+        "dtype": "rocm6.1",
         "platform": ["linux"],
         "torch_ver": "torch==2.5.0+rocm6.1 torchvision==0.20.0+rocm6.1 torchaudio==2.5.0+rocm6.1",
         "xformers_ver": "xformers==0.0.28.post2",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm61"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm61"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.1"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.1"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1720,13 +1723,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.5.1 (ROCm 6.2)",
-        "dtype": "rocm62",
+        "dtype": "rocm6.2",
         "platform": ["linux"],
         "torch_ver": "torch==2.5.1+rocm6.2 torchvision==0.20.1+rocm6.2 torchaudio==2.5.1+rocm6.2",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm62"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm62"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.2"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.2"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1739,13 +1742,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.5.1 (ROCm 6.1) + xFormers 0.0.28.post3",
-        "dtype": "rocm61",
+        "dtype": "rocm6.1",
         "platform": ["linux"],
         "torch_ver": "torch==2.5.1+rocm6.1 torchvision==0.20.1+rocm6.1 torchaudio==2.5.1+rocm6.1",
         "xformers_ver": "xformers==0.0.28.post3",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm61"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm61"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.1"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.1"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1853,13 +1856,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.6.0 (ROCm 6.2.4) + xFormers 0.0.29.post3",
-        "dtype": "rocm624",
+        "dtype": "rocm6.2.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.6.0+rocm6.2.4 torchvision==0.21.0+rocm6.2.4 torchaudio==2.6.0+rocm6.2.4",
         "xformers_ver": "xformers==0.0.29.post3",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm624"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm624"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.2.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.2.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -1872,13 +1875,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.6.0 (ROCm 6.1) + xFormers 0.0.29.post3",
-        "dtype": "rocm61",
+        "dtype": "rocm6.1",
         "platform": ["linux"],
         "torch_ver": "torch==2.6.0+rocm6.1 torchvision==0.21.0+rocm6.1 torchaudio==2.6.0+rocm6.1",
         "xformers_ver": "xformers==0.0.29.post3",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm61"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm61"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.1"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.1"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2005,13 +2008,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.7.0 (ROCm 6.3) + xFormers 0.0.30",
-        "dtype": "rocm63",
+        "dtype": "rocm6.3",
         "platform": ["linux"],
         "torch_ver": "torch==2.7.0+rocm6.3 torchvision==0.22.0+rocm6.3 torchaudio==2.7.0+rocm6.3",
         "xformers_ver": "xformers==0.0.30",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm63"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm63"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.3"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.3"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2024,13 +2027,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.7.0 (ROCm 6.2.4) + xFormers 0.0.30",
-        "dtype": "rocm624",
+        "dtype": "rocm6.2.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.7.0+rocm6.2.4 torchvision==0.22.0+rocm6.2.4 torchaudio==2.7.0+rocm6.2.4",
         "xformers_ver": "xformers==0.0.30",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm624"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm624"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.2.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.2.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2157,13 +2160,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.7.1 (ROCm 6.3) + xFormers 0.0.31.post1",
-        "dtype": "rocm63",
+        "dtype": "rocm6.3",
         "platform": ["linux"],
         "torch_ver": "torch==2.7.1+rocm6.3 torchvision==0.22.1+rocm6.3 torchaudio==2.7.1+rocm6.3",
         "xformers_ver": "xformers==0.0.31.post1",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm63"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm63"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.3"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.3"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2176,13 +2179,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.7.1 (ROCm 6.2.4) + xFormers 0.0.31.post1",
-        "dtype": "rocm624",
+        "dtype": "rocm6.2.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.7.1+rocm6.2.4 torchvision==0.22.1+rocm6.2.4 torchaudio==2.7.1+rocm6.2.4",
         "xformers_ver": "xformers==0.0.31.post1",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm624"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm624"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.2.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.2.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2309,13 +2312,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.8.0 (ROCm 6.4) + xFormers 0.0.32.post2",
-        "dtype": "rocm64",
+        "dtype": "rocm6.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.8.0+rocm6.4 torchvision==0.23.0+rocm6.4 torchaudio==2.8.0+rocm6.4",
         "xformers_ver": "xformers==0.0.32.post2",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm64"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm64"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2328,13 +2331,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.8.0 (ROCm 6.3)",
-        "dtype": "rocm63",
+        "dtype": "rocm6.3",
         "platform": ["linux"],
         "torch_ver": "torch==2.8.0+rocm6.3 torchvision==0.23.0+rocm6.3 torchaudio==2.8.0+rocm6.3",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm63"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm63"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.3"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.3"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2461,13 +2464,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.9.0 (ROCm 6.4) + xFormers 0.0.33",
-        "dtype": "rocm64",
+        "dtype": "rocm6.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.9.0+rocm6.4 torchvision==0.24.0+rocm6.4 torchaudio==2.9.0+rocm6.4",
         "xformers_ver": "xformers==0.0.33",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm64"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm64"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2480,13 +2483,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.9.0 (ROCm 6.3)",
-        "dtype": "rocm63",
+        "dtype": "rocm6.3",
         "platform": ["linux"],
         "torch_ver": "torch==2.9.0+rocm6.3 torchvision==0.24.0+rocm6.3 torchaudio==2.9.0+rocm6.3",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm63"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm63"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.3"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.3"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2613,13 +2616,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.9.1 (ROCm 6.4) + xFormers 0.0.33.post2",
-        "dtype": "rocm64",
+        "dtype": "rocm6.4",
         "platform": ["linux"],
         "torch_ver": "torch==2.9.1+rocm6.4 torchvision==0.24.1+rocm6.4 torchaudio==2.9.1+rocm6.4",
         "xformers_ver": "xformers==0.0.33.post2",
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm64"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm64"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.4"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.4"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2632,13 +2635,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.9.1 (ROCm 6.3)",
-        "dtype": "rocm63",
+        "dtype": "rocm6.3",
         "platform": ["linux"],
         "torch_ver": "torch==2.9.1+rocm6.3 torchvision==0.24.1+rocm6.3 torchaudio==2.9.1+rocm6.3",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_MIRROR_DICT["rocm63"]],
-            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm63"]],
+            "official": [PYTORCH_MIRROR_DICT["rocm6.3"]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm6.3"]],
         },
         "extra_index_mirror": {
             "official": [],
@@ -2765,13 +2768,13 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     },
     {
         "name": "Torch 2.10.0 (ROCm 7.1) + xFormers 0.0.34",
-        "dtype": "rocm71",
+        "dtype": "rocm7.1",
         "platform": ["linux"],
         "torch_ver": "torch==2.10.0+rocm7.1 torchvision==0.25.0+rocm7.1 torchaudio==2.10.0+rocm7.1",
         "xformers_ver": "xformers==0.0.34",
         "index_mirror": {
-            "official": PYTORCH_MIRROR_DICT["rocm71"],
-            "mirror": PYTORCH_MIRROR_NJU_DICT["rocm71"],
+            "official": PYTORCH_MIRROR_DICT["rocm7.1"],
+            "mirror": PYTORCH_MIRROR_NJU_DICT["rocm7.1"],
         },
         "extra_index_mirror": {
             "official": [],
