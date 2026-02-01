@@ -3,6 +3,7 @@
 import os
 import shutil
 from pathlib import Path
+from functools import cache
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
@@ -16,6 +17,7 @@ logger = get_logger(
 )
 
 
+@cache
 def get_git_exec() -> Path:
     """检查 Git 命令是否可用并返回 Git 可执行文件地址
 
@@ -377,6 +379,70 @@ def check_local_branch_exists(
         return False
 
 
+def get_current_branch_remote_url(
+    path: Path,
+) -> str | None:
+    """获取当前 Git 仓库的所在分支的远程源地址
+
+    Args:
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        (str | None):
+            当前 Git 仓库的所在分支的远程源地址
+
+    Raises:
+        ValueError:
+            所指路径不是有效的 Git 仓库时
+    """
+    git_exec = get_git_exec()
+    if not is_git_repo(path):
+        raise ValueError(f"'{path}' 不是有效的 Git 仓库")
+
+    custom_env = os.environ.copy()
+    custom_env.pop("GIT_CONFIG_GLOBAL", None)
+
+    try:
+        current_remote_branch = get_current_branch_remote(path)
+        if current_remote_branch is None:
+            logger.debug("获取 '%s' 仓库的当前分支所属的远程分支失败", path)
+            return None
+        else:
+            return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "remote", "get-url", current_remote_branch], custom_env=custom_env, live=False).strip()
+    except RuntimeError as e:
+        logger.debug("获取 '%s' 仓库的当前分支所属的远程源地址失败: %s", path, e)
+        return None
+
+
+def get_current_commit(
+    path: Path,
+) -> str | None:
+    """获取当前 Git 仓库的提交的哈希值
+
+    Args:
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        (str | None):
+            当前 Git 仓库的提交的哈希值
+
+    Raises:
+        ValueError:
+            所指路径不是有效的 Git 仓库时
+    """
+    git_exec = get_git_exec()
+    if not is_git_repo(path):
+        raise ValueError(f"'{path}' 不是有效的 Git 仓库")
+
+    try:
+        return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "rev-parse", "--short", "HEAD"], live=False).strip()
+    except RuntimeError as e:
+        logger.debug("获取 '%s' 仓库的提交哈希值失败: %s", path, e)
+        return None
+
+
 def switch_branch(
     path: Path,
     branch: str,
@@ -408,15 +474,10 @@ def switch_branch(
 
     custom_env = os.environ.copy()
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
-    try:
-        current_remote_branch = get_current_branch_remote(path)
-        if current_remote_branch is None:
-            current_url = None
-        else:
-            current_url = run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "remote", "get-url", current_remote_branch], custom_env=custom_env, live=False).strip()
-    except RuntimeError as e:
-        current_url = None
-        logger.warning("获取 %s 原有的远程源失败: %s", path, e)
+
+    current_url = get_current_branch_remote_url(path)
+    if current_url is None:
+        logger.warning("获取 %s 原有的远程源失败", path)
 
     use_submodules = ["--recurse-submodules"] if recurse_submodules else []
     if new_url is not None:

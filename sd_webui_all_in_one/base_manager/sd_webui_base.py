@@ -1,15 +1,19 @@
 import os
+import json
+import uuid
 import urllib.request
 from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
+from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
@@ -20,12 +24,14 @@ from sd_webui_all_in_one.base_manager.base import (
     get_pypi_mirror_config,
     pre_download_model_for_webui,
     launch_webui,
+    get_repo_name_from_url,
+    install_webui_model_from_library,
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_operations.file_manager import copy_files
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -657,8 +663,9 @@ SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
 ]
 """Stable Diffusion WebUI 组件信息字典"""
 
-SD_WEBUI_CONFIG_PATH = ROOT_PATH / "base_manager"/ "config" / "sd_webui_config.json"
+SD_WEBUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "sd_webui_config.json"
 """Stable Diffusion WebUI 预设配置文件路径"""
+
 
 def install_sd_webui_config(
     sd_webui_path: Path,
@@ -673,7 +680,6 @@ def install_sd_webui_config(
     config_path = sd_webui_path / "config.json"
     if not config_path.exists():
         copy_files(SD_WEBUI_CONFIG_PATH, config_path)
-
 
 
 def install_sd_webui(
@@ -848,11 +854,17 @@ def check_sd_webui_env(
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
         check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将引发错误
+            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+
+    Raises:
+        AggregateError:
+            检查 Stable Diffusion WebUI 环境发生错误时
+        FileNotFoundError:
+            未找到 Stable Diffusion WebUI 依赖文件记录表时
     """
     req_v_path = sd_webui_path / "requirements_version.txt"
     req_path = sd_webui_path / "requirements.txt"
@@ -904,7 +916,7 @@ def set_sd_webui_extension_download_list_mirror(
     Args:
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源列表
-        origin_env (dict[str, str] | None): 
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Raises:
@@ -915,9 +927,7 @@ def set_sd_webui_extension_download_list_mirror(
         origin_env = os.environ.copy()
 
     github_mirror = GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
     if github_mirror is None:
         return origin_env
@@ -945,7 +955,6 @@ def set_sd_webui_extension_download_list_mirror(
     raise ValueError(f"传入的 Github 镜像源列表类型不支持: {type(github_mirror)}")
 
 
-
 def launch_sd_webui(
     sd_webui_path: Path,
     launch_args: list[str] | None = None,
@@ -957,13 +966,24 @@ def launch_sd_webui(
     """启动 Stable Diffusion WebUI
 
     Args:
-
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        launch_args (list[str] | None):
+            启动 Stable Diffusion WebUI 的参数
+        use_hf_mirror (bool | None):
+            是否启用 HuggingFace 镜像源
+        use_github_mirror (bool | None):
+            是否启用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        use_pypi_mirror (bool | None):
+            是否启用 PyPI 镜像源
     """
     with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+
         logger.info("准备 Stable Diffusion WebUI 启动环境")
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir))
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
         set_github_mirror(
             mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             config_path=git_config_path,
@@ -995,27 +1015,340 @@ def launch_sd_webui(
 
 def install_extension(
     sd_webui_path: Path,
-) -> None: ...
+    extension_url: str | list[str],
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    check: bool | None = True,
+) -> None:
+    """安装 Stable Diffusion WebUI 扩展
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        extension_url (str | list[str]):
+            Stable Diffusion WebUI 扩展下载链接
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        check (bool | None):
+            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
+
+    Raises:
+        AggregateError:
+            安装 Stable Diffusion WebUI 扩展发生错误时
+    """
+    urls = [extension_url] if isinstance(extension_url, str) else extension_url
+
+    # 获取已安装扩展列表
+    extension_list = list_extensions(sd_webui_path)
+    installed_names = {x["name"] for x in extension_list}
+    err: list[Exception] = []
+
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
+        set_github_mirror(
+            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+            config_path=git_config_path,
+        )
+
+        for url in urls:
+            extension_name = get_repo_name_from_url(url)
+            extension_path = sd_webui_path / "extensions" / extension_name
+
+            if extension_name in installed_names or extension_path.exists():
+                logger.info("'%s' 扩展已安装", extension_name)
+                continue
+
+            logger.info("安装 '%s' 扩展到 '%s' 中", extension_name, extension_path)
+            try:
+                clone_repo(
+                    repo=url,
+                    path=extension_path,
+                )
+                logger.info("'%s' 扩展安装成功", extension_name)
+                installed_names.add(extension_name)
+            except Exception as e:
+                err.append(e)
+                logger.error("'%s' 扩展安装失败: %s", extension_name, e)
+
+    if err and check:
+        raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
+
+    logger.info("安装 Stable Diffusion WebUI 扩展完成")
+
+
+class SDWebUiLocalExtensionInfo(TypedDict, total=False):
+    """Stable Diffusion WebUI 本地扩展信息"""
+
+    name: str
+    """Stable Diffusion WebUI 扩展名称"""
+
+    status: bool
+    """当前 Stable Diffusion WebUI 是否已经启用"""
+
+    path: Path
+    """Stable Diffusion WebUI 本地路径"""
+
+    url: str | None
+    """Stable Diffusion WebUI 扩展远程地址"""
+
+    commit: str | None
+    """Stable Diffusion WebUI 扩展的提交信息"""
+
+    branch: str | None
+    """Stable Diffusion WebUI 扩展的当前分支"""
+
+
+SDWebUiLocalExtensionInfoList = list[SDWebUiLocalExtensionInfo]
+"""Stable Diffusion WebUI 本地扩展信息"""
 
 
 def set_extensions_status(
     sd_webui_path: Path,
-) -> None: ...
+    extension_name: str,
+    status: bool,
+) -> None:
+    """设置 Stable Diffusion WebUI 启用状态
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        extension_name (str):
+            Stable Diffusion WebUI 扩展名称
+        status (bool):
+            设置扩展的启用状态
+            - `True`: 启用
+            - `False`: 禁用
+
+    Raises:
+        FileNotFoundError:
+            Stable Diffusion WebUI 未找到时
+    """
+
+    def _save(data: dict[str, Any]) -> None:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+
+    config_path = sd_webui_path / "config.json"
+    extension_path = sd_webui_path / "extensions"
+    extension_list = [ext.name for ext in extension_path.iterdir() if ext.is_dir()]
+    settings: dict[str, str | list[str] | Any] = {}
+
+    if extension_name not in extension_list:
+        raise FileNotFoundError(f"'{extension_name}' 扩展未找到, 请检查该扩展是否已安装")
+
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception as e:
+        logger.error("加载 '%s' 配置文件发生错误: %s", config_path, e)
+        logger.warning("尝试重置 Stable Diffusion WebUI 配置文件")
+        move_files(config_path, f"config_{uuid.uuid4()}.json")
+
+    if "disabled_extensions" not in settings:
+        settings["disabled_extensions"] = []
+
+    if status:
+        if extension_name in settings["disabled_extensions"]:
+            settings["disabled_extensions"].remove(extension_name)
+            _save(settings)
+        logger.info("启用 '%s' 扩展成功", extension_name)
+    else:
+        if extension_name not in settings["disabled_extensions"]:
+            settings["disabled_extensions"].append(extension_name)
+            _save(settings)
+        logger.info("禁用 '%s' 扩展成功", extension_name)
 
 
 def list_extensions(
     sd_webui_path: Path,
-) -> None: ...
+) -> SDWebUiLocalExtensionInfoList:
+    """获取 Stable Diffusion WebUI 本地扩展列表
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+
+    Returns:
+        SDWebUiLocalExtensionInfoList:
+            Stable Diffusion WebUI 本地扩展列表
+    """
+    config_path = sd_webui_path / "config.json"
+    extension_path = sd_webui_path / "extensions"
+    info_list: SDWebUiLocalExtensionInfoList = []
+
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception as e:
+        logger.debug("加载 '%s' 配置文件发生错误: %s", config_path, e)
+        settings = {}
+
+    disabled_extensions = set(settings.get("disabled_extensions", []))
+    disable_all_extensions = settings.get("disable_all_extensions", "none")
+
+    for ext in extension_path.iterdir():
+        info: SDWebUiLocalExtensionInfo = {}
+        if ext.is_file():
+            continue
+
+        name = ext.name
+        path = ext
+
+        if disable_all_extensions == "all":
+            status = False
+        elif disable_all_extensions != "extra":
+            status = name not in disabled_extensions
+        else:
+            status = True
+
+        try:
+            url = git_warpper.get_current_branch_remote_url(ext)
+        except ValueError:
+            url = None
+
+        try:
+            commit = git_warpper.get_current_commit(ext)
+        except ValueError:
+            commit = None
+
+        try:
+            branch = git_warpper.get_current_branch(ext)
+        except ValueError:
+            branch = None
+
+        info["name"] = name
+        info["status"] = status
+        info["path"] = path
+        info["url"] = url
+        info["commit"] = commit
+        info["branch"] = branch
+        info_list.append(info)
+
+    return info_list
+
+
+def update_extensions(
+    sd_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    check: bool | None = True,
+) -> None:
+    """更新 Stable Diffusion WebUI 扩展
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录、
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        check (bool | None):
+            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
+
+    Raises:
+        AggregateError:
+            检查 Stable Diffusion WebUI 环境发生错误时
+    """
+    extension_path = sd_webui_path / "extensions"
+    err: list[Exception] = []
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
+        set_github_mirror(
+            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+            config_path=git_config_path,
+        )
+        for ext in extension_path.iterdir():
+            if ext.is_file():
+                continue
+
+            logger.info("更新 '%s' 扩展中", ext.name)
+            try:
+                git_warpper.update(ext)
+            except Exception as e:
+                err.append(e)
+                logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+
+    if err and check:
+        raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)
+
+    logger.info("更新 Stable Diffusion WebUI 扩展完成")
 
 
 def uninstall_extension(
     sd_webui_path: Path,
-) -> None: ...
+    extension_name: str,
+    check: bool | None = True,
+) -> None:
+    """卸载 Stable Diffusion WebUI 扩展
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        extension_name (str):
+            Stable Diffusion WebUI
+        check (bool | None):
+            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
+
+    Raises:
+        FileNotFoundError:
+            要卸载的扩展未找到时
+        RuntimeError:
+            卸载扩展发生错误时
+    """
+    extension_path = sd_webui_path / "extensions"
+    extension_list = [ext.name for ext in extension_path.iterdir() if ext.is_dir()]
+    if extension_name not in extension_list:
+        raise FileNotFoundError(f"'{extension_name}' 扩展未安装")
+
+    try:
+        logger.info("卸载 '%s' 扩展中", extension_name)
+        remove_files(extension_path / extension_name)
+        logger.info("卸载 '%s' 扩展完成", extension_name)
+    except Exception as e:
+        logger.info("卸载 '%s' 扩展时发生错误: %s", extension_name, e)
+        if check:
+            raise RuntimeError(f"卸载 '{extension_name}' 扩展时发生错误:{e}") from e
 
 
 def install_model_from_library(
     sd_webui_path: Path,
-) -> None: ...
+    download_resource_type: ModelDownloadUrlType | None = "modelscope",
+    model_name: str | None = None,
+    model_index: int | None = None,
+    downloader: DownloadToolType | None = "aria2",
+    interactive_mode: bool | None = False,
+) -> None:
+    """为 Stable Diffusion WebUI 下载模型, 使用模型库进行下载
+
+    Args:
+        webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        download_resource_type (ModelDownloadUrlType | None):
+            模型下载源类型
+        model_name (str | None):
+            下载的模型名称
+        model_index (int | None):
+            下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
+        downloader (DownloadToolType | None):
+            下载模型使用的工具
+        interactive_mode (bool | None):
+            是否启用交互模式
+    """
+    install_webui_model_from_library(
+        webui_path=sd_webui_path,
+        dtype="sd_webui",
+        download_resource_type=download_resource_type,
+        model_name=model_name,
+        model_index=model_index,
+        downloader=downloader,
+        interactive_mode=interactive_mode,
+    )
 
 
 def install_model_from_url(

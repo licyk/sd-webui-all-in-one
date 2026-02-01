@@ -1,9 +1,11 @@
 import os
 import sys
 import importlib.metadata
+import urllib.parse
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
     PYPI_INDEX_MIRROR_OFFICIAL,
@@ -26,9 +28,10 @@ from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, co
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
-from sd_webui_all_in_one.model_downloader.model_utils import download_model
-from sd_webui_all_in_one.model_downloader.base import SupportedWebUiType, ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.model_utils import download_model, query_model_info, display_model_table, search_models_from_library
+from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT, SupportedWebUiType, ModelDownloadUrlType
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.utils import print_divider
 
 logger = get_logger(
     name="Base Manager",
@@ -196,7 +199,7 @@ def clone_repo(
         src = git_warpper.clone(
             repo=repo,
             path=tmp_dir,
-        )   
+        )
         copy_files(src, path)
     logger.info("'%s' 下载到 '%s' 完成", Path(repo).name, path)
 
@@ -210,7 +213,7 @@ def get_pypi_mirror_config(
     Args:
         use_cn_mirror (bool | None):
             是否使用国内镜像源
-        origin_env (dict[str, str] | None): 
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Returns:
@@ -273,13 +276,13 @@ def launch_webui(
     """运行 WebUI
 
     Args:
-        webui_path (Path): 
+        webui_path (Path):
             WebUI 的根目录
-        launch_script (str): 
+        launch_script (str):
             启动 WebUI 的脚本名称, 使用相对路径
         launch_args (list[str] | None):
             启动 WebUI 的参数
-        custom_env (dict[str, str] | None): 
+        custom_env (dict[str, str] | None):
             自定义环境变量
 
     Raises:
@@ -297,3 +300,133 @@ def launch_webui(
         run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
     except RuntimeError as e:
         raise RuntimeError(f"运行 WebUI 时出现错误: {e}") from e
+
+
+def get_repo_name_from_url(url: str) -> str:
+    """从 Git 仓库链接中解析并返回仓库名称
+
+    Args:
+        url:
+            Git 仓库的链接
+
+    Returns:
+        str:
+            Git 仓库的名称
+    """
+
+    # 1. 处理标准的 HTTP/HTTPS/Git 协议链接
+    # 例如: https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path
+
+    # 2. 处理特殊的 SSH 格式 (urllib 无法正确解析此类非标准 URI)
+    # 例如: git@github.com:AUTOMATIC1111/stable-diffusion-webui.git
+    if not parsed.scheme and ":" in url:
+        # 提取冒号后面的路径部分: AUTOMATIC1111/stable-diffusion-webui.git
+        path = url.split(":")[-1]
+
+    # 3. 路径清洗
+    # 移除末尾的斜杠 (如果有)
+    path = path.rstrip("/")
+
+    # 获取路径的最后一部分 (文件名部分)
+    # stable-diffusion-webui.git
+    repo_name = os.path.basename(path)
+
+    # 4. 移除 .git 后缀
+    if repo_name.endswith(".git"):
+        repo_name = repo_name[:-4]
+
+    return repo_name
+
+
+def install_webui_model_from_library(
+    webui_path: Path,
+    dtype: SupportedWebUiType,
+    download_resource_type: ModelDownloadUrlType | None = "modelscope",
+    model_name: str | None = None,
+    model_index: int | None = None,
+    downloader: DownloadToolType | None = "aria2",
+    interactive_mode: bool | None = False,
+) -> None:
+    """为 WebUI 下载模型, 使用模型库进行下载
+
+    Args:
+        webui_path (Path):
+            WebUI 根目录
+        dtype (SupportedWebUiType):
+            WebUI 的类型
+        download_resource_type (ModelDownloadUrlType | None):
+            模型下载源类型
+        model_name (str | None):
+            下载的模型名称
+        model_index (int | None):
+            下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
+        downloader (DownloadToolType | None):
+            下载模型使用的工具
+        interactive_mode (bool | None):
+            是否启用交互模式
+    """
+
+    def _input_to_int_list(_input: str) -> list[str] | None: #FIXME
+        try:
+            return [int(_i) for _i in _input.split()]
+        except Exception:
+            return None
+
+    model_list = MODEL_DOWNLOAD_DICT.copy()
+    display_model = True
+
+    if interactive_mode:
+        while True:
+            if display_model:
+                print_divider("=")
+                display_model_table(model_list)
+                print_divider("=")
+
+            display_model = True
+            print(
+                "请选择要下载的模型\n"
+                "提示:\n"
+                "1. 输入数字后回车\n"
+                "2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开\n"
+                "3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型\n"
+                "4. 输入 exit 退出模型下载脚本"
+            )
+            user_input = input("==> ").strip()
+
+            if user_input == "exit":
+                return
+
+            if user_input == "search":
+                display_model = False
+                print_divider("=")
+                search_models_from_library(
+                    query=input("请输入要从模型列表搜索的模型名称: "),
+                    models=model_list,
+                )
+                print_divider("=")
+                continue
+
+            result = _input_to_int_list(user_input)
+
+            if result is None or len(result):
+                logger.warning("输入有误, 请重试")
+                continue
+
+            download_model(
+                dtype=dtype,
+                base_path=webui_path,
+                download_resource_type=download_resource_type,
+                model_index=result,
+                downloader=downloader,
+            )
+    else:
+        download_model(
+            dtype=dtype,
+            base_path=webui_path,
+            download_resource_type=download_resource_type,
+            model_name=model_name,
+            model_index=model_index,
+            downloader=downloader,
+        )

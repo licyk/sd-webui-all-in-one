@@ -634,10 +634,10 @@ def comfyui_conflict_analyzer(
         logger.warning("您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况")
         logger.warning("检测到冲突的依赖:")
         print(conflict_info)
-        if input("是否按顺序安装冲突组件依赖 (y/N): ").strip().lower() not in ["yes", "y"]:
+        if interactive_mode and input("是否按顺序安装冲突组件依赖 (y/N): ").strip().lower() not in ["yes", "y"]:
             logger.info("忽略警告并继续启动 ComfyUI")
             return
-        if not install_conflict_component_requirement:
+        if not interactive_mode and not install_conflict_component_requirement:
             logger.info("忽略警告并继续启动 ComfyUI")
             return
 

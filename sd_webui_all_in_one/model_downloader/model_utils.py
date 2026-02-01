@@ -1,6 +1,7 @@
 from pathlib import Path
+from dataclasses import dataclass
 
-from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT,  ModelCardList, SupportedWebUiType, SUPPORTED_WEBUI_LIST, ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT, ModelCardList, SupportedWebUiType, SUPPORTED_WEBUI_LIST, ModelDownloadUrlType
 from sd_webui_all_in_one.downloader import download_file, DownloadToolType
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
@@ -157,3 +158,81 @@ def query_model_info(
             query_model += _get_model_with_name(model_name)
 
     return query_model
+
+
+@dataclass
+class ANSIColor:
+    """ANSI 转义码, 用于在终端中显示彩色文本"""
+
+    BLUE = "\033[94m"
+    """蓝色"""
+
+    GOLD = "\033[33m"
+    """金色"""
+
+    WHITE = "\033[97m"
+    """白色"""
+
+    RESET = "\033[0m"
+    """重置颜色"""
+
+
+def display_model_table(
+    models: ModelCardList,
+) -> None:
+    """显示模型库中的模型
+
+    Args:
+        models (ModelCardList):
+            模型列表
+    """
+
+    grouped_models: dict[str, list[tuple[int, str]]] = {}
+    for index, model in enumerate(models, start=1):
+        dtype = model["dtype"]
+        if dtype not in grouped_models:
+            grouped_models[dtype] = []
+        grouped_models[dtype].append((index, model))
+
+    for dtype, items in grouped_models.items():
+        print(f"{ANSIColor.BLUE}- {dtype}{ANSIColor.RESET}")
+        for idx, model in items:
+            filename = model["filename"]
+            print(f"  - {ANSIColor.GOLD}{idx}{ANSIColor.RESET}、{ANSIColor.WHITE}{filename}{ANSIColor.RESET} ({ANSIColor.BLUE}{dtype}{ANSIColor.RESET})")
+
+        print()
+
+
+def search_models_from_library(
+    query: str,
+    models: ModelCardList,
+) -> list[int]:
+    """从模型库搜索模型并显示结果
+
+    Args:
+        query (str):
+            搜索关键词
+        models (ModelCardList):
+            模型列表
+
+    Returns:
+        list[int]: 匹配到的模型序号列表
+    """
+
+    results_indices = []
+    matched_items = []
+    query_lower = query.lower()
+
+    for index, model in enumerate(models, start=1):
+        if query_lower in model["name"].lower() or query_lower in model["filename"].lower():
+            results_indices.append(index)
+            matched_items.append((index, model))
+
+    for idx, model in matched_items:
+        filename = model["filename"]
+        dtype = model["dtype"]
+        print(f" - {ANSIColor.GOLD}{idx}{ANSIColor.RESET}、{ANSIColor.WHITE}{filename}{ANSIColor.RESET} ({ANSIColor.BLUE}{dtype}{ANSIColor.RESET})")
+
+    print(f"\n搜索 {query} 得到的结果数量: {len(results_indices)}")
+
+    return results_indices

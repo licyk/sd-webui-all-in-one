@@ -1,5 +1,6 @@
 """其他工具合集"""
 
+import shutil
 import sys
 from typing import Any
 from pathlib import Path
@@ -131,7 +132,7 @@ def exec_from_path(path: Path) -> dict[str, Any] | None:
     env: dict[str, Any] = {}
     try:
         code = path.read_text(encoding="utf-8")
-        exec(code, env) # pylint: disable=exec-used
+        exec(code, env)  # pylint: disable=exec-used
         return env
     except Exception:
         return None
@@ -158,3 +159,14 @@ def load_source_directly(module_name: str) -> dict[str, Any] | None:
             return exec_from_path(full_path)
 
     return None
+
+
+def print_divider(char: str = "-") -> None:
+    """在终端中输出一整行分隔符
+
+    Args:
+        char (str):
+            输出的字符
+    """
+    columns = shutil.get_terminal_size(fallback=(80, 20)).columns
+    print(char * columns)
