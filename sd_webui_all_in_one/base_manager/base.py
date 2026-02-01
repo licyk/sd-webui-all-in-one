@@ -1,5 +1,6 @@
 import importlib.metadata
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
@@ -19,7 +20,7 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty
+from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, copy_files, remove_files
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
@@ -185,10 +186,16 @@ def clone_repo(
         logger.info("'%s' 已存在于 '%s', 跳过下载", Path(repo).name, path)
         return
 
-    git_warpper.clone(
-        repo=repo,
-        path=path,
-    )
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+        if path.exists():
+            remove_files(path)
+        src = git_warpper.clone(
+            repo=repo,
+            path=tmp_dir,
+        )   
+        copy_files(src, path)
+    logger.info("'%s' 下载到 '%s' 完成", Path(repo).name, path)
 
 
 def get_pypi_mirror_config(

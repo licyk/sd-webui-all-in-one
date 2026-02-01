@@ -16,8 +16,30 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+GITHUB_MIRROR_LIST = [
+    "https://ghfast.top/https://github.com",
+    "https://mirror.ghproxy.com/https://github.com",
+    "https://ghproxy.net/https://github.com",
+    "https://gh.api.99988866.xyz/https://github.com",
+    "https://gh-proxy.com/https://github.com",
+    "https://ghps.cc/https://github.com",
+    "https://gh.idayer.com/https://github.com",
+    "https://ghproxy.1888866.xyz/github.com",
+    "https://slink.ltd/https://github.com",
+    "https://github.boki.moe/github.com",
+    "https://github.moeyy.xyz/https://github.com",
+    "https://gh-proxy.net/https://github.com",
+    "https://gh-proxy.ygxz.in/https://github.com",
+    "https://wget.la/https://github.com",
+    "https://kkgithub.com",
+    "https://gitclone.com/github.com",
+]
+"""Github 镜像源列表"""
 
-def set_pypi_index_mirror(mirror: str | None = None) -> None:
+
+def set_pypi_index_mirror(
+    mirror: str | None = None,
+) -> None:
     """设置 PyPI Index 镜像源
 
     Args:
@@ -33,7 +55,9 @@ def set_pypi_index_mirror(mirror: str | None = None) -> None:
         os.environ.pop("UV_DEFAULT_INDEX", None)
 
 
-def set_pypi_extra_index_mirror(mirror: str | None = None) -> None:
+def set_pypi_extra_index_mirror(
+    mirror: str | None = None,
+) -> None:
     """设置 PyPI Extra Index 镜像源
 
     Args:
@@ -49,7 +73,9 @@ def set_pypi_extra_index_mirror(mirror: str | None = None) -> None:
         os.environ.pop("UV_INDEX", None)
 
 
-def set_pypi_find_links_mirror(mirror: str | None = None) -> None:
+def set_pypi_find_links_mirror(
+    mirror: str | None = None,
+) -> None:
     """设置 PyPI Find Links 镜像源
 
     Args:
@@ -66,23 +92,91 @@ def set_pypi_find_links_mirror(mirror: str | None = None) -> None:
         os.environ.pop("UV_FIND_LINKS", None)
 
 
-def set_github_mirror(mirror: str | list[str] | None = None, config_path: Path | str = None) -> None:
+def test_github_mirror(
+    mirror: list[str],
+) -> str | None:
+    """测试 Github 镜像源可用性, 当有一个可用的 Github 镜像源则直接返回该镜像源地址
+
+    Args:
+        mirror (list[str]):
+            Github 镜像源列表
+
+    Returns:
+        (str | None): 当有可用镜像源可用时则返回该镜像源地址
+    """
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+        mirror_test_path = tmp_dir / "__github_mirror_test__"
+        custon_env = os.environ.copy()
+        custon_env.pop("GIT_CONFIG_GLOBAL", None)
+        for gh in mirror:
+            logger.info("测试 Github 镜像源: %s", gh)
+            test_repo = f"{gh}/licyk/empty"
+            try:
+                if mirror_test_path.exists():
+                    remove_files(mirror_test_path)
+                run_cmd(
+                    ["git", "clone", "--depth", "1", test_repo, mirror_test_path.as_posix()],
+                    custom_env=custon_env,
+                    live=False,
+                )
+                if mirror_test_path.exists():
+                    remove_files(mirror_test_path)
+                logger.info("该镜像源可用")
+                return gh
+            except Exception:
+                logger.info("镜像源不可用")
+
+    logger.info("无可用的 Github 镜像源")
+    return None
+
+
+def set_git_base_config(
+    config_path: Path,
+) -> None:
+    """设置 Git 基本配置
+
+    Args:
+        config_path (Path):
+            Git 配置文件路径
+
+    Raises:
+        RuntimeError:
+            设置 Git 基本配置时发生错误
+    """
+    custom_env = os.environ.copy()
+    custom_env["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
+    try:
+        run_cmd(["git", "config", "--global", "--add", "safe.directory", "'*'"], live=False, custom_env=custom_env)
+        run_cmd(["git", "config", "--global", "core.longpaths", "true"], live=False, custom_env=custom_env)
+    except RuntimeError as e:
+        raise RuntimeError(f"设置 Git 基本配置时发生错误: {e}") from e
+
+
+def set_github_mirror(
+    mirror: str | list[str] | None = None,
+    config_path: Path = None,
+) -> None:
     """设置 Github 镜像源
 
     当`mirror`传入的是 Github 镜像源地址, 则直接设置 GIT_CONFIG_GLOBAL 环境变量并直接使用该镜像源地址
 
     如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 GIT_CONFIG_GLOBAL 环境变量
 
-    当不传入参数时则清除 GIT_CONFIG_GLOBAL 环境变量并删除 GIT_CONFIG_GLOBAL 环境变量对应的 Git 配置文件
+    当不传入参数时则不进行任何 Github 镜像源配置
+
+    传入参数为 [] 时则清除 Github 镜像源配置
 
     使用:
     ```python
-    set_github_mirror() # 不传入参数时则清除 Github 镜像源
+    set_github_mirror(mirror=None) # 传入参数为 None 时则不进行任何 Github 镜像源配置
 
-    set_github_mirror("https://ghfast.top/https://github.com") # 只设置一个 Github 镜像源时将直接使用该 Github 镜像源
+    set_github_mirror(mirror=[]) # 传入参数为 [] 时则清除 Github 镜像源配置
+
+    set_github_mirror(mirror="https://ghfast.top/https://github.com") # 只设置一个 Github 镜像源时将直接使用该 Github 镜像源
 
     set_github_mirror( # 传入 Github 镜像源列表时将自动测试可用的 Github 镜像源并设置
-        [
+        mirror=[
             "https://ghfast.top/https://github.com",
             "https://mirror.ghproxy.com/https://github.com",
             "https://ghproxy.net/https://github.com",
@@ -104,82 +198,67 @@ def set_github_mirror(mirror: str | list[str] | None = None, config_path: Path |
     ```
 
     Args:
-        mirror (str | list[str] | None): Github 镜像源地址
-        config_path (Path | str): Git 配置文件路径
+        mirror (str | list[str] | None):
+            Github 镜像源地址
+        config_path (Path | None):
+            Git 配置文件路径
+
+    Raises:
+        RuntimeError:
+            设置镜像源出现错误时
+        ValueError:
+            传入的镜像源类型不支持时
     """
-    if mirror is None:
-        logger.info("清除 GIT_CONFIG_GLOBAL 环境变量, 取消使用 Github 镜像源")
-        git_config = os.environ.pop("GIT_CONFIG_GLOBAL", None)
-        if git_config is not None:
-            p = Path(git_config)
-            if p.exists():
-                p.unlink()
-        return
+
+    def _set_github_mirror(
+        mirror: str,
+    ) -> None:
+        logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
+        try:
+            run_cmd(["git", "config", "--global", f"url.{mirror}.insteadOf", "https://github.com"])
+        except RuntimeError as e:
+            logger.error("设置 Github 镜像源时发生错误: %s", e)
+            raise RuntimeError(f"设置 Github 镜像源时发生错误: {e}") from e
+
+    def _configure_github_mirror(
+        mirror: str | list[str],
+    ) -> None:
+        if isinstance(mirror, str):
+            _set_github_mirror(mirror)
+        elif isinstance(mirror, list):
+            if len(mirror) == 0:
+                logger.info("取消使用 Github 镜像源")
+                if git_config_path.exists():
+                    remove_files(git_config_path)
+            elif len(mirror) == 1:
+                _set_github_mirror(mirror)
+            else:
+                gh = test_github_mirror(mirror)
+                if gh is not None:
+                    _set_github_mirror(gh)
+                else:
+                    logger.info("取消使用 Github 镜像源")
+                    if git_config_path.exists():
+                        remove_files(git_config_path)
+        else:
+            logger.info("未知镜像源参数类型: %s", type(mirror))
+            raise ValueError(f"未知镜像源参数类型: {type(mirror)}")
 
     if config_path is None:
-        config_path = os.getcwd()
+        config_path = Path().cwd()
 
-    config_path = Path(config_path) if not isinstance(config_path, Path) and config_path is not None else config_path
     git_config_path = config_path / ".gitconfig"
     os.environ["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
 
-    if isinstance(mirror, str):
-        logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
-        try:
-            run_cmd(
-                [
-                    "git",
-                    "config",
-                    "--global",
-                    f"url.{mirror}.insteadOf",
-                    "https://github.com",
-                ]
-            )
-        except Exception as e:
-            logger.error("设置 Github 镜像源时发生错误: %s", e)
-    elif isinstance(mirror, list):
-        with TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-            mirror_test_path = tmp_dir / "__github_mirror_test__"
-            custon_env = os.environ.copy()
-            custon_env.pop("GIT_CONFIG_GLOBAL", None)
-            for gh in mirror:
-                logger.info("测试 Github 镜像源: %s", gh)
-                test_repo = f"{gh}/licyk/empty"
-                if mirror_test_path.exists():
-                    remove_files(mirror_test_path)
-                try:
-                    run_cmd(
-                        ["git", "clone", test_repo, mirror_test_path.as_posix()],
-                        custom_env=custon_env,
-                        live=False,
-                    )
-                    if mirror_test_path.exists():
-                        remove_files(mirror_test_path)
-                    run_cmd(
-                        [
-                            "git",
-                            "config",
-                            "--global",
-                            f"url.{gh}.insteadOf",
-                            "https://github.com",
-                        ]
-                    )
-                    logger.info("该镜像源可用")
-                    return
-                except Exception as _:
-                    logger.info("镜像源不可用")
+    if mirror is not None:
+        _configure_github_mirror(mirror)
 
-            logger.info("无可用的 Github 镜像源, 取消使用 Github 镜像源")
-            if git_config_path.exists():
-                git_config_path.unlink()
-            os.environ.pop("GIT_CONFIG_GLOBAL", None)
-    else:
-        logger.info("未知镜像源参数类型: %s", type(mirror))
-        return
+    set_git_base_config(git_config_path)
 
 
-def set_huggingface_mirror(mirror: str | None = None) -> None:
+def set_huggingface_mirror(
+    mirror: str | None = None,
+) -> None:
     """设置 HuggingFace 镜像源
 
     Args:

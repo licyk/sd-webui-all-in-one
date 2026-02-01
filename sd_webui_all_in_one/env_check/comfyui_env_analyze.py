@@ -567,23 +567,27 @@ def display_check_result(
 
 def process_comfyui_env_analysis(
     comfyui_root_path: Path,
-) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]:
+) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str]:
     """分析 ComfyUI 环境
 
     Args:
         comfyui_root_path (Path):
             ComfyUI 根目录
     Returns:
-        (tuple[dict[str, ComponentEnvironmentDetails], list[str], str] | tuple[None, None, None]):
+        (tuple[dict[str, ComponentEnvironmentDetails], list[str], str]):
             ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
+
+    Raises:
+        FileNotFoundError:
+            ComfyUI 依赖文件缺失 / 自定义节点文件夹未找到时
     """
     if not (comfyui_root_path / "requirements.txt").exists():
         logger.error("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
-        return None, None, None
+        raise FileNotFoundError("ComfyUI 依赖文件缺失, 请检查 ComfyUI 是否安装完整")
 
     if not (comfyui_root_path / "custom_nodes").exists():
         logger.error("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
-        return None, None, None
+        raise FileNotFoundError("ComfyUI 自定义节点文件夹未找到, 请检查 ComfyUI 是否安装完整")
 
     env_data = create_comfyui_environment_dict(comfyui_root_path)
     update_comfyui_component_requires_list(env_data)
@@ -600,6 +604,7 @@ def process_comfyui_env_analysis(
 def comfyui_conflict_analyzer(
     comfyui_root_path: Path,
     install_conflict_component_requirement: bool | None = False,
+    interactive_mode: bool | None = False,
     use_uv: bool | None = True,
 ) -> None:
     """检查并安装 ComfyUI 的依赖环境
@@ -609,6 +614,8 @@ def comfyui_conflict_analyzer(
             ComfyUI 根目录
         install_conflict_component_requirement (bool | None):
             检测到冲突依赖时是否按顺序安装组件依赖
+        interactive_mode (bool | None):
+            是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
         use_uv (bool | None):
             是否使用 uv 安装依赖
 
@@ -627,6 +634,9 @@ def comfyui_conflict_analyzer(
         logger.warning("您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况")
         logger.warning("检测到冲突的依赖:")
         print(conflict_info)
+        if input("是否按顺序安装冲突组件依赖 (y/N): ").strip().lower() not in ["yes", "y"]:
+            logger.info("忽略警告并继续启动 ComfyUI")
+            return
         if not install_conflict_component_requirement:
             logger.info("忽略警告并继续启动 ComfyUI")
             return

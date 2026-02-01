@@ -1,5 +1,7 @@
+import os
 from typing import TypedDict, Literal, TypeAlias, get_args
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.logger import get_logger
@@ -7,6 +9,7 @@ from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.base_manager.base import prepare_pytorch_install_info, clone_repo, install_pytorch_for_webui, get_pypi_mirror_config, pre_download_model_for_webui
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -646,12 +649,44 @@ def install_sd_webui(
     custom_xformers_package: str | None = None,
     use_cn_pypi_mirror: bool | None = True,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
     install_branch: SDWebUiBranchType | None = None,
     no_pre_download_extension: bool | None = False,
     no_pre_download_model: bool | None = False,
     use_cn_model_mirror: bool | None = True,
 ) -> None:
-    """安装 Stable Diffusion WebUI"""
+    """安装 Stable Diffusion WebUI
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        pytorch_mirror_type (PyTorchDeviceType | None): 
+            设置使用的 PyTorch 镜像源类型
+        custom_pytorch_package (str | None):
+            自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
+        custom_xformers_package (str | None):
+            自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
+        use_cn_pypi_mirror (bool | None): 
+            是否使用国内 PyPI 镜像源
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        install_branch (SDWebUiBranchType | None):
+            安装的 Stable Diffusion WebUI 分支
+        no_pre_download_extension (bool | None):
+            是否禁用预下载 Stable Diffusion WebUI 扩展
+        no_pre_download_model (bool | None):
+            是否禁用预下载模型
+        use_cn_model_mirror (bool | None):
+            是否使用国内镜像下载模型
+
+    Raises:
+        ValueError:
+            安装的 Stable Diffusion WebUI 分支未知时
+        FileNotFoundError:
+            Stable Diffusion WebUI 依赖文件缺失时
+    """
     logger.info("准备 Stable Diffusion WebUI 安装配置")
 
     # 准备 Stable Diffusion WebUI 安装分支信息
@@ -699,65 +734,79 @@ def install_sd_webui(
     logger.info("开始安装 Stable Diffusion WebUI, 安装路径: %s", sd_webui_path)
     logger.info("安装的 Stable Diffusion WebUI 分支: '%s'", branch_info["name"])
 
-    logger.info("安装 Stable Diffusion WebUI 内核中")
-    clone_repo(
-        repo=branch_info["url"],
-        path=sd_webui_path,
-    )
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
 
-    logger.info("切换 Stable Diffusion WebUI 分支中")
-    git_warpper.switch_branch(
-        path=sd_webui_path,
-        branch=branch_info["branch"],
-        new_url=branch_info["url"],
-        recurse_submodules=branch_info["use_submodule"],
-    )
-
-    if sd_webui_repository_list:
-        logger.info("安装 Stable Diffusion WebUI 组件中")
-        for info in sd_webui_repository_list:
-            clone_repo(
-                repo=info["url"],
-                path=sd_webui_path / info["save_dir"],
+        if use_github_mirror:
+            set_github_mirror(
+                mirror=GITHUB_MIRROR_LIST,
+                config_path=Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix())),
+            )
+        else:
+            set_github_mirror(
+                mirror=None,
+                config_path=Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix())),
             )
 
-    if sd_weui_extension_list:
-        logger.info("安装 Stable Diffusion WebUI 扩展中")
-        for info in sd_weui_extension_list:
-            clone_repo(
-                repo=info["url"],
-                path=sd_webui_path / info["save_dir"],
-            )
-
-    install_pytorch_for_webui(
-        pytorch_package=pytorch_package,
-        xformers_package=xformers_package,
-        custom_env=custom_env_pytorch,
-        use_uv=use_uv,
-    )
-
-    requirements_version_path = sd_webui_path / "requirements_version.txt"
-    requirements_path = sd_webui_path / "requirements.txt"
-
-    if not requirements_path.is_file() and requirements_version_path.is_file():
-        raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查 Stable Diffusion WebUI 文件是否完整")
-
-    logger.info("安装 Stable Diffusion WebUI 依赖中")
-    install_requirements(
-        path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
-        use_uv=use_uv,
-        custom_env=custom_env,
-        cwd=sd_webui_path,
-    )
-
-    if not no_pre_download_model:
-        pre_download_model_for_webui(
-            dtype="sd_webui",
-            model_path=sd_webui_path / "models" / "Stable-diffusion",
-            webui_base_path=sd_webui_path,
-            model_name="ChenkinNoob-XL-V0.2",
-            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+        logger.info("安装 Stable Diffusion WebUI 内核中")
+        clone_repo(
+            repo=branch_info["url"],
+            path=sd_webui_path,
         )
+
+        logger.info("切换 Stable Diffusion WebUI 分支中")
+        git_warpper.switch_branch(
+            path=sd_webui_path,
+            branch=branch_info["branch"],
+            new_url=branch_info["url"],
+            recurse_submodules=branch_info["use_submodule"],
+        )
+
+        if sd_webui_repository_list:
+            logger.info("安装 Stable Diffusion WebUI 组件中")
+            for info in sd_webui_repository_list:
+                clone_repo(
+                    repo=info["url"],
+                    path=sd_webui_path / info["save_dir"],
+                )
+
+        if sd_weui_extension_list:
+            logger.info("安装 Stable Diffusion WebUI 扩展中")
+            for info in sd_weui_extension_list:
+                clone_repo(
+                    repo=info["url"],
+                    path=sd_webui_path / info["save_dir"],
+                )
+
+        install_pytorch_for_webui(
+            pytorch_package=pytorch_package,
+            xformers_package=xformers_package,
+            custom_env=custom_env_pytorch,
+            use_uv=use_uv,
+        )
+
+        requirements_version_path = sd_webui_path / "requirements_version.txt"
+        requirements_path = sd_webui_path / "requirements.txt"
+
+        if not requirements_path.is_file() and requirements_version_path.is_file():
+            raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查 Stable Diffusion WebUI 文件是否完整")
+
+        logger.info("安装 Stable Diffusion WebUI 依赖中")
+        install_requirements(
+            path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
+            use_uv=use_uv,
+            custom_env=custom_env,
+            cwd=sd_webui_path,
+        )
+
+        if not no_pre_download_model:
+            pre_download_model_for_webui(
+                dtype="sd_webui",
+                model_path=sd_webui_path / "models" / "Stable-diffusion",
+                webui_base_path=sd_webui_path,
+                model_name="ChenkinNoob-XL-V0.2",
+                download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+            )
     
     logger.info("安装 Stable Diffusion WebUI 完成")
 
@@ -765,7 +814,10 @@ def install_sd_webui(
 
 def check_sd_webui_env(
     sd_webui_path: Path,
-) -> None: ...
+    check: bool | None = True,
+) -> None:
+    """检查 Stable Diffusion WebUI 运行环境"""
+    
 
 
 def launch_sd_webui(
