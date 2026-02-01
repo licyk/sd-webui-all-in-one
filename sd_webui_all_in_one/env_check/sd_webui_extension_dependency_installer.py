@@ -54,17 +54,17 @@ def run_extension_installer(
 
 
 def install_extension_requirements(
-    sd_webui_base_path: Path,
+    sd_webui_path: Path,
 ) -> None:
     """安装 SD WebUI 扩展依赖
 
     Args:
-        sd_webui_base_path (Path):
+        sd_webui_path (Path):
             SD WebUI 根目录
     """
-    settings_file = sd_webui_base_path / "config.json"
-    extensions_dir = sd_webui_base_path / "extensions"
-    builtin_extensions_dir = sd_webui_base_path / "extensions-builtin"
+    settings_file = sd_webui_path / "config.json"
+    extensions_dir = sd_webui_path / "extensions"
+    builtin_extensions_dir = sd_webui_path / "extensions-builtin"
     ext_install_list = []
     ext_builtin_install_list = []
     settings = {}
@@ -102,7 +102,7 @@ def install_extension_requirements(
         ext_name = ext.name
         logger.info("[%s/%s] 执行 %s 扩展的依赖安装脚本中", count, extension_count, ext_name)
         if run_extension_installer(
-            sd_webui_base_path=sd_webui_base_path,
+            sd_webui_base_path=sd_webui_path,
             extension_dir=ext,
         ):
             logger.info("[%s/%s] 执行 %s 扩展的依赖安装脚本成功", count, extension_count, ext_name)

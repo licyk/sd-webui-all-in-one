@@ -238,36 +238,6 @@ class SDWebUIManager(BaseManager):
             else:
                 logger.info("更新 %s 扩展失败", i.name)
 
-    def fix_stable_diffusion_invaild_repo_url(self) -> None:
-        """修复 Stable Diffusion WebUI 无效的组件仓库源"""
-        logger.info("检查 Stable Diffusion WebUI 无效组件仓库源")
-        stable_diffusion_path = self.workspace / self.workfolder / "repositories" / "stable-diffusion-stability-ai"
-        new_repo_url = "https://github.com/licyk/stablediffusion"
-        if not git_warpper.is_git_repo(stable_diffusion_path):
-            return
-
-        custom_env = os.environ.copy()
-        custom_env.pop("GIT_CONFIG_GLOBAL", None)
-        try:
-            repo_url = self.run_cmd(
-                ["git", "-C", str(stable_diffusion_path), "remote", "get-url", "origin"],
-                custom_env=custom_env,
-                live=False,
-            )
-        except Exception:
-            return
-
-        if repo_url in ["https://github.com/Stability-AI/stablediffusion.git", "https://github.com/Stability-AI/stablediffusion"]:
-            try:
-                self.run_cmd(
-                    ["git", "-C", str(stable_diffusion_path), "remote", "set-url", "origin", new_repo_url],
-                    custom_env=custom_env,
-                    live=False,
-                )
-                logger.info("替换仓库源: %s -> %s", repo_url, new_repo_url)
-            except Exception as e:
-                logger.error("修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: %s", e)
-
     def check_env(
         self,
         use_uv: bool | None = True,
@@ -287,7 +257,7 @@ class SDWebUIManager(BaseManager):
             name="Stable Diffusion WebUI",
             use_uv=use_uv,
         )
-        install_extension_requirements(sd_webui_base_path=sd_webui_path)
+        install_extension_requirements(sd_webui_path=sd_webui_path)
         fix_torch_libomp()
         check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
         check_numpy(use_uv=use_uv)

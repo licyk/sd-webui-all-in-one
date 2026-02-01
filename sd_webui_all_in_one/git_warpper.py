@@ -47,8 +47,12 @@ def clone(
             下载到本地的路径
 
     Returns:
-        (Path | None):
+        Path:
             下载成功时返回路径
+
+    Raises:
+        RuntimeError:
+            下载 Git 仓库失败时
     """
     git_exec = get_git_exec()
 

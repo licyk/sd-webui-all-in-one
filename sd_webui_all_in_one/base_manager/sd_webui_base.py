@@ -1,8 +1,14 @@
 import os
-from typing import TypedDict, Literal, TypeAlias, get_args
+from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
+from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
+from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
+from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
+from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
@@ -10,6 +16,7 @@ from sd_webui_all_in_one.base_manager.base import prepare_pytorch_install_info, 
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -660,13 +667,13 @@ def install_sd_webui(
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
-        pytorch_mirror_type (PyTorchDeviceType | None): 
+        pytorch_mirror_type (PyTorchDeviceType | None):
             设置使用的 PyTorch 镜像源类型
         custom_pytorch_package (str | None):
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_cn_pypi_mirror (bool | None): 
+        use_cn_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像源
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
@@ -710,17 +717,8 @@ def install_sd_webui(
     )
 
     # 准备扩展 / 组件安装信息
-    sd_weui_extension_list = [
-        x
-        for x in SD_WEBUI_EXTENSION_INFO_DICT
-        if install_branch in x["supported_branch"]
-        and not no_pre_download_extension
-    ]
-    sd_webui_repository_list = [
-        x
-        for x in SD_WEBUI_REPOSITORY_INFO_DICT
-        if install_branch in x["supported_branch"]
-    ]
+    sd_weui_extension_list = [x for x in SD_WEBUI_EXTENSION_INFO_DICT if install_branch in x["supported_branch"] and not no_pre_download_extension]
+    sd_webui_repository_list = [x for x in SD_WEBUI_REPOSITORY_INFO_DICT if install_branch in x["supported_branch"]]
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_cn_pypi_mirror)
@@ -737,16 +735,11 @@ def install_sd_webui(
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
 
-        if use_github_mirror:
-            set_github_mirror(
-                mirror=GITHUB_MIRROR_LIST,
-                config_path=Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix())),
-            )
-        else:
-            set_github_mirror(
-                mirror=None,
-                config_path=Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix())),
-            )
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix()))
+        set_github_mirror(
+            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
+            config_path=git_config_path,
+        )
 
         logger.info("安装 Stable Diffusion WebUI 内核中")
         clone_repo(
@@ -807,17 +800,65 @@ def install_sd_webui(
                 model_name="ChenkinNoob-XL-V0.2",
                 download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
             )
-    
-    logger.info("安装 Stable Diffusion WebUI 完成")
 
+    logger.info("安装 Stable Diffusion WebUI 完成")
 
 
 def check_sd_webui_env(
     sd_webui_path: Path,
     check: bool | None = True,
+    use_github_mirror: bool | None = False,
+    use_uv: bool | None = True,
 ) -> None:
-    """检查 Stable Diffusion WebUI 运行环境"""
-    
+    """检查 Stable Diffusion WebUI 运行环境
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        check (bool | None):
+            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将引发错误
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+    """
+    req_v_path = sd_webui_path / "requirements_version.txt"
+    req_path = sd_webui_path / "requirements.txt"
+
+    if check and req_v_path.is_file() and not req_path.is_file():
+        raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查文件是否完整")
+
+    # 确定主要的依赖描述文件
+    active_req_path = req_v_path if req_v_path.is_file() else req_path
+
+    with TemporaryDirectory() as tmp_dir:
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir))
+        set_github_mirror(
+            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
+            config_path=git_config_path,
+        )
+
+        # 检查任务列表
+        tasks: list[tuple[Callable, dict[str, Any]]] = [
+            (fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path}),
+            (py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv}),
+            (install_extension_requirements, {"sd_webui_path": sd_webui_path}),
+            (fix_torch_libomp, {}),
+            (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
+            (check_numpy, {"use_uv": use_uv}),
+        ]
+        err: list[Exception] = []
+
+        for func, kwargs in tasks:
+            try:
+                func(**kwargs)
+            except Exception as e:
+                err.append(e)
+
+        if err and check:
+            raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
+
+        logger.info("检查 Stable Diffusion WebUI 环境完成")
 
 
 def launch_sd_webui(
