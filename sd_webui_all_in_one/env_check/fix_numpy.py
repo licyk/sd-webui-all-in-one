@@ -15,11 +15,18 @@ logger = get_logger(
 )
 
 
-def check_numpy(use_uv: bool | None = True) -> None:
+def check_numpy(
+    use_uv: bool | None = True,
+) -> None:
     """检查 Numpy 是否需要降级
 
     Args:
-        use_uv (bool| None): 是否使用 uv 安装依赖
+        use_uv (bool| None):
+            是否使用 uv 安装依赖
+
+    Raises:
+        RuntimeError:
+            检查 Numpy 版本时出现错误
     """
     logger.info("检查 Numpy 是否需要降级")
     try:
@@ -32,3 +39,4 @@ def check_numpy(use_uv: bool | None = True) -> None:
             logger.info("Numpy 无需降级")
     except Exception as e:
         logger.error("检查 Numpy 时出现错误: %s", e)
+        raise RuntimeError(f"检查 Numpy 时出现错误: {e}") from e

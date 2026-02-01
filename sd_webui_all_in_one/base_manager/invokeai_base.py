@@ -409,5 +409,5 @@ def check_invokeai_env(
         use_uv (bool | None): 使用 uv 安装依赖
     """
     fix_torch_libomp()
-    check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+    check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
     check_numpy(use_uv=use_uv)

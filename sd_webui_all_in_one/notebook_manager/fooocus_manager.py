@@ -273,7 +273,7 @@ class FooocusManager(BaseManager):
             use_uv=use_uv,
         )
         fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=True)
+        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
         check_numpy(use_uv=use_uv)
 
     def get_launch_command(

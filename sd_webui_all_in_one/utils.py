@@ -1,5 +1,6 @@
 """其他工具合集"""
 
+import sys
 from typing import Any
 from pathlib import Path
 from sd_webui_all_in_one.logger import get_logger
@@ -43,6 +44,7 @@ def clear_jupyter_output() -> None:
     """
     try:
         from IPython.display import clear_output
+
         clear_output(wait=False)
     except Exception as e:
         raise RuntimeError(f"清理 Jupyter Notebook 输出内容失败: {e}") from e
@@ -112,3 +114,47 @@ def remove_duplicate_object_from_list(origin: list[Any]) -> list[Any]:
 def get_sdaio_patcher_path() -> Path:
     """获取 SD WebUI All In One 补丁路径"""
     return SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
+
+
+def exec_from_path(path: Path) -> dict[str, Any] | None:
+    """读取并执行指定路径的 Python 文件, 返回其全局命名空间
+
+    Args:
+        path (Path):
+            Python 源代码文件的路径
+
+    Returns:
+        (dict[str, Any] | None):
+            - 如果执行成功, 返回包含该脚本全局变量、函数和类的字典
+            - 如果读取或执行过程中发生任何错误, 返回 None
+    """
+    env: dict[str, Any] = {}
+    try:
+        code = path.read_text(encoding="utf-8")
+        exec(code, env) # pylint: disable=exec-used
+        return env
+    except Exception:
+        return None
+
+
+def load_source_directly(module_name: str) -> dict[str, Any] | None:
+    """在 sys.path 中搜索并直接加载指定的模块源码
+
+    Args:
+        module_name (str):
+            模块全名, 例如 "tools.utils"
+
+    Returns:
+        (dict[str, Any] | None):
+            - 如果找到并成功执行了对应的 .py 文件，返回其命名空间字典；
+            - 如果在所有搜索路径中均未找到或执行失败, 返回 None
+    """
+    module_parts = module_name.split(".")
+    relative_module_path = Path(*module_parts).with_suffix(".py")
+
+    for search_path in sys.path:
+        full_path = Path(search_path) / relative_module_path
+        if full_path.is_file():
+            return exec_from_path(full_path)
+
+    return None

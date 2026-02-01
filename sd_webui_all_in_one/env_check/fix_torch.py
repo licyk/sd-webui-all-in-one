@@ -34,8 +34,8 @@ def fix_torch_libomp() -> None:
                     break
             try:
                 _ = ctypes.cdll.LoadLibrary(test_file)
-            except FileNotFoundError as _:
+            except FileNotFoundError:
                 logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
                 shutil.copyfile(lib_folder / "libiomp5md.dll", dest)
-    except Exception as _:
+    except Exception:
         pass

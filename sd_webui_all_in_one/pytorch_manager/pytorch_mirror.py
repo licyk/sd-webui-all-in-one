@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Literal, TypedDict
+from typing import TypedDict
 
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
