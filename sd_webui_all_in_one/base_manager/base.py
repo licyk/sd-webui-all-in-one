@@ -1,3 +1,5 @@
+import os
+import sys
 import importlib.metadata
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -26,6 +28,7 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
 from sd_webui_all_in_one.model_downloader.model_utils import download_model
 from sd_webui_all_in_one.model_downloader.base import SupportedWebUiType, ModelDownloadUrlType
+from sd_webui_all_in_one.cmd import run_cmd
 
 logger = get_logger(
     name="Base Manager",
@@ -200,12 +203,15 @@ def clone_repo(
 
 def get_pypi_mirror_config(
     use_cn_mirror: bool | None = False,
+    origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """获取带有 PyPI 镜像源配置的环境变量字典
 
     Args:
         use_cn_mirror (bool | None):
             是否使用国内镜像源
+        origin_env (dict[str, str] | None): 
+            原始的环境变量字典
 
     Returns:
         (dict[str, str]):
@@ -216,12 +222,14 @@ def get_pypi_mirror_config(
             index_url=PYPI_INDEX_MIRROR_TENCENT,
             extra_index_url=PYPI_EXTRA_INDEX_MIRROR_CERNET,
             find_links=PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
+            origin_env=origin_env,
         )
     else:
         return generate_uv_and_pip_env_mirror_config(
             index_url=PYPI_INDEX_MIRROR_OFFICIAL,
             extra_index_url=[],
             find_links=PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
+            origin_env=origin_env,
         )
 
 
@@ -254,3 +262,38 @@ def pre_download_model_for_webui(
             download_resource_type=download_resource_type,
             model_name=model_name,
         )
+
+
+def launch_webui(
+    webui_path: Path,
+    launch_script: str,
+    launch_args: list[str] | None = None,
+    custom_env: dict[str, str] | None = None,
+) -> None:
+    """运行 WebUI
+
+    Args:
+        webui_path (Path): 
+            WebUI 的根目录
+        launch_script (str): 
+            启动 WebUI 的脚本名称, 使用相对路径
+        launch_args (list[str] | None):
+            启动 WebUI 的参数
+        custom_env (dict[str, str] | None): 
+            自定义环境变量
+
+    Raises:
+        RuntimeError:
+            运行 WebUI 时出现错误
+    """
+    if launch_args is None:
+        launch_args = []
+
+    if custom_env is None:
+        custom_env = os.environ.copy()
+
+    cmd = [Path(sys.executable).as_posix(), webui_path / launch_script] + launch_args
+    try:
+        run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
+    except RuntimeError as e:
+        raise RuntimeError(f"运行 WebUI 时出现错误: {e}") from e

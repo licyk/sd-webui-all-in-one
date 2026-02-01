@@ -36,6 +36,11 @@ GITHUB_MIRROR_LIST = [
 ]
 """Github 镜像源列表"""
 
+HUGGINGFACE_MIRROR_LIST = [
+    "https://hf-mirror.com",
+]
+"""HuggingFace 镜像源列表"""
+
 
 def set_pypi_index_mirror(
     mirror: str | None = None,
@@ -228,8 +233,8 @@ def set_github_mirror(
         elif isinstance(mirror, list):
             if len(mirror) == 0:
                 logger.info("取消使用 Github 镜像源")
-                if git_config_path.exists():
-                    remove_files(git_config_path)
+                if config_path.exists():
+                    remove_files(config_path)
             elif len(mirror) == 1:
                 _set_github_mirror(mirror)
             else:
@@ -238,22 +243,21 @@ def set_github_mirror(
                     _set_github_mirror(gh)
                 else:
                     logger.info("取消使用 Github 镜像源")
-                    if git_config_path.exists():
-                        remove_files(git_config_path)
+                    if config_path.exists():
+                        remove_files(config_path)
         else:
             logger.info("未知镜像源参数类型: %s", type(mirror))
             raise ValueError(f"未知镜像源参数类型: {type(mirror)}")
 
     if config_path is None:
-        config_path = Path().cwd()
+        config_path = Path().cwd() / ".gitconfig"
 
-    git_config_path = config_path / ".gitconfig"
-    os.environ["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
+    os.environ["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
 
     if mirror is not None:
         _configure_github_mirror(mirror)
 
-    set_git_base_config(git_config_path)
+    set_git_base_config(config_path)
 
 
 def set_huggingface_mirror(

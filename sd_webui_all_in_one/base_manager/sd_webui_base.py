@@ -1,4 +1,5 @@
 import os
+import urllib.request
 from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,12 +12,20 @@ from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer impor
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
-from sd_webui_all_in_one.base_manager.base import prepare_pytorch_install_info, clone_repo, install_pytorch_for_webui, get_pypi_mirror_config, pre_download_model_for_webui
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
+from sd_webui_all_in_one.base_manager.base import (
+    prepare_pytorch_install_info,
+    clone_repo,
+    install_pytorch_for_webui,
+    get_pypi_mirror_config,
+    pre_download_model_for_webui,
+    launch_webui,
+)
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.custom_exceptions import AggregateError
+from sd_webui_all_in_one.file_operations.file_manager import copy_files
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -648,6 +657,24 @@ SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
 ]
 """Stable Diffusion WebUI 组件信息字典"""
 
+SD_WEBUI_CONFIG_PATH = ROOT_PATH / "base_manager"/ "config" / "sd_webui_config.json"
+"""Stable Diffusion WebUI 预设配置文件路径"""
+
+def install_sd_webui_config(
+    sd_webui_path: Path,
+) -> None:
+    """安装 Stable Diffusion WebUI 配置文件
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+
+    """
+    config_path = sd_webui_path / "config.json"
+    if not config_path.exists():
+        copy_files(SD_WEBUI_CONFIG_PATH, config_path)
+
+
 
 def install_sd_webui(
     sd_webui_path: Path,
@@ -657,6 +684,7 @@ def install_sd_webui(
     use_cn_pypi_mirror: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
     install_branch: SDWebUiBranchType | None = None,
     no_pre_download_extension: bool | None = False,
     no_pre_download_model: bool | None = False,
@@ -679,6 +707,8 @@ def install_sd_webui(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
         install_branch (SDWebUiBranchType | None):
             安装的 Stable Diffusion WebUI 分支
         no_pre_download_extension (bool | None):
@@ -735,9 +765,9 @@ def install_sd_webui(
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir.as_posix()))
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
         set_github_mirror(
-            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
+            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             config_path=git_config_path,
         )
 
@@ -801,6 +831,8 @@ def install_sd_webui(
                 download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
             )
 
+        install_sd_webui_config(sd_webui_path)
+
     logger.info("安装 Stable Diffusion WebUI 完成")
 
 
@@ -832,7 +864,9 @@ def check_sd_webui_env(
     active_req_path = req_v_path if req_v_path.is_file() else req_path
 
     with TemporaryDirectory() as tmp_dir:
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir))
+        tmp_dir = Path(tmp_dir)
+
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
         set_github_mirror(
             mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
             config_path=git_config_path,
@@ -861,9 +895,102 @@ def check_sd_webui_env(
         logger.info("检查 Stable Diffusion WebUI 环境完成")
 
 
+def set_sd_webui_extension_download_list_mirror(
+    custom_github_mirror: str | list[str] | None = None,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """配置 Stable Diffusion WebUI 扩展下载列表镜像源
+
+    Args:
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源列表
+        origin_env (dict[str, str] | None): 
+            原始的环境变量字典
+
+    Raises:
+        ValueError:
+            传入的镜像源参数类型不支持时
+    """
+    if origin_env is None:
+        origin_env = os.environ.copy()
+
+    github_mirror = GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
+    if github_mirror is None:
+        return origin_env
+    if isinstance(github_mirror, str):
+        origin_env["WEBUI_EXTENSIONS_INDEX"] = github_mirror
+        return origin_env
+    if isinstance(github_mirror, list):
+        for gh in github_mirror:
+            mirror_prefix = gh.replace("github.com", "raw.githubusercontent.com", 1)
+            test_url = f"{mirror_prefix}/licyk/empty/main/README.md"
+            req = urllib.request.Request(test_url, headers=headers)
+            try:
+                logger.info("测试镜像源: %s", gh)
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.getcode() == 200:
+                        logger.info("该镜像源可用")
+                        origin_env["WEBUI_EXTENSIONS_INDEX"] = f"{mirror_prefix}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
+                        return origin_env
+            except Exception:
+                logger.info("该镜像源不可用")
+
+        logger.info("无可用的 Github 镜像源")
+        return origin_env
+
+    raise ValueError(f"传入的 Github 镜像源列表类型不支持: {type(github_mirror)}")
+
+
+
 def launch_sd_webui(
     sd_webui_path: Path,
-) -> None: ...
+    launch_args: list[str] | None = None,
+    use_hf_mirror: bool | None = False,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool | None = False,
+) -> None:
+    """启动 Stable Diffusion WebUI
+
+    Args:
+
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
+    with TemporaryDirectory() as tmp_dir:
+        logger.info("准备 Stable Diffusion WebUI 启动环境")
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", tmp_dir))
+        set_github_mirror(
+            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+            config_path=git_config_path,
+        )
+        custom_env = os.environ.copy()
+
+        if use_hf_mirror:
+            custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+
+        custom_env = get_pypi_mirror_config(
+            use_cn_mirror=use_pypi_mirror,
+            origin_env=custom_env,
+        )
+        custom_env["STABLE_DIFFUSION_REPO"] = "https://github.com/licyk/stablediffusion"
+        if use_github_mirror:
+            custom_env = set_sd_webui_extension_download_list_mirror(
+                custom_github_mirror=custom_github_mirror,
+                origin_env=custom_env,
+            )
+
+        logger.info("启动 Stable Diffusion WebUI 中")
+        launch_webui(
+            webui_path=sd_webui_path,
+            launch_script="launch.py",
+            launch_args=launch_args,
+            custom_env=custom_env,
+        )
 
 
 def install_extension(

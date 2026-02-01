@@ -167,10 +167,12 @@ def install_pytorch(
     if custom_env is None:
         custom_env = os.environ.copy()
 
+    logger.debug("使用的环境变量: %s", custom_env)
+
     if torch_package is not None:
-        logger.info("安装 PyTorch 中")
         torch_package = torch_package.split() if isinstance(torch_package, str) else torch_package
         try:
+            logger.info("安装 PyTorch 中, 版本: '%s'", " ".join(torch_package))
             pip_install(*torch_package, use_uv=use_uv, custom_env=custom_env)
             logger.info("安装 PyTorch 成功")
         except RuntimeError as e:
@@ -178,9 +180,9 @@ def install_pytorch(
             raise RuntimeError(f"安装 PyTorch 时发生错误: {e}") from e
 
     if xformers_package is not None:
-        logger.info("安装 xFormers 中")
         xformers_package = xformers_package.split() if isinstance(xformers_package, str) else xformers_package
         try:
+            logger.info("安装 xFormers 中, 版本: '%s'", " ".join(xformers_package))
             pip_install(*xformers_package, use_uv=use_uv, custom_env=custom_env)
             logger.info("安装 xFormers 成功")
         except RuntimeError as e:
