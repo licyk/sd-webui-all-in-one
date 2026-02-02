@@ -20,6 +20,9 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     get_pytorch_mirror,
     get_pytorch_mirror_type,
     auto_detect_pytorch_device_category,
+    export_pytorch_list,
+    display_pytorch_config,
+    query_pytorch_info_from_library,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
@@ -29,7 +32,7 @@ from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
 from sd_webui_all_in_one.model_downloader.model_utils import download_model, export_model_list, display_model_table, search_models_from_library
-from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT, SupportedWebUiType, ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.base import SupportedWebUiType, ModelDownloadUrlType
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import print_divider
 
@@ -167,7 +170,114 @@ def install_pytorch_for_webui(
     logger.info("PyTorch / xFormers 安装完成")
 
 
-def reinstall_pytorch() -> None: ...
+def reinstall_pytorch(
+    pytorch_name: str | None = None,
+    pytorch_index: int | None = None,
+    use_pypi_mirror: bool | None = True,
+    use_uv: bool | None = None,
+    interactive_mode: bool | None = False,
+) -> None:
+    """PyTorch 重装工具
+
+    Args:
+        pytorch_name (str | None):
+            PyTorch 版本组合名称
+        pytorch_index (int | None):
+            PyTorch 版本组合索引值
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+        use_uv (bool | None):
+            是否使用 uv 进行 PyTorch 安装
+        interactive_mode (bool | None):
+            是否启用交互模式
+
+    Raises:
+
+    """
+
+    def _install(
+        input_name: str | None = None,
+        input_index: int | None = None,
+    ) -> None:
+        info = query_pytorch_info_from_library(
+            pytorch_name=input_name,
+            pytorch_index=input_index,
+        )
+        custom_env = generate_uv_and_pip_env_mirror_config(
+            index_url=info["index_mirror"]["mirror"] if use_pypi_mirror else info["index_mirror"]["official"],
+            extra_index_url=info["extra_index_mirror"]["mirror"] if use_pypi_mirror else info["extra_index_mirror"]["official"],
+            find_links=info["find_links"]["mirror"] if use_pypi_mirror else info["find_links"]["official"],
+        )
+        logger.info("安装 PyTorch 中")
+        install_pytorch(
+            torch_package=info["torch_ver"],
+            xformers_package=info["xformers_ver"],
+            custom_env=custom_env,
+            use_uv=use_uv,
+        )
+
+    pytorch_list = export_pytorch_list()
+    display_model = True
+    input_err = (0, None)
+
+    if interactive_mode:
+        while True:
+            if display_model:
+                print_divider("=")
+                display_pytorch_config(pytorch_list)
+                print_divider("=")
+
+            display_model = True
+            i, m = input_err
+            if i == 1:
+                logger.warning("输入有误, 请重试")
+            elif i == 2:
+                logger.warning("输入的数字有误, %s, 请重新输入", m)
+            input_err = (0, None)
+            print(
+                "请选择 PyTorch 版本\n"
+                "提示:\n"
+                "1. PyTorch 版本通常来说选择最新版的即可\n"
+                "2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch\n"
+                "3. 输入数字后回车即可选择安装指定的 PyTorch 版本组合\n" \
+                "4. 输入 auto 后回车可以自动根据设备支持情况选择最佳 PyTorch 版本组合进行安装\n"
+                "5. 输入 exit 后回车退出 PyTorch 重装"
+            )
+            user_input = input("==> ").strip()
+
+            if user_input == "exit":
+                return
+
+            if user_input == "auto":
+                logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合中")
+                pytorch, xformers, custom_env = prepare_pytorch_install_info(use_cn_mirror=use_pypi_mirror)
+                logger.info("安装 PyTorch 中")
+                install_pytorch(
+                    torch_package=pytorch,
+                    xformers_package=xformers,
+                    custom_env=custom_env,
+                    use_uv=use_uv,
+                )
+                return
+
+            try:
+                index = int(user_input)
+            except Exception:
+                input_err = (1, None)
+                continue
+
+            try:
+                _install(input_index=index)
+                return
+            except ValueError as e:
+                input_err = (1, str(e))
+                continue
+
+    else:
+        _install(
+            input_name=pytorch_name,
+            input_index=pytorch_index,
+        )
 
 
 def clone_repo(

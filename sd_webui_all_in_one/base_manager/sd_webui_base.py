@@ -688,7 +688,7 @@ def install_sd_webui(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
     custom_xformers_package: str | None = None,
-    use_cn_pypi_mirror: bool | None = True,
+    use_pypi_mirror: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -708,7 +708,7 @@ def install_sd_webui(
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_cn_pypi_mirror (bool | None):
+        use_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像源
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
@@ -750,7 +750,7 @@ def install_sd_webui(
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=custom_pytorch_package,
         custom_xformers_package=custom_xformers_package,
-        use_cn_mirror=use_cn_pypi_mirror,
+        use_cn_mirror=use_pypi_mirror,
     )
 
     # 准备扩展 / 组件安装信息
@@ -758,7 +758,7 @@ def install_sd_webui(
     sd_webui_repository_list = [x for x in SD_WEBUI_REPOSITORY_INFO_DICT if install_branch in x["supported_branch"]]
 
     # 准备安装依赖的 PyPI 镜像源
-    custom_env = get_pypi_mirror_config(use_cn_pypi_mirror)
+    custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -875,15 +875,30 @@ def switch_sd_webui_branch(
 
 def update_sd_webui(
     sd_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 Stable Diffusion WebUI
 
     Args:
         sd_webui_path (Path):
             Stable DIffusion WebUI 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
     """
     logger.info("更新 Stable Diffusion WebUI 中")
-    git_warpper.update(sd_webui_path)
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+
+        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
+        set_github_mirror(
+            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+            config_path=git_config_path,
+        )
+        git_warpper.update(sd_webui_path)
+
     logger.info("更新 Stable Diffusion WebUI 完成")
 
 
@@ -1286,7 +1301,7 @@ def update_extensions(
 
     Args:
         sd_webui_path (Path):
-            Stable Diffusion WebUI 根目录、
+            Stable Diffusion WebUI 根目录
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):

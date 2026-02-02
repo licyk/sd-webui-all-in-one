@@ -20,6 +20,7 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
+from sd_webui_all_in_one.utils import ANSIColor
 
 
 def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str]:
@@ -689,11 +690,12 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
 
     return "cpu"
 
+
 def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
     """检测当前的设备并获取大致的 PyTorch 设备分类类型 (不带版本号)
 
     Returns:
-        PyTorchDeviceTypeCategory: 
+        PyTorchDeviceTypeCategory:
             支持当前设备的通用类型
     """
     gpu_list = get_gpu_list()
@@ -775,3 +777,66 @@ def get_pytorch_mirror(
         raise ValueError(f"未找到 '{dtype}' 对应的 PyTorch 镜像源")
 
     return url
+
+
+def display_pytorch_config(pytorch_list: PyTorchVersionInfoList) -> None:
+    """显示 PyTorch 配置列表并标注当前平台是否支持
+
+    Args:
+        pytorch_list (PyTorchVersionInfoList):
+            包含 PyTorch 配置信息的列表
+    """
+    for index, item in enumerate(pytorch_list, start=1):
+        name = item["name"]
+
+        if item["supported"]:
+            status_text = f"{ANSIColor.GREEN}(支持✓){ANSIColor.RESET}"
+        else:
+            status_text = f"{ANSIColor.RED}(不支持×){ANSIColor.RESET}"
+
+        print(f"- {ANSIColor.GOLD}{index}{ANSIColor.RESET}、{ANSIColor.WHITE}{name}{ANSIColor.RESET} {status_text}")
+
+
+def query_pytorch_info_from_library(
+    pytorch_name: str | None = None,
+    pytorch_index: int | None = None,
+) -> PyTorchVersionInfo:
+    """从 PyTorch 版本库中查找指定的 PyTorch 版本下载信息
+
+    Args:
+        pytorch_name (str | None):
+            PyTorch 版本组合名称
+        pytorch_index (int | None):
+            PyTorch 版本组合的索引值
+
+    Returns:
+        PyTorchVersionInfo:
+            PyTorch 版本下载信息
+
+    Raises:
+        ValueError:
+            索引值超出范围时
+        FileNotFoundError:
+            未根据 PyTorch 组合名称找到 PyTorch 版本下载信息时
+    """
+
+    def _validate_index(index: int) -> None:
+        if not 0 < index <= len(pytorch_list):
+            raise ValueError(f"索引值 {index} 超出范围, 模型有效的范围为: 1 ~ {len(pytorch_list)}")
+
+    def _get_pytorch_with_name(name: str) -> PyTorchVersionInfo:
+        for m in pytorch_list:
+            if m["name"] == name:
+                return m
+
+        raise FileNotFoundError(f"未找到指定的 PyTorch 版本组合名称: {name}")
+
+    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
+    if pytorch_name is None and pytorch_index is None:
+        raise ValueError("`pytorch_name` 和 `pytorch_index` 缺失, 需要提供其中一项才能进行 PyTorch 下载信息查找")
+
+    if pytorch_index is not None:
+        _validate_index(pytorch_index)
+        return pytorch_list[pytorch_index - 1]
+    elif pytorch_name is not None:
+        return _get_pytorch_with_name(pytorch_name)

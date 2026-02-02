@@ -1,10 +1,10 @@
 from pathlib import Path
-from dataclasses import dataclass
 
 from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT, ModelCardList, SupportedWebUiType, SUPPORTED_WEBUI_LIST, ModelDownloadUrlType
 from sd_webui_all_in_one.downloader import download_file, DownloadToolType
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.utils import ANSIColor
 
 logger = get_logger(
     name="Model Utils",
@@ -138,7 +138,7 @@ def query_model_info(
 
     model_list = export_model_list(dtype)
     if model_name is None and model_index is None:
-        raise ValueError("`model_name` 和 `model_index` 缺失, 需要提供其中一项才能进行模型下载")
+        raise ValueError("`model_name` 和 `model_index` 缺失, 需要提供其中一项才能进行模型信息查找")
 
     query_model: ModelCardList = []
 
@@ -158,23 +158,6 @@ def query_model_info(
             query_model += _get_model_with_name(model_name)
 
     return query_model
-
-
-@dataclass
-class ANSIColor:
-    """ANSI 转义码, 用于在终端中显示彩色文本"""
-
-    BLUE = "\033[94m"
-    """蓝色"""
-
-    GOLD = "\033[33m"
-    """金色"""
-
-    WHITE = "\033[97m"
-    """白色"""
-
-    RESET = "\033[0m"
-    """重置颜色"""
 
 
 def display_model_table(

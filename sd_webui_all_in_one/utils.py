@@ -1,5 +1,6 @@
 """其他工具合集"""
 
+from dataclasses import dataclass
 import shutil
 import sys
 from typing import Any
@@ -170,3 +171,26 @@ def print_divider(char: str = "-") -> None:
     """
     columns = shutil.get_terminal_size(fallback=(80, 20)).columns
     print(char * columns)
+
+
+@dataclass
+class ANSIColor:
+    """ANSI 转义码, 用于在终端中显示彩色文本"""
+
+    BLUE = "\033[94m"
+    """蓝色"""
+
+    GOLD = "\033[33m"
+    """金色"""
+
+    WHITE = "\033[97m"
+    """白色"""
+
+    GREEN = "\033[92m"
+    """绿色"""
+
+    RED = "\033[91m"
+    """红色"""
+
+    RESET = "\033[0m"
+    """重置颜色"""

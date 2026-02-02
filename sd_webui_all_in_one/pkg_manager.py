@@ -147,7 +147,7 @@ def install_pytorch(
     xformers_package: str | list[str] | None = None,
     custom_env: dict[str, str] | None = None,
     use_uv: bool | None = True,
-) -> bool:
+) -> None:
     """安装 PyTorch / xFormers
 
     Args:
