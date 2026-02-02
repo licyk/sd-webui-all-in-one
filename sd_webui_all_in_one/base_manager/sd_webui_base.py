@@ -1026,6 +1026,8 @@ def launch_sd_webui(
     """启动 Stable Diffusion WebUI
 
     Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
         launch_args (list[str] | None):
             启动 Stable Diffusion WebUI 的参数
         use_hf_mirror (bool | None):

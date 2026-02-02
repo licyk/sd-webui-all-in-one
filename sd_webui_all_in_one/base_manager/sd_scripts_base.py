@@ -185,7 +185,7 @@ def install_sd_scripts(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        install_branch (SDWebUiBranchType | None):
+        install_branch (SDScriptsBranchType | None):
             安装的 SD Scripts 分支
         no_pre_download_model (bool | None):
             是否禁用预下载模型
