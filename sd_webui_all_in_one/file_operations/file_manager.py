@@ -214,7 +214,10 @@ def get_file_list(
     Returns:
         (list[Path]): 路径列表的绝对路径
     """
-    from tqdm import tqdm
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
     if not path or not path.exists():
         return []
@@ -355,7 +358,10 @@ def get_sync_files(
     Returns:
         list[Path]: 要进行同步的文件
     """
-    from tqdm import tqdm
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
     src_is_file = src_path.is_file()
     src_files = get_file_list(src_path)
@@ -387,7 +393,10 @@ def sync_files(src_path: Path, dst_path: Path) -> None:
         RuntimeError:
             同步文件发生错误时
     """
-    from tqdm import tqdm
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
     logger.info("增量同步文件: %s -> %s", src_path, dst_path)
     file_list = get_sync_files(src_path, dst_path)

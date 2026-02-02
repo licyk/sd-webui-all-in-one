@@ -123,7 +123,10 @@ def download_file_from_url(
         ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
     """
     import requests
-    from tqdm import tqdm
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
     if save_path is None:
         save_path = Path.cwd()

@@ -31,7 +31,8 @@ from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files, generate_dir_tree, get_file_list
+from sd_webui_all_in_one.downloader import download_file
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -842,6 +843,50 @@ def install_sd_webui(
     logger.info("安装 Stable Diffusion WebUI 完成")
 
 
+def switch_sd_webui_branch(
+    sd_webui_path: Path,
+    branch: SDWebUiBranchType,
+) -> None:
+    """切换 Stable Diffusion WebUI 分支
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        branch (SDWebUiBranchType):
+            要切换的 Stable Diffusion WebUI 分支
+
+    Raises:
+        ValueError:
+            传入未知的 Stable Diffusion WebUI 分支时
+    """
+    if branch not in SD_WEBUI_BRANCH_LIST:
+        raise ValueError(f"未知的 Stable Diffusion WebUI 分支: '{branch}'")
+
+    branch_info = [x for x in SD_WEBUI_BRANCH_INFO_DICT if branch == x["dtype"]][0]
+    logger.info("切换 Stable Diffusion WebUI 分支到 %s", branch_info["name"])
+    git_warpper.switch_branch(
+        path=sd_webui_path,
+        branch=branch_info["branch"],
+        new_url=branch_info["url"],
+        recurse_submodules=branch_info["use_submodule"],
+    )
+    logger.info("切换 Stable Diffusion WebUI 分支完成")
+
+
+def update_sd_webui(
+    sd_webui_path: Path,
+) -> None:
+    """更新 Stable Diffusion WebUI
+
+    Args:
+        sd_webui_path (Path):
+            Stable DIffusion WebUI 根目录
+    """
+    logger.info("更新 Stable Diffusion WebUI 中")
+    git_warpper.update(sd_webui_path)
+    logger.info("更新 Stable Diffusion WebUI 完成")
+
+
 def check_sd_webui_env(
     sd_webui_path: Path,
     check: bool | None = True,
@@ -1353,14 +1398,93 @@ def install_model_from_library(
 
 def install_model_from_url(
     sd_webui_path: Path,
-) -> None: ...
+    model_url: str,
+    model_type: str,
+    downloader: DownloadToolType | None = "aria2",
+) -> None:
+    """从链接下载模型到 Stable Diffusion WebUI
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        model_url (str):
+            模型下载地址
+        model_type (str):
+            模型的类型
+        downloader (DownloadToolType | None):
+            下载模型使用的工具
+    """
+    model_path = sd_webui_path / "models" / model_type
+    download_file(
+        url=model_url,
+        path=model_path,
+        tool=downloader,
+    )
 
 
-def list_models(
+def list_sd_webui_models(
     sd_webui_path: Path,
-) -> None: ...
+) -> None:
+    """列出 Stable Diffusion WebUI 的模型目录
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+    """
+    models_path = sd_webui_path / "models"
+    logger.info("Stable Diffusion WebUI 模型列表")
+    for m in models_path.iterdir():
+        logger.info("%s 的模型列表", m.name)
+        generate_dir_tree(m)
+        print("\n\n")
 
 
 def uninstall_model(
     sd_webui_path: Path,
-) -> None: ...
+    model_name: str,
+    model_type: str | None = None,
+    interactive_mode: bool | None = False,
+) -> None:
+    """卸载 Stable Diffusion WebUI 中的模型
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        model_name (str):
+            模型名称
+        model_type (str | None):
+            模型的类型
+        interactive_mode (bool | None):
+            是否启用交互模式
+
+    Raises:
+        FileNotFoundError:
+            未找到要删除的模型时
+    """
+    if model_type is None:
+        model_path = sd_webui_path / "models"
+    else:
+        model_path = sd_webui_path / "models" / model_type
+
+    model_list = get_file_list(model_path)
+    delete_list = [x for x in model_list if model_name.lower() in x.name.lower()]
+
+    if not delete_list:
+        raise FileNotFoundError(f"模型 '{model_name}' 不存在")
+
+    logger.info("根据 '%s' 模型名找到的已有模型列表:\n", model_name)
+    for d in delete_list:
+        print(f"- `{d}`")
+
+    print()
+    if interactive_mode:
+        logger.info("是否删除以上模型?")
+        if input("[y/N]").strip().lower() not in ["yes", "y"]:
+            logger.info("取消模型删除操作")
+            return
+
+    for i in delete_list:
+        logger.info("删除模型: %s", i)
+        remove_files(i)
+
+    logger.info("模型删除完成")
