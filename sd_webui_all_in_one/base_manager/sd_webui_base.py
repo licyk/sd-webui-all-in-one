@@ -1026,8 +1026,6 @@ def launch_sd_webui(
     """启动 Stable Diffusion WebUI
 
     Args:
-        custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
         launch_args (list[str] | None):
             启动 Stable Diffusion WebUI 的参数
         use_hf_mirror (bool | None):
