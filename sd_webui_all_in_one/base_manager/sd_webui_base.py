@@ -1147,7 +1147,7 @@ class SDWebUiLocalExtensionInfo(TypedDict, total=False):
     """Stable Diffusion WebUI 扩展名称"""
 
     status: bool
-    """当前 Stable Diffusion WebUI 是否已经启用"""
+    """当前 Stable Diffusion WebUI 扩展是否已经启用"""
 
     path: Path
     """Stable Diffusion WebUI 本地路径"""
@@ -1185,7 +1185,7 @@ def set_extensions_status(
 
     Raises:
         FileNotFoundError:
-            Stable Diffusion WebUI 未找到时
+            Stable Diffusion WebUI 扩展未找到时
     """
 
     def _save(data: dict[str, Any]) -> None:
