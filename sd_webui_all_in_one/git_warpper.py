@@ -118,6 +118,34 @@ def update(
         raise RuntimeError(f"更新 '{path}' 时发生错误: {e}") from e
 
 
+def update_submodule(
+    path: Path,
+) -> None:
+    """更新 Git 仓库
+
+    Args:
+        path (Path): Git 仓库路径
+
+    Raises:
+        ValueError:
+            所指路径不是有效的 Git 仓库时
+        RuntimeError:
+            更新发生错误时
+    """
+    git_exec = get_git_exec()
+    if not is_git_repo(path):
+        raise ValueError(f"'{path}' 不是有效的 Git 仓库")
+
+    logger.info("更新 '%s' 仓库的 Git 子模块中", path)
+    try:
+        run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "submodule", "init"])
+        run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "submodule", "update"])
+        logger.info("更新 '%s' 仓库的 Git 子模块完成", path)
+    except RuntimeError as e:
+        logger.info("更新 '%s' 仓库的 Git 子模块时发生错误: %s", path, e)
+        raise RuntimeError(f"更新 '{path}' 仓库的 Git 子模块时发生错误: {e}") from e
+
+
 def check_point_offset(
     path: Path,
 ) -> bool:

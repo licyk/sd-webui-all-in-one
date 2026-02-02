@@ -100,7 +100,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -125,7 +125,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -150,7 +150,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -175,7 +175,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -200,7 +200,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -225,7 +225,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -250,7 +250,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -275,7 +275,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -300,7 +300,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -325,7 +325,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -350,7 +350,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -375,7 +375,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -400,7 +400,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -425,7 +425,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -450,7 +450,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -475,7 +475,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -500,7 +500,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -525,7 +525,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -550,7 +550,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     # SD 2.1
@@ -576,7 +576,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -601,7 +601,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -626,7 +626,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     # SDXL
@@ -677,7 +677,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -702,7 +702,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -727,7 +727,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -752,7 +752,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -777,7 +777,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -802,7 +802,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -827,7 +827,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -852,7 +852,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -877,7 +877,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -902,7 +902,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -927,7 +927,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -952,7 +952,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -977,7 +977,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1002,7 +1002,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1027,7 +1027,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1052,7 +1052,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1077,7 +1077,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1102,7 +1102,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1127,7 +1127,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1152,7 +1152,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1177,7 +1177,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1202,7 +1202,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1227,7 +1227,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1252,7 +1252,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1277,7 +1277,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1302,7 +1302,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1327,7 +1327,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1352,7 +1352,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1377,7 +1377,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1402,7 +1402,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1427,7 +1427,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1452,7 +1452,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1477,7 +1477,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1502,7 +1502,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1527,7 +1527,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1552,7 +1552,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1577,7 +1577,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1602,7 +1602,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1627,7 +1627,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1652,7 +1652,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1677,7 +1677,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1702,7 +1702,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1727,7 +1727,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1752,7 +1752,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1777,7 +1777,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1802,7 +1802,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1827,7 +1827,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1852,7 +1852,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1877,7 +1877,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1902,7 +1902,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1927,7 +1927,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1952,7 +1952,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -1977,7 +1977,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2002,7 +2002,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2027,7 +2027,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2052,7 +2052,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2077,7 +2077,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2102,7 +2102,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2127,7 +2127,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2152,7 +2152,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2177,7 +2177,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2202,7 +2202,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2227,7 +2227,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2252,7 +2252,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2277,7 +2277,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2302,7 +2302,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2327,7 +2327,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2352,7 +2352,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2377,7 +2377,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2402,7 +2402,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2427,7 +2427,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2452,7 +2452,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     # SD 3
@@ -2478,7 +2478,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2503,7 +2503,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2528,7 +2528,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2553,7 +2553,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2578,7 +2578,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2603,7 +2603,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2628,7 +2628,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2653,7 +2653,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2678,7 +2678,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     # SD 3 Text Encoder
@@ -2829,7 +2829,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2852,7 +2852,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2875,7 +2875,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2898,7 +2898,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2921,7 +2921,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2944,7 +2944,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2967,7 +2967,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -2990,7 +2990,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3013,7 +3013,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3036,7 +3036,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3059,7 +3059,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3082,7 +3082,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3105,7 +3105,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3128,7 +3128,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3151,7 +3151,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3174,7 +3174,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3197,7 +3197,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3220,7 +3220,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3243,7 +3243,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3266,7 +3266,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3289,7 +3289,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3312,7 +3312,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3335,7 +3335,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3358,7 +3358,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3381,7 +3381,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3404,7 +3404,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3427,7 +3427,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3450,7 +3450,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3473,7 +3473,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3496,7 +3496,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3519,7 +3519,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3542,7 +3542,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3565,7 +3565,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3588,7 +3588,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3611,7 +3611,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3634,7 +3634,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3657,7 +3657,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     {
@@ -3680,7 +3680,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "Stable-diffusion",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
-            "sd_scripts": "models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
         },
     },
     # FLUX Text Encoder
@@ -3971,7 +3971,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "comfyui": "models/vae",
             "invokeai": "models/vae",
             "sd_trainer": "sd-models/vae",
-            "sd_scripts": "models/vae",
+            "sd_scripts": "sd-models/vae",
         },
     },
     # SD 1.5 VAE
@@ -3997,7 +3997,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/vae",
             "fooocus": "models/vae",
             "sd_trainer": "sd-models/vae",
-            "sd_scripts": "models/vae",
+            "sd_scripts": "sd-models/vae",
         },
     },
     {
@@ -4022,7 +4022,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/vae",
             "fooocus": "models/vae",
             "sd_trainer": "sd-models/vae",
-            "sd_scripts": "models/vae",
+            "sd_scripts": "sd-models/vae",
         },
     },
     # SDXL VAE
@@ -4048,7 +4048,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/vae",
             "fooocus": "models/vae",
             "sd_trainer": "sd-models/vae",
-            "sd_scripts": "models/vae",
+            "sd_scripts": "sd-models/vae",
         },
     },
     {
@@ -4073,7 +4073,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
             "invokeai": "models/vae",
             "fooocus": "models/vae",
             "sd_trainer": "sd-models/vae",
-            "sd_scripts": "models/vae",
+            "sd_scripts": "sd-models/vae",
         },
     },
     # VAE approx

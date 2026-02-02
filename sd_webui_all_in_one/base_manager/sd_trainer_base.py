@@ -173,6 +173,7 @@ def install_sd_trainer(
             repo=branch_info["url"],
             path=sd_trainer_path,
         )
+        git_warpper.update_submodule(sd_trainer_path)
 
         logger.info("切换 SD Trainer 分支中")
         git_warpper.switch_branch(
@@ -206,7 +207,7 @@ def install_sd_trainer(
         if not no_pre_download_model:
             pre_download_model_for_webui(
                 dtype="sd_webui",
-                model_path=sd_trainer_path / "models" / "Stable-diffusion",
+                model_path=sd_trainer_path / "sd-models",
                 webui_base_path=sd_trainer_path,
                 model_name="ChenkinNoob-XL-V0.2",
                 download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",

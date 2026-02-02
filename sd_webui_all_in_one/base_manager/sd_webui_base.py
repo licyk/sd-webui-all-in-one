@@ -1385,7 +1385,7 @@ def install_model_from_library(
     """为 Stable Diffusion WebUI 下载模型, 使用模型库进行下载
 
     Args:
-        webui_path (Path):
+        sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
         download_resource_type (ModelDownloadUrlType | None):
             模型下载源类型
