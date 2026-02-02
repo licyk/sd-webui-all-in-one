@@ -28,7 +28,7 @@ from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, co
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
-from sd_webui_all_in_one.model_downloader.model_utils import download_model, query_model_info, display_model_table, search_models_from_library
+from sd_webui_all_in_one.model_downloader.model_utils import download_model, export_model_list, display_model_table, search_models_from_library
 from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_DICT, SupportedWebUiType, ModelDownloadUrlType
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import print_divider
@@ -368,14 +368,15 @@ def install_webui_model_from_library(
             是否启用交互模式
     """
 
-    def _input_to_int_list(_input: str) -> list[str] | None: #FIXME
+    def _input_to_int_list(_input: str) -> list[str] | None:
         try:
             return [int(_i) for _i in _input.split()]
         except Exception:
             return None
 
-    model_list = MODEL_DOWNLOAD_DICT.copy()
+    model_list = export_model_list(dtype)
     display_model = True
+    input_err = (0, None)
 
     if interactive_mode:
         while True:
@@ -385,13 +386,19 @@ def install_webui_model_from_library(
                 print_divider("=")
 
             display_model = True
+            i, m = input_err
+            if i == 1:
+                logger.warning("输入有误, 请重试")
+            elif i == 2:
+                logger.warning("输入的数字有误, %s, 请重新输入", m)
+            input_err = (0, None)
             print(
                 "请选择要下载的模型\n"
                 "提示:\n"
                 "1. 输入数字后回车\n"
                 "2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开\n"
                 "3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型\n"
-                "4. 输入 exit 退出模型下载脚本"
+                "4. 输入 exit 退出模型下载"
             )
             user_input = input("==> ").strip()
 
@@ -410,17 +417,23 @@ def install_webui_model_from_library(
 
             result = _input_to_int_list(user_input)
 
-            if result is None or len(result):
-                logger.warning("输入有误, 请重试")
+            if result is None or len(result) == 0:
+                input_err = (1, None)
+
                 continue
 
-            download_model(
-                dtype=dtype,
-                base_path=webui_path,
-                download_resource_type=download_resource_type,
-                model_index=result,
-                downloader=downloader,
-            )
+            try:
+                download_model(
+                    dtype=dtype,
+                    base_path=webui_path,
+                    download_resource_type=download_resource_type,
+                    model_index=result,
+                    downloader=downloader,
+                )
+                return
+            except ValueError as e:
+                input_err = (2, str(e))
+                continue
     else:
         download_model(
             dtype=dtype,

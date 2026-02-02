@@ -122,7 +122,7 @@ def query_model_info(
     """
 
     def _validate_index(index: int) -> None:
-        if not 0 < index < len(model_list):
+        if not 0 < index <= len(model_list):
             raise ValueError(f"索引值 {index} 超出范围, 模型有效的范围为: 1 ~ {len(model_list)}")
 
     def _get_model_with_name(name: str) -> ModelCardList:
