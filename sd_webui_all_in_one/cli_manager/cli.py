@@ -1,5 +1,5 @@
 import argparse
-from typing import Optional, Callable
+
 from sd_webui_all_in_one.cli_manager.sd_webui_cli import register_sd_webui
 from sd_webui_all_in_one.cli_manager.sd_trainer_cli import register_sd_trainer
 from sd_webui_all_in_one.cli_manager.sd_scripts_cli import register_sd_scripts
@@ -8,12 +8,8 @@ from sd_webui_all_in_one.cli_manager.fooocus_cli import register_fooocus
 from sd_webui_all_in_one.cli_manager.comfyui_cli import register_comfyui
 
 
-class ParsedArgs(argparse.Namespace):
-    func: Optional[Callable[[argparse.Namespace], None]]
-    main_command: str
-
-
 def main() -> None:
+    """主函数"""
     # 根解析器
     parser = argparse.ArgumentParser(prog="sd-webui-all-in-one", description="SD WebUI All in One CLI 管理器")
 
@@ -29,7 +25,7 @@ def main() -> None:
     register_comfyui(subparsers)
 
     # 执行解析
-    args: ParsedArgs = parser.parse_args()  # type: ignore
+    args = parser.parse_args()  # type: ignore
 
     # 执行绑定的函数
     if hasattr(args, "func") and args.func:
