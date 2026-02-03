@@ -56,3 +56,19 @@ ARIA2_MINIMUM_VER = "1.37.0"
 
 SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", os.getcwd()))
 """Stable Diffusion WebUI 根目录"""
+
+COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", os.getcwd()))
+"""ComfyUI 根目录"""
+
+FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", os.getcwd()))
+"""Fooocus 根目录"""
+
+INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", os.getcwd()))
+"""InvokeAI 根目录"""
+
+SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", os.getcwd()))
+"""SD Trainer 根目录"""
+
+SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", os.getcwd()))
+"""SD Scripts 根目录"""
+

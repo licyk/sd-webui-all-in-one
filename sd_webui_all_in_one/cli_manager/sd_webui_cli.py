@@ -1,5 +1,4 @@
 import argparse
-import os
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
@@ -469,7 +468,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
             子命令行解析器
     """
     sd_parser: argparse.ArgumentParser = subparsers.add_parser("sd-webui", help="Stable Diffusion WebUI 相关命令")
-    sd_sub = sd_parser.add_subparsers(dest="sd_action", required=True)
+    sd_sub = sd_parser.add_subparsers(dest="sd_webui_action", required=True)
 
     # install
     install_p = sd_sub.add_parser("install", help="安装 Stable Diffusion WebUI")

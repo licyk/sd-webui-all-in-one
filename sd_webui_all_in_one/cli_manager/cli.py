@@ -1,6 +1,7 @@
 import argparse
 from typing import Optional, Callable
 from sd_webui_all_in_one.cli_manager.sd_webui_cli import register_sd_webui
+from sd_webui_all_in_one.cli_manager.sd_trainer_cli import register_sd_trainer
 
 
 class ParsedArgs(argparse.Namespace):
@@ -17,6 +18,7 @@ def main() -> None:
 
     # 注册各模块的子命令
     register_sd_webui(subparsers)
+    register_sd_trainer(subparsers)
 
     # 执行解析
     args: ParsedArgs = parser.parse_args()  # type: ignore
