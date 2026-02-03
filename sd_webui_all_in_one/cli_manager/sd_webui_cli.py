@@ -280,16 +280,12 @@ def set_extensions_status(
 
 def list_extensions(
     sd_webui_path: Path,
-) -> SDWebUiLocalExtensionInfoList:
+) -> None:
     """获取 Stable Diffusion WebUI 本地扩展列表 (注册命令 sd-webui extension list)
 
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
-
-    Returns:
-        SDWebUiLocalExtensionInfoList:
-            Stable Diffusion WebUI 本地扩展列表
     """
     for ext in list_sd_webui_extensions(sd_webui_path):
         print(f"- {ext['name']}")
