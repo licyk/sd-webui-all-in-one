@@ -1,4 +1,5 @@
 import argparse
+import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.comfyui_base import (
@@ -149,7 +150,7 @@ def check_env(
 
 def launch(
     comfyui_path: Path,
-    launch_args: list[str] | None = None,
+    launch_args: str | list[str] | None = None,
     use_hf_mirror: bool | None = False,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -166,7 +167,7 @@ def launch(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        launch_args (list[str] | None):
+        launch_args (str | list[str] | None):
             启动 ComfyUI 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
@@ -203,6 +204,10 @@ def launch(
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
         )
+    if isinstance(launch_args, str):
+        launch_args = shlex.split(launch_args)
+    elif launch_args is None:
+        launch_args = []
     launch_comfyui(
         comfyui_path=comfyui_path,
         launch_args=launch_args,
@@ -530,7 +535,7 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     # launch
     launch_p = comfy_sub.add_parser("launch", help="启动 ComfyUI")
     launch_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, help="ComfyUI 根目录")
-    launch_p.add_argument("--launch-args", nargs="*", help="启动参数")
+    launch_p.add_argument("--launch-args", type=str, help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--use-github-mirror", action="store_true", help="启用 Github 镜像源")
     launch_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")

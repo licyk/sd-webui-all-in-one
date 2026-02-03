@@ -1,4 +1,5 @@
 import argparse
+import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.fooocus_base import (
@@ -154,7 +155,7 @@ def switch(
 
 def launch(
     fooocus_path: Path,
-    launch_args: list[str] | None = None,
+    launch_args: str | list[str] | None = None,
     use_hf_mirror: bool | None = False,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -169,7 +170,7 @@ def launch(
     Args:
         fooocus_path (Path):
             Fooocus 根目录
-        launch_args (list[str] | None):
+        launch_args (str | list[str] | None):
             启动 Fooocus 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
@@ -179,7 +180,7 @@ def launch(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None): 
+        use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
         check (bool | None):
             是否检查环境时发生的错误
@@ -194,6 +195,10 @@ def launch(
             check=check,
             use_uv=use_uv,
         )
+    if isinstance(launch_args, str):
+        launch_args = shlex.split(launch_args)
+    elif launch_args is None:
+        launch_args = []
     launch_fooocus(
         fooocus_path=fooocus_path,
         launch_args=launch_args,
@@ -389,7 +394,7 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
     # launch
     launch_p = fooocus_sub.add_parser("launch", help="启动 Fooocus")
     launch_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, help="Fooocus 根目录")
-    launch_p.add_argument("--launch-args", nargs="*", help="启动参数")
+    launch_p.add_argument("--launch-args", type=str, help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--use-github-mirror", action="store_true", help="启用 Github 镜像源")
     launch_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")

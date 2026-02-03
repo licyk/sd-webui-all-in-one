@@ -1,4 +1,5 @@
 import argparse
+import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.invokeai_base import (
@@ -94,7 +95,7 @@ def check_env(
 
 def launch(
     invokeai_path: Path,
-    launch_args: list[str] | None = None,
+    launch_args: str | list[str] | None = None,
     use_hf_mirror: bool | None = False,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
@@ -106,7 +107,7 @@ def launch(
     Args:
         invokeai_path (Path):
             InvokeAI 根目录
-        launch_args (list[str] | None):
+        launch_args (str | list[str] | None):
             启动 InvokeAI 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
@@ -123,6 +124,10 @@ def launch(
         check_invokeai_env(
             use_uv=use_uv,
         )
+    if isinstance(launch_args, str):
+        launch_args = shlex.split(launch_args)
+    elif launch_args is None:
+        launch_args = []
     launch_invokeai(
         invokeai_path=invokeai_path,
         launch_args=launch_args,
@@ -409,7 +414,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     # launch
     launch_p = invoke_sub.add_parser("launch", help="启动 InvokeAI")
     launch_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
-    launch_p.add_argument("--launch-args", nargs="*", help="启动参数")
+    launch_p.add_argument("--launch-args", type=str, help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
