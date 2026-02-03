@@ -16,10 +16,10 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     list_invokeai_models,
     uninstall_invokeai_model,
 )
-from sd_webui_all_in_one.config import SD_WEBUI_ROOT_PATH
+from sd_webui_all_in_one.config import INVOKEAI_ROOT_PATH
 from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType, PyTorchDeviceTypeCategory
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import normalized_filepath
 
 
@@ -361,7 +361,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # install
     install_p = invoke_sub.add_parser("install", help="安装 InvokeAI")
-    install_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    install_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     install_p.add_argument("--device-type", type=str, help="设备类型 (cuda, rocm, cpu, mps)")
     install_p.add_argument("--version", help="自定义安装版本")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
@@ -398,7 +398,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # launch
     launch_p = invoke_sub.add_parser("launch", help="启动 InvokeAI")
-    launch_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    launch_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     launch_p.add_argument("--launch-args", nargs="*", help="启动参数")
     launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
@@ -419,7 +419,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # custom-node install
     node_install_p = node_sub.add_parser("install", help="安装扩展")
-    node_install_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    node_install_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     node_install_p.add_argument("--url", required=True, help="扩展下载链接")
     node_install_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     node_install_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
@@ -436,7 +436,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # custom-node status
     node_status_p = node_sub.add_parser("status", help="设置扩展启用状态")
-    node_status_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    node_status_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     node_status_p.add_argument("--name", required=True, help="扩展名称")
     node_status_p.add_argument("--enable", action="store_true", dest="status", help="启用扩展")
     node_status_p.add_argument("--disable", action="store_false", dest="status", help="禁用扩展")
@@ -450,12 +450,12 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # custom-node list
     node_list_p = node_sub.add_parser("list", help="列出扩展")
-    node_list_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    node_list_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     node_list_p.set_defaults(func=lambda args: list_custom_nodes(invokeai_path=args.invokeai_path))
 
     # custom-node update
     node_update_p = node_sub.add_parser("update", help="更新扩展")
-    node_update_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    node_update_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     node_update_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     node_update_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     node_update_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
@@ -470,7 +470,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # custom-node uninstall
     node_uninstall_p = node_sub.add_parser("uninstall", help="卸载扩展")
-    node_uninstall_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    node_uninstall_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     node_uninstall_p.add_argument("--name", required=True, help="扩展名称")
     node_uninstall_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     node_uninstall_p.set_defaults(
@@ -487,7 +487,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")
-    model_lib_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    model_lib_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     model_lib_p.add_argument("--source", default="modelscope", help="模型下载源类型")
     model_lib_p.add_argument("--name", help="模型名称")
     model_lib_p.add_argument("--index", type=int, help="模型索引")
@@ -506,7 +506,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # model install-url
     model_url_p = model_sub.add_parser("install-url", help="从链接安装模型")
-    model_url_p.add_argument("--invokeai-path", type=normalized_filepath, required=True, help="InvokeAI 根目录")
+    model_url_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, help="InvokeAI 根目录")
     model_url_p.add_argument("--url", required=True, help="模型下载地址")
     model_url_p.add_argument("--type", required=True, help="模型类型")
     model_url_p.add_argument("--downloader", default="aria2", help="下载工具")
