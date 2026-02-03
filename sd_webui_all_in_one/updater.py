@@ -1,7 +1,6 @@
 import importlib.metadata
 import re
 import sys
-from functools import cache
 from pathlib import Path
 
 from sd_webui_all_in_one.cmd import run_cmd
@@ -17,7 +16,6 @@ logger = get_logger(
 )
 
 
-@cache
 def check_and_update_uv(
     custom_env: dict[str, str] | None = None,
 ) -> None:
@@ -47,7 +45,6 @@ def check_and_update_uv(
         raise RuntimeError(f"更新 uv 时发生错误: {e}") from e
 
 
-@cache
 def check_and_update_pip(
     custom_env: dict[str, str] | None = None,
 ) -> None:
