@@ -5,6 +5,7 @@ from typing import Any, Callable, TypeAlias, TypedDict, Literal, get_args
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_git_base_config_and_github_mirror,
     clone_repo,
     get_pypi_mirror_config,
     install_pytorch_for_webui,
@@ -19,7 +20,7 @@ from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import generate_dir_tree, get_file_list, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
@@ -223,6 +224,14 @@ def install_sd_scripts(
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=custom_env,
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
 
@@ -230,36 +239,30 @@ def install_sd_scripts(
     logger.info("开始安装 SD Scripts, 安装路径: %s", sd_scripts_path)
     logger.info("安装的 SD Scripts 分支: '%s'", branch_info["name"])
 
+    logger.info("安装 SD Scripts 内核中")
+    clone_repo(
+        repo=branch_info["url"],
+        path=sd_scripts_path,
+    )
+    git_warpper.update_submodule(sd_scripts_path)
+
+    logger.info("切换 SD Scripts 分支中")
+    git_warpper.switch_branch(
+        path=sd_scripts_path,
+        branch=branch_info["branch"],
+        new_url=branch_info["url"],
+        recurse_submodules=branch_info["use_submodule"],
+    )
+
+    install_pytorch_for_webui(
+        pytorch_package=pytorch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env_pytorch,
+        use_uv=use_uv,
+    )
+
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
-
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-
-        logger.info("安装 SD Scripts 内核中")
-        clone_repo(
-            repo=branch_info["url"],
-            path=sd_scripts_path,
-        )
-        git_warpper.update_submodule(sd_scripts_path)
-
-        logger.info("切换 SD Scripts 分支中")
-        git_warpper.switch_branch(
-            path=sd_scripts_path,
-            branch=branch_info["branch"],
-            new_url=branch_info["url"],
-            recurse_submodules=branch_info["use_submodule"],
-        )
-
-        install_pytorch_for_webui(
-            pytorch_package=pytorch_package,
-            xformers_package=xformers_package,
-            custom_env=custom_env_pytorch,
-            use_uv=use_uv,
-        )
 
         requirements_path = sd_scripts_path / "requirements.txt"
         pyproject_toml_path = sd_scripts_path / "pyproject.toml"
@@ -339,15 +342,15 @@ def update_sd_scripts(
             自定义 Github 镜像源
     """
     logger.info("更新 SD Scripts 中")
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        git_warpper.update(sd_scripts_path)
+    git_warpper.update(sd_scripts_path)
 
     logger.info("更新 SD Scripts 完成")
 
@@ -355,8 +358,9 @@ def update_sd_scripts(
 def check_sd_scripts_env(
     sd_scripts_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 SD Scripts 运行环境
 
@@ -369,6 +373,8 @@ def check_sd_scripts_env(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -382,14 +388,16 @@ def check_sd_scripts_env(
     if check and req_v_path.is_file() and not req_path.is_file():
         raise FileNotFoundError("未找到 SD Scripts 依赖文件记录表, 请检查文件是否完整")
 
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
-
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
-            config_path=git_config_path,
-        )
 
         requirements_path = sd_scripts_path / "requirements.txt"
         pyproject_toml_path = sd_scripts_path / "pyproject.toml"

@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.downloader import DownloadToolType
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_git_base_config, set_github_mirror
 from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
     PYPI_INDEX_MIRROR_OFFICIAL,
@@ -560,3 +561,47 @@ def install_webui_model_from_library(
             model_index=model_index,
             downloader=downloader,
         )
+
+
+def apply_git_base_config_and_github_mirror(
+    git_config_path: Path | None = None,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """为 Git 应用基本配置并设置 Github 镜像源
+
+    Args:
+        git_config_path (Path | None):
+            Git 配置文件路径
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        origin_env (dict[str, str] | None): 
+            原始的环境变量字典
+
+    Returns:
+        (dict[str, str]):
+            包含 Git 配置 (GIT_CONFIG_GLOBAL) 的环境变量字典
+    """
+    if origin_env is not None:
+        custom_env = origin_env.copy()
+    else:
+        custom_env = os.environ.copy()
+
+    config_path_env = custom_env.get("GIT_CONFIG_GLOBAL", None)
+    if config_path_env is None:
+        git_config_path = Path().cwd() / ".gitconfig"
+    else:
+        git_config_path = Path(config_path_env)
+        git_config_path.parent.mkdir(parents=True, exist_ok=True)
+
+    set_github_mirror(
+        mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        config_path=git_config_path,
+    )
+    set_git_base_config(git_config_path)
+    custom_env["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
+
+    return custom_env

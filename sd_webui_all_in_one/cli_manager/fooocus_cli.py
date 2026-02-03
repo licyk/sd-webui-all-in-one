@@ -105,7 +105,6 @@ def update(
 def check_env(
     fooocus_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
 ) -> None:
     """检查 Fooocus 运行环境
@@ -117,8 +116,6 @@ def check_env(
             是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
-            是否使用 Github 镜像源
 
     Raises:
         AggregateError:
@@ -129,7 +126,6 @@ def check_env(
     check_fooocus_env(
         fooocus_path=fooocus_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         use_uv=use_uv,
     )
 
@@ -192,7 +188,6 @@ def launch(
     check_fooocus_env(
         fooocus_path=fooocus_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         use_uv=use_uv,
     )
     launch_fooocus(
@@ -372,7 +367,6 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
         func=lambda args: check_env(
             fooocus_path=args.fooocus_path,
             check=args.check,
-            use_github_mirror=args.use_github_mirror,
             use_uv=args.use_uv,
         )
     )

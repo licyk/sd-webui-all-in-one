@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Callable, TypedDict
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_git_base_config_and_github_mirror,
     clone_repo,
     get_pypi_mirror_config,
     get_repo_name_from_url,
@@ -23,7 +23,7 @@ from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntim
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, generate_dir_tree, get_file_list, move_files, remove_files
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
@@ -247,6 +247,14 @@ def install_comfyui(
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=custom_env,
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
     logger.debug("安装的扩展信息: %s", comfyui_custom_node_list)
@@ -254,59 +262,50 @@ def install_comfyui(
     logger.info("ComfyUI 安装配置准备完成")
     logger.info("开始安装 ComfyUI, 安装路径: %s", comfyui_path)
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("安装 ComfyUI 内核中")
+    clone_repo(
+        repo=COMFYUI_REPO_URL,
+        path=comfyui_path,
+    )
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-
-        logger.info("安装 ComfyUI 内核中")
-        clone_repo(
-            repo=COMFYUI_REPO_URL,
-            path=comfyui_path,
-        )
-
-        if comfyui_custom_node_list:
-            logger.info("安装 ComfyUI 扩展中")
-            for info in comfyui_custom_node_list:
-                clone_repo(
-                    repo=info["url"],
-                    path=comfyui_path / info["save_dir"],
-                )
-
-        install_pytorch_for_webui(
-            pytorch_package=pytorch_package,
-            xformers_package=xformers_package,
-            custom_env=custom_env_pytorch,
-            use_uv=use_uv,
-        )
-
-        requirements_path = comfyui_path / "requirements.txt"
-
-        if not requirements_path.is_file():
-            raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查 ComfyUI 文件是否完整")
-
-        logger.info("安装 ComfyUI 依赖中")
-        install_requirements(
-            path=requirements_path,
-            use_uv=use_uv,
-            custom_env=custom_env,
-            cwd=comfyui_path,
-        )
-
-        if not no_pre_download_model:
-            pre_download_model_for_webui(
-                dtype="fooocus",
-                model_path=comfyui_path / "models" / "checkpoints",
-                webui_base_path=comfyui_path,
-                model_name="ChenkinNoob-XL-V0.2",
-                download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+    if comfyui_custom_node_list:
+        logger.info("安装 ComfyUI 扩展中")
+        for info in comfyui_custom_node_list:
+            clone_repo(
+                repo=info["url"],
+                path=comfyui_path / info["save_dir"],
             )
 
-        install_comfyui_config(comfyui_path)
+    install_pytorch_for_webui(
+        pytorch_package=pytorch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env_pytorch,
+        use_uv=use_uv,
+    )
+
+    requirements_path = comfyui_path / "requirements.txt"
+
+    if not requirements_path.is_file():
+        raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查 ComfyUI 文件是否完整")
+
+    logger.info("安装 ComfyUI 依赖中")
+    install_requirements(
+        path=requirements_path,
+        use_uv=use_uv,
+        custom_env=custom_env,
+        cwd=comfyui_path,
+    )
+
+    if not no_pre_download_model:
+        pre_download_model_for_webui(
+            dtype="fooocus",
+            model_path=comfyui_path / "models" / "checkpoints",
+            webui_base_path=comfyui_path,
+            model_name="ChenkinNoob-XL-V0.2",
+            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+        )
+
+    install_comfyui_config(comfyui_path)
 
     logger.info("安装 ComfyUI 完成")
 
@@ -327,15 +326,15 @@ def update_comfyui(
             自定义 Github 镜像源
     """
     logger.info("更新 ComfyUI 中")
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        git_warpper.update(comfyui_path)
+    git_warpper.update(comfyui_path)
 
     logger.info("更新 ComfyUI 完成")
 
@@ -343,10 +342,11 @@ def update_comfyui(
 def check_comfyui_env(
     comfyui_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     install_conflict_component_requirement: bool | None = False,
     interactive_mode: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 ComfyUI 运行环境
 
@@ -355,14 +355,16 @@ def check_comfyui_env(
             ComfyUI 根目录
         check (bool | None):
             是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
-        use_uv (bool | None):
-            是否使用 uv 安装 Python 软件包
         install_conflict_component_requirement (bool | None):
             检测到冲突依赖时是否按顺序安装组件依赖
         interactive_mode (bool | None):
             是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -375,43 +377,42 @@ def check_comfyui_env(
     if check and req_path.is_file():
         raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查文件是否完整")
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
-            config_path=git_config_path,
-        )
+    # 检查任务列表
+    tasks: list[tuple[Callable, dict[str, Any]]] = [
+        (py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv}),
+        (
+            comfyui_conflict_analyzer,
+            {
+                "comfyui_root_path": comfyui_path,
+                "install_conflict_component_requirement": install_conflict_component_requirement,
+                "interactive_mode": interactive_mode,
+                "use_uv": use_uv,
+            },
+        ),
+        (fix_torch_libomp, {}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
+        (check_numpy, {"use_uv": use_uv}),
+    ]
+    err: list[Exception] = []
 
-        # 检查任务列表
-        tasks: list[tuple[Callable, dict[str, Any]]] = [
-            (py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv}),
-            (
-                comfyui_conflict_analyzer,
-                {
-                    "comfyui_root_path": comfyui_path,
-                    "install_conflict_component_requirement": install_conflict_component_requirement,
-                    "interactive_mode": interactive_mode,
-                    "use_uv": use_uv,
-                },
-            ),
-            (fix_torch_libomp, {}),
-            (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
-            (check_numpy, {"use_uv": use_uv}),
-        ]
-        err: list[Exception] = []
+    for func, kwargs in tasks:
+        try:
+            func(**kwargs)
+        except Exception as e:
+            err.append(e)
 
-        for func, kwargs in tasks:
-            try:
-                func(**kwargs)
-            except Exception as e:
-                err.append(e)
+    if err and check:
+        raise AggregateError("检查 ComfyUI 环境时发生错误", err)
 
-        if err and check:
-            raise AggregateError("检查 ComfyUI 环境时发生错误", err)
-
-        logger.info("检查 ComfyUI 环境完成")
+    logger.info("检查 ComfyUI 环境完成")
 
 
 def launch_comfyui(
@@ -438,41 +439,39 @@ def launch_comfyui(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None): 
+        use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
     """
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("准备 ComfyUI 启动环境")
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        logger.info("准备 ComfyUI 启动环境")
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        custom_env = os.environ.copy()
+    if use_hf_mirror:
+        custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
 
-        if use_hf_mirror:
-            custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=custom_env,
+    )
 
-        custom_env = get_pypi_mirror_config(
-            use_cn_mirror=use_pypi_mirror,
-            origin_env=custom_env,
-        )
+    if use_cuda_malloc:
+        cuda_malloc_config = get_cuda_malloc_var()
+        if cuda_malloc_config is not None:
+            custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+            custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
-        if use_cuda_malloc:
-            cuda_malloc_config = get_cuda_malloc_var()
-            if cuda_malloc_config is not None:
-                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
-                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
-
-        logger.info("启动 ComfyUI 中")
-        launch_webui(
-            webui_path=comfyui_path,
-            launch_script="main.py",
-            launch_args=launch_args,
-            custom_env=custom_env,
-        )
+    logger.info("启动 ComfyUI 中")
+    launch_webui(
+        webui_path=comfyui_path,
+        launch_script="main.py",
+        launch_args=launch_args,
+        custom_env=custom_env,
+    )
 
 
 def install_comfyui_custom_node(
@@ -507,35 +506,34 @@ def install_comfyui_custom_node(
     installed_names = {x["name"] for x in custom_node_list}
     err: list[Exception] = []
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
+    for url in urls:
+        custom_node_name = get_repo_name_from_url(url)
+        custom_node_path = comfyui_path / "custom_nodes" / custom_node_name
+        custom_node_diaabled_path = comfyui_path / "custom_nodes" / f"{custom_node_name}.disabled"
 
-        for url in urls:
-            custom_node_name = get_repo_name_from_url(url)
-            custom_node_path = comfyui_path / "custom_nodes" / custom_node_name
-            custom_node_diaabled_path = comfyui_path / "custom_nodes" / f"{custom_node_name}.disabled"
+        if custom_node_name in installed_names or custom_node_path.exists() or custom_node_diaabled_path.exists():
+            logger.info("'%s' 扩展已安装", custom_node_name)
+            continue
 
-            if custom_node_name in installed_names or custom_node_path.exists() or custom_node_diaabled_path.exists():
-                logger.info("'%s' 扩展已安装", custom_node_name)
-                continue
-
-            logger.info("安装 '%s' 扩展到 '%s' 中", custom_node_name, custom_node_path)
-            try:
-                clone_repo(
-                    repo=url,
-                    path=custom_node_path,
-                )
-                logger.info("'%s' 扩展安装成功", custom_node_name)
-                installed_names.add(custom_node_name)
-            except Exception as e:
-                err.append(e)
-                logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
+        logger.info("安装 '%s' 扩展到 '%s' 中", custom_node_name, custom_node_path)
+        try:
+            clone_repo(
+                repo=url,
+                path=custom_node_path,
+            )
+            logger.info("'%s' 扩展安装成功", custom_node_name)
+            installed_names.add(custom_node_name)
+        except Exception as e:
+            err.append(e)
+            logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
 
     if err and check:
         raise AggregateError("安装 ComfyUI 扩展时发生错误", err)
@@ -685,24 +683,24 @@ def update_comfyui_custom_nodes(
     """
     custom_nodes_path = comfyui_path / "custom_nodes"
     err: list[Exception] = []
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        for ext in custom_nodes_path.iterdir():
-            if ext.is_file():
-                continue
+    for ext in custom_nodes_path.iterdir():
+        if ext.is_file():
+            continue
 
-            logger.info("更新 '%s' 扩展中", ext.name)
-            try:
-                git_warpper.update(ext)
-            except Exception as e:
-                err.append(e)
-                logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+        logger.info("更新 '%s' 扩展中", ext.name)
+        try:
+            git_warpper.update(ext)
+        except Exception as e:
+            err.append(e)
+            logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
 
     if err and check:
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)

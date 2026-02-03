@@ -106,10 +106,11 @@ def update(
 def check_env(
     comfyui_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     install_conflict_component_requirement: bool | None = False,
     interactive_mode: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 ComfyUI 运行环境
 
@@ -126,6 +127,8 @@ def check_env(
             是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -136,10 +139,11 @@ def check_env(
     check_comfyui_env(
         comfyui_path=comfyui_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         install_conflict_component_requirement=install_conflict_component_requirement,
         interactive_mode=interactive_mode,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -189,10 +193,11 @@ def launch(
     check_comfyui_env(
         comfyui_path=comfyui_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         install_conflict_component_requirement=install_conflict_component_requirement,
         interactive_mode=interactive_mode,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
     launch_comfyui(
         comfyui_path=comfyui_path,
@@ -505,14 +510,16 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     check_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
     check_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    check_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             comfyui_path=args.comfyui_path,
             check=args.check,
-            use_github_mirror=args.use_github_mirror,
             install_conflict_component_requirement=args.install_conflict_component_requirement,
             interactive_mode=args.interactive_mode,
             use_uv=args.use_uv,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 
@@ -525,6 +532,10 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
+    launch_p.add_argument("--no-check", action="store_false", dest="check", help="不检查环境")
+    launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    launch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    launch_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
     launch_p.set_defaults(
         func=lambda args: launch(
             comfyui_path=args.comfyui_path,
@@ -534,6 +545,10 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
             custom_github_mirror=args.custom_github_mirror,
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
+            check=args.check,
+            use_uv=args.use_uv,
+            interactive_mode=args.interactive_mode,
+            install_conflict_component_requirement=args.install_conflict_component_requirement,
         )
     )
 

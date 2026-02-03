@@ -10,6 +10,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_git_base_config_and_github_mirror,
     clone_repo,
     get_pypi_mirror_config,
     get_repo_name_from_url,
@@ -23,7 +24,7 @@ from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_pytorch, pip_install
@@ -690,34 +691,33 @@ def install_invokeai_custom_nodes(
     installed_names = {x["name"] for x in custom_node_list}
     err: list[Exception] = []
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
+    for url in urls:
+        custom_node_name = get_repo_name_from_url(url)
+        custom_node_path = invokeai_path / "nodes" / custom_node_name
 
-        for url in urls:
-            custom_node_name = get_repo_name_from_url(url)
-            custom_node_path = invokeai_path / "nodes" / custom_node_name
+        if custom_node_name in installed_names or custom_node_path.exists():
+            logger.info("'%s' 扩展已安装", custom_node_name)
+            continue
 
-            if custom_node_name in installed_names or custom_node_path.exists():
-                logger.info("'%s' 扩展已安装", custom_node_name)
-                continue
-
-            logger.info("安装 '%s' 扩展到 '%s' 中", custom_node_name, custom_node_path)
-            try:
-                clone_repo(
-                    repo=url,
-                    path=custom_node_path,
-                )
-                logger.info("'%s' 扩展安装成功", custom_node_name)
-                installed_names.add(custom_node_name)
-            except Exception as e:
-                err.append(e)
-                logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
+        logger.info("安装 '%s' 扩展到 '%s' 中", custom_node_name, custom_node_path)
+        try:
+            clone_repo(
+                repo=url,
+                path=custom_node_path,
+            )
+            logger.info("'%s' 扩展安装成功", custom_node_name)
+            installed_names.add(custom_node_name)
+        except Exception as e:
+            err.append(e)
+            logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
 
     if err and check:
         raise AggregateError("安装 InvokeAI 扩展时发生错误", err)
@@ -866,24 +866,25 @@ def update_invokeai_custom_nodes(
     """
     custom_nodes_path = invokeai_path / "nodes"
     err: list[Exception] = []
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        for ext in custom_nodes_path.iterdir():
-            if ext.is_file():
-                continue
+    for ext in custom_nodes_path.iterdir():
+        if ext.is_file():
+            continue
 
-            logger.info("更新 '%s' 扩展中", ext.name)
-            try:
-                git_warpper.update(ext)
-            except Exception as e:
-                err.append(e)
-                logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+        logger.info("更新 '%s' 扩展中", ext.name)
+        try:
+            git_warpper.update(ext)
+        except Exception as e:
+            err.append(e)
+            logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
 
     if err and check:
         raise AggregateError("更新 InvokeAI 扩展时发生错误", err)

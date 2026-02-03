@@ -1,11 +1,11 @@
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Callable, TypeAlias, TypedDict, Literal, get_args
 
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_git_base_config_and_github_mirror,
     clone_repo,
     get_pypi_mirror_config,
     install_pytorch_for_webui,
@@ -23,7 +23,7 @@ from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntim
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, generate_dir_tree, get_file_list, remove_files
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
@@ -185,6 +185,15 @@ def install_fooocus(
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
+    
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=custom_env,
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
 
@@ -192,60 +201,51 @@ def install_fooocus(
     logger.info("开始安装 Fooocus, 安装路径: %s", fooocus_path)
     logger.info("安装的 Fooocus 分支: '%s'", branch_info["name"])
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("安装 Fooocus 内核中")
+    clone_repo(
+        repo=branch_info["url"],
+        path=fooocus_path,
+    )
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
+    logger.info("切换 Fooocus 分支中")
+    git_warpper.switch_branch(
+        path=fooocus_path,
+        branch=branch_info["branch"],
+        new_url=branch_info["url"],
+        recurse_submodules=branch_info["use_submodule"],
+    )
+
+    install_pytorch_for_webui(
+        pytorch_package=pytorch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env_pytorch,
+        use_uv=use_uv,
+    )
+
+    requirements_version_path = fooocus_path / "requirements_version.txt"
+    requirements_path = fooocus_path / "requirements.txt"
+
+    if not requirements_path.is_file() and requirements_version_path.is_file():
+        raise FileNotFoundError("未找到 Fooocus 依赖文件记录表, 请检查 Fooocus 文件是否完整")
+
+    logger.info("安装 Fooocus 依赖中")
+    install_requirements(
+        path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
+        use_uv=use_uv,
+        custom_env=custom_env,
+        cwd=fooocus_path,
+    )
+
+    if not no_pre_download_model:
+        pre_download_model_for_webui(
+            dtype="sd_webui",
+            model_path=fooocus_path / "models" / "checkpoints",
+            webui_base_path=fooocus_path,
+            model_name="ChenkinNoob-XL-V0.2",
+            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
 
-        logger.info("安装 Fooocus 内核中")
-        clone_repo(
-            repo=branch_info["url"],
-            path=fooocus_path,
-        )
-
-        logger.info("切换 Fooocus 分支中")
-        git_warpper.switch_branch(
-            path=fooocus_path,
-            branch=branch_info["branch"],
-            new_url=branch_info["url"],
-            recurse_submodules=branch_info["use_submodule"],
-        )
-
-        install_pytorch_for_webui(
-            pytorch_package=pytorch_package,
-            xformers_package=xformers_package,
-            custom_env=custom_env_pytorch,
-            use_uv=use_uv,
-        )
-
-        requirements_version_path = fooocus_path / "requirements_version.txt"
-        requirements_path = fooocus_path / "requirements.txt"
-
-        if not requirements_path.is_file() and requirements_version_path.is_file():
-            raise FileNotFoundError("未找到 Fooocus 依赖文件记录表, 请检查 Fooocus 文件是否完整")
-
-        logger.info("安装 Fooocus 依赖中")
-        install_requirements(
-            path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
-            use_uv=use_uv,
-            custom_env=custom_env,
-            cwd=fooocus_path,
-        )
-
-        if not no_pre_download_model:
-            pre_download_model_for_webui(
-                dtype="sd_webui",
-                model_path=fooocus_path / "models" / "checkpoints",
-                webui_base_path=fooocus_path,
-                model_name="ChenkinNoob-XL-V0.2",
-                download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
-            )
-
-        install_fooocus_config(fooocus_path)
+    install_fooocus_config(fooocus_path)
 
     logger.info("安装 Fooocus 完成")
 
@@ -296,15 +296,16 @@ def update_fooocus(
             自定义 Github 镜像源
     """
     logger.info("更新 Fooocus 中")
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        git_warpper.update(fooocus_path)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
+    git_warpper.update(fooocus_path)
 
     logger.info("更新 Fooocus 完成")
 
@@ -312,7 +313,6 @@ def update_fooocus(
 def check_fooocus_env(
     fooocus_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
 ) -> None:
     """检查 Fooocus 运行环境
@@ -324,8 +324,6 @@ def check_fooocus_env(
             是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
-            是否使用 Github 镜像源
 
     Raises:
         AggregateError:
@@ -342,34 +340,25 @@ def check_fooocus_env(
     # 确定主要的依赖描述文件
     active_req_path = req_v_path if req_v_path.is_file() else req_path
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 检查任务列表
+    tasks: list[tuple[Callable, dict[str, Any]]] = [
+        (py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv}),
+        (fix_torch_libomp, {}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
+        (check_numpy, {"use_uv": use_uv}),
+    ]
+    err: list[Exception] = []
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
-            config_path=git_config_path,
-        )
+    for func, kwargs in tasks:
+        try:
+            func(**kwargs)
+        except Exception as e:
+            err.append(e)
 
-        # 检查任务列表
-        tasks: list[tuple[Callable, dict[str, Any]]] = [
-            (py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv}),
-            (fix_torch_libomp, {}),
-            (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
-            (check_numpy, {"use_uv": use_uv}),
-        ]
-        err: list[Exception] = []
+    if err and check:
+        raise AggregateError("检查 Fooocus 环境时发生错误", err)
 
-        for func, kwargs in tasks:
-            try:
-                func(**kwargs)
-            except Exception as e:
-                err.append(e)
-
-        if err and check:
-            raise AggregateError("检查 Fooocus 环境时发生错误", err)
-
-        logger.info("检查 Fooocus 环境完成")
+    logger.info("检查 Fooocus 环境完成")
 
 
 def launch_fooocus(
@@ -399,45 +388,45 @@ def launch_fooocus(
         use_cuda_malloc (bool | None): 
             是否启用 CUDA Malloc 显存优化
     """
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("准备 Fooocus 启动环境")
 
-        logger.info("准备 Fooocus 启动环境")
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        custom_env = os.environ.copy()
-        hf_mirror_args: list[str] = []
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        if use_hf_mirror:
-            custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
-            try:
-                url = git_warpper.get_current_branch_remote_url(fooocus_path)
-                if "lllyasviel/Fooocus" in url:
-                    hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
-            except Exception as e:
-                logger.debug("获取 Fooocus 远程源失败: %s", e)
+    hf_mirror_args: list[str] = []
 
-        custom_env = get_pypi_mirror_config(
-            use_cn_mirror=use_pypi_mirror,
-            origin_env=custom_env,
-        )
+    if use_hf_mirror:
+        custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+        try:
+            url = git_warpper.get_current_branch_remote_url(fooocus_path)
+            if "lllyasviel/Fooocus" in url:
+                hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
+        except Exception as e:
+            logger.debug("获取 Fooocus 远程源失败: %s", e)
 
-        if use_cuda_malloc:
-            cuda_malloc_config = get_cuda_malloc_var()
-            if cuda_malloc_config is not None:
-                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
-                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=custom_env,
+    )
 
-        logger.info("启动 Fooocus 中")
-        launch_webui(
-            webui_path=fooocus_path,
-            launch_script="launch.py",
-            launch_args=launch_args + hf_mirror_args,
-            custom_env=custom_env,
-        )
+    if use_cuda_malloc:
+        cuda_malloc_config = get_cuda_malloc_var()
+        if cuda_malloc_config is not None:
+            custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+            custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
+
+    logger.info("启动 Fooocus 中")
+    launch_webui(
+        webui_path=fooocus_path,
+        launch_script="launch.py",
+        launch_args=launch_args + hf_mirror_args,
+        custom_env=custom_env,
+    )
 
 
 def install_fooocus_model_from_library(

@@ -104,8 +104,9 @@ def update(
 def check_env(
     sd_scripts_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 SD Scripts 运行环境
 
@@ -118,6 +119,8 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -128,8 +131,9 @@ def check_env(
     check_sd_scripts_env(
         sd_scripts_path=sd_scripts_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -315,14 +319,16 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     check_p = scripts_sub.add_parser("check-env", help="检查 SD Scripts 运行环境")
     check_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, help="SD Scripts 根目录")
     check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
-    check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
+    check_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             sd_scripts_path=args.sd_scripts_path,
             check=args.check,
-            use_github_mirror=args.use_github_mirror,
             use_uv=args.use_uv,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

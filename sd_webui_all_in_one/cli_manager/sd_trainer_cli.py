@@ -105,8 +105,9 @@ def update(
 def check_env(
     sd_trainer_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 SD Trainer 运行环境
 
@@ -129,8 +130,9 @@ def check_env(
     check_sd_trainer_env(
         sd_trainer_path=sd_trainer_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -190,8 +192,9 @@ def launch(
     check_sd_trainer_env(
         sd_trainer_path=sd_trainer_path,
         check=check,
-        use_github_mirror=use_github_mirror,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
     launch_sd_trainer(
         sd_trainer_path=sd_trainer_path,
@@ -364,14 +367,16 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     check_p = trainer_sub.add_parser("check-env", help="检查 SD Trainer 运行环境")
     check_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, help="SD Trainer 根目录")
     check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
-    check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    check_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
+    check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             sd_trainer_path=args.sd_trainer_path,
             check=args.check,
-            use_github_mirror=args.use_github_mirror,
             use_uv=args.use_uv,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

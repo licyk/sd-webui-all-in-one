@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Callable, TypeAlias, Literal, TypedDict, get_args
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_git_base_config_and_github_mirror,
     clone_repo,
     get_pypi_mirror_config,
     install_pytorch_for_webui,
@@ -20,7 +20,7 @@ from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import generate_dir_tree, get_file_list, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
@@ -153,6 +153,14 @@ def install_sd_trainer(
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=custom_env,
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
 
@@ -160,59 +168,50 @@ def install_sd_trainer(
     logger.info("开始安装 SD Trainer, 安装路径: %s", sd_trainer_path)
     logger.info("安装的 SD Trainer 分支: '%s'", branch_info["name"])
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("安装 SD Trainer 内核中")
+    clone_repo(
+        repo=branch_info["url"],
+        path=sd_trainer_path,
+    )
+    git_warpper.update_submodule(sd_trainer_path)
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
+    logger.info("切换 SD Trainer 分支中")
+    git_warpper.switch_branch(
+        path=sd_trainer_path,
+        branch=branch_info["branch"],
+        new_url=branch_info["url"],
+        recurse_submodules=branch_info["use_submodule"],
+    )
+
+    install_pytorch_for_webui(
+        pytorch_package=pytorch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env_pytorch,
+        use_uv=use_uv,
+    )
+
+    requirements_version_path = sd_trainer_path / "requirements_version.txt"
+    requirements_path = sd_trainer_path / "requirements.txt"
+
+    if not requirements_path.is_file() and requirements_version_path.is_file():
+        raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查 SD Trainer 文件是否完整")
+
+    logger.info("安装 SD Trainer 依赖中")
+    install_requirements(
+        path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
+        use_uv=use_uv,
+        custom_env=custom_env,
+        cwd=sd_trainer_path,
+    )
+
+    if not no_pre_download_model:
+        pre_download_model_for_webui(
+            dtype="sd_webui",
+            model_path=sd_trainer_path / "sd-models",
+            webui_base_path=sd_trainer_path,
+            model_name="ChenkinNoob-XL-V0.2",
+            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
-
-        logger.info("安装 SD Trainer 内核中")
-        clone_repo(
-            repo=branch_info["url"],
-            path=sd_trainer_path,
-        )
-        git_warpper.update_submodule(sd_trainer_path)
-
-        logger.info("切换 SD Trainer 分支中")
-        git_warpper.switch_branch(
-            path=sd_trainer_path,
-            branch=branch_info["branch"],
-            new_url=branch_info["url"],
-            recurse_submodules=branch_info["use_submodule"],
-        )
-
-        install_pytorch_for_webui(
-            pytorch_package=pytorch_package,
-            xformers_package=xformers_package,
-            custom_env=custom_env_pytorch,
-            use_uv=use_uv,
-        )
-
-        requirements_version_path = sd_trainer_path / "requirements_version.txt"
-        requirements_path = sd_trainer_path / "requirements.txt"
-
-        if not requirements_path.is_file() and requirements_version_path.is_file():
-            raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查 SD Trainer 文件是否完整")
-
-        logger.info("安装 SD Trainer 依赖中")
-        install_requirements(
-            path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
-            use_uv=use_uv,
-            custom_env=custom_env,
-            cwd=sd_trainer_path,
-        )
-
-        if not no_pre_download_model:
-            pre_download_model_for_webui(
-                dtype="sd_webui",
-                model_path=sd_trainer_path / "sd-models",
-                webui_base_path=sd_trainer_path,
-                model_name="ChenkinNoob-XL-V0.2",
-                download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
-            )
 
     logger.info("安装 SD Trainer 完成")
 
@@ -263,15 +262,15 @@ def update_sd_trainer(
             自定义 Github 镜像源
     """
     logger.info("更新 SD Trainer 中")
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        git_warpper.update(sd_trainer_path)
+    git_warpper.update(sd_trainer_path)
 
     logger.info("更新 SD Trainer 完成")
 
@@ -279,8 +278,9 @@ def update_sd_trainer(
 def check_sd_trainer_env(
     sd_trainer_path: Path,
     check: bool | None = True,
-    use_github_mirror: bool | None = False,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 SD Trainer 运行环境
 
@@ -293,6 +293,8 @@ def check_sd_trainer_env(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -305,34 +307,33 @@ def check_sd_trainer_env(
     if check and req_path.is_file():
         raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查文件是否完整")
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=GITHUB_MIRROR_LIST if use_github_mirror else None,
-            config_path=git_config_path,
-        )
+    # 检查任务列表
+    tasks: list[tuple[Callable, dict[str, Any]]] = [
+        (py_dependency_checker, {"requirement_path": req_path, "name": "SD Trainer", "use_uv": use_uv}),
+        (fix_torch_libomp, {}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False}),
+        (check_numpy, {"use_uv": use_uv}),
+    ]
+    err: list[Exception] = []
 
-        # 检查任务列表
-        tasks: list[tuple[Callable, dict[str, Any]]] = [
-            (py_dependency_checker, {"requirement_path": req_path, "name": "SD Trainer", "use_uv": use_uv}),
-            (fix_torch_libomp, {}),
-            (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False}),
-            (check_numpy, {"use_uv": use_uv}),
-        ]
-        err: list[Exception] = []
+    for func, kwargs in tasks:
+        try:
+            func(**kwargs)
+        except Exception as e:
+            err.append(e)
 
-        for func, kwargs in tasks:
-            try:
-                func(**kwargs)
-            except Exception as e:
-                err.append(e)
+    if err and check:
+        raise AggregateError("检查 SD Trainer 环境时发生错误", err)
 
-        if err and check:
-            raise AggregateError("检查 SD Trainer 环境时发生错误", err)
-
-        logger.info("检查 SD Trainer 环境完成")
+    logger.info("检查 SD Trainer 环境完成")
 
 
 def launch_sd_trainer(
@@ -357,41 +358,40 @@ def launch_sd_trainer(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None): 
+        use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
     """
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    logger.info("准备 SD Trainer 启动环境")
 
-        logger.info("准备 SD Trainer 启动环境")
-        git_config_path = Path(os.getenv("GIT_CONFIG_GLOBAL", (tmp_dir / ".gitconfig").as_posix()))
-        set_github_mirror(
-            mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-            config_path=git_config_path,
-        )
-        custom_env = os.environ.copy()
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-        if use_hf_mirror:
-            custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+    if use_hf_mirror:
+        custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
 
-        custom_env = get_pypi_mirror_config(
-            use_cn_mirror=use_pypi_mirror,
-            origin_env=custom_env,
-        )
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=custom_env,
+    )
 
-        if use_cuda_malloc:
-            cuda_malloc_config = get_cuda_malloc_var()
-            if cuda_malloc_config is not None:
-                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
-                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
+    if use_cuda_malloc:
+        cuda_malloc_config = get_cuda_malloc_var()
+        if cuda_malloc_config is not None:
+            custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+            custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
-        logger.info("启动 SD Trainer 中")
-        launch_webui(
-            webui_path=sd_trainer_path,
-            launch_script="gui.py" if (sd_trainer_path / "gui.py").is_file() else "kohya_gui.py",
-            launch_args=launch_args,
-            custom_env=custom_env,
-        )
+    logger.info("启动 SD Trainer 中")
+    launch_webui(
+        webui_path=sd_trainer_path,
+        launch_script="gui.py" if (sd_trainer_path / "gui.py").is_file() else "kohya_gui.py",
+        launch_args=launch_args,
+        custom_env=custom_env,
+    )
 
 
 def install_sd_trainer_model_from_library(

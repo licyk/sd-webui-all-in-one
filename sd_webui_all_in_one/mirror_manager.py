@@ -149,11 +149,9 @@ def set_git_base_config(
         RuntimeError:
             设置 Git 基本配置时发生错误
     """
-    custom_env = os.environ.copy()
-    custom_env["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
     try:
-        run_cmd(["git", "config", "--global", "--add", "safe.directory", "'*'"], live=False, custom_env=custom_env)
-        run_cmd(["git", "config", "--global", "core.longpaths", "true"], live=False, custom_env=custom_env)
+        run_cmd(["git", "config", "--file", config_path.as_posix(), "--add", "safe.directory", "'*'"], live=False)
+        run_cmd(["git", "config", "--file", config_path.as_posix(), "core.longpaths", "true"], live=False)
     except RuntimeError as e:
         raise RuntimeError(f"设置 Git 基本配置时发生错误: {e}") from e
 
@@ -161,12 +159,12 @@ def set_git_base_config(
 def set_github_mirror(
     mirror: str | list[str] | None = None,
     config_path: Path = None,
-) -> None:
-    """设置 Github 镜像源
+) -> Path:
+    """设置 Github 镜像源并返回带有镜像源配置的 Git 配置文件路径
 
-    当`mirror`传入的是 Github 镜像源地址, 则直接设置 GIT_CONFIG_GLOBAL 环境变量并直接使用该镜像源地址
+    当`mirror`传入的是 Github 镜像源地址, 则直接设置 Github 镜像源
 
-    如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 GIT_CONFIG_GLOBAL 环境变量
+    如果传入的是镜像源列表, 则自动测试可用的 Github 镜像源并设置 Github 镜像源
 
     当不传入参数时则不进行任何 Github 镜像源配置
 
@@ -207,6 +205,10 @@ def set_github_mirror(
             Github 镜像源地址
         config_path (Path | None):
             Git 配置文件路径
+
+    Returns:
+        Path:
+            配置 Github 镜像源后的 Git 配置文件路径
 
     Raises:
         RuntimeError:
@@ -252,12 +254,10 @@ def set_github_mirror(
     if config_path is None:
         config_path = Path().cwd() / ".gitconfig"
 
-    os.environ["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
-
     if mirror is not None:
         _configure_github_mirror(mirror)
 
-    set_git_base_config(config_path)
+    return config_path
 
 
 def set_huggingface_mirror(
@@ -296,6 +296,6 @@ def set_mirror(
     set_pypi_index_mirror(pypi_index_mirror)
     set_pypi_extra_index_mirror(pypi_extra_index_mirror)
     set_pypi_find_links_mirror(pypi_find_links_mirror)
-    set_github_mirror(github_mirror)
+    os.environ["GIT_CONFIG_GLOBAL"] = set_github_mirror(github_mirror).as_posix()
     set_huggingface_mirror(huggingface_mirror)
     logger.info("镜像源配置完成")
