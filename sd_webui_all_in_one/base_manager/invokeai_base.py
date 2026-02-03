@@ -22,7 +22,7 @@ from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.file_operations.file_manager import move_files, remove_files
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
@@ -450,6 +450,73 @@ def import_model_to_invokeai(
     return True
 
 
+def install_pypatchmatch(
+    use_cn_mirror: bool | None = False,
+    downloader: DownloadToolType | None = "aria2",
+) -> None:
+    """为 Windows 的 PyPatchMatch 安装组件
+
+    Args:
+        use_cn_mirror (bool | None):
+            是否使用国内下载镜像
+        downloader (DownloadToolType):
+            使用的下载器
+
+    Raises:
+        ModuleNotFoundError:
+            未找到 PyPatchMatch 时
+        RuntimeError:
+            安装 pypatchmatch 模块组件发生错误时
+    """
+    if sys.platform != "win32":
+        return
+
+    try:
+        util = [p for p in importlib.metadata.files("pypatchmatch") if "__init__.py" in str(p)][0]
+        path = Path(util.locate()).parent
+    except Exception as e:
+        raise ModuleNotFoundError(f"未找到 pypatchmatch 模块路径, 无法安装 pypatchmatch 所需库: {e}") from e
+
+    tasks = [
+        (
+            [
+                "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll",
+                "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/libpatchmatch_windows_amd64.dll",
+            ],
+            "libpatchmatch_windows_amd64.dll",
+        ),
+        (
+            [
+                "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll",
+                "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/opencv_world460.dll",
+            ],
+            "opencv_world460.dll",
+        ),
+    ]
+
+    logger.info("安装 PyPatchMatch 组件中")
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+
+        for urls, file in tasks:
+            save_path = path / file
+            if save_path.is_file():
+                continue
+
+            try:
+                file_path = download_file(
+                    url=urls[0] if use_cn_mirror else urls[1],
+                    path=tmp_dir / file,
+                    save_name=file,
+                    tool=downloader,
+                )
+                copy_files(file_path, save_path)
+            except Exception as e:
+                raise RuntimeError(f"下载 '{file}' 时发生错误, 无法安装 pypatchmatch 模块组件: {e}") from e
+
+    logger.info("PyPatchMatch 组件安装完成")
+
+
 def install_invokeai(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,
@@ -487,6 +554,11 @@ def install_invokeai(
             invokeai_version=invokeai_version,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
+        )
+
+        install_pypatchmatch(
+            use_cn_mirror=use_pypi_mirror,
+            downloader="aria2",
         )
 
         if not no_pre_download_model:
@@ -586,7 +658,7 @@ def launch_invokeai(
     sys.exit(run_app())
 
 
-def install_extension(
+def install_invokeai_custom_nodes(
     invokeai_path: Path,
     custom_node_url: str | list[str],
     use_github_mirror: bool | None = False,
@@ -614,7 +686,7 @@ def install_extension(
     urls = [custom_node_url] if isinstance(custom_node_url, str) else custom_node_url
 
     # 获取已安装扩展列表
-    custom_node_list = list_custom_nodes(invokeai_path)
+    custom_node_list = list_invokeai_custom_nodes(invokeai_path)
     installed_names = {x["name"] for x in custom_node_list}
     err: list[Exception] = []
 
@@ -653,7 +725,7 @@ def install_extension(
     logger.info("安装 InvokeAI 扩展完成")
 
 
-def set_extensions_status(
+def set_invokeai_custom_nodes_status(
     invokeai_path: Path,
     custom_node_name: str,
     status: bool,
@@ -719,7 +791,7 @@ InvokeAILocalExtensionInfoList = list[InvokeAILocalExtensionInfo]
 """InvokeAI 本地扩展信息"""
 
 
-def list_custom_nodes(
+def list_invokeai_custom_nodes(
     invokeai_path: Path,
 ) -> InvokeAILocalExtensionInfoList:
     """获取 InvokeAI 本地扩展列表
@@ -770,7 +842,7 @@ def list_custom_nodes(
     return info_list
 
 
-def update_extensions(
+def update_invokeai_custom_nodes(
     invokeai_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -819,7 +891,7 @@ def update_extensions(
     logger.info("更新 InvokeAI 扩展完成")
 
 
-def uninstall_custom_node(
+def uninstall_invokeai_custom_node(
     invokeai_path: Path,
     custom_node_name: str,
     check: bool | None = True,
@@ -855,7 +927,7 @@ def uninstall_custom_node(
             raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
 
 
-def install_model_from_library(
+def install_invokeai_model_from_library(
     invokeai_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -891,7 +963,7 @@ def install_model_from_library(
     import_model_to_invokeai(model_list=paths)
 
 
-def install_model_from_url(
+def install_invokeai_model_from_url(
     sd_webui_path: Path,
     model_url: str,
     model_type: str,
@@ -1100,9 +1172,8 @@ def uninstall_model_from_invokeai(
         return False
 
 
-def uninstall_model(
+def uninstall_invokeai_model(
     model_name: str,
-    model_type: str | None = None,
     interactive_mode: bool | None = False,
 ) -> None:
     """卸载 InvokeAI 中的模型
@@ -1112,8 +1183,6 @@ def uninstall_model(
             InvokeAI 根目录
         model_name (str):
             模型名称
-        model_type (str | None):
-            模型的类型
         interactive_mode (bool | None):
             是否启用交互模式
 

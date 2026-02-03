@@ -394,7 +394,7 @@ def launch_sd_trainer(
         )
 
 
-def install_model_from_library(
+def install_sd_trainer_model_from_library(
     sd_trainer_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -429,7 +429,7 @@ def install_model_from_library(
     )
 
 
-def install_model_from_url(
+def install_sd_trainer_model_from_url(
     sd_trainer_path: Path,
     model_url: str,
     model_type: str,
@@ -455,7 +455,7 @@ def install_model_from_url(
     )
 
 
-def list_models(
+def list_sd_trainer_models(
     sd_trainer_path: Path,
 ) -> None:
     """列出 SD Trainer 的模型目录
@@ -472,7 +472,7 @@ def list_models(
         print("\n\n")
 
 
-def uninstall_model(
+def uninstall_sd_trainer_model(
     sd_trainer_path: Path,
     model_name: str,
     model_type: str | None = None,

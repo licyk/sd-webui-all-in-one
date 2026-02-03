@@ -44,3 +44,12 @@ SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
 
 SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") not in ["0", "False", "false", "None", "none", "null"]
 """是否 SD WebUI All In One 启用补丁"""
+
+UV_MINIMUM_VER = "0.9.28"
+"""uv 最低版本要求版本号"""
+
+PIP_MINIMUM_VER = "26.0"
+"""Pip 最低版本要求版本号"""
+
+ARIA2_MINIMUM_VER = "1.37.0"
+"""Aria2 最低版本要求版本号"""

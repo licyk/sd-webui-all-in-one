@@ -475,7 +475,7 @@ def launch_comfyui(
         )
 
 
-def install_custom_node(
+def install_comfyui_custom_node(
     comfyui_path: Path,
     custom_node_url: str | list[str],
     use_github_mirror: bool | None = False,
@@ -503,7 +503,7 @@ def install_custom_node(
     urls = [custom_node_url] if isinstance(custom_node_url, str) else custom_node_url
 
     # 获取已安装扩展列表
-    custom_node_list = list_custom_nodes(comfyui_path)
+    custom_node_list = list_comfyui_custom_nodes(comfyui_path)
     installed_names = {x["name"] for x in custom_node_list}
     err: list[Exception] = []
 
@@ -569,7 +569,7 @@ ComfyUiLocalExtensionInfoList = list[ComfyUiLocalExtensionInfo]
 """ComfyUI 本地扩展信息"""
 
 
-def list_custom_nodes(
+def list_comfyui_custom_nodes(
     comfyui_path: Path,
 ) -> ComfyUiLocalExtensionInfoList:
     """获取 ComfyUI 本地扩展列表
@@ -620,7 +620,7 @@ def list_custom_nodes(
     return info_list
 
 
-def set_custom_node_status(
+def set_comfyui_custom_node_status(
     comfyui_path: Path,
     custom_node_name: str,
     status: bool,
@@ -661,7 +661,7 @@ def set_custom_node_status(
         logger.info("禁用 '%s' 扩展成功", custom_node_name)
 
 
-def update_custom_nodes(
+def update_comfyui_custom_nodes(
     comfyui_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -710,7 +710,7 @@ def update_custom_nodes(
     logger.info("更新 ComfyUI 扩展完成")
 
 
-def uninstall_custom_node(
+def uninstall_comfyui_custom_node(
     comfyui_path: Path,
     custom_node_name: str,
     check: bool | None = True,
@@ -746,7 +746,7 @@ def uninstall_custom_node(
             raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
 
 
-def install_model_from_library(
+def install_comfyui_model_from_library(
     comfyui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -781,7 +781,7 @@ def install_model_from_library(
     )
 
 
-def install_model_from_url(
+def install_comfyui_model_from_url(
     comfyui_path: Path,
     model_url: str,
     model_type: str,
@@ -807,7 +807,7 @@ def install_model_from_url(
     )
 
 
-def list_models(
+def list_comfyui_models(
     comfyui_path: Path,
 ) -> None:
     """列出 ComfyUI 的模型目录
@@ -824,7 +824,7 @@ def list_models(
         print("\n\n")
 
 
-def uninstall_model(
+def uninstall_comfyui_model(
     comfyui_path: Path,
     model_name: str,
     model_type: str | None = None,

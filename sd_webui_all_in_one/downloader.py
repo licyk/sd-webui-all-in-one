@@ -201,7 +201,7 @@ def download_executer(
     url: str,
     path: Path,
     save_name: str | None,
-    tool: str,
+    tool: DownloadToolType,
     progress: bool,
 ) -> Path:
     """底层下载执行器
@@ -213,7 +213,7 @@ def download_executer(
             保存路径
         save_name (str | None):
             保存名称
-        tool (str):
+        tool (DownloadToolType):
             工具名称
         progress (bool):
             是否显示进度
@@ -233,18 +233,22 @@ def download_file(
     url: str,
     path: Path | None = None,
     save_name: str | None = None,
-    tool: str | None = "aria2",
+    tool: DownloadToolType | None = "aria2",
     progress: bool = True,
 ) -> Path:
     """下载文件工具
 
     Args:
-        url (str): 文件下载链接
-        path (Path | str): 文件下载路径
-        save_name (str | None): 文件保存名称
-        tool (str | None): 下载工具
-        retry_count (int): 重试下载的次数
-        progress (bool): 是否启用下载进度条
+        url (str):
+            文件下载链接
+        path (Path | None):
+            文件下载路径
+        save_name (str | None):
+            文件保存名称
+        tool (DownloadToolType | None):
+            下载工具
+        progress (bool):
+            是否启用下载进度条
 
     Returns:
         Path: 保存的文件路径

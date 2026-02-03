@@ -1083,7 +1083,7 @@ def launch_sd_webui(
         )
 
 
-def install_extension(
+def install_sd_webui_extension(
     sd_webui_path: Path,
     extension_url: str | list[str],
     use_github_mirror: bool | None = False,
@@ -1111,7 +1111,7 @@ def install_extension(
     urls = [extension_url] if isinstance(extension_url, str) else extension_url
 
     # 获取已安装扩展列表
-    extension_list = list_extensions(sd_webui_path)
+    extension_list = list_sd_webui_extensions(sd_webui_path)
     installed_names = {x["name"] for x in extension_list}
     err: list[Exception] = []
 
@@ -1176,7 +1176,7 @@ SDWebUiLocalExtensionInfoList = list[SDWebUiLocalExtensionInfo]
 """Stable Diffusion WebUI 本地扩展信息"""
 
 
-def set_extensions_status(
+def set_sd_webui_extensions_status(
     sd_webui_path: Path,
     extension_name: str,
     status: bool,
@@ -1233,7 +1233,7 @@ def set_extensions_status(
         logger.info("禁用 '%s' 扩展成功", extension_name)
 
 
-def list_extensions(
+def list_sd_webui_extensions(
     sd_webui_path: Path,
 ) -> SDWebUiLocalExtensionInfoList:
     """获取 Stable Diffusion WebUI 本地扩展列表
@@ -1301,7 +1301,7 @@ def list_extensions(
     return info_list
 
 
-def update_extensions(
+def update_sd_webui_extensions(
     sd_webui_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -1350,7 +1350,7 @@ def update_extensions(
     logger.info("更新 Stable Diffusion WebUI 扩展完成")
 
 
-def uninstall_extension(
+def uninstall_sd_webui_extension(
     sd_webui_path: Path,
     extension_name: str,
     check: bool | None = True,
@@ -1386,7 +1386,7 @@ def uninstall_extension(
             raise RuntimeError(f"卸载 '{extension_name}' 扩展时发生错误:{e}") from e
 
 
-def install_model_from_library(
+def install_sd_webui_model_from_library(
     sd_webui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -1421,7 +1421,7 @@ def install_model_from_library(
     )
 
 
-def install_model_from_url(
+def install_sd_webui_model_from_url(
     sd_webui_path: Path,
     model_url: str,
     model_type: str,
@@ -1464,7 +1464,7 @@ def list_sd_webui_models(
         print("\n\n")
 
 
-def uninstall_model(
+def uninstall_sd_webui_model(
     sd_webui_path: Path,
     model_name: str,
     model_type: str | None = None,

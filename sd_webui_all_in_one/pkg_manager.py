@@ -8,7 +8,7 @@ from pathlib import Path
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
-
+from sd_webui_all_in_one.updater import check_and_update_uv, check_and_update_pip
 
 logger = get_logger(
     name="Env Manager",
@@ -26,10 +26,14 @@ def pip_install(
     """使用 Pip / uv 安装 Python 软件包
 
     Args:
-        *args (Any): 要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
-        use_uv (bool | None): 使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
-        custom_env (dict[str, str] | None): 自定义环境变量
-        cwd (Path | None): 执行 Pip / uv 时的起始路径
+        *args (Any):
+            要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
+        use_uv (bool | None):
+            使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        cwd (Path | None):
+            执行 Pip / uv 时的起始路径
 
     Raises:
         RuntimeError: 当 uv 和 pip 都无法安装软件包时抛出异常
@@ -38,16 +42,11 @@ def pip_install(
     if custom_env is None:
         custom_env = os.environ.copy()
 
+    check_and_update_pip(custom_env=custom_env)
+
     if use_uv:
         custom_env["UV_PYTHON"] = sys.executable
-        try:
-            run_cmd(["uv", "--version"], live=False, custom_env=custom_env)
-        except RuntimeError:
-            logger.info("安装 uv 中")
-            run_cmd(
-                [Path(sys.executable).as_posix(), "-m", "pip", "install", "uv"],
-                custom_env=custom_env,
-            )
+        check_and_update_uv(custom_env=custom_env)
 
         try:
             run_cmd(["uv", "pip", "install", *args], custom_env=custom_env, cwd=cwd)

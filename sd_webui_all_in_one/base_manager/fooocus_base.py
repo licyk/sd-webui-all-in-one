@@ -440,7 +440,7 @@ def launch_fooocus(
         )
 
 
-def install_model_from_library(
+def install_fooocus_model_from_library(
     fooocus_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -475,7 +475,7 @@ def install_model_from_library(
     )
 
 
-def install_model_from_url(
+def install_fooocus_model_from_url(
     fooocus_path: Path,
     model_url: str,
     model_type: str,
@@ -501,7 +501,7 @@ def install_model_from_url(
     )
 
 
-def list_models(
+def list_fooocus_models(
     fooocus_path: Path,
 ) -> None:
     """列出 Fooocus 的模型目录
@@ -518,7 +518,7 @@ def list_models(
         print("\n\n")
 
 
-def uninstall_model(
+def uninstall_fooocus_model(
     fooocus_path: Path,
     model_name: str,
     model_type: str | None = None,

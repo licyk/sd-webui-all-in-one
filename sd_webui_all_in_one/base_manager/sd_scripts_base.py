@@ -422,7 +422,7 @@ def check_sd_scripts_env(
         logger.info("检查 SD Scripts 环境完成")
 
 
-def install_model_from_library(
+def install_sd_scripts_model_from_library(
     sd_scripts_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
@@ -457,7 +457,7 @@ def install_model_from_library(
     )
 
 
-def install_model_from_url(
+def install_sd_scripts_model_from_url(
     sd_scripts_path: Path,
     model_url: str,
     model_type: str,
@@ -500,7 +500,7 @@ def list_sd_scripts_models(
         print("\n\n")
 
 
-def uninstall_model(
+def uninstall_sd_scripts_model(
     sd_scripts_path: Path,
     model_name: str,
     model_type: str | None = None,
