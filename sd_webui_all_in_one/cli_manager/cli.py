@@ -5,6 +5,7 @@ from sd_webui_all_in_one.cli_manager.sd_trainer_cli import register_sd_trainer
 from sd_webui_all_in_one.cli_manager.sd_scripts_cli import register_sd_scripts
 from sd_webui_all_in_one.cli_manager.invokeai_cli import register_invokeai
 from sd_webui_all_in_one.cli_manager.fooocus_cli import register_fooocus
+from sd_webui_all_in_one.cli_manager.comfyui_cli import register_comfyui
 
 
 class ParsedArgs(argparse.Namespace):
@@ -25,6 +26,7 @@ def main() -> None:
     register_sd_scripts(subparsers)
     register_invokeai(subparsers)
     register_fooocus(subparsers)
+    register_comfyui(subparsers)
 
     # 执行解析
     args: ParsedArgs = parser.parse_args()  # type: ignore

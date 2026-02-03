@@ -164,6 +164,8 @@ def launch(
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
+    check: bool | None = True,
+    use_uv: bool | None = True,
 ) -> None:
     """启动 Fooocus
 
@@ -182,7 +184,17 @@ def launch(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None): 
             是否启用 CUDA Malloc 显存优化
+        check (bool | None):
+            是否检查环境时发生的错误
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
     """
+    check_fooocus_env(
+        fooocus_path=fooocus_path,
+        check=check,
+        use_github_mirror=use_github_mirror,
+        use_uv=use_uv,
+    )
     launch_fooocus(
         fooocus_path=fooocus_path,
         launch_args=launch_args,

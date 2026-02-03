@@ -98,6 +98,7 @@ def launch(
     use_hf_mirror: bool | None = False,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
+    use_uv: bool | None = True,
 ) -> None:
     """启动 InvokeAI
 
@@ -112,7 +113,12 @@ def launch(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
     """
+    check_invokeai_env(
+        use_uv=use_uv,
+    )
     launch_invokeai(
         invokeai_path=invokeai_path,
         launch_args=launch_args,
