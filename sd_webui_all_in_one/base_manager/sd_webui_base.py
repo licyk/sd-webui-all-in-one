@@ -14,6 +14,7 @@ from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntim
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
@@ -1022,6 +1023,7 @@ def launch_sd_webui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
+    use_cuda_malloc: bool | None = True,
 ) -> None:
     """启动 Stable Diffusion WebUI
 
@@ -1038,6 +1040,8 @@ def launch_sd_webui(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
+        use_cuda_malloc (bool | None): 
+            是否启用 CUDA Malloc 显存优化
     """
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
@@ -1063,6 +1067,12 @@ def launch_sd_webui(
                 custom_github_mirror=custom_github_mirror,
                 origin_env=custom_env,
             )
+
+        if use_cuda_malloc:
+            cuda_malloc_config = get_cuda_malloc_var()
+            if cuda_malloc_config is not None:
+                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
         logger.info("启动 Stable Diffusion WebUI 中")
         launch_webui(
@@ -1135,7 +1145,7 @@ def install_extension(
                 logger.error("'%s' 扩展安装失败: %s", extension_name, e)
 
     if err and check:
-        raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
+        raise AggregateError("安装 Stable Diffusion WebUI 扩展时发生错误", err)
 
     logger.info("安装 Stable Diffusion WebUI 扩展完成")
 
@@ -1351,7 +1361,7 @@ def uninstall_extension(
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
         extension_name (str):
-            Stable Diffusion WebUI
+            Stable Diffusion WebUI 扩展名称
         check (bool | None):
             是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
 

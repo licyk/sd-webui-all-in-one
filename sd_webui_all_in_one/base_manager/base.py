@@ -25,7 +25,7 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     query_pytorch_info_from_library,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
+from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, is_package_has_version, get_package_version
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, copy_files, remove_files
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
@@ -71,15 +71,15 @@ def prepare_pytorch_install_info(
     if custom_pytorch_package is None:
         dtype = auto_detect_avaliable_pytorch_type()
         pytorch_info = find_latest_pytorch_info(dtype)
-        mirror_type = pytorch_info["dtype"]
+        device_type = pytorch_info["dtype"]
         index_url = pytorch_info["index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["index_mirror"]["official"]
         extra_index_url = pytorch_info["extra_index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["extra_index_mirror"]["official"]
         find_links = pytorch_info["find_links"]["mirror"] if use_cn_mirror else pytorch_info["find_links"]["official"]
         torch_ver = pytorch_info["torch_ver"]
         xformers_ver = pytorch_info["xformers_ver"]
     else:
-        mirror_type = None
-        torch_part = [x for x in custom_pytorch_package.split() if x.startswith("torch==")]
+        device_type = None
+        torch_part = [x for x in custom_pytorch_package.split() if get_package_name(x) == "torch"]
         torch_ver = custom_pytorch_package
         xformers_ver = custom_xformers_package
         extra_index_url = []
@@ -104,7 +104,7 @@ def prepare_pytorch_install_info(
             index_url = get_pytorch_mirror(
                 dtype=get_pytorch_mirror_type(
                     torch_ver=get_package_version(torch_part[0]),
-                    device_type=auto_detect_pytorch_device_category() if mirror_type is None else mirror_type,
+                    device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
                 ),
                 use_cn_mirror=use_cn_mirror,
             )
@@ -190,9 +190,6 @@ def reinstall_pytorch(
             是否使用 uv 进行 PyTorch 安装
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-
     """
 
     def _install(
@@ -352,7 +349,7 @@ def pre_download_model_for_webui(
     webui_base_path: Path,
     model_name: str,
     download_resource_type: ModelDownloadUrlType,
-) -> None:
+) -> Path | None:
     """为 WebUI 预下载模型
 
     Args:
@@ -366,15 +363,23 @@ def pre_download_model_for_webui(
             预下载的模型名称
         download_resource_type (ModelDownloadUrlType):
             模型下载源类型
+
+    Returns:
+        (Path | None):
+            模型的保存路径
     """
     if model_path.is_dir() and not any(model_path.rglob("*.safetensors")):
         logger.info("预下载模型中")
-        download_model(
+        path = download_model(
             dtype=dtype,
             base_path=webui_base_path,
             download_resource_type=download_resource_type,
             model_name=model_name,
         )
+        if len(path) > 0:
+            return path[0]
+
+    return None
 
 
 def launch_webui(
@@ -458,7 +463,7 @@ def install_webui_model_from_library(
     model_index: int | None = None,
     downloader: DownloadToolType | None = "aria2",
     interactive_mode: bool | None = False,
-) -> None:
+) -> list[Path] | None:
     """为 WebUI 下载模型, 使用模型库进行下载
 
     Args:
@@ -476,11 +481,15 @@ def install_webui_model_from_library(
             下载模型使用的工具
         interactive_mode (bool | None):
             是否启用交互模式
+
+    Returns:
+        list[Path]:
+            模型的保存地址
     """
 
     def _input_to_int_list(_input: str) -> list[str] | None:
         try:
-            return [int(_i) for _i in _input.split()]
+            return list({int(_i) for _i in _input.split()})
         except Exception:
             return None
 
@@ -513,7 +522,7 @@ def install_webui_model_from_library(
             user_input = input("==> ").strip()
 
             if user_input == "exit":
-                return
+                return None
 
             if user_input == "search":
                 display_model = False
@@ -529,23 +538,21 @@ def install_webui_model_from_library(
 
             if result is None or len(result) == 0:
                 input_err = (1, None)
-
                 continue
 
             try:
-                download_model(
+                return download_model(
                     dtype=dtype,
                     base_path=webui_path,
                     download_resource_type=download_resource_type,
                     model_index=result,
                     downloader=downloader,
                 )
-                return
             except ValueError as e:
                 input_err = (2, str(e))
                 continue
     else:
-        download_model(
+        return download_model(
             dtype=dtype,
             base_path=webui_path,
             download_resource_type=download_resource_type,

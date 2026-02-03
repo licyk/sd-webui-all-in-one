@@ -25,6 +25,7 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import comfyui_conflict_analyzer
@@ -420,6 +421,7 @@ def launch_comfyui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
+    use_cuda_malloc: bool | None = True,
 ) -> None:
     """启动 ComfyUI
 
@@ -436,6 +438,8 @@ def launch_comfyui(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
+        use_cuda_malloc (bool | None): 
+            是否启用 CUDA Malloc 显存优化
     """
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
@@ -455,6 +459,12 @@ def launch_comfyui(
             use_cn_mirror=use_pypi_mirror,
             origin_env=custom_env,
         )
+
+        if use_cuda_malloc:
+            cuda_malloc_config = get_cuda_malloc_var()
+            if cuda_malloc_config is not None:
+                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
         logger.info("启动 ComfyUI 中")
         launch_webui(
@@ -528,7 +538,7 @@ def install_custom_node(
                 logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
 
     if err and check:
-        raise AggregateError("检查 ComfyUI 环境时发生错误", err)
+        raise AggregateError("安装 ComfyUI 扩展时发生错误", err)
 
     logger.info("安装 ComfyUI 扩展完成")
 
@@ -711,7 +721,7 @@ def uninstall_custom_node(
         comfyui_path (Path):
             ComfyUI 根目录
         extension_name (str):
-            ComfyUI
+            ComfyUI 扩展名称
         check (bool | None):
             是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
 

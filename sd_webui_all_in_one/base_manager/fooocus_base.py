@@ -25,6 +25,7 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_github_mirror
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 
@@ -378,6 +379,7 @@ def launch_fooocus(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
+    use_cuda_malloc: bool | None = True,
 ) -> None:
     """启动 Fooocus
 
@@ -394,6 +396,8 @@ def launch_fooocus(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
+        use_cuda_malloc (bool | None): 
+            是否启用 CUDA Malloc 显存优化
     """
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
@@ -420,6 +424,12 @@ def launch_fooocus(
             use_cn_mirror=use_pypi_mirror,
             origin_env=custom_env,
         )
+
+        if use_cuda_malloc:
+            cuda_malloc_config = get_cuda_malloc_var()
+            if cuda_malloc_config is not None:
+                custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
+                custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
         logger.info("启动 Fooocus 中")
         launch_webui(
