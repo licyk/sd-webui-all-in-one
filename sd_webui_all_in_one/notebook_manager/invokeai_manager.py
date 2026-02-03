@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one.base_manager.invokeai_base import InvokeAIComponentManager
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
@@ -58,7 +57,7 @@ class InvokeAIManager(BaseManager):
             ms_token=ms_token,
             port=port,
         )
-        self.component = InvokeAIComponentManager()
+        self.component = NotImplemented
 
     def mount_drive(self) -> None:
         """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录

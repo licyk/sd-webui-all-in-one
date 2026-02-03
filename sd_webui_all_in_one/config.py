@@ -53,3 +53,6 @@ PIP_MINIMUM_VER = "26.0"
 
 ARIA2_MINIMUM_VER = "1.37.0"
 """Aria2 最低版本要求版本号"""
+
+SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", os.getcwd()))
+"""Stable Diffusion WebUI 根目录"""
