@@ -99,6 +99,7 @@ def launch(
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
     use_uv: bool | None = True,
+    check_launch_env: bool | None = True,
 ) -> None:
     """启动 InvokeAI
 
@@ -115,10 +116,13 @@ def launch(
             是否启用 CUDA Malloc 显存优化
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        check_launch_env (bool | None):
+            是否在启动前检查运行环境
     """
-    check_invokeai_env(
-        use_uv=use_uv,
-    )
+    if check_launch_env:
+        check_invokeai_env(
+            use_uv=use_uv,
+        )
     launch_invokeai(
         invokeai_path=invokeai_path,
         launch_args=launch_args,
@@ -409,6 +413,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
+    launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
     launch_p.set_defaults(
         func=lambda args: launch(
             invokeai_path=args.invokeai_path,
@@ -416,6 +421,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
             use_hf_mirror=args.use_hf_mirror,
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
+            check_launch_env=args.check_env,
         )
     )
 

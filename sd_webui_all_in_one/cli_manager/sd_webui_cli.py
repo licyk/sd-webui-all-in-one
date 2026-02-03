@@ -179,6 +179,7 @@ def launch(
     use_cuda_malloc: bool | None = True,
     check: bool | None = True,
     use_uv: bool | None = True,
+    check_launch_env: bool | None = True,
 ) -> None:
     """启动 Stable Diffusion WebUI (注册命令 sd-webui launch)
 
@@ -201,14 +202,17 @@ def launch(
             是否检查环境时发生的错误
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        check_launch_env (bool | None):
+            是否在启动前检查运行环境
     """
-    check_sd_webui_env(
-        sd_webui_path=sd_webui_path,
-        check=check,
-        use_uv=use_uv,
-        use_github_mirror=use_github_mirror,
-        custom_github_mirror=custom_github_mirror,
-    )
+    if check_launch_env:
+        check_sd_webui_env(
+            sd_webui_path=sd_webui_path,
+            check=check,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+        )
     launch_sd_webui(
         sd_webui_path=sd_webui_path,
         launch_args=launch_args,
@@ -551,8 +555,9 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
-    launch_p.add_argument("--no-check", action="store_false", dest="check", help="不检查环境")
+    launch_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
     launch_p.set_defaults(
         func=lambda args: launch(
             sd_webui_path=args.sd_webui_path,
@@ -564,6 +569,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
             use_cuda_malloc=args.use_cuda_malloc,
             check=args.check,
             use_uv=args.use_uv,
+            check_launch_env=args.check_env,
         )
     )
 

@@ -159,6 +159,7 @@ def launch(
     use_uv: bool | None = True,
     interactive_mode: bool | None = False,
     install_conflict_component_requirement: bool | None = False,
+    check_launch_env: bool | None = True,
 ) -> None:
     """启动 ComfyUI
 
@@ -189,16 +190,19 @@ def launch(
             是否启用交互模式
         install_conflict_component_requirement (bool | None):
             检测到冲突依赖时是否按顺序安装组件依赖
+        check_launch_env (bool | None):
+            是否在启动前检查运行环境
     """
-    check_comfyui_env(
-        comfyui_path=comfyui_path,
-        check=check,
-        install_conflict_component_requirement=install_conflict_component_requirement,
-        interactive_mode=interactive_mode,
-        use_uv=use_uv,
-        use_github_mirror=use_github_mirror,
-        custom_github_mirror=custom_github_mirror,
-    )
+    if check_launch_env:
+        check_comfyui_env(
+            comfyui_path=comfyui_path,
+            check=check,
+            install_conflict_component_requirement=install_conflict_component_requirement,
+            interactive_mode=interactive_mode,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+        )
     launch_comfyui(
         comfyui_path=comfyui_path,
         launch_args=launch_args,
@@ -536,6 +540,7 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     launch_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
+    launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
     launch_p.set_defaults(
         func=lambda args: launch(
             comfyui_path=args.comfyui_path,
@@ -549,6 +554,7 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
             use_uv=args.use_uv,
             interactive_mode=args.interactive_mode,
             install_conflict_component_requirement=args.install_conflict_component_requirement,
+            check_launch_env=args.check_env,
         )
     )
 
