@@ -1,6 +1,7 @@
 """SD Scripts 管理工具"""
 
 import os
+import warnings
 from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
@@ -10,6 +11,7 @@ from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.repo_manager import ApiType, RepoType
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
@@ -17,6 +19,7 @@ from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_manager import config_wandb_token, configure_env_var, configure_pip
 from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements, pip_install
+from sd_webui_all_in_one.base_manager.base import clone_repo
 
 
 logger = get_logger(
@@ -28,6 +31,85 @@ logger = get_logger(
 
 class SDScriptsManager(BaseManager):
     """sd-scripts 管理工具"""
+
+    def __init__(self, workspace, workfolder, hf_token=None, ms_token=None, port=7860):
+        super().__init__(workspace, workfolder, hf_token, ms_token, port)
+        warnings.warn(
+            "SDScriptsManager() 已弃用, 请使用 SDTrainerScriptsManager() 代替",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+
+        class Repo:  # pylint: disable=missing-function-docstring
+            """兼容器"""
+
+            _self = self
+
+            def download_files_from_repo(  # pylint: disable=missing-function-docstring
+                self,
+                api_type: ApiType,
+                repo_id: str,
+                local_dir: Path,
+                repo_type: RepoType = "model",
+                folder: str | None = None,
+                num_threads: int | None = 16,
+                retry: int | None = None,  # pylint: disable=unused-argument
+            ):
+                warnings.warn(
+                    "SDScriptsManager.repo.download_files_from_repo() 已弃用, 请使用 SDScriptsManager.download_files_from_repo() 代替",
+                    category=DeprecationWarning,
+                    stacklevel=2,
+                )
+                Repo._self.repo_manager.download_files_from_repo(
+                    api_type=api_type,
+                    repo_id=repo_id,
+                    local_dir=local_dir,
+                    repo_type=repo_type,
+                    folder=folder,
+                    num_threads=num_threads,
+                )
+
+            def upload_files_to_repo(  # pylint: disable=missing-function-docstring
+                self,
+                api_type: ApiType,
+                repo_id: str,
+                upload_path: Path,
+                repo_type: RepoType = "model",
+                visibility: bool | None = False,
+                retry: int | None = None,  # pylint: disable=unused-argument
+            ) -> None:
+                warnings.warn(
+                    "SDScriptsManager.repo.upload_files_to_repo() 已弃用, 请使用 SDScriptsManager.upload_files_to_repo() 代替",
+                    category=DeprecationWarning,
+                    stacklevel=2,
+                )
+                Repo._self.repo_manager.upload_files_to_repo(
+                    api_type=api_type,
+                    repo_id=repo_id,
+                    upload_path=upload_path,
+                    repo_type=repo_type,
+                    visibility=visibility,
+                )
+
+        self.repo = Repo()
+
+    def download_archive_and_unpack(  # pylint: disable=missing-function-docstring
+        self,
+        url: str,
+        local_dir: Path,
+        name: str | None = None,
+        retry: int | None = None,  # pylint: disable=unused-argument
+    ) -> None:
+        warnings.warn(
+            "SDScriptsManager.download_archive_and_unpack() 已弃用, 请使用 SDScriptsManager.download_and_extract() 代替",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        super().download_and_extract(
+            url=url,
+            local_dir=local_dir,
+            name=name,
+        )
 
     def check_env(
         self,
@@ -68,7 +150,6 @@ class SDScriptsManager(BaseManager):
         pytorch_mirror: str | None = None,
         sd_scripts_repo: str | None = None,
         sd_scripts_requirements: str | None = None,
-        retry: int | None = 3,
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
         wandb_token: str | None = None,
@@ -163,7 +244,7 @@ class SDScriptsManager(BaseManager):
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )  # 准备 Notebook 的运行依赖
         # 下载 sd-scripts
-        git_warpper.clone(
+        clone_repo(
             repo=sd_scripts_repo,
             path=sd_scripts_path,
         )
@@ -200,7 +281,7 @@ class SDScriptsManager(BaseManager):
         except Exception as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
         check_numpy(use_uv=use_uv)
-        self.get_model_from_list(path=model_path, model_list=model_list, retry=retry)
+        self.get_model_from_list(path=model_path, model_list=model_list)
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
@@ -211,7 +292,7 @@ class SDScriptsManager(BaseManager):
             email=git_email,
         )
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
         if enable_cuda_malloc:
             set_cuda_malloc()
         logger.info("sd-scripts 安装完成")

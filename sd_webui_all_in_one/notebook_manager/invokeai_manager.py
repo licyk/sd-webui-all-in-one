@@ -2,22 +2,18 @@
 
 import os
 from pathlib import Path
-from typing import Literal
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.file_operations.file_manager import get_file_list
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
-from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai
+from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai, check_invokeai_env, install_invokeai
 
 logger = get_logger(
     name="InvokeAI Manager",
@@ -27,37 +23,7 @@ logger = get_logger(
 
 
 class InvokeAIManager(BaseManager):
-    """InvokeAI 管理模块
-
-    Attributes:
-        component (InvokeAIComponentManager): InvokeAI 组件管理器
-    """
-
-    def __init__(
-        self,
-        workspace: str | Path,
-        workfolder: str,
-        hf_token: str | None = None,
-        ms_token: str | None = None,
-        port: int | None = 9090,
-    ) -> None:
-        """管理工具初始化
-
-        Args:
-            workspace (str | Path): 工作区路径
-            workfolder (str): 工作区的文件夹名称
-            hf_token (str | None): HuggingFace Token
-            ms_token (str | None): ModelScope Token
-            port (int | None): 内网穿透端口
-        """
-        super().__init__(
-            workspace=workspace,
-            workfolder=workfolder,
-            hf_token=hf_token,
-            ms_token=ms_token,
-            port=port,
-        )
-        self.component = NotImplemented
+    """InvokeAI 管理模块"""
 
     def mount_drive(self) -> None:
         """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录
@@ -65,18 +31,12 @@ class InvokeAIManager(BaseManager):
         Raises:
             RuntimeError: 挂载 Google Drive 失败
         """
-        if not is_colab_environment():
-            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+        if not self.mount_google_drive_for_notebook():
             return
 
-        drive_path = Path("/content/drive")
-        if not (drive_path / "MyDrive").exists():
-            if not mount_google_drive(drive_path):
-                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
-
-        invokeai_output = drive_path / "MyDrive" / "invokeai_output"
-        invokeai_output.mkdir(parents=True, exist_ok=True)
-        os.environ["INVOKEAI_ROOT"] = invokeai_output.as_posix()
+        drive_output = Path("/content/drive") / "MyDrive" / "invokeai_output"
+        drive_output.mkdir(parents=True, exist_ok=True)
+        os.environ["INVOKEAI_ROOT"] = drive_output.as_posix()
 
     def import_model(self) -> None:
         """导入模型到 InvokeAI 中"""
@@ -84,10 +44,9 @@ class InvokeAIManager(BaseManager):
         model_list = get_file_list(model_path)
         try:
             self.mount_drive()
+            import_model_to_invokeai(model_list)
         except Exception as e:
             logger.error("挂载 Google Drive 失败, 无法导入模型: %s", e)
-            return
-        import_model_to_invokeai(model_list)
 
     def get_sd_model(
         self,
@@ -106,36 +65,61 @@ class InvokeAIManager(BaseManager):
         path = self.workspace / self.workfolder / "sd-models"
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
-    def get_sd_model_from_list(
-        self,
-        model_list: list[str],
-        retry: int | None = 3,
-    ) -> None:
+    def get_model_from_list(self, path: str | Path, model_list: list[str, int]) -> None:
         """从模型列表下载模型
 
+        `model_list`需要指定模型下载的链接和下载状态, 例如
+        ```python
+        model_list = [
+            ["url1", 0],
+            ["url2", 1],
+            ["url3", 0],
+            ["url4", 1, "file.safetensors"]
+        ]
+        ```
+
+        在这个例子中, 第一个参数指定了模型的下载链接, 第二个参数设置了是否要下载这个模型, 当这个值为 1 时则下载该模型
+
+        第三个参数是可选参数, 用于指定下载到本地后的文件名称
+
+        则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
+
         Args:
-            model_list (list[str]): 模型列表
+            path (str | Path): 将模型下载到的本地路径
+            model_list (list[str | int]): 模型列表
             retry (int | None): 重试下载的次数, 默认为 3
         """
-        new_model_list = [[model, 1] for model in model_list]
-        self.get_model_from_list(
-            path=self.workspace / self.workfolder / "sd-models",
-            model_list=new_model_list,
-            retry=retry,
-        )
+        for model in model_list:
+            try:
+                url = model[0]
+                status = model[1]
+                filename = model[2] if len(model) > 2 else None
+            except Exception as e:
+                logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
+                continue
+            if status >= 1:
+                if filename is None:
+                    self.get_model(url=url, path=path)
+                else:
+                    self.get_model(url=url, path=path, filename=filename)
 
     def check_env(
         self,
         use_uv: bool | None = True,
+        use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 InvokeAI 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
+            use_uv (bool | None):
+                使用 uv 安装依赖
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
         """
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
-        check_numpy(use_uv=use_uv)
+        check_invokeai_env(
+            use_uv=use_uv,
+            use_pypi_mirror=use_pypi_mirror,
+        )
 
     def run(self) -> None:
         """启动 InvokeAI"""
@@ -149,46 +133,67 @@ class InvokeAIManager(BaseManager):
 
     def install(
         self,
-        device_type: Literal["cuda", "rocm", "xpu", "cpu"] = "cuda",
+        device_type: PyTorchDeviceTypeCategory | None = None,
+        invokeai_version: str | None = None,
+        use_pypi_mirror: bool | None = False,
         use_uv: bool | None = True,
+        no_pre_download_model: bool | None = True,
+        use_cn_model_mirror: bool | None = False,
+        # legecy
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror_dict: dict[str, str] | None = None,
-        model_list: list[str] | None = None,
+        model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
-        update_core: bool | None = True,
         *args,
         **kwargs,
     ) -> None:
         """安装 InvokeAI
 
         Args:
-            device_type (Literal["cuda", "rocm", "xpu", "cpu"]): 显卡设备类型
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
-            pypi_index_mirror (str | None): PyPI Index 镜像源链接
-            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
-            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list | None): Github 镜像源链接或者镜像源链接列表
-            huggingface_mirror (str | None): HuggingFace 镜像源链接
-            pytorch_mirror_dict (dict[str, str] | None): PyTorch 镜像源字典, 需包含不同镜像源对应的 PyTorch 镜像源链接
-            model_list (list[str] | None): 模型下载列表
-            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
-            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能ol | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
-            huggingface_token (str | None): 配置 HuggingFace Token
-            modelscope_token (str | None): 配置 ModelScope Token
-            update_core (bool | None): 安装时更新内核和扩展
-        Raises:
-            Exception: GPU 不可用
+            device_type (PyTorchDeviceTypeCategory | None):
+                设置使用的 PyTorch 镜像源类型
+            invokeai_version (str | None):
+                自定义安装 InvokeAI 的版本
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            no_pre_download_model (bool | None):
+                是否禁用预下载模型
+            use_cn_model_mirror (bool | None):
+                是否使用国内镜像下载模型
+            pypi_index_mirror (str | None):
+                PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None):
+                PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None):
+                PyPI Find Links 镜像源链接
+            github_mirror (str | list[str] | None):
+                Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None):
+                HuggingFace 镜像源链接
+            model_list (list[dict[str, str]] | None):
+                模型下载列表
+            check_avaliable_gpu (bool | None):
+                是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None):
+                是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None):
+                启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
+                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None):
+                配置 HuggingFace Token
+            modelscope_token (str | None):
+                配置 ModelScope Token
         """
         warning_unexpected_params(
             message="InvokeAIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -216,21 +221,31 @@ class InvokeAIManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        if pytorch_mirror_dict is not None:
-            self.component.update_pytorch_mirror_dict(pytorch_mirror_dict)
-        self.component.install_invokeai(
+
+        install_invokeai(
+            invokeai_path=self.workspace / self.workfolder,
             device_type=device_type,
-            upgrade=update_core,
+            invokeai_version=invokeai_version,
+            use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
+            no_pre_download_model=no_pre_download_model,
+            use_cn_model_mirror=use_cn_model_mirror,
         )
+
         if model_list is not None:
-            self.get_sd_model_from_list(model_list=model_list)
+            self.get_model_from_list(
+                path=self.workspace / self.workfolder,
+                model_list=model_list,
+            )
+
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
+
         if enable_cuda_malloc:
             set_cuda_malloc()
+
         logger.info("InvokeAI 安装完成")

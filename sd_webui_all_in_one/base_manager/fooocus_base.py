@@ -131,7 +131,7 @@ def install_fooocus(
     """安装 Fooocus
 
     Args:
-        sd_webui_path (Path):
+        fooocus_path (Path):
             Fooocus 根目录
         pytorch_mirror_type (PyTorchDeviceType | None):
             设置使用的 PyTorch 镜像源类型
@@ -314,7 +314,7 @@ def check_fooocus_env(
     fooocus_path: Path,
     check: bool | None = True,
     use_uv: bool | None = True,
-    use_pypi_mirror: bool | None = None,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 Fooocus 运行环境
 

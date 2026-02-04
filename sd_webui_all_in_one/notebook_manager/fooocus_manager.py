@@ -2,26 +2,19 @@
 
 import os
 import sys
-import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
-from sd_webui_all_in_one.downloader import MultiThreadDownloader, download_file
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements
-
+from sd_webui_all_in_one.pkg_manager import install_manager_depend
+from sd_webui_all_in_one.base_manager.fooocus_base import FooocusBranchType, check_fooocus_env, update_fooocus, install_fooocus
 
 logger = get_logger(
     name="Fooocus Manager",
@@ -57,19 +50,11 @@ class FooocusManager(BaseManager):
 
         Args:
             extras (list[dict[str, str | bool]]): 挂载额外目录
-        Raises:
-            RuntimeError: 挂载 Google Drive 失败
         """
-        if not is_colab_environment():
-            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+        if not self.mount_google_drive_for_notebook():
             return
 
-        drive_path = Path("/content/drive")
-        if not (drive_path / "MyDrive").exists():
-            if not mount_google_drive(drive_path):
-                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
-
-        drive_output = drive_path / "MyDrive" / "fooocus_output"
+        drive_output = Path("/content/drive") / "MyDrive" / "fooocus_output"
         fooocus_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
             {"link_dir": "outputs"},
@@ -129,152 +114,27 @@ class FooocusManager(BaseManager):
             model_type = model.get("type", "checkpoints")
             self.get_sd_model(url=url, filename=filename, model_type=model_type)
 
-    def install_config(
-        self,
-        preset: str | None = None,
-        translation: str | None = None,
-    ) -> None:
-        """下载 Fooocus 配置文件
-
-        Args:
-            preset (str | None): Fooocus 预设文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/presets/custom.json`
-            path_config (str | None): Fooocus 路径配置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.txt`
-            translation (str | None): Fooocus 翻译文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/language/zh.json`
-        """
-        path = self.workspace / self.workfolder
-        preset_path = path / "presets"
-        language_path = path / "language"
-        logger.info("下载配置文件")
-        if preset is not None:
-            download_file(url=preset, path=preset_path, save_name="custom.json")
-        if translation is not None:
-            download_file(url=translation, path=language_path, save_name="zh.json")
-
-    def pre_download_model(
-        self,
-        path: str | Path,
-        thread_num: int | None = 16,
-        downloader: Literal["aria2", "request", "mix"] = "mix",
-    ) -> None:
-        """根据 Fooocus 配置文件预下载模型
-
-        Args:
-            path (str | Path): Fooocus 配置文件路径
-            thread_num (int | None): 下载模型的线程数
-            downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的下载器 (`aria2`, `request`, `mix`)
-        """
-        path = Path(path) if not isinstance(path, Path) and path is not None else path
-        if path.exists():
-            try:
-                with open(path, "r", encoding="utf8") as file:
-                    data = json.load(file)
-            except Exception as e:
-                logger.warning("打开 Fooocus 配置文件时出现错误: %s", e)
-                data = {}
-        else:
-            data = {}
-
-        if downloader == "aria2":
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "aria2"
-            lora_downloader = "aria2"
-        elif downloader == "requests":
-            sd_model_downloader = "requests"
-            vae_downloader = "requests"
-            embedding_downloader = "requests"
-            lora_downloader = "requests"
-        elif downloader == "mix":
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "requests"
-            lora_downloader = "requests"
-        else:
-            sd_model_downloader = "aria2"
-            vae_downloader = "aria2"
-            embedding_downloader = "aria2"
-            lora_downloader = "aria2"
-
-        sd_model_list: dict[str, str] = data.get("checkpoint_downloads", {})
-        lora_list: dict[str, str] = data.get("lora_downloads", {})
-        vae_list: dict[str, str] = data.get("vae_downloads", {})
-        embedding_list: dict[str, str] = data.get("embeddings_downloads", {})
-        fooocus_path = self.workspace / self.workfolder
-        sd_model_path = fooocus_path / "models" / "checkpoints"
-        lora_path = fooocus_path / "models" / "loras"
-        vae_path = fooocus_path / "models" / "vae"
-        embedding_path = fooocus_path / "models" / "embeddings"
-
-        downloader_params: list[dict[str, Any]] = []
-        downloader_params += [
-            {
-                "url": sd_model_list.get(i),
-                "path": sd_model_path,
-                "save_name": i,
-                "tool": sd_model_downloader,
-                "progress": True if sd_model_downloader == "aria2" else False,
-            }
-            for i in sd_model_list
-        ]
-        downloader_params += [
-            {
-                "url": lora_list.get(i),
-                "path": lora_path,
-                "save_name": i,
-                "tool": lora_downloader,
-                "progress": True if lora_downloader == "aria2" else False,
-            }
-            for i in lora_list
-        ]
-        downloader_params += [
-            {
-                "url": vae_list.get(i),
-                "path": vae_path,
-                "save_name": i,
-                "tool": vae_downloader,
-                "progress": True if vae_downloader == "aria2" else False,
-            }
-            for i in vae_list
-        ]
-        downloader_params += [
-            {
-                "url": embedding_list.get(i),
-                "path": embedding_path,
-                "save_name": i,
-                "tool": embedding_downloader,
-                "progress": True if embedding_downloader == "aria2" else False,
-            }
-            for i in embedding_list
-        ]
-
-        model_downloader = MultiThreadDownloader(
-            download_func=download_file,
-            download_kwargs_list=downloader_params,
-        )
-        model_downloader.start(num_threads=thread_num)
-        logger.info("预下载 Fooocus 模型完成")
-
     def check_env(
         self,
+        check: bool | None = False,
         use_uv: bool | None = True,
-        requirements_file: str | None = "requirements_versions.txt",
+        use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 Fooocus 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
-            requirements_file (str | None): 依赖文件名
+            check (bool | None):
+                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_pypi_mirror (bool | None):
         """
-        sd_webui_path = self.workspace / self.workfolder
-        requirement_path = sd_webui_path / requirements_file
-        py_dependency_checker(
-            requirement_path=requirement_path,
-            name="Fooocus",
+        check_fooocus_env(
+            fooocus_path=self.workspace / self.workfolder,
+            check=check,
             use_uv=use_uv,
+            use_pypi_mirror=use_pypi_mirror,
         )
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
-        check_numpy(use_uv=use_uv)
 
     def get_launch_command(
         self,
@@ -316,21 +176,22 @@ class FooocusManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list[str] | None = None,
-        xformers_ver: str | list[str] | None = None,
+        pytorch_mirror_type: PyTorchDeviceType | None = None,
+        custom_pytorch_package: str | None = None,
+        custom_xformers_package: str | None = None,
+        use_pypi_mirror: bool | None = False,
         use_uv: bool | None = True,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        install_branch: FooocusBranchType | None = None,
+        no_pre_download_model: bool | None = True,
+        use_cn_model_mirror: bool | None = False,
+        # legecy
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror: str | None = None,
-        fooocus_repo: str | None = None,
-        fooocus_requirements: str | None = None,
-        fooocus_preset: str | None = None,
-        fooocus_translation: str | None = None,
-        model_downloader: Literal["aria2", "request", "mix"] = "mix",
-        download_model_thread: int | None = 16,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -344,30 +205,52 @@ class FooocusManager(BaseManager):
         """安装 Fooocus
 
         Args:
-            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
-            pypi_index_mirror (str | None): PyPI Index 镜像源链接
-            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
-            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
-            huggingface_mirror (str | None): HuggingFace 镜像源链接
-            pytorch_mirror (str | None): PyTorch 镜像源链接
-            fooocus_repo (str | None): Fooocus 仓库地址
-            fooocus_requirements (str | None): Fooocus 依赖文件名
-            fooocus_preset (str | None): Fooocus 预设文件下载链接
-            fooocus_translation (str | None): Fooocus 翻译文件下载地址
-            model_downloader (Literal["aria2", "request", "mix"]): 预下载模型时使用的模型下载器
-            download_model_thread (int | None): 预下载模型的线程
-            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
-            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
-            huggingface_token (str | None): 配置 HuggingFace Token
-            modelscope_token (str | None): 配置 ModelScope Token
-            update_core (bool | None): 安装时更新内核和扩展
-        Raises:
-            Exception: GPU 不可用
+            pytorch_mirror_type (PyTorchDeviceType | None):
+                设置使用的 PyTorch 镜像源类型
+            custom_pytorch_package (str | None):
+                自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
+            custom_xformers_package (str | None):
+                自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            install_branch (FooocusBranchType | None):
+                安装的 Fooocus 分支
+            no_pre_download_model (bool | None):
+                是否禁用预下载模型
+            use_cn_model_mirror (bool | None):
+                是否使用国内镜像下载模型
+            pypi_index_mirror (str | None):
+                PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None):
+                PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None):
+                PyPI Find Links 镜像源链接
+            github_mirror (str | list[str] | None):
+                Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None):
+                HuggingFace 镜像源链接
+            model_list (list[dict[str, str]] | None):
+                模型下载列表
+            check_avaliable_gpu (bool | None):
+                是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None):
+                是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None):
+                启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
+                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None):
+                配置 HuggingFace Token
+            modelscope_token (str | None):
+                配置 ModelScope Token
+            update_core (bool | None):
+                安装时更新内核和扩展
         """
         warning_unexpected_params(
             message="FooocusManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -379,18 +262,13 @@ class FooocusManager(BaseManager):
             custom_sys_pkg_cmd = []
         elif custom_sys_pkg_cmd is True:
             custom_sys_pkg_cmd = None
+
         os.chdir(self.workspace)
         fooocus_path = self.workspace / self.workfolder
-        fooocus_repo = "https://github.com/lllyasviel/Fooocus" if fooocus_repo is None else fooocus_repo
-        fooocus_preset = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_config.json" if fooocus_preset is None else fooocus_preset
-        fooocus_translation = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/fooocus_zh_cn.json" if fooocus_translation is None else fooocus_translation
-        requirements_path = fooocus_path / ("requirements_versions.txt" if fooocus_requirements is None else fooocus_requirements)
-        config_file = fooocus_path / "presets" / "custom.json"
+
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
-        logger.info("Fooocus 内核分支: %s", fooocus_repo)
-        logger.info("Fooocus 预设配置: %s", fooocus_preset)
-        logger.info("Fooocus 翻译配置: %s", fooocus_translation)
+
         set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -404,35 +282,33 @@ class FooocusManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        git_warpper.clone(fooocus_repo, fooocus_path)
+
+        install_fooocus(
+            fooocus_path=fooocus_path,
+            pytorch_mirror_type=pytorch_mirror_type,
+            custom_pytorch_package=custom_pytorch_package,
+            custom_xformers_package=custom_xformers_package,
+            use_pypi_mirror=use_pypi_mirror,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            install_branch=install_branch,
+            no_pre_download_model=no_pre_download_model,
+            use_cn_model_mirror=use_cn_model_mirror,
+        )
+
         if update_core:
-            git_warpper.update(fooocus_path)
-        install_pytorch(
-            torch_package=torch_ver,
-            xformers_package=xformers_ver,
-            custom_env=pytorch_mirror,
-            use_uv=use_uv,
-        )
-        install_requirements(
-            path=requirements_path,
-            use_uv=use_uv,
-            cwd=fooocus_path,
-        )
-        self.install_config(
-            preset=fooocus_preset,
-            translation=fooocus_translation,
-        )
+            update_fooocus(fooocus_path=fooocus_path)
+
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )
+
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
+
         if enable_cuda_malloc:
             set_cuda_malloc()
-        self.pre_download_model(
-            path=config_file,
-            thread_num=download_model_thread,
-            downloader=model_downloader,
-        )
+
         logger.info("Fooocus 安装完成")

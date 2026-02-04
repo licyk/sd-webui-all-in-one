@@ -52,30 +52,6 @@ def clear_jupyter_output() -> None:
         raise RuntimeError(f"清理 Jupyter Notebook 输出内容失败: {e}") from e
 
 
-def check_gpu() -> bool:
-    """检查环境中是否有可用的 GPU
-
-    Returns:
-        bool: 当有可用 GPU 时返回`True`
-
-    ImportError:
-
-    """
-    # TODO: 替换成 get_avaliable_pytorch_device_type() 的实现
-    logger.info("检查当前环境是否有 GPU 可用")
-    try:
-        import tensorflow as tf
-    except ImportError as e:
-        raise ImportError("tensorflow 未安装, 无法检测是否有可用的 GPU") from e
-
-    if tf.test.gpu_device_name():
-        logger.info("有可用的 GPU")
-        return True
-    else:
-        logger.error("无可用 GPU")
-        return False
-
-
 def warning_unexpected_params(
     message: str,
     args: tuple[Any, ...],

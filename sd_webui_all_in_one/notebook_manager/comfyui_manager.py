@@ -5,22 +5,16 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
-from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.env_check.comfyui_env_analyze import comfyui_conflict_analyzer
-from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements
+from sd_webui_all_in_one.pkg_manager import install_manager_depend
+from sd_webui_all_in_one.base_manager.comfyui_base import install_comfyui_custom_node, update_comfyui_custom_nodes, check_comfyui_env, update_comfyui, install_comfyui
 
 
 logger = get_logger(
@@ -56,20 +50,13 @@ class ComfyUIManager(BaseManager):
         默认挂载的目录和文件: `output`, `user`, `input`, `extra_model_paths.yaml`
 
         Args:
-            extras (list[dict[str, str | bool]]): 挂载额外目录
-        Raises:
-            RuntimeError: 挂载 Google Drive 失败
+            extras (list[dict[str, str | bool]]):
+                挂载额外目录
         """
-        if not is_colab_environment():
-            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+        if not self.mount_google_drive_for_notebook():
             return
 
-        drive_path = Path("/content/drive")
-        if not (drive_path / "MyDrive").exists():
-            if not mount_google_drive(drive_path):
-                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
-
-        drive_output = drive_path / "MyDrive" / "comfyui_output"
+        drive_output = Path("/content/drive") / "MyDrive" / "comfyui_output"
         comfyui_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
             {"link_dir": "output"},
@@ -94,11 +81,15 @@ class ComfyUIManager(BaseManager):
         """下载模型
 
         Args:
-            url (str): 模型的下载链接
-            filename (str | None): 模型下载后保存的名称
-            model_type (str | None): 模型的类型
+            url (str):
+                模型的下载链接
+            filename (str | None):
+                模型下载后保存的名称
+            model_type (str | None):
+                模型的类型
         Returns:
-            Path | None: 模型保存路径
+            (Path | None):
+                模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / model_type
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
@@ -128,95 +119,98 @@ class ComfyUIManager(BaseManager):
             model_type = model.get("type", "checkpoints")
             self.get_sd_model(url=url, filename=filename, model_type=model_type)
 
-    def install_config(
-        self,
-        setting: str | None = None,
-    ) -> None:
-        """下载 ComfyUI 配置文件
-
-        Args:
-            setting ( str| None): ComfyUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/user/default/comfy.settings.json`
-        """
-        setting_path = self.workspace / self.workfolder / "user" / "default"
-        logger.info("下载配置文件")
-        if setting is not None:
-            download_file(
-                url=setting,
-                path=setting_path,
-                save_name="comfy.settings.json",
-            )
-
     def install_custom_node(
         self,
-        custom_node: str,
-    ) -> Path | None:
-        """安装 ComfyUI 自定义节点
-
-        Args:
-            custom_node (str): 自定义节点下载地址
-        Returns:
-            (Path | None): 自定义节点安装路径
-        """
-        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
-        name = os.path.basename(custom_node)
-        install_path = custom_node_path / name
-        logger.info("安装 %s 自定义节点中", name)
-        p = git_warpper.clone(repo=custom_node, path=install_path)
-        if p is not None:
-            logger.info("安装 %s 自定义节点完成", name)
-            return p
-        logger.error("安装 %s 自定义节点失败", name)
-        return None
-
-    def install_custom_nodes_from_list(
-        self,
-        custom_node_list: list[str],
+        custom_node: str | list[str],
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        check: bool | None = True,
     ) -> None:
         """安装 ComfyUI 自定义节点
 
         Args:
-            custom_node_list (list[str]): 自定义节点列表
+            custom_node (str):
+                自定义节点下载地址
+            custom_node_url (str | list[str]):
+                ComfyUI 扩展下载链接
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            check (bool | None):
+                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
         """
-        logger.info("安装 ComfyUI 自定义节点中")
-        for node in custom_node_list:
-            self.install_custom_node(node)
-        logger.info("安装 ComfyUI 自定义节点完成")
+        install_comfyui_custom_node(
+            comfyui_path=self.workspace / self.workfolder,
+            custom_node_url=custom_node,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            check=check,
+        )
 
-    def update_custom_nodes(self) -> None:
-        """更新 ComfyUI 自定义节点"""
-        custom_node_path = self.workspace / self.workfolder / "custom_nodes"
-        custom_node_list = [x for x in custom_node_path.iterdir() if x.is_dir() and (x / ".git").is_dir()]
-        for i in custom_node_list:
-            logger.info("更新 %s 自定义节点中", i.name)
-            if git_warpper.update(i):
-                logger.info("更新 %s 自定义节点成功", i.name)
-            else:
-                logger.info("更新 %s 自定义节点失败", i.name)
+    def update_custom_nodes(
+        self,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        check: bool | None = True,
+    ) -> None:
+        """更新 ComfyUI 自定义节点
+
+        Args:
+            custom_node_url (str | list[str]):
+                ComfyUI 扩展下载链接
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            check (bool | None):
+                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
+        """
+        update_comfyui_custom_nodes(
+            comfyui_path=self.workspace / self.workfolder,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            check=check,
+        )
 
     def check_env(
         self,
-        use_uv: bool | None = True,
+        check: bool | None = False,
         install_conflict_component_requirement: bool | None = True,
-        requirements_file: str | None = "requirements.txt",
+        interactive_mode: bool | None = False,
+        use_uv: bool | None = True,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 ComfyUI 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
-            install_conflict_component_requirement (bool | None): 检测到冲突依赖时是否按顺序安装组件依赖
-            requirements_file (str | None): 依赖文件名
+            check (bool | None):
+                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
+            install_conflict_component_requirement (bool | None):
+                检测到冲突依赖时是否按顺序安装组件依赖
+            interactive_mode (bool | None):
+                是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
         """
-        comfyui_path = self.workspace / self.workfolder
-        requirement_path = comfyui_path / requirements_file
-        py_dependency_checker(requirement_path=requirement_path, name="ComfyUI", use_uv=use_uv)
-        comfyui_conflict_analyzer(
-            comfyui_root_path=comfyui_path,
+        check_comfyui_env(
+            comfyui_path=self.workspace / self.workfolder,
+            check=check,
             install_conflict_component_requirement=install_conflict_component_requirement,
+            interactive_mode=interactive_mode,
             use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
         )
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
-        check_numpy(use_uv=use_uv)
 
     def get_launch_command(
         self,
@@ -258,20 +252,24 @@ class ComfyUIManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list[str] | None = None,
-        xformers_ver: str | list[str] | None = None,
+        pytorch_mirror_type: PyTorchDeviceType | None = None,
+        custom_pytorch_package: str | None = None,
+        custom_xformers_package: str | None = None,
+        use_pypi_mirror: bool | None = False,
         use_uv: bool | None = True,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        no_pre_download_extension: bool | None = False,
+        no_pre_download_model: bool | None = True,
+        use_cn_model_mirror: bool | None = False,
+        # legecy
+        custom_node_list: list[str] | None = None,
+        model_list: list[dict[str, str]] | None = None,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror: str | None = None,
-        comfyui_repo: str | None = None,
-        comfyui_requirements: str | None = None,
-        comfyui_setting: str | None = None,
-        custom_node_list: list[str] | None = None,
-        model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
         enable_cuda_malloc: bool | None = True,
@@ -285,27 +283,54 @@ class ComfyUIManager(BaseManager):
         """安装 ComfyUI
 
         Args:
-            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
-            pypi_index_mirror (str | None): PyPI Index 镜像源链接
-            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
-            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
-            huggingface_mirror (str | None): HuggingFace 镜像源链接
-            pytorch_mirror (str | None): PyTorch 镜像源链接
-            comfyui_repo (str | None): ComfyUI 仓库地址
-            comfyui_requirements (str | None): ComfyUI 依赖文件名
-            comfyui_setting (str | None): ComfyUI 设置文件下载链接
-            custom_node_list (list[str] | None): 自定义节点列表
-            model_list (list[dict[str, str]] | None): 模型下载列表
-            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
-            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
-            huggingface_token (str | None): 配置 HuggingFace Token
-            modelscope_token (str | None): 配置 ModelScope Token
-            update_core (bool | None): 安装时更新内核和扩展
+            pytorch_mirror_type (PyTorchDeviceType | None):
+                设置使用的 PyTorch 镜像源类型
+            custom_pytorch_package (str | None):
+                自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
+            custom_xformers_package (str | None):
+                自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            no_pre_download_extension (bool | None):
+                是否禁用预下载 ComfyUI 扩展
+            no_pre_download_model (bool | None):
+                是否禁用预下载模型
+            use_cn_model_mirror (bool | None):
+                是否使用国内镜像下载模型
+            custom_node_list (list[str] | None):
+                自定义节点列表
+            model_list (list[dict[str, str]] | None):
+                模型下载列表
+            pypi_index_mirror (str | None):
+                PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None):
+                PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None):
+                PyPI Find Links 镜像源链接
+            github_mirror (str | list[str] | None):
+                Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None):
+                HuggingFace 镜像源链接
+            check_avaliable_gpu (bool | None):
+                是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None):
+                是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None):
+                启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
+                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None):
+                配置 HuggingFace Token
+            modelscope_token (str | None):
+                配置 ModelScope Token
+            update_core (bool | None):
+                安装时更新内核和扩展
         Raises:
             Exception: GPU 不可用
         """
@@ -319,13 +344,12 @@ class ComfyUIManager(BaseManager):
             custom_sys_pkg_cmd = []
         elif custom_sys_pkg_cmd is True:
             custom_sys_pkg_cmd = None
+
         os.chdir(self.workspace)
         comfyui_path = self.workspace / self.workfolder
-        comfyui_repo = "https://github.com/comfyanonymous/ComfyUI" if comfyui_repo is None else comfyui_repo
-        comfyui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/comfy.settings.json" if comfyui_setting is None else comfyui_setting
-        requirements_path = comfyui_path / ("requirements.txt" if comfyui_requirements is None else comfyui_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
+
         set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -339,32 +363,51 @@ class ComfyUIManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        git_warpper.clone(comfyui_repo, comfyui_path)
+
+        install_comfyui(
+            comfyui_path=comfyui_path,
+            pytorch_mirror_type=pytorch_mirror_type,
+            custom_pytorch_package=custom_pytorch_package,
+            custom_xformers_package=custom_xformers_package,
+            use_pypi_mirror=use_pypi_mirror,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            no_pre_download_extension=no_pre_download_extension,
+            no_pre_download_model=no_pre_download_model,
+            use_cn_model_mirror=use_cn_model_mirror,
+        )
+
         if custom_node_list is not None:
-            self.install_custom_nodes_from_list(custom_node_list)
+            self.install_custom_node(
+                custom_node=custom_node_list,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+
         if update_core:
-            git_warpper.update(comfyui_path)
-            self.update_custom_nodes()
-        install_pytorch(
-            torch_package=torch_ver,
-            xformers_package=xformers_ver,
-            custom_env=pytorch_mirror,
-            use_uv=use_uv,
-        )
-        install_requirements(
-            path=requirements_path,
-            use_uv=use_uv,
-            cwd=comfyui_path,
-        )
-        self.install_config(comfyui_setting)
+            update_comfyui(
+                comfyui_path=comfyui_path,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+            self.update_custom_nodes(
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
+
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )
+
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
+
         if enable_cuda_malloc:
             set_cuda_malloc()
+
         logger.info("ComfyUI 安装完成")

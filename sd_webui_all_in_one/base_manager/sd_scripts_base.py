@@ -361,7 +361,7 @@ def check_sd_scripts_env(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = None,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 SD Scripts 运行环境
 

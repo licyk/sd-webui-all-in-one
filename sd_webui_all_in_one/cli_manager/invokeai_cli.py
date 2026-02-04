@@ -163,10 +163,6 @@ def install_custom_nodes(
             自定义 Github 镜像源
         check (bool | None):
             是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
-
-    Raises:
-        AggregateError:
-            安装 InvokeAI 扩展发生错误时
     """
     install_invokeai_custom_nodes(
         invokeai_path=invokeai_path,
@@ -193,10 +189,6 @@ def set_custom_node_status(
             设置扩展的启用状态
             - `True`: 启用
             - `False`: 禁用
-
-    Raises:
-        FileNotFoundError:
-            InvokeAI 扩展未找到时
     """
     set_invokeai_custom_nodes_status(
         invokeai_path=invokeai_path,
@@ -240,10 +232,6 @@ def update_custom_nodes(
             自定义 Github 镜像源
         check (bool | None):
             是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
-
-    Raises:
-        AggregateError:
-            检查 InvokeAI 环境发生错误时
     """
     update_invokeai_custom_nodes(
         invokeai_path=invokeai_path,
@@ -267,12 +255,6 @@ def uninstall_custom_node(
             InvokeAI 扩展名称
         check (bool | None):
             是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
-
-    Raises:
-        FileNotFoundError:
-            要卸载的扩展未找到时
-        RuntimeError:
-            卸载扩展发生错误时
     """
     uninstall_invokeai_custom_node(
         invokeai_path=invokeai_path,
@@ -359,10 +341,6 @@ def uninstall_model(
             模型名称
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-        FileNotFoundError:
-            未找到要删除的模型时
     """
     uninstall_invokeai_model(
         model_name=model_name,

@@ -57,12 +57,6 @@ def install(
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
             是否使用国内镜像下载模型
-
-    Raises:
-        ValueError:
-            安装的 SD Scripts 分支未知时
-        FileNotFoundError:
-            SD Scripts 依赖文件缺失时
     """
     install_sd_scripts(
         sd_scripts_path=sd_scripts_path,
@@ -124,12 +118,6 @@ def check_env(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-
-    Raises:
-        AggregateError:
-            检查 SD Scripts 环境发生错误时
-        FileNotFoundError:
-            未找到 SD Scripts 依赖文件记录表时
     """
     check_sd_scripts_env(
         sd_scripts_path=sd_scripts_path,
@@ -152,10 +140,6 @@ def switch(
             SD Scripts 根目录
         branch (SDScriptsBranchType):
             要切换的 SD Scripts 分支
-
-    Raises:
-        ValueError:
-            传入未知的 SD Scripts 分支时
     """
     switch_sd_trainer_branch(
         sd_scripts_path=sd_scripts_path,
@@ -254,10 +238,6 @@ def uninstall_model(
             模型的类型
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-        FileNotFoundError:
-            未找到要删除的模型时
     """
     uninstall_sd_scripts_model(
         sd_scripts_path=sd_scripts_path,

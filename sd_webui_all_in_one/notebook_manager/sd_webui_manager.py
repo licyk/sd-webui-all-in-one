@@ -5,22 +5,23 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
-from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements
-from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
+from sd_webui_all_in_one.pkg_manager import install_manager_depend
+from sd_webui_all_in_one.base_manager.sd_webui_base import (
+    SDWebUiBranchType,
+    install_sd_webui_extension,
+    update_sd_webui_extensions,
+    update_sd_webui,
+    check_sd_webui_env,
+    install_sd_webui,
+)
 
 
 logger = get_logger(
@@ -32,32 +33,6 @@ logger = get_logger(
 
 class SDWebUIManager(BaseManager):
     """Stable Diffusion WebUI 管理工具"""
-
-    def __init__(
-        self,
-        workspace: str | Path,
-        workfolder: str,
-        hf_token: str | None = None,
-        ms_token: str | None = None,
-        port: int | None = 9090,
-    ) -> None:
-        """管理工具初始化
-
-        Args:
-            workspace (str | Path): 工作区路径
-            workfolder (str): 工作区的文件夹名称
-            hf_token (str | None): HuggingFace Token
-            ms_token (str | None): ModelScope Token
-            port (int | None): 内网穿透端口
-        """
-        super().__init__(
-            workspace=workspace,
-            workfolder=workfolder,
-            hf_token=hf_token,
-            ms_token=ms_token,
-            port=port,
-        )
-        os.environ["STABLE_DIFFUSION_REPO"] = "https://github.com/licyk/stablediffusion"
 
     def mount_drive(
         self,
@@ -86,16 +61,10 @@ class SDWebUIManager(BaseManager):
         Raises:
             RuntimeError: 挂载 Google Drive 失败
         """
-        if not is_colab_environment():
-            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+        if not self.mount_google_drive_for_notebook():
             return
 
-        drive_path = Path("/content/drive")
-        if not (drive_path / "MyDrive").exists():
-            if not mount_google_drive(drive_path):
-                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
-
-        drive_output = drive_path / "MyDrive" / "sd_webui_output"
+        drive_output = Path("/content/drive") / "MyDrive" / "sd_webui_output"
         sd_webui_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
             {"link_dir": "outputs"},
@@ -159,108 +128,86 @@ class SDWebUIManager(BaseManager):
             model_type = model.get("type", "Stable-diffusion")
             self.get_sd_model(url=url, filename=filename, model_type=model_type)
 
-    def install_config(
-        self,
-        setting: str | None = None,
-        requirements: str | None = None,
-        requirements_file: str | None = None,
-    ) -> None:
-        """下载 Stable Diffusion WebUI 配置文件
-
-        Args:
-            setting (str | None): Stable Diffusion WebUI 设置文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/config.json`
-            requirements (str | None): Stable Diffusion WebUI 依赖表文件下载链接, 下载后将保存在`{self.workspace}/{self.workfolder}/{requirements_file}`
-            requirements_file (str | None): Stable Diffusion WebUI 依赖表文件名
-        """
-        setting_path = self.workspace / self.workfolder
-        logger.info("下载配置文件")
-        if setting is not None:
-            download_file(
-                url=setting,
-                path=setting_path,
-                save_name="config.json",
-            )
-        if requirements is not None:
-            try:
-                (setting_path / requirements_file).unlink(missing_ok=True)
-                download_file(
-                    url=requirements,
-                    path=setting_path,
-                    save_name=requirements_file,
-                )
-            except Exception as e:
-                logger.error("下载 Stable Diffusion WebUI 依赖文件出现错误: %s", e)
-
     def install_extension(
         self,
-        extension: str,
-    ) -> Path | None:
-        """安装 Stable Diffusion WebUI 扩展
-
-        Args:
-            extension (str): 扩展下载地址
-        Returns:
-            (Path | None): 扩展安装路径
-        """
-        extension_path = self.workspace / self.workfolder / "extensions"
-        name = os.path.basename(extension)
-        install_path = extension_path / name
-        logger.info("安装 %s 扩展中", name)
-        p = git_warpper.clone(repo=extension, path=install_path)
-        if p is not None:
-            logger.info("安装 %s 扩展完成", name)
-            return p
-        logger.error("安装 %s 扩展失败", name)
-        return None
-
-    def install_extensions_from_list(
-        self,
-        extension_list: list[str],
+        extension: str | list[str],
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        check: bool | None = True,
     ) -> None:
         """安装 Stable Diffusion WebUI 扩展
 
         Args:
-            extension_list (list[str]): 扩展列表
+            extension (str | list[str]):
+                扩展下载地址
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            check (bool | None):
+                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
         """
-        logger.info("安装 Stable Diffusion WebUI 扩展中")
-        for extension in extension_list:
-            self.install_extension(extension)
-        logger.info("安装 Stable Diffusion WebUI 扩展完成")
+        install_sd_webui_extension(
+            sd_webui_path=self.workspace / self.workfolder,
+            extension_url=extension,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            check=check,
+        )
 
-    def update_extensions(self) -> None:
-        """更新 Stable Diffusion WebUI 扩展"""
-        extension_path = self.workspace / self.workfolder / "extensions"
-        extension_list = [x for x in extension_path.iterdir() if x.is_dir() and (x / ".git").is_dir()]
-        for i in extension_list:
-            logger.info("更新 %s 扩展中", i.name)
-            if git_warpper.update(i):
-                logger.info("更新 %s 扩展成功", i.name)
-            else:
-                logger.info("更新 %s 扩展失败", i.name)
+    def update_extensions(
+        self,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        check: bool | None = True,
+    ) -> None:
+        """更新 Stable Diffusion WebUI 扩展
+
+        Args:
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            check (bool | None):
+                是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
+        """
+        update_sd_webui_extensions(
+            sd_webui_path=self.workspace / self.workfolder,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            check=check,
+        )
 
     def check_env(
         self,
+        check: bool | None = True,
         use_uv: bool | None = True,
-        requirements_file: str | None = "requirements_versions.txt",
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 Stable Diffusion WebUI 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
-            requirements_file (str | None): 依赖文件名
+            check (bool | None):
+                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
         """
-        sd_webui_path = self.workspace / self.workfolder
-        requirement_path = sd_webui_path / requirements_file
-        self.fix_stable_diffusion_invaild_repo_url()
-        py_dependency_checker(
-            requirement_path=requirement_path,
-            name="Stable Diffusion WebUI",
+        check_sd_webui_env(
+            sd_webui_path=self.workspace / self.workfolder,
+            check=check,
             use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
         )
-        install_extension_requirements(sd_webui_path=sd_webui_path)
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
-        check_numpy(use_uv=use_uv)
 
     def get_launch_command(
         self,
@@ -302,21 +249,24 @@ class SDWebUIManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list[str] | None = None,
-        xformers_ver: str | list[str] | None = None,
+        pytorch_mirror_type: PyTorchDeviceType | None = None,
+        custom_pytorch_package: str | None = None,
+        custom_xformers_package: str | None = None,
+        use_pypi_mirror: bool | None = True,
         use_uv: bool | None = True,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        install_branch: SDWebUiBranchType | None = None,
+        no_pre_download_extension: bool | None = True,
+        no_pre_download_model: bool | None = True,
+        use_cn_model_mirror: bool | None = False,
+        # legecy
+        extension_list: list[str] | None = None,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror: str | None = None,
-        sd_webui_repo: str | None = None,
-        sd_webui_branch: str | None = None,
-        sd_webui_requirements: str | None = None,
-        sd_webui_requirements_url: str | None = None,
-        sd_webui_setting: str | None = None,
-        extension_list: list[str] | None = None,
         model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
@@ -331,31 +281,56 @@ class SDWebUIManager(BaseManager):
         """安装 Stable Diffusion WebUI
 
         Args:
-            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
-            pypi_index_mirror (str | None): PyPI Index 镜像源链接
-            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
-            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
-            huggingface_mirror (str | None): HuggingFace 镜像源链接
-            pytorch_mirror (str | None): PyTorch 镜像源链接
-            sd_webui_repo (str | None): Stable Diffusion WebUI 仓库地址
-            sd_webui_branch (str | None): Stable Diffusion WebUI 分支
-            sd_webui_requirements (str | None): Stable Diffusion WebUI 依赖文件名
-            sd_webui_requirements_url (str | None): Stable Diffusion WebUI 依赖文件下载地址
-            sd_webui_setting (str | None): Stable Diffusion WebUI 预设文件下载链接
-            extension_list (list[str] | None): 扩展列表
-            model_list (list[dict[str, str]] | None): 模型下载列表
-            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
-            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
-            huggingface_token (str | None): 配置 HuggingFace Token
-            modelscope_token (str | None): 配置 ModelScope Token
-            update_core (bool | None): 安装时更新内核和扩展
-        Raises:
-            Exception: GPU 不可用
+            pytorch_mirror_type (PyTorchDeviceType | None):
+                设置使用的 PyTorch 镜像源类型
+            custom_pytorch_package (str | None):
+                自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
+            custom_xformers_package (str | None):
+                自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            install_branch (SDWebUiBranchType | None):
+                安装的 Stable Diffusion WebUI 分支
+            no_pre_download_extension (bool | None):
+                是否禁用预下载 Stable Diffusion WebUI 扩展
+            no_pre_download_model (bool | None):
+                是否禁用预下载模型
+            use_cn_model_mirror (bool | None):
+                是否使用国内镜像下载模型
+            extension_list (list[str] | None):
+                扩展列表
+            pypi_index_mirror (str | None):
+                PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None):
+                PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None):
+                PyPI Find Links 镜像源链接
+            github_mirror (str | list[str] | None):
+                Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None):
+                HuggingFace 镜像源链接
+            model_list (list[dict[str, str]] | None):
+                模型下载列表
+            check_avaliable_gpu (bool | None):
+                是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None):
+                是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None):
+                启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
+                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None):
+                配置 HuggingFace Token
+            modelscope_token (str | None):
+                配置 ModelScope Token
+            update_core (bool | None):
+                安装时更新内核和扩展
         """
         warning_unexpected_params(
             message="SDWebUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -367,13 +342,14 @@ class SDWebUIManager(BaseManager):
             custom_sys_pkg_cmd = []
         elif custom_sys_pkg_cmd is True:
             custom_sys_pkg_cmd = None
+
         os.chdir(self.workspace)
+        os.environ["STABLE_DIFFUSION_REPO"] = "https://github.com/licyk/stablediffusion"
         sd_webui_path = self.workspace / self.workfolder
-        sd_webui_repo = "https://github.com/AUTOMATIC1111/stable-diffusion-webui" if sd_webui_repo is None else sd_webui_repo
-        sd_webui_setting = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/sd_webui_config.json" if sd_webui_setting is None else sd_webui_setting
-        requirements_path = sd_webui_path / ("requirements_versions.txt" if sd_webui_requirements is None else sd_webui_requirements)
+
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
+
         set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
@@ -387,42 +363,47 @@ class SDWebUIManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        git_warpper.clone(sd_webui_repo, sd_webui_path)
+
+        install_sd_webui(
+            sd_webui_path=sd_webui_path,
+            pytorch_mirror_type=pytorch_mirror_type,
+            custom_pytorch_package=custom_pytorch_package,
+            custom_xformers_package=custom_xformers_package,
+            use_pypi_mirror=use_pypi_mirror,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            install_branch=install_branch,
+            no_pre_download_extension=no_pre_download_extension,
+            no_pre_download_model=no_pre_download_model,
+            use_cn_model_mirror=use_cn_model_mirror,
+        )
+
         if extension_list is not None:
-            self.install_extensions_from_list(extension_list)
-        if update_core:
-            git_warpper.update(sd_webui_path)
-            self.update_extensions()
-        if sd_webui_branch is not None:
-            git_warpper.switch_branch(
-                path=sd_webui_path,
-                branch=sd_webui_branch,
-                recurse_submodules=True,
+            self.install_extension(
+                extension=extension_list,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
             )
-        install_pytorch(
-            torch_package=torch_ver,
-            xformers_package=xformers_ver,
-            custom_env=pytorch_mirror,
-            use_uv=use_uv,
-        )
-        self.install_config(
-            setting=sd_webui_setting,
-            requirements=sd_webui_requirements_url,
-            requirements_file=requirements_path.name,
-        )
-        install_requirements(
-            path=requirements_path,
-            use_uv=use_uv,
-            cwd=sd_webui_path,
-        )
+
+        if update_core:
+            update_sd_webui(sd_webui_path=sd_webui_path)
+            self.update_extensions(
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
+
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
+
         if enable_cuda_malloc:
             set_cuda_malloc()
+
         logger.info("Stable Diffusion WebUI 安装完成")

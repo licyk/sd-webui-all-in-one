@@ -59,12 +59,6 @@ def install(
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
             是否使用国内镜像下载模型
-
-    Raises:
-        ValueError:
-            安装的 Fooocus 分支未知时
-        FileNotFoundError:
-            Fooocus 依赖文件缺失时
     """
     install_fooocus(
         fooocus_path=fooocus_path,
@@ -120,12 +114,6 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-
-    Raises:
-        AggregateError:
-            检查 Fooocus 环境发生错误时
-        FileNotFoundError:
-            未找到 Fooocus 依赖文件记录表时
     """
     check_fooocus_env(
         fooocus_path=fooocus_path,
@@ -146,10 +134,6 @@ def switch(
             Fooocus 根目录
         branch (FooocusBranchType):
             要切换的 Fooocus 分支
-
-    Raises:
-        ValueError:
-            传入未知的 Fooocus 分支时
     """
     switch_fooocus_branch(
         fooocus_path=fooocus_path,
@@ -306,10 +290,6 @@ def uninstall_model(
             模型的类型
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-        FileNotFoundError:
-            未找到要删除的模型时
     """
     uninstall_fooocus_model(
         fooocus_path=fooocus_path,

@@ -408,12 +408,11 @@ def launch_webui(
     if launch_args is None:
         launch_args = []
 
-    if custom_env is None:
-        custom_env = os.environ.copy()
-
     cmd = [Path(sys.executable).as_posix(), webui_path / launch_script] + launch_args
     try:
         run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
+    except KeyboardInterrupt:
+        logger.info("已关闭 WebUI")
     except RuntimeError as e:
         raise RuntimeError(f"运行 WebUI 时出现错误: {e}") from e
 

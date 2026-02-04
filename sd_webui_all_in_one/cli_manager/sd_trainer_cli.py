@@ -59,12 +59,6 @@ def install(
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
             是否使用国内镜像下载模型
-
-    Raises:
-        ValueError:
-            安装的 SD Trainer 分支未知时
-        FileNotFoundError:
-            SD Trainer 依赖文件缺失时
     """
     install_sd_trainer(
         sd_trainer_path=sd_trainer_path,
@@ -123,13 +117,7 @@ def check_env(
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
         use_pypi_mirror (bool | None):
-            是否启用 PyPI 镜像源
-
-    Raises:
-        AggregateError:
-            检查 SD Trainer 环境发生错误时
-        FileNotFoundError:
-            未找到 SD Trainer 依赖文件记录表时
+            是否启用 PyPI 镜像源=
     """
     check_sd_trainer_env(
         sd_trainer_path=sd_trainer_path,
@@ -152,10 +140,6 @@ def switch(
             SD Trainer 根目录
         branch (SDTrainerBranchType):
             要切换的 SD Trainer 分支
-
-    Raises:
-        ValueError:
-            传入未知的 SD Trainer 分支时
     """
     switch_sd_trainer_branch(
         sd_trainer_path=sd_trainer_path,
@@ -313,10 +297,6 @@ def uninstall_model(
             模型的类型
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-        FileNotFoundError:
-            未找到要删除的模型时
     """
     uninstall_sd_trainer_model(
         sd_trainer_path=sd_trainer_path,

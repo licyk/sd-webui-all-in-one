@@ -67,12 +67,6 @@ def install(
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
             是否使用国内镜像下载模型
-
-    Raises:
-        ValueError:
-            安装的 Stable Diffusion WebUI 分支未知时
-        FileNotFoundError:
-            Stable Diffusion WebUI 依赖文件缺失时
     """
     install_sd_webui(
         sd_webui_path=sd_webui_path,
@@ -135,12 +129,6 @@ def check_env(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-
-    Raises:
-        AggregateError:
-            检查 Stable Diffusion WebUI 环境发生错误时
-        FileNotFoundError:
-            未找到 Stable Diffusion WebUI 依赖文件记录表时
     """
     check_sd_webui_env(
         sd_webui_path=sd_webui_path,
@@ -163,10 +151,6 @@ def switch(
             Stable Diffusion WebUI 根目录
         branch (SDWebUiBranchType):
             要切换的 Stable Diffusion WebUI 分支
-
-    Raises:
-        ValueError:
-            传入未知的 Stable Diffusion WebUI 分支时
     """
     switch_sd_webui_branch(
         sd_webui_path=sd_webui_path,
@@ -254,10 +238,6 @@ def install_extension(
             自定义 Github 镜像源
         check (bool | None):
             是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
-
-    Raises:
-        AggregateError:
-            安装 Stable Diffusion WebUI 扩展发生错误时
     """
     install_sd_webui_extension(
         sd_webui_path=sd_webui_path,
@@ -284,10 +264,6 @@ def set_extensions_status(
             设置扩展的启用状态
             - `True`: 启用
             - `False`: 禁用
-
-    Raises:
-        FileNotFoundError:
-            Stable Diffusion WebUI 扩展未找到时
     """
     set_sd_webui_extensions_status(
         sd_webui_path=sd_webui_path,
@@ -331,10 +307,6 @@ def update_extensions(
             自定义 Github 镜像源
         check (bool | None):
             是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
-
-    Raises:
-        AggregateError:
-            检查 Stable Diffusion WebUI 环境发生错误时
     """
     update_sd_webui_extensions(
         sd_webui_path=sd_webui_path,
@@ -358,12 +330,6 @@ def uninstall_extension(
             Stable Diffusion WebUI 扩展名称
         check (bool | None):
             是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
-
-    Raises:
-        FileNotFoundError:
-            要卸载的扩展未找到时
-        RuntimeError:
-            卸载扩展发生错误时
     """
     uninstall_sd_webui_extension(
         sd_webui_path=sd_webui_path,
@@ -461,10 +427,6 @@ def uninstall_model(
             模型的类型
         interactive_mode (bool | None):
             是否启用交互模式
-
-    Raises:
-        FileNotFoundError:
-            未找到要删除的模型时
     """
     uninstall_sd_webui_model(
         sd_webui_path=sd_webui_path,

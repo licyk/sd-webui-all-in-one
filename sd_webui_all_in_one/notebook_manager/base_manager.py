@@ -1,6 +1,5 @@
 """管理工具基础类"""
 
-import re
 import os
 import subprocess
 import shlex
@@ -9,17 +8,17 @@ from pathlib import Path
 from typing import Literal
 
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_gpu_list, has_gpus
 from sd_webui_all_in_one.tunnel import TunnelManager
-from sd_webui_all_in_one.repo_manager import RepoManager
-from sd_webui_all_in_one.downloader import download_file, download_archive_and_unpack
+from sd_webui_all_in_one.repo_manager import ApiType, RepoManager, RepoType
+from sd_webui_all_in_one.downloader import DownloadToolType, download_file, download_archive_and_unpack
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
-from sd_webui_all_in_one.utils import check_gpu, in_jupyter, clear_jupyter_output
-from sd_webui_all_in_one.colab_tools import is_colab_environment
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, SD_WEBUI_ALL_IN_ONE_PATCHER_PATH, SD_WEBUI_ALL_IN_ONE_PATCHER
-from sd_webui_all_in_one.file_operations.file_manager import copy_files, sync_files_and_create_symlink
+from sd_webui_all_in_one.utils import in_jupyter
+from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, remove_files, move_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.file_operations.file_manager import remove_files
 
 
 logger = get_logger(
@@ -68,24 +67,15 @@ class BaseManager:
         self.workspace = Path(workspace)
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.workfolder = workfolder
-        self.repo = RepoManager(hf_token, ms_token)
-        self.tun = TunnelManager(workspace, port)
-        self.tcmalloc = TCMalloc(workspace)
+        self.repo_manager = RepoManager(hf_token, ms_token)
+        self.tun_manager = TunnelManager(workspace, port)
+        self.tcmalloc_manager = TCMalloc(workspace)
         self.copy_files = copy_files
-        self.import_kaggle_input = import_kaggle_input
-        self.display_model_and_dataset_dir = display_model_and_dataset_dir
-        self.clear_up = clear_jupyter_output
-        self.download_file = download_file
-        self.download_archive_and_unpack = download_archive_and_unpack
-        self.run_cmd = run_cmd
         self.remove_files = remove_files
-        if SD_WEBUI_ALL_IN_ONE_PATCHER:
-            logger.debug("配置 SD WebUI All In One 补丁模块")
-            if "PYTHONPATH" in os.environ and os.environ["PYTHONPATH"]:
-                os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix() + os.pathsep + os.environ["PYTHONPATH"]
-            else:
-                os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix()
-            logger.debug("PYTHONPATH: %s", os.getenv("PYTHONPATH"))
+        self.move_files = move_files
+        self.display_model_and_dataset_dir = display_model_and_dataset_dir
+        self.import_kaggle_input = import_kaggle_input
+        self.run_cmd = run_cmd
 
     def restart_repo_manager(
         self,
@@ -99,7 +89,7 @@ class BaseManager:
             ms_token (str | None): ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
         logger.info("重启 HuggingFace / ModelScope 仓库管理模块")
-        self.repo = RepoManager(
+        self.repo_manager = RepoManager(
             hf_token=hf_token,
             ms_token=ms_token,
         )
@@ -109,27 +99,35 @@ class BaseManager:
         url: str,
         path: str | Path,
         filename: str | None = None,
-        tool: Literal["aria2", "request"] = "aria2",
+        tool: DownloadToolType = "aria2",
     ) -> Path | None:
         """下载模型文件到本地中
 
         Args:
-            url (str): 模型文件的下载链接
-            path (str | Path): 模型文件下载到本地的路径
-            filename (str | None): 指定下载的模型文件名称
-            tool (Literal["aria2", "request"]): 下载工具
+            url (str):
+                模型文件的下载链接
+            path (str | Path):
+                模型文件下载到本地的路径
+            filename (str | None):
+                指定下载的模型文件名称
+            tool (DownloadToolType):
+                下载工具
 
         Returns:
             (Path | None): 文件保存路径
         """
         try:
-            return download_file(url=url, path=path, save_name=filename, tool=tool)
+            return download_file(url=url, path=Path(path), save_name=filename, tool=tool)
         except Exception as e:
             traceback.print_exc()
             logger.error("下载 '%s' 到 '%s' 时发生错误: %s", url, path, e)
             return None
 
-    def get_model_from_list(self, path: str | Path, model_list: list[str, int]) -> None:
+    def get_model_from_list(
+        self,
+        path: str | Path,
+        model_list: list[str, int],
+    ) -> None:
         """从模型列表下载模型
 
         `model_list`需要指定模型下载的链接和下载状态, 例如
@@ -166,15 +164,20 @@ class BaseManager:
                 else:
                     self.get_model(url=url, path=path, filename=filename)
 
-    def check_avaliable_gpu(self) -> bool:
+    def check_avaliable_gpu(
+        self,
+    ) -> bool:
         """检测当前环境是否有 GPU
 
         Returns:
-            bool: 环境有可用 GPU 时返回`True`
+            bool:
+                环境有可用 GPU 时返回`True`
+
         Raises:
-            RuntimeError: 环境中无 GPU 时引发错误
+            RuntimeError:
+                环境中无 GPU 时引发错误
         """
-        if not check_gpu():
+        if not has_gpus(get_gpu_list()):
             if is_colab_environment():
                 notice = "没有可用的 GPU, 请在 Colab -> 代码执行程序 > 更改运行时类型 -> 硬件加速器 选择 GPU T4\n如果不能使用 GPU, 请尝试更换账号!"
             else:
@@ -300,3 +303,189 @@ class BaseManager:
                 logger.error("未知的显示模式: %s", display_mode)
         except KeyboardInterrupt:
             logger.info("关闭 %s", name)
+
+    def get_pytorch_mirror_env(
+        self,
+        mirror_url: str | None = None,
+    ) -> dict[str, str]:
+        """获取包含 PyTorch 镜像源配置的环境变量字典
+
+        Args:
+            mirror_url (str | None):
+                PyTorch 镜像源地址
+
+        Returns:
+            (dict[str, str]):
+                包含 PyTorch 镜像源配置的环境变量字典
+        """
+        custom_env = os.environ.copy()
+        if mirror_url is None:
+            return custom_env
+
+        custom_env["PIP_INDEX_URL"] = mirror_url
+        custom_env["UV_DEFAULT_INDEX"] = mirror_url
+        custom_env.pop("PIP_EXTRA_INDEX_URL", None)
+        custom_env.pop("UV_INDEX", None)
+        custom_env.pop("PIP_FIND_LINKS", None)
+        custom_env.pop("UV_FIND_LINKS", None)
+
+        return custom_env
+
+    def mount_google_drive_for_notebook(
+        self,
+    ) -> bool:
+        """挂载 Google Drive
+
+        Returns:
+            bool:
+                当挂载 Google Drive 成功时
+
+        Raises:
+            RuntimeError: 挂载 Google Drive 失败
+        """
+        if not is_colab_environment():
+            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+            return False
+
+        drive_path = Path("/content/drive")
+        if not (drive_path / "MyDrive").exists():
+            try:
+                mount_google_drive(drive_path)
+                return True
+            except RuntimeError as e:
+                raise RuntimeError(f"挂载 Google Drive 失败, 请尝试重新挂载 Google Drive: {e}") from e
+
+        return True
+
+    def download_and_extract(
+        self,
+        url: str,
+        local_dir: Path,
+        name: str | None = None,
+    ) -> None:
+        """下载压缩包并解压到指定路径
+
+        Args:
+            url (str):
+                压缩包下载链接, 压缩包支持的格式: .zip, .7z, .rar, .tar, .tar.Z, .tar.lz, .tar.lzma, .tar.bz2, .tar.7z, .tar.gz, .tar.xz, .tar.zst
+            local_dir (Path):
+                下载路径
+            name (str | None):
+                下载文件保存的名称, 为`None`时从`url`解析文件名
+        """
+        download_archive_and_unpack(
+            url=url,
+            local_dir=local_dir,
+            name=name,
+        )
+
+    def upload_files_to_repo(
+        self,
+        api_type: ApiType,
+        repo_id: str,
+        upload_path: Path,
+        repo_type: RepoType = "model",
+        visibility: bool | None = False,
+    ) -> None:
+        """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
+
+        Args:
+            api_type (ApiType):
+                Api 类型
+            repo_id (str):
+                仓库 ID
+            repo_type (RepoType):
+                仓库类型
+            upload_path (Path):
+                要上传的文件夹
+            visibility (bool | None):
+                当仓库不存在时自动创建的仓库的可见性
+            retry (int | None):
+                上传重试次数
+        """
+        self.repo_manager.upload_files_to_repo(
+            api_type=api_type,
+            repo_id=repo_id,
+            upload_path=upload_path,
+            repo_type=repo_type,
+            visibility=visibility,
+        )
+
+    def download_files_from_repo(
+        self,
+        api_type: ApiType,
+        repo_id: str,
+        local_dir: Path,
+        repo_type: RepoType = "model",
+        folder: str | None = None,
+        num_threads: int | None = 16,
+    ) -> None:
+        """从 HuggingFace / ModelScope 仓库下载文文件
+
+        `folder`参数未指定时, 则下载 HuggingFace / ModelScope 仓库中的所有文件, 如果`folder`参数指定了, 例如指定的是`aaaki`
+
+        而仓库的文件结构如下:
+
+        ```markdown
+        HuggingFace / ModelScope Repositories
+        ├── Nachoneko
+        │   ├── 1_nachoneko
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.png
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2019 winter 麗.txt
+        │   │       ├── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).png
+        │   │       └── [メロンブックス (よろず)]Melonbooks Girls Collection 2020 spring 彩 (オリジナル).txt
+        │   ├── 2_nachoneko
+        │   │       ├── 0(8).txt
+        │   │       ├── 0(8).webp
+        │   │       ├── 001_2.png
+        │   │       └── 001_2.txt
+        │   └── 4_nachoneko
+        │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.png
+        │           ├── 0b1c8893-c9aa-49e5-8769-f90c4b6866f5.txt
+        │           ├── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.png
+        │           └── 0d5149dd-3bc1-484f-8c1e-a1b94bab3be5.txt
+        └ aaaki
+            ├── 1_aaaki
+            │   ├── 1.png
+            │   ├── 1.txt
+            │   ├── 11.png
+            │   ├── 11.txt
+            │   ├── 12.png
+            │   └── 12.txt
+            └── 3_aaaki
+                ├── 14.png
+                ├── 14.txt
+                ├── 16.png
+                └── 16.txt
+        ```
+
+        则使用该函数下载 HuggingFace / ModelScope 仓库的文件时将下载`aaaki`文件夹中的所有文件, 而`Nachoneko`文件夹中的文件不会被下载
+
+        `folder`参数使用的是前缀匹配方式, 从路径的开头的字符串进行匹配, 匹配成功则进行下载
+
+        如果要指定下载某个文件, 则`folder`参数需要指定该文件在仓库中的完整路径, 比如`aaaki/1_aaaki/1.png`, 此时只会下载该文件, 其他文件不会被下载
+
+        文件下载下来后, 保存路径为`local_dir/<文件在仓库中的路径>`, 比如`local_dir`为`/kaggle/dataset`, 上面下载单个文件的例子下载下载下来的文件就会保存在`/kaggle/dataset/aaaki/1_aaaki/1.png`
+
+        Args:
+            api_type (ApiType):
+                Api 类型
+            repo_id (str):
+                仓库 ID
+            repo_type (RepoType):
+                仓库类型
+            local_dir (Path):
+                下载路径
+            folder (str | None):
+                指定下载某个文件夹, 未指定时则下载整个文件夹
+            num_threads (int | None):
+                下载线程
+        """
+        self.repo_manager.download_files_from_repo(
+            api_type=api_type,
+            repo_id=repo_id,
+            local_dir=local_dir,
+            repo_type=repo_type,
+            folder=folder,
+            num_threads=num_threads,
+        )

@@ -599,7 +599,7 @@ def update_invokeai(
 
 def check_invokeai_env(
     use_uv: bool | None = True,
-    use_pypi_mirror: bool | None = None,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 InvokeAI 运行环境
 
