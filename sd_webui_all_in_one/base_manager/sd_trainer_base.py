@@ -277,7 +277,6 @@ def update_sd_trainer(
 
 def check_sd_trainer_env(
     sd_trainer_path: Path,
-    check: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -288,8 +287,6 @@ def check_sd_trainer_env(
     Args:
         sd_trainer_path (Path):
             SD Trainer 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
@@ -307,7 +304,7 @@ def check_sd_trainer_env(
     """
     req_path = sd_trainer_path / "requirements.txt"
 
-    if check and req_path.is_file():
+    if req_path.is_file():
         raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查文件是否完整")
 
     # 准备 Git 配置
@@ -339,7 +336,7 @@ def check_sd_trainer_env(
         except Exception as e:
             err.append(e)
 
-    if err and check:
+    if err:
         raise AggregateError("检查 SD Trainer 环境时发生错误", err)
 
     logger.info("检查 SD Trainer 环境完成")

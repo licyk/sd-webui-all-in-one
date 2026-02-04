@@ -341,7 +341,6 @@ def update_comfyui(
 
 def check_comfyui_env(
     comfyui_path: Path,
-    check: bool | None = True,
     install_conflict_component_requirement: bool | None = False,
     interactive_mode: bool | None = False,
     use_uv: bool | None = True,
@@ -354,8 +353,6 @@ def check_comfyui_env(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         install_conflict_component_requirement (bool | None):
             检测到冲突依赖时是否按顺序安装组件依赖
         interactive_mode (bool | None):
@@ -377,7 +374,7 @@ def check_comfyui_env(
     """
     req_path = comfyui_path / "requirements.txt"
 
-    if check and req_path.is_file():
+    if req_path.is_file():
         raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查文件是否完整")
 
     # 准备安装依赖的 PyPI 镜像源
@@ -419,7 +416,7 @@ def check_comfyui_env(
         except Exception as e:
             err.append(e)
 
-    if err and check:
+    if err:
         raise AggregateError("检查 ComfyUI 环境时发生错误", err)
 
     logger.info("检查 ComfyUI 环境完成")
@@ -489,7 +486,6 @@ def install_comfyui_custom_node(
     custom_node_url: str | list[str],
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """安装 ComfyUI 扩展
 
@@ -502,8 +498,6 @@ def install_comfyui_custom_node(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -545,7 +539,7 @@ def install_comfyui_custom_node(
             err.append(e)
             logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("安装 ComfyUI 扩展时发生错误", err)
 
     logger.info("安装 ComfyUI 扩展完成")
@@ -673,7 +667,6 @@ def update_comfyui_custom_nodes(
     comfyui_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """更新 ComfyUI 扩展
 
@@ -684,8 +677,6 @@ def update_comfyui_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -712,7 +703,7 @@ def update_comfyui_custom_nodes(
             err.append(e)
             logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)
 
     logger.info("更新 ComfyUI 扩展完成")
@@ -721,7 +712,6 @@ def update_comfyui_custom_nodes(
 def uninstall_comfyui_custom_node(
     comfyui_path: Path,
     custom_node_name: str,
-    check: bool | None = True,
 ) -> None:
     """卸载 ComfyUI 扩展
 
@@ -730,8 +720,6 @@ def uninstall_comfyui_custom_node(
             ComfyUI 根目录
         extension_name (str):
             ComfyUI 扩展名称
-        check (bool | None):
-            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
 
     Raises:
         FileNotFoundError:
@@ -750,8 +738,7 @@ def uninstall_comfyui_custom_node(
         logger.info("卸载 '%s' 扩展完成", custom_node_name)
     except Exception as e:
         logger.info("卸载 '%s' 扩展时发生错误: %s", custom_node_name, e)
-        if check:
-            raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
+        raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
 
 
 def install_comfyui_model_from_library(

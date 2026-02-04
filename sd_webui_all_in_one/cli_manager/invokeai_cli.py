@@ -148,7 +148,6 @@ def install_custom_nodes(
     custom_node_url: str | list[str],
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """安装 InvokeAI 扩展
 
@@ -161,15 +160,12 @@ def install_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
     """
     install_invokeai_custom_nodes(
         invokeai_path=invokeai_path,
         custom_node_url=custom_node_url,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
-        check=check,
     )
 
 
@@ -219,7 +215,6 @@ def update_custom_nodes(
     invokeai_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """更新 InvokeAI 扩展
 
@@ -230,21 +225,17 @@ def update_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
     """
     update_invokeai_custom_nodes(
         invokeai_path=invokeai_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
-        check=check,
     )
 
 
 def uninstall_custom_node(
     invokeai_path: Path,
     custom_node_name: str,
-    check: bool | None = True,
 ) -> None:
     """卸载 InvokeAI 扩展
 
@@ -253,13 +244,10 @@ def uninstall_custom_node(
             InvokeAI 根目录
         custom_node_name (str):
             InvokeAI 扩展名称
-        check (bool | None):
-            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
     """
     uninstall_invokeai_custom_node(
         invokeai_path=invokeai_path,
         custom_node_name=custom_node_name,
-        check=check,
     )
 
 
@@ -462,15 +450,12 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     # node_install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     node_install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     node_install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    # node_install_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    node_install_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_install_p.set_defaults(
         func=lambda args: install_custom_nodes(
             invokeai_path=args.invokeai_path,
             custom_node_url=args.url,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
-            check=args.check,
         )
     )
 
@@ -499,14 +484,11 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     # node_update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     node_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     node_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    # node_update_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    node_update_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_update_p.set_defaults(
         func=lambda args: update_custom_nodes(
             invokeai_path=args.invokeai_path,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
-            check=args.check,
         )
     )
 
@@ -514,13 +496,10 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     node_uninstall_p = node_sub.add_parser("uninstall", help="卸载扩展")
     node_uninstall_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
     node_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
-    # node_uninstall_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    node_uninstall_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_uninstall_p.set_defaults(
         func=lambda args: uninstall_custom_node(
             invokeai_path=args.invokeai_path,
             custom_node_name=args.name,
-            check=args.check,
         )
     )
 

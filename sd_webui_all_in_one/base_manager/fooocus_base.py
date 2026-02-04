@@ -312,7 +312,6 @@ def update_fooocus(
 
 def check_fooocus_env(
     fooocus_path: Path,
-    check: bool | None = True,
     use_uv: bool | None = True,
     use_pypi_mirror: bool | None = False,
 ) -> None:
@@ -321,8 +320,6 @@ def check_fooocus_env(
     Args:
         fooocus_path (Path):
             Fooocus 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_pypi_mirror (bool | None):
@@ -337,7 +334,7 @@ def check_fooocus_env(
     req_v_path = fooocus_path / "requirements_version.txt"
     req_path = fooocus_path / "requirements.txt"
 
-    if check and req_v_path.is_file() and not req_path.is_file():
+    if req_v_path.is_file() and not req_path.is_file():
         raise FileNotFoundError("未找到 Fooocus 依赖文件记录表, 请检查文件是否完整")
 
     # 确定主要的依赖描述文件
@@ -364,7 +361,7 @@ def check_fooocus_env(
         except Exception as e:
             err.append(e)
 
-    if err and check:
+    if err:
         raise AggregateError("检查 Fooocus 环境时发生错误", err)
 
     logger.info("检查 Fooocus 环境完成")

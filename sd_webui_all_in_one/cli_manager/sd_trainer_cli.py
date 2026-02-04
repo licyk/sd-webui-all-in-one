@@ -101,7 +101,6 @@ def update(
 
 def check_env(
     sd_trainer_path: Path,
-    check: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -112,8 +111,6 @@ def check_env(
     Args:
         sd_trainer_path (Path):
             SD Trainer 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
@@ -123,7 +120,6 @@ def check_env(
     """
     check_sd_trainer_env(
         sd_trainer_path=sd_trainer_path,
-        check=check,
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
@@ -157,7 +153,6 @@ def launch(
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
-    check: bool | None = True,
     use_uv: bool | None = True,
     check_launch_env: bool | None = True,
 ) -> None:
@@ -178,8 +173,6 @@ def launch(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
-        check (bool | None):
-            是否检查环境时发生的错误
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         check_launch_env (bool | None):
@@ -188,7 +181,6 @@ def launch(
     if check_launch_env:
         check_sd_trainer_env(
             sd_trainer_path=sd_trainer_path,
-            check=check,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
@@ -388,8 +380,6 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     # check-env
     check_p = trainer_sub.add_parser("check-env", help="检查 SD Trainer 运行环境")
     check_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
-    # check_p.add_argument("--check-env", action="store_true", dest="check", help="检查环境时抛出错误")
-    check_p.add_argument("--no-check-env", action="store_false", dest="check", help="不抛出环境检查错误")
     # check_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
@@ -400,7 +390,6 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     check_p.set_defaults(
         func=lambda args: check_env(
             sd_trainer_path=args.sd_trainer_path,
-            check=args.check,
             use_uv=args.use_uv,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
@@ -432,8 +421,6 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
     # launch_p.add_argument("--use-cuda-malloc", action="store_true", dest="use_cuda_malloc", help="启用 CUDA Malloc 优化")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
-    # launch_p.add_argument("--check-env-error", action="store_true", dest="check", help="检查环境时抛出错误")
-    launch_p.add_argument("--no-check-env-error", action="store_false", dest="check", help="不检查错误")
     # launch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     # launch_p.add_argument("--check-env", action="store_true", dest="check_env", help="检查运行环境完整性")
@@ -447,7 +434,6 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
             custom_github_mirror=args.custom_github_mirror,
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
-            check=args.check,
             use_uv=args.use_uv,
             check_launch_env=args.check_env,
         )

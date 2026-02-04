@@ -124,7 +124,6 @@ class ComfyUIManager(BaseManager):
         custom_node: str | list[str],
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
-        check: bool | None = True,
     ) -> None:
         """安装 ComfyUI 自定义节点
 
@@ -137,22 +136,18 @@ class ComfyUIManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
-            check (bool | None):
-                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
         """
         install_comfyui_custom_node(
             comfyui_path=self.workspace / self.workfolder,
             custom_node_url=custom_node,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
-            check=check,
         )
 
     def update_custom_nodes(
         self,
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
-        check: bool | None = True,
     ) -> None:
         """更新 ComfyUI 自定义节点
 
@@ -163,19 +158,15 @@ class ComfyUIManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
-            check (bool | None):
-                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
         """
         update_comfyui_custom_nodes(
             comfyui_path=self.workspace / self.workfolder,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
-            check=check,
         )
 
     def check_env(
         self,
-        check: bool | None = False,
         install_conflict_component_requirement: bool | None = True,
         interactive_mode: bool | None = False,
         use_uv: bool | None = True,
@@ -186,8 +177,6 @@ class ComfyUIManager(BaseManager):
         """检查 ComfyUI 运行环境
 
         Args:
-            check (bool | None):
-                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
             install_conflict_component_requirement (bool | None):
                 检测到冲突依赖时是否按顺序安装组件依赖
             interactive_mode (bool | None):
@@ -203,7 +192,6 @@ class ComfyUIManager(BaseManager):
         """
         check_comfyui_env(
             comfyui_path=self.workspace / self.workfolder,
-            check=check,
             install_conflict_component_requirement=install_conflict_component_requirement,
             interactive_mode=interactive_mode,
             use_uv=use_uv,

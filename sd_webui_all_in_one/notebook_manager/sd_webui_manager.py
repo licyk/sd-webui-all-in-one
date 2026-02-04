@@ -133,7 +133,6 @@ class SDWebUIManager(BaseManager):
         extension: str | list[str],
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
-        check: bool | None = True,
     ) -> None:
         """安装 Stable Diffusion WebUI 扩展
 
@@ -144,22 +143,18 @@ class SDWebUIManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
-            check (bool | None):
-                是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
         """
         install_sd_webui_extension(
             sd_webui_path=self.workspace / self.workfolder,
             extension_url=extension,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
-            check=check,
         )
 
     def update_extensions(
         self,
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
-        check: bool | None = True,
     ) -> None:
         """更新 Stable Diffusion WebUI 扩展
 
@@ -168,19 +163,15 @@ class SDWebUIManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
-            check (bool | None):
-                是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
         """
         update_sd_webui_extensions(
             sd_webui_path=self.workspace / self.workfolder,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
-            check=check,
         )
 
     def check_env(
         self,
-        check: bool | None = True,
         use_uv: bool | None = True,
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
@@ -189,8 +180,6 @@ class SDWebUIManager(BaseManager):
         """检查 Stable Diffusion WebUI 运行环境
 
         Args:
-            check (bool | None):
-                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
             use_uv (bool | None):
                 是否使用 uv 安装 Python 软件包
             use_github_mirror (bool | None):
@@ -202,7 +191,6 @@ class SDWebUIManager(BaseManager):
         """
         check_sd_webui_env(
             sd_webui_path=self.workspace / self.workfolder,
-            check=check,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,

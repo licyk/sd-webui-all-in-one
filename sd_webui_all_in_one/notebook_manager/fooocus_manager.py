@@ -116,22 +116,18 @@ class FooocusManager(BaseManager):
 
     def check_env(
         self,
-        check: bool | None = False,
         use_uv: bool | None = True,
         use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 Fooocus 运行环境
 
         Args:
-            check (bool | None):
-                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
             use_uv (bool | None):
                 是否使用 uv 安装 Python 软件包
             use_pypi_mirror (bool | None):
         """
         check_fooocus_env(
             fooocus_path=self.workspace / self.workfolder,
-            check=check,
             use_uv=use_uv,
             use_pypi_mirror=use_pypi_mirror,
         )

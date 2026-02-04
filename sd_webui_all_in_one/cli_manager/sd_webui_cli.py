@@ -42,7 +42,7 @@ def install(
     no_pre_download_model: bool | None = False,
     use_cn_model_mirror: bool | None = True,
 ) -> None:
-    """安装 Stable Diffusion WebUI (注册命令 sd-webui install)
+    """安装 Stable Diffusion WebUI
 
     Args:
         sd_webui_path (Path):
@@ -91,7 +91,7 @@ def update(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """更新 Stable Diffusion WebUI (注册命令 sd-webui update)
+    """更新 Stable Diffusion WebUI
 
     Args:
         sd_webui_path (Path):
@@ -110,19 +110,16 @@ def update(
 
 def check_env(
     sd_webui_path: Path,
-    check: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
 ) -> None:
-    """检查 Stable Diffusion WebUI 运行环境 (注册命令 sd-webui check)
+    """检查 Stable Diffusion WebUI 运行环境
 
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
@@ -134,7 +131,6 @@ def check_env(
     """
     check_sd_webui_env(
         sd_webui_path=sd_webui_path,
-        check=check,
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
@@ -146,7 +142,7 @@ def switch(
     sd_webui_path: Path,
     branch: SDWebUiBranchType,
 ) -> None:
-    """切换 Stable Diffusion WebUI 分支 (注册命令 sd-webui switch-branch)
+    """切换 Stable Diffusion WebUI 分支
 
     Args:
         sd_webui_path (Path):
@@ -168,11 +164,10 @@ def launch(
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
-    check: bool | None = True,
     use_uv: bool | None = True,
     check_launch_env: bool | None = True,
 ) -> None:
-    """启动 Stable Diffusion WebUI (注册命令 sd-webui launch)
+    """启动 Stable Diffusion WebUI
 
     Args:
         sd_webui_path (Path):
@@ -189,8 +184,6 @@ def launch(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
-        check (bool | None):
-            是否检查环境时发生的错误
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         check_launch_env (bool | None):
@@ -199,7 +192,6 @@ def launch(
     if check_launch_env:
         check_sd_webui_env(
             sd_webui_path=sd_webui_path,
-            check=check,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
@@ -225,9 +217,8 @@ def install_extension(
     extension_url: str | list[str],
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
-    """安装 Stable Diffusion WebUI 扩展 (注册命令 sd-webui extension install)
+    """安装 Stable Diffusion WebUI 扩展
 
     Args:
         sd_webui_path (Path):
@@ -238,15 +229,12 @@ def install_extension(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
     """
     install_sd_webui_extension(
         sd_webui_path=sd_webui_path,
         extension_url=extension_url,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
-        check=check,
     )
 
 
@@ -255,7 +243,7 @@ def set_extensions_status(
     extension_name: str,
     status: bool,
 ) -> None:
-    """设置 Stable Diffusion WebUI 启用状态 (注册命令 sd-webui extension status)
+    """设置 Stable Diffusion WebUI 启用状态
 
     Args:
         sd_webui_path (Path):
@@ -277,7 +265,7 @@ def set_extensions_status(
 def list_extensions(
     sd_webui_path: Path,
 ) -> None:
-    """获取 Stable Diffusion WebUI 本地扩展列表 (注册命令 sd-webui extension list)
+    """获取 Stable Diffusion WebUI 本地扩展列表
 
     Args:
         sd_webui_path (Path):
@@ -296,9 +284,8 @@ def update_extensions(
     sd_webui_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
-    """更新 Stable Diffusion WebUI 扩展 (注册命令 sd-webui extension update)
+    """更新 Stable Diffusion WebUI 扩展
 
     Args:
         sd_webui_path (Path):
@@ -307,36 +294,29 @@ def update_extensions(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
     """
     update_sd_webui_extensions(
         sd_webui_path=sd_webui_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
-        check=check,
     )
 
 
 def uninstall_extension(
     sd_webui_path: Path,
     extension_name: str,
-    check: bool | None = True,
 ) -> None:
-    """卸载 Stable Diffusion WebUI 扩展 (注册命令 sd-webui extension uninstall)
+    """卸载 Stable Diffusion WebUI 扩展
 
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
         extension_name (str):
             Stable Diffusion WebUI 扩展名称
-        check (bool | None):
-            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
     """
     uninstall_sd_webui_extension(
         sd_webui_path=sd_webui_path,
         extension_name=extension_name,
-        check=check,
     )
 
 
@@ -348,7 +328,7 @@ def install_model_from_library(
     downloader: DownloadToolType | None = "aria2",
     interactive_mode: bool | None = False,
 ) -> None:
-    """为 Stable Diffusion WebUI 下载模型, 使用模型库进行下载 (注册命令 sd-webui model install-library)
+    """为 Stable Diffusion WebUI 下载模型, 使用模型库进行下载
 
     Args:
         sd_webui_path (Path):
@@ -380,7 +360,7 @@ def install_model_from_url(
     model_type: str,
     downloader: DownloadToolType | None = "aria2",
 ) -> None:
-    """从链接下载模型到 Stable Diffusion WebUI (注册命令 sd-webui model install-url)
+    """从链接下载模型到 Stable Diffusion WebUI
 
     Args:
         sd_webui_path (Path):
@@ -403,7 +383,7 @@ def install_model_from_url(
 def list_models(
     sd_webui_path: Path,
 ) -> None:
-    """列出 Stable Diffusion WebUI 的模型目录 (注册命令 sd-webui model list)
+    """列出 Stable Diffusion WebUI 的模型目录
 
     Args:
         sd_webui_path (Path):
@@ -418,7 +398,7 @@ def uninstall_model(
     model_type: str | None = None,
     interactive_mode: bool | None = False,
 ) -> None:
-    """卸载 Stable Diffusion WebUI 中的模型 (注册命令 sd-webui model uninstall)
+    """卸载 Stable Diffusion WebUI 中的模型
 
     Args:
         sd_webui_path (Path):
@@ -521,8 +501,6 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # check-env
     check_p = sd_sub.add_parser("check-env", help="检查 Stable Diffusion WebUI 运行环境")
     check_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
-    # check_p.add_argument("--check-env", action="store_true", dest="check", help="检查环境时抛出错误")
-    check_p.add_argument("--no-check-env", action="store_false", dest="check", help="不抛出环境检查错误")
     # check_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     # check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
@@ -533,7 +511,6 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     check_p.set_defaults(
         func=lambda args: check_env(
             sd_webui_path=args.sd_webui_path,
-            check=args.check,
             use_uv=args.use_uv,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
@@ -565,8 +542,6 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
     # launch_p.add_argument("--use-cuda-malloc", action="store_true", dest="use_cuda_malloc", help="启用 CUDA Malloc 优化")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
-    # launch_p.add_argument("--check-env-error", action="store_true", dest="check", help="检查环境时抛出错误")
-    launch_p.add_argument("--no-check-env-error", action="store_false", dest="check", help="不检查错误")
     # launch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     # launch_p.add_argument("--check-env", action="store_true", dest="check_env", help="检查运行环境完整性")
@@ -580,7 +555,6 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
             custom_github_mirror=args.custom_github_mirror,
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
-            check=args.check,
             use_uv=args.use_uv,
             check_launch_env=args.check_env,
         )
@@ -597,15 +571,12 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # ext_install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     ext_install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     ext_install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    # ext_install_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    ext_install_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     ext_install_p.set_defaults(
         func=lambda args: install_extension(
             sd_webui_path=args.sd_webui_path,
             extension_url=args.url,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
-            check=args.check,
         )
     )
 
@@ -634,14 +605,11 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # ext_update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     ext_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     ext_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    # ext_update_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    ext_update_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     ext_update_p.set_defaults(
         func=lambda args: update_extensions(
             sd_webui_path=args.sd_webui_path,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
-            check=args.check,
         )
     )
 
@@ -649,13 +617,10 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     ext_uninstall_p = ext_sub.add_parser("uninstall", help="卸载扩展")
     ext_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     ext_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
-    # ext_uninstall_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
-    ext_uninstall_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     ext_uninstall_p.set_defaults(
         func=lambda args: uninstall_extension(
             sd_webui_path=args.sd_webui_path,
             extension_name=args.name,
-            check=args.check,
         )
     )
 

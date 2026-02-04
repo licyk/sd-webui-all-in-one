@@ -904,7 +904,6 @@ def update_sd_webui(
 
 def check_sd_webui_env(
     sd_webui_path: Path,
-    check: bool | None = True,
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -915,8 +914,6 @@ def check_sd_webui_env(
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
-        check (bool | None):
-            是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
@@ -935,7 +932,7 @@ def check_sd_webui_env(
     req_v_path = sd_webui_path / "requirements_version.txt"
     req_path = sd_webui_path / "requirements.txt"
 
-    if check and req_v_path.is_file() and not req_path.is_file():
+    if req_v_path.is_file() and not req_path.is_file():
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查文件是否完整")
 
     # 确定主要的依赖描述文件
@@ -972,7 +969,7 @@ def check_sd_webui_env(
         except Exception as e:
             err.append(e)
 
-    if err and check:
+    if err:
         raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
 
     logger.info("检查 Stable Diffusion WebUI 环境完成")
@@ -1097,7 +1094,6 @@ def install_sd_webui_extension(
     extension_url: str | list[str],
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """安装 Stable Diffusion WebUI 扩展
 
@@ -1110,8 +1106,6 @@ def install_sd_webui_extension(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -1152,7 +1146,7 @@ def install_sd_webui_extension(
             err.append(e)
             logger.error("'%s' 扩展安装失败: %s", extension_name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("安装 Stable Diffusion WebUI 扩展时发生错误", err)
 
     logger.info("安装 Stable Diffusion WebUI 扩展完成")
@@ -1313,7 +1307,6 @@ def update_sd_webui_extensions(
     sd_webui_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """更新 Stable Diffusion WebUI 扩展
 
@@ -1324,8 +1317,6 @@ def update_sd_webui_extensions(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -1352,7 +1343,7 @@ def update_sd_webui_extensions(
             err.append(e)
             logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)
 
     logger.info("更新 Stable Diffusion WebUI 扩展完成")
@@ -1361,7 +1352,6 @@ def update_sd_webui_extensions(
 def uninstall_sd_webui_extension(
     sd_webui_path: Path,
     extension_name: str,
-    check: bool | None = True,
 ) -> None:
     """卸载 Stable Diffusion WebUI 扩展
 
@@ -1370,8 +1360,6 @@ def uninstall_sd_webui_extension(
             Stable Diffusion WebUI 根目录
         extension_name (str):
             Stable Diffusion WebUI 扩展名称
-        check (bool | None):
-            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
 
     Raises:
         FileNotFoundError:
@@ -1390,8 +1378,7 @@ def uninstall_sd_webui_extension(
         logger.info("卸载 '%s' 扩展完成", extension_name)
     except Exception as e:
         logger.info("卸载 '%s' 扩展时发生错误: %s", extension_name, e)
-        if check:
-            raise RuntimeError(f"卸载 '{extension_name}' 扩展时发生错误:{e}") from e
+        raise RuntimeError(f"卸载 '{extension_name}' 扩展时发生错误:{e}") from e
 
 
 def install_sd_webui_model_from_library(

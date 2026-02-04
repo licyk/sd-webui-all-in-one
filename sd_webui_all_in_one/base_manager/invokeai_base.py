@@ -675,7 +675,6 @@ def install_invokeai_custom_nodes(
     custom_node_url: str | list[str],
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """安装 InvokeAI 扩展
 
@@ -688,8 +687,6 @@ def install_invokeai_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查安装扩展时发生的错误, 设置为 True 时, 如果安装扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -730,7 +727,7 @@ def install_invokeai_custom_nodes(
             err.append(e)
             logger.error("'%s' 扩展安装失败: %s", custom_node_name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("安装 InvokeAI 扩展时发生错误", err)
 
     logger.info("安装 InvokeAI 扩展完成")
@@ -857,7 +854,6 @@ def update_invokeai_custom_nodes(
     invokeai_path: Path,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    check: bool | None = True,
 ) -> None:
     """更新 InvokeAI 扩展
 
@@ -868,8 +864,6 @@ def update_invokeai_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        check (bool | None):
-            是否检查更新时发生的错误, 设置为 True 时, 如果更新扩展时发生错误时将抛出异常
 
     Raises:
         AggregateError:
@@ -897,7 +891,7 @@ def update_invokeai_custom_nodes(
             err.append(e)
             logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
 
-    if err and check:
+    if err:
         raise AggregateError("更新 InvokeAI 扩展时发生错误", err)
 
     logger.info("更新 InvokeAI 扩展完成")
@@ -906,7 +900,6 @@ def update_invokeai_custom_nodes(
 def uninstall_invokeai_custom_node(
     invokeai_path: Path,
     custom_node_name: str,
-    check: bool | None = True,
 ) -> None:
     """卸载 InvokeAI 扩展
 
@@ -915,8 +908,6 @@ def uninstall_invokeai_custom_node(
             InvokeAI 根目录
         custom_node_name (str):
             InvokeAI 扩展名称
-        check (bool | None):
-            是否卸载扩展时发生的错误, 设置为 True 时, 如果卸载扩展时发生错误时将抛出异常
 
     Raises:
         FileNotFoundError:
@@ -935,8 +926,7 @@ def uninstall_invokeai_custom_node(
         logger.info("卸载 '%s' 扩展完成", custom_node_name)
     except Exception as e:
         logger.info("卸载 '%s' 扩展时发生错误: %s", custom_node_name, e)
-        if check:
-            raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
+        raise RuntimeError(f"卸载 '{custom_node_name}' 扩展时发生错误:{e}") from e
 
 
 def install_invokeai_model_from_library(
@@ -1268,6 +1258,8 @@ def reinstall_invokeai_pytorch(
             )
             user_input = input("==> ").strip()
             if user_input in PYTORCH_DEVICE_CATEGORY_LIST:
+                if user_input == "auto":
+                    user_input = None
                 logger.info("重装 PyTorch 中")
                 _uninstall()
                 _install(user_input)

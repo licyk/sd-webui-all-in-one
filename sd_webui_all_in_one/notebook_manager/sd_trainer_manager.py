@@ -141,7 +141,6 @@ class SDTrainerManager(BaseManager):
 
     def check_env(
         self,
-        check: bool | None = True,
         use_uv: bool | None = True,
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
@@ -150,8 +149,6 @@ class SDTrainerManager(BaseManager):
         """检查 SD Trainer 运行环境
 
         Args:
-            check (bool | None):
-                是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
             use_uv (bool | None):
                 是否使用 uv 安装 Python 软件包
             use_github_mirror (bool | None):
@@ -163,7 +160,6 @@ class SDTrainerManager(BaseManager):
         """
         check_sd_trainer_env(
             sd_trainer_path=self.workspace / self.workfolder,
-            check=check,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
