@@ -177,10 +177,6 @@ def launch(
             是否检查环境时发生的错误
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
-        check (bool | None):
-            是否检查环境时发生的错误
-        use_uv (bool | None):
-            是否使用 uv 安装 Python 软件包
         interactive_mode (bool | None):
             是否启用交互模式
         install_conflict_component_requirement (bool | None):
@@ -446,7 +442,9 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     reinstall_pytorch_p = comfy_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
     reinstall_pytorch_p.add_argument("--pytorch-name", type=str, dest="pytorch_name", help="PyTorch 版本组合名称")
     reinstall_pytorch_p.add_argument("--pytorch-index", type=int, dest="pytorch_index", help="PyTorch 版本组合索引值")
+    # reinstall_pytorch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    # reinstall_pytorch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     reinstall_pytorch_p.set_defaults(
@@ -465,12 +463,18 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", help="PyTorch 镜像源类型")
     install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
     install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
+    # install_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    # install_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
-    install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    # install_p.add_argument("--pre-download-extension", action="store_false", dest="no_pre_download_extension", help="启用预下载扩展")
     install_p.add_argument("--no-pre-download-extension", action="store_true", dest="no_pre_download_extension", help="禁用预下载扩展")
+    # install_p.add_argument("--pre-download-model", action="store_false", dest="no_pre_download_model", help="启用预下载模型")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
+    # install_p.add_argument("--use-cn-model-mirror", action="store_true", dest="use_cn_model_mirror", help="使用国内镜像下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
         func=lambda args: install(
@@ -491,7 +495,8 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     # update
     update_p = comfy_sub.add_parser("update", help="更新 ComfyUI")
     update_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
-    update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     update_p.set_defaults(
         func=lambda args: update(
@@ -504,12 +509,16 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     # check-env
     check_p = comfy_sub.add_parser("check-env", help="检查 ComfyUI 运行环境")
     check_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
-    check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
-    check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # check_p.add_argument("--check-env", action="store_true", dest="check", help="检查环境时抛出错误")
+    check_p.add_argument("--no-check-env", action="store_false", dest="check", help="不抛出环境检查错误")
+    # check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
     check_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    # check_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    # check_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
@@ -528,15 +537,22 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     launch_p = comfy_sub.add_parser("launch", help="启动 ComfyUI")
     launch_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
     launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--theme dark")')
-    launch_p.add_argument("--use-hf-mirror", action="store_true", dest="use_hf_mirror", help="启用 HuggingFace 镜像源")
-    launch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="启用 Github 镜像源")
+    # launch_p.add_argument("--use-hf-mirror", action="store_true", dest="use_hf_mirror", help="启用 HuggingFace 镜像源")
+    launch_p.add_argument("--no-hf-mirror", action="store_false", dest="use_hf_mirror", help="禁用 HuggingFace 镜像源")
+    # launch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="启用 Github 镜像源")
+    launch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="禁用 Github 镜像源")
     launch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    launch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="启用 PyPI 镜像源")
+    # launch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="启用 PyPI 镜像源")
+    launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
+    # launch_p.add_argument("--use-cuda-malloc", action="store_true", dest="use_cuda_malloc", help="启用 CUDA Malloc 优化")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
-    launch_p.add_argument("--no-check", action="store_false", dest="check", help="不检查环境")
+    # launch_p.add_argument("--check-env-error", action="store_true", dest="check", help="检查环境时抛出错误")
+    launch_p.add_argument("--no-check-env-error", action="store_false", dest="check", help="不检查环境")
+    # launch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     launch_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
+    # launch_p.add_argument("--check-env", action="store_true", dest="check_env", help="检查运行环境完整性")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
     launch_p.set_defaults(
         func=lambda args: launch(
@@ -563,9 +579,11 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     node_install_p = node_sub.add_parser("install", help="安装扩展")
     node_install_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
     node_install_p.add_argument("--url", required=True, dest="url", help="扩展下载链接")
-    node_install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # node_install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    node_install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     node_install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    node_install_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
+    # node_install_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
+    node_install_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_install_p.set_defaults(
         func=lambda args: install_custom_node(
             comfyui_path=args.comfyui_path,
@@ -598,9 +616,11 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     # custom-node update
     node_update_p = node_sub.add_parser("update", help="更新扩展")
     node_update_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
-    node_update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # node_update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    node_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     node_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    node_update_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
+    # node_update_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
+    node_update_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_update_p.set_defaults(
         func=lambda args: update_custom_nodes(
             comfyui_path=args.comfyui_path,
@@ -614,7 +634,8 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     node_uninstall_p = node_sub.add_parser("uninstall", help="卸载扩展")
     node_uninstall_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
     node_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
-    node_uninstall_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
+    # node_uninstall_p.add_argument("--check-error", action="store_true", dest="check", help="检查错误")
+    node_uninstall_p.add_argument("--no-check-error", action="store_false", dest="check", help="不检查错误")
     node_uninstall_p.set_defaults(
         func=lambda args: uninstall_custom_node(
             comfyui_path=args.comfyui_path,

@@ -263,7 +263,9 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     reinstall_pytorch_p = scripts_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
     reinstall_pytorch_p.add_argument("--pytorch-name", type=str, dest="pytorch_name", help="PyTorch 版本组合名称")
     reinstall_pytorch_p.add_argument("--pytorch-index", type=int, dest="pytorch_index", help="PyTorch 版本组合索引值")
+    # reinstall_pytorch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    # reinstall_pytorch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     reinstall_pytorch_p.set_defaults(
@@ -282,12 +284,17 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", help="PyTorch 镜像源类型")
     install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
     install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
+    # install_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    # install_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
-    install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=SD_SCRIPTS_BRANCH_LIST, help="安装的分支")
+    # install_p.add_argument("--pre-download-model", action="store_false", dest="no_pre_download_model", help="启用预下载模型")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
+    # install_p.add_argument("--use-cn-model-mirror", action="store_true", dest="use_cn_model_mirror", help="使用国内镜像下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
         func=lambda args: install(
@@ -308,7 +315,8 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     # update
     update_p = scripts_sub.add_parser("update", help="更新 SD Scripts")
     update_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
-    update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     update_p.set_defaults(
         func=lambda args: update(
@@ -321,10 +329,14 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     # check-env
     check_p = scripts_sub.add_parser("check-env", help="检查 SD Scripts 运行环境")
     check_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
-    check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
+    # check_p.add_argument("--check-env", action="store_true", dest="check", help="检查环境时抛出错误")
+    check_p.add_argument("--no-check-env", action="store_false", dest="check", help="不抛出环境检查错误")
+    # check_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
-    check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    # check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    # check_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
