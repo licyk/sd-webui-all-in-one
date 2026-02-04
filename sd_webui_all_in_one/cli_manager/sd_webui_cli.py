@@ -449,8 +449,8 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # reinstall-pytorch
     reinstall_pytorch_p = sd_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
-    reinstall_pytorch_p.add_argument("--pytorch-name", type=str, help="PyTorch 版本组合名称")
-    reinstall_pytorch_p.add_argument("--pytorch-index", type=int, help="PyTorch 版本组合索引值")
+    reinstall_pytorch_p.add_argument("--pytorch-name", type=str, dest="pytorch_name", help="PyTorch 版本组合名称")
+    reinstall_pytorch_p.add_argument("--pytorch-index", type=int, dest="pytorch_index", help="PyTorch 版本组合索引值")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
@@ -466,17 +466,17 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # install
     install_p = sd_sub.add_parser("install", help="安装 Stable Diffusion WebUI")
-    install_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    install_p.add_argument("--pytorch-mirror-type", type=str, help="PyTorch 镜像源类型")
-    install_p.add_argument("--custom-pytorch-package", type=str, help="自定义 PyTorch 软件包版本声明")
-    install_p.add_argument("--custom-xformers-package", type=str, help="自定义 xFormers 软件包版本声明")
+    install_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", help="PyTorch 镜像源类型")
+    install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
+    install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
-    install_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
-    install_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
-    install_p.add_argument("--install-branch", type=str, help="安装的分支")
-    install_p.add_argument("--no-pre-download-extension", action="store_true", help="禁用预下载扩展")
-    install_p.add_argument("--no-pre-download-model", action="store_true", help="禁用预下载模型")
+    install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    install_p.add_argument("--install-branch", type=str, dest="install_branch", help="安装的分支")
+    install_p.add_argument("--no-pre-download-extension", action="store_true", dest="no_pre_download_extension", help="禁用预下载扩展")
+    install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
         func=lambda args: install(
@@ -497,9 +497,9 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # update
     update_p = sd_sub.add_parser("update", help="更新 Stable Diffusion WebUI")
-    update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    update_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
-    update_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
+    update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     update_p.set_defaults(
         func=lambda args: update(
             sd_webui_path=args.sd_webui_path,
@@ -510,11 +510,11 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # check-env
     check_p = sd_sub.add_parser("check-env", help="检查 Stable Diffusion WebUI 运行环境")
-    check_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
+    check_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
-    check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
-    check_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
+    check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
@@ -529,8 +529,8 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # switch
     switch_p = sd_sub.add_parser("switch", help="切换 Stable Diffusion WebUI 分支")
-    switch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, help="要切换的分支")
+    switch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    switch_p.add_argument("--branch", type=str, required=True, dest="branch", help="要切换的分支")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_webui_path=args.sd_webui_path,
@@ -540,12 +540,12 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # launch
     launch_p = sd_sub.add_parser("launch", help="启动 Stable Diffusion WebUI")
-    launch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    launch_p.add_argument("--launch-args", type=str, help='启动参数 (请使用引号包裹，例如 "--theme dark")')
-    launch_p.add_argument("--use-hf-mirror", action="store_true", help="启用 HuggingFace 镜像源")
-    launch_p.add_argument("--use-github-mirror", action="store_true", help="启用 Github 镜像源")
-    launch_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
-    launch_p.add_argument("--use-pypi-mirror", action="store_true", help="启用 PyPI 镜像源")
+    launch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--theme dark")')
+    launch_p.add_argument("--use-hf-mirror", action="store_true", dest="use_hf_mirror", help="启用 HuggingFace 镜像源")
+    launch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="启用 Github 镜像源")
+    launch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    launch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
     launch_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
@@ -571,10 +571,10 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # extension install
     ext_install_p = ext_sub.add_parser("install", help="安装扩展")
-    ext_install_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    ext_install_p.add_argument("--url", required=True, help="扩展下载链接")
-    ext_install_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
-    ext_install_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
+    ext_install_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_install_p.add_argument("--url", required=True, dest="url", help="扩展下载链接")
+    ext_install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    ext_install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     ext_install_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     ext_install_p.set_defaults(
         func=lambda args: install_extension(
@@ -588,8 +588,8 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # extension status
     ext_status_p = ext_sub.add_parser("status", help="设置扩展启用状态")
-    ext_status_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    ext_status_p.add_argument("--name", required=True, help="扩展名称")
+    ext_status_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_status_p.add_argument("--name", required=True, dest="name", help="扩展名称")
     ext_status_p.add_argument("--enable", action="store_true", dest="status", help="启用扩展")
     ext_status_p.add_argument("--disable", action="store_false", dest="status", help="禁用扩展")
     ext_status_p.set_defaults(
@@ -602,14 +602,14 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # extension list
     ext_list_p = ext_sub.add_parser("list", help="列出扩展")
-    ext_list_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
+    ext_list_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     ext_list_p.set_defaults(func=lambda args: list_extensions(sd_webui_path=args.sd_webui_path))
 
     # extension update
     ext_update_p = ext_sub.add_parser("update", help="更新扩展")
-    ext_update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    ext_update_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
-    ext_update_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
+    ext_update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_update_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    ext_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     ext_update_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     ext_update_p.set_defaults(
         func=lambda args: update_extensions(
@@ -622,8 +622,8 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # extension uninstall
     ext_uninstall_p = ext_sub.add_parser("uninstall", help="卸载扩展")
-    ext_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    ext_uninstall_p.add_argument("--name", required=True, help="扩展名称")
+    ext_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
     ext_uninstall_p.add_argument("--no-check", action="store_false", dest="check", help="不检查错误")
     ext_uninstall_p.set_defaults(
         func=lambda args: uninstall_extension(
@@ -639,12 +639,12 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")
-    model_lib_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    model_lib_p.add_argument("--source", default="modelscope", help="模型下载源类型")
-    model_lib_p.add_argument("--name", help="模型名称")
-    model_lib_p.add_argument("--index", type=int, help="模型索引")
-    model_lib_p.add_argument("--downloader", default="aria2", help="下载工具")
-    model_lib_p.add_argument("--interactive", action="store_true", help="启用交互模式")
+    model_lib_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    model_lib_p.add_argument("--source", default="modelscope", dest="source", help="模型下载源类型")
+    model_lib_p.add_argument("--name", dest="name", help="模型名称")
+    model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
+    model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", help="下载工具")
+    model_lib_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
     model_lib_p.set_defaults(
         func=lambda args: install_model_from_library(
             sd_webui_path=args.sd_webui_path,
@@ -658,10 +658,10 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # model install-url
     model_url_p = model_sub.add_parser("install-url", help="从链接安装模型")
-    model_url_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    model_url_p.add_argument("--url", required=True, help="模型下载地址")
-    model_url_p.add_argument("--type", required=True, help="模型类型")
-    model_url_p.add_argument("--downloader", default="aria2", help="下载工具")
+    model_url_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    model_url_p.add_argument("--url", required=True, dest="url", help="模型下载地址")
+    model_url_p.add_argument("--type", required=True, dest="type", help="模型类型")
+    model_url_p.add_argument("--downloader", default="aria2", dest="downloader", help="下载工具")
     model_url_p.set_defaults(
         func=lambda args: install_model_from_url(
             sd_webui_path=args.sd_webui_path,
@@ -673,15 +673,15 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # model list
     model_list_p = model_sub.add_parser("list", help="列出模型")
-    model_list_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
+    model_list_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     model_list_p.set_defaults(func=lambda args: list_models(sd_webui_path=args.sd_webui_path))
 
     # model uninstall
     model_uninstall_p = model_sub.add_parser("uninstall", help="卸载模型")
-    model_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, help="Stable Diffusion WebUI 根目录")
-    model_uninstall_p.add_argument("--name", required=True, help="模型名称")
-    model_uninstall_p.add_argument("--type", help="模型类型")
-    model_uninstall_p.add_argument("--interactive", action="store_true", help="启用交互模式")
+    model_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    model_uninstall_p.add_argument("--name", required=True, dest="name", help="模型名称")
+    model_uninstall_p.add_argument("--type", dest="type", help="模型类型")
+    model_uninstall_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
     model_uninstall_p.set_defaults(
         func=lambda args: uninstall_model(
             sd_webui_path=args.sd_webui_path,
