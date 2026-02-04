@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager.base import (
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
 )
+from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
@@ -30,7 +31,7 @@ from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_pytorch, pip_install
 from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, get_package_version, is_package_has_version
 from sd_webui_all_in_one.package_analyzer.ver_cmp import version_decrement, version_increment
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
+from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_env_pytorch_type, get_pytorch_mirror_type, auto_detect_pytorch_device_category
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.logger import get_logger
@@ -876,7 +877,7 @@ def update_invokeai_custom_nodes(
     """
     custom_nodes_path = invokeai_path / "nodes"
     err: list[Exception] = []
-    
+
     # 准备 Git 配置
     custom_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=use_github_mirror,
@@ -1226,3 +1227,57 @@ def uninstall_invokeai_model(
     )
 
     logger.info("模型删除完成")
+
+
+def reinstall_invokeai_pytorch(
+    device_type: PyTorchDeviceTypeCategory | None = None,
+    use_pypi_mirror: bool | None = True,
+    use_uv: bool | None = None,
+    interactive_mode: bool | None = False,
+) -> None:
+    """PyTorch 重装工具
+
+    Args:
+        pytorch_name (str | None):
+            PyTorch 版本组合名称
+        pytorch_index (device_type | None):
+            PyTorch 版本组合索引值
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+        use_uv (bool | None):
+            是否使用 uv 进行 PyTorch 安装
+        interactive_mode (bool | None):
+            是否启用交互模式
+    """
+
+    def _uninstall() -> None:
+        run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
+
+    def _install(d: PyTorchDeviceTypeCategory) -> None:
+        install_invokeai_component(
+            device_type=d,
+            use_pypi_mirror=use_pypi_mirror,
+            use_uv=use_uv,
+        )
+
+    if interactive_mode:
+        while True:
+            print(
+                "请输入要重装的 PyTorch 类型:\n\n".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]),
+                "\n提示:\n1. 输入类型后回车即可开始 PyTorch 重装\n2. 如果不知道使用什么类型的 PyTorch, 可输入 auto 后回车, 此时将根据设备类型自动选择最佳的 PyTorch 类型",
+            )
+            user_input = input("==> ").strip()
+            if user_input in PYTORCH_DEVICE_CATEGORY_LIST:
+                logger.info("重装 PyTorch 中")
+                _uninstall()
+                _install(user_input)
+                logger.info("PyTorch 重装完成")
+                return
+            else:
+                logger.warning("输入有误, 请重试")
+                continue
+    else:
+        logger.info("重装 PyTorch 中")
+        _uninstall()
+        _install(device_type)
+        logger.info("PyTorch 重装完成")

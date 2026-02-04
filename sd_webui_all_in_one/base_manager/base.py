@@ -207,6 +207,7 @@ def reinstall_pytorch(
             find_links=info["find_links"]["mirror"] if use_pypi_mirror else info["find_links"]["official"],
         )
         logger.info("安装 PyTorch 中")
+        _uninstall()
         install_pytorch(
             torch_package=info["torch_ver"],
             xformers_package=info["xformers_ver"],
@@ -214,9 +215,14 @@ def reinstall_pytorch(
             use_uv=use_uv,
         )
 
+    def _uninstall() -> None:
+        if force_reinstall:
+            run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
+
     pytorch_list = export_pytorch_list()
     display_model = True
     input_err = (0, None)
+    force_reinstall = False
 
     if interactive_mode:
         while True:
@@ -226,6 +232,7 @@ def reinstall_pytorch(
                 print_divider("=")
 
             display_model = True
+            force_reinstall = False
             i, m = input_err
             if i == 1:
                 logger.warning("输入有误, 请重试")
@@ -247,9 +254,13 @@ def reinstall_pytorch(
                 return
 
             if user_input == "auto":
+                if input("是否启用强制重装? [y/N] ").strip().lower() in ["yes", "y"]:
+                    force_reinstall = True
+
                 logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合中")
                 pytorch, xformers, custom_env = prepare_pytorch_install_info(use_cn_mirror=use_pypi_mirror)
                 logger.info("安装 PyTorch 中")
+                _uninstall()
                 install_pytorch(
                     torch_package=pytorch,
                     xformers_package=xformers,
@@ -265,6 +276,9 @@ def reinstall_pytorch(
                 continue
 
             try:
+                if input("是否启用强制重装? [y/N] ").strip().lower() in ["yes", "y"]:
+                    force_reinstall = True
+
                 _install(input_index=index)
                 return
             except ValueError as e:
