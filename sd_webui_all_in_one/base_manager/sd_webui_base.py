@@ -735,7 +735,9 @@ def install_sd_webui(
     logger.info("准备 Stable Diffusion WebUI 安装配置")
 
     # 准备 Stable Diffusion WebUI 安装分支信息
+    need_switch_branch = True
     if install_branch is None:
+        need_switch_branch = False
         install_branch = SD_WEBUI_BRANCH_LIST[0]
 
     if install_branch not in SD_WEBUI_BRANCH_LIST:
@@ -784,13 +786,14 @@ def install_sd_webui(
         path=sd_webui_path,
     )
 
-    logger.info("切换 Stable Diffusion WebUI 分支中")
-    git_warpper.switch_branch(
-        path=sd_webui_path,
-        branch=branch_info["branch"],
-        new_url=branch_info["url"],
-        recurse_submodules=branch_info["use_submodule"],
-    )
+    if need_switch_branch:
+        logger.info("切换 Stable Diffusion WebUI 分支中")
+        git_warpper.switch_branch(
+            path=sd_webui_path,
+            branch=branch_info["branch"],
+            new_url=branch_info["url"],
+            recurse_submodules=branch_info["use_submodule"],
+        )
 
     if sd_webui_repository_list:
         logger.info("安装 Stable Diffusion WebUI 组件中")

@@ -202,7 +202,9 @@ def install_sd_scripts(
     logger.info("准备 SD Scripts 安装配置")
 
     # 准备 SD Scripts 安装分支信息
+    need_switch_branch = True
     if install_branch is None:
+        need_switch_branch = False
         install_branch = SD_SCRIPTS_BRANCH_LIST[0]
 
     if install_branch not in SD_SCRIPTS_BRANCH_LIST:
@@ -246,13 +248,14 @@ def install_sd_scripts(
     )
     git_warpper.update_submodule(sd_scripts_path)
 
-    logger.info("切换 SD Scripts 分支中")
-    git_warpper.switch_branch(
-        path=sd_scripts_path,
-        branch=branch_info["branch"],
-        new_url=branch_info["url"],
-        recurse_submodules=branch_info["use_submodule"],
-    )
+    if need_switch_branch:
+        logger.info("切换 SD Scripts 分支中")
+        git_warpper.switch_branch(
+            path=sd_scripts_path,
+            branch=branch_info["branch"],
+            new_url=branch_info["url"],
+            recurse_submodules=branch_info["use_submodule"],
+        )
 
     install_pytorch_for_webui(
         pytorch_package=pytorch_package,

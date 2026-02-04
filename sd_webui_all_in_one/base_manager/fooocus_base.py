@@ -163,7 +163,9 @@ def install_fooocus(
     logger.info("准备 Fooocus 安装配置")
 
     # 准备 Fooocus 安装分支信息
+    need_switch_branch = True
     if install_branch is None:
+        need_switch_branch = False
         install_branch = FOOOCUS_BRANCH_LIST[0]
 
     if install_branch not in FOOOCUS_BRANCH_LIST:
@@ -207,13 +209,14 @@ def install_fooocus(
         path=fooocus_path,
     )
 
-    logger.info("切换 Fooocus 分支中")
-    git_warpper.switch_branch(
-        path=fooocus_path,
-        branch=branch_info["branch"],
-        new_url=branch_info["url"],
-        recurse_submodules=branch_info["use_submodule"],
-    )
+    if need_switch_branch:
+        logger.info("切换 Fooocus 分支中")
+        git_warpper.switch_branch(
+            path=fooocus_path,
+            branch=branch_info["branch"],
+            new_url=branch_info["url"],
+            recurse_submodules=branch_info["use_submodule"],
+        )
 
     install_pytorch_for_webui(
         pytorch_package=pytorch_package,
