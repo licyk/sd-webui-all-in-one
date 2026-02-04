@@ -3,6 +3,7 @@ import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_trainer_base import (
+    SD_TRAINER_BRANCH_LIST,
     SDTrainerBranchType,
     install_sd_trainer,
     update_sd_trainer,
@@ -344,7 +345,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--install-branch", type=str, dest="install_branch", help="安装的分支")
+    install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=SD_TRAINER_BRANCH_LIST, help="安装的分支")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
@@ -398,7 +399,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = trainer_sub.add_parser("switch", help="切换 SD Trainer 分支")
     switch_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_TRAINER_BRANCH_LIST, help="要切换的分支")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_trainer_path=args.sd_trainer_path,

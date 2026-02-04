@@ -3,6 +3,7 @@ import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
+    SD_WEBUI_BRANCH_LIST,
     SDWebUiBranchType,
     install_sd_webui,
     update_sd_webui,
@@ -474,7 +475,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--install-branch", type=str, dest="install_branch", help="安装的分支")
+    install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=SD_WEBUI_BRANCH_LIST, help="安装的分支")
     install_p.add_argument("--no-pre-download-extension", action="store_true", dest="no_pre_download_extension", help="禁用预下载扩展")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
@@ -530,7 +531,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = sd_sub.add_parser("switch", help="切换 Stable Diffusion WebUI 分支")
     switch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_WEBUI_BRANCH_LIST, help="要切换的分支")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_webui_path=args.sd_webui_path,

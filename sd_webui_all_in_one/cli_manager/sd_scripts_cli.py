@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_scripts_base import (
+    SD_SCRIPTS_BRANCH_LIST,
     SDScriptsBranchType,
     install_sd_scripts,
     update_sd_scripts,
@@ -285,7 +286,7 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--install-branch", type=str, dest="install_branch", help="安装的分支")
+    install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=SD_SCRIPTS_BRANCH_LIST, help="安装的分支")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
@@ -339,7 +340,7 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = scripts_sub.add_parser("switch", help="切换 SD Scripts 分支")
     switch_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_SCRIPTS_BRANCH_LIST, help="要切换的分支")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_scripts_path=args.sd_scripts_path,

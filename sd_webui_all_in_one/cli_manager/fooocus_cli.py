@@ -3,6 +3,7 @@ import shlex
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.fooocus_base import (
+    FOOOCUS_BRANCH_LIST,
     FooocusBranchType,
     install_fooocus,
     update_fooocus,
@@ -337,7 +338,7 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--install-branch", type=str, dest="install_branch", help="安装的分支")
+    install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=FOOOCUS_BRANCH_LIST, help="安装的分支")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
     install_p.set_defaults(
@@ -388,7 +389,7 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = fooocus_sub.add_parser("switch", help="切换 Fooocus 分支")
     switch_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=FOOOCUS_BRANCH_LIST, help="要切换的分支")
     switch_p.set_defaults(
         func=lambda args: switch(
             fooocus_path=args.fooocus_path,
