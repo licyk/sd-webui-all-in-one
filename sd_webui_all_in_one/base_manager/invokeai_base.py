@@ -599,15 +599,25 @@ def update_invokeai(
 
 def check_invokeai_env(
     use_uv: bool | None = True,
+    use_pypi_mirror: bool | None = None,
 ) -> None:
     """检查 InvokeAI 运行环境
 
     Args:
-        use_uv (bool | None): 使用 uv 安装依赖
+        use_uv (bool | None):
+            使用 uv 安装依赖
+        use_pypi_mirror (bool | None):
+            是否使用国内 PyPI 镜像源
     """
+
+    # 准备安装依赖的 PyPI 镜像源
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=os.environ.copy(),
+    )
     fix_torch_libomp()
-    check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True)
-    check_numpy(use_uv=use_uv)
+    check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True, custom_env=custom_env)
+    check_numpy(use_uv=use_uv, custom_env=custom_env)
 
 
 def launch_invokeai(

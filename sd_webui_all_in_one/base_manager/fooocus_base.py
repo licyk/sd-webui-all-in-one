@@ -314,6 +314,7 @@ def check_fooocus_env(
     fooocus_path: Path,
     check: bool | None = True,
     use_uv: bool | None = True,
+    use_pypi_mirror: bool | None = None,
 ) -> None:
     """检查 Fooocus 运行环境
 
@@ -324,6 +325,8 @@ def check_fooocus_env(
             是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        use_pypi_mirror (bool | None):
+            是否使用国内 PyPI 镜像源
 
     Raises:
         AggregateError:
@@ -340,12 +343,18 @@ def check_fooocus_env(
     # 确定主要的依赖描述文件
     active_req_path = req_v_path if req_v_path.is_file() else req_path
 
+    # 准备安装依赖的 PyPI 镜像源
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=os.environ.copy(),
+    )
+
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
-        (py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv}),
+        (py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
-        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
-        (check_numpy, {"use_uv": use_uv}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
 

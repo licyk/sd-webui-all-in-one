@@ -107,6 +107,7 @@ def check_env(
     fooocus_path: Path,
     check: bool | None = True,
     use_uv: bool | None = True,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 Fooocus 运行环境
 
@@ -117,6 +118,8 @@ def check_env(
             是否检查环境时发生的错误, 设置为 True 时, 如果检查环境发生错误时将抛出异常
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        use_pypi_mirror (bool | None):
+            是否启用 PyPI 镜像源
 
     Raises:
         AggregateError:
@@ -128,6 +131,7 @@ def check_env(
         fooocus_path=fooocus_path,
         check=check,
         use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
     )
 
 
@@ -194,6 +198,7 @@ def launch(
             fooocus_path=fooocus_path,
             check=check,
             use_uv=use_uv,
+            use_pypi_mirror=use_pypi_mirror,
         )
     if isinstance(launch_args, str):
         launch_args = shlex.split(launch_args)
@@ -372,11 +377,13 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
     check_p.add_argument("--no-check", action="store_false", dest="check", help="不抛出环境检查错误")
     check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             fooocus_path=args.fooocus_path,
             check=args.check,
             use_uv=args.use_uv,
+            use_pypi_mirror=args.use_pypi_mirror,
         )
     )
 

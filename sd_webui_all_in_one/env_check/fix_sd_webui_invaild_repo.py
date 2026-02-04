@@ -15,12 +15,15 @@ logger = get_logger(
 
 def fix_stable_diffusion_invaild_repo_url(
     sd_webui_path: Path,
+    custom_env: dict[str, str] | None = None,
 ) -> None:
     """修复 Stable Diffusion WebUI 无效的组件仓库源
 
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
+        custom_env (dict[str, str] | None):
+            环境变量字典
     """
     logger.info("检查 Stable Diffusion WebUI 无效组件仓库源")
     stable_diffusion_path = sd_webui_path / "repositories" / "stable-diffusion-stability-ai"
@@ -28,11 +31,13 @@ def fix_stable_diffusion_invaild_repo_url(
     if not git_warpper.is_git_repo(stable_diffusion_path):
         return
 
-    custom_env = os.environ.copy()
+    if custom_env is None:
+        custom_env = os.environ.copy()
+
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
     try:
         repo_url = run_cmd(
-            ["git", "-C", str(stable_diffusion_path), "remote", "get-url", "origin"],
+            ["git", "-C", stable_diffusion_path.as_posix(), "remote", "get-url", "origin"],
             custom_env=custom_env,
             live=False,
         )
@@ -42,7 +47,7 @@ def fix_stable_diffusion_invaild_repo_url(
     if repo_url in ["https://github.com/Stability-AI/stablediffusion.git", "https://github.com/Stability-AI/stablediffusion"]:
         try:
             run_cmd(
-                ["git", "-C", str(stable_diffusion_path), "remote", "set-url", "origin", new_repo_url],
+                ["git", "-C", stable_diffusion_path.as_posix(), "remote", "set-url", "origin", new_repo_url],
                 custom_env=custom_env,
                 live=False,
             )

@@ -19,6 +19,7 @@ def py_dependency_checker(
     requirement_path: Path,
     name: str | None = None,
     use_uv: bool | None = True,
+    custom_env: dict[str, str] | None = None,
 ) -> None:
     """检测依赖完整性并安装缺失依赖
 
@@ -29,6 +30,8 @@ def py_dependency_checker(
             显示的名称
         use_uv (bool | None):
             是否使用 uv 安装依赖
+        custom_env (dict[str, str] | None):
+            环境变量字典
 
     Raises:
         FileNotFoundError:
@@ -51,6 +54,7 @@ def py_dependency_checker(
                 path=requirement_path,
                 use_uv=use_uv,
                 cwd=requirement_path.parent,
+                custom_env=custom_env,
             )
             logger.info("安装 %s 依赖完成", name)
         except RuntimeError as e:

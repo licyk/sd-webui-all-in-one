@@ -606,6 +606,7 @@ def comfyui_conflict_analyzer(
     install_conflict_component_requirement: bool | None = False,
     interactive_mode: bool | None = False,
     use_uv: bool | None = True,
+    custom_env: dict[str, str] | None = None,
 ) -> None:
     """检查并安装 ComfyUI 的依赖环境
 
@@ -618,6 +619,8 @@ def comfyui_conflict_analyzer(
             是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
         use_uv (bool | None):
             是否使用 uv 安装依赖
+        custom_env (dict[str, str] | None):
+            环境变量字典
 
     Returns:
         AggregateError:
@@ -655,6 +658,7 @@ def comfyui_conflict_analyzer(
                 path=req,
                 use_uv=use_uv,
                 cwd=req_path.parent,
+                custom_env=custom_env,
             )
         except RuntimeError as e:
             err.append(e)
@@ -666,6 +670,7 @@ def comfyui_conflict_analyzer(
                 run_cmd(
                     [Path(sys.executable).as_posix(), installer_script.as_posix()],
                     cwd=req_path.parent,
+                    custom_env=custom_env,
                 )
             except RuntimeError as e:
                 err.append(e)

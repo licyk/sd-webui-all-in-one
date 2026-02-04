@@ -82,14 +82,19 @@ def update(
 
 def check_env(
     use_uv: bool | None = True,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 InvokeAI 运行环境
 
     Args:
-        use_uv (bool | None): 使用 uv 安装依赖
+        use_uv (bool | None):
+            使用 uv 安装依赖
+        use_pypi_mirror (bool | None):
+            是否启用 PyPI 镜像源
     """
     check_invokeai_env(
         use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
     )
 
 
@@ -123,6 +128,7 @@ def launch(
     if check_launch_env:
         check_invokeai_env(
             use_uv=use_uv,
+            use_pypi_mirror=use_pypi_mirror,
         )
     if isinstance(launch_args, str):
         launch_args = shlex.split(launch_args)
@@ -409,7 +415,13 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     # check-env
     check_p = invoke_sub.add_parser("check-env", help="检查 InvokeAI 运行环境")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
-    check_p.set_defaults(func=lambda args: check_env(use_uv=args.use_uv))
+    check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    check_p.set_defaults(
+        func=lambda args: check_env(
+            use_uv=args.use_uv,
+            use_pypi_mirror=args.use_pypi_mirror,
+        )
+    )
 
     # launch
     launch_p = invoke_sub.add_parser("launch", help="启动 InvokeAI")

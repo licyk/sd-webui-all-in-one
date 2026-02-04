@@ -347,6 +347,7 @@ def check_comfyui_env(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool | None = None,
 ) -> None:
     """检查 ComfyUI 运行环境
 
@@ -365,6 +366,8 @@ def check_comfyui_env(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        use_pypi_mirror (bool | None):
+            是否使用国内 PyPI 镜像源
 
     Raises:
         AggregateError:
@@ -377,17 +380,23 @@ def check_comfyui_env(
     if check and req_path.is_file():
         raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查文件是否完整")
 
+    # 准备安装依赖的 PyPI 镜像源
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=os.environ.copy(),
+    )
+
     # 准备 Git 配置
     custom_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=use_github_mirror,
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-        origin_env=os.environ.copy(),
+        origin_env=custom_env,
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
-        (py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv}),
+        (py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv, "custom_env": custom_env}),
         (
             comfyui_conflict_analyzer,
             {
@@ -395,11 +404,12 @@ def check_comfyui_env(
                 "install_conflict_component_requirement": install_conflict_component_requirement,
                 "interactive_mode": interactive_mode,
                 "use_uv": use_uv,
+                "custom_env": custom_env,
             },
         ),
         (fix_torch_libomp, {}),
-        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
-        (check_numpy, {"use_uv": use_uv}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
 

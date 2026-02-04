@@ -109,6 +109,7 @@ def check_env(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool | None = False,
 ) -> None:
     """检查 SD Trainer 运行环境
 
@@ -121,6 +122,8 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        use_pypi_mirror (bool | None):
+            是否启用 PyPI 镜像源
 
     Raises:
         AggregateError:
@@ -134,6 +137,7 @@ def check_env(
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+        use_pypi_mirror=use_pypi_mirror,
     )
 
 
@@ -381,6 +385,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     check_p.add_argument("--custom-github-mirror", type=str, help="自定义 Github 镜像源")
     check_p.add_argument("--use-github-mirror", action="store_true", help="使用 Github 镜像源")
+    check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             sd_trainer_path=args.sd_trainer_path,
@@ -388,6 +393,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
             use_uv=args.use_uv,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
+            use_pypi_mirror=args.use_pypi_mirror,
         )
     )
 

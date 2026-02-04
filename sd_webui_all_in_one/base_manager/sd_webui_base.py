@@ -908,6 +908,7 @@ def check_sd_webui_env(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool | None = None,
 ) -> None:
     """检查 Stable Diffusion WebUI 运行环境
 
@@ -922,6 +923,8 @@ def check_sd_webui_env(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        use_pypi_mirror (bool | None):
+            是否使用国内 PyPI 镜像源
 
     Raises:
         AggregateError:
@@ -946,14 +949,20 @@ def check_sd_webui_env(
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
+    # 准备安装依赖的 PyPI 镜像源
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=custom_env,
+    )
+
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
-        (fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path}),
-        (py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv}),
-        (install_extension_requirements, {"sd_webui_path": sd_webui_path}),
+        (fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
+        (py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv, "custom_env": custom_env}),
+        (install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
-        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True}),
-        (check_numpy, {"use_uv": use_uv}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
 
