@@ -22,7 +22,7 @@ from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import normalized_filepath
-
+from sd_webui_all_in_one.base_manager.invokeai_base import reinstall_invokeai_pytorch
 
 def install(
     invokeai_path: Path,
@@ -357,6 +357,21 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     """
     invoke_parser: argparse.ArgumentParser = subparsers.add_parser("invokeai", help="InvokeAI 相关命令")
     invoke_sub = invoke_parser.add_subparsers(dest="invokeai_action", required=True)
+
+    # reinstall-pytorch
+    reinstall_pytorch_p = invoke_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--device-type", type=str, help="设备类型 (cuda, rocm, cpu, mps)")
+    reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
+    reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    reinstall_pytorch_p.set_defaults(
+        func=lambda args: reinstall_invokeai_pytorch(
+            device_type=args.device_type,
+            use_pypi_mirror=args.use_pypi_mirror,
+            use_uv=args.use_uv,
+            interactive_mode=args.interactive_mode,
+        )
+    )
 
     # install
     install_p = invoke_sub.add_parser("install", help="安装 InvokeAI")

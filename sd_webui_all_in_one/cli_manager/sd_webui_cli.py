@@ -24,6 +24,7 @@ from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import normalized_filepath
+from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 
 
 def install(
@@ -445,6 +446,23 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     """
     sd_parser: argparse.ArgumentParser = subparsers.add_parser("sd-webui", help="Stable Diffusion WebUI 相关命令")
     sd_sub = sd_parser.add_subparsers(dest="sd_webui_action", required=True)
+
+    # reinstall-pytorch
+    reinstall_pytorch_p = sd_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--pytorch-name", type=str, help="PyTorch 版本组合名称")
+    reinstall_pytorch_p.add_argument("--pytorch-index", type=int, help="PyTorch 版本组合索引值")
+    reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
+    reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    reinstall_pytorch_p.set_defaults(
+        func=lambda args: reinstall_pytorch(
+            pytorch_name=args.pytorch_name,
+            pytorch_index=args.pytorch_index,
+            use_pypi_mirror=args.use_pypi_mirror,
+            use_uv=args.use_uv,
+            interactive_mode=args.interactive_mode,
+        )
+    )
 
     # install
     install_p = sd_sub.add_parser("install", help="安装 Stable Diffusion WebUI")

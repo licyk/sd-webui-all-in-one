@@ -22,7 +22,7 @@ from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import normalized_filepath
-
+from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 
 def install(
     comfyui_path: Path,
@@ -441,6 +441,23 @@ def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
     """
     comfy_parser: argparse.ArgumentParser = subparsers.add_parser("comfyui", help="ComfyUI 相关命令")
     comfy_sub = comfy_parser.add_subparsers(dest="comfyui_action", required=True)
+
+    # reinstall-pytorch
+    reinstall_pytorch_p = comfy_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--pytorch-name", type=str, help="PyTorch 版本组合名称")
+    reinstall_pytorch_p.add_argument("--pytorch-index", type=int, help="PyTorch 版本组合索引值")
+    reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
+    reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    reinstall_pytorch_p.set_defaults(
+        func=lambda args: reinstall_pytorch(
+            pytorch_name=args.pytorch_name,
+            pytorch_index=args.pytorch_index,
+            use_pypi_mirror=args.use_pypi_mirror,
+            use_uv=args.use_uv,
+            interactive_mode=args.interactive_mode,
+        )
+    )
 
     # install
     install_p = comfy_sub.add_parser("install", help="安装 ComfyUI")
