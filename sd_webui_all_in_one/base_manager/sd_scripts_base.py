@@ -288,6 +288,8 @@ def install_sd_scripts(
         )
 
         if not no_pre_download_model:
+            model_path = sd_scripts_path / "sd-models"
+            model_path.mkdir(parents=True, exist_ok=True)
             pre_download_model_for_webui(
                 dtype="sd_scripts",
                 model_path=sd_scripts_path / "sd-models",

@@ -567,6 +567,8 @@ def install_invokeai(
         )
 
         if not no_pre_download_model:
+            model_path = invokeai_path / "models" / "checkpoints"
+            model_path.mkdir(parents=True, exist_ok=True)
             save_paths = pre_download_model_for_webui(
                 dtype="invokeai",
                 model_path=invokeai_path / "models" / "checkpoints",

@@ -3,6 +3,7 @@ import json
 import uuid
 import urllib.request
 import importlib.metadata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
 from pathlib import Path
 
@@ -1331,14 +1332,16 @@ def list_sd_webui_extensions(
     disabled_extensions = set(settings.get("disabled_extensions", []))
     disable_all_extensions = settings.get("disable_all_extensions", "none")
 
-    for ext in tqdm(list(extension_path.iterdir()), desc="获取 Stable Diffusion WebUI 扩展数据"):
-        info: SDWebUiLocalExtensionInfo = {}
-        if ext.is_file() or ext.name == "__pycache__":
-            continue
+    if not extension_path.exists():
+        return []
+    ext_dirs = [ext for ext in extension_path.iterdir() if ext.is_dir() and ext.name != "__pycache__"]
 
+    def process_single_extension(ext: Path) -> SDWebUiLocalExtensionInfo:
+        """内部函数：处理单个插件的信息提取"""
         name = ext.name
         path = ext
 
+        # 计算状态 (Status 逻辑保持原样)
         if disable_all_extensions == "all":
             status = False
         elif disable_all_extensions != "extra":
@@ -1346,29 +1349,40 @@ def list_sd_webui_extensions(
         else:
             status = True
 
+        info: SDWebUiLocalExtensionInfo = {"name": name, "status": status, "path": path, "url": None, "commit": None, "branch": None}
+
+        # 提取 Git 信息
         try:
-            url = git_warpper.get_current_branch_remote_url(ext)
-        except ValueError:
-            url = None
+            # 注意：如果 git_warpper 内部支持 timeout，建议在此处传入
+            info["url"] = git_warpper.get_current_branch_remote_url(ext)
+        except (ValueError, Exception):
+            pass
 
         try:
-            commit = git_warpper.get_current_commit(ext)
-        except ValueError:
-            commit = None
+            info["commit"] = git_warpper.get_current_commit(ext)
+        except (ValueError, Exception):
+            pass
 
         try:
-            branch = git_warpper.get_current_branch(ext)
-        except ValueError:
-            branch = None
+            info["branch"] = git_warpper.get_current_branch(ext)
+        except (ValueError, Exception):
+            pass
 
-        info["name"] = name
-        info["status"] = status
-        info["path"] = path
-        info["url"] = url
-        info["commit"] = commit
-        info["branch"] = branch
-        info_list.append(info)
+        return info
 
+    logger.info("获取 Stable Diffusion WebUI 扩展列表中")
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_to_ext = {executor.submit(process_single_extension, ext): ext for ext in ext_dirs}
+        for future in tqdm(as_completed(future_to_ext), total=len(ext_dirs), desc="获取 Stable Diffusion WebUI 扩展数据"):
+            try:
+                result = future.result(timeout=15)
+                if result:
+                    info_list.append(result)
+            except Exception as e:
+                ext_name = future_to_ext[future].name
+                logger.error("处理扩展 '%s' 时发生异常: %s", ext_name, e)
+
+    logger.info("获取 Stable Diffusion WebUI 扩展列表中完成")
     return info_list
 
 
@@ -1390,6 +1404,8 @@ def update_sd_webui_extensions(
     Raises:
         AggregateError:
             检查 Stable Diffusion WebUI 环境发生错误时
+        FileNotFoundError:
+            未找到 Stable Diffusion WebUI 扩展目录时
     """
     extension_path = sd_webui_path / "extensions"
     err: list[Exception] = []
@@ -1401,16 +1417,21 @@ def update_sd_webui_extensions(
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-    for ext in extension_path.iterdir():
-        if ext.is_file() or not (ext / ".git").exists():
-            continue
+    if not extension_path.is_dir():
+        raise FileNotFoundError("未找到 Stable Diffusion WebUI 扩展目录")
 
-        logger.info("更新 '%s' 扩展中", ext.name)
+    update_targets = [ext for ext in extension_path.iterdir() if ext.is_dir() and (ext / ".git").exists()]
+    count = 0
+    task_sum = len(update_targets)
+
+    for ext in update_targets:
+        count += 1
+        logger.info("[%s/%s] 更新 '%s' 扩展中", count, task_sum, ext.name)
         try:
             git_warpper.update(ext)
         except Exception as e:
             err.append(e)
-            logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+            logger.error("[%s/%s] 更新 '%s' 扩展时发生错误: %s", count, task_sum, ext.name, e)
 
     if err:
         raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Any, Callable, TypedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
@@ -593,6 +594,7 @@ def list_comfyui_custom_nodes(
         ComfyUiLocalExtensionInfoList:
             ComfyUI 本地扩展列表
     """
+
     try:
         from tqdm import tqdm
     except ImportError:
@@ -600,39 +602,47 @@ def list_comfyui_custom_nodes(
 
     custom_node_path = comfyui_path / "custom_nodes"
     info_list: ComfyUiLocalExtensionInfoList = []
+    ext_dirs = list(custom_node_path.iterdir())
 
-    logger.info("获取 ComfyUI 扩展列表中")
-    for ext in tqdm(list(custom_node_path.iterdir()), desc="获取 ComfyUI 扩展数据"):
-        info: ComfyUiLocalExtensionInfo = {}
+    def _process_extension(ext: Path) -> ComfyUiLocalExtensionInfo:
         if ext.is_file() or ext.name == "__pycache__":
-            continue
+            return None
 
         name = ext.name
         path = ext
         status = not name.endswith(".disabled")
+        url = None
+        commit = None
+        branch = None
 
         try:
             url = git_warpper.get_current_branch_remote_url(ext)
-        except ValueError:
-            url = None
+        except (ValueError, Exception):
+            pass
 
         try:
             commit = git_warpper.get_current_commit(ext)
-        except ValueError:
-            commit = None
+        except (ValueError, Exception):
+            pass
 
         try:
             branch = git_warpper.get_current_branch(ext)
-        except ValueError:
-            branch = None
+        except (ValueError, Exception):
+            pass
 
-        info["name"] = name
-        info["status"] = status
-        info["path"] = path
-        info["url"] = url
-        info["commit"] = commit
-        info["branch"] = branch
-        info_list.append(info)
+        return {"name": name, "status": status, "path": path, "url": url, "commit": commit, "branch": branch}
+
+    logger.info("获取 ComfyUI 扩展列表中")
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_to_ext = {executor.submit(_process_extension, ext): ext for ext in ext_dirs}
+        for future in tqdm(as_completed(future_to_ext), total=len(ext_dirs), desc="获取 ComfyUI 扩展数据"):
+            try:
+                result = future.result(timeout=5)
+                if result:
+                    info_list.append(result)
+            except Exception as e:
+                ext_name = future_to_ext[future].name
+                logger.error("处理扩展 '%s' 时发生异常: %s", ext_name, e)
 
     logger.info("获取 ComfyUI 扩展列表中完成")
     return info_list
@@ -697,6 +707,8 @@ def update_comfyui_custom_nodes(
     Raises:
         AggregateError:
             检查 ComfyUI 环境发生错误时
+        FileNotFoundError:
+            未找到 ComfyUI 扩展目录时
     """
     custom_nodes_path = comfyui_path / "custom_nodes"
     err: list[Exception] = []
@@ -707,14 +719,16 @@ def update_comfyui_custom_nodes(
         origin_env=os.environ.copy(),
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
-    custom_node_list = list(custom_nodes_path.iterdir())
-    task_sum = len(custom_node_list)
-    count = 0
-    for ext in custom_node_list:
-        count += 1
-        if ext.is_file() or not (ext / ".git").exists():
-            continue
 
+    if not custom_nodes_path.is_dir():
+        raise FileNotFoundError("未找到 ComfyUI 扩展目录")
+
+    update_targets = [ext for ext in custom_nodes_path.iterdir() if ext.is_dir() and (ext / ".git").exists()]
+    task_sum = len(update_targets)
+    count = 0
+
+    for ext in update_targets:
+        count += 1
         logger.info("[%s/%s] 更新 '%s' 扩展中", count, task_sum, ext.name)
         try:
             git_warpper.update(ext)
