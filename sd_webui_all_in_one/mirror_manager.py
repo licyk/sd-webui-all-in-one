@@ -222,7 +222,7 @@ def set_github_mirror(
     ) -> None:
         logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
         try:
-            run_cmd(["git", "config", "--global", f"url.{mirror}.insteadOf", "https://github.com"])
+            run_cmd(["git", "config", "--file", config_path.as_posix(), f"url.{mirror}.insteadOf", "https://github.com"])
         except RuntimeError as e:
             logger.error("设置 Github 镜像源时发生错误: %s", e)
             raise RuntimeError(f"设置 Github 镜像源时发生错误: {e}") from e
