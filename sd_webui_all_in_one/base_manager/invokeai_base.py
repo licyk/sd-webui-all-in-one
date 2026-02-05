@@ -11,6 +11,7 @@ from pathlib import Path
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
+    apply_hf_mirror,
     clone_repo,
     get_pypi_mirror_config,
     get_repo_name_from_url,
@@ -625,6 +626,7 @@ def launch_invokeai(
     invokeai_path: Path,
     launch_args: list[str] | None = None,
     use_hf_mirror: bool | None = False,
+    custom_hf_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
 ) -> None:
@@ -637,6 +639,8 @@ def launch_invokeai(
             启动 InvokeAI 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
@@ -647,8 +651,11 @@ def launch_invokeai(
     custom_env = os.environ.copy()
     custom_env["INVOKEAI_ROOT"] = invokeai_path.as_posix()
 
-    if use_hf_mirror:
-        custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+    custom_env = apply_hf_mirror(
+        use_hf_mirror=use_hf_mirror,
+        custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
+        origin_env=custom_env,
+    )
 
     custom_env = get_pypi_mirror_config(
         use_cn_mirror=use_pypi_mirror,

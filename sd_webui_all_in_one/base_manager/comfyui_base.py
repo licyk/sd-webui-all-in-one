@@ -5,6 +5,7 @@ from typing import Any, Callable, TypedDict
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
+    apply_hf_mirror,
     clone_repo,
     get_pypi_mirror_config,
     get_repo_name_from_url,
@@ -426,6 +427,7 @@ def launch_comfyui(
     comfyui_path: Path,
     launch_args: list[str] | None = None,
     use_hf_mirror: bool | None = False,
+    custom_hf_mirror: str | list[str] | None = None,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
@@ -440,6 +442,8 @@ def launch_comfyui(
             启动 ComfyUI 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
         use_github_mirror (bool | None):
             是否启用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
@@ -458,8 +462,11 @@ def launch_comfyui(
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
-    if use_hf_mirror:
-        custom_env["HF_ENDPOINT"] = os.getenv("HF_ENDPOINT", HUGGINGFACE_MIRROR_LIST[0])
+    custom_env = apply_hf_mirror(
+        use_hf_mirror=use_hf_mirror,
+        custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
+        origin_env=custom_env,
+    )
 
     custom_env = get_pypi_mirror_config(
         use_cn_mirror=use_pypi_mirror,

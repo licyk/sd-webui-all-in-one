@@ -2,11 +2,12 @@ import os
 import sys
 import importlib.metadata
 import urllib.parse
+import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.downloader import DownloadToolType
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, set_git_base_config, set_github_mirror
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_git_base_config, set_github_mirror
 from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
     PYPI_INDEX_MIRROR_OFFICIAL,
@@ -254,7 +255,7 @@ def reinstall_pytorch(
                 "提示:\n"
                 "1. PyTorch 版本通常来说选择最新版的即可\n"
                 "2. 驱动支持的最高 CUDA 版本需要大于或等于要安装的 PyTorch 中所带的 CUDA 版本, 若驱动支持的最高 CUDA 版本低于要安装的 PyTorch 中所带的 CUDA 版本, 可尝试更新显卡驱动, 或者选择 CUDA 版本更低的 PyTorch\n"
-                "3. 输入数字后回车即可选择安装指定的 PyTorch 版本组合\n" \
+                "3. 输入数字后回车即可选择安装指定的 PyTorch 版本组合\n"
                 "4. 输入 auto 后回车可以自动根据设备支持情况选择最佳 PyTorch 版本组合进行安装\n"
                 "5. 输入 exit 后回车退出 PyTorch 重装"
             )
@@ -611,7 +612,7 @@ def apply_git_base_config_and_github_mirror(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        origin_env (dict[str, str] | None): 
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Returns:
@@ -638,3 +639,43 @@ def apply_git_base_config_and_github_mirror(
     custom_env["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
 
     return custom_env
+
+
+def apply_hf_mirror(
+    use_hf_mirror: bool | None = False,
+    custom_hf_mirror: str | list[str] | None = None,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """配置 HuggingFace 镜像源"""
+
+    if origin_env is not None:
+        custom_env = origin_env.copy()
+    else:
+        custom_env = os.environ.copy()
+
+    hf_mirror = (HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+
+    if hf_mirror is None:
+        return custom_env
+    if isinstance(hf_mirror, str):
+        custom_env["HF_ENDPOINT"] = hf_mirror
+        return custom_env
+    if isinstance(hf_mirror, list):
+        for hf in hf_mirror: # pylint: disable=not-an-iterable
+            test_url = f"{hf}/licyk/sd-model/resolve/main/README.md"
+            req = urllib.request.Request(test_url, headers=headers)
+            try:
+                logger.info("测试镜像源: %s", hf)
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.getcode() == 200:
+                        logger.info("该镜像源可用")
+                        custom_env["HF_ENDPOINT"] = hf
+                        return custom_env
+            except Exception:
+                logger.info("该镜像源不可用")
+
+        logger.info("无可用的 HuggingFace 镜像源")
+        return custom_env
+
+    raise ValueError(f"传入的 HuggingFace 镜像源列表类型不支持: {type(hf_mirror)}")

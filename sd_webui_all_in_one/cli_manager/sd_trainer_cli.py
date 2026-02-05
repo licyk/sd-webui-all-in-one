@@ -149,6 +149,7 @@ def launch(
     sd_trainer_path: Path,
     launch_args: str | list[str] | None = None,
     use_hf_mirror: bool | None = False,
+    custom_hf_mirror: str | list[str] | None = None,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
@@ -165,6 +166,8 @@ def launch(
             启动 SD Trainer 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
         use_github_mirror (bool | None):
             是否启用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
@@ -193,6 +196,7 @@ def launch(
         sd_trainer_path=sd_trainer_path,
         launch_args=launch_args,
         use_hf_mirror=use_hf_mirror,
+        custom_hf_mirror=custom_hf_mirror,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
         use_pypi_mirror=use_pypi_mirror,
@@ -420,6 +424,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     # launch_p.add_argument("--use-hf-mirror", action="store_true", dest="use_hf_mirror", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--no-hf-mirror", action="store_false", dest="use_hf_mirror", help="禁用 HuggingFace 镜像源")
+    launch_p.add_argument("--custom-hf-mirror", type=str, dest="custom_hf_mirror", help="自定义 HuggingFace 镜像源")
     # launch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="启用 Github 镜像源")
     launch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="禁用 Github 镜像源")
     launch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
@@ -436,6 +441,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
             sd_trainer_path=args.sd_trainer_path,
             launch_args=args.launch_args,
             use_hf_mirror=args.use_hf_mirror,
+            custom_hf_mirror=args.custom_hf_mirror,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
             use_pypi_mirror=args.use_pypi_mirror,

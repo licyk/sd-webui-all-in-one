@@ -102,6 +102,7 @@ def launch(
     invokeai_path: Path,
     launch_args: str | list[str] | None = None,
     use_hf_mirror: bool | None = False,
+    custom_hf_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
     use_uv: bool | None = True,
@@ -116,6 +117,8 @@ def launch(
             启动 InvokeAI 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
@@ -138,6 +141,7 @@ def launch(
         invokeai_path=invokeai_path,
         launch_args=launch_args,
         use_hf_mirror=use_hf_mirror,
+        custom_hf_mirror=custom_hf_mirror,
         use_pypi_mirror=use_pypi_mirror,
         use_cuda_malloc=use_cuda_malloc,
     )
@@ -426,6 +430,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     # launch_p.add_argument("--use-hf-mirror", action="store_true", dest="use_hf_mirror", help="启用 HuggingFace 镜像源")
     launch_p.add_argument("--no-hf-mirror", action="store_false", dest="use_hf_mirror", help="禁用 HuggingFace 镜像源")
+    launch_p.add_argument("--custom-hf-mirror", type=str, dest="custom_hf_mirror", help="自定义 HuggingFace 镜像源")
     # launch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="启用 PyPI 镜像源")
     launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
     # launch_p.add_argument("--use-cuda-malloc", action="store_true", dest="use_cuda_malloc", help="启用 CUDA Malloc 优化")
@@ -439,6 +444,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
             invokeai_path=args.invokeai_path,
             launch_args=args.launch_args,
             use_hf_mirror=args.use_hf_mirror,
+            custom_hf_mirror=args.custom_hf_mirror,
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
             check_launch_env=args.check_env,
