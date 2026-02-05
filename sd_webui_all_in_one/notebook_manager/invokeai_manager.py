@@ -13,7 +13,7 @@ from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai, check_invokeai_env, install_invokeai
+from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai, check_invokeai_env, install_invokeai, update_invokeai
 
 logger = get_logger(
     name="InvokeAI Manager",
@@ -65,43 +65,20 @@ class InvokeAIManager(BaseManager):
         path = self.workspace / self.workfolder / "sd-models"
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
-    def get_model_from_list(self, path: str | Path, model_list: list[str, int]) -> None:
+    def get_sd_model_from_list(
+        self,
+        model_list: list[str],
+    ) -> None:
         """从模型列表下载模型
 
-        `model_list`需要指定模型下载的链接和下载状态, 例如
-        ```python
-        model_list = [
-            ["url1", 0],
-            ["url2", 1],
-            ["url3", 0],
-            ["url4", 1, "file.safetensors"]
-        ]
-        ```
-
-        在这个例子中, 第一个参数指定了模型的下载链接, 第二个参数设置了是否要下载这个模型, 当这个值为 1 时则下载该模型
-
-        第三个参数是可选参数, 用于指定下载到本地后的文件名称
-
-        则上面的例子中`url2`和`url4`下载链接所指的文件将被下载, 并且`url4`所指的文件将被重命名为`file.safetensors`
-
         Args:
-            path (str | Path): 将模型下载到的本地路径
-            model_list (list[str | int]): 模型列表
-            retry (int | None): 重试下载的次数, 默认为 3
+            model_list (list[str]):
+                模型列表
+            retry (int | None):
+                重试下载的次数, 默认为 3
         """
-        for model in model_list:
-            try:
-                url = model[0]
-                status = model[1]
-                filename = model[2] if len(model) > 2 else None
-            except Exception as e:
-                logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
-                continue
-            if status >= 1:
-                if filename is None:
-                    self.get_model(url=url, path=path)
-                else:
-                    self.get_model(url=url, path=path, filename=filename)
+        for url in model_list:
+            self.get_sd_model(url=url)
 
     def check_env(
         self,
@@ -152,6 +129,7 @@ class InvokeAIManager(BaseManager):
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
+        update_core: bool | None = True,
         *args,
         **kwargs,
     ) -> None:
@@ -194,6 +172,8 @@ class InvokeAIManager(BaseManager):
                 配置 HuggingFace Token
             modelscope_token (str | None):
                 配置 ModelScope Token
+            update_core (bool | None):
+                安装时更新内核和扩展
         """
         warning_unexpected_params(
             message="InvokeAIManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -231,6 +211,12 @@ class InvokeAIManager(BaseManager):
             no_pre_download_model=no_pre_download_model,
             use_cn_model_mirror=use_cn_model_mirror,
         )
+
+        if update_core:
+            update_invokeai(
+                use_pypi_mirror=use_pypi_mirror,
+                use_uv=use_uv,
+            )
 
         if model_list is not None:
             self.get_model_from_list(

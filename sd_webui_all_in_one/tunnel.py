@@ -14,7 +14,7 @@ import threading
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TypedDict
+from typing import Any, Callable, TypedDict
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import AggregateError
@@ -622,7 +622,7 @@ class TunnelManager:
         tunnel_url: TunnelUrl = {"local_url": f"http://127.0.0.1:{self.port}"}
         errors: list[Exception] = []
 
-        tasks = [
+        tasks: list[tuple[bool, str, Callable, Any]] = [
             (use_cloudflare, "cloudflare", self.cloudflare, []),
             (use_ngrok, "ngrok", self.ngrok, [ngrok_token] if ngrok_token else None),
             (use_remote_moe, "remote_moe", self.remote_moe, []),
@@ -639,6 +639,7 @@ class TunnelManager:
             try:
                 tunnel_url[key] = func(*args)
             except Exception as e:
+                logger.error("启动 %s 内网穿透失败: %s", key, e)
                 if check:
                     errors.append(e)
 

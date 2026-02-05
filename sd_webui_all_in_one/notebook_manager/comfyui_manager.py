@@ -319,8 +319,6 @@ class ComfyUIManager(BaseManager):
                 配置 ModelScope Token
             update_core (bool | None):
                 安装时更新内核和扩展
-        Raises:
-            Exception: GPU 不可用
         """
         warning_unexpected_params(
             message="ComfyUIManager.install() 接收到不期望参数, 请检查参数输入是否正确",

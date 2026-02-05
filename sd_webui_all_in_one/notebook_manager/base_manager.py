@@ -13,7 +13,7 @@ from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.repo_manager import ApiType, RepoManager, RepoType
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file, download_archive_and_unpack
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
-from sd_webui_all_in_one.utils import in_jupyter
+from sd_webui_all_in_one.utils import in_jupyter, clear_jupyter_output, print_divider
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, remove_files, move_files, sync_files_and_create_symlink
@@ -488,4 +488,94 @@ class BaseManager:
             repo_type=repo_type,
             folder=folder,
             num_threads=num_threads,
+        )
+
+    def clear_output(self) -> None:
+        """清理 Jupyter Notebook 的输出"""
+        clear_jupyter_output()
+
+    def get_tunnel_url(
+        self,
+        use_ngrok: bool | None = False,
+        ngrok_token: str | None = None,
+        use_cloudflare: bool | None = False,
+        use_remote_moe: bool | None = False,
+        use_localhost_run: bool | None = False,
+        use_gradio: bool | None = False,
+        use_pinggy_io: bool | None = False,
+        use_zrok: bool | None = False,
+        zrok_token: str | None = None,
+        webui_name: str | None = "WebUI",
+    ) -> None:
+        """获取内网穿透地址
+
+        Args:
+            use_ngrok (bool | None):
+                启用 Ngrok 内网穿透
+            ngrok_token (str | None):
+                Ngrok 账号 Token
+            use_cloudflare (bool | None):
+                启用 CloudFlare 内网穿透
+            use_remote_moe (bool | None):
+                启用 remote.moe 内网穿透
+            use_localhost_run (bool | None):
+                使用 localhost.run 内网穿透
+            use_gradio (bool | None):
+                使用 Gradio 内网穿透
+            use_pinggy_io (bool | None):
+                使用 pinggy.io 内网穿透
+            use_zrok (bool | None):
+                使用 Zrok 内网穿透
+            zrok_token (str | None):
+                Zrok 账号 Token
+            check (bool | None):
+                检查内网穿透是否启动成功
+            webui_name (str | None):
+                WebUI 的名称
+        """
+        logger.info("为 %s 启动内网穿透", webui_name)
+        tun = self.tun_manager.start_tunnel(
+            use_ngrok=use_ngrok,
+            ngrok_token=ngrok_token,
+            use_cloudflare=use_cloudflare,
+            use_remote_moe=use_remote_moe,
+            use_localhost_run=use_localhost_run,
+            use_gradio=use_gradio,
+            use_pinggy_io=use_pinggy_io,
+            use_zrok=use_zrok,
+            zrok_token=zrok_token,
+            check=False,
+        )
+        logger.info("内网穿透启动完成")
+        print_divider("=")
+        print(f"原 {webui_name} 访问地址: {tun['local_url']}")
+        print(f"{webui_name} 的内网穿透地址: ")
+        for k, v in tun.items():
+            print(f"- {k}: {v}")
+        print_divider("=")
+
+    def download_file_from_url(
+        self,
+        url: str,
+        path: Path | None = None,
+        save_name: str | None = None,
+        tool: DownloadToolType | None = "aria2",
+    ) -> Path:
+        """从链接中下载文件
+
+        Args:
+            url (str):
+                文件下载链接
+            path (Path | None):
+                文件下载路径
+            save_name (str | None):
+                文件保存名称
+            tool (DownloadToolType | None):
+                下载工具
+        """
+        return download_file(
+            url=url,
+            path=path,
+            save_name=save_name,
+            tool=tool,
         )

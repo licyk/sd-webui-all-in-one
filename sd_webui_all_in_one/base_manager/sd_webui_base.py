@@ -115,7 +115,7 @@ SD_WEBUI_BRANCH_INFO_DICT: list[SDWebUiBranchInfo] = [
         "name": "Panchovix - Stable-Diffusion-WebUI-reForge 测试分支",
         "dtype": "sd_webui_reforge_dev",
         "url": "https://github.com/Panchovix/stable-diffusion-webui-reForge",
-        "branch": "dev_upstream",
+        "branch": "dev",
         "use_submodule": False,
     },
     {
