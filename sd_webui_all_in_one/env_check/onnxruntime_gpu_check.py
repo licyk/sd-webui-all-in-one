@@ -2,9 +2,11 @@
 
 import os
 import sys
+import multiprocessing
+import importlib.metadata
+from multiprocessing.queues import Queue
 from enum import Enum
 from pathlib import Path
-import importlib.metadata
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
@@ -61,6 +63,71 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
     return ver.get("cuda_version"), ver.get("cudnn_version")
 
 
+def get_torch_version_worker(result_queue: Queue) -> None:
+    """在子进程中执行的任务函数，用于获取 Torch 版本信息
+
+    Args:
+        result_queue (Queue): 用于返回结果的多进程队列
+    """
+    try:
+        import torch
+
+        torch_ver = str(torch.__version__) if hasattr(torch, "__version__") else None
+        cuda_ver = str(torch.version.cuda) if hasattr(torch.version, "cuda") else None
+
+        # 获取 cuDNN 版本
+        try:
+            cudnn_ver = str(torch.backends.cudnn.version())
+        except Exception:
+            cudnn_ver = None
+
+        result_queue.put((torch_ver, cuda_ver, cudnn_ver))
+    except Exception:
+        # 如果导入失败或发生异常，返回空值
+        result_queue.put((None, None, None))
+
+
+def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]:
+    """获取 Torch 的本体, CUDA, cuDNN 版本 (通过子进程隔离)
+
+    为了防止 torch 模块加载后无法从内存中彻底卸载，以及避免其占用显存
+
+    此处通过开辟一个独立的子进程来完成版本检查工作
+
+    Returns:
+        (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
+    """
+    # 使用 'spawn' 模式创建上下文，确保子进程拥有完全独立的内存空间
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+
+    # 创建子进程
+    process = ctx.Process(target=get_torch_version_worker, args=(result_queue,), name="TorchVersionChecker")
+
+    torch_ver, cuda_ver, cudnn_ver = None, None, None
+
+    try:
+        logger.debug("启动子进程检查 Torch 版本")
+        process.start()
+
+        # 等待子进程返回结果，设置 15 秒超时防止意外卡死
+        # 获取结果后，子进程的任务就完成了
+        torch_ver, cuda_ver, cudnn_ver = result_queue.get(timeout=15)
+
+        process.join()
+    except Exception as e:
+        logger.debug("通过子进程获取 Torch 版本失败: %s", e)
+        # 发生异常时强制终止进程
+        if process.is_alive():
+            process.terminate()
+    finally:
+        # 确保进程资源被回收
+        process.close()
+
+    logger.debug("子进程返回结果 - Torch: %s, CUDA: %s, cuDNN: %s", torch_ver, cuda_ver, cudnn_ver)
+    return torch_ver, cuda_ver, cudnn_ver
+
+
 def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
     """获取 Torch 的本体, CUDA, cuDNN 版本
 
@@ -96,7 +163,7 @@ def need_install_ort_ver(skip_if_missing: bool = True) -> OrtType | None:
             需要安装的 onnxruntime-gpu 类型
     """
     # 检测是否安装了 Torch
-    torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver()
+    torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver_subprocess()
     logger.debug("torch_ver: %s, cuda_ver: %s, cuddn_ver: %s", torch_ver, cuda_ver, cuddn_ver)
     # 缺少 Torch / CUDA / cuDNN 版本时取消判断
     if torch_ver is None or cuda_ver is None or cuddn_ver is None:
@@ -211,6 +278,7 @@ def check_onnxruntime_gpu(
         RuntimeError:
             当修复 Onnxruntime GPU 版本问题发生错误时
     """
+
     def _clean_env():
         custom_env.pop("PIP_EXTRA_INDEX_URL", None)
         custom_env.pop("UV_INDEX", None)

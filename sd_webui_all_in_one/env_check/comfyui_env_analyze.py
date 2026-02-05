@@ -629,8 +629,9 @@ def comfyui_conflict_analyzer(
     logger.info("检测 ComfyUI 环境中")
     env_data, req_list, conflict_info = process_comfyui_env_analysis(comfyui_root_path)
 
-    display_comfyui_environment_dict(env_data)
-    display_check_result(req_list, conflict_info)
+    if logger.level <= 10:
+        display_comfyui_environment_dict(env_data)
+        display_check_result(req_list, conflict_info)
 
     if len(conflict_info) > 0:
         logger.warning("检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用")
@@ -655,7 +656,7 @@ def comfyui_conflict_analyzer(
         logger.info("[%s/%s] 安装 %s 的依赖中", count, task_sum, name)
         try:
             install_requirements(
-                path=req,
+                path=Path(req),
                 use_uv=use_uv,
                 cwd=req_path.parent,
                 custom_env=custom_env,

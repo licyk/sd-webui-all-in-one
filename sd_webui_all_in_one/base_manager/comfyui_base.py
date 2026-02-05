@@ -375,7 +375,7 @@ def check_comfyui_env(
     """
     req_path = comfyui_path / "requirements.txt"
 
-    if req_path.is_file():
+    if not req_path.is_file():
         raise FileNotFoundError("未找到 ComfyUI 依赖文件记录表, 请检查文件是否完整")
 
     # 准备安装依赖的 PyPI 镜像源
