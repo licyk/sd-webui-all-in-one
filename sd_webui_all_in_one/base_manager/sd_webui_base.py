@@ -866,10 +866,10 @@ def install_sd_webui(
         use_uv=use_uv,
     )
 
-    requirements_version_path = sd_webui_path / "requirements_version.txt"
+    requirements_version_path = sd_webui_path / "requirements_versions.txt"
     requirements_path = sd_webui_path / "requirements.txt"
 
-    if not requirements_path.is_file() and requirements_version_path.is_file():
+    if not requirements_path.is_file() and not requirements_version_path.is_file():
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查 Stable Diffusion WebUI 文件是否完整")
 
     logger.info("安装 Stable Diffusion WebUI 依赖中")
@@ -985,7 +985,7 @@ def check_sd_webui_env(
         FileNotFoundError:
             未找到 Stable Diffusion WebUI 依赖文件记录表时
     """
-    req_v_path = sd_webui_path / "requirements_version.txt"
+    req_v_path = sd_webui_path / "requirements_versions.txt"
     req_path = sd_webui_path / "requirements.txt"
 
     if not req_v_path.is_file() and not req_path.is_file():
@@ -1147,6 +1147,7 @@ def launch_sd_webui(
     launch_webui(
         webui_path=sd_webui_path,
         launch_script="launch.py",
+        webui_name="Stable Diffusion WebUI",
         launch_args=launch_args,
         custom_env=custom_env,
     )

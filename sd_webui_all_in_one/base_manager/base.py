@@ -411,6 +411,7 @@ def pre_download_model_for_webui(
 def launch_webui(
     webui_path: Path,
     launch_script: str,
+    webui_name: str | None = None,
     launch_args: list[str] | None = None,
     custom_env: dict[str, str] | None = None,
 ) -> None:
@@ -421,6 +422,8 @@ def launch_webui(
             WebUI 的根目录
         launch_script (str):
             启动 WebUI 的脚本名称, 使用相对路径
+        webui_name (str | None):
+            WebUI 的名称
         launch_args (list[str] | None):
             启动 WebUI 的参数
         custom_env (dict[str, str] | None):
@@ -433,13 +436,16 @@ def launch_webui(
     if launch_args is None:
         launch_args = []
 
+    if webui_name is None:
+        webui_name = "WebUI"
+
     cmd = [Path(sys.executable).as_posix(), webui_path / launch_script] + launch_args
     try:
         run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
     except KeyboardInterrupt:
-        logger.info("已关闭 WebUI")
+        logger.info("已关闭 %s", webui_name)
     except RuntimeError as e:
-        raise RuntimeError(f"运行 WebUI 时出现错误: {e}") from e
+        raise RuntimeError(f"运行 {webui_name} 时出现错误: {e}") from e
 
 
 def get_repo_name_from_url(url: str) -> str:

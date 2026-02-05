@@ -33,14 +33,16 @@ def check_and_update_uv(
         ver = importlib.metadata.version("uv")
         if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(UV_MINIMUM_VER):
             return
-    except Exception:
         logger.info("更新 uv 中")
+    except Exception:
+        logger.info("安装 uv 中")
 
     try:
         run_cmd(
             [Path(sys.executable).as_posix(), "-m", "pip", "install", "uv", "--upgrade"],
             custom_env=custom_env,
         )
+        logger.info("uv 更新完成")
     except RuntimeError as e:
         raise RuntimeError(f"更新 uv 时发生错误: {e}") from e
 
@@ -48,7 +50,7 @@ def check_and_update_uv(
 def check_and_update_pip(
     custom_env: dict[str, str] | None = None,
 ) -> None:
-    """检查 uv 版本并尝试更新
+    """检查 Pip 版本并尝试更新
 
     Args:
         custom_env (dict[str, str] | None):
@@ -56,20 +58,22 @@ def check_and_update_pip(
 
     Raises:
         RuntimeError:
-            更新 uv 发生错误时
+            更新 Pip 发生错误时
     """
     try:
         ver = importlib.metadata.version("pip")
         if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(PIP_MINIMUM_VER):
             return
+        logger.info("更新 Pip 中")
     except Exception:
-        logger.info("更新 uv 中")
+        logger.info("安装 Pip 中")
 
     try:
         run_cmd(
             [Path(sys.executable).as_posix(), "-m", "pip", "install", "pip", "--upgrade"],
             custom_env=custom_env,
         )
+        logger.info("Pip 更新完成")
     except RuntimeError as e:
         raise RuntimeError(f"更新 uv 时发生错误: {e}") from e
 

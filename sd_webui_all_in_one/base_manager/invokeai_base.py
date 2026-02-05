@@ -179,7 +179,7 @@ def sync_invokeai_component(
         device_type = auto_detect_pytorch_device_category()
 
     pytorch_mirror_type = get_pytorch_mirror_type_for_ivnokeai(device_type)
-    custom_env_pytorch, _, _ = prepare_pytorch_install_info(
+    _, _, custom_env_pytorch = prepare_pytorch_install_info(
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=f"torch=={torch_ver}",
         use_cn_mirror=use_pypi_mirror,
@@ -188,8 +188,8 @@ def sync_invokeai_component(
     # 配置安装 PyTorch 所需的包版本声明
     pytorch_package = get_pytorch_for_invokeai()
     xformers_package = get_xformers_for_invokeai()
-    torch_with_xformers = " ".join(pytorch_package.split())
-    torch_without_xformers = " ".join(pytorch_package.split() + xformers_package.split())
+    torch_with_xformers = " ".join(pytorch_package.split() + xformers_package.split())
+    torch_without_xformers = " ".join(pytorch_package.split())
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
@@ -324,6 +324,7 @@ def import_model_to_invokeai(
         logger.info("初始化 InvokeAI 模型管理服务中")
         configuration = get_config()
         output_folder = configuration.outputs_path
+        configuration.models_path.mkdir(parents=True, exist_ok=True)
         image_files = DiskImageFileStorage(f"{output_folder}/images")
         db = init_db(config=configuration, logger=logger, image_files=image_files)
         event_handler_id = 1234
@@ -407,6 +408,7 @@ def import_model_to_invokeai(
     logger.info("就地安装 (仅本地) 模式: %s", ("禁用" if install_model_to_local else "启用"))
 
     for model in model_list:
+        print(model, type(model))
         count += 1
         if _model_exists(model_manager, model):
             logger.info("[%s/%s] 模型 %s 已经存在，跳过导入", count, task_sum, model.name)
@@ -572,7 +574,7 @@ def install_invokeai(
                 model_name="ChenkinNoob-XL-V0.2",
                 download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
             )
-            import_model_to_invokeai(model_list=[save_paths])
+            import_model_to_invokeai(model_list=([save_paths] if save_paths is not None else []))
 
     logger.info("安装 InvokeAI 完成")
 
@@ -674,7 +676,10 @@ def launch_invokeai(
     if launch_args is not None:
         sys.argv = [sys.argv[0]] + launch_args
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
-    sys.exit(run_app())
+    try:
+        sys.exit(run_app())
+    except KeyboardInterrupt:
+        logger.info("已退出 InvokeAI")
 
 
 def install_invokeai_custom_nodes(

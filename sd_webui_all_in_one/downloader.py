@@ -69,8 +69,9 @@ def aria2(
         run_cmd(
             [
                 "aria2c",
+                "--file-allocation=none",
                 "--console-log-level=error",
-                "--summary-interval=30",
+                "--summary-interval=20",
                 "-c",
                 "-x",
                 "16",

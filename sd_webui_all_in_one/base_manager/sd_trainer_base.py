@@ -194,15 +194,13 @@ def install_sd_trainer(
         use_uv=use_uv,
     )
 
-    requirements_version_path = sd_trainer_path / "requirements_version.txt"
-    requirements_path = sd_trainer_path / "requirements.txt"
-
-    if not requirements_path.is_file() and requirements_version_path.is_file():
+    req_path = sd_trainer_path / "requirements.txt"
+    if not req_path.is_file():
         raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查 SD Trainer 文件是否完整")
 
     logger.info("安装 SD Trainer 依赖中")
     install_requirements(
-        path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
+        path=req_path,
         use_uv=use_uv,
         custom_env=custom_env,
         cwd=sd_trainer_path,
@@ -210,7 +208,7 @@ def install_sd_trainer(
 
     if not no_pre_download_model:
         pre_download_model_for_webui(
-            dtype="sd_webui",
+            dtype="sd_trainer",
             model_path=sd_trainer_path / "sd-models",
             webui_base_path=sd_trainer_path,
             model_name="ChenkinNoob-XL-V0.2",
@@ -406,6 +404,7 @@ def launch_sd_trainer(
     launch_webui(
         webui_path=sd_trainer_path,
         launch_script="gui.py" if (sd_trainer_path / "gui.py").is_file() else "kohya_gui.py",
+        webui_name="SD Trainer",
         launch_args=launch_args,
         custom_env=custom_env,
     )

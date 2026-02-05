@@ -92,8 +92,11 @@ FOOOCUS_BRANCH_INFO_DICT: list[FooocusBranchInfo] = [
 ]
 """Fooocus 分支信息字典"""
 
-FOOOCUS_PRESET_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_config.json"
-"""Fooocus 预设配置文件路径"""
+FOOOCUS_PRESET_HF_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_config_huggingface.json"
+"""Fooocus 预设配置文件路径, 使用 HuggingFace 下载源"""
+
+FOOOCUS_PRESET_MS_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_config_modelscope.json"
+"""Fooocus 预设配置文件路径, 使用 ModelScope 下载源"""
 
 FOOOCUS_TRANSLATE_ZH_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_zh_cn.json"
 """Fooocus 中文翻译文件路径"""
@@ -101,17 +104,20 @@ FOOOCUS_TRANSLATE_ZH_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_zh_
 
 def install_fooocus_config(
     fooocus_path: Path,
+    use_cn_model_mirror: bool | None = False,
 ) -> None:
     """安装 Fooocus 配置文件
     Args:
         fooocus_path (Path):
             Fooocus 根目录
+        use_cn_model_mirror (bool | None):
+            是否使用国内镜像下载模型
 
     """
     preset_path = fooocus_path / "presets" / "sd_webui_all_in_one.json"
     translate_path = fooocus_path / "language" / "zh.json"
     if not preset_path.exists():
-        copy_files(FOOOCUS_PRESET_PATH, preset_path)
+        copy_files(FOOOCUS_PRESET_MS_PATH if use_cn_model_mirror else FOOOCUS_PRESET_HF_PATH, preset_path)
     if not translate_path.exists():
         copy_files(FOOOCUS_TRANSLATE_ZH_PATH, translate_path)
 
@@ -188,7 +194,6 @@ def install_fooocus(
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
-    
     # 准备 Git 配置
     custom_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=use_github_mirror,
@@ -226,10 +231,10 @@ def install_fooocus(
         use_uv=use_uv,
     )
 
-    requirements_version_path = fooocus_path / "requirements_version.txt"
+    requirements_version_path = fooocus_path / "requirements_versions.txt"
     requirements_path = fooocus_path / "requirements.txt"
 
-    if not requirements_path.is_file() and requirements_version_path.is_file():
+    if not requirements_path.is_file() and not requirements_version_path.is_file():
         raise FileNotFoundError("未找到 Fooocus 依赖文件记录表, 请检查 Fooocus 文件是否完整")
 
     logger.info("安装 Fooocus 依赖中")
@@ -242,14 +247,17 @@ def install_fooocus(
 
     if not no_pre_download_model:
         pre_download_model_for_webui(
-            dtype="sd_webui",
+            dtype="fooocus",
             model_path=fooocus_path / "models" / "checkpoints",
             webui_base_path=fooocus_path,
             model_name="ChenkinNoob-XL-V0.2",
             download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
 
-    install_fooocus_config(fooocus_path)
+    install_fooocus_config(
+        fooocus_path=fooocus_path,
+        use_cn_model_mirror=use_cn_model_mirror,
+    )
 
     logger.info("安装 Fooocus 完成")
 
@@ -335,7 +343,7 @@ def check_fooocus_env(
         FileNotFoundError:
             未找到 Fooocus 依赖文件记录表时
     """
-    req_v_path = fooocus_path / "requirements_version.txt"
+    req_v_path = fooocus_path / "requirements_versions.txt"
     req_path = fooocus_path / "requirements.txt"
 
     if not req_v_path.is_file() and not req_path.is_file():
@@ -399,7 +407,7 @@ def launch_fooocus(
             自定义 Github 镜像源
         use_pypi_mirror (bool | None):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None): 
+        use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
     """
     logger.info("准备 Fooocus 启动环境")
@@ -422,7 +430,7 @@ def launch_fooocus(
         )
         try:
             url = git_warpper.get_current_branch_remote_url(fooocus_path)
-            if "lllyasviel/Fooocus" in url:
+            if "lllyasviel/Fooocus" in url and custom_env.get("HF_ENDPOINT") is not None:
                 hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
         except Exception as e:
             logger.debug("获取 Fooocus 远程源失败: %s", e)
@@ -442,6 +450,7 @@ def launch_fooocus(
     launch_webui(
         webui_path=fooocus_path,
         launch_script="launch.py",
+        webui_name="Fooocus",
         launch_args=launch_args + hf_mirror_args,
         custom_env=custom_env,
     )

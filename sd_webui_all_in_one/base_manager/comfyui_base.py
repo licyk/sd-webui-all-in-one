@@ -299,7 +299,7 @@ def install_comfyui(
 
     if not no_pre_download_model:
         pre_download_model_for_webui(
-            dtype="fooocus",
+            dtype="comfyui",
             model_path=comfyui_path / "models" / "checkpoints",
             webui_base_path=comfyui_path,
             model_name="ChenkinNoob-XL-V0.2",
@@ -484,6 +484,7 @@ def launch_comfyui(
     launch_webui(
         webui_path=comfyui_path,
         launch_script="main.py",
+        webui_name="ComfyUI",
         launch_args=launch_args,
         custom_env=custom_env,
     )
