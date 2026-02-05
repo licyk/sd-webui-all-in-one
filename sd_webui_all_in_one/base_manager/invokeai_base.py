@@ -1230,6 +1230,7 @@ def reinstall_invokeai_pytorch(
     use_pypi_mirror: bool | None = True,
     use_uv: bool | None = None,
     interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """PyTorch 重装工具
 
@@ -1244,6 +1245,8 @@ def reinstall_invokeai_pytorch(
             是否使用 uv 进行 PyTorch 安装
         interactive_mode (bool | None):
             是否启用交互模式
+        list_only (bool | None):
+            是否仅列出 PyTorch 列表并退出
     """
 
     def _uninstall() -> None:
@@ -1255,6 +1258,10 @@ def reinstall_invokeai_pytorch(
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
         )
+
+    if list_only:
+        print("".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
+        return
 
     if interactive_mode:
         while True:

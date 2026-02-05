@@ -177,6 +177,7 @@ def reinstall_pytorch(
     use_pypi_mirror: bool | None = True,
     use_uv: bool | None = None,
     interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """PyTorch 重装工具
 
@@ -191,6 +192,8 @@ def reinstall_pytorch(
             是否使用 uv 进行 PyTorch 安装
         interactive_mode (bool | None):
             是否启用交互模式
+        list_only (bool | None):
+            是否仅列出 PyTorch 列表并退出
     """
 
     def _install(
@@ -220,6 +223,13 @@ def reinstall_pytorch(
             run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
     pytorch_list = export_pytorch_list()
+
+    if list_only:
+        print_divider("=")
+        display_pytorch_config(pytorch_list)
+        print_divider("=")
+        return
+
     display_model = True
     input_err = (0, None)
     force_reinstall = False

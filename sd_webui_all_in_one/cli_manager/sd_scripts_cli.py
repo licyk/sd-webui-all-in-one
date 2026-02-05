@@ -268,6 +268,7 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     # reinstall_pytorch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    reinstall_pytorch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出 PyTorch 列表并退出")
     reinstall_pytorch_p.set_defaults(
         func=lambda args: reinstall_pytorch(
             pytorch_name=args.pytorch_name,
@@ -275,6 +276,7 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
             use_pypi_mirror=args.use_pypi_mirror,
             use_uv=args.use_uv,
             interactive_mode=args.interactive_mode,
+            list_only=args.list_only,
         )
     )
 
