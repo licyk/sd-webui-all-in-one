@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import urllib.request
+import importlib.metadata
 from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
 from pathlib import Path
 
@@ -34,6 +35,7 @@ from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_M
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files, generate_dir_tree, get_file_list
 from sd_webui_all_in_one.downloader import download_file
+from sd_webui_all_in_one.pkg_manager import pip_install
 
 logger = get_logger(
     name="SD WebUI Manager",
@@ -684,6 +686,51 @@ def install_sd_webui_config(
         copy_files(SD_WEBUI_CONFIG_PATH, config_path)
 
 
+def install_clip_package(
+    use_pypi_mirror: bool | None = False,
+    custom_env: dict[str, str] | None = None,
+    use_uv: bool | None = True,
+) -> None:
+    """安装 CLIP 软件包
+
+    Args:
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+        custom_env (dict[str, str] | None):
+            自定义环境变量字典
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
+
+    Raises:
+        RuntimeError:
+            安装 CLIP 软件包发生错误时
+    """
+
+    if use_pypi_mirror:
+        pkg_url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip_python_package.zip"
+    else:
+        pkg_url = "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/clip_python_package.zip"
+
+    logger.info("检测是否需要安装 CLIP 软件包")
+    try:
+        importlib.metadata.version("clip")
+        logger.info("CLIP 软件包已安装")
+        return
+    except Exception:
+        logger.info("安装 CLIP 软件包中")
+
+    try:
+        pip_install(
+            pkg_url,
+            use_uv=use_uv,
+            custom_env=custom_env,
+        )
+    except RuntimeError as e:
+        raise RuntimeError(f"安装 CLIP 软件包时发生错误: {e}") from e
+
+    logger.info("CLIP 软件包安装成功")
+
+
 def install_sd_webui(
     sd_webui_path: Path,
     pytorch_mirror_type: PyTorchDeviceType | None = None,
@@ -825,6 +872,11 @@ def install_sd_webui(
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查 Stable Diffusion WebUI 文件是否完整")
 
     logger.info("安装 Stable Diffusion WebUI 依赖中")
+    install_clip_package(
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        custom_env=custom_env,
+    )
     install_requirements(
         path=requirements_version_path if requirements_version_path.is_file() else requirements_path,
         use_uv=use_uv,
