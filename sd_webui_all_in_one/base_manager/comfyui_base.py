@@ -748,6 +748,7 @@ def install_comfyui_model_from_library(
     model_index: int | None = None,
     downloader: DownloadToolType | None = "aria2",
     interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """为 ComfyUI 下载模型, 使用模型库进行下载
 
@@ -764,6 +765,8 @@ def install_comfyui_model_from_library(
             下载模型使用的工具
         interactive_mode (bool | None):
             是否启用交互模式
+        list_only (bool | None):
+            是否仅列出模型列表并退出
     """
     install_webui_model_from_library(
         webui_path=comfyui_path,
@@ -773,6 +776,7 @@ def install_comfyui_model_from_library(
         model_index=model_index,
         downloader=downloader,
         interactive_mode=interactive_mode,
+        list_only=list_only,
     )
 
 

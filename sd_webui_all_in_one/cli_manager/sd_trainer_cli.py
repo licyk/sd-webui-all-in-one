@@ -207,6 +207,7 @@ def install_model_from_library(
     model_index: int | None = None,
     downloader: DownloadToolType | None = "aria2",
     interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """为 SD Trainer 下载模型, 使用模型库进行下载
 
@@ -223,6 +224,8 @@ def install_model_from_library(
             下载模型使用的工具
         interactive_mode (bool | None):
             是否启用交互模式
+        list_only (bool | None):
+            是否仅列出模型列表并退出
     """
     install_sd_trainer_model_from_library(
         sd_trainer_path=sd_trainer_path,
@@ -231,6 +234,7 @@ def install_model_from_library(
         model_index=model_index,
         downloader=downloader,
         interactive_mode=interactive_mode,
+        list_only=list_only,
     )
 
 
@@ -451,6 +455,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
     model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", help="下载工具")
     model_lib_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
+    model_lib_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出模型列表并退出")
     model_lib_p.set_defaults(
         func=lambda args: install_model_from_library(
             sd_trainer_path=args.sd_trainer_path,
@@ -459,6 +464,7 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
             model_index=args.index,
             downloader=args.downloader,
             interactive_mode=args.interactive,
+            list_only=args.list_only,
         )
     )
 

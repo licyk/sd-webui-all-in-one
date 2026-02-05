@@ -477,6 +477,7 @@ def install_webui_model_from_library(
     model_index: int | None = None,
     downloader: DownloadToolType | None = "aria2",
     interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> list[Path] | None:
     """为 WebUI 下载模型, 使用模型库进行下载
 
@@ -495,6 +496,8 @@ def install_webui_model_from_library(
             下载模型使用的工具
         interactive_mode (bool | None):
             是否启用交互模式
+        list_only (bool | None):
+            是否仅列出模型列表并退出
 
     Returns:
         list[Path]:
@@ -508,6 +511,13 @@ def install_webui_model_from_library(
             return None
 
     model_list = export_model_list(dtype)
+
+    if list_only:
+        print_divider("=")
+        display_model_table(model_list)
+        print_divider("=")
+        return None
+
     display_model = True
     input_err = (0, None)
 
