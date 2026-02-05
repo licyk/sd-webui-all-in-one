@@ -68,8 +68,8 @@ class BaseManager:
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.workfolder = workfolder
         self.repo_manager = RepoManager(hf_token, ms_token)
-        self.tun_manager = TunnelManager(workspace, port)
-        self.tcmalloc_manager = TCMalloc(workspace)
+        self.tun_manager = TunnelManager(self.workspace, port)
+        self.tcmalloc_manager = TCMalloc(self.workspace)
         self.copy_files = copy_files
         self.remove_files = remove_files
         self.move_files = move_files
