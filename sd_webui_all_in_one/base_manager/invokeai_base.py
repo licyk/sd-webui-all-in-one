@@ -769,7 +769,7 @@ def set_invokeai_custom_nodes_status(
         raise FileNotFoundError(f"'{custom_node_name}' 扩展未找到, 请检查该扩展是否已安装")
 
     init_py = custom_node_path / custom_node_name / "__init__.py"
-    init_bak_py = custom_node_path / custom_node_name / "__init__.py"
+    init_bak_py = custom_node_path / custom_node_name / "__init__.py.bak"
     if status:
         if init_bak_py.is_file() and not init_py.is_file():
             move_files(init_bak_py, init_py)

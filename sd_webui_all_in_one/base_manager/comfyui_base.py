@@ -416,6 +416,7 @@ def check_comfyui_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
+            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
 
     if err:
         raise AggregateError("检查 ComfyUI 环境时发生错误", err)
@@ -591,12 +592,18 @@ def list_comfyui_custom_nodes(
         ComfyUiLocalExtensionInfoList:
             ComfyUI 本地扩展列表
     """
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
+
     custom_node_path = comfyui_path / "custom_nodes"
     info_list: ComfyUiLocalExtensionInfoList = []
 
-    for ext in custom_node_path.iterdir():
+    logger.info("获取 ComfyUI 扩展列表中")
+    for ext in tqdm(list(custom_node_path.iterdir()), desc="获取 ComfyUI 扩展数据"):
         info: ComfyUiLocalExtensionInfo = {}
-        if ext.is_file():
+        if ext.is_file() or ext.name == "__pycache__":
             continue
 
         name = ext.name
@@ -626,6 +633,7 @@ def list_comfyui_custom_nodes(
         info["branch"] = branch
         info_list.append(info)
 
+    logger.info("获取 ComfyUI 扩展列表中完成")
     return info_list
 
 
@@ -658,7 +666,7 @@ def set_comfyui_custom_node_status(
     if custom_node_name not in all_custom_nodes:
         raise FileNotFoundError(f"'{custom_node_name}' 扩展未找到, 请检查该扩展是否已安装")
 
-    enable_path = custom_node_path / f"{custom_node_name}.disabled"
+    enable_path = custom_node_path / f"{custom_node_name}"
     disabled_path = custom_node_path / f"{custom_node_name}.disabled"
     if status:
         if disabled_path.is_dir():
@@ -698,17 +706,20 @@ def update_comfyui_custom_nodes(
         origin_env=os.environ.copy(),
     )
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
-
-    for ext in custom_nodes_path.iterdir():
-        if ext.is_file():
+    custom_node_list = list(custom_nodes_path.iterdir())
+    task_sum = len(custom_node_list)
+    count = 0
+    for ext in custom_node_list:
+        count += 1
+        if ext.is_file() or not (ext / ".git").exists():
             continue
 
-        logger.info("更新 '%s' 扩展中", ext.name)
+        logger.info("[%s/%s] 更新 '%s' 扩展中", count, task_sum, ext.name)
         try:
             git_warpper.update(ext)
         except Exception as e:
             err.append(e)
-            logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+            logger.error("[%s/%s] 更新 '%s' 扩展时发生错误: %s", count, task_sum, ext.name, e)
 
     if err:
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)

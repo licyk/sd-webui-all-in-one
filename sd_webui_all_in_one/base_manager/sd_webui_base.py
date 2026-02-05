@@ -1024,6 +1024,7 @@ def check_sd_webui_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
+            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
 
     if err:
         raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
@@ -1310,6 +1311,11 @@ def list_sd_webui_extensions(
         SDWebUiLocalExtensionInfoList:
             Stable Diffusion WebUI 本地扩展列表
     """
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
+
     config_path = sd_webui_path / "config.json"
     extension_path = sd_webui_path / "extensions"
     info_list: SDWebUiLocalExtensionInfoList = []
@@ -1324,9 +1330,9 @@ def list_sd_webui_extensions(
     disabled_extensions = set(settings.get("disabled_extensions", []))
     disable_all_extensions = settings.get("disable_all_extensions", "none")
 
-    for ext in extension_path.iterdir():
+    for ext in tqdm(list(extension_path.iterdir()), desc="获取 Stable Diffusion WebUI 扩展数据"):
         info: SDWebUiLocalExtensionInfo = {}
-        if ext.is_file():
+        if ext.is_file() or ext.name == "__pycache__":
             continue
 
         name = ext.name
@@ -1395,7 +1401,7 @@ def update_sd_webui_extensions(
     os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
     for ext in extension_path.iterdir():
-        if ext.is_file():
+        if ext.is_file() or not (ext / ".git").exists():
             continue
 
         logger.info("更新 '%s' 扩展中", ext.name)

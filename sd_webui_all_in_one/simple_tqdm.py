@@ -1,13 +1,13 @@
 import shutil
 import sys
 import time
-from typing import Any, Iterable, TypeVar
+from typing import Any, Iterable, TypeVar, Generic
 
 
 T = TypeVar("T")
 
 
-class SimpleTqdm:
+class SimpleTqdm(Generic[T]):
     """一个简单的终端进度条工具, 支持多行显示
 
     Attributes:
@@ -110,7 +110,7 @@ class SimpleTqdm:
 
     def __enter__(
         self,
-    ) -> "SimpleTqdm":
+    ) -> "SimpleTqdm[T]":
         """上下文管理器进入"""
         return self
 

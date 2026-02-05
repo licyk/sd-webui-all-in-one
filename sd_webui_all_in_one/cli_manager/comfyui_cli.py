@@ -272,6 +272,7 @@ def list_custom_nodes(
         print(f"  - 启用状态: {ext['status']}")
         print(f"  - 版本: {ext['commit']}")
         print(f"  - 分支: {ext['branch']}")
+        print()
 
 
 def update_custom_nodes(

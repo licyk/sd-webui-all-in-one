@@ -364,6 +364,7 @@ def check_fooocus_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
+            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
 
     if err:
         raise AggregateError("检查 Fooocus 环境时发生错误", err)
