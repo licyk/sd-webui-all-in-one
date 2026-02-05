@@ -388,7 +388,7 @@ def check_sd_scripts_env(
     req_v_path = sd_scripts_path / "requirements_version.txt"
     req_path = sd_scripts_path / "requirements.txt"
 
-    if req_v_path.is_file() and not req_path.is_file():
+    if not req_v_path.is_file() and not req_path.is_file():
         raise FileNotFoundError("未找到 SD Scripts 依赖文件记录表, 请检查文件是否完整")
 
     # 准备 Git 配置

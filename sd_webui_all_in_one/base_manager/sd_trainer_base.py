@@ -308,7 +308,7 @@ def check_sd_trainer_env(
     """
     req_path = sd_trainer_path / "requirements.txt"
 
-    if req_path.is_file():
+    if not req_path.is_file():
         raise FileNotFoundError("未找到 SD Trainer 依赖文件记录表, 请检查文件是否完整")
 
     # 准备 Git 配置

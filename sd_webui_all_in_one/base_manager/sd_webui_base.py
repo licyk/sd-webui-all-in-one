@@ -988,7 +988,7 @@ def check_sd_webui_env(
     req_v_path = sd_webui_path / "requirements_version.txt"
     req_path = sd_webui_path / "requirements.txt"
 
-    if req_v_path.is_file() and not req_path.is_file():
+    if not req_v_path.is_file() and not req_path.is_file():
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 依赖文件记录表, 请检查文件是否完整")
 
     # 确定主要的依赖描述文件
