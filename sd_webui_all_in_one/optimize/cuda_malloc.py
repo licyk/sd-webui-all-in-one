@@ -164,8 +164,14 @@ def get_pytorch_cuda_alloc_conf(is_cuda: bool | None = True) -> str | None:
         return None
 
 
-def set_cuda_malloc() -> None:
-    """配置 CUDA Malloc 内存优化, 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量进行配置"""
+def get_cuda_malloc_var() -> str | None:
+    """获取配置 CUDA Malloc 内存优化所需的环境变量, 可将参数设置到 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量
+
+    Returns:
+        (str | None):
+            当可用时返回配置 CUDA Malloc 内存优化的参数, 否则返回 None
+    """
+
     try:
         version = ""
         torch_spec = importlib.util.find_spec("torch")
@@ -183,18 +189,25 @@ def set_cuda_malloc() -> None:
                 malloc_type = get_pytorch_cuda_alloc_conf(False)
         else:
             malloc_type = None
-    except Exception as _:
+    except Exception:
         malloc_type = None
 
     if malloc_type == "cuda_malloc":
-        logger.info("设置 CUDA 内存分配器为 CUDA 内置异步分配器")
-        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:cudaMallocAsync"  # PyTorch 将弃用该参数
-        os.environ["PYTORCH_ALLOC_CONF"] = "backend:cudaMallocAsync"
+        logger.info("可用的 CUDA 内存分配器: CUDA 内置异步分配器")
+        return "backend:cudaMallocAsync"
     elif malloc_type == "pytorch_malloc":
-        logger.info("设置 CUDA 内存分配器为 PyTorch 原生分配器")
-        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (  # PyTorch 将弃用该参数
-            "garbage_collection_threshold:0.9,max_split_size_mb:512"
-        )
-        os.environ["PYTORCH_ALLOC_CONF"] = "garbage_collection_threshold:0.9,max_split_size_mb:512"
+        logger.info("可用的 CUDA 内存分配器: PyTorch 原生分配器")
+        return "garbage_collection_threshold:0.9,max_split_size_mb:512"
     else:
-        logger.warning("显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器")
+        logger.warning("无可用的 CUDA 内存分配器")
+        return None
+
+
+def set_cuda_malloc() -> None:
+    """配置 CUDA Malloc 内存优化, 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量进行配置"""
+    malloc_var = get_cuda_malloc_var()
+    if malloc_var is None:
+        return
+
+    os.environ["PYTORCH_ALLOC_CONF"] = malloc_var
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = malloc_var

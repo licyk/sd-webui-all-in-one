@@ -161,11 +161,15 @@ def run_cmd(
             return "".join(process_output)
 
         if display_mode == "terminal":
-            result: subprocess.CompletedProcess[bytes] = subprocess.run(
+            result: subprocess.CompletedProcess[str] = subprocess.run(
                 command_to_exec,
                 shell=shell,
                 env=custom_env,
                 cwd=cwd,
+                bufsize=1,
+                text=True,
+                encoding="utf-8",
+                errors="ignore",
             )
             if result.returncode != 0:
                 raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
@@ -174,7 +178,7 @@ def run_cmd(
 
             try:
                 # 当 subprocess.run() 使用 PIPE 捕获输出时, result 才有输出内容
-                return result.stdout.decode(encoding="utf8", errors="ignore")
+                return result.stdout
             except Exception:
                 # 未使用 PIPE 时 subprocess.run() 可以实时输出内容, 但是 result 将为 None
                 return None
@@ -189,15 +193,19 @@ def run_cmd(
         shell=shell,
         env=custom_env,
         cwd=cwd,
+        bufsize=1,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
     )
 
     if result.returncode != 0:
         message = f"""{errdesc or "执行命令时发生错误"}
 命令: {command_to_exec}
 错误代码: {result.returncode}
-标准输出: {result.stdout.decode(encoding="utf8", errors="ignore") if len(result.stdout) > 0 else ""}
-错误输出: {result.stderr.decode(encoding="utf8", errors="ignore") if len(result.stderr) > 0 else ""}
+标准输出: {result.stdout if len(result.stdout) > 0 else ""}
+错误输出: {result.stderr if len(result.stderr) > 0 else ""}
 """
         raise RuntimeError(message)
 
-    return result.stdout.decode(encoding="utf8", errors="ignore")
+    return result.stdout

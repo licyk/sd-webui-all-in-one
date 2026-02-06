@@ -1,6 +1,7 @@
 """配置管理"""
 
 import os
+import sys
 import logging
 from pathlib import Path
 
@@ -12,6 +13,9 @@ LOGGER_LEVEL = int(os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", str(logging.INF
 
 LOGGER_COLOR = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR") not in ["0", "False", "false", "None", "none", "null"]
 """日志颜色"""
+
+RETRY_TIMES = int(os.getenv("SD_WEBUI_ALL_IN_ONE_RETRY_TIMES", str(3)))
+"""重试次数"""
 
 DEFAULT_ENV_VARS = [
     ["TF_CPP_MIN_LOG_LEVEL", "3"],
@@ -30,48 +34,18 @@ DEFAULT_ENV_VARS = [
         "PYTHONWARNINGS",
         "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning",
     ],
+    ["UV_HTTP_TIMEOUT", "30"],
+    ["UV_CONCURRENT_DOWNLOADS", "50"],
+    ["UV_INDEX_STRATEGY", "unsafe-best-match"],
+    ["PIP_DISABLE_PIP_VERSION_CHECK", "1"],
+    ["PIP_NO_WARN_SCRIPT_LOCATION", "0"],
+    ["PIP_TIMEOUT", "30"],
+    ["PIP_RETRIES", "5"],
+    ["PIP_PREFER_BINARY", "1"],
+    ["PIP_YES", "1"],
+    ["UV_PYTHON", Path(sys.executable).as_posix()],
 ]
 """默认配置的环境变量"""
-
-PYTORCH_MIRROR_DICT = {
-    "other": "https://download.pytorch.org/whl",
-    "cpu": "https://download.pytorch.org/whl/cpu",
-    "xpu": "https://download.pytorch.org/whl/xpu",
-    "rocm61": "https://download.pytorch.org/whl/rocm6.1",
-    "rocm62": "https://download.pytorch.org/whl/rocm6.2",
-    "rocm624": "https://download.pytorch.org/whl/rocm6.2.4",
-    "rocm63": "https://download.pytorch.org/whl/rocm6.3",
-    "rocm64": "https://download.pytorch.org/whl/rocm6.4",
-    "rocm71": "https://download.pytorch.org/whl/rocm7.1",
-    "cu118": "https://download.pytorch.org/whl/cu118",
-    "cu121": "https://download.pytorch.org/whl/cu121",
-    "cu124": "https://download.pytorch.org/whl/cu124",
-    "cu126": "https://download.pytorch.org/whl/cu126",
-    "cu128": "https://download.pytorch.org/whl/cu128",
-    "cu129": "https://download.pytorch.org/whl/cu129",
-    "cu130": "https://download.pytorch.org/whl/cu130",
-}
-"""PyTorch 镜像源字典"""
-
-PYTORCH_MIRROR_NJU_DICT = {
-    "other": "https://mirror.nju.edu.cn/pytorch/whl",
-    "cpu": "https://mirror.nju.edu.cn/pytorch/whl/cpu",
-    "xpu": "https://mirror.nju.edu.cn/pytorch/whl/xpu",
-    "rocm61": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.1",
-    "rocm62": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2",
-    "rocm624": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4",
-    "rocm63": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.3",
-    "rocm64": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.4",
-    "rocm71": "https://mirror.nju.edu.cn/pytorch/whl/rocm7.1",
-    "cu118": "https://mirror.nju.edu.cn/pytorch/whl/cu118",
-    "cu121": "https://mirror.nju.edu.cn/pytorch/whl/cu121",
-    "cu124": "https://mirror.nju.edu.cn/pytorch/whl/cu124",
-    "cu126": "https://mirror.nju.edu.cn/pytorch/whl/cu126",
-    "cu128": "https://mirror.nju.edu.cn/pytorch/whl/cu128",
-    "cu129": "https://mirror.nju.edu.cn/pytorch/whl/cu129",
-    "cu130": "https://mirror.nju.edu.cn/pytorch/whl/cu130",
-}
-"""PyTorch 国内镜像源 (NJU) 字典"""
 
 ROOT_PATH = Path(__file__).parent
 """SD WebUI All In One 根目录"""
@@ -79,5 +53,50 @@ ROOT_PATH = Path(__file__).parent
 SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
 """SD WebUI All In One 补丁目录"""
 
-SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") not in ["0", "False", "false", "None", "none", "null"]
+SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") in ["1", "True", "true"]
 """是否 SD WebUI All In One 启用补丁"""
+
+UV_MINIMUM_VER = "0.9.28"
+"""uv 最低版本要求版本号"""
+
+PIP_MINIMUM_VER = "26.0"
+"""Pip 最低版本要求版本号"""
+
+ARIA2_MINIMUM_VER = "1.37.0"
+"""Aria2 最低版本要求版本号"""
+
+SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd())
+"""SD WebUI All In One 运行时的起始目录"""
+
+SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""Stable Diffusion WebUI 根目录"""
+
+COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""ComfyUI 根目录"""
+
+FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""Fooocus 根目录"""
+
+INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""InvokeAI 根目录"""
+
+SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""SD Trainer 根目录"""
+
+SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""SD Scripts 根目录"""
+
+QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+"""Qwen TTS WebUI 根目录"""
+
+SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]
+"""是否启用 SD WebUI All In One 自带的额外 PyPI 镜像源"""
+
+SD_WEBUI_ALL_IN_ONE_PROXY = os.getenv("SD_WEBUI_ALL_IN_ONE_PROXY") in ["1", "True", "true"]
+"""是否自动读取系统代理配置并应用代理"""
+
+SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH") in ["1", "True", "true"]
+"""是否设置缓存路径"""
+
+SD_WEBUI_ALL_IN_ONE_SET_CONFIG = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CONFIG") in ["1", "True", "true"]
+"""是否在启动时通过环境变量进行配置"""

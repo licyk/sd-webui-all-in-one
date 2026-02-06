@@ -36,6 +36,7 @@ _✨快速部署，简单易用_
 </div>
 
 - [SD WebUI All In One](#sd-webui-all-in-one)
+- [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
   - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
   - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
@@ -45,6 +46,7 @@ _✨快速部署，简单易用_
   - [ComfyUI Colab NoteBook](#comfyui-colab-notebook)
   - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
   - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
+  - [Qwen TTS WebUI Colab Jupyter NoteBook](#qwen-tts-webui-colab-jupyter-notebook)
   - [SD WebUI All In One Jupyter NoteBook](#sd-webui-all-in-one-jupyter-notebook)
   - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
   - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
@@ -61,6 +63,30 @@ _✨快速部署，简单易用_
   - [Installer 自动化构建状态](#installer-自动化构建状态)
 
 ***
+
+# SD WebUI All In One CLI
+支持多平台安装和管理 WebUI 的 CLI 工具，支持部署的 WebUI 如下：
+
+- [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+- [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
+- [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)
+- [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)
+- [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)
+- [SD.Next](https://github.com/vladmandic/automatic)
+- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+- [InvokeAI](https://github.com/invoke-ai/InvokeAI)
+- [Fooocus](https://github.com/lllyasviel/Fooocus)
+- [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [Kohya GUI](https://github.com/bmaltais/kohya_ss)
+- [sd-scripts](https://github.com/kohya-ss/sd-scripts)
+- [ai-toolkit](https://github.com/ostris/ai-toolkit)
+- [finetrainers](https://github.com/a-r-r-o-w/finetrainers)
+- [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
+- [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
+- [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
+
+详细的说明[点击此处](docs/cli.md)阅读。
+
 
 # SD WebUI All In One Notebook
 支持部署不同 WebUI 的各种 Notebook，基于 [SD WebUI All In One](https://github.com/licyk/sd-webui-all-in-one/tree/main/sd_webui_all_in_one) 内核，支持部署的 WebUI 如下：
@@ -137,6 +163,12 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 ## Fooocus Colab Jupyter NoteBook
 [fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb))：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+## Qwen TTS WebUI Colab Jupyter NoteBook
+[qwen_tts_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/qwen_tts_webui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb))：适用于 Colab 一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -268,3 +300,5 @@ Windows 平台一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-we
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
+
+

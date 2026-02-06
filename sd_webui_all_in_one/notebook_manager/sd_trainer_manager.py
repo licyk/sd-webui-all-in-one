@@ -7,21 +7,17 @@ import importlib.metadata
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
-from sd_webui_all_in_one.env import configure_env_var, configure_pip
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
+from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
-from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.env_manager import install_manager_depend, install_pytorch, install_requirements, pip_install
+from sd_webui_all_in_one.pkg_manager import install_manager_depend, pip_install
+from sd_webui_all_in_one.base_manager.sd_trainer_base import SDTrainerBranchType, check_sd_trainer_env, install_sd_trainer, update_sd_trainer
 
 
 logger = get_logger(
@@ -62,16 +58,10 @@ class SDTrainerManager(BaseManager):
         Raises:
             RuntimeError: 挂载 Google Drive 失败
         """
-        if not is_colab_environment():
-            logger.warning("当前环境非 Colab, 无法挂载 Google Drive")
+        if not self.mount_google_drive_for_notebook():
             return
 
-        drive_path = Path("/content/drive")
-        if not (drive_path / "MyDrive").exists():
-            if not mount_google_drive(drive_path):
-                raise RuntimeError("挂载 Google Drive 失败, 请尝试重新挂载 Google Drive")
-
-        drive_output = drive_path / "MyDrive" / "sd_trainer_output"
+        drive_output = Path("/content/drive") / "MyDrive" / "sd_trainer_output"
         sd_trainer_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
             {"link_dir": "outputs"},
@@ -152,20 +142,29 @@ class SDTrainerManager(BaseManager):
     def check_env(
         self,
         use_uv: bool | None = True,
-        requirements_file: str | None = "requirements.txt",
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        use_pypi_mirror: bool | None = False,
     ) -> None:
         """检查 SD Trainer 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
-            requirements_file (str | None): 依赖文件名
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
         """
-        sd_trainer_path = self.workspace / self.workfolder
-        requirement_path = sd_trainer_path / requirements_file
-        py_dependency_checker(requirement_path=requirement_path, name="SD Trainer", use_uv=use_uv)
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, ignore_ort_install=False)
-        check_numpy(use_uv=use_uv)
+        check_sd_trainer_env(
+            sd_trainer_path=self.workspace / self.workfolder,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
+        )
         self.check_protobuf(use_uv=use_uv)
 
     def get_launch_command(
@@ -214,17 +213,23 @@ class SDTrainerManager(BaseManager):
 
     def install(
         self,
-        torch_ver: str | list[str] | None = None,
-        xformers_ver: str | list[str] | None = None,
+        pytorch_mirror_type: PyTorchDeviceType | None = None,
+        custom_pytorch_package: str | None = None,
+        custom_xformers_package: str | None = None,
+        use_pypi_mirror: bool | None = False,
         use_uv: bool | None = True,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
+        install_branch: SDTrainerBranchType | None = None,
+        no_pre_download_model: bool | None = False,
+        use_cn_model_mirror: bool | None = False,
+        # legecy
+        use_hf_mirror: bool | None = False,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        pytorch_mirror: str | None = None,
-        sd_trainer_repo: str | None = None,
-        sd_trainer_requirements: str | None = None,
         model_list: list[dict[str, str]] | None = None,
         check_avaliable_gpu: bool | None = False,
         enable_tcmalloc: bool | None = True,
@@ -239,27 +244,54 @@ class SDTrainerManager(BaseManager):
         """安装 SD Trainer
 
         Args:
-            torch_ver (str | list[str] | None): 指定的 PyTorch 软件包包名, 并包括版本号
-            xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
-            pypi_index_mirror (str | None): PyPI Index 镜像源链接
-            pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
-            pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
-            github_mirror (str | list[str] | None): Github 镜像源链接或者镜像源链接列表
-            huggingface_mirror (str | None): HuggingFace 镜像源链接
-            pytorch_mirror (str | None): PyTorch 镜像源链接
-            sd_trainer_repo (str | None): SD Trainer 仓库地址
-            sd_trainer_requirements (str | None): SD Trainer 依赖文件名
-            model_list (list[dict[str, str]] | None): 模型下载列表
-            check_avaliable_gpu (bool | None): 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None): 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
-            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
-            huggingface_token (str | None): 配置 HuggingFace Token
-            modelscope_token (str | None): 配置 ModelScope Token
-            update_core (bool | None): 安装时更新内核和扩展
-        Raises:
-            Exception: GPU 不可用
+            pytorch_mirror_type (PyTorchDeviceType | None):
+                设置使用的 PyTorch 镜像源类型
+            custom_pytorch_package (str | None):
+                自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
+            custom_xformers_package (str | None):
+                自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
+            use_pypi_mirror (bool | None):
+                是否使用国内 PyPI 镜像源
+            use_uv (bool | None):
+                是否使用 uv 安装 Python 软件包
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
+            install_branch (SDTrainerBranchType | None):
+                安装的 SD Trainer 分支
+            no_pre_download_model (bool | None):
+                是否禁用预下载模型
+            use_cn_model_mirror (bool | None):
+                是否使用国内镜像下载模型
+            use_hf_mirror (bool | None):
+                是否启用 HuggingFace 镜像源
+            pypi_index_mirror (str | None):
+                PyPI Index 镜像源链接
+            pypi_extra_index_mirror (str | None):
+                PyPI Extra Index 镜像源链接
+            pypi_find_links_mirror (str | None):
+                PyPI Find Links 镜像源链接
+            github_mirror (str | list[str] | None):
+                Github 镜像源链接或者镜像源链接列表
+            huggingface_mirror (str | None):
+                HuggingFace 镜像源链接
+            model_list (list[dict[str, str]] | None):
+                模型下载列表
+            check_avaliable_gpu (bool | None):
+                是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
+            enable_tcmalloc (bool | None):
+                是否启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool | None):
+                启用 CUDA 显存优化
+            custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
+                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+            huggingface_token (str | None):
+                配置 HuggingFace Token
+            modelscope_token (str | None):
+                配置 ModelScope Token
+            update_core (bool | None):
+                安装时更新内核和扩展
         """
         warning_unexpected_params(
             message="SDTrainerManager.install() 接收到不期望参数, 请检查参数输入是否正确",
@@ -273,16 +305,14 @@ class SDTrainerManager(BaseManager):
             custom_sys_pkg_cmd = None
         os.chdir(self.workspace)
         sd_trainer_path = self.workspace / self.workfolder
-        sd_trainer_repo = "https://github.com/Akegarasu/lora-scripts" if sd_trainer_repo is None else sd_trainer_repo
-        requirements_path = sd_trainer_path / ("requirements.txt" if sd_trainer_requirements is None else sd_trainer_requirements)
         if check_avaliable_gpu:
             self.check_avaliable_gpu()
         set_mirror(
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
             pypi_find_links_mirror=pypi_find_links_mirror,
-            github_mirror=github_mirror,
-            huggingface_mirror=huggingface_mirror,
+            github_mirror=github_mirror if use_github_mirror else None,
+            huggingface_mirror=huggingface_mirror if use_hf_mirror else None,
         )
         configure_pip()
         configure_env_var()
@@ -290,28 +320,35 @@ class SDTrainerManager(BaseManager):
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
         )
-        git_warpper.clone(sd_trainer_repo, sd_trainer_path)
+        install_sd_trainer(
+            sd_trainer_path=sd_trainer_path,
+            pytorch_mirror_type=pytorch_mirror_type,
+            custom_pytorch_package=custom_pytorch_package,
+            custom_xformers_package=custom_xformers_package,
+            use_pypi_mirror=use_pypi_mirror,
+            use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            install_branch=install_branch,
+            no_pre_download_model=no_pre_download_model,
+            use_cn_model_mirror=use_cn_model_mirror,
+        )
         if update_core:
-            git_warpper.update(sd_trainer_path)
-        install_pytorch(
-            torch_package=torch_ver,
-            xformers_package=xformers_ver,
-            pytorch_mirror=pytorch_mirror,
-            use_uv=use_uv,
-        )
-        install_requirements(
-            path=requirements_path,
-            use_uv=use_uv,
-            cwd=sd_trainer_path,
-        )
+            update_sd_trainer(
+                sd_trainer_path=sd_trainer_path,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
+
         self.restart_repo_manager(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )
         if enable_tcmalloc:
-            self.tcmalloc.configure_tcmalloc()
+            self.tcmalloc_manager.configure_tcmalloc()
         if enable_cuda_malloc:
             set_cuda_malloc()
         logger.info("SD Trainer 安装完成")

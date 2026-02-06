@@ -1,17 +1,19 @@
 """Onnxruntime GPU 检查工具"""
 
 import os
-import re
 import sys
+import multiprocessing
+import importlib.metadata
+from multiprocessing.queues import Queue
 from enum import Enum
 from pathlib import Path
-import importlib.metadata
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.env_manager import pip_install
+from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
+from sd_webui_all_in_one.utils import load_source_directly
 
 
 logger = get_logger(
@@ -44,25 +46,8 @@ class OrtType(str, Enum):
     CU121CUDNN9 = "cu121cudnn9"
     CU118 = "cu118"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
-
-
-def get_onnxruntime_version_file() -> Path | None:
-    """获取记录 onnxruntime 版本的文件路径
-
-    Returns:
-        (Path | None): 记录 onnxruntime 版本的文件路径
-    """
-    package = "onnxruntime-gpu"
-    version_file = "onnxruntime/capi/version_info.py"
-    try:
-        util = [p for p in importlib.metadata.files(package) if version_file in str(p)][0]
-        info_path = Path(util.locate())
-    except Exception as _:
-        info_path = None
-
-    return info_path
 
 
 def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
@@ -71,34 +56,76 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
     Returns:
         (tuple[str | None, str | None]): onnxruntime 支持的 CUDA, cuDNN 版本
     """
-    ver_path = get_onnxruntime_version_file()
-    cuda_ver = None
-    cudnn_ver = None
-    try:
-        with open(ver_path, "r", encoding="utf8") as f:
-            for line in f:
-                if "cuda_version" in line:
-                    cuda_ver = get_value_from_variable(line, "cuda_version")
-                if "cudnn_version" in line:
-                    cudnn_ver = get_value_from_variable(line, "cudnn_version")
-    except Exception as _:
-        pass
+    ver = load_source_directly("onnxruntime.capi.version_info")
+    if ver is None:
+        return None, None
 
-    return cuda_ver, cudnn_ver
+    return ver.get("cuda_version"), ver.get("cudnn_version")
 
 
-def get_value_from_variable(content: str, var_name: str) -> str | None:
-    """从字符串 (Python 代码片段) 中找出指定字符串变量的值
+def get_torch_version_worker(result_queue: Queue) -> None:
+    """在子进程中执行的任务函数，用于获取 Torch 版本信息
 
     Args:
-        content (str): 待查找的内容
-        var_name (str): 待查找的字符串变量
-    Returns:
-        (str | None): 返回字符串变量的值
+        result_queue (Queue): 用于返回结果的多进程队列
     """
-    pattern = rf'{var_name}\s*=\s*"([^"]+)"'
-    match = re.search(pattern, content)
-    return match.group(1) if match else None
+    try:
+        import torch
+
+        torch_ver = str(torch.__version__) if hasattr(torch, "__version__") else None
+        cuda_ver = str(torch.version.cuda) if hasattr(torch.version, "cuda") else None
+
+        # 获取 cuDNN 版本
+        try:
+            cudnn_ver = str(torch.backends.cudnn.version())
+        except Exception:
+            cudnn_ver = None
+
+        result_queue.put((torch_ver, cuda_ver, cudnn_ver))
+    except Exception:
+        # 如果导入失败或发生异常，返回空值
+        result_queue.put((None, None, None))
+
+
+def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]:
+    """获取 Torch 的本体, CUDA, cuDNN 版本 (通过子进程隔离)
+
+    为了防止 torch 模块加载后无法从内存中彻底卸载，以及避免其占用显存
+
+    此处通过开辟一个独立的子进程来完成版本检查工作
+
+    Returns:
+        (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
+    """
+    # 使用 'spawn' 模式创建上下文，确保子进程拥有完全独立的内存空间
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+
+    # 创建子进程
+    process = ctx.Process(target=get_torch_version_worker, args=(result_queue,), name="TorchVersionChecker")
+
+    torch_ver, cuda_ver, cudnn_ver = None, None, None
+
+    try:
+        logger.debug("启动子进程检查 Torch 版本")
+        process.start()
+
+        # 等待子进程返回结果，设置 15 秒超时防止意外卡死
+        # 获取结果后，子进程的任务就完成了
+        torch_ver, cuda_ver, cudnn_ver = result_queue.get(timeout=15)
+
+        process.join()
+    except Exception as e:
+        logger.debug("通过子进程获取 Torch 版本失败: %s", e)
+        # 发生异常时强制终止进程
+        if process.is_alive():
+            process.terminate()
+    finally:
+        # 确保进程资源被回收
+        process.close()
+
+    logger.debug("子进程返回结果 - Torch: %s, CUDA: %s, cuDNN: %s", torch_ver, cuda_ver, cudnn_ver)
+    return torch_ver, cuda_ver, cudnn_ver
 
 
 def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
@@ -122,25 +149,30 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         return None, None, None
 
 
-def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
+def need_install_ort_ver(skip_if_missing: bool = True) -> OrtType | None:
     """判断需要安装的 onnxruntime 版本
 
     Args:
-        ignore_ort_install (bool): 当 onnxruntime 未安装时跳过检查
+        skip_if_missing (bool | None):
+            当 onnxruntime 未安装时是否跳过检查
+            - `True`: 未安装时则不给出需要安装的 Onnxruntime GPU 版本
+            - `False`: 即使 Onnxruntime GPU 未安装也给出推荐安装的 Onnxruntime GPU 版本
+
     Returns:
-        OrtType: 需要安装的 onnxruntime-gpu 类型
+        OrtType:
+            需要安装的 onnxruntime-gpu 类型
     """
     # 检测是否安装了 Torch
-    torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver()
+    torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver_subprocess()
     logger.debug("torch_ver: %s, cuda_ver: %s, cuddn_ver: %s", torch_ver, cuda_ver, cuddn_ver)
     # 缺少 Torch / CUDA / cuDNN 版本时取消判断
     if torch_ver is None or cuda_ver is None or cuddn_ver is None:
         logger.debug("缺少 Torch / CUDA / cuDNN 版本")
-        if not ignore_ort_install:
+        if not skip_if_missing:
             try:
                 logger.debug("检查 Onnxruntime GPU 是否已安装")
                 _ = importlib.metadata.version("onnxruntime-gpu")
-            except Exception as _:
+            except Exception:
                 logger.debug("Onnxruntime GPU 未安装, 使用默认版本进行安装")
                 # onnxruntime-gpu 没有安装时
                 return OrtType.CU130
@@ -196,7 +228,7 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
                 return OrtType.CU118
     else:
         logger.debug("未检测到 Onnxruntime GPU 声明的 CUDA / cuDNN 版本")
-        if ignore_ort_install:
+        if skip_if_missing:
             return None
 
         logger.debug("确定需要安装的 Onnxruntime GPU 版本")
@@ -225,67 +257,69 @@ def need_install_ort_ver(ignore_ort_install: bool = True) -> OrtType | None:
             return OrtType.CU118
 
 
-def check_onnxruntime_gpu(use_uv: bool | None = True, ignore_ort_install: bool | None = False):
+def check_onnxruntime_gpu(
+    use_uv: bool | None = True,
+    skip_if_missing: bool | None = False,
+    custom_env: dict[str, str] | None = None,
+) -> None:
     """检查并修复 Onnxruntime GPU 版本问题
 
     Args:
-        use_uv (bool | None): 是否使用 uv 安装依赖
-        ignore_ort_install (bool | None): 当 onnxruntime 未安装时跳过检查
+        use_uv (bool | None):
+            是否使用 uv 安装依赖
+        skip_if_missing (bool | None):
+            当 onnxruntime 未安装时是否跳过检查
+            - `True`: 未安装时则不给出需要安装的 Onnxruntime GPU 版本
+            - `False`: 即使 Onnxruntime GPU 未安装也给出推荐安装的 Onnxruntime GPU 版本
+        custom_env (dict[str, str] | None):
+            环境变量字典
+
+    Raises:
+        RuntimeError:
+            当修复 Onnxruntime GPU 版本问题发生错误时
     """
+
+    def _clean_env():
+        custom_env.pop("PIP_EXTRA_INDEX_URL", None)
+        custom_env.pop("UV_INDEX", None)
+        custom_env.pop("PIP_FIND_LINKS", None)
+        custom_env.pop("UV_FIND_LINKS", None)
+
     logger.info("检查 Onnxruntime GPU 版本问题中")
-    ver = need_install_ort_ver(ignore_ort_install)
+    ver = need_install_ort_ver(skip_if_missing)
     logger.debug("需要安装的 Onnxruntime GPU 版本类型: %s", ver)
     if ver is None:
         logger.info("Onnxruntime GPU 无版本问题")
         return
-    custom_env = os.environ.copy()
-    custom_env.pop("PIP_EXTRA_INDEX_URL", None)
-    custom_env.pop("UV_INDEX", None)
-    custom_env.pop("PIP_FIND_LINKS", None)
-    custom_env.pop("UV_FIND_LINKS", None)
 
-    def _uninstall_onnxruntime_gpu():
-        run_cmd(
-            [
-                Path(sys.executable).as_posix(),
-                "-m",
-                "pip",
-                "uninstall",
-                "onnxruntime-gpu",
-                "-y",
-            ]
-        )
+    if custom_env is None:
+        custom_env = os.environ.copy()
+
+    def _uninstall_onnxruntime_gpu() -> None:
+        run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
 
     try:
         # TODO: 将 onnxruntime-gpu 的 1.23.2 版本替换成实际属于 CU130 的版本
         if ver == OrtType.CU118:
+            _clean_env()
             custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
             custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
             _uninstall_onnxruntime_gpu()
-            pip_install(
-                "onnxruntime-gpu>=1.18.1",
-                "--no-cache-dir",
-                use_uv=use_uv,
-                custom_env=custom_env,
-            )
+            pip_install("onnxruntime-gpu>=1.18.1", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
         elif ver == OrtType.CU121CUDNN9:
             _uninstall_onnxruntime_gpu()
             pip_install("onnxruntime-gpu>=1.19.0,<1.23.2", "--no-cache-dir", use_uv=use_uv)
         elif ver == OrtType.CU121CUDNN8:
+            _clean_env()
             custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
             custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
             _uninstall_onnxruntime_gpu()
-            pip_install(
-                "onnxruntime-gpu==1.17.1",
-                "--no-cache-dir",
-                use_uv=use_uv,
-                custom_env=custom_env,
-            )
+            pip_install("onnxruntime-gpu==1.17.1", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
         elif ver == OrtType.CU130:
             _uninstall_onnxruntime_gpu()
             pip_install("onnxruntime-gpu>=1.23.2", "--no-cache-dir", use_uv=use_uv)
-    except Exception as e:
+    except RuntimeError as e:
         logger.error("修复 Onnxruntime GPU 版本问题时出现错误: %s", e)
-        return
+        raise RuntimeError(f"修复 Onnxrunime GPU 版本问题时发生错误: {e}") from e
 
     logger.info("Onnxruntime GPU 版本问题修复完成")
