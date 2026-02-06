@@ -251,6 +251,7 @@ class ComfyUIManager(BaseManager):
         no_pre_download_model: bool | None = True,
         use_cn_model_mirror: bool | None = False,
         # legecy
+        use_hf_mirror: bool | None = False,
         custom_node_list: list[str] | None = None,
         model_list: list[dict[str, str]] | None = None,
         pypi_index_mirror: str | None = None,
@@ -291,6 +292,8 @@ class ComfyUIManager(BaseManager):
                 是否禁用预下载模型
             use_cn_model_mirror (bool | None):
                 是否使用国内镜像下载模型
+            use_hf_mirror (bool | None):
+                是否启用 HuggingFace 镜像源
             custom_node_list (list[str] | None):
                 自定义节点列表
             model_list (list[dict[str, str]] | None):
@@ -340,8 +343,8 @@ class ComfyUIManager(BaseManager):
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
             pypi_find_links_mirror=pypi_find_links_mirror,
-            github_mirror=github_mirror,
-            huggingface_mirror=huggingface_mirror,
+            github_mirror=github_mirror if use_github_mirror else None,
+            huggingface_mirror=huggingface_mirror if use_hf_mirror else None,
         )
         configure_pip()
         configure_env_var()

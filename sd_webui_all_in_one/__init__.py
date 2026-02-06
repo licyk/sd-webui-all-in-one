@@ -30,6 +30,7 @@ from sd_webui_all_in_one.notebook_manager.fooocus_manager import FooocusManager
 from sd_webui_all_in_one.notebook_manager.invokeai_manager import InvokeAIManager
 from sd_webui_all_in_one.notebook_manager.sd_trainer_manager import SDTrainerManager
 from sd_webui_all_in_one.notebook_manager.sd_scripts_manager import SDScriptsManager
+from sd_webui_all_in_one.notebook_manager.sd_trainer_scripts_manager import SDTrainerScriptsManager
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -54,6 +55,7 @@ __all__ = [
     "InvokeAIManager",
     "SDTrainerManager",
     "SDScriptsManager",
+    "SDTrainerScriptsManager",
     "VERSION",
     "logger",
 ]

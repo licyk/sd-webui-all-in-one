@@ -224,6 +224,7 @@ class SDTrainerManager(BaseManager):
         no_pre_download_model: bool | None = False,
         use_cn_model_mirror: bool | None = False,
         # legecy
+        use_hf_mirror: bool | None = False,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
@@ -263,6 +264,8 @@ class SDTrainerManager(BaseManager):
                 是否禁用预下载模型
             use_cn_model_mirror (bool | None):
                 是否使用国内镜像下载模型
+            use_hf_mirror (bool | None):
+                是否启用 HuggingFace 镜像源
             pypi_index_mirror (str | None):
                 PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None):
@@ -308,8 +311,8 @@ class SDTrainerManager(BaseManager):
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
             pypi_find_links_mirror=pypi_find_links_mirror,
-            github_mirror=github_mirror,
-            huggingface_mirror=huggingface_mirror,
+            github_mirror=github_mirror if use_github_mirror else None,
+            huggingface_mirror=huggingface_mirror if use_hf_mirror else None,
         )
         configure_pip()
         configure_env_var()

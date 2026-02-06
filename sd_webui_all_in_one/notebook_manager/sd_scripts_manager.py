@@ -17,7 +17,7 @@ from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.env_manager import config_wandb_token, configure_env_var, configure_pip
+from sd_webui_all_in_one.env_manager import config_wandb_token, configure_env_var, configure_pip, generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements, pip_install
 from sd_webui_all_in_one.base_manager.base import clone_repo
 
@@ -257,10 +257,15 @@ class SDScriptsManager(BaseManager):
         if git_commit is not None:
             git_warpper.switch_commit(path=sd_scripts_path, commit=git_commit)
         # 安装 PyTorch 和 xFormers
+        custom_env = generate_uv_and_pip_env_mirror_config(
+            index_url=pytorch_mirror,
+            extra_index_url=[],
+            find_links=[]
+        )
         install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
-            custom_env=pytorch_mirror,
+            custom_env=custom_env,
             use_uv=use_uv,
         )
         # 安装 sd-scripts 的依赖

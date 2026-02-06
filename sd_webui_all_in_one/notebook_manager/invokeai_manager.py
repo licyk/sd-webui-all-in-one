@@ -117,6 +117,8 @@ class InvokeAIManager(BaseManager):
         no_pre_download_model: bool | None = True,
         use_cn_model_mirror: bool | None = False,
         # legecy
+        use_hf_mirror: bool | None = False,
+        use_github_mirror: bool | None = False,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
@@ -158,6 +160,10 @@ class InvokeAIManager(BaseManager):
                 Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None):
                 HuggingFace 镜像源链接
+            use_hf_mirror (bool | None):
+                是否启用 HuggingFace 镜像源
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
             model_list (list[dict[str, str]] | None):
                 模型下载列表
             check_avaliable_gpu (bool | None):
@@ -192,8 +198,8 @@ class InvokeAIManager(BaseManager):
             pypi_index_mirror=pypi_index_mirror,
             pypi_extra_index_mirror=pypi_extra_index_mirror,
             pypi_find_links_mirror=pypi_find_links_mirror,
-            github_mirror=github_mirror,
-            huggingface_mirror=huggingface_mirror,
+            github_mirror=github_mirror if use_github_mirror else None,
+            huggingface_mirror=huggingface_mirror if use_hf_mirror else None,
         )
         configure_pip()
         configure_env_var()

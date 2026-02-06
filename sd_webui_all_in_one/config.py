@@ -42,7 +42,7 @@ ROOT_PATH = Path(__file__).parent
 SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
 """SD WebUI All In One 补丁目录"""
 
-SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") not in ["0", "False", "false", "None", "none", "null"]
+SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") in ["1", "True", "true"]
 """是否 SD WebUI All In One 启用补丁"""
 
 UV_MINIMUM_VER = "0.9.28"
@@ -72,3 +72,5 @@ SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", os.getcwd()))
 SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", os.getcwd()))
 """SD Scripts 根目录"""
 
+SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]
+"""是否启用 SD WebUI All In One 自带的额外 PyPI 镜像源"""
