@@ -49,7 +49,7 @@ class SDScriptsManager(BaseManager):
                 self,
                 api_type: ApiType,
                 repo_id: str,
-                local_dir: Path,
+                local_dir: Path | str,
                 repo_type: RepoType = "model",
                 folder: str | None = None,
                 num_threads: int | None = 16,
@@ -60,10 +60,10 @@ class SDScriptsManager(BaseManager):
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                Repo._self.repo_manager.download_files_from_repo(
+                Repo._self.download_files_from_repo(
                     api_type=api_type,
                     repo_id=repo_id,
-                    local_dir=local_dir,
+                    local_dir=Path(local_dir),
                     repo_type=repo_type,
                     folder=folder,
                     num_threads=num_threads,
@@ -73,7 +73,7 @@ class SDScriptsManager(BaseManager):
                 self,
                 api_type: ApiType,
                 repo_id: str,
-                upload_path: Path,
+                upload_path: Path | str,
                 repo_type: RepoType = "model",
                 visibility: bool | None = False,
                 retry: int | None = None,  # pylint: disable=unused-argument
@@ -83,10 +83,10 @@ class SDScriptsManager(BaseManager):
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                Repo._self.repo_manager.upload_files_to_repo(
+                Repo._self.upload_files_to_repo(
                     api_type=api_type,
                     repo_id=repo_id,
-                    upload_path=upload_path,
+                    upload_path=Path(upload_path),
                     repo_type=repo_type,
                     visibility=visibility,
                 )
@@ -96,7 +96,7 @@ class SDScriptsManager(BaseManager):
     def download_archive_and_unpack(  # pylint: disable=missing-function-docstring
         self,
         url: str,
-        local_dir: Path,
+        local_dir: Path | str,
         name: str | None = None,
         retry: int | None = None,  # pylint: disable=unused-argument
     ) -> None:
@@ -105,9 +105,9 @@ class SDScriptsManager(BaseManager):
             category=DeprecationWarning,
             stacklevel=2,
         )
-        super().download_and_extract(
+        self.download_and_extract(
             url=url,
-            local_dir=local_dir,
+            local_dir=Path(local_dir),
             name=name,
         )
 
@@ -237,7 +237,7 @@ class SDScriptsManager(BaseManager):
         sd_scripts_path = self.workspace / self.workfolder
         requirement_path = sd_scripts_path / (sd_scripts_requirements if sd_scripts_requirements is not None else "requirements.txt")
         sd_scripts_repo = sd_scripts_repo if sd_scripts_repo is not None else "https://github.com/kohya-ss/sd-scripts"
-        model_path = model_path if model_path is not None else (self.workspace / "sd-models")
+        model_path = Path(model_path) if model_path is not None else (self.workspace / "sd-models")
         model_list = model_list if model_list else []
         # 检查是否有可用的 GPU
         if check_avaliable_gpu:

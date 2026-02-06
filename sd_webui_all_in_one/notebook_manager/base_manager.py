@@ -398,8 +398,6 @@ class BaseManager:
                 要上传的文件夹
             visibility (bool | None):
                 当仓库不存在时自动创建的仓库的可见性
-            retry (int | None):
-                上传重试次数
         """
         self.repo_manager.upload_files_to_repo(
             api_type=api_type,
