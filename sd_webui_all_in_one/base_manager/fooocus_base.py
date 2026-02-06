@@ -301,7 +301,7 @@ def update_fooocus(
 
     Args:
         fooocus_path (Path):
-            Stable DIffusion WebUI 根目录
+            Fooocus 根目录
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):

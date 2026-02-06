@@ -378,7 +378,11 @@ class SDWebUIManager(BaseManager):
             )
 
         if update_core:
-            update_sd_webui(sd_webui_path=sd_webui_path)
+            update_sd_webui(
+                sd_webui_path=sd_webui_path,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
             self.update_extensions(
                 use_github_mirror=use_github_mirror,
                 custom_github_mirror=custom_github_mirror,

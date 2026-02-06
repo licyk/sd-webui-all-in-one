@@ -312,8 +312,6 @@ class RepoManager:
                 要上传的文件夹
             visibility (bool | None):
                 当仓库不存在时自动创建的仓库的可见性
-            retry (int | None):
-                上传重试次数
 
         Raises:
             ValueError:
@@ -347,7 +345,6 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
-        retry: int | None = 3,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace 仓库中
 
@@ -358,8 +355,6 @@ class RepoManager:
                 HuggingFace 仓库类型
             upload_path (Path):
                 要上传到 HuggingFace 仓库的文件夹
-            retry (int | None):
-                上传重试次数
 
         Raises:
             AggregateError:
@@ -413,7 +408,6 @@ class RepoManager:
                     repo_type=repo_type,
                     path_in_repo=upload_file_rel_path,
                     path_or_fileobj=upload_file,
-                    retry=retry,
                 )
             except RuntimeError as e:
                 err.append(e)
@@ -439,8 +433,6 @@ class RepoManager:
                 ModelScope 仓库类型
             upload_path (Path):
                 要上传到 ModelScope 仓库的文件夹
-            retry (int | None):
-                上传重试次数
 
         Raises:
             AggregateError:
@@ -670,8 +662,6 @@ class RepoManager:
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
-            retry (int | None):
-                重试下载的次数
             num_threads (int | None):
                 下载线程
         """

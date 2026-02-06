@@ -31,6 +31,7 @@ from sd_webui_all_in_one.notebook_manager.invokeai_manager import InvokeAIManage
 from sd_webui_all_in_one.notebook_manager.sd_trainer_manager import SDTrainerManager
 from sd_webui_all_in_one.notebook_manager.sd_scripts_manager import SDScriptsManager
 from sd_webui_all_in_one.notebook_manager.sd_trainer_scripts_manager import SDTrainerScriptsManager
+from sd_webui_all_in_one.notebook_manager.qwen_tts_webui_manager import QwenTTSWebUIManager
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -56,6 +57,7 @@ __all__ = [
     "SDTrainerManager",
     "SDScriptsManager",
     "SDTrainerScriptsManager",
+    "QwenTTSWebUIManager",
     "VERSION",
     "logger",
 ]

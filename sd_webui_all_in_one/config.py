@@ -72,5 +72,8 @@ SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", os.getcwd()))
 SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", os.getcwd()))
 """SD Scripts 根目录"""
 
+QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", os.getcwd()))
+"""Qwen TTS WebUI 根目录"""
+
 SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]
 """是否启用 SD WebUI All In One 自带的额外 PyPI 镜像源"""
