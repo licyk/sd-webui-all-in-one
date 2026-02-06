@@ -114,8 +114,20 @@ _✨小巧，强大的命令工具_
 # 简介
 SD WebUI All Ine One CLI 提供了一个强大的命令行界面，用于管理各种 AI 绘画软件的安装、更新、环境检查、启动以及模型和扩展管理。
 
+
 # 安装
 使用前需确保系统已安装 [Python](https://www.python.org) 3.10+ 和 [Git](https://git-scm.com/)。
+
+```bash
+pip install sd-webui-all-in-one
+```
+
+安装完整依赖：
+
+```bash
+pip install "sd-webui-all-in-one[full]"
+```
+
 
 # 基础使用
 可使用 `--help` 查看可用的命令。
@@ -123,6 +135,7 @@ SD WebUI All Ine One CLI 提供了一个强大的命令行界面，用于管理�
 ```bash
 sd-webui-all-in-one --help
 ```
+
 
 # Stable Diffusion WebUI
 Stable Diffusion WebUI 是目前最流行的 AI 绘画开源软件之一。

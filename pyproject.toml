@@ -10,6 +10,22 @@ readme = { content-type = "text/markdown", file = "README.md" }
 license = "GPL-3.0"
 dynamic = ["version"]
 authors = [ {name = "licyk"} ]
+dependencies = []
+
+[project.optional-dependencies]
+full = [
+    "numpy",
+    "zstandard",
+    "py7zr",
+    "rarfile",
+    "requests",
+    "tqdm",
+    "modelscope",
+    "huggingface_hub",
+    "pyngrok",
+    "pycloudflared",
+    "gradio-tunneling",
+]
 
 [project.scripts]
 "sd-webui-all-in-one" = "sd_webui_all_in_one.cli_manager.cli:main"
