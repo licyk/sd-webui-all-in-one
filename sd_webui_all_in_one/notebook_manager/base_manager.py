@@ -186,8 +186,8 @@ class BaseManager:
 
     def link_to_google_drive(
         self,
-        base_dir: Path,
-        drive_path: Path,
+        base_dir: str | Path,
+        drive_path: str | Path,
         links: list[dict[str, str | bool]],
     ) -> None:
         """将 Colab 中的文件夹 / 文件链接到 Google Drive 中
@@ -206,8 +206,8 @@ class BaseManager:
         ```
 
         Args:
-            base_dir (Path): 链接的根路径
-            drive_path (Path): 链接到的 Google Drive 的路径
+            base_dir (Path | str): 链接的根路径
+            drive_path (Path | str): 链接到的 Google Drive 的路径
             links (list[dict[str, str | bool]]): 要进行链接文件的路径表
         """
         for link in links:
@@ -215,8 +215,8 @@ class BaseManager:
             is_file = link.get("is_file", False)
             if link_dir is None:
                 continue
-            full_link_path = base_dir / link_dir
-            full_drive_path = drive_path / link_dir
+            full_link_path = Path(base_dir) / link_dir
+            full_drive_path = Path(drive_path) / link_dir
             if is_file and (not full_link_path.exists() and not full_drive_path.exists()):
                 # 链接路径指定的是文件并且源文件和链接文件都不存在时则取消链接
                 continue
@@ -358,7 +358,7 @@ class BaseManager:
     def download_and_extract(
         self,
         url: str,
-        local_dir: Path,
+        local_dir: Path | str,
         name: str | None = None,
     ) -> None:
         """下载压缩包并解压到指定路径
@@ -366,14 +366,14 @@ class BaseManager:
         Args:
             url (str):
                 压缩包下载链接, 压缩包支持的格式: .zip, .7z, .rar, .tar, .tar.Z, .tar.lz, .tar.lzma, .tar.bz2, .tar.7z, .tar.gz, .tar.xz, .tar.zst
-            local_dir (Path):
+            local_dir (Path | str):
                 下载路径
             name (str | None):
                 下载文件保存的名称, 为`None`时从`url`解析文件名
         """
         download_archive_and_unpack(
             url=url,
-            local_dir=local_dir,
+            local_dir=Path(local_dir),
             name=name,
         )
 
@@ -381,7 +381,7 @@ class BaseManager:
         self,
         api_type: ApiType,
         repo_id: str,
-        upload_path: Path,
+        upload_path: Path | str,
         repo_type: RepoType = "model",
         visibility: bool | None = False,
     ) -> None:
@@ -394,7 +394,7 @@ class BaseManager:
                 仓库 ID
             repo_type (RepoType):
                 仓库类型
-            upload_path (Path):
+            upload_path (Path | str):
                 要上传的文件夹
             visibility (bool | None):
                 当仓库不存在时自动创建的仓库的可见性
@@ -404,7 +404,7 @@ class BaseManager:
         self.repo_manager.upload_files_to_repo(
             api_type=api_type,
             repo_id=repo_id,
-            upload_path=upload_path,
+            upload_path=Path(upload_path),
             repo_type=repo_type,
             visibility=visibility,
         )
@@ -413,7 +413,7 @@ class BaseManager:
         self,
         api_type: ApiType,
         repo_id: str,
-        local_dir: Path,
+        local_dir: Path | str,
         repo_type: RepoType = "model",
         folder: str | None = None,
         num_threads: int | None = 16,
@@ -472,7 +472,7 @@ class BaseManager:
                 仓库 ID
             repo_type (RepoType):
                 仓库类型
-            local_dir (Path):
+            local_dir (Path | str):
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
@@ -482,7 +482,7 @@ class BaseManager:
         self.repo_manager.download_files_from_repo(
             api_type=api_type,
             repo_id=repo_id,
-            local_dir=local_dir,
+            local_dir=Path(local_dir),
             repo_type=repo_type,
             folder=folder,
             num_threads=num_threads,
@@ -555,7 +555,7 @@ class BaseManager:
     def download_file_from_url(
         self,
         url: str,
-        path: Path | None = None,
+        path: Path | str | None = None,
         save_name: str | None = None,
         tool: DownloadToolType | None = "aria2",
     ) -> Path:
@@ -573,7 +573,7 @@ class BaseManager:
         """
         return download_file(
             url=url,
-            path=path,
+            path=Path(path) if isinstance(path, str) else path,
             save_name=save_name,
             tool=tool,
         )
