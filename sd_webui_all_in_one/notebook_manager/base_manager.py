@@ -16,8 +16,8 @@ from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
 from sd_webui_all_in_one.utils import in_jupyter, clear_jupyter_output, print_divider
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
-from sd_webui_all_in_one.file_operations.file_manager import copy_files, remove_files, move_files, sync_files_and_create_symlink
-from sd_webui_all_in_one.kaggle_tools import display_model_and_dataset_dir, import_kaggle_input
+from sd_webui_all_in_one.file_operations.file_manager import copy_files, display_directories, remove_files, move_files, sync_files_and_create_symlink
+from sd_webui_all_in_one.kaggle_tools import import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
 
 
@@ -73,7 +73,6 @@ class BaseManager:
         self.copy_files = copy_files
         self.remove_files = remove_files
         self.move_files = move_files
-        self.display_model_and_dataset_dir = display_model_and_dataset_dir
         self.import_kaggle_input = import_kaggle_input
         self.run_cmd = run_cmd
 
@@ -578,4 +577,27 @@ class BaseManager:
             path=path,
             save_name=save_name,
             tool=tool,
+        )
+
+    def display_directories_tree(
+        self,
+        *paths: Path | str | None,
+        recursive: bool | None = False,
+        show_hidden: bool | None = True,
+    ) -> None:
+        """列出多个指定文件夹的文件列表
+
+        Args:
+            *paths (Path | None):
+                要展示的一个或多个路径
+            recursive (bool | None):
+                递归显示子目录的内容
+            show_hidden (bool | None):
+                显示隐藏文件
+        """
+        paths = [Path(p) for p in paths]
+        display_directories(
+            *paths,
+            recursive=recursive,
+            show_hidden=show_hidden,
         )

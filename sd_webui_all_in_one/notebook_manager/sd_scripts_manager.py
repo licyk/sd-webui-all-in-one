@@ -111,6 +111,13 @@ class SDScriptsManager(BaseManager):
             name=name,
         )
 
+    def display_model_and_dataset_dir(  # pylint: disable=missing-function-docstring
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        self.display_directories_tree(*args, **kwargs)
+
     def check_env(
         self,
         use_uv: bool | None = True,
@@ -257,11 +264,7 @@ class SDScriptsManager(BaseManager):
         if git_commit is not None:
             git_warpper.switch_commit(path=sd_scripts_path, commit=git_commit)
         # 安装 PyTorch 和 xFormers
-        custom_env = generate_uv_and_pip_env_mirror_config(
-            index_url=pytorch_mirror,
-            extra_index_url=[],
-            find_links=[]
-        )
+        custom_env = generate_uv_and_pip_env_mirror_config(index_url=pytorch_mirror, extra_index_url=[], find_links=[])
         install_pytorch(
             torch_package=torch_ver,
             xformers_package=xformers_ver,

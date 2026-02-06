@@ -494,3 +494,31 @@ def is_folder_empty(path: Path) -> None:
         raise ValueError(f"路径 '{path}' 不是有效的目录或不存在")
 
     return next(path.iterdir(), None) is None
+
+
+def display_directories(
+    *paths: Path | None,
+    recursive: bool | None = False,
+    show_hidden: bool | None = True,
+) -> None:
+    """列出多个指定文件夹的文件列表
+
+    Args:
+        *paths (Path | None):
+            要展示的一个或多个路径
+        recursive (bool | None):
+            递归显示子目录的内容
+        show_hidden (bool | None):
+            显示隐藏文件
+    """
+    for path in paths:
+        if path is not None and path.is_dir():
+            logger.info("目录 '%s' 中的文件列表", path.name)
+            generate_dir_tree(
+                start_path=path,
+                max_depth=None if recursive else 1,
+                show_hidden=show_hidden,
+            )
+            print()
+        else:
+            logger.info("目录 '%s' 不存在或无效", path)
