@@ -182,8 +182,6 @@ class QwenTTSWebUIManager(BaseManager):
                 Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None):
                 HuggingFace 镜像源链接
-            model_list (list[dict[str, str]] | None):
-                模型下载列表
             check_avaliable_gpu (bool | None):
                 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
             enable_tcmalloc (bool | None):

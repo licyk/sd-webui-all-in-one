@@ -1,6 +1,7 @@
 """配置管理"""
 
 import os
+import sys
 import logging
 from pathlib import Path
 
@@ -33,6 +34,16 @@ DEFAULT_ENV_VARS = [
         "PYTHONWARNINGS",
         "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning",
     ],
+    ["UV_HTTP_TIMEOUT", "30"],
+    ["UV_CONCURRENT_DOWNLOADS", "50"],
+    ["UV_INDEX_STRATEGY", "unsafe-best-match"],
+    ["PIP_DISABLE_PIP_VERSION_CHECK", "1"],
+    ["PIP_NO_WARN_SCRIPT_LOCATION", "0"],
+    ["PIP_TIMEOUT", "30"],
+    ["PIP_RETRIES", "5"],
+    ["PIP_PREFER_BINARY", "1"],
+    ["PIP_YES", "1"],
+    ["UV_PYTHON", Path(sys.executable).as_posix()],
 ]
 """默认配置的环境变量"""
 
@@ -54,26 +65,38 @@ PIP_MINIMUM_VER = "26.0"
 ARIA2_MINIMUM_VER = "1.37.0"
 """Aria2 最低版本要求版本号"""
 
-SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", os.getcwd()))
+SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd())
+"""SD WebUI All In One 运行时的起始目录"""
+
+SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """Stable Diffusion WebUI 根目录"""
 
-COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", os.getcwd()))
+COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """ComfyUI 根目录"""
 
-FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", os.getcwd()))
+FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """Fooocus 根目录"""
 
-INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", os.getcwd()))
+INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """InvokeAI 根目录"""
 
-SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", os.getcwd()))
+SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """SD Trainer 根目录"""
 
-SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", os.getcwd()))
+SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """SD Scripts 根目录"""
 
-QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", os.getcwd()))
+QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
 """Qwen TTS WebUI 根目录"""
 
 SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]
 """是否启用 SD WebUI All In One 自带的额外 PyPI 镜像源"""
+
+SD_WEBUI_ALL_IN_ONE_PROXY = os.getenv("SD_WEBUI_ALL_IN_ONE_PROXY") in ["1", "True", "true"]
+"""是否自动读取系统代理配置并应用代理"""
+
+SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH") in ["1", "True", "true"]
+"""是否设置缓存路径"""
+
+SD_WEBUI_ALL_IN_ONE_SET_CONFIG = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CONFIG") in ["1", "True", "true"]
+"""是否在启动时通过环境变量进行配置"""

@@ -7,6 +7,7 @@ from sd_webui_all_in_one.cli_manager.invokeai_cli import register_invokeai
 from sd_webui_all_in_one.cli_manager.fooocus_cli import register_fooocus
 from sd_webui_all_in_one.cli_manager.comfyui_cli import register_comfyui
 from sd_webui_all_in_one.cli_manager.qwen_tts_webui_cli import register_qwen_tts_webui
+from sd_webui_all_in_one.cli_manager.utils import register_manager
 
 
 def main() -> None:
@@ -25,6 +26,7 @@ def main() -> None:
     register_fooocus(subparsers)
     register_comfyui(subparsers)
     register_qwen_tts_webui(subparsers)
+    register_manager(subparsers)
 
     # 执行解析
     args = parser.parse_args()  # type: ignore

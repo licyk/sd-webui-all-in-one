@@ -99,11 +99,7 @@ def get_aria2_ver() -> str | None:
 
 
 def check_aria2_version() -> bool:
-    """检查 uv 版本并尝试更新
-
-    Args:
-        custom_env (dict[str, str] | None):
-            自定义环境变量
+    """检查 Aria2 是否需要更新
 
     Returns:
         bool:
