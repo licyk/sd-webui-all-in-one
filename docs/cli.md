@@ -108,6 +108,9 @@ _✨小巧，强大的命令工具_
   - [检查并更新 Pip](#检查并更新-pip)
   - [检查并更新 uv](#检查并更新-uv)
   - [获取补丁路径](#获取补丁路径)
+- [SD WebUI All In One 环境变量配置](#sd-webui-all-in-one-环境变量配置)
+  - [基础配置](#基础配置)
+  - [软件根目录配置](#软件根目录配置)
 
 ***
 
@@ -1115,3 +1118,28 @@ sd-webui-all-in-one self-manager check-uv [选项]
 ```bash
 sd-webui-all-in-one self-manager get-patcher
 ```
+
+
+# SD WebUI All In One 环境变量配置
+SD WebUI All In One 支持通过环境变量来调整其行为。
+
+## 基础配置
+- `SD_WEBUI_ALL_IN_ONE_LOGGER_NAME`: 日志器名称 (默认: `SD WebUI All In One`)。
+- `SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL`: 日志等级 (默认: `20` 即 INFO)。
+- `SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR`: 是否启用日志颜色 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_RETRY_TIMES`: 网络请求重试次数 (默认: `3`)。
+- `SD_WEBUI_ALL_IN_ONE_PROXY`: 是否自动读取系统代理配置并应用代理 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_PATCHER`: 是否启用补丁功能 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR`: 是否启用自带的额外 PyPI 镜像源 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH`: 是否设置缓存路径 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_SET_CONFIG`: 是否在启动时通过环境变量进行配置 (`1`|`True` 启用)。
+
+## 软件根目录配置
+可以通过以下环境变量自定义各软件的默认根目录：
+- `SD_WEBUI_ROOT`: Stable Diffusion WebUI 根目录。
+- `COMFYUI_ROOT`: ComfyUI 根目录。
+- `FOOOCUS_ROOT`: Fooocus 根目录。
+- `INVOKEAI_ROOT`: InvokeAI 根目录。
+- `SD_TRAINER_ROOT`: SD Trainer 根目录。
+- `SD_SCRIPTS_ROOT`: SD Scripts 根目录。
+- `QWEN_TTS_WEBUI_ROOT`: Qwen TTS WebUI 根目录。
