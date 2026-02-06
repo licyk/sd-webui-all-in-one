@@ -118,6 +118,12 @@ class SDScriptsManager(BaseManager):
     ) -> None:
         self.display_directories_tree(*args, **kwargs)
 
+    def import_kaggle_input(  # pylint: disable=missing-function-docstring
+        self,
+        output_path,
+    ) -> None:
+        self.import_file_from_kaggle_input(output_path)
+
     def check_env(
         self,
         use_uv: bool | None = True,

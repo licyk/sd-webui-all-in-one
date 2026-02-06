@@ -73,7 +73,6 @@ class BaseManager:
         self.copy_files = copy_files
         self.remove_files = remove_files
         self.move_files = move_files
-        self.import_kaggle_input = import_kaggle_input
         self.run_cmd = run_cmd
 
     def restart_repo_manager(
@@ -601,3 +600,15 @@ class BaseManager:
             recursive=recursive,
             show_hidden=show_hidden,
         )
+
+    def import_file_from_kaggle_input(
+        self,
+        output_path: str | Path,
+    ) -> None:
+        """从 Kaggle Input 文件夹中导入文件
+
+        Args:
+            output_path (Path):
+                导出文件的路径
+        """
+        import_kaggle_input(Path(output_path))
