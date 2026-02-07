@@ -84,6 +84,12 @@ $env:UV_CONFIG_FILE = "nul"
 $env:PIP_CACHE_DIR = "$script:InstallPath/cache/pip"
 $env:UV_CACHE_DIR = "$script:InstallPath/cache/uv"
 $env:SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = $script:InstallPath
+$env:SD_WEBUI_ALL_IN_ONE_LOGGER_NAME = "ComfyUI Installer"
+$env:SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL = 20
+$env:SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR = 1
+$env:SD_WEBUI_ALL_IN_ONE_RETRY_TIMES = 3
+$env:SD_WEBUI_ALL_IN_ONE_PATCHER = 0
+$env:SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = 0
 $env:SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = 1
 $env:SD_WEBUI_ALL_IN_ONE_SET_CONFIG = 1
 
@@ -332,15 +338,23 @@ if __name__ == '__main__':
     print(is_core_need_update('$script:CORE_MINIMUM_VER'))
 ".Trim()
 
+    if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($script:DisablePyPIMirror))) {
+        $pip_index_url = "https://mirrors.cloud.tencent.com/pypi/simple"
+    } else {
+        $pip_index_url = "https://pypi.python.org/simple"
+    }
+
     Write-Log "检测 SD WebUI All In One 内核是否需要更新"
     $status = $(python -c "$content")
     if ($status -eq "True") {
         Write-Log "更新 SD WebUI All In One 内核中"
-        python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER"
+        & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" --index-url $pip_index_url
         if ($?) {
             Write-Log "SD WebUI All In One 内核更新成功"
         } else {
-            Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用"
+            Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
     } else {
         Write-Log "SD WebUI All In One 内核无需更新"
@@ -383,7 +397,7 @@ function Install-ArchiveResource {
 
     if (-not $success) {
         Write-Log "$ResourceName 安装失败, 终止安装进程。可尝试重新运行重试。"
-        if (-not $BuildMode) { Read-Host | Out-Null }
+        if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
 
@@ -455,7 +469,7 @@ function Install-Aria2 {
                 Write-Log "重试下载 Aria2 中"
             } else {
                 Write-Log "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
-                if (-not $BuildMode) { Read-Host | Out-Null }
+                if (!($script:BuildMode)) { Read-Host | Out-Null }
                 exit 1
             }
         }
@@ -549,7 +563,7 @@ function Initialize-EnvPath {
     `$git_path = `"`$PSScriptRoot/git/bin`"
     `$git_extra_path = `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin`"
     `$sep = `$([System.IO.Path]::PathSeparator)
-    `$env:PATH = `"`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`$g{it_pat}h`${sep}`${env:PATH}`"
+    `$env:PATH = `"`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_pat}h`${sep}`${env:PATH}`"
 
     `$env:UV_CONFIG_FILE = `"nul`"
     `$env:PIP_CONFIG_FILE = `"nul`"
@@ -691,6 +705,8 @@ if __name__ == '__main__':
             Write-Log `"SD WebUI All In One 内核更新成功`"
         } else {
             Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`"
+            if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
     } else {
         Write-Log `"SD WebUI All In One 内核无需更新`"
@@ -699,7 +715,7 @@ if __name__ == '__main__':
 
 
 # ComfyUI Installer 更新检测
-function Update-ComfyUIInstaller {
+function Update-Installer {
     [CmdletBinding()]
     param([switch]`$DisableRestart)
     `$urls = @(
@@ -1041,10 +1057,10 @@ function Set-PyTorchCUDAMemoryAlloc {
 }
 
 
-Export-ModuleMember -Function Initialize-EnvPath, Write-Log, Write-FileWithStreamWriter, Update-SDWebUiAllInOne, Update-ComfyUIInstaller, Update-Aria2, Get-Version, Set-CorePrefix, Set-Proxy, Set-ProxyLegecy, Set-PyPIMirror, Set-HuggingFaceMirror, Set-GithubMirror, Set-uv, Set-PyTorchCUDAMemoryAlloc
+Export-ModuleMember -Function Initialize-EnvPath, Write-Log, Write-FileWithStreamWriter, Update-SDWebUiAllInOne, Update-Installer, Update-Aria2, Get-Version, Set-CorePrefix, Set-Proxy, Set-ProxyLegecy, Set-PyPIMirror, Set-HuggingFaceMirror, Set-GithubMirror, Set-uv, Set-PyTorchCUDAMemoryAlloc
 ".Trim()
-    Write-Log "$(if (Test-Path "$InstallPath/modules.ps1") { "更新" } else { "生成" }) modules.psm1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$InstallPath/modules.psm1" -Value $content
+    Write-Log "$(if (Test-Path "$script:InstallPath/modules.psm1") { "更新" } else { "生成" }) modules.psm1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/modules.psm1" -Value $content
 }
 
 
@@ -1069,7 +1085,7 @@ param (
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableEnvCheck
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-ComfyUIInstaller`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$CorePrefix
     `$script:DisableUV = `$script:DisableUV
     `$script:DisableProxy = `$script:DisableProxy
@@ -1272,6 +1288,9 @@ function Get-LaunchCoreArgs {
     Get-ComfyUILaunchArgs `$launch_params
     Set-PyTorchCUDAMemoryAlloc `$launch_params
     Test-ComfyUIEnv `$launch_params
+    if (!(`$script:BuildMode)) {
+        `$launch_params.Add(`"--interactive`") | Out-Null
+    }
     return `$launch_params
 }
 
@@ -1282,7 +1301,7 @@ function Main {
     Set-CorePrefix
     Initialize-EnvPath
     Set-Proxy
-    Update-ComfyUIInstaller
+    Update-Installer
     Update-SDWebUiAllInOne
 
     if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
@@ -1332,7 +1351,7 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-ComfyUIInstaller`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$script:CorePrefix
     `$script:DisableUV = `$script:DisableUV
     `$script:DisableProxy = `$script:DisableProxy
@@ -1422,7 +1441,7 @@ function Main {
     Set-CorePrefix
     Initialize-EnvPath
     Set-Proxy
-    Update-ComfyUIInstaller
+    Update-Installer
     Update-SDWebUiAllInOne
 
     if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
@@ -1435,9 +1454,7 @@ function Main {
     & python -m sd_webui_all_in_one.cli_manager.main comfyui update `$launch_args
 
     Write-Log `"退出 ComfyUI 更新脚本`"
-    if (!(`$script:BuildMode)) {
-        Read-Host | Out-Null
-    }
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
 }
 
 ###################
@@ -1464,7 +1481,7 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-ComfyUIInstaller`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$script:CorePrefix
     `$script:DisableUV = `$script:DisableUV
     `$script:DisableProxy = `$script:DisableProxy
@@ -1554,7 +1571,7 @@ function Main {
     Set-CorePrefix
     Initialize-EnvPath
     Set-Proxy
-    Update-ComfyUIInstaller
+    Update-Installer
     Update-SDWebUiAllInOne
 
     if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
@@ -1566,11 +1583,9 @@ function Main {
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one.cli_manager.main comfyui custom-node update `$launch_args
 
-    Write-Log `"退出 ComfyUI 自定义节点更新脚本`"
+    Write-Log `"退出 ComfyUI 扩展更新脚本`"
 
-    if (!(`$script:BuildMode)) {
-        Read-Host | Out-Null
-    }
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
 }
 
 ###################
@@ -1578,13 +1593,13 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/update_node.ps1") { "更新" } else { "生成" }) update_node.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update_node.ps1" -Value $content
+    Write-Log "$(if (Test-Path "$script:InstallPath/update_extension.ps1") { "更新" } else { "生成" }) update_extension.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update_extension.ps1" -Value $content
 }
 
 
 # 获取安装脚本
-function Write-LaunchComfyUIInstallScript {
+function Write-LaunchInstallerScript {
     $content = "
 param (
     [string]`$InstallPath,
@@ -1622,18 +1637,34 @@ param (
     }
     `$env:CORE_PREFIX = `"core`"
 }
-if (-not `$InstallPath) {
-    `$InstallPath = `$PSScriptRoot
+if (-not `$script:InstallPath) {
+    `$script:InstallPath = `$PSScriptRoot
 }
 
 
 
 # 消息输出
-function Write-Log (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
-    Write-Host `":: `" -ForegroundColor Blue -NoNewline
-    Write-Host `"`$msg`"
+function Write-Log {
+    [CmdletBinding()]
+    param(
+        [string]`$Message,
+        [ValidateSet(`"DEBUG`", `"INFO`", `"WARNING`", `"ERROR`", `"CRITICAL`")]
+        [string]`$Level = `"INFO`",
+        [string]`$Name = `"ComfyUI Installer`"
+    )
+    Write-Host `"[`" -NoNewline
+    Write-Host `$Name -ForegroundColor Blue -NoNewline
+    Write-Host `"]-|`" -NoNewline
+    Write-Host (Get-Date -Format `"HH:mm:ss`") -ForegroundColor Gray -NoNewline
+    Write-Host `"|-`" -NoNewline
+    switch (`$Level) {
+        `"DEBUG`"    { Write-Host `"DEBUG`" -ForegroundColor Cyan -NoNewline }
+        `"INFO`"     { Write-Host `"INFO`" -ForegroundColor Green -NoNewline }
+        `"WARNING`"  { Write-Host `"WARNING`" -ForegroundColor Yellow -NoNewline }
+        `"ERROR`"    { Write-Host `"ERROR`" -ForegroundColor Red -NoNewline }
+        `"CRITICAL`" { Write-Host `"CRITICAL`" -ForegroundColor White -BackgroundColor Red -NoNewline }
+    }
+    Write-Host `": `$Message`"
 }
 
 
@@ -1680,7 +1711,7 @@ function Set-Proxy {
 
 
 # 下载 ComfyUI Installer
-function Download-ComfyUI-Installer {
+function Download-Installer {
     # 可用的下载源
     `$urls = @(
         `"https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/comfyui_installer.ps1`",
@@ -1705,12 +1736,12 @@ function Download-ComfyUI-Installer {
             Write-Log `"下载 ComfyUI Installer 脚本成功`"
             break
         } else {
-            Write-Log `"下载 ComfyUI Installer 脚本失败`"
+            Write-Log `"下载 ComfyUI Installer 脚本失败`" -Level ERROR
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Write-Log `"重试下载 ComfyUI Installer 脚本`"
+                Write-Log `"重试下载 ComfyUI Installer 脚本`" -Level WARNING
             } else {
-                Write-Log `"下载 ComfyUI Installer 脚本失败, 可尝试重新运行 ComfyUI Installer 下载脚本`"
+                Write-Log `"下载 ComfyUI Installer 脚本失败, 可尝试重新运行 ComfyUI Installer 下载脚本`" -Level ERROR
                 return `$false
             }
         }
@@ -1720,7 +1751,7 @@ function Download-ComfyUI-Installer {
 
 
 # 获取本地配置文件参数
-function Get-Local-Setting {
+function Get-LocalSetting {
     `$arg = @{}
     if ((Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") -or (`$script:DisablePyPIMirror)) {
         `$arg.Add(`"-DisablePyPIMirror`", `$true)
@@ -1756,7 +1787,7 @@ function Get-Local-Setting {
         }
     }
 
-    `$arg.Add(`"-InstallPath`", `$InstallPath)
+    `$arg.Add(`"-InstallPath`", `$script:InstallPath)
 
     return `$arg
 }
@@ -1782,11 +1813,11 @@ function Get-ExtraArgs {
 function Main {
     Set-Proxy
 
-    `$status = Download-ComfyUI-Installer
+    `$status = Download-Installer
 
     if (`$status) {
         Write-Log `"运行 ComfyUI Installer 中`"
-        `$arg = Get-Local-Setting
+        `$arg = Get-LocalSetting
         `$extra_args = Get-ExtraArgs
         try {
             Invoke-Expression `"& ```"`$PSScriptRoot/cache/comfyui_installer.ps1```" `$extra_args @arg`"
@@ -1805,8 +1836,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$InstallPath/launch_comfyui_installer.ps1") { "更新" } else { "生成" }) launch_comfyui_installer.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$InstallPath/launch_comfyui_installer.ps1" -Value $content
+    Write-Log "$(if (Test-Path "$script:InstallPath/launch_comfyui_installer.ps1") { "更新" } else { "生成" }) launch_comfyui_installer.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/launch_comfyui_installer.ps1" -Value $content
 }
 
 
@@ -1825,7 +1856,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-ComfyUIInstaller`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$script:CorePrefix
     `$script:DisableUV = `$script:DisableUV
     `$script:DisableProxy = `$script:DisableProxy
@@ -1898,7 +1929,9 @@ function Get-LaunchCoreArgs {
     if (`$script:BuildWithTorchReinstall) {
         `$launch_params.Add(`"--force-reinstall`") | Out-Null
     }
-    `$launch_params.Add(`"--interactive`") | Out-Null
+    if (!(`$script:BuildMode)) {
+        `$launch_params.Add(`"--interactive`") | Out-Null
+    }
     return `$launch_params
 }
 
@@ -1909,16 +1942,14 @@ function Main {
     Set-CorePrefix
     Initialize-EnvPath
     Set-Proxy
-    Update-ComfyUIInstaller
+    Update-Installer
     Update-SDWebUiAllInOne
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one.cli_manager.main comfyui reinstall-pytorch `$launch_args
 
     Write-Log `"退出 PyTorch 重装脚本`"
-    if (!(`$script:BuildMode)) {
-        Read-Host | Out-Null
-    }
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
 }
 
 ###################
@@ -1944,7 +1975,7 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-ComfyUIInstaller`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$script:CorePrefix
     `$script:DisableProxy = `$script:DisableProxy
     `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2005,7 +2036,13 @@ function Get-LaunchCoreArgs {
         `$launch_params.Add(`"--index`") | Out-Null
         `$launch_params.Add(`$script:BuildWitchModel) | Out-Null
     }
-    `$launch_params.Add(`"--interactive`") | Out-Null
+    if (!(`$script:BuildMode)) {
+        `$launch_params.Add(`"--interactive`") | Out-Null
+    }
+    `$launch_params.Add(`"--source`") | Out-Null
+    `$launch_params.Add(`"modelscope`") | Out-Null
+    `$launch_params.Add(`"--downloader`") | Out-Null
+    `$launch_params.Add(`"aria2`") | Out-Null
     return `$launch_params
 }
 
@@ -2016,7 +2053,7 @@ function Main {
     Set-CorePrefix
     Initialize-EnvPath
     Set-Proxy
-    Update-ComfyUIInstaller
+    Update-Installer
     Update-SDWebUiAllInOne
     Update-Aria2
 
@@ -2030,9 +2067,7 @@ function Main {
     & python -m sd_webui_all_in_one.cli_manager.main comfyui model install-library `$launch_args
 
     Write-Log `"退出模型下载脚本`"
-    if (!(`$script:BuildMode)) {
-        Read-Host | Out-Null
-    }
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
 }
 
 ###################
@@ -2054,7 +2089,7 @@ param (
     [switch]`$DisableProxy,
     [switch]`$UseCustomProxy
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-ComfyUIInstaller`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force).Invoke({
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force).Invoke({
     `$script:CorePrefix = `$script:CorePrefix
     `$script:DisableProxy = `$script:DisableProxy
     `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2135,11 +2170,11 @@ function Update-ProxySetting {
         `$current = if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义: `" + (Get-Content `"`$PSScriptRoot/proxy.txt`") } else { `"系统代理`" }
         Write-Log `"当前代理设置: `$current`"
         Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
-        `$choice = Get-User-Input
+        `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item `"`$PSScriptRoot/disable_proxy.txt`", `"`$PSScriptRoot/proxy.txt`" -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") { 
             Write-Log `"请输入代理地址 (如 http://127.0.0.1:10809):`"
-            `$addr = Get-User-Input
+            `$addr = Get-UserInput
             if (`$addr) {
                 Remove-Item `"`$PSScriptRoot/disable_proxy.txt`" -Force -ErrorAction SilentlyContinue
                 Set-Content -Path `"`$PSScriptRoot/proxy.txt`" -Value `$addr -Encoding UTF8
@@ -2155,18 +2190,19 @@ function Update-ProxySetting {
     }
 }
 
+
 # 更新镜像设置
 function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$examples) {
     while (`$true) {
         `$current = if (Test-Path `"`$PSScriptRoot/disable_`$file`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/`$file`") { `"自定义: `" + (Get-Content `"`$PSScriptRoot/`$file`") } else { `"默认`" }
         Write-Log `"当前 `$name 设置: `$current`"
         Write-Log `"1. 默认/自动 | 2. 自定义地址 | 3. 禁用 | 4. 返回`"
-        `$choice = Get-User-Input
+        `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item `"`$PSScriptRoot/disable_`$file`", `"`$PSScriptRoot/`$file`" -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
             Write-Log `"请输入 `$name 地址, 示例:`"
             `$examples | ForEach-Object { Write-Log `"  `$_`" -Level ERROR }
-            `$addr = Get-User-Input
+            `$addr = Get-UserInput
             if (`$addr) {
                 Remove-Item `"`$PSScriptRoot/disable_`$file`" -Force -ErrorAction SilentlyContinue
                 Set-Content -Path `"`$PSScriptRoot/`$file`" -Value `$addr -Encoding UTF8
@@ -2187,10 +2223,10 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
 function Update-Core-Prefix {
     Write-Log `"当前内核路径前缀: `$(Get-TextStatus `"core_prefix.txt`" `"自动选择`")`"
     Write-Log `"1. 配置自定义 | 2. 自动选择 | 3. 返回`"
-    `$choice = Get-User-Input
+    `$choice = Get-UserInput
     if (`$choice -eq `"1`") {
         Write-Log `"请输入前缀或绝对路径:`"
-        `$path = Get-User-Input
+        `$path = Get-UserInput
         if (`$path) {
             if ([System.IO.Path]::IsPathRooted(`$path)) {
                 `$from = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
@@ -2202,7 +2238,8 @@ function Update-Core-Prefix {
     elseif (`$choice -eq `"2`") { Remove-Item `"`$PSScriptRoot/core_prefix.txt`" -Force -ErrorAction SilentlyContinue }
 }
 
-# 
+
+# 检测环境完整性
 function Test-EnvIntegrity {
     `$items = @(
         @{ n=`"Python`"; p=`"python/python.exe`"; t=`"file`" },
@@ -2225,15 +2262,8 @@ function Test-EnvIntegrity {
 
 
 # 获取用户输入
-function Get-User-Input {
-    return (Read-Host `"======================================>`").Trim()
-}
-
-
-# 查看 ComfyUI Installer 文档
-function Get-ComfyUI-Installer-Help-Docs {
-    Write-Log `"调用浏览器打开 ComfyUI Installer 文档中`"
-    Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`"
+function Get-UserInput {
+    return (Read-Host `"==================================>`").Trim()
 }
 
 
@@ -2252,42 +2282,40 @@ function Main {
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"禁用`" `"启用`" `$true) },
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"禁用`" `"启用`" `$true) },
             @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=6;  n=`"自动应用更新`"; v=`$(Get-ToggleStatus `"disable_auto_apply_update.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=7;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=8;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=9;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
+            @{ id=6;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
+            @{ id=7;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
+            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"13. 检查更新 | 14. 环境检查 | 15. 文档 | 16. 退出`"
+        Write-Log `"12. 检查更新 | 13. 环境检查 | 14. 文档 | 15. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
-        `$choice = Get-User-Input
+        `$choice = Get-UserInput
         switch (`$choice) {
             `"1`"  { Update-ProxySetting }
             `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"包管理器`" (Test-Path `"`$PSScriptRoot/disable_uv.txt`") }
             `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"HuggingFace`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
             `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
             `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path `"`$PSScriptRoot/disable_update.txt`") }
-            `"6`"  { Set-ToggleSetting `"disable_auto_apply_update.txt`" `"自动应用更新`" (Test-Path `"`$PSScriptRoot/disable_auto_apply_update.txt`") }
-            `"7`"  { 
+            `"6`"  { 
                 Write-Log `"请输入启动参数 (直接回车删除):`"
-                `$args = Get-User-Input
+                `$args = Get-UserInput
                 if (`$args) { Write-FileWithStreamWriter -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$args -Encoding UTF8 }
                 else { Remove-Item `"`$PSScriptRoot/launch_args.txt`" -Force -ErrorAction SilentlyContinue }
             }
-            `"8`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) }
-            `"9`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") }
-            `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`") }
-            `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") }
-            `"12`" { Update-Core-Prefix }
-            `"13`" { Update-ComfyUIInstaller }
-            `"14`" { Test-EnvIntegrity }
-            `"15`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`" }
-            `"16`" { return }
+            `"7`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) }
+            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") }
+            `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`") }
+            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") }
+            `"11`" { Update-Core-Prefix }
+            `"12`" { Update-Installer -DisableRestart }
+            `"13`" { Test-EnvIntegrity }
+            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`" }
+            `"15`" { return }
         }
     }
 }
@@ -2326,7 +2354,7 @@ param (
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"https://download.pytorch.org/whl`"
 `$PIP_FIND_ADDR = `"https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html`"
 `$PIP_FIND_ADDR_ORI = `"https://download.pytorch.org/whl/torch_stable.html`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$DisablePyPIMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$script:DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
@@ -2610,16 +2638,6 @@ if exist .\hanamizuki.exe (
 }
 
 
-# 获取指定路径的内核路径前缀
-function global:Get-Core-Prefix (`$to_path) {
-    `$from_path = `$env:COMFYUI_INSTALLER_ROOT
-    `$from_uri = New-Object System.Uri(`$from_path.Replace('\', '/') + '/')
-    `$to_uri = New-Object System.Uri(`$to_path.Trim('/').Trim('\').Replace('\', '/'))
-    `$relative_path = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-    Write-Log `"`$to_path 路径的内核路径前缀: `$relative_path`"
-    Write-Log `"提示: 可使用 settings.ps1 设置内核路径前缀`"
-}
-
 function global:pip {
     python -m pip @args
 }
@@ -2668,15 +2686,15 @@ function Get-PyPIMirrorStatus {
 function Set-Proxy {
     `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     # 检测是否禁用自动设置镜像源
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$DisableProxy)) {
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
         Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
 
     `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$UseCustomProxy)) { # 本地存在代理配置
-        if (`$UseCustomProxy) {
-            `$proxy_value = `$UseCustomProxy
+    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) { # 本地存在代理配置
+        if (`$script:UseCustomProxy) {
+            `$proxy_value = `$script:UseCustomProxy
         } else {
             `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
         }
@@ -2708,14 +2726,14 @@ function Set-Proxy {
 
 # HuggingFace 镜像源
 function Set-HuggingFaceMirror {
-    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$script:DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
         Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
-        if (`$UseCustomHuggingFaceMirror) {
-            `$hf_mirror_value = `$UseCustomHuggingFaceMirror
+    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$script:UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+        if (`$script:UseCustomHuggingFaceMirror) {
+            `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
             `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
         }
@@ -2739,15 +2757,15 @@ function Set-GithubMirrorLegecy {
     git config --global --add safe.directory '*'
     git config --global core.longpaths true
 
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$DisableGithubMirror)) { # 禁用 Github 镜像源
+    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$script:DisableGithubMirror)) { # 禁用 Github 镜像源
         Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
     # 使用自定义 Github 镜像源
-    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$UseCustomGithubMirror)) {
-        if (`$UseCustomGithubMirror) {
-            `$github_mirror = `$UseCustomGithubMirror
+    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$script:UseCustomGithubMirror)) {
+        if (`$script:UseCustomGithubMirror) {
+            `$github_mirror = `$script:UseCustomGithubMirror
         } else {
             `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
         }
@@ -2787,13 +2805,7 @@ Main
 # 快捷启动终端脚本, 启动后将自动运行环境激活脚本
 function Write-LaunchTerminalScript {
     $content = "
-function Write-Log (`$msg) {
-    Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
-    Write-Host `"[ComfyUI Installer]`" -ForegroundColor Cyan -NoNewline
-    Write-Host `":: `" -ForegroundColor Blue -NoNewline
-    Write-Host `"`$msg`"
-}
-
+(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force).Invoke({})
 Write-Log `"执行 ComfyUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
@@ -2819,7 +2831,7 @@ Github：https://github.com/licyk
 
 - launch.ps1：启动 ComfyUI。
 - update.ps1：更新 ComfyUI。
-- update_node.ps1：更新 ComfyUI 自定义节点。
+- update_extension.ps1：更新 ComfyUI 扩展。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 ComfyUI 的模型文件夹中。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 - settings.ps1：管理 ComfyUI Installer 的设置。
@@ -2883,7 +2895,7 @@ function Write-ManagerScripts {
     Write-LaunchScript
     Write-UpdateScript
     Write-UpdateNodeScript
-    Write-LaunchComfyUIInstallScript
+    Write-LaunchInstallerScript
     Write-PyTorchReInstallScript
     Write-DownloadModelScript
     Write-SettingsScript
@@ -3113,7 +3125,7 @@ function Use-InstallMode {
     Write-ManagerScripts
     Copy-ComfyUIInstallerConfig
 
-    if ($BuildMode) {
+    if ($script:BuildMode) {
         Use-BuildMode
         Install-Hanamizuki
         Initialize-HanamizukiEnv
@@ -3128,9 +3140,7 @@ function Use-InstallMode {
     Write-Log "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md"
     Write-Log "退出 ComfyUI Installer"
 
-    if (!($BuildMode)) {
-        Read-Host | Out-Null
-    }
+    if (!($script:BuildMode)) { Read-Host | Out-Null }
 }
 
 
@@ -3198,8 +3208,8 @@ function Use-BuildMode {
         if ($script:DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
-        Write-Log "执行 ComfyUI 自定义节点更新脚本中"
-        . "$InstallPath/update_node.ps1" @launch_args
+        Write-Log "执行 ComfyUI 扩展更新脚本中"
+        . "$InstallPath/update_extension.ps1" @launch_args
     }
 
     if ($script:BuildWithLaunch) {
@@ -3343,14 +3353,14 @@ function Get-InstallerCmdletHelp {
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
+            - update_extension.ps1           (对应 -BuildWithUpdateNode 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update.ps1 脚本, 更新 ComfyUI 内核
 
     -BuildWithUpdateNode
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_node.ps1 脚本, 更新 ComfyUI 自定义节点
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_extension.ps1 脚本, 更新 ComfyUI 扩展
 
     -BuildWithLaunch
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 launch.ps1 脚本, 执行启动 ComfyUI 前的环境检查流程, 但跳过启动 ComfyUI
@@ -3418,9 +3428,8 @@ function Get-InstallerCmdletHelp {
 
 # 主程序
 function Main {
-    Write-Log "初始化中"
-    Get-Version
     Get-InstallerCmdletHelp
+    Get-Version
     Get-CorePrefixStatus
 
     if ($script:UseUpdateMode) {
@@ -3428,9 +3437,8 @@ function Main {
         Use-UpdateMode
         Set-Content -Encoding UTF8 -Path "$script:InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
-        if ($script:BuildMode) {
-            Write-Log "ComfyUI Installer 构建模式已启用"
-        }
+        if ($script:BuildMode) { Write-Log "ComfyUI Installer 构建模式已启用" }
+        
         Write-Log "使用安装模式"
         Use-InstallMode
     }
