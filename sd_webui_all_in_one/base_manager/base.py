@@ -180,6 +180,7 @@ def reinstall_pytorch(
     use_uv: bool | None = None,
     interactive_mode: bool | None = False,
     list_only: bool | None = False,
+    force_reinstall: bool | None = False,
 ) -> None:
     """PyTorch 重装工具
 
@@ -196,6 +197,8 @@ def reinstall_pytorch(
             是否启用交互模式
         list_only (bool | None):
             是否仅列出 PyTorch 列表并退出
+        force_reinstall (bool | None):
+            是否强制重装 PyTorch
     """
 
     def _install(
@@ -221,7 +224,7 @@ def reinstall_pytorch(
         )
 
     def _uninstall() -> None:
-        if force_reinstall:
+        if enable_force_reinstall:
             run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
     pytorch_list = export_pytorch_list()
@@ -234,7 +237,7 @@ def reinstall_pytorch(
 
     display_model = True
     input_err = (0, None)
-    force_reinstall = False
+    enable_force_reinstall = False
 
     if interactive_mode:
         while True:
@@ -244,7 +247,7 @@ def reinstall_pytorch(
                 print_divider("=")
 
             display_model = True
-            force_reinstall = False
+            enable_force_reinstall = False
             i, m = input_err
             if i == 1:
                 logger.warning("输入有误, 请重试")
@@ -267,7 +270,7 @@ def reinstall_pytorch(
 
             if user_input == "auto":
                 if input("是否启用强制重装? [y/N] ").strip().lower() in ["yes", "y"]:
-                    force_reinstall = True
+                    enable_force_reinstall = True
 
                 logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合中")
                 pytorch, xformers, custom_env = prepare_pytorch_install_info(use_cn_mirror=use_pypi_mirror)
@@ -289,7 +292,7 @@ def reinstall_pytorch(
 
             try:
                 if input("是否启用强制重装? [y/N] ").strip().lower() in ["yes", "y"]:
-                    force_reinstall = True
+                    enable_force_reinstall = True
 
                 _install(input_index=index)
                 return
@@ -298,6 +301,8 @@ def reinstall_pytorch(
                 continue
 
     else:
+        if force_reinstall:
+            _uninstall()
         _install(
             input_name=pytorch_name,
             input_index=pytorch_index,
