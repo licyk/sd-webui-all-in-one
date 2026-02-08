@@ -26,7 +26,6 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
     clone_repo,
     install_pytorch_for_webui,
-    get_pypi_mirror_config,
     pre_download_model_for_webui,
     launch_webui,
     get_repo_name_from_url,
@@ -35,7 +34,7 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, get_pypi_mirror_config
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files, generate_dir_tree, get_file_list
 from sd_webui_all_in_one.downloader import download_file

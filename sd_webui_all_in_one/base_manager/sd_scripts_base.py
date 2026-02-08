@@ -7,7 +7,6 @@ from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     clone_repo,
-    get_pypi_mirror_config,
     install_pytorch_for_webui,
     install_webui_model_from_library,
     pre_download_model_for_webui,
@@ -21,7 +20,7 @@ from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import generate_dir_tree, get_file_list, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, get_pypi_mirror_config
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType

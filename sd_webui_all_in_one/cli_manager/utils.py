@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from sd_webui_all_in_one.updater import check_aria2_version, check_and_update_uv, check_and_update_pip
-from sd_webui_all_in_one.base_manager.base import get_pypi_mirror_config
+from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
 
 

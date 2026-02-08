@@ -8,7 +8,6 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
     clone_repo,
-    get_pypi_mirror_config,
     install_pytorch_for_webui,
     launch_webui,
     prepare_pytorch_install_info,
@@ -19,7 +18,7 @@ from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.file_operations.file_manager import copy_files
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST
+from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, get_pypi_mirror_config
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
