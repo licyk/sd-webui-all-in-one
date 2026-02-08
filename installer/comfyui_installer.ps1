@@ -34,30 +34,36 @@
     [switch]$DisableEnvCheck
 )
 & {
-    $prefix_list = @("core", "ComfyUI", "comfyui", "ComfyUI-aki-v1.0", "ComfyUI-aki-v1.1", "ComfyUI-aki-v1.2", "ComfyUI-aki-v1.3", "ComfyUI-aki-v1.4", "ComfyUI-aki-v1.5", "ComfyUI-aki-v1.6", "ComfyUI-aki-v1.7", "ComfyUI-aki-v2")
-    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($script:CorePrefix)) {
-        if ($script:CorePrefix) {
-            $origin_core_prefix = $script:CorePrefix
-        } else {
-            $origin_core_prefix = Get-Content "$PSScriptRoot/core_prefix.txt"
+    $target_prefix = $null
+    $prefix_list = @("core", "ComfyUI*")
+    if ($script:CorePrefix -or (Test-Path "$PSScriptRoot/core_prefix.txt")) {
+        $origin_core_prefix = if ($script:CorePrefix) { 
+            $script:CorePrefix 
+        } else { 
+            (Get-Content "$PSScriptRoot/core_prefix.txt" -Raw).Trim()
         }
-        $origin_core_prefix = $origin_core_prefix.Trim('/').Trim('\')
+        $origin_core_prefix = $origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
-            $to_path = $origin_core_prefix
-            $from_uri = New-Object System.Uri($script:InstallPath.Replace('\', '/') + '/')
-            $to_uri = New-Object System.Uri($to_path.Replace('\', '/'))
-            $origin_core_prefix = $from_uri.MakeRelativeUri($to_uri).ToString().Trim('/')
+            $from_uri = New-Object System.Uri($PSScriptRoot.Replace('\', '/') + '/')
+            $to_uri = New-Object System.Uri($origin_core_prefix.Replace('\', '/'))
+            $target_prefix = $from_uri.MakeRelativeUri($to_uri).ToString().Trim('/')
+        } else {
+            $target_prefix = $origin_core_prefix
         }
-        $env:CORE_PREFIX = $origin_core_prefix
-        return
-    }
-    ForEach ($i in $prefix_list) {
-        if (Test-Path "$script:InstallPath/$i") {
-            $env:CORE_PREFIX = $i
-            return
+    } 
+    else {
+        foreach ($i in $prefix_list) {
+            $found_dir = Get-ChildItem -Path $PSScriptRoot -Directory -Filter $i | Select-Object -First 1
+            if ($found_dir) {
+                $target_prefix = $found_dir.Name
+                break
+            }
         }
     }
-    $env:CORE_PREFIX = "core"
+    if ([string]::IsNullOrWhiteSpace($target_prefix)) {
+        $target_prefix = "core"
+    }
+    $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
 $script:COMFYUI_INSTALLER_VERSION = 292
@@ -83,6 +89,13 @@ $env:PIP_CONFIG_FILE = "nul"
 $env:UV_CONFIG_FILE = "nul"
 $env:PIP_CACHE_DIR = "$script:InstallPath/cache/pip"
 $env:UV_CACHE_DIR = "$script:InstallPath/cache/uv"
+$env:PYTHONUTF8 = 1
+$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONUNBUFFERED = 1
+$env:PYTHONNOUSERSITE = 1
+$env:PYTHONFAULTHANDLER = 1
+$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 $env:SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = $script:InstallPath
 $env:SD_WEBUI_ALL_IN_ONE_LOGGER_NAME = "ComfyUI Installer"
 $env:SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL = 20
@@ -170,7 +183,7 @@ function Get-CorePrefixStatus {
         if ($script:CorePrefix) {
             $origin_core_prefix = $script:CorePrefix
         } else {
-            $origin_core_prefix = Get-Content "$PSScriptRoot/core_prefix.txt"
+            $origin_core_prefix = (Get-Content "$PSScriptRoot/core_prefix.txt" -Raw).Trim()
         }
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
             Write-Log "转换绝对路径为内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
@@ -218,7 +231,7 @@ function Set-Proxy {
         if ($script:UseCustomProxy) {
             $proxy_value = $script:UseCustomProxy
         } else {
-            $proxy_value = Get-Content "$PSScriptRoot/proxy.txt"
+            $proxy_value = (Get-Content "$PSScriptRoot/proxy.txt" -Raw).Trim()
         }
         $env:HTTP_PROXY = $proxy_value
         $env:HTTPS_PROXY = $proxy_value
@@ -262,7 +275,7 @@ function Set-GithubMirror {
         if ($script:UseCustomGithubMirror) {
             $github_mirror = $script:UseCustomGithubMirror
         } else {
-            $github_mirror = Get-Content "$PSScriptRoot/gh_mirror.txt"
+            $github_mirror = (Get-Content "$PSScriptRoot/gh_mirror.txt" -Raw).Trim()
         }
         Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         $ArrayList.Add("--custom-github-mirror") | Out-Null
@@ -307,8 +320,6 @@ from importlib.metadata import version
 
 
 def compare_versions(version1: str, version2: str) -> int:
-    version1 = str(version1)
-    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -563,10 +574,17 @@ function Initialize-EnvPath {
     `$git_path = `"`$PSScriptRoot/git/bin`"
     `$git_extra_path = `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin`"
     `$sep = `$([System.IO.Path]::PathSeparator)
-    `$env:PATH = `"`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_pat}h`${sep}`${env:PATH}`"
+    `$env:PATH = `"`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
 
     `$env:UV_CONFIG_FILE = `"nul`"
     `$env:PIP_CONFIG_FILE = `"nul`"
+    `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
+    `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+    `$env:PYTHONUTF8 = 1
+    `$env:PYTHONIOENCODING = `"utf-8`"
+    `$env:PYTHONUNBUFFERED = 1
+    `$env:PYTHONNOUSERSITE = 1
+    `$env:PYTHONFAULTHANDLER = 1
     `$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
     `$env:COMFYUI_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX`"
     `$env:COMFYUI_ROOT = `"`$PSScriptRoot/`$env:CORE_PREFIX`"
@@ -659,8 +677,6 @@ from importlib.metadata import version
 
 
 def compare_versions(version1: str, version2: str) -> int:
-    version1 = str(version1)
-    version2 = str(version2)
     try:
         nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
         nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
@@ -741,7 +757,7 @@ function Update-Installer {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = Get-Content `"`$PSScriptRoot/update_time.txt`" 2> `$null
+        `$last_update_time = (Get-Content `"`$PSScriptRoot/update_time.txt`" -Raw).Trim() 2> `$null
         `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
@@ -868,38 +884,41 @@ function Get-Version {
 
 # 设置路径前缀
 function Set-CorePrefix {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
-    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$script:CorePrefix)) {
-    Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
-        if (`$script:CorePrefix) {
-            `$origin_core_prefix = `$script:CorePrefix
-        } else {
-            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+    `$target_prefix = `$null
+    `$prefix_list = @(`"core`", `"ComfyUI*`")
+    if (`$script:CorePrefix -or (Test-Path `"`$PSScriptRoot/core_prefix.txt`")) {
+        Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        `$origin_core_prefix = if (`$script:CorePrefix) { 
+            `$script:CorePrefix 
+        } else { 
+            (Get-Content `"`$PSScriptRoot/core_prefix.txt`" -Raw).Trim() 
         }
-        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
-            `$to_path = `$origin_core_prefix
             `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
-            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
-            `$new_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-            Write-Log `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$new_core_prefix`"
+            `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
+            `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+            Write-Log `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$target_prefix`"
+        } else {
+            `$target_prefix = `$origin_core_prefix
         }
-        `$env:CORE_PREFIX = `$new_core_prefix
-        Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
-        Write-Log `"完整内核路径: `$PSScriptRoot\`$env:CORE_PREFIX`"
-        return
-    }
-    ForEach (`$i in `$prefix_list) {
-        if (Test-Path `"`$PSScriptRoot/`$i`") {
-            `$env:CORE_PREFIX = `$i
-            Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
-            Write-Log `"完整内核路径: `$PSScriptRoot\`$env:CORE_PREFIX`"
-            return
+    } 
+    else {
+        foreach (`$i in `$prefix_list) {
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            if (`$found_dir) {
+                `$target_prefix = `$found_dir.Name
+                break
+            }
         }
     }
-    `$env:CORE_PREFIX = `"core`"
+    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
+        `$target_prefix = `"core`"
+    }
+    `$env:CORE_PREFIX = `$target_prefix
+    `$full_core_path = Join-Path `$PSScriptRoot `$env:CORE_PREFIX
     Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
-    Write-Log `"完整内核路径: `$PSScriptRoot\`$env:CORE_PREFIX`"
+    Write-Log `"完整内核路径: `$full_core_path`"
 }
 
 
@@ -915,7 +934,7 @@ function Set-Proxy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
         }
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
@@ -941,7 +960,7 @@ function Set-ProxyLegecy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
         }
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
@@ -995,7 +1014,7 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+            `$hf_mirror_value = (Get-Content `"`$PSScriptRoot/hf_mirror.txt`" -Raw).Trim()
         }
         `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
         `$ArrayList.Add(`$hf_mirror_value) | Out-Null
@@ -1022,7 +1041,7 @@ function Set-GithubMirror {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
         }
         Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
@@ -1085,20 +1104,30 @@ param (
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableEnvCheck
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$CorePrefix
-    `$script:DisableUV = `$script:DisableUV
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-    `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-    `$script:DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
-    `$script:UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
-    `$script:DisableGithubMirror = `$script:DisableGithubMirror
-    `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
-    `$script:DisableCUDAMalloc = `$script:DisableCUDAMalloc
-    `$script:DisableUpdate = `$script:DisableUpdate
-    `$script:BuildMode = `$script:BuildMode
-})
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$CorePrefix
+        `$script:DisableUV = `$script:DisableUV
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
+        `$script:DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
+        `$script:UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        `$script:DisableGithubMirror = `$script:DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        `$script:DisableCUDAMalloc = `$script:DisableCUDAMalloc
+        `$script:DisableUpdate = `$script:DisableUpdate
+        `$script:BuildMode = `$script:BuildMode
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
 
 
 # 帮助信息
@@ -1192,7 +1221,7 @@ function Get-ComfyUILaunchArgs {
         if (`$script:LaunchArg) {
             `$launch_args = `$script:LaunchArg.Trim()
         } else {
-            `$launch_args = (Get-Content `"`$PSScriptRoot/launch_args.txt`").Trim()
+            `$launch_args = (Get-Content `"`$PSScriptRoot/launch_args.txt`" -Raw).Trim()
         }
         if ([string]::IsNullOrEmpty(`$launch_args)) {
             return
@@ -1249,7 +1278,7 @@ function Add-ComfyUIShortcut {
 
 
 # 检测 Microsoft Visual C++ Redistributable
-function Test-MS-VCPP-Redistributable {
+function Test-MSVCPPRedistributable {
     Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
     if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
         `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
@@ -1310,6 +1339,7 @@ function Main {
         return
     }
 
+    Test-MSVCPPRedistributable
     `$launch_args = Get-LaunchCoreArgs
     Add-ComfyUIShortcut
 
@@ -1351,18 +1381,27 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-    `$script:DisableUV = `$script:DisableUV
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-    `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-    `$script:DisableGithubMirror = `$script:DisableGithubMirror
-    `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
-    `$script:DisableUpdate = `$script:DisableUpdate
-    `$script:BuildMode = `$script:BuildMode
-})
-
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableUV = `$script:DisableUV
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
+        `$script:DisableGithubMirror = `$script:DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        `$script:DisableUpdate = `$script:DisableUpdate
+        `$script:BuildMode = `$script:BuildMode
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
 
 
 # 帮助信息
@@ -1481,18 +1520,27 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-    `$script:DisableUV = `$script:DisableUV
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-    `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-    `$script:DisableGithubMirror = `$script:DisableGithubMirror
-    `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
-    `$script:DisableUpdate = `$script:DisableUpdate
-    `$script:BuildMode = `$script:BuildMode
-})
-
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableUV = `$script:DisableUV
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
+        `$script:DisableGithubMirror = `$script:DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        `$script:DisableUpdate = `$script:DisableUpdate
+        `$script:BuildMode = `$script:BuildMode
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
 
 
 # 帮助信息
@@ -1593,8 +1641,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/update_extension.ps1") { "更新" } else { "生成" }) update_extension.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update_extension.ps1" -Value $content
+    Write-Log "$(if (Test-Path "$script:InstallPath/update_node.ps1") { "更新" } else { "生成" }) update_node.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update_node.ps1" -Value $content
 }
 
 
@@ -1609,33 +1657,40 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
+    [string]`$CorePrefix,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
 & {
-    `$prefix_list = @(`"core`", `"ComfyUI`", `"comfyui`", `"ComfyUI-aki-v1.0`", `"ComfyUI-aki-v1.1`", `"ComfyUI-aki-v1.2`", `"ComfyUI-aki-v1.3`", `"ComfyUI-aki-v1.4`", `"ComfyUI-aki-v1.5`", `"ComfyUI-aki-v1.6`", `"ComfyUI-aki-v1.7`", `"ComfyUI-aki-v2`")
-    if ((Test-Path `"`$PSScriptRoot/core_prefix.txt`") -or (`$CorePrefix)) {
-        if (`$CorePrefix) {
-            `$origin_core_prefix = `$CorePrefix
-        } else {
-            `$origin_core_prefix = Get-Content `"`$PSScriptRoot/core_prefix.txt`"
+    `$target_prefix = `$null
+    `$prefix_list = @(`"core`", `"ComfyUI*`")
+    if (`$script:CorePrefix -or (Test-Path `"`$PSScriptRoot/core_prefix.txt`")) {
+        `$origin_core_prefix = if (`$script:CorePrefix) { 
+            `$script:CorePrefix 
+        } else { 
+            (Get-Content `"`$PSScriptRoot/core_prefix.txt`" -Raw).Trim() 
         }
-        `$origin_core_prefix = `$origin_core_prefix.Trim('/').Trim('\')
+        `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
-            `$to_path = `$origin_core_prefix
             `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
-            `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/'))
-            `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+            `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
+            `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        } else {
+            `$target_prefix = `$origin_core_prefix
         }
-        `$env:CORE_PREFIX = `$origin_core_prefix
-        return
-    }
-    ForEach (`$i in `$prefix_list) {
-        if (Test-Path `"`$PSScriptRoot/`$i`") {
-            `$env:CORE_PREFIX = `$i
-            return
+    } 
+    else {
+        foreach (`$i in `$prefix_list) {
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            if (`$found_dir) {
+                `$target_prefix = `$found_dir.Name
+                break
+            }
         }
     }
-    `$env:CORE_PREFIX = `"core`"
+    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
+        `$target_prefix = `"core`"
+    }
+    `$env:CORE_PREFIX = `$target_prefix
 }
 if (-not `$script:InstallPath) {
     `$script:InstallPath = `$PSScriptRoot
@@ -1682,7 +1737,7 @@ function Set-Proxy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
         }
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
@@ -1764,7 +1819,7 @@ function Get-LocalSetting {
             if (`$script:UseCustomProxy) {
                 `$proxy_value = `$script:UseCustomProxy
             } else {
-                `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+                `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
             }
             `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
         }
@@ -1781,13 +1836,14 @@ function Get-LocalSetting {
             if (`$script:UseCustomGithubMirror) {
                 `$github_mirror = `$script:UseCustomGithubMirror
             } else {
-                `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+                `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
             }
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
     }
 
     `$arg.Add(`"-InstallPath`", `$script:InstallPath)
+    `$arg.Add(`"-CorePrefix`", `$script:CorePrefix)
 
     return `$arg
 }
@@ -1856,16 +1912,25 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-    `$script:DisableUV = `$script:DisableUV
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-    `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-    `$script:BuildMode = `$script:BuildMode
-    `$script:DisableUpdate = `$script:DisableUpdate
-})
-
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableUV = `$script:DisableUV
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
+        `$script:BuildMode = `$script:BuildMode
+        `$script:DisableUpdate = `$script:DisableUpdate
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
 
 
 # 帮助信息
@@ -1975,15 +2040,24 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-    `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-    `$script:DisableUpdate = `$script:DisableUpdate
-    `$script:BuildMode = `$script:BuildMode
-})
-
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
+        `$script:DisableUpdate = `$script:DisableUpdate
+        `$script:BuildMode = `$script:BuildMode
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
 
 
 # 帮助信息
@@ -2089,12 +2163,21 @@ param (
     [switch]`$DisableProxy,
     [switch]`$UseCustomProxy
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-    `$script:DisableProxy = `$script:DisableProxy
-    `$script:UseCustomProxy = `$script:UseCustomProxy
-})
-
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    Read-Host | Out-Null
+    exit 1
+}
 
 # 帮助信息
 function Get-InstallerCmdletHelp {
@@ -2138,7 +2221,7 @@ function Get-ToggleStatus ([string]`$file, [string]`$trueLabel = `"启用`", [st
 
 # 通用文本配置获取
 function Get-TextStatus ([string]`$file, [string]`$defaultLabel = `"无`") {
-    if (Test-Path `"`$PSScriptRoot/`$file`") { return Get-Content `"`$PSScriptRoot/`$file`" }
+    if (Test-Path `"`$PSScriptRoot/`$file`") { return (Get-Content `"`$PSScriptRoot/`$file`" -Raw).Trim() }
     return `$defaultLabel
 }
 
@@ -2167,7 +2250,7 @@ function Set-ToggleSetting ([string]`$file, [string]`$name, [bool]`$enable) {
 # 更新代理设置
 function Update-ProxySetting {
     while (`$true) {
-        `$current = if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义: `" + (Get-Content `"`$PSScriptRoot/proxy.txt`") } else { `"系统代理`" }
+        `$current = if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义: `$((Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim())`" } else { `"系统代理`" }
         Write-Log `"当前代理设置: `$current`"
         Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
@@ -2194,7 +2277,7 @@ function Update-ProxySetting {
 # 更新镜像设置
 function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$examples) {
     while (`$true) {
-        `$current = if (Test-Path `"`$PSScriptRoot/disable_`$file`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/`$file`") { `"自定义: `" + (Get-Content `"`$PSScriptRoot/`$file`") } else { `"默认`" }
+        `$current = if (Test-Path `"`$PSScriptRoot/disable_`$file`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/`$file`") { `"自定义: `$((Get-Content `"`$PSScriptRoot/`$file`" -Raw).Trim())`" } else { `"默认`" }
         Write-Log `"当前 `$name 设置: `$current`"
         Write-Log `"1. 默认/自动 | 2. 自定义地址 | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
@@ -2277,7 +2360,7 @@ function Main {
     while (`$true) {
         Write-Log `"=== ComfyUI 管理设置 ===`"
         `$menu = @(
-            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义 (地址: `$(Get-Content `"`$PSScriptRoot/proxy.txt`"))`" } else { `"系统`" }) },
+            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义 (地址: `$((Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()))`" } else { `"系统`" }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"禁用`" `"启用`" `$true) },
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"禁用`" `"启用`" `$true) },
@@ -2344,9 +2427,21 @@ param (
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror
 )
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`" -PassThru -Force).Invoke({
-    `$script:CorePrefix = `$script:CorePrefix
-})
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:CorePrefix = `$script:CorePrefix
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    Read-Host | Out-Null
+    exit 1
+}
+
+
 # PyPI 镜像源
 `$PIP_INDEX_ADDR = `"https://mirrors.cloud.tencent.com/pypi/simple`"
 `$PIP_INDEX_ADDR_ORI = `"https://pypi.python.org/simple`"
@@ -2377,8 +2472,6 @@ param (
 `$env:UV_HTTP_TIMEOUT = 30
 `$env:UV_CONCURRENT_DOWNLOADS = 50
 `$env:UV_INDEX_STRATEGY = `"unsafe-best-match`"
-`$env:UV_CONFIG_FILE = `"nul`"
-`$env:PIP_CONFIG_FILE = `"nul`"
 `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
 `$env:PIP_TIMEOUT = 30
@@ -2564,14 +2657,14 @@ for %%i in (%*) do (
 )
 
 if exist ```"%CorePrefixFile%```" (
-    for /f ```"delims=```" %%i in ('powershell -command ```"Get-Content -Path '%CorePrefixFile%'```"') do (
+    for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"(Get-Content -Path '%CorePrefixFile%' -Raw).Trim()```"') do (
         set CorePrefix=%%i
         goto :convert
     )
 )
 
 :convert
-for /f ```"delims=```" %%i in ('powershell -command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
+for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
     set CorePrefix=%%i
     goto :continue
 )
@@ -2696,7 +2789,7 @@ function Set-Proxy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
         }
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
@@ -2735,7 +2828,7 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/hf_mirror.txt`"
+            `$hf_mirror_value = (Get-Content `"`$PSScriptRoot/hf_mirror.txt`" -Raw).Trim()
         }
         `$env:HF_ENDPOINT = `$hf_mirror_value
         Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
@@ -2767,7 +2860,7 @@ function Set-GithubMirrorLegecy {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = Get-Content `"`$PSScriptRoot/gh_mirror.txt`"
+            `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
         }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
@@ -2805,7 +2898,17 @@ Main
 # 快捷启动终端脚本, 启动后将自动运行环境激活脚本
 function Write-LaunchTerminalScript {
     $content = "
-(Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force).Invoke({})
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({})
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_comfyui_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    Read-Host | Out-Null
+    exit 1
+}
 Write-Log `"执行 ComfyUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
@@ -2831,7 +2934,7 @@ Github：https://github.com/licyk
 
 - launch.ps1：启动 ComfyUI。
 - update.ps1：更新 ComfyUI。
-- update_extension.ps1：更新 ComfyUI 扩展。
+- update_node.ps1：更新 ComfyUI 扩展。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 ComfyUI 的模型文件夹中。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
 - settings.ps1：管理 ComfyUI Installer 的设置。
@@ -2976,14 +3079,14 @@ for %%i in (%*) do (
 )
 
 if exist `"%CorePrefixFile%`" (
-    for /f `"delims=`" %%i in ('powershell -command `"Get-Content -Path '%CorePrefixFile%'`"') do (
+    for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"(Get-Content -Path '%CorePrefixFile%' -Raw).Trim()`"') do (
         set CorePrefix=%%i
         goto :convert
     )
 )
 
 :convert
-for /f `"delims=`" %%i in ('powershell -command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
+for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
     set CorePrefix=%%i
     goto :continue
 )
@@ -3209,7 +3312,7 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 ComfyUI 扩展更新脚本中"
-        . "$InstallPath/update_extension.ps1" @launch_args
+        . "$InstallPath/update_node.ps1" @launch_args
     }
 
     if ($script:BuildWithLaunch) {
@@ -3275,10 +3378,10 @@ if '%errorlevel%' NEQ '0' (
     title Configure environment
     echo :: Set PowerShell execution policies
     echo :: Executing command: `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
-    powershell `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
+    powershell -NoProfile -Command `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
     echo :: Enable long paths supported
     echo :: Executing command: `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
-    powershell `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
+    powershell -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
     echo :: Configure completed
     echo :: Exit environment configuration script 
     pause
@@ -3353,14 +3456,14 @@ function Get-InstallerCmdletHelp {
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - update_extension.ps1           (对应 -BuildWithUpdateNode 参数)
+            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update.ps1 脚本, 更新 ComfyUI 内核
 
     -BuildWithUpdateNode
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_extension.ps1 脚本, 更新 ComfyUI 扩展
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update_node.ps1 脚本, 更新 ComfyUI 扩展
 
     -BuildWithLaunch
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 launch.ps1 脚本, 执行启动 ComfyUI 前的环境检查流程, 但跳过启动 ComfyUI
