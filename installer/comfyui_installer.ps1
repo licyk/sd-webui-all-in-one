@@ -3151,8 +3151,6 @@ function Initialize-HanamizukiEnv {
 
 # 执行安装
 function Use-InstallMode {
-    Set-Proxy
-    Set-uv
     Write-Log "启动 ComfyUI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 ComfyUI Installer, 更多的说明请阅读 ComfyUI Installer 使用文档"
     Write-Log "ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md"

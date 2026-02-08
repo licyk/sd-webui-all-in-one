@@ -3407,8 +3407,6 @@ function Initialize-HanamizukiEnv {
 
 # 执行安装
 function Use-InstallMode {
-    Set-Proxy
-    Set-uv
     Write-Log "启动 Stable Diffusion WebUI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD WebUI Installer, 更多的说明请阅读 SD WebUI Installer 使用文档"
     Write-Log "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md"

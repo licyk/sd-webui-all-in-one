@@ -2777,8 +2777,6 @@ function Copy-InstallerConfig {
 
 # 执行安装
 function Use-InstallMode {
-    Set-Proxy
-    Set-uv
     Write-Log "启动 InvokeAI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 InvokeAI Installer, 更多的说明请阅读 InvokeAI Installer 使用文档"
     Write-Log "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md"

@@ -2448,8 +2448,6 @@ function Copy-InstallerConfig {
 
 # 执行安装
 function Use-InstallMode {
-    Set-Proxy
-    Set-uv
     Write-Log "启动 Qwen TTS WebUI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 Qwen TTS WebUI Installer, 更多的说明请阅读 Qwen TTS WebUI Installer 使用文档"
     Write-Log "Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
@@ -2706,7 +2704,6 @@ function Main {
         Set-Content -Encoding UTF8 -Path "$script:InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($script:BuildMode) { Write-Log "Qwen TTS WebUI Installer 构建模式已启用" }
-        
         Write-Log "使用安装模式"
         Use-InstallMode
     }
