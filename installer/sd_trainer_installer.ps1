@@ -292,7 +292,7 @@ function Get-InstallBranch {
         @{ Key = "kohya_gui";       Val = "kohya_gui_main" }
         @{ Key = "kohya_gui_main";  Val = "kohya_gui_main" }
     )
-    $target_branch = "sd_trainer_main"
+    $target_branch = $null
     foreach ($item in $branch_mapping_table) {
         $file_path = Join-Path $PSScriptRoot "install_$($item.Key).txt"
         if ((Test-Path $file_path) -or ($script:InstallBranch -eq $item.Key)) {
@@ -327,8 +327,10 @@ function Get-LaunchCoreArgs {
         $launch_params.Add($script:xFormersPackage)
     }
     $target_branch = Get-InstallBranch
-    $launch_params.Add("--install-branch") | Out-Null
-    $launch_params.Add($target_branch) | Out-Null
+    if ($target_branch) {
+        $launch_params.Add("--install-branch") | Out-Null
+        $launch_params.Add($target_branch) | Out-Null
+    }
     return $launch_params
 }
 
@@ -556,7 +558,7 @@ function Invoke-Installation {
     }
     if (!(Test-Path "$script:InstallPath/launch_args.txt")) {
         Write-Log "设置默认 SD Trainer 启动参数"
-        if ($launch_args_map.ContainsKey($target_branch)) {
+        if (($target_branch)-and $launch_args_map.ContainsKey($target_branch)) {
             $default_content = $launch_args_map[$target_branch]
         } else {
             $default_content = $launch_args_map["sd_trainer_main"]

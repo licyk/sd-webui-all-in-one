@@ -283,6 +283,32 @@ function Set-GithubMirror {
     }
 }
 
+function Get-InstallBranch {
+    $branch_mapping_table = @(
+        @{ Key = "sd_scripts";          Val = "sd_scripts_dev" }
+        @{ Key = "sd_scripts_main";     Val = "sd_scripts_main" }
+        @{ Key = "sd_scripts_dev";      Val = "sd_scripts_dev" }
+        @{ Key = "sd_scripts_sd3";      Val = "sd_scripts_sd3" }
+        @{ Key = "ai_toolkit";          Val = "ai_toolkit_main" }
+        @{ Key = "ai_toolkit_main";     Val = "ai_toolkit_main" }
+        @{ Key = "finetrainers";        Val = "finetrainers_main" }
+        @{ Key = "finetrainers_main";   Val = "finetrainers_main" }
+        @{ Key = "diffusion_pipe";      Val = "diffusion_pipe_main" }
+        @{ Key = "diffusion_pipe_main"; Val = "diffusion_pipe_main" }
+        @{ Key = "musubi_tuner";        Val = "musubi_tuner_main" }
+        @{ Key = "musubi_tuner_main";   Val = "musubi_tuner_main" }
+    )
+    $target_branch = $null
+    foreach ($item in $branch_mapping_table) {
+        $file_path = Join-Path $PSScriptRoot "install_$($item.Key).txt"
+        if ((Test-Path $file_path) -or ($script:InstallBranch -eq $item.Key)) {
+            $target_branch = $item.Val
+            break
+        }
+    }
+    return $target_branch
+}
+
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     $launch_params = New-Object System.Collections.ArrayList
@@ -307,6 +333,11 @@ function Get-LaunchCoreArgs {
     if ($script:xFormersPackage) {
         $launch_params.Add("--custom-xformers-package")
         $launch_params.Add($script:xFormersPackage)
+    }
+    $target_branch = Get-InstallBranch
+    if ($target_branch) {
+        $launch_params.Add("--install-branch") | Out-Null
+        $launch_params.Add($target_branch) | Out-Null
     }
     return $launch_params
 }
@@ -526,11 +557,6 @@ function Invoke-Installation {
         Write-Log "运行 SD WebUI All In One 安装 SD Trainer Script 时发生了错误, 终止 SD Trainer Script 安装进程, 可尝试重新运行 SD Trainer Script Installer 重试失败的安装" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
-    }
-    if (!(Test-Path "$script:InstallPath/launch_args.txt")) {
-        Write-Log "设置默认 SD Trainer Script 启动参数"
-        $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
-        Write-FileWithStreamWriter -Encoding UTF8 "$script:InstallPath/launch_args.txt" -Value $content
     }
 
     if (!($script:NoCleanCache)) {
@@ -1586,6 +1612,136 @@ Main
 }
 
 
+# 切换分支脚本
+function Write-SwitchBranchScript {
+    $content = "
+param (
+    [switch]`$Help,
+    [string]`$CorePrefix,
+    [switch]`$BuildMode,
+    [string]`$BuildWitchBranch,
+    [switch]`$DisableUpdate,
+    [switch]`$DisableProxy,
+    [string]`$UseCustomProxy,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror
+)
+try {
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:CorePrefix = `$script:CorePrefix
+        `$script:DisableProxy = `$script:DisableProxy
+        `$script:UseCustomProxy = `$script:UseCustomProxy
+        `$script:DisableGithubMirror = `$script:DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        `$script:DisableUpdate = `$script:DisableUpdate
+        `$script:BuildMode = `$script:BuildMode
+    })
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    exit 1
+}
+
+
+# 帮助信息
+function Get-InstallerCmdletHelp {
+    `$content = `"
+使用:
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <SD Trainer Script 分支编号>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+
+参数:
+    -Help
+        获取 SD Trainer Script Installer 的帮助信息
+
+    -CorePrefix <内核路径前缀>
+        设置内核的路径前缀, 默认路径前缀为 core
+
+    -BuildMode
+        启用 SD Trainer Script Installer 构建模式
+
+    -BuildWitchBranch <SD Trainer Script 分支编号>
+        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 switch_branch.ps1 脚本, 根据 SD Trainer Script 分支编号切换到对应的 SD Trainer Script 分支
+        SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -DisableUpdate
+        禁用 SD Trainer Script Installer 更新检查
+
+    -DisableProxy
+        禁用 SD Trainer Script Installer 自动设置代理服务器
+
+    -UseCustomProxy <代理服务器地址>
+        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+
+    -DisableGithubMirror
+        禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+
+    -UseCustomGithubMirror <Github 镜像站地址>
+        使用自定义的 Github 镜像站地址
+
+
+更多的帮助信息请阅读 SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md
+`".Trim()
+
+    if (`$script:Help) {
+        Write-Host `$content
+        exit 0
+    }
+}
+
+
+# 获取启动 SD WebUI All In One 内核的启动参数
+function Get-LaunchCoreArgs {
+    `$launch_params = New-Object System.Collections.ArrayList
+    if (`$script:BuildMode) {
+        `$launch_params.Add(`"--branch`") | Out-Null
+        `$launch_params.Add(`$script:BuildWitchBranch) | Out-Null
+    } else {
+        `$launch_params.Add(`"--interactive`") | Out-Null
+    }
+    Set-GithubMirror `$launch_params
+    return `$launch_params
+}
+
+
+function Main {
+    Get-InstallerCmdletHelp
+    Get-Version
+    Set-CorePrefix
+    Initialize-EnvPath
+    Set-Proxy
+    Update-Installer
+    Update-SDWebUiAllInOne
+
+    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
+        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 SD Trainer Script 是否已正确安装, 或者尝试运行 SD Trainer Script Installer 进行修复`"
+        Read-Host | Out-Null
+        return
+    }
+
+    `$launch_args = Get-LaunchCoreArgs
+    & python -m sd_webui_all_in_one.cli_manager.main sd-scripts switch `$launch_args
+
+    Write-Log `"退出 SD Trainer Script 分支切换脚本`"
+
+    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+}
+
+###################
+
+Main
+".Trim()
+
+    Write-Log "$(if (Test-Path "$script:InstallPath/switch_branch.ps1") { "更新" } else { "生成" }) switch_branch.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/switch_branch.ps1" -Value $content
+}
+
+
 # 获取安装脚本
 function Write-LaunchInstallerScript {
     $content = "
@@ -1780,6 +1936,51 @@ function Get-LocalSetting {
             }
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
+    }
+
+    `$git_repo_map = @{
+        `"kohya-ss/sd-scripts`"         = `"sd_scripts_dev`"
+        `"ostris/ai-toolkit`"           = `"ai_toolkit_main`"
+        `"a-r-r-o-w/finetrainers`"      = `"finetrainers_main`"
+        `"tdrussell/diffusion-pipe`"    = `"diffusion_pipe_main`"
+        `"kohya-ss/musubi-tuner`"       = `"musubi_tuner_main`"
+    }
+    `$fallback_check_list = @(
+        @{ Key = `"sd_scripts`";          Val = `"sd_scripts_dev`" }
+        @{ Key = `"sd_scripts_main`";     Val = `"sd_scripts_main`" }
+        @{ Key = `"sd_scripts_dev`";      Val = `"sd_scripts_dev`" }
+        @{ Key = `"sd_scripts_sd3`";      Val = `"sd_scripts_sd3`" }
+        @{ Key = `"ai_toolkit`";          Val = `"ai_toolkit_main`" }
+        @{ Key = `"ai_toolkit_main`";     Val = `"ai_toolkit_main`" }
+        @{ Key = `"finetrainers`";        Val = `"finetrainers_main`" }
+        @{ Key = `"finetrainers_main`";   Val = `"finetrainers_main`" }
+        @{ Key = `"diffusion_pipe`";      Val = `"diffusion_pipe_main`" }
+        @{ Key = `"diffusion_pipe_main`"; Val = `"diffusion_pipe_main`" }
+        @{ Key = `"musubi_tuner`";        Val = `"musubi_tuner_main`" }
+        @{ Key = `"musubi_tuner_main`";   Val = `"musubi_tuner_main`" }
+    )
+    `$detected_branch = `$null
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+        try {
+            `$remoteUrl = (git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin).Trim() -replace '\.git`$', ''
+            `$urlParts = `$remoteUrl -split '/'
+            `$repoKey = `"`$(`$urlParts[-2])/`$(`$urlParts[-1])`"
+            if (`$git_repo_map.ContainsKey(`$repoKey)) {
+                `$detected_branch = `$git_repo_map[`$repoKey]
+            }
+        } catch {}
+    }
+    if (-not `$detected_branch) {
+        foreach (`$item in `$fallback_check_list) {
+            `$file_path = Join-Path `$PSScriptRoot `"install_`$(`$item.Key).txt`"
+            if ((Test-Path `$file_path) -or (`$script:InstallBranch -eq `$item.Key)) {
+                `$detected_branch = `$item.Val
+                break
+            }
+        }
+    }
+    if (`$detected_branch) {
+        `$arg.Add(`"-InstallBranch`", `$detected_branch)
     }
 
     `$arg.Add(`"-InstallPath`", `$script:InstallPath)
@@ -2789,6 +2990,7 @@ function Write-ManagerScripts {
     Write-InitScript
     Write-TrainScript
     Write-UpdateScript
+    Write-SwitchBranchScript
     Write-LaunchInstallerScript
     Write-PyTorchReInstallScript
     Write-DownloadModelScript
@@ -2917,7 +3119,7 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:DisableAutoApplyUpdate) { $launch_args.Add("-DisableAutoApplyUpdate", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
-        Write-Log "执行 SD-Trainer 分支切换脚本中"
+        Write-Log "执行 SD Trainer Script 分支切换脚本中"
         . "$InstallPath/switch_branch.ps1" @launch_args
     }
 
