@@ -36,15 +36,15 @@
 & {
     $target_prefix = $null
     $prefix_list = @("core", "ComfyUI*")
-    if ($script:CorePrefix -or (Test-Path "$PSScriptRoot/core_prefix.txt")) {
+    if ($script:CorePrefix -or (Test-Path "$script:InstallPath/core_prefix.txt")) {
         $origin_core_prefix = if ($script:CorePrefix) { 
             $script:CorePrefix 
         } else { 
-            (Get-Content "$PSScriptRoot/core_prefix.txt" -Raw).Trim()
+            (Get-Content "$script:InstallPath/core_prefix.txt" -Raw).Trim()
         }
         $origin_core_prefix = $origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
-            $from_uri = New-Object System.Uri($PSScriptRoot.Replace('\', '/') + '/')
+            $from_uri = New-Object System.Uri($script:InstallPath.Replace('\', '/') + '/')
             $to_uri = New-Object System.Uri($origin_core_prefix.Replace('\', '/'))
             $target_prefix = $from_uri.MakeRelativeUri($to_uri).ToString().Trim('/')
         } else {
@@ -53,7 +53,7 @@
     } 
     else {
         foreach ($i in $prefix_list) {
-            $found_dir = Get-ChildItem -Path $PSScriptRoot -Directory -Filter $i | Select-Object -First 1
+            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i | Select-Object -First 1
             if ($found_dir) {
                 $target_prefix = $found_dir.Name
                 break
@@ -401,13 +401,13 @@ function Install-ArchiveResource {
         }
         catch {
             if ($i -lt ($Urls.Length - 1)) {
-                Write-Log "重试下载 $ResourceName 中..."
+                Write-Log "重试下载 $ResourceName 中" -Level WARNING
             }
         }
     }
 
     if (-not $success) {
-        Write-Log "$ResourceName 安装失败, 终止安装进程。可尝试重新运行重试。"
+        Write-Log "$ResourceName 安装失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
@@ -477,9 +477,9 @@ function Install-Aria2 {
         catch {
             $i += 1
             if ($i -lt $urls.Length) {
-                Write-Log "重试下载 Aria2 中"
+                Write-Log "重试下载 Aria2 中" -Level WARNING
             } else {
-                Write-Log "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装"
+                Write-Log "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
                 if (!($script:BuildMode)) { Read-Host | Out-Null }
                 exit 1
             }
@@ -523,7 +523,11 @@ function Invoke-Installation {
     $launch_params = Get-LaunchCoreArgs
 
     & python -m sd_webui_all_in_one.cli_manager.main comfyui install $launch_params
-
+    if (!($?)) {
+        Write-Log "运行 SD WebUI All In One 安装 ComfyUI 时发生了错误, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        exit 1
+    }
     if (!(Test-Path "$script:InstallPath/launch_args.txt")) {
         Write-Log "设置默认 ComfyUI 启动参数"
         $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
@@ -793,7 +797,7 @@ function Update-Installer {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Write-Log `"重试检查 ComfyUI Installer 更新中`"
+                Write-Log `"重试检查 ComfyUI Installer 更新中`" -Level WARNING
             } else {
                 Write-Log `"检查 ComfyUI Installer 更新失败`"
                 return
@@ -854,7 +858,7 @@ function Update-Aria2 {
         catch {
             `$i += 1
             if (`$i -lt `$urls.Length) {
-                Write-Log `"重试下载 Aria2 中`"
+                Write-Log `"重试下载 Aria2 中`" -Level WARNING
             } else {
                 Write-Log `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`"
                 return
@@ -1173,23 +1177,6 @@ function Get-InstallerCmdletHelp {
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
 
     -DisableUV
         禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
@@ -1218,8 +1205,8 @@ function Get-InstallerCmdletHelp {
 
 
 
-# ComfyUI 启动参数
-function Get-ComfyUILaunchArgs {
+# 获取启动参数
+function Get-WebUILaunchArgs {
     param ([System.Collections.ArrayList]`$ArrayList)
     if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$script:LaunchArg)) {
         if (`$script:LaunchArg) {
@@ -1238,8 +1225,8 @@ function Get-ComfyUILaunchArgs {
 }
 
 
-# 设置 ComfyUI 的快捷启动方式
-function Add-ComfyUIShortcut {
+# 设置快捷启动方式
+function Add-Shortcut {
     `$filename = `"ComfyUI`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/comfyui_icon.ico`"
     `$shortcut_icon = `"`$PSScriptRoot/comfyui_icon.ico`"
@@ -1301,8 +1288,8 @@ function Test-MSVCPPRedistributable {
 }
 
 
-# 检查 ComfyUI 运行环境
-function Test-ComfyUIEnv {
+# 检查运行环境
+function Test-WebUIEnv {
     param ([System.Collections.ArrayList]`$ArrayList)
     if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$script:DisableEnvCheck)) {
         Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`"
@@ -1318,9 +1305,9 @@ function Get-LaunchCoreArgs {
     Set-HuggingFaceMirror `$launch_params
     Set-GithubMirror `$launch_params
     Set-uv `$launch_params
-    Get-ComfyUILaunchArgs `$launch_params
+    Get-WebUILaunchArgs `$launch_params
     Set-PyTorchCUDAMemoryAlloc `$launch_params
-    Test-ComfyUIEnv `$launch_params
+    Test-WebUIEnv `$launch_params
     if (!(`$script:BuildMode)) {
         `$launch_params.Add(`"--interactive`") | Out-Null
     }
@@ -1345,7 +1332,7 @@ function Main {
 
     Test-MSVCPPRedistributable
     `$launch_args = Get-LaunchCoreArgs
-    Add-ComfyUIShortcut
+    Add-Shortcut
 
     if (`$script:BuildMode) {
         Write-Log `"ComfyUI Installer 构建模式已启用, 跳过启动 ComfyUI`"
@@ -1437,23 +1424,6 @@ function Get-InstallerCmdletHelp {
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
 
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md
@@ -1506,7 +1476,7 @@ Main
 }
 
 
-# 更新脚本
+# 更新扩展脚本
 function Write-UpdateNodeScript {
     $content = "
 param (
@@ -1572,23 +1542,6 @@ function Get-InstallerCmdletHelp {
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
 
 
 更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md
@@ -2062,7 +2015,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -2077,9 +2030,6 @@ function Get-InstallerCmdletHelp {
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableProxy
         禁用 ComfyUI Installer 自动设置代理服务器
@@ -2537,23 +2487,6 @@ function Get-InstallerCmdletHelp {
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
 
     -DisableProxy
         禁用 ComfyUI Installer 自动设置代理服务器
@@ -2621,7 +2554,7 @@ function global:Install-Hanamizuki {
             catch {
                 `$i += 1
                 if (`$i -lt `$urls.Length) {
-                    Write-Log `"重试下载绘世启动器中`"
+                    Write-Log `"重试下载绘世启动器中`" -Level WARNING
                 } else {
                     Write-Log `"下载绘世启动器失败`"
                     return
@@ -3016,7 +2949,7 @@ function Write-ManagerScripts {
 
 
 # 将安装器配置文件复制到管理脚本路径
-function Copy-ComfyUIInstallerConfig {
+function Copy-InstallerConfig {
     Write-Log "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
 
     if ((!($script:DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
@@ -3166,7 +3099,7 @@ function Install-Hanamizuki {
             catch {
                 $i += 1
                 if ($i -lt $urls.Length) {
-                    Write-Log "重试下载绘世启动器中"
+                    Write-Log "重试下载绘世启动器中" -Level WARNING
                 } else {
                     Write-Log "下载绘世启动器失败"
                     return
@@ -3231,7 +3164,7 @@ function Use-InstallMode {
     Invoke-Installation
     Write-Log "添加管理脚本和文档中"
     Write-ManagerScripts
-    Copy-ComfyUIInstallerConfig
+    Copy-InstallerConfig
 
     if ($script:BuildMode) {
         Use-BuildMode
@@ -3285,7 +3218,7 @@ function Use-BuildMode {
         $launch_args.Add("-BuildWitchModel", $script:BuildWitchModel)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
-        if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $UseCustomProxy) }
+        if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行模型安装脚本中"
@@ -3332,7 +3265,7 @@ function Use-BuildMode {
         if ($script:DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
-        if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $LaunchArg) }
+        if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
@@ -3437,23 +3370,6 @@ function Get-InstallerCmdletHelp {
 
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
-        可用的 Github 镜像站地址:
-            https://ghfast.top/https://github.com
-            https://mirror.ghproxy.com/https://github.com
-            https://ghproxy.net/https://github.com
-            https://gh.api.99988866.xyz/https://github.com
-            https://gh-proxy.com/https://github.com
-            https://ghps.cc/https://github.com
-            https://gh.idayer.com/https://github.com
-            https://ghproxy.1888866.xyz/github.com
-            https://slink.ltd/https://github.com
-            https://github.boki.moe/github.com
-            https://github.moeyy.xyz/https://github.com
-            https://gh-proxy.net/https://github.com
-            https://gh-proxy.ygxz.in/https://github.com
-            https://wget.la/https://github.com
-            https://kkgithub.com
-            https://gitclone.com/github.com
 
     -BuildMode
         启用 ComfyUI Installer 构建模式, 在基础安装流程结束后将调用 ComfyUI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 ComfyUI Installer 的执行, 而是直接退出
