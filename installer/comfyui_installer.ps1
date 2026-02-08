@@ -814,9 +814,11 @@ function Update-Installer {
         return
     }
 
-    `$raw_params = `$script:MyInvocation.Line -replace `"^.*\.ps1[\s]*`", `"`"
+    `$script_to_run = if (`$script:OriginalScriptPath) { `$script:OriginalScriptPath } else { `$PSCommandPath }
+    `$current_line = if (`$script:LaunchCommandLine) { `$script:LaunchCommandLine } else { `$script:MyInvocation.Line }
+    `$raw_params = `$current_line -replace `"^.*\.ps1[\s]*`", `"`"
     Write-Log `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-    Invoke-Expression `"& ```"`$PSCommandPath```" `$raw_params`"
+    Invoke-Expression `"& ```"`$script_to_run```" `$raw_params`"
     exit 0
 }
 
@@ -1106,6 +1108,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -1383,6 +1387,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -1522,6 +1528,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -1914,6 +1922,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -2042,6 +2052,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2165,6 +2177,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2429,6 +2443,8 @@ param (
 )
 try {
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
     })
 }
@@ -2899,7 +2915,10 @@ Main
 function Write-LaunchTerminalScript {
     $content = "
 try {
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({})
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
+        `$script:OriginalScriptPath = `$PSCommandPath
+        `$script:LaunchCommandLine = `$MyInvocation.Line
+    })
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
