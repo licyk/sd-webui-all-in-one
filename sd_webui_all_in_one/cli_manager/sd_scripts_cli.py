@@ -7,7 +7,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     install_sd_scripts,
     update_sd_scripts,
     check_sd_scripts_env,
-    switch_sd_trainer_branch,
+    switch_sd_scripts_branch,
     install_sd_scripts_model_from_library,
     install_sd_scripts_model_from_url,
     list_sd_scripts_models,
@@ -129,19 +129,35 @@ def check_env(
 
 def switch(
     sd_scripts_path: Path,
-    branch: SDScriptsBranchType,
+    branch: SDScriptsBranchType | None = None,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """切换 SD Scripts 分支
 
     Args:
         sd_scripts_path (Path):
             SD Scripts 根目录
-        branch (SDScriptsBranchType):
+        branch (SDScriptsBranchType | None):
             要切换的 SD Scripts 分支
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        interactive_mode (bool | None):
+            是否启用交互模式
+        list_only (bool | None):
+            是否仅列出分支列表并退出
     """
-    switch_sd_trainer_branch(
+    switch_sd_scripts_branch(
         sd_scripts_path=sd_scripts_path,
         branch=branch,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
     )
 
 
@@ -353,11 +369,20 @@ def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = scripts_sub.add_parser("switch", help="切换 SD Scripts 分支")
     switch_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_SCRIPTS_BRANCH_LIST, help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, dest="branch", choices=SD_SCRIPTS_BRANCH_LIST, help="要切换的分支")
+    # switch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    switch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    switch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    switch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    switch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出分支列表并退出")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_scripts_path=args.sd_scripts_path,
             branch=args.branch,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
+            interactive_mode=args.interactive_mode,
+            list_only=args.list_only,
         )
     )
 

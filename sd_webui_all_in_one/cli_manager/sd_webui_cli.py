@@ -140,19 +140,35 @@ def check_env(
 
 def switch(
     sd_webui_path: Path,
-    branch: SDWebUiBranchType,
+    branch: SDWebUiBranchType | None = None,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """切换 Stable Diffusion WebUI 分支
 
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
-        branch (SDWebUiBranchType):
+        branch (SDWebUiBranchType | None):
             要切换的 Stable Diffusion WebUI 分支
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        interactive_mode (bool | None):
+            是否启用交互模式
+        list_only (bool | None):
+            是否仅列出分支列表并退出
     """
     switch_sd_webui_branch(
         sd_webui_path=sd_webui_path,
         branch=branch,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
     )
 
 
@@ -534,11 +550,20 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = sd_sub.add_parser("switch", help="切换 Stable Diffusion WebUI 分支")
     switch_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_WEBUI_BRANCH_LIST, help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, dest="branch", choices=SD_WEBUI_BRANCH_LIST, help="要切换的分支")
+    # switch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    switch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    switch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    switch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    switch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出分支列表并退出")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_webui_path=args.sd_webui_path,
             branch=args.branch,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
+            interactive_mode=args.interactive_mode,
+            list_only=args.list_only,
         )
     )
 

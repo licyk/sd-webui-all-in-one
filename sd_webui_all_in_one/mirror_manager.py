@@ -5,9 +5,18 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.file_operations.file_manager import remove_files
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYPI_EXTRA_INDEX_MIRROR_CERNET,
+    PYPI_INDEX_MIRROR_OFFICIAL,
+    PYPI_INDEX_MIRROR_TENCENT,
+    PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
+    PYTORCH_FIND_LINKS_MIRROR_LICYK,
+    PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
+)
 
 
 logger = get_logger(
@@ -299,3 +308,37 @@ def set_mirror(
     os.environ["GIT_CONFIG_GLOBAL"] = set_github_mirror(github_mirror).as_posix()
     set_huggingface_mirror(huggingface_mirror)
     logger.info("镜像源配置完成")
+
+
+def get_pypi_mirror_config(
+    use_cn_mirror: bool | None = False,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """获取带有 PyPI 镜像源配置的环境变量字典
+
+    如果设置了 `SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR=1` 环境变量, 则启用 SD WebUI All In One 自带的额外 PyPI 镜像源
+
+    Args:
+        use_cn_mirror (bool | None):
+            是否使用国内镜像源
+        origin_env (dict[str, str] | None):
+            原始的环境变量字典
+
+    Returns:
+        (dict[str, str]):
+            带有 PyPI 镜像源配置的环境变量字典
+    """
+    if use_cn_mirror:
+        return generate_uv_and_pip_env_mirror_config(
+            index_url=PYPI_INDEX_MIRROR_TENCENT,
+            extra_index_url=PYPI_EXTRA_INDEX_MIRROR_CERNET,
+            find_links=[PYTORCH_FIND_LINKS_MIRROR_ALIYUN, PYTORCH_FIND_LINKS_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
+            origin_env=origin_env,
+        )
+    else:
+        return generate_uv_and_pip_env_mirror_config(
+            index_url=PYPI_INDEX_MIRROR_OFFICIAL,
+            extra_index_url=[],
+            find_links=[PYTORCH_FIND_LINKS_MIRROR_OFFICIAL, PYTORCH_FIND_LINKS_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
+            origin_env=origin_env,
+        )

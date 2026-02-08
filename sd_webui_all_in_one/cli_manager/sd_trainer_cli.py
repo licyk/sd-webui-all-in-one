@@ -129,19 +129,35 @@ def check_env(
 
 def switch(
     sd_trainer_path: Path,
-    branch: SDTrainerBranchType,
+    branch: SDTrainerBranchType | None = None,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+    interactive_mode: bool | None = False,
+    list_only: bool | None = False,
 ) -> None:
     """切换 SD Trainer 分支
 
     Args:
         sd_trainer_path (Path):
             SD Trainer 根目录
-        branch (SDTrainerBranchType):
+        branch (SDTrainerBranchType | None):
             要切换的 SD Trainer 分支
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        interactive_mode (bool | None):
+            是否启用交互模式
+        list_only (bool | None):
+            是否仅列出分支列表并退出
     """
     switch_sd_trainer_branch(
         sd_trainer_path=sd_trainer_path,
         branch=branch,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
     )
 
 
@@ -412,11 +428,20 @@ def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
     # switch
     switch_p = trainer_sub.add_parser("switch", help="切换 SD Trainer 分支")
     switch_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
-    switch_p.add_argument("--branch", type=str, required=True, dest="branch", choices=SD_TRAINER_BRANCH_LIST, help="要切换的分支")
+    switch_p.add_argument("--branch", type=str, dest="branch", choices=SD_TRAINER_BRANCH_LIST, help="要切换的分支")
+    # switch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    switch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    switch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    switch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    switch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出分支列表并退出")
     switch_p.set_defaults(
         func=lambda args: switch(
             sd_trainer_path=args.sd_trainer_path,
             branch=args.branch,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
+            interactive_mode=args.interactive_mode,
+            list_only=args.list_only,
         )
     )
 
