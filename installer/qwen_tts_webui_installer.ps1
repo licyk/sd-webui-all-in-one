@@ -519,7 +519,7 @@ function Invoke-Installation {
     }
     if (!(Test-Path "$script:InstallPath/launch_args.txt")) {
         Write-Log "设置默认 Qwen TTS WebUI 启动参数"
-        $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
+        $content = ""
         Write-FileWithStreamWriter -Encoding UTF8 "$script:InstallPath/launch_args.txt" -Value $content
     }
 
