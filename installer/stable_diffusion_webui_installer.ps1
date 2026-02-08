@@ -18,6 +18,7 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
+    [int]$BuildWitchBranch,
     [switch]$NoPreDownloadExtension,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
@@ -54,7 +55,7 @@
     } 
     else {
         foreach ($i in $prefix_list) {
-            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i | Select-Object -First 1
+            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found_dir) {
                 $target_prefix = $found_dir.Name
                 break
@@ -963,7 +964,7 @@ function Set-CorePrefix {
     } 
     else {
         foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
             if (`$found_dir) {
                 `$target_prefix = `$found_dir.Name
                 break
@@ -1707,7 +1708,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -1718,6 +1719,10 @@ function Get-InstallerCmdletHelp {
 
     -BuildMode
         启用 SD WebUI Installer 构建模式
+
+    -BuildWitchBranch <Stable Diffusion WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支
+        Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -DisableUpdate
         禁用 SD WebUI Installer 更新检查
@@ -1826,7 +1831,7 @@ param (
     } 
     else {
         foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
             if (`$found_dir) {
                 `$target_prefix = `$found_dir.Name
                 break
@@ -1989,13 +1994,13 @@ function Get-LocalSetting {
     }
 
     `$git_repo_map = @{
-        `"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui`"
+        `"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui_dev`"
         `"lllyasviel/stable-diffusion-webui-forge`"   = `"sd_webui_forge`"
-        `"Panchovix/stable-diffusion-webui-reForge`"  = `"sd_webui_reforge`"
-        `"Haoming02/sd-webui-forge-classic`"          = `"sd_webui_forge_classic`"
+        `"Panchovix/stable-diffusion-webui-reForge`"  = `"sd_webui_reforge_main`"
+        `"Haoming02/sd-webui-forge-classic`"          = `"sd_webui_forge_neo`"
         `"lshqqytiger/stable-diffusion-webui-amdgpu`" = `"sd_webui_amdgpu`"
-        `"vladmandic/automatic`"                      = `"sdnext`"
-        `"vladmandic/sdnext`"                         = `"sdnext`"
+        `"vladmandic/automatic`"                      = `"sd_next_main`"
+        `"vladmandic/sdnext`"                         = `"sd_next_main`"
     }
     `$fallback_check_list = @(
         @{ Key = `"sd_webui`";              Val = `"sd_webui_dev`" }
@@ -2541,7 +2546,7 @@ function Test-EnvIntegrity {
 
 # 获取用户输入
 function Get-UserInput {
-    return (Read-Host `"==================================>`").Trim()
+    return (Read-Host `"===================================>`").Trim()
 }
 
 
@@ -3596,7 +3601,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -3677,6 +3682,10 @@ function Get-InstallerCmdletHelp {
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
+
+    -BuildWitchBranch <Stable Diffusion WebUI 分支编号>
+        (需添加 -BuildMode 启用 SD WebUI Installer 构建模式) SD WebUI Installer 执行完基础安装流程后调用 SD WebUI Installer 的 switch_branch.ps1 脚本, 根据 Stable Diffusion WebUI 分支编号切换到对应的 Stable Diffusion WebUI 分支
+        Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查看
 
     -NoPreDownloadExtension
         安装 Stable Diffusion WebUI 时跳过安装 Stable Diffusion WebUI 扩展

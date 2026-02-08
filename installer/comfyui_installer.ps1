@@ -53,7 +53,7 @@
     } 
     else {
         foreach ($i in $prefix_list) {
-            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i | Select-Object -First 1
+            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found_dir) {
                 $target_prefix = $found_dir.Name
                 break
@@ -911,7 +911,7 @@ function Set-CorePrefix {
     } 
     else {
         foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
             if (`$found_dir) {
                 `$target_prefix = `$found_dir.Name
                 break
@@ -1629,7 +1629,7 @@ param (
     } 
     else {
         foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i | Select-Object -First 1
+            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
             if (`$found_dir) {
                 `$target_prefix = `$found_dir.Name
                 break
