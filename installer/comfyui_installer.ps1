@@ -1378,7 +1378,6 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -1390,10 +1389,8 @@ try {
         `$script:OriginalScriptPath = `$PSCommandPath
         `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
         `$script:DisableGithubMirror = `$script:DisableGithubMirror
         `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
         `$script:DisableUpdate = `$script:DisableUpdate
@@ -1414,7 +1411,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -1425,9 +1422,6 @@ function Get-InstallerCmdletHelp {
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 ComfyUI Installer 更新检查
@@ -1519,7 +1513,6 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [switch]`$DisablePyPIMirror,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -1531,10 +1524,8 @@ try {
         `$script:OriginalScriptPath = `$PSCommandPath
         `$script:LaunchCommandLine = `$MyInvocation.Line
         `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
         `$script:DisableGithubMirror = `$script:DisableGithubMirror
         `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
         `$script:DisableUpdate = `$script:DisableUpdate
@@ -1555,7 +1546,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    .\`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -1566,9 +1557,6 @@ function Get-InstallerCmdletHelp {
 
     -BuildMode
         启用 ComfyUI Installer 构建模式
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 
     -DisableUpdate
         禁用 ComfyUI Installer 更新检查
@@ -2045,7 +2033,6 @@ param (
     [string]`$CorePrefix,
     [switch]`$BuildMode,
     [string]`$BuildWitchModel,
-    [switch]`$DisablePyPIMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -2057,7 +2044,6 @@ try {
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
         `$script:DisableUpdate = `$script:DisableUpdate
         `$script:BuildMode = `$script:BuildMode
     })
