@@ -17,7 +17,7 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [int]$BuildWitchBranch,
+    [string]$BuildWitchBranch,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
@@ -1248,7 +1248,7 @@ function Get-WebUILaunchArgs {
             return
         }
         `$ArrayList.Add(`"--launch-args`") | Out-Null
-        `$ArrayList.Add(`$launch_args) | Out-Null
+        `$ArrayList.Add(`$launch_args + `" `") | Out-Null
         Write-Log `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
         Write-Log `"使用的启动参数: `$launch_args`"
     }
@@ -1351,9 +1351,6 @@ function Get-LaunchCoreArgs {
     Get-WebUILaunchArgs `$launch_params
     Set-PyTorchCUDAMemoryAlloc `$launch_params
     Test-WebUIEnv `$launch_params
-    if (!(`$script:BuildMode)) {
-        `$launch_params.Add(`"--interactive`") | Out-Null
-    }
     return `$launch_params
 }
 
@@ -1526,7 +1523,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [int]`$BuildWitchBranch,
+    [string]`$BuildWitchBranch,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2780,7 +2777,6 @@ Github：https://github.com/licyk
 当前可用的 SD Trainer Installer 内置命令：
 
     Install-Hanamizuki
-    Get-Core-Prefix
     List-CMD
 
 更多帮助信息可在 SD Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md
@@ -3434,7 +3430,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD Trainer 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD Trainer 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD Trainer 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-InstallBranch <安装的 SD Trainer 分支>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <SD Trainer 分支编号>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD Trainer 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -3471,20 +3467,25 @@ function Get-InstallerCmdletHelp {
     -UseCustomGithubMirror <Github 镜像站地址>
         使用自定义的 Github 镜像站地址
 
+    -InstallBranch <安装的 SD Trainer 分支>
+        指定 SD Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer_main, kohya_gui_main)
+        例如: .\$($script:MyInvocation.MyCommand.Name) -InstallBranch `"kohya_gui`", 这将指定 SD-Trainer Installer 安装 bmaltais/Kohya GUI 分支
+        未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
+        支持指定安装的分支如下:
+            sd_trainer_main:    Akegarasu - SD-Trainer 分支
+            kohya_gui_main:     bmaltais - Kohya GUI 分支
+
     -BuildMode
         启用 SD Trainer Installer 构建模式, 在基础安装流程结束后将调用 SD Trainer Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD Trainer Installer 的执行, 而是直接退出
         当指定调用多个 SD Trainer Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
+            - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 SD Trainer Installer 构建模式) SD Trainer Installer 执行完基础安装流程后调用 SD Trainer Installer 的 update.ps1 脚本, 更新 SD Trainer 内核
-
-    -BuildWithUpdateNode
-        (需添加 -BuildMode 启用 SD Trainer Installer 构建模式) SD Trainer Installer 执行完基础安装流程后调用 SD Trainer Installer 的 update_node.ps1 脚本, 更新 SD Trainer 扩展
 
     -BuildWithLaunch
         (需添加 -BuildMode 启用 SD Trainer Installer 构建模式) SD Trainer Installer 执行完基础安装流程后调用 SD Trainer Installer 的 launch.ps1 脚本, 执行启动 SD Trainer 前的环境检查流程, 但跳过启动 SD Trainer

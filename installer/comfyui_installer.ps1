@@ -1218,7 +1218,7 @@ function Get-WebUILaunchArgs {
             return
         }
         `$ArrayList.Add(`"--launch-args`") | Out-Null
-        `$ArrayList.Add(`$launch_args) | Out-Null
+        `$ArrayList.Add(`$launch_args + `" `") | Out-Null
         Write-Log `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
         Write-Log `"使用的启动参数: `$launch_args`"
     }
@@ -1308,9 +1308,6 @@ function Get-LaunchCoreArgs {
     Get-WebUILaunchArgs `$launch_params
     Set-PyTorchCUDAMemoryAlloc `$launch_params
     Test-WebUIEnv `$launch_params
-    if (!(`$script:BuildMode)) {
-        `$launch_params.Add(`"--interactive`") | Out-Null
-    }
     return `$launch_params
 }
 
@@ -2513,7 +2510,7 @@ function Get-InstallerCmdletHelp {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[ComfyUI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[SD Trainer Scripts Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
@@ -2692,7 +2689,6 @@ Github：https://github.com/licyk
 当前可用的 ComfyUI Installer 内置命令：
 
     Install-Hanamizuki
-    Get-Core-Prefix
     List-CMD
 
 更多帮助信息可在 ComfyUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md
@@ -2816,7 +2812,7 @@ function Main {
     if (Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/python/python.exe`") {
         `$env:UV_PYTHON = `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/python/python.exe`"
     }
-    Write-Log `"激活 ComfyUI Env`"
+    Write-Log `"激活 SD Trainer Scripts Env`"
     Write-Log `"更多帮助信息可在 ComfyUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`"
 }
 

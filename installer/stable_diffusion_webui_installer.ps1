@@ -18,7 +18,7 @@
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
-    [int]$BuildWitchBranch,
+    [string]$BuildWitchBranch,
     [switch]$NoPreDownloadExtension,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
@@ -1271,7 +1271,7 @@ function Get-WebUILaunchArgs {
             return
         }
         `$ArrayList.Add(`"--launch-args`") | Out-Null
-        `$ArrayList.Add(`$launch_args) | Out-Null
+        `$ArrayList.Add(`$launch_args + `" `") | Out-Null
         Write-Log `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
         Write-Log `"使用的启动参数: `$launch_args`"
     }
@@ -1674,7 +1674,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [int]`$BuildWitchBranch,
+    [string]`$BuildWitchBranch,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2942,7 +2942,6 @@ Github：https://github.com/licyk
 当前可用的 SD WebUI Installer 内置命令：
 
     Install-Hanamizuki
-    Get-Core-Prefix
     List-CMD
 
 更多帮助信息可在 SD WebUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md
@@ -3601,7 +3600,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    .\$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Stable Diffusion WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallBranch <安装的 Stable Diffusion WebUI 分支>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateExtension] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-BuildWitchBranch <Stable Diffusion WebUI 分支编号>] [-NoPreDownloadExtension] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Stable Diffusion WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
