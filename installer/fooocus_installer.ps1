@@ -1326,20 +1326,36 @@ function Add-Shortcut {
 
 # 检测 Microsoft Visual C++ Redistributable
 function Test-MSVCPPRedistributable {
+    if (!(`$env:OS -like `"*Windows*`" -or `$IsWindows)) {
+        Write-Log `"非 Windows 系统，跳过 Microsoft Visual C++ Redistributable 检测`"
+        return
+    }
+
     Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
+
     if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
         `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
     } else {
         `$vc_runtime_dll_path = `"`$env:SYSTEMROOT/System32/vcruntime140_1.dll`"
     }
 
-    if (Test-Path `"`$vc_runtime_dll_path`") {
+    if (Test-Path `$vc_runtime_dll_path) {
         Write-Log `"Microsoft Visual C++ Redistributable 未缺失`"
-    } else {
-        Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
-        Write-Log `"Microsoft Visual C++ Redistributable 下载: https://aka.ms/vs/17/release/vc_redist.x64.exe`"
-        Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
-        Start-Sleep -Seconds 2
+        return
+    }
+
+    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
+    Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
+
+    Add-Type -AssemblyName PresentationFramework
+    `$msg_text = `"检测到系统缺失 Microsoft Visual C++ Redistributable, 这可能导致程序无法正常运行。请下载并安装该组件, 并重新启动以解决问题。``n``n是否立即打开下载页面?`"
+    `$msg_title = `"缺失系统组件`"
+    `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+    
+    if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
+        `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
+        Write-Log `"正在打开下载链接: `$download_url`"
+        Start-Process `$download_url
     }
 }
 
