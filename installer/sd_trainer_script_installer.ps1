@@ -3381,7 +3381,6 @@ function Main {
         Set-Content -Encoding UTF8 -Path "$script:InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($script:BuildMode) { Write-Log "SD Trainer Script Installer 构建模式已启用" }
-        
         Write-Log "使用安装模式"
         Use-InstallMode
     }
