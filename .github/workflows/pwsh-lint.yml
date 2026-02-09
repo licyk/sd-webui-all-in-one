@@ -1,0 +1,69 @@
+name: PSScript Lint
+
+on:
+  push:
+    paths:
+      - '**.ps1'
+  delete:
+  create:
+  workflow_dispatch:
+
+jobs:
+  lint-with-PSScriptAnalyzer:
+    name: PSScript Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Install PSScriptAnalyzer module
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -ErrorAction Stop
+
+      - name: Generate Installer manage scripts
+        shell: pwsh
+        run: |
+          $installers = @(
+              @{ File = "fooocus_installer.ps1"; Path = "fooocus" },
+              @{ File = "comfyui_installer.ps1"; Path = "comfyui" },
+              @{ File = "invokeai_installer.ps1"; Path = "invokeai" },
+              @{ File = "sd_trainer_installer.ps1"; Path = "sd_trainer" },
+              @{ File = "sd_trainer_script_installer.ps1"; Path = "sd_trainer_script" },
+              @{ File = "stable_diffusion_webui_installer.ps1"; Path = "sd_webui" },
+              @{ File = "qwen_tts_webui_installer.ps1"; Path = "qwen_tts_webui" }
+          )
+
+          foreach ($item in $installers) {
+              try {
+                  pwsh -File "${{ github.workspace }}/installer/$($item.File)" -InstallPath "${{ github.workspace }}/$($item.Path)" -UseUpdateMode
+              } catch {
+                  Write-Host "$($item.File) 执行时出现错误: $_"
+              }
+          }
+
+      - name: List files in the repository
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
+
+      - name: Lint with PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $file_list = Get-ChildItem -Path "**/*.ps1" -Filter *.ps1 -Recurse
+          ForEach ($file in $file_list) {
+              Invoke-ScriptAnalyzer -Path "$file" -Recurse -OutVariable issues -Severity @("Error", "ParseError")
+              $errors = $issues.Where({$_.Severity -eq 'Error'})
+              $parse_errors = $issues.Where({$_.Severity -eq 'ParseError'})
+              $all_errors += $errors
+              $all_parse_errors += $parse_errors
+              if ($errors -or $parse_errors) {
+                  Write-Host "$($file.FullName) 出现 $($errors.Count) 个错误和 $($parse_errors.Count) 个语法错误"
+              }
+          }
+          if ($all_errors -or $all_parse_errors) {
+              Write-Error "检查完成, 出现 $($all_errors.Count) 个错误和 $($all_parse_errors.Count) 个语法错误" -ErrorAction Stop
+          } else {
+              Write-Output "检查完成"
+          }

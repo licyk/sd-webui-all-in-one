@@ -12,7 +12,8 @@ jobs:
   Update-Portable-Release-Note:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
       - name: List files in the repository
         run: |

@@ -3,7 +3,7 @@ name: Ruff Lint
 on:
   push:
     paths:
-      - sd_webui_all_in_one
+      - "sd_webui_all_in_one/**"
   workflow_dispatch:
 
 jobs:

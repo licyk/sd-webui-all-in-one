@@ -16,8 +16,8 @@ _✨快速部署，简单易用_
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml">
       <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/sync_repo.yml/badge.svg" alt="Sync">
     </a>
-    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml">
-      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/lint.yaml/badge.svg" alt="Lint">
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pwsh-lint.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pwsh-lint.yml/badge.svg" alt="Lint">
     </a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml">
       <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/check_version.yaml/badge.svg" alt="Check Installer Version">
