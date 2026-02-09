@@ -66,7 +66,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 293
+$script:COMFYUI_INSTALLER_VERSION = 294
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.2"
@@ -265,7 +265,7 @@ function Set-GithubMirror {
     }
 
     if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($script:DisableGithubMirror)) { # 禁用 Github 镜像源
-        Print-Msg "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
+        Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         $ArrayList.Add("--no-github-mirror") | Out-Null
         return
     }
@@ -277,7 +277,7 @@ function Set-GithubMirror {
         } else {
             $github_mirror = (Get-Content "$PSScriptRoot/gh_mirror.txt" -Raw).Trim()
         }
-        Print-Msg "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         $ArrayList.Add("--custom-github-mirror") | Out-Null
         $ArrayList.Add($github_mirror)
         return
@@ -1037,7 +1037,7 @@ function Set-GithubMirror {
         Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
     }
     if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$script:DisableGithubMirror)) {
-        Print-Msg `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
+        Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         `$ArrayList.Add(`"--no-github-mirror`") | Out-Null
         return
     }
@@ -1047,7 +1047,7 @@ function Set-GithubMirror {
         } else {
             `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
         }
-        Print-Msg `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
         `$ArrayList.Add(`$github_mirror) | Out-Null
         return
