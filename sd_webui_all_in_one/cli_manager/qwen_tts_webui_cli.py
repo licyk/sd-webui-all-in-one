@@ -86,6 +86,8 @@ def check_env(
     qwen_tts_webui_path: Path,
     use_uv: bool | None = True,
     use_pypi_mirror: bool | None = False,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 Qwen TTS WebUI 运行环境
 
@@ -96,11 +98,17 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         use_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像源
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
     """
     check_qwen_tts_webui_env(
         qwen_tts_webui_path=qwen_tts_webui_path,
         use_uv=use_uv,
         use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -145,6 +153,8 @@ def launch(
             qwen_tts_webui_path=qwen_tts_webui_path,
             use_uv=use_uv,
             use_pypi_mirror=use_pypi_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
         )
     if isinstance(launch_args, str):
         launch_args = shlex.split(launch_args)
@@ -247,17 +257,20 @@ def register_qwen_tts_webui(subparsers: "argparse._SubParsersAction") -> None:
     check_p.add_argument(
         "--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录"
     )
-    # check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
-    check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     # check_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     # check_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    # check_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     check_p.set_defaults(
         func=lambda args: check_env(
             qwen_tts_webui_path=args.qwen_tts_webui_path,
             use_uv=args.use_uv,
             use_pypi_mirror=args.use_pypi_mirror,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

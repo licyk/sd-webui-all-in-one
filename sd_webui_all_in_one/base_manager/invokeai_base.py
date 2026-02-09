@@ -4,7 +4,7 @@ import asyncio
 import re
 import sys
 from tempfile import TemporaryDirectory
-from typing import Any, TypedDict
+from typing import Any, Callable, TypedDict
 from pathlib import Path
 
 
@@ -605,6 +605,8 @@ def update_invokeai(
 def check_invokeai_env(
     use_uv: bool | None = True,
     use_pypi_mirror: bool | None = False,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 InvokeAI 运行环境
 
@@ -613,16 +615,47 @@ def check_invokeai_env(
             使用 uv 安装依赖
         use_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像源
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+
+    Raises:
+        AggregateError:
+            检查 InvokeAI 环境发生错误时
     """
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
         use_cn_mirror=use_pypi_mirror,
-        origin_env=os.environ.copy(),
+        origin_env=custom_env,
     )
-    fix_torch_libomp()
-    check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=True, custom_env=custom_env)
-    check_numpy(use_uv=use_uv, custom_env=custom_env)
+
+    # 检查任务列表
+    tasks: list[tuple[Callable, dict[str, Any]]] = [
+        (fix_torch_libomp, {}),
+        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
+    ]
+    err: list[Exception] = []
+
+    for func, kwargs in tasks:
+        try:
+            func(**kwargs)
+        except Exception as e:
+            err.append(e)
+            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+
+    if err:
+        raise AggregateError("检查 InvokeAI 环境时发生错误", err)
+
+    logger.info("检查 InvokeAI 环境完成")
 
 
 def launch_invokeai(
@@ -1275,21 +1308,25 @@ def reinstall_invokeai_pytorch(
     if list_only:
         print("".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
         return
-    
+
     has_err = False
 
     if interactive_mode:
         while True:
             print_divider("=")
-            print("\n".join([f"- {ANSIColor.GOLD}{i}{ANSIColor.RESET}. {ANSIColor.WHITE}{d}{ANSIColor.RESET}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
+            print(
+                "\n".join(
+                    [f"- {ANSIColor.GOLD}{i}{ANSIColor.RESET}. {ANSIColor.WHITE}{d}{ANSIColor.RESET}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]
+                )
+            )
             print_divider("=")
             if has_err:
                 logger.warning("输入有误, 请重试")
             has_err = False
             print(
                 "请输入要重装的 PyTorch 类型:\n"
-                "提示:\n" \
-                "1. 输入类型后回车即可开始 PyTorch 重装\n" \
+                "提示:\n"
+                "1. 输入类型后回车即可开始 PyTorch 重装\n"
                 "2. 如果不知道使用什么类型的 PyTorch, 可输入 auto 后回车, 此时将根据设备类型自动选择最佳的 PyTorch 类型"
             )
             user_input = input("==> ").strip()

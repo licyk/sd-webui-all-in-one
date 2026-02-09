@@ -188,6 +188,8 @@ def check_qwen_tts_webui_env(
     qwen_tts_webui_path: Path,
     use_uv: bool | None = True,
     use_pypi_mirror: bool | None = False,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 Qwen TTS WebUI 运行环境
 
@@ -198,6 +200,10 @@ def check_qwen_tts_webui_env(
             是否使用 uv 安装 Python 软件包
         use_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像源
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
 
     Raises:
         AggregateError:
@@ -210,10 +216,17 @@ def check_qwen_tts_webui_env(
     if not req_path.is_file():
         raise FileNotFoundError("未找到 Qwen TTS WebUI 依赖文件记录表, 请检查文件是否完整")
 
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
         use_cn_mirror=use_pypi_mirror,
-        origin_env=os.environ.copy(),
+        origin_env=custom_env,
     )
 
     # 检查任务列表
