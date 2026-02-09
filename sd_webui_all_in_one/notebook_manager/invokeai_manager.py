@@ -84,6 +84,8 @@ class InvokeAIManager(BaseManager):
         self,
         use_uv: bool | None = True,
         use_pypi_mirror: bool | None = False,
+        use_github_mirror: bool | None = False,
+        custom_github_mirror: str | list[str] | None = None,
     ) -> None:
         """检查 InvokeAI 运行环境
 
@@ -92,10 +94,16 @@ class InvokeAIManager(BaseManager):
                 使用 uv 安装依赖
             use_pypi_mirror (bool | None):
                 是否使用国内 PyPI 镜像源
+            use_github_mirror (bool | None):
+                是否使用 Github 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
         """
         check_invokeai_env(
             use_uv=use_uv,
             use_pypi_mirror=use_pypi_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
         )
 
     def run(self) -> None:
