@@ -30,6 +30,8 @@ def install(
     invokeai_version: str | None = None,
     use_pypi_mirror: bool | None = True,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
     no_pre_download_model: bool | None = False,
     use_cn_model_mirror: bool | None = True,
 ) -> None:
@@ -46,6 +48,10 @@ def install(
             是否使用国内 PyPI 镜像源
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool | None):
+            是否启用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
         no_pre_download_model (bool | None):
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
@@ -57,6 +63,8 @@ def install(
         invokeai_version=invokeai_version,
         use_pypi_mirror=use_pypi_mirror,
         use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
         no_pre_download_model=no_pre_download_model,
         use_cn_model_mirror=use_cn_model_mirror,
     )
@@ -398,6 +406,9 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     # install_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
+    # launch_p.add_argument("--use-github-mirror", action="store_true", dest="use_github_mirror", help="使用 Github 镜像源")
+    install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     # install_p.add_argument("--pre-download-model", action="store_false", dest="no_pre_download_model", help="启用预下载模型")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
     # install_p.add_argument("--use-cn-model-mirror", action="store_true", dest="use_cn_model_mirror", help="使用国内镜像下载模型")
@@ -409,6 +420,8 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
             invokeai_version=args.version,
             use_pypi_mirror=args.use_pypi_mirror,
             use_uv=args.use_uv,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
             no_pre_download_model=args.no_pre_download_model,
             use_cn_model_mirror=args.use_cn_model_mirror,
         )

@@ -527,6 +527,8 @@ def install_invokeai(
     invokeai_version: str | None = None,
     use_pypi_mirror: bool | None = True,
     use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
     no_pre_download_model: bool | None = False,
     use_cn_model_mirror: bool | None = True,
 ) -> None:
@@ -543,11 +545,23 @@ def install_invokeai(
             是否使用国内 PyPI 镜像源
         use_uv (bool | None):
             是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool | None):
+            是否启用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
         no_pre_download_model (bool | None):
             是否禁用预下载模型
         use_cn_model_mirror (bool | None):
             是否使用国内镜像下载模型
     """
+    logger.info("准备 InvokeAI 安装配置")
+
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
     logger.info("开始安装 InvokeAI, 安装路径: %s", invokeai_path)
 
     with TemporaryDirectory() as tmp_dir:

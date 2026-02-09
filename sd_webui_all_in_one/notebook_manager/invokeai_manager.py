@@ -122,6 +122,7 @@ class InvokeAIManager(BaseManager):
         invokeai_version: str | None = None,
         use_pypi_mirror: bool | None = False,
         use_uv: bool | None = True,
+        custom_github_mirror: str | list[str] | None = None,
         no_pre_download_model: bool | None = True,
         use_cn_model_mirror: bool | None = False,
         # legecy
@@ -154,6 +155,8 @@ class InvokeAIManager(BaseManager):
                 是否使用国内 PyPI 镜像源
             use_uv (bool | None):
                 是否使用 uv 安装 Python 软件包
+            custom_github_mirror (str | list[str] | None):
+                自定义 Github 镜像源
             no_pre_download_model (bool | None):
                 是否禁用预下载模型
             use_cn_model_mirror (bool | None):
@@ -222,6 +225,8 @@ class InvokeAIManager(BaseManager):
             invokeai_version=invokeai_version,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
             no_pre_download_model=no_pre_download_model,
             use_cn_model_mirror=use_cn_model_mirror,
         )
