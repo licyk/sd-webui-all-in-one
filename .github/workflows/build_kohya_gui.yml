@@ -14,11 +14,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: List files in the repository
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
-
       - name: Launch SD-Trainer Installer
         shell: pwsh
         run: |
@@ -27,7 +22,7 @@ jobs:
             -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
-            -InstallBranch "kohya_gui" `
+            -InstallBranch "kohya_gui_main" `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
