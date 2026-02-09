@@ -35,7 +35,7 @@ from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIS
 from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_env_pytorch_type, get_pytorch_mirror_type, auto_detect_pytorch_device_category
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import print_divider
+from sd_webui_all_in_one.utils import print_divider, ANSIColor
 
 logger = get_logger(
     name="InvokeAI Base Manager",
@@ -1275,16 +1275,29 @@ def reinstall_invokeai_pytorch(
     if list_only:
         print("".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
         return
+    
+    has_err = False
 
     if interactive_mode:
         while True:
+            print_divider("=")
+            print("\n".join([f"- {ANSIColor.GOLD}{i}{ANSIColor.RESET}. {ANSIColor.WHITE}{d}{ANSIColor.RESET}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
+            print_divider("=")
+            if has_err:
+                logger.warning("输入有误, 请重试")
+            has_err = False
             print(
-                "请输入要重装的 PyTorch 类型:\n\n".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]),
-                "\n提示:\n1. 输入类型后回车即可开始 PyTorch 重装\n2. 如果不知道使用什么类型的 PyTorch, 可输入 auto 后回车, 此时将根据设备类型自动选择最佳的 PyTorch 类型",
+                "请输入要重装的 PyTorch 类型:\n"
+                "提示:\n" \
+                "1. 输入类型后回车即可开始 PyTorch 重装\n" \
+                "2. 如果不知道使用什么类型的 PyTorch, 可输入 auto 后回车, 此时将根据设备类型自动选择最佳的 PyTorch 类型"
             )
             user_input = input("==> ").strip()
-            if user_input in PYTORCH_DEVICE_CATEGORY_LIST:
+            if user_input == "exit":
+                return
+            if user_input == "auto" or user_input in PYTORCH_DEVICE_CATEGORY_LIST:
                 if user_input == "auto":
+                    logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合")
                     user_input = None
                 logger.info("重装 PyTorch 中")
                 _uninstall()
@@ -1292,7 +1305,7 @@ def reinstall_invokeai_pytorch(
                 logger.info("PyTorch 重装完成")
                 return
             else:
-                logger.warning("输入有误, 请重试")
+                has_err = True
                 continue
     else:
         logger.info("重装 PyTorch 中")
