@@ -68,7 +68,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 287
+$script:SD_WEBUI_INSTALLER_VERSION = 288
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.2"
@@ -326,19 +326,19 @@ function Get-LaunchCoreArgs {
         $launch_params.Add("--no-pre-download-model") | Out-Null
     }
     if ($script:NoPreDownloadExtension) {
-        $launch_params.Add("--no-pre-download-extension")
+        $launch_params.Add("--no-pre-download-extension") | Out-Null
     }
     if ($script:PyTorchMirrorType) {
         $launch_params.Add("--pytorch-mirror-type") | Out-Null
-        $launch_params.Add($script:PyTorchMirrorType)
+        $launch_params.Add($script:PyTorchMirrorType) | Out-Null
     }
     if ($script:PyTorchPackage) {
-        $launch_params.Add("--custom-pytorch-package")
-        $launch_params.Add($script:PyTorchPackage)
+        $launch_params.Add("--custom-pytorch-package") | Out-Null
+        $launch_params.Add($script:PyTorchPackage) | Out-Null
     }
     if ($script:xFormersPackage) {
-        $launch_params.Add("--custom-xformers-package")
-        $launch_params.Add($script:xFormersPackage)
+        $launch_params.Add("--custom-xformers-package") | Out-Null
+        $launch_params.Add($script:xFormersPackage) | Out-Null
     }
     $target_branch = Get-InstallBranch
     if ($target_branch) {
