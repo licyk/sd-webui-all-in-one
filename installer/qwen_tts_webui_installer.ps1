@@ -61,7 +61,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 103
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 104
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.2"
@@ -288,15 +288,15 @@ function Get-LaunchCoreArgs {
     Set-GithubMirror $launch_params
     if ($script:PyTorchMirrorType) {
         $launch_params.Add("--pytorch-mirror-type") | Out-Null
-        $launch_params.Add($script:PyTorchMirrorType)
+        $launch_params.Add($script:PyTorchMirrorType) | Out-Null
     }
     if ($script:PyTorchPackage) {
-        $launch_params.Add("--custom-pytorch-package")
-        $launch_params.Add($script:PyTorchPackage)
+        $launch_params.Add("--custom-pytorch-package") | Out-Null
+        $launch_params.Add($script:PyTorchPackage) | Out-Null
     }
     if ($script:xFormersPackage) {
-        $launch_params.Add("--custom-xformers-package")
-        $launch_params.Add($script:xFormersPackage)
+        $launch_params.Add("--custom-xformers-package") | Out-Null
+        $launch_params.Add($script:xFormersPackage) | Out-Null
     }
     return $launch_params
 }
