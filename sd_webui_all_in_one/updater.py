@@ -1,8 +1,11 @@
 import importlib.metadata
 import re
 import sys
+import urllib.request
+import urllib.error
 from pathlib import Path
 
+from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.logger import get_logger
@@ -14,6 +17,41 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def network_gfw_test(
+    timeout: int | None = 3,
+) -> bool:
+    """检查当前网络环境是否被 GFW 阻挡
+
+    Args:
+        timeout (int | None):
+            超时时间设置
+
+    Returns:
+        bool:
+            当未被阻挡时则返回 True
+    """
+    try:
+        proxy_support = urllib.request.ProxyHandler()
+        opener = urllib.request.build_opener(proxy_support)
+        urllib.request.install_opener(opener)
+        with urllib.request.urlopen("https://www.google.com", timeout=timeout) as response:
+            if response.status == 200:
+                logger.debug("测试链接正常访问")
+                return True
+            else:
+                logger.error("测试链接访问失败: %s", response.status)
+                return False
+    except urllib.error.HTTPError as e:
+        logger.error("测试链接访问失败 (HTTPError): %s", e.code)
+        return False
+    except urllib.error.URLError as e:
+        logger.error("测试链接访问失败 (URLError): %s", e.reason)
+        return False
+    except Exception as e:
+        logger.error("测试链接访问失败: %s", e)
+        return False
 
 
 def check_and_update_uv(
@@ -38,6 +76,7 @@ def check_and_update_uv(
         logger.info("安装 uv 中")
 
     try:
+        custom_env = get_auto_pypi_mirror_config(custom_env)
         run_cmd(
             [Path(sys.executable).as_posix(), "-m", "pip", "install", "uv", "--upgrade"],
             custom_env=custom_env,
@@ -67,15 +106,20 @@ def check_and_update_pip(
         logger.info("更新 Pip 中")
     except Exception:
         logger.info("安装 Pip 中")
+        try:
+            run_cmd([Path(sys.executable).as_posix(), "-m", "ensurepip"])
+        except RuntimeError as e:
+            raise RuntimeError(f"安装 Pip 时发生错误: {e}") from e
 
     try:
+        custom_env = get_auto_pypi_mirror_config(custom_env)
         run_cmd(
             [Path(sys.executable).as_posix(), "-m", "pip", "install", "pip", "--upgrade"],
             custom_env=custom_env,
         )
         logger.info("Pip 更新完成")
     except RuntimeError as e:
-        raise RuntimeError(f"更新 uv 时发生错误: {e}") from e
+        raise RuntimeError(f"更新 Pip 时发生错误: {e}") from e
 
 
 def get_aria2_ver() -> str | None:
@@ -113,3 +157,28 @@ def check_aria2_version() -> bool:
             return False
     except Exception:
         return True
+
+
+def get_auto_pypi_mirror_config(
+    custom_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """为安装 Pip 和 uv 配置所需的镜像源
+
+    Args:
+        custom_env (dict[str, str] | None):
+            原始的环境变量
+
+    Returns:
+        (dict[str, str]):
+            配置 PyPI 镜像源后的环境变量
+    """
+    if network_gfw_test():
+        return get_pypi_mirror_config(
+            use_cn_mirror=False,
+            origin_env=custom_env,
+        )
+    else:
+        return get_pypi_mirror_config(
+            use_cn_mirror=True,
+            origin_env=custom_env,
+        )
