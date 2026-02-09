@@ -66,7 +66,10 @@ def prepare_pytorch_install_info(
 
     # 配置 PyTorch 软件包列表
     if custom_pytorch_package is None:
-        dtype = auto_detect_avaliable_pytorch_type()
+        if pytorch_mirror_type is not None:
+            dtype = pytorch_mirror_type
+        else:
+            dtype = auto_detect_avaliable_pytorch_type()
         pytorch_info = find_latest_pytorch_info(dtype)
         device_type = pytorch_info["dtype"]
         index_url = pytorch_info["index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["index_mirror"]["official"]
