@@ -43,6 +43,22 @@ jobs:
         run: |
           uv pip install insightface
 
+      - name: Avoid version check alter
+        shell: python
+        env:
+          PYTHONPATH: "${{ github.workspace }}/sd_webui_forge_classic/core"
+          CONFIG_PATH: "${{ github.workspace }}/sd_webui_forge_classic/core/config.json"
+        run: |
+          import os
+          import json
+          from modules.launch_utils import VERSION_UID
+          with open(os.getenv("CONFIG_PAT"), "w", encoding="utf-8") as f:
+            config = json.load(f)
+
+          config["VERSION_UID"] = VERSION_UID
+          with open(os.getenv("CONFIG_PAT"), "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=4)
+
       - name: Launch SD WebUI Forge Classic to init component
         shell: pwsh
         env:

@@ -31,7 +31,8 @@ jobs:
             -InstallBranch "sd_scripts" `
             -DisablePyPIMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
 
       - name: Make docs
         shell: pwsh

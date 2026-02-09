@@ -31,7 +31,8 @@ jobs:
             -InstallBranch "musubi_tuner" `
             -DisablePyPIMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
 
       - name: Make docs
         shell: pwsh

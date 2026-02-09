@@ -13,7 +13,6 @@
     [string]$InstallBranch,
     [switch]$BuildMode,
     [switch]$BuildWithUpdate,
-    [switch]$BuildWithLaunch,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
     [string]$BuildWitchModel,
@@ -3164,27 +3163,6 @@ function Use-BuildMode {
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 SD Trainer Script 更新脚本中"
         . "$InstallPath/update.ps1" @launch_args
-    }
-
-    if ($script:BuildWithLaunch) {
-        $launch_args = @{}
-        $launch_args.Add("-BuildMode", $true)
-        if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
-        if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
-        if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
-        if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
-        if ($script:DisableHuggingFaceMirror) { $launch_args.Add("-DisableHuggingFaceMirror", $true) }
-        if ($script:UseCustomHuggingFaceMirror) { $launch_args.Add("-UseCustomHuggingFaceMirror", $script:UseCustomHuggingFaceMirror) }
-        if ($script:DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
-        if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
-        if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
-        if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
-        if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
-        if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
-        if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
-        if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
-        Write-Log "执行 SD Trainer Script 启动脚本中"
-        . "$InstallPath/launch.ps1" @launch_args
     }
 
     # 清理缓存

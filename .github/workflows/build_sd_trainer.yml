@@ -31,7 +31,8 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
 
       - name: Make docs
         shell: pwsh

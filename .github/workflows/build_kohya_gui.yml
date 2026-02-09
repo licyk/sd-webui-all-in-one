@@ -30,7 +30,8 @@ jobs:
             -InstallBranch "kohya_gui" `
             -DisablePyPIMirror `
             -DisableGithubMirror `
-            -DisableHuggingFaceMirror
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
 
       - name: Make docs
         shell: pwsh
