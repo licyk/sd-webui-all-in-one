@@ -818,11 +818,9 @@ function Update-Installer {
         return
     }
 
-    `$script_to_run = if (`$script:OriginalScriptPath) { `$script:OriginalScriptPath } else { `$PSCommandPath }
-    `$current_line = if (`$script:LaunchCommandLine) { `$script:LaunchCommandLine } else { `$script:MyInvocation.Line }
-    `$raw_params = `$current_line -replace `"^.*\.ps1[\s]*`", `"`"
+    `$raw_params = `$script:LaunchCommandLine -replace `"^.*\.ps1[\s]*`", `"`"
     Write-Log `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-    Invoke-Expression `"& ```"`$script_to_run```" `$raw_params`"
+    Invoke-Expression `"& ```"`$script:OriginalScriptPath```" `$raw_params`"
     exit 0
 }
 
@@ -1111,9 +1109,13 @@ param (
     [switch]`$DisableEnvCheck
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -1369,9 +1371,13 @@ param (
     [string]`$UseCustomGithubMirror
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -1487,9 +1493,13 @@ param (
     [string]`$UseCustomGithubMirror
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -1859,9 +1869,13 @@ param (
     [string]`$UseCustomProxy
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableUV = `$script:DisableUV
         `$script:DisableProxy = `$script:DisableProxy
@@ -1988,9 +2002,13 @@ param (
     [switch]`$DisableUpdate
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2109,9 +2127,13 @@ param (
     [switch]`$UseCustomProxy
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
         `$script:DisableProxy = `$script:DisableProxy
         `$script:UseCustomProxy = `$script:UseCustomProxy
@@ -2375,9 +2397,13 @@ param (
     [string]`$UseCustomHuggingFaceMirror
 )
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
         `$script:CorePrefix = `$script:CorePrefix
     })
 }
@@ -2830,9 +2856,13 @@ Main
 function Write-LaunchTerminalScript {
     $content = "
 try {
+    `$global:OriginalScriptPath = `$PSCommandPath
+    `$global:LaunchCommandLine = `$MyInvocation.Line
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$PSCommandPath
-        `$script:LaunchCommandLine = `$MyInvocation.Line
+        `$script:OriginalScriptPath = `$global:OriginalScriptPath
+        `$script:LaunchCommandLine = `$global:LaunchCommandLine
+        Remove-Variable OriginalScriptPath -Scope Global -Force
+        Remove-Variable LaunchCommandLine -Scope Global -Force
     })
 }
 catch {
