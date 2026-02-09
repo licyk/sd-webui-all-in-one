@@ -66,10 +66,10 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 324
+$script:SD_TRAINER_INSTALLER_VERSION = 325
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.4"
+$script:CORE_MINIMUM_VER = "2.0.6"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1366,12 +1366,14 @@ function Test-WebUIEnv {
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
     Set-PyPIMirror `$launch_params
-    Set-HuggingFaceMirror `$launch_params
-    Set-GithubMirror `$launch_params
     Set-uv `$launch_params
-    Get-WebUILaunchArgs `$launch_params
-    Set-PyTorchCUDAMemoryAlloc `$launch_params
-    Test-WebUIEnv `$launch_params
+    Set-GithubMirror `$launch_params
+    if (!(`$script:BuildMode)) {
+        Set-HuggingFaceMirror `$launch_params
+        Get-WebUILaunchArgs `$launch_params
+        Set-PyTorchCUDAMemoryAlloc `$launch_params
+        Test-WebUIEnv `$launch_params
+    }
     return `$launch_params
 }
 
@@ -1396,7 +1398,8 @@ function Main {
     Add-Shortcut
 
     if (`$script:BuildMode) {
-        Write-Log `"SD Trainer Installer 构建模式已启用, 跳过启动 SD Trainer`"
+        Write-Log `"SD Trainer Installer 构建模式已启用, 仅检查 SD Trainer 运行环境`"
+        & python -m sd_webui_all_in_one.cli_manager.main sd-trainer check-env `$launch_args
     } else {
         & python -m sd_webui_all_in_one.cli_manager.main sd-trainer launch `$launch_args
         `$req = `$?

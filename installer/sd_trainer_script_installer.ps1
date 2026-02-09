@@ -67,7 +67,7 @@
 $script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 210
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.4"
+$script:CORE_MINIMUM_VER = "2.0.6"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)

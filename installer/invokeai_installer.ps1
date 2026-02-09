@@ -61,10 +61,10 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 297
+$script:INVOKEAI_INSTALLER_VERSION = 298
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.4"
+$script:CORE_MINIMUM_VER = "2.0.6"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -252,12 +252,42 @@ function Set-uv {
 }
 
 
+# 设置 Github 镜像源
+function Set-GithubMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]$ArrayList)
+    if (Test-Path "$script:InstallPath/.gitconfig") {
+        Remove-Item -Path "$script:InstallPath/.gitconfig" -Force -Recurse
+    }
+
+    if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($script:DisableGithubMirror)) { # 禁用 Github 镜像源
+        Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
+        $ArrayList.Add("--no-github-mirror") | Out-Null
+        return
+    }
+
+    # 使用自定义 Github 镜像源
+    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($script:UseCustomGithubMirror)) {
+        if ($script:UseCustomGithubMirror) {
+            $github_mirror = $script:UseCustomGithubMirror
+        } else {
+            $github_mirror = (Get-Content "$PSScriptRoot/gh_mirror.txt" -Raw).Trim()
+        }
+        Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+        $ArrayList.Add("--custom-github-mirror") | Out-Null
+        $ArrayList.Add($github_mirror) | Out-Null
+        return
+    }
+}
+
+
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     $launch_params = New-Object System.Collections.ArrayList
     Set-uv $launch_params
     Set-PyPIMirror $launch_params
     Set-Proxy
+    Set-GithubMirror $launch_params
     if ($script:NoPreDownloadModel) {
         $launch_params.Add("--no-pre-download-model") | Out-Null
     }
@@ -1052,6 +1082,8 @@ param (
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
     [switch]`$UseCustomHuggingFaceMirror,
+    [switch]`$DisableGithubMirror,
+    [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
     [string]`$LaunchArg,
     [switch]`$EnableShortcut,
@@ -1061,7 +1093,7 @@ param (
 try {
     `$global:OriginalScriptPath = `$PSCommandPath
     `$global:LaunchCommandLine = `$MyInvocation.Line
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
         `$script:OriginalScriptPath = `$global:OriginalScriptPath
         `$script:LaunchCommandLine = `$global:LaunchCommandLine
         Remove-Variable OriginalScriptPath -Scope Global -Force
@@ -1073,6 +1105,8 @@ try {
         `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
         `$script:DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
         `$script:UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        `$script:DisableGithubMirror = `$script:DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
         `$script:DisableCUDAMalloc = `$script:DisableCUDAMalloc
         `$script:DisableUpdate = `$script:DisableUpdate
         `$script:BuildMode = `$script:BuildMode
@@ -1262,11 +1296,14 @@ function Test-WebUIEnv {
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
     Set-PyPIMirror `$launch_params
-    Set-HuggingFaceMirror `$launch_params
     Set-uv `$launch_params
-    Get-WebUILaunchArgs `$launch_params
-    Set-PyTorchCUDAMemoryAlloc `$launch_params
-    Test-WebUIEnv `$launch_params
+    Set-GithubMirror `$launch_params
+    if (!(`$script:BuildMode)) {
+        Set-HuggingFaceMirror `$launch_params
+        Get-WebUILaunchArgs `$launch_params
+        Set-PyTorchCUDAMemoryAlloc `$launch_params
+        Test-WebUIEnv `$launch_params
+    }
     return `$launch_params
 }
 
@@ -1291,7 +1328,8 @@ function Main {
     Add-Shortcut
 
     if (`$script:BuildMode) {
-        Write-Log `"InvokeAI Installer 构建模式已启用, 跳过启动 InvokeAI`"
+        Write-Log `"InvokeAI Installer 构建模式已启用, 仅检查 InvokeAI 运行环境`"
+        & python -m sd_webui_all_in_one.cli_manager.main invokeai check-env `$launch_args
     } else {
         & python -m sd_webui_all_in_one.cli_manager.main invokeai launch `$launch_args
         `$req = `$?
