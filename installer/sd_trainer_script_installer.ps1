@@ -65,10 +65,10 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 207
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 208
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.1"
+$script:CORE_MINIMUM_VER = "2.0.2"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
