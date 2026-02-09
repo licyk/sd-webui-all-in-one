@@ -71,7 +71,7 @@
 $script:SD_WEBUI_INSTALLER_VERSION = 288
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.2"
+$script:CORE_MINIMUM_VER = "2.0.4"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -320,7 +320,7 @@ function Get-LaunchCoreArgs {
     $launch_params = New-Object System.Collections.ArrayList
     Set-uv $launch_params
     Set-PyPIMirror $launch_params
-    Set-Proxy $launch_params
+    Set-Proxy
     Set-GithubMirror $launch_params
     if ($script:NoPreDownloadModel) {
         $launch_params.Add("--no-pre-download-model") | Out-Null
@@ -639,6 +639,7 @@ function Initialize-EnvPath {
     `$env:PIP_CONFIG_FILE = `"nul`"
     `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
     `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+    `$env:UV_LINK_MODE = `"copy`"
     `$env:PYTHONUTF8 = 1
     `$env:PYTHONIOENCODING = `"utf-8`"
     `$env:PYTHONUNBUFFERED = 1

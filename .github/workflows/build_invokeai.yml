@@ -24,7 +24,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/invokeai_installer.ps1" `
             -InstallPath "${{ github.workspace }}/invokeai" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cuda `
             -BuildMode `
             -BuildWithLaunch `
             -DisablePyPIMirror `

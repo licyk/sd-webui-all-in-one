@@ -20,7 +20,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
 from sd_webui_all_in_one.config import INVOKEAI_ROOT_PATH
 from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
+from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.invokeai_base import reinstall_invokeai_pytorch
 
@@ -356,7 +356,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
 
     # reinstall-pytorch
     reinstall_pytorch_p = invoke_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
-    reinstall_pytorch_p.add_argument("--device-type", type=str, dest="device_type", help="设备类型 (cuda, rocm, cpu, mps)")
+    reinstall_pytorch_p.add_argument("--device-type", type=str, dest="device_type", choices=PYTORCH_DEVICE_CATEGORY_LIST, help="设备类型")
     # reinstall_pytorch_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     # reinstall_pytorch_p.add_argument("--use-uv", action="store_true", dest="use_uv", help="使用 uv 安装 PyTorch 软件包")
@@ -376,7 +376,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     # install
     install_p = invoke_sub.add_parser("install", help="安装 InvokeAI")
     install_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
-    install_p.add_argument("--device-type", type=str, dest="device_type", help="设备类型 (cuda, rocm, cpu, mps)")
+    install_p.add_argument("--device-type", type=str, dest="device_type", choices=PYTORCH_DEVICE_CATEGORY_LIST, help="设备类型")
     install_p.add_argument("--version", dest="version", help="自定义安装版本")
     # install_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")

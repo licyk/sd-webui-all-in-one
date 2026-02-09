@@ -17,8 +17,6 @@
     [int]$BuildWithTorch,
     [string]$BuildWitchModel,
     [switch]$NoPreDownloadModel,
-    [string]$PyTorchPackage,
-    [string]$xFormersPackage,
     [switch]$NoCleanCache,
 
     # 仅在管理脚本中生效
@@ -66,7 +64,7 @@
 $script:INVOKEAI_INSTALLER_VERSION = 297
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.2"
+$script:CORE_MINIMUM_VER = "2.0.4"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -259,21 +257,13 @@ function Get-LaunchCoreArgs {
     $launch_params = New-Object System.Collections.ArrayList
     Set-uv $launch_params
     Set-PyPIMirror $launch_params
-    Set-Proxy $launch_params
+    Set-Proxy
     if ($script:NoPreDownloadModel) {
         $launch_params.Add("--no-pre-download-model") | Out-Null
     }
     if ($script:PyTorchMirrorType) {
-        $launch_params.Add("--pytorch-mirror-type") | Out-Null
+        $launch_params.Add("--device-type") | Out-Null
         $launch_params.Add($script:PyTorchMirrorType) | Out-Null
-    }
-    if ($script:PyTorchPackage) {
-        $launch_params.Add("--custom-pytorch-package") | Out-Null
-        $launch_params.Add($script:PyTorchPackage) | Out-Null
-    }
-    if ($script:xFormersPackage) {
-        $launch_params.Add("--custom-xformers-package") | Out-Null
-        $launch_params.Add($script:xFormersPackage) | Out-Null
     }
     return $launch_params
 }
@@ -545,6 +535,7 @@ function Initialize-EnvPath {
     `$env:PIP_CONFIG_FILE = `"nul`"
     `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
     `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
+    `$env:UV_LINK_MODE = `"copy`"
     `$env:PYTHONUTF8 = 1
     `$env:PYTHONIOENCODING = `"utf-8`"
     `$env:PYTHONUNBUFFERED = 1
