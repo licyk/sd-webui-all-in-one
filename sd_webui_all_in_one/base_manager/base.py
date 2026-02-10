@@ -410,7 +410,7 @@ def launch_webui(
     if webui_name is None:
         webui_name = "WebUI"
 
-    cmd = [Path(sys.executable).as_posix(), webui_path / launch_script] + launch_args
+    cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
     try:
         run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
     except KeyboardInterrupt:
