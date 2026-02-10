@@ -65,7 +65,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 218
+$script:FOOOCUS_INSTALLER_VERSION = 219
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.6"
@@ -849,7 +849,7 @@ function Update-Installer {
     }
 
     Write-Log `"调用 Fooocus Installer 进行更新中`"
-    . `"`$env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    & `"`$env:CACHE_HOME/fooocus_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
 
     if (`$DisableRestart) {
         Write-Log `"更新结束, 已禁用自动重新启动`"

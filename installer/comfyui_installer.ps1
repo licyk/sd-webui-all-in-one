@@ -3,6 +3,7 @@
     [string]$CorePrefix,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "ComfyUI"),
     [string]$PyTorchMirrorType,
+    [string]$InstallPythonVersion,
     [switch]$UseUpdateMode,
     [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
@@ -66,7 +67,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 298
+$script:COMFYUI_INSTALLER_VERSION = 299
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.6"
@@ -435,28 +436,168 @@ function Install-ArchiveResource {
     Write-Log "$ResourceName 安装成功"
 }
 
+function Get-PythonDownloadUrl {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$Platform,
+        [Parameter(Mandatory = $true)]
+        [string]$Arch
+    )
+
+    $python_data = @(
+        @{ Name = "cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.10"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/aarch64/cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.11"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/aarch64/cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.12"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/aarch64/cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.13"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/aarch64/cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.14"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/aarch64/cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.10"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/amd64/cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.11"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/amd64/cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.12"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/amd64/cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.13"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/amd64/cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.14"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/linux/amd64/cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.10"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/aarch64/cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.11"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/aarch64/cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.12"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/aarch64/cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.13"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/aarch64/cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.14"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/aarch64/cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.10"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/amd64/cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.11"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/amd64/cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.12"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/amd64/cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.13"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/amd64/cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.14"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/macos/amd64/cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.11"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/aarch64/cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.12"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/aarch64/cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.13"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/aarch64/cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.14"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/aarch64/cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.10"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/amd64/cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.11"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/amd64/cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.12"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/amd64/cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.13"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/amd64/cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.14"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/python/windows/amd64/cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+    )
+
+    $result = $python_data | Where-Object { $_.Ver -eq $Version -and $_.Platform -eq $Platform -and $_.Arch -eq $Arch }
+
+    if ($result) {
+        return [PSCustomObject]$result | Select-Object Name, Url
+    }
+    else {
+        Write-Log "未找到匹配的 Python: $Version, 平台: $Platform, 架构: $Arch" -Level WARNING
+        return $null
+    }
+}
+
+function Get-CurrentPlatform {
+    if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
+        return "windows"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)) {
+        return "linux"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)) {
+        return "macos"
+    }
+    else {
+        return "unknown"
+    }
+}
+
+function Get-CurrentArchitecture {
+    $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+    if ($architecture -eq "x64") {
+        return "amd64" 
+    }
+    elseif ($architecture -eq "arm64") {
+        return "aarch64"
+    }
+    else {
+        return $Architecture 
+    }
+}
 
 # 安装 Python
 function Install-Python {
-    $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.11.11-amd64.zip",
-        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/python-3.11.11-amd64.zip"
+    if ($script:InstallPythonVersion) {
+        $py_ver = $script:InstallPythonVersion
+    }
+    else {
+        $py_ver = "3.11"
+    }
+    $platform = Get-CurrentPlatform
+    $arch = Get-CurrentArchitecture
+    $py_info = Get-PythonDownloadUrl -Version $py_ver -Platform $platform -Arch $arch
+    if ($py_info) {
+        $zip_name = $py_info.Name
+        $urls = $py_info.Url
+    } else {
+        Write-Log "不支持当前的平台安装: ($platform, $arch)"
+        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        exit 1
+    }
+    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath "$script:InstallPath/python" -ZipName $zip_name
+}
+
+function Invoke-SmartCommand {
+    [CmdletBinding()]
+    param (
+        [string]$Command,
+        [string[]]$Arguments
     )
-    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath "$script:InstallPath/python" -ZipName "python-amd64.zip"
+    
+    if ((Get-CurrentPlatform -ne "windows") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
+        & sudo $Command @Arguments
+    } else {
+        & $Command @Arguments
+    }
 }
 
 # 安装 Git
 function Install-Git {
-    $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip",
-        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/PortableGit.zip"
-    )
-    Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath "$script:InstallPath/git" -ZipName "PortableGit.zip"
+    $platform = Get-CurrentPlatform
+    if ($platform -eq "windows") {
+        $urls = @(
+            "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip",
+            "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/PortableGit.zip"
+        )
+        Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath "$script:InstallPath/git" -ZipName "PortableGit.zip"
+    }
+    elseif ($platform -eq "linux") {
+        if (Get-Command git -ErrorAction SilentlyContinue) { return }
+        try {
+            Write-Log "安装 Git 中"
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments $("install", "git", "-y") }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "git", "-y") }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "git") }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "git", "--noconfirm") }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y") }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git") }
+        }
+        catch {
+            Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
+    elseif ($platform -eq "macos") {
+        if (Get-Command git -ErrorAction SilentlyContinue) { return }
+        try {
+            Write-Log "安装 Git 中"
+            Invoke-SmartCommand -Command "brew" -Arguments $("install", "git", "-y")
+        }
+        catch {
+            Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
 }
 
 
 # 下载 Aria2
-function Install-Aria2 {
+function Install-WindowsAria2 {
     $urls = @(
         "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe",
         "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe"
@@ -488,6 +629,42 @@ function Install-Aria2 {
 
     Move-Item -Path "$env:CACHE_HOME/aria2c.exe" -Destination "$script:InstallPath/git/bin/aria2c.exe" -Force
     Write-Log "Aria2 下载成功"
+}
+
+function Install-Aria2 {
+    $platform = Get-CurrentPlatform
+    if ($platform -eq "windows") {
+        Install-WindowsAria2
+    }
+    elseif ($platform -eq "linux") {
+        if (Get-Command aria2c -ErrorAction SilentlyContinue) { return }
+        try {
+            Write-Log "安装 Aria2 中"
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y") }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "aria2", "-y") }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "aria2") }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "aria2", "--noconfirm") }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y") }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2") }
+        }
+        catch {
+            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
+    elseif ($platform -eq "macos") {
+        if (Get-Command aria2 -ErrorAction SilentlyContinue) { return }
+        try {
+            Write-Log "安装 Aria2 中"
+            Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2", "-y")
+        }
+        catch {
+            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
 }
 
 # 安装
@@ -812,7 +989,7 @@ function Update-Installer {
     }
 
     Write-Log `"调用 ComfyUI Installer 进行更新中`"
-    . `"`$env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    & `"`$env:CACHE_HOME/comfyui_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
 
     if (`$DisableRestart) {
         Write-Log `"更新结束, 已禁用自动重新启动`"

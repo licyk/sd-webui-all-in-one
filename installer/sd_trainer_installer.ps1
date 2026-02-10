@@ -66,7 +66,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 325
+$script:SD_TRAINER_INSTALLER_VERSION = 326
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.6"
@@ -844,7 +844,7 @@ function Update-Installer {
     }
 
     Write-Log `"调用 SD Trainer Installer 进行更新中`"
-    . `"`$env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    & `"`$env:CACHE_HOME/sd_trainer_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
 
     if (`$DisableRestart) {
         Write-Log `"更新结束, 已禁用自动重新启动`"
