@@ -96,7 +96,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -121,7 +121,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -146,7 +146,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -171,7 +171,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -196,7 +196,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -221,7 +221,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -246,7 +246,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -271,7 +271,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -296,7 +296,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -321,7 +321,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -346,7 +346,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -371,7 +371,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -396,7 +396,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -421,7 +421,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -446,7 +446,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -471,7 +471,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -496,7 +496,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -521,7 +521,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -546,7 +546,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -572,7 +572,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -597,7 +597,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -622,7 +622,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -673,7 +673,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -698,7 +698,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -723,7 +723,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -748,7 +748,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -773,7 +773,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -798,7 +798,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -823,7 +823,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -848,7 +848,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -873,7 +873,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -898,7 +898,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -923,7 +923,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -948,7 +948,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -973,7 +973,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -998,7 +998,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1023,7 +1023,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1048,7 +1048,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1073,7 +1073,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1098,7 +1098,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1123,7 +1123,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1148,7 +1148,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1173,7 +1173,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1198,7 +1198,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1223,7 +1223,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1248,7 +1248,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1273,7 +1273,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1298,7 +1298,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1323,7 +1323,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1348,7 +1348,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1373,7 +1373,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1398,7 +1398,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1423,7 +1423,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1448,7 +1448,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1473,7 +1473,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1498,7 +1498,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1523,7 +1523,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1548,7 +1548,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1573,7 +1573,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1598,7 +1598,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1623,7 +1623,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1648,7 +1648,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1673,7 +1673,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1698,7 +1698,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1723,7 +1723,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1748,7 +1748,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1773,7 +1773,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1798,7 +1798,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1823,7 +1823,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1848,7 +1848,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1873,7 +1873,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1898,7 +1898,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1923,7 +1923,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1948,7 +1948,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1973,7 +1973,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -1998,7 +1998,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2023,7 +2023,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2048,7 +2048,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2073,7 +2073,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2098,7 +2098,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2123,7 +2123,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2148,7 +2148,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2173,7 +2173,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2198,7 +2198,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2223,7 +2223,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2248,7 +2248,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2273,7 +2273,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2298,7 +2298,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2323,7 +2323,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2348,7 +2348,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2373,7 +2373,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2398,7 +2398,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2423,7 +2423,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2448,7 +2448,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2474,7 +2474,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2499,7 +2499,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2524,7 +2524,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2549,7 +2549,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2574,7 +2574,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2599,7 +2599,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2624,7 +2624,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2649,7 +2649,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2674,7 +2674,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/checkpoints",
             "invokeai": "models/checkpoints",
             "fooocus": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
@@ -2826,7 +2826,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -2941,7 +2941,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -2964,7 +2964,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -2987,7 +2987,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3010,7 +3010,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3033,7 +3033,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3056,7 +3056,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3079,7 +3079,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3102,7 +3102,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3125,7 +3125,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3148,7 +3148,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3171,7 +3171,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3194,7 +3194,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3240,7 +3240,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3263,7 +3263,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3286,7 +3286,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3309,7 +3309,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3332,7 +3332,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3355,7 +3355,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3378,7 +3378,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3401,7 +3401,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3424,7 +3424,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3447,7 +3447,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3470,7 +3470,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3493,7 +3493,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3516,7 +3516,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3539,7 +3539,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3562,7 +3562,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3585,7 +3585,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3608,7 +3608,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3631,7 +3631,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3654,7 +3654,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
@@ -3677,7 +3677,7 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         ],
         "save_dir": {
             "sd_webui": "models/Stable-diffusion",
-            "comfyui": "Stable-diffusion",
+            "comfyui": "models/diffusion_models",
             "invokeai": "models/checkpoints",
             "sd_trainer": "sd-models/checkpoints",
             "sd_scripts": "sd-models/checkpoints",
