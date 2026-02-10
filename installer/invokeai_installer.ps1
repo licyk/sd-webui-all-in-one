@@ -61,7 +61,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 299
+$script:INVOKEAI_INSTALLER_VERSION = 300
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.7"
@@ -1091,26 +1091,39 @@ param (
     [switch]`$DisableEnvCheck
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableUV = `$script:DisableUV
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
+        UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        DisableGithubMirror = `$script:DisableGithubMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableCUDAMalloc = `$script:DisableCUDAMalloc
+        DisableUpdate = `$script:DisableUpdate
+        BuildMode = `$script:BuildMode
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$CorePrefix
-        `$script:DisableUV = `$script:DisableUV
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-        `$script:DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
-        `$script:UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
-        `$script:DisableGithubMirror = `$script:DisableGithubMirror
-        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
-        `$script:DisableCUDAMalloc = `$script:DisableCUDAMalloc
-        `$script:DisableUpdate = `$script:DisableUpdate
-        `$script:BuildMode = `$script:BuildMode
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableUV = `$cfg.DisableUV
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
+        `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:BuildMode = `$cfg.BuildMode
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -1366,21 +1379,29 @@ param (
     [switch]`$DisableUV
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableUpdate = `$script:DisableUpdate
+        BuildMode = `$script:BuildMode
+        DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableUV = `$script:DisableUV
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Set-uv`", `"Set-PyPIMirror`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisableUpdate = `$script:DisableUpdate
-        `$script:BuildMode = `$script:BuildMode
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-        `$script:DisableUV = `$script:DisableUV
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:BuildMode = `$cfg.BuildMode
+        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableUV = `$cfg.DisableUV
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -1488,21 +1509,29 @@ param (
     [string]`$UseCustomGithubMirror
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableGithubMirror = `$script:DisableGithubMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableUpdate = `$script:DisableUpdate
+        BuildMode = `$script:BuildMode
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisableGithubMirror = `$script:DisableGithubMirror
-        `$script:UseCustomGithubMirror = `$script:UseCustomGithubMirror
-        `$script:DisableUpdate = `$script:DisableUpdate
-        `$script:BuildMode = `$script:BuildMode
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:BuildMode = `$cfg.BuildMode
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -1863,21 +1892,29 @@ param (
     [string]`$UseCustomProxy
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableUV = `$script:DisableUV
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisablePyPIMirror = `$script:DisablePyPIMirror
+        BuildMode = `$script:BuildMode
+        DisableUpdate = `$script:DisableUpdate
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableUV = `$script:DisableUV
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisablePyPIMirror = `$script:DisablePyPIMirror
-        `$script:BuildMode = `$script:BuildMode
-        `$script:DisableUpdate = `$script:DisableUpdate
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableUV = `$cfg.DisableUV
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:BuildMode = `$cfg.BuildMode
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -1990,19 +2027,25 @@ param (
     [switch]`$DisableUpdate
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableUpdate = `$script:DisableUpdate
+        BuildMode = `$script:BuildMode
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-        `$script:DisableUpdate = `$script:DisableUpdate
-        `$script:BuildMode = `$script:BuildMode
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:BuildMode = `$cfg.BuildMode
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -2115,17 +2158,21 @@ param (
     [switch]`$UseCustomProxy
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-        `$script:DisableProxy = `$script:DisableProxy
-        `$script:UseCustomProxy = `$script:UseCustomProxy
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
