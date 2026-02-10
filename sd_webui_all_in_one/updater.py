@@ -41,16 +41,16 @@ def network_gfw_test(
                 logger.debug("测试链接正常访问")
                 return True
             else:
-                logger.error("测试链接访问失败: %s", response.status)
+                logger.debug("测试链接访问失败: %s", response.status)
                 return False
     except urllib.error.HTTPError as e:
-        logger.error("测试链接访问失败 (HTTPError): %s", e.code)
+        logger.debug("测试链接访问失败 (HTTPError): %s", e.code)
         return False
     except urllib.error.URLError as e:
-        logger.error("测试链接访问失败 (URLError): %s", e.reason)
+        logger.debug("测试链接访问失败 (URLError): %s", e.reason)
         return False
     except Exception as e:
-        logger.error("测试链接访问失败: %s", e)
+        logger.debug("测试链接访问失败: %s", e)
         return False
 
 
