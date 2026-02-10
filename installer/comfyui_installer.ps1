@@ -586,7 +586,7 @@ function Install-Git {
             if (!($script:BuildMode)) { Read-Host | Out-Null }
             exit 1
         }
-        Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath "$script:InstallPath" -ZipName "PortableGit.zip"
+        Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath "$script:InstallPath/git" -ZipName "PortableGit.zip"
     }
     elseif ($platform -eq "linux") {
         if (Get-Command git -ErrorAction SilentlyContinue) { return }
