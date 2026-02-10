@@ -67,7 +67,7 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 300
+$script:COMFYUI_INSTALLER_VERSION = 301
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.7"
@@ -809,13 +809,13 @@ function Initialize-EnvPath {
     `$python_path = Join-NormalizedPath `$PSScriptRoot `"python`"
     `$python_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
     `$python_scripts_path = Join-NormalizedPath `$PSScriptRoot `"python`" `"Scripts`"
-    `$python_scripts_extra_path = Join-NormalizedPath `"`$PSScriptRoot `$env:CORE_PREFIX `"python`" `"Scripts`"
-    `$python_scripts_path = Join-NormalizedPath `$PSScriptRoot `"python`" `"bin`"
-    `$python_scripts_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"bin`"
+    `$python_scripts_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"Scripts`"
+    `$python_bin_path = Join-NormalizedPath `$PSScriptRoot `"python`" `"bin`"
+    `$python_bin_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"bin`"
     `$git_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`"
     `$git_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"git`" `"bin`"
     `$sep = `$([System.IO.Path]::PathSeparator)
-    `$env:PATH = `"`${python_bin_extra_path}`${sep}`${python_extra_path}`${sep}`${python_script_extra_path}`${sep}`${git_extra_path}`${sep}`${python_bin_path}`${sep}`${python_path}`${sep}`${python_script_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
+    `$env:PATH = `"`${python_bin_extra_path}`${sep}`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_bin_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
 
     `$env:UV_CONFIG_FILE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv.toml`"
     `$env:PIP_CONFIG_FILE = `"nul`"
