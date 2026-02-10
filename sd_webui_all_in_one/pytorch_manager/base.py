@@ -114,7 +114,7 @@ PyTorchDeviceType: TypeAlias = Literal[
 PYTORCH_DEVICE_LIST: list[str] = list(get_args(PyTorchDeviceType))
 """PyTorch 支持的设备类型列表"""
 
-PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "cpu"]
+PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "mps", "cpu"]
 """PyTorch 支持的设备类型 (不带版本号)"""
 
 PYTORCH_DEVICE_CATEGORY_LIST: list[str] = list(get_args(PyTorchDeviceTypeCategory))
@@ -226,7 +226,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 1.12.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==1.12.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -283,7 +283,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 1.13.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -359,7 +359,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.0.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.0.0+cpu torchvision==0.15.1+cpu torchaudio==2.0.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -473,7 +473,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.0.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.0.1+cpu torchvision==0.15.2+cpu torchaudio==2.0.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -530,7 +530,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.1.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.1.0+cpu torchvision==0.16.0+cpu torchaudio==2.1.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -644,7 +644,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.1.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.1.1+cpu torchvision==0.16.1+cpu torchaudio==2.1.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -739,7 +739,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.1.2 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.1.2+cpu torchvision==0.16.2+cpu torchaudio==2.1.2+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -834,7 +834,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.2.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.2.0+cpu torchvision==0.17.0+cpu torchaudio==2.2.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -929,7 +929,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.2.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.2.1+cpu torchvision==0.17.1+cpu torchaudio==2.2.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1043,7 +1043,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.2.2 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.2.2+cpu torchvision==0.17.2+cpu torchaudio==2.2.2+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1138,7 +1138,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.3.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.3.0+cpu torchvision==0.18.0+cpu torchaudio==2.3.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1233,7 +1233,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.3.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.3.1+cpu torchvision==0.18.1+cpu torchaudio==2.3.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1347,7 +1347,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.4.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1461,7 +1461,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.4.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.4.1+cpu torchvision==0.19.1+cpu torchaudio==2.4.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1575,7 +1575,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.5.0+cpu torchvision==0.20.0+cpu torchaudio==2.5.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1708,7 +1708,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.5.1+cpu torchvision==0.20.1+cpu torchaudio==2.5.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1841,7 +1841,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.6.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.6.0+cpu torchvision==0.21.0+cpu torchaudio==2.6.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -1993,7 +1993,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.7.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.7.0+cpu torchvision==0.22.0+cpu torchaudio==2.7.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -2145,7 +2145,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.7.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.7.1+cpu torchvision==0.22.1+cpu torchaudio==2.7.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -2297,7 +2297,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.8.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.8.0+cpu torchvision==0.23.0+cpu torchaudio==2.8.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -2449,7 +2449,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.9.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.9.0+cpu torchvision==0.24.0+cpu torchaudio==2.9.0+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -2601,7 +2601,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.9.1 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.9.1+cpu torchvision==0.24.1+cpu torchaudio==2.9.1+cpu",
         "xformers_ver": None,
         "index_mirror": {
@@ -2753,7 +2753,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.10.0 (CPU)",
         "dtype": "cpu",
-        "platform": ["win32", "linux", "darwin"],
+        "platform": ["win32", "linux"],
         "torch_ver": "torch==2.10.0+cpu torchvision==0.25.0+cpu torchaudio==2.10.0+cpu",
         "xformers_ver": None,
         "index_mirror": {

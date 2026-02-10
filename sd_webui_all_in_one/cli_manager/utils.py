@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from sd_webui_all_in_one.proxy import get_system_proxy_address
 from sd_webui_all_in_one.updater import check_aria2_version, check_and_update_uv, check_and_update_pip
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
@@ -36,6 +37,18 @@ def get_patcher_path() -> None:
     """获取 SD WebUI All In One 补丁路径"""
     print(SD_WEBUI_ALL_IN_ONE_PATCHER_PATH)
 
+
+def get_proxy() -> str:
+    """获取当前系统中的代理地址
+
+    Returns:
+        str:
+            代理地址
+    """
+    addr = get_system_proxy_address()
+    if addr is None:
+        addr = ""
+    print(addr)
 
 def register_manager(subparsers: "argparse._SubParsersAction") -> None:
     """注册 SD WebUI All In One 模块及其子命令
@@ -73,4 +86,10 @@ def register_manager(subparsers: "argparse._SubParsersAction") -> None:
     get_patcher_p = sd_webui_all_in_one_sub.add_parser("get-patcher", help="获取 SD WebUI All In One 补丁路径")
     get_patcher_p.set_defaults(
         func=lambda args: get_patcher_path(),
+    )
+
+    # get-proxy
+    get_proxy_p = sd_webui_all_in_one_sub.add_parser("get-proxy", help="获取系统代理地址")
+    get_proxy_p.set_defaults(
+        func=lambda args: get_proxy()
     )

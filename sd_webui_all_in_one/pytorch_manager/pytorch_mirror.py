@@ -265,6 +265,9 @@ def get_pytorch_mirror_type(torch_ver: str, device_type: PyTorchDeviceTypeCatego
     if device_type == "xpu":
         return get_pytorch_mirror_type_ipex(torch_ver)
 
+    if device_type == "mps":
+        return "all"
+
     if device_type == "cpu":
         return get_pytorch_mirror_type_cpu(torch_ver)
 
@@ -275,7 +278,7 @@ def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
     """获取当前环境中 PyTorch 版本号对应的类型
 
     Returns:
-        PyTorchDeviceTypeCategory: PyTorch 类型 (cuda, rocm, xpu, cpu)
+        PyTorchDeviceTypeCategory: PyTorch 类型 (cuda, rocm, xpu, mps, cpu)
     """
     torch_ipex_legacy_ver_list = [
         "2.0.0a0+gite9ebda2",
@@ -307,6 +310,9 @@ def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
 
     if "cpu" in torch_type:
         return "cpu"
+
+    if sys.platform == "darwin":
+        return "mps"
 
     return "cuda"
 
@@ -660,6 +666,9 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
     nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
     intel_xpu_avaliable = has_intel_xpu(gpu_list)
     amd_gpu_avaliable = has_amd_gpu(gpu_list)
+
+    if sys.platform == "darwin":
+        return "all"
 
     if not gpu_avaliable:
         return "cpu"

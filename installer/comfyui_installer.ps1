@@ -70,7 +70,7 @@
 $script:COMFYUI_INSTALLER_VERSION = 300
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.6"
+$script:CORE_MINIMUM_VER = "2.0.7"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
