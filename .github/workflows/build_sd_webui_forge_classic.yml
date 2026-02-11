@@ -46,7 +46,7 @@ jobs:
           import os
           import json
           from modules.launch_utils import VERSION_UID
-          with open(os.getenv("CONFIG_PATH"), "w", encoding="utf-8") as f:
+          with open(os.getenv("CONFIG_PATH"), "r", encoding="utf-8") as f:
             config = json.load(f)
 
           config["VERSION_UID"] = VERSION_UID

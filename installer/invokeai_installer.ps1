@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 304
+$script:INVOKEAI_INSTALLER_VERSION = 305
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.12"
@@ -2727,7 +2727,7 @@ param (
 try {
     `$global:OriginalScriptPath = `$PSCommandPath
     `$global:LaunchCommandLine = `$MyInvocation.Line
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`" -PassThru -Force -ErrorAction Stop).Invoke({
         `$script:OriginalScriptPath = `$global:OriginalScriptPath
         `$script:LaunchCommandLine = `$global:LaunchCommandLine
         Remove-Variable OriginalScriptPath -Scope Global -Force
