@@ -3,6 +3,7 @@
     [string]$CorePrefix,
     [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer-Scripts"),
     [string]$PyTorchMirrorType,
+    [string]$InstallPythonVersion,
     [switch]$UseUpdateMode,
     [switch]$DisablePyPIMirror,
     [switch]$DisableProxy,
@@ -572,7 +573,7 @@ function Install-Python {
         $py_ver = $script:InstallPythonVersion
     }
     else {
-        $py_ver = "3.12"
+        $py_ver = "3.11"
     }
     $platform = Get-CurrentPlatform
     $arch = Get-CurrentArchitecture
