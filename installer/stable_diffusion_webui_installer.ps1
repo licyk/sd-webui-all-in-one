@@ -78,7 +78,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 293
+$script:SD_WEBUI_INSTALLER_VERSION = 294
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.11"
@@ -553,15 +553,16 @@ function Get-CurrentPlatform {
 }
 
 function Get-CurrentArchitecture {
-    $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    if ($architecture -eq "x64") {
-        return "amd64" 
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+    } else {
+        $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
     }
-    elseif ($architecture -eq "arm64") {
-        return "aarch64"
-    }
-    else {
-        return $architecture 
+    switch ($arch) {
+        "amd64" { "amd64" }
+        "x64"   { "amd64" }
+        "arm64" { "aarch64" }
+        default { $arch }
     }
 }
 
@@ -1251,15 +1252,16 @@ function Get-CurrentPlatform {
 
 # 获取当前架构
 function Get-CurrentArchitecture {
-    `$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    if (`$architecture -eq `"x64`") {
-        return `"amd64`" 
+    if (`$PSVersionTable.PSVersion.Major -ge 6) {
+        `$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+    } else {
+        `$arch = `$env:PROCESSOR_ARCHITECTURE.ToLower()
     }
-    elseif (`$architecture -eq `"arm64`") {
-        return `"aarch64`"
-    }
-    else {
-        return `$architecture 
+    switch (`$arch) {
+        `"amd64`" { `"amd64`" }
+        `"x64`"   { `"amd64`" }
+        `"arm64`" { `"aarch64`" }
+        default { `$arch }
     }
 }
 
@@ -2213,10 +2215,14 @@ param (
 function Join-NormalizedPath {
     `$joined = `$args[0]
     for (`$i = 1; `$i -lt `$args.Count; `$i++) { `$joined = Join-Path `$joined `$args[`$i] }
-    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
+    return `$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
 }
 
-`$script:InstallPath = `$script:InstallPath
+if (`$null -eq `$script:InstallPath) {
+    `$script:InstallPath = `$PSScriptRoot
+} else {
+    `$script:InstallPath = Join-NormalizedPath `$script:InstallPath
+}
 
 & {
     `$target_prefix = `$null
@@ -2358,17 +2364,6 @@ function Get-LocalSetting {
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
-        `$arg.Add(`"-DisableProxy`", `$true)
-    } elseif ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) {
-        if (`$script:UseCustomProxy) {
-            `$proxy_value = `$script:UseCustomProxy
-        } else {
-            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
-        }
-        `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
-    }
-
     `$git_repo_map = @{
         `"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui_dev`"
         `"lllyasviel/stable-diffusion-webui-forge`"   = `"sd_webui_forge`"
@@ -2450,8 +2445,9 @@ function Main {
         Write-Log `"运行 SD WebUI Installer 中`"
         `$arg = Get-LocalSetting
         `$extra_args = Get-ExtraArgs
+        `$script_path = Join-NormalizedPath `$PSScriptRoot `"cache`" `"stable_diffusion_webui_installer.ps1`"
         try {
-            Invoke-Expression `"& ```"$(Join-NormalizedPath `$PSScriptRoot 'cache' 'stable_diffusion_webui_installer.ps1')```" `$extra_args @arg`"
+            Invoke-Expression `"& ```"`$script_path```" `$extra_args @arg`"
         }
         catch {
             Write-Log `"运行 SD WebUI Installer 时出现了错误: `$_`"
@@ -3474,7 +3470,7 @@ try {
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3489,7 +3485,7 @@ catch {
     exit 1
 }
 Write-Log `"执行 SD WebUI Installer 激活环境脚本`"
-powershell -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
+& (Get-Process -Id $PID).Path -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
