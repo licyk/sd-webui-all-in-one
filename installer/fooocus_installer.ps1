@@ -75,10 +75,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 223
+$script:FOOOCUS_INSTALLER_VERSION = 224
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.11"
+$script:CORE_MINIMUM_VER = "2.0.12"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1506,8 +1506,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
@@ -1806,8 +1806,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
@@ -1938,7 +1938,7 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -2339,8 +2339,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
@@ -2470,8 +2470,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
@@ -2593,8 +2593,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     Read-Host | Out-Null
     exit 1
@@ -2860,8 +2860,8 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     Read-Host | Out-Null
     exit 1
@@ -3319,14 +3319,14 @@ try {
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White
-    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     Read-Host | Out-Null
     exit 1
 }
 Write-Log `"执行 Fooocus Installer 激活环境脚本`"
-& (Get-Process -Id $PID).Path -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
+& (Get-Process -Id `$PID).Path -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"

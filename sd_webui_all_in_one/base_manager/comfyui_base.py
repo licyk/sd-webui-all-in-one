@@ -18,7 +18,6 @@ from sd_webui_all_in_one.base_manager.base import (
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, generate_dir_tree, get_file_list, move_files, remove_files
@@ -407,7 +406,6 @@ def check_comfyui_env(
         ),
         (fix_torch_libomp, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
-        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
 

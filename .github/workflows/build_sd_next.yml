@@ -22,7 +22,7 @@ jobs:
             -PyTorchMirrorType cu128 `
             -BuildMode `
             -BuildWithLaunch `
-            -InstallBranch "sdnext_main" `
+            -InstallBranch "sd_next_main" `
             -NoPreDownloadModel `
             -DisablePyPIMirror `
             -DisableGithubMirror `

@@ -9,7 +9,6 @@ from pathlib import Path
 
 from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
@@ -1120,7 +1119,6 @@ def check_sd_webui_env(
         (install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
-        (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
 
