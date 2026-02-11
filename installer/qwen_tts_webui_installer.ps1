@@ -1089,7 +1089,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [switch]`$UseCustomHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,

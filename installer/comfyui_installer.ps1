@@ -41,6 +41,8 @@ function Join-NormalizedPath {
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
 }
 
+$script:InstallPath = Join-NormalizedPath $script:InstallPath
+
 & {
     $target_prefix = $null
     $prefix_list = @("core", "ComfyUI*")
@@ -74,7 +76,7 @@ function Join-NormalizedPath {
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 302
+$script:COMFYUI_INSTALLER_VERSION = 303
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.7"
@@ -95,8 +97,8 @@ $script:CORE_MINIMUM_VER = "2.0.7"
 $env:COMFYUI_PATH = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
 $env:COMFYUI_ROOT = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
 $env:CACHE_HOME = Join-NormalizedPath $script:InstallPath "cache"
-$env:PIP_CONFIG_FILE = "nul"
-$env:UV_CONFIG_FILE = "nul"
+$env:PIP_CONFIG_FILE = Join-NormalizedPath $script:InstallPath "cache" "pip.ini"
+$env:UV_CONFIG_FILE = Join-NormalizedPath $script:InstallPath "cache" "uv.toml"
 $env:PIP_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "pip"
 $env:UV_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "uv"
 $env:PYTHONUTF8 = 1
@@ -747,6 +749,8 @@ function Install-Aria2 {
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
     New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "uv.toml") -Value " " -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "pip.ini") -Value " " -Encoding UTF8
 
     Write-Log "检测是否安装 Python"
     Install-Python
@@ -823,7 +827,7 @@ function Initialize-EnvPath {
     `$env:PATH = `"`${python_bin_extra_path}`${sep}`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_bin_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
 
     `$env:UV_CONFIG_FILE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv.toml`"
-    `$env:PIP_CONFIG_FILE = `"nul`"
+    `$env:PIP_CONFIG_FILE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"pip.ini`"
     `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
     `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
     `$env:UV_LINK_MODE = `"copy`"
@@ -844,6 +848,10 @@ function Initialize-EnvPath {
     `$env:SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = 0
     `$env:SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = 1
     `$env:SD_WEBUI_ALL_IN_ONE_SET_CONFIG = 1
+
+    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"uv.toml`") -Value `" `" -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"pip.ini`") -Value `" `" -Encoding UTF8
 }
 
 
@@ -1411,7 +1419,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
-    [switch]`$UseCustomHuggingFaceMirror,
+    [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
@@ -3418,6 +3426,10 @@ function Install-Hanamizuki {
         return
     }
 
+    if ((Get-CurrentPlatform) -ne "windows") {
+        Write-Log "不支持当前的系统安装绘世启动器" -Level WARNING
+    }
+
     New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
 
     if (Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe")) {
@@ -3455,6 +3467,10 @@ function Install-Hanamizuki {
 # 配置绘世启动器运行环境
 function Initialize-HanamizukiEnv {
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe"))) {
+        return
+    }
+
+    if ((Get-CurrentPlatform) -ne "windows") {
         return
     }
 
