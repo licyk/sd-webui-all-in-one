@@ -573,7 +573,7 @@ function Invoke-SmartCommand {
         [string[]]$Arguments
     )
     
-    if ((Get-CurrentPlatform -ne "windows") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
+    if (((Get-CurrentPlatform) -eq "linux") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
         & sudo $Command @Arguments
     } else {
         & $Command @Arguments
@@ -622,7 +622,7 @@ function Install-Git {
         }
         try {
             Write-Log "安装 Git 中"
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "git", "-y"); return }
             if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "git", "-y"); return }
             if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "git"); return }
             if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "git", "--noconfirm"); return }
@@ -642,7 +642,7 @@ function Install-Git {
         }
         try {
             Write-Log "安装 Git 中"
-            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
         }
@@ -712,7 +712,7 @@ function Install-Aria2 {
         }
         try {
             Write-Log "安装 Aria2 中"
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "aria2"); return }
             if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "aria2", "--noconfirm"); return }
@@ -732,7 +732,7 @@ function Install-Aria2 {
         }
         try {
             Write-Log "安装 Aria2 中"
-            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
         }
         catch {
@@ -786,6 +786,8 @@ function Invoke-Installation {
 function Write-ModulesScript {
     $content = "
 param (
+    [string]`$script:OriginalScriptPath,
+    [string]`$script:LaunchCommandLine,
     [string]`$CorePrefix,
     [switch]`$DisableUpdate,
     [switch]`$BuildMode,
@@ -1071,20 +1073,13 @@ function Update-Installer {
 }
 
 
-# 检查 Aria2 版本并更新
-function Update-Aria2 {
-    Write-Log `"检查 Aria2 是否需要更新`"
+# 更新 Aria2 (Windows) 版本
+function Update-WindowsAria2 {
     `$urls = @(
         `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`",
         `"https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe`"
     )
     `$aria2_tmp_path = Join-NormalizedPath `$env:CACHE_HOME `"aria2c.exe`"
-    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
-    if (`$?) {
-        Write-Log `"Aria2 无需更新`"
-        return
-    }
-    Write-Log `"更新 Aria2 中`"
     New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
 
     ForEach (`$url in `$urls) {
@@ -1093,7 +1088,7 @@ function Update-Aria2 {
             `$web_request_params = @{
                 Uri = `$url
                 UseBasicParsing = `$true
-                OutFile = `"`$aria2_tmp_path`"
+                OutFile = `$aria2_tmp_path
             }
             Invoke-WebRequest @web_request_params
             break
@@ -1109,15 +1104,62 @@ function Update-Aria2 {
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/git.exe`")) {
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
-    } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
-    } else {
-        New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+    `$git_cmd = Get-Command git -ErrorAction SilentlyContinue
+    if (`$git_cmd) {
+        `$git_path_prefix = Join-NormalizedPath `$script:InstallPath `"git`"
+        `$git_extra_path_prefix = Join-NormalizedPath `$script:InstallPath `$env:CORE_PREFIX `"git`"
+        `$git_cmd = Get-NormalizedFilePath `$git_cmd.Path
+        if ((`$git_cmd) -and ((`$git_cmd.ToString().StartsWith(`$git_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$git_cmd.ToString().StartsWith(`$git_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+            `$aria2_bin_path = Join-NormalizedPath (Split-Path -Path `$git_cmd -Parent) `"aria2c.exe`"
+        }
+        else {
+            `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
+        }
     }
-    Write-Log `"Aria2 更新完成`"
+    else {
+        `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
+    }
+
+    New-Item -ItemType Directory -Path (Split-Path -Path `$aria2_bin_path -Parent) -Force | Out-Null
+    Move-Item -Path `$aria2_tmp_path -Destination `$aria2_bin_path -Force
+}
+
+
+# 更新 Aria2
+function Update-Aria2 {
+    Write-Log `"检查 Aria2 是否需要更新`"
+    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
+    if (`$?) {
+        Write-Log `"Aria2 无需更新`"
+        return
+    }
+    Write-Log `"更新 Aria2 中`"
+    `$platform = Get-CurrentPlatform
+    if (`$platform -eq `"windows`") {
+        Update-WindowsAria2
+    }
+    elseif (`$platform -eq `"linux`") {
+        try {
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apt`" -Arguments @(`"update`"); Invoke-SmartCommand -Command `"apt`" -Arguments @(`"install`", `"--only-upgrade`", `"aria2`", `"-y`"); return }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"yum`" -Arguments @(`"upgrade`", `"aria2`", `"-y`"); return }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apk`" -Arguments @(`"add`", `"--upgrade`", `"aria2`"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"pacman`" -Arguments @(`"-S`", `"aria2`", `"--noconfirm`"); return }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"zypper`" -Arguments @(`"update`", `"-y`", `"aria2`"); return }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"nix-channel`" -Arguments @(`"--update`"); Invoke-SmartCommand -Command `"nix-env`" -Arguments @(`"-u`", `"aria2`"); return }
+        }
+        catch {
+            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
+        }
+    }
+    elseif (`$platform -eq `"macos`") {
+        try {
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"brew`" -Arguments @(`"upgrade`", `"aria2`"); return }
+            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"port`" -Arguments @(`"upgrade`", `"aria2`"); return }
+        }
+        catch {
+            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
+        }
+    }
 }
 
 
@@ -1493,11 +1535,11 @@ function Get-InstallerCmdletHelp {
 # 获取启动参数
 function Get-WebUILaunchArgs {
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((Test-Path `"`$PSScriptRoot/launch_args.txt`") -or (`$script:LaunchArg)) {
+    if ((`$script:LaunchArg) or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"))) {
         if (`$script:LaunchArg) {
             `$launch_args = `$script:LaunchArg.Trim()
         } else {
-            `$launch_args = (Get-Content `"`$PSScriptRoot/launch_args.txt`" -Raw).Trim()
+            `$launch_args = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Raw).Trim()
         }
         if ([string]::IsNullOrEmpty(`$launch_args)) {
             return
@@ -1514,9 +1556,9 @@ function Get-WebUILaunchArgs {
 function Add-Shortcut {
     `$filename = `"ComfyUI`"
     `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/comfyui_icon.ico`"
-    `$shortcut_icon = `"`$PSScriptRoot/comfyui_icon.ico`"
+    `$shortcut_icon = Join-NormalizedPath `$PSScriptRoot `"comfyui_icon.ico`"
 
-    if ((!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) -and (!(`$script:EnableShortcut))) {
+    if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) -and (!(`$script:EnableShortcut))) {
         return
     }
 
@@ -1526,7 +1568,7 @@ function Add-Shortcut {
         `$web_request_params = @{
             Uri = `$url
             UseBasicParsing = `$true
-            OutFile = `"`$PSScriptRoot/comfyui_icon.ico`"
+            OutFile = `$shortcut_icon
         }
         Invoke-WebRequest @web_request_params
         if (!(`$?)) {
@@ -1541,13 +1583,13 @@ function Add-Shortcut {
     `$shortcut_path = `"`$desktop\`$filename.lnk`"
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
     `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
-    `$launch_script_path = `$(Get-Item `"`$PSScriptRoot/launch.ps1`").FullName
+    `$launch_script_path = `$(Get-Item (Join-NormalizedPath `$PSScriptRoot `"launch.ps1`")).FullName
     `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
 
     # 保存到桌面
     `$shortcut.Save()
-    `$start_menu_path = `"`$env:APPDATA/Microsoft/Windows/Start Menu/Programs`"
+    `$start_menu_path = Join-NormalizedPath `$env:APPDATA `"Microsoft`" `"Windows`" `"Start Menu`" `"Programs`"
     # 保存到开始菜单
     Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
 }
@@ -1563,9 +1605,9 @@ function Test-MSVCPPRedistributable {
     Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
 
     if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
-        `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
+        `$vc_runtime_dll_path = Join-NormalizedPath `"C:/`" `"Windows`" `"System32`" `"vcruntime140_1.dll`"
     } else {
-        `$vc_runtime_dll_path = `"`$env:SYSTEMROOT/System32/vcruntime140_1.dll`"
+        `$vc_runtime_dll_path = Join-NormalizedPath `$env:SYSTEMROOT `"System32`" `"vcruntime140_1.dll`"
     }
 
     if (Test-Path `$vc_runtime_dll_path) {
@@ -1592,7 +1634,7 @@ function Test-MSVCPPRedistributable {
 # 检查运行环境
 function Test-WebUIEnv {
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((Test-Path `"`$PSScriptRoot/disable_check_env.txt`") -or (`$script:DisableEnvCheck)) {
+    if ((`$script:DisableEnvCheck) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`"))) {
         Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`"
         `$ArrayList.Add(`"--no-check-env`") | Out-Null
     }
@@ -1624,7 +1666,7 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -1766,7 +1808,7 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -1896,7 +1938,7 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -2426,7 +2468,7 @@ function Main {
     Update-SDWebUiAllInOne
     Update-Aria2
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         Read-Host | Out-Null
         return
@@ -2466,7 +2508,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-ProxyLegecy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2516,7 +2558,7 @@ function Get-InstallerCmdletHelp {
 
 # 通用开关状态获取
 function Get-ToggleStatus ([string]`$file, [string]`$trueLabel = `"启用`", [string]`$falseLabel = `"禁用`", [bool]`$reverse = `$false) {
-    `$exists = Test-Path `"`$PSScriptRoot/`$file`"
+    `$exists = Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)
     if (`$reverse) {
         if (`$exists) { return `$falseLabel } else { return `$trueLabel }
     }
@@ -2526,7 +2568,7 @@ function Get-ToggleStatus ([string]`$file, [string]`$trueLabel = `"启用`", [st
 
 # 通用文本配置获取
 function Get-TextStatus ([string]`$file, [string]`$defaultLabel = `"无`") {
-    if (Test-Path `"`$PSScriptRoot/`$file`") { return (Get-Content `"`$PSScriptRoot/`$file`" -Raw).Trim() }
+    if (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { return (Get-Content (Join-NormalizedPath `$PSScriptRoot `$file) -Raw).Trim() }
     return `$defaultLabel
 }
 
@@ -2536,16 +2578,16 @@ function Set-ToggleSetting ([string]`$file, [string]`$name, [bool]`$enable) {
     # 如果文件名以 disable 开头, 则 enable=true 表示删除文件, enable=false 表示创建文件
     if (`$file.ToLower().StartsWith(`"disable`")) {
         if (`$enable) {
-            if (Test-Path `"`$PSScriptRoot/`$file`") { Remove-Item `"`$PSScriptRoot/`$file`" -Force -ErrorAction SilentlyContinue }
+            if (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { Remove-Item (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue }
         } else {
-            if (!(Test-Path `"`$PSScriptRoot/`$file`")) { New-Item -ItemType File -Path `"`$PSScriptRoot/`$file`" -Force > `$null }
+            if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$file))) { New-Item -ItemType File -Path (Join-NormalizedPath `$PSScriptRoot `$file) -Force > `$null }
         }
     } else {
         # 普通开关: enable=true 表示创建文件, enable=false 表示删除文件
         if (`$enable) {
-            if (!(Test-Path `"`$PSScriptRoot/`$file`")) { New-Item -ItemType File -Path `"`$PSScriptRoot/`$file`" -Force > `$null }
+            if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$file))) { New-Item -ItemType File -Path (Join-NormalizedPath `$PSScriptRoot `$file) -Force > `$null }
         } else {
-            if (Test-Path `"`$PSScriptRoot/`$file`") { Remove-Item `"`$PSScriptRoot/`$file`" -Force -ErrorAction SilentlyContinue }
+            if (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { Remove-Item (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue }
         }
     }
     Write-Log `"`$name 设置成功`"
@@ -2555,23 +2597,23 @@ function Set-ToggleSetting ([string]`$file, [string]`$name, [bool]`$enable) {
 # 更新代理设置
 function Update-ProxySetting {
     while (`$true) {
-        `$current = if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义: `$((Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim())`" } else { `"系统代理`" }
+        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim())`" } else { `"系统代理`" }
         Write-Log `"当前代理设置: `$current`"
         Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
-        if (`$choice -eq `"1`") { Remove-Item `"`$PSScriptRoot/disable_proxy.txt`", `"`$PSScriptRoot/proxy.txt`" -Force -ErrorAction SilentlyContinue; break }
+        if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`"), (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") { 
             Write-Log `"请输入代理地址 (如 http://127.0.0.1:10809):`"
             `$addr = Get-UserInput
             if (`$addr) {
-                Remove-Item `"`$PSScriptRoot/disable_proxy.txt`" -Force -ErrorAction SilentlyContinue
-                Set-Content -Path `"`$PSScriptRoot/proxy.txt`" -Value `$addr -Encoding UTF8
+                Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`") -Force -ErrorAction SilentlyContinue
+                Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Value `$addr -Encoding UTF8
             }
             break 
         }
         elseif (`$choice -eq `"3`") { 
-            New-Item `"`$PSScriptRoot/disable_proxy.txt`" -Force > `$null
-            Remove-Item `"`$PSScriptRoot/proxy.txt`" -Force -ErrorAction SilentlyContinue
+            New-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`") -Force > `$null
+            Remove-Item (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue
             break 
         }
         elseif (`$choice -eq `"4`") { return }
@@ -2582,24 +2624,24 @@ function Update-ProxySetting {
 # 更新镜像设置
 function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$examples) {
     while (`$true) {
-        `$current = if (Test-Path `"`$PSScriptRoot/disable_`$file`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/`$file`") { `"自定义: `$((Get-Content `"`$PSScriptRoot/`$file`" -Raw).Trim())`" } else { `"默认`" }
+        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { `"自定义: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `$file) -Raw).Trim())`" } else { `"默认`" }
         Write-Log `"当前 `$name 设置: `$current`"
         Write-Log `"1. 默认/自动 | 2. 自定义地址 | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
-        if (`$choice -eq `"1`") { Remove-Item `"`$PSScriptRoot/disable_`$file`", `"`$PSScriptRoot/`$file`" -Force -ErrorAction SilentlyContinue; break }
+        if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`"), (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
             Write-Log `"请输入 `$name 地址, 示例:`"
             `$examples | ForEach-Object { Write-Log `"  `$_`" -Level ERROR }
             `$addr = Get-UserInput
             if (`$addr) {
-                Remove-Item `"`$PSScriptRoot/disable_`$file`" -Force -ErrorAction SilentlyContinue
-                Set-Content -Path `"`$PSScriptRoot/`$file`" -Value `$addr -Encoding UTF8
+                Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`") -Force -ErrorAction SilentlyContinue
+                Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `$file) -Value `$addr -Encoding UTF8
             }
             break
         }
         elseif (`$choice -eq `"3`") {
-            New-Item `"`$PSScriptRoot/disable_`$file`" -Force > `$null
-            Remove-Item `"`$PSScriptRoot/`$file`" -Force -ErrorAction SilentlyContinue
+            New-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`") -Force > `$null
+            Remove-Item (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue
             break
         }
         elseif (`$choice -eq `"4`") { return }
@@ -2620,32 +2662,10 @@ function Update-Core-Prefix {
                 `$from = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
                 `$path = `$from.MakeRelativeUri((New-Object System.Uri(`$path.Replace('\', '/')))).ToString().Trim('/')
             }
-            Set-Content -Path `"`$PSScriptRoot/core_prefix.txt`" -Value `$path -Encoding UTF8
+            Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Value `$path -Encoding UTF8
         }
     }
-    elseif (`$choice -eq `"2`") { Remove-Item `"`$PSScriptRoot/core_prefix.txt`" -Force -ErrorAction SilentlyContinue }
-}
-
-
-# 检测环境完整性
-function Test-EnvIntegrity {
-    `$items = @(
-        @{ n=`"Python`"; p=`"python/python.exe`"; t=`"file`" },
-        @{ n=`"Git`"; p=`"git/bin/git.exe`"; t=`"file`" },
-        @{ n=`"Aria2`"; p=`"git/bin/aria2c.exe`"; t=`"file`" },
-        @{ n=`"ComfyUI`"; p=`"`$env:CORE_PREFIX/main.py`"; t=`"file`" },
-        @{ n=`"uv`"; m=`"uv`" },
-        @{ n=`"PyTorch`"; m=`"torch`" },
-        @{ n=`"xFormers`"; m=`"xformers`" }
-    )
-    `$broken = `$false
-    foreach (`$i in `$items) {
-        `$ok = `$false
-        if (`$i.p) { `$ok = (Test-Path `"`$PSScriptRoot/`$(`$i.p)`") -or (Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX/`$(`$i.p)`") }
-        else { python -m pip show `$(`$i.m) --quiet 2> `$null; `$ok = `$? }
-        Write-Log `"`$(`$i.n): `$(if (`$ok) { `"OK`" } else { `$broken=`$true; `"缺失`" })`" -Level `$(if (`$ok) { `"INFO`" } else { `"ERROR`" })
-    }
-    if (`$broken) { Write-Log `"检测到组件缺失, 请运行安装程序修复`" -Level WARNING }
+    elseif (`$choice -eq `"2`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Force -ErrorAction SilentlyContinue }
 }
 
 
@@ -2660,12 +2680,12 @@ function Main {
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
-    Set-ProxyLegecy
+    Set-Proxy -Legacy
 
     while (`$true) {
         Write-Log `"=== ComfyUI 管理设置 ===`"
         `$menu = @(
-            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path `"`$PSScriptRoot/disable_proxy.txt`") { `"禁用`" } elseif (Test-Path `"`$PSScriptRoot/proxy.txt`") { `"自定义 (地址: `$((Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()))`" } else { `"系统`" }) },
+            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义 (地址: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()))`" } else { `"系统`" }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"禁用`" `"启用`" `$true) },
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"禁用`" `"启用`" `$true) },
@@ -2679,31 +2699,30 @@ function Main {
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"12. 检查更新 | 13. 环境检查 | 14. 文档 | 15. 退出`"
+        Write-Log `"12. 检查更新 | 13. 文档 | 14. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
         switch (`$choice) {
             `"1`"  { Update-ProxySetting }
-            `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"包管理器`" (Test-Path `"`$PSScriptRoot/disable_uv.txt`") }
+            `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"包管理器`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) }
             `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"HuggingFace`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
             `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
-            `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path `"`$PSScriptRoot/disable_update.txt`") }
+            `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
             `"6`"  { 
                 Write-Log `"请输入启动参数 (直接回车删除):`"
                 `$args = Get-UserInput
-                if (`$args) { Write-FileWithStreamWriter -Path `"`$PSScriptRoot/launch_args.txt`" -Value `$args -Encoding UTF8 }
-                else { Remove-Item `"`$PSScriptRoot/launch_args.txt`" -Force -ErrorAction SilentlyContinue }
+                if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
+                else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
             }
-            `"7`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path `"`$PSScriptRoot/enable_shortcut.txt`")) }
-            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") }
-            `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`") }
-            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path `"`$PSScriptRoot/disable_check_env.txt`") }
+            `"7`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
+            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
+            `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
+            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
             `"12`" { Update-Installer -DisableRestart }
-            `"13`" { Test-EnvIntegrity }
-            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`" }
-            `"15`" { return }
+            `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`" }
+            `"14`" { return }
         }
     }
 }
@@ -3451,7 +3470,7 @@ function Install-Hanamizuki {
                 $web_request_params = @{
                     Uri = $url
                     UseBasicParsing = $true
-                    OutFile = "$env:CACHE_HOME/hanamizuki_tmp.exe"
+                    OutFile = Join-NormalizedPath $env:CACHE_HOME "hanamizuki_tmp.exe"
                 }
                 Invoke-WebRequest @web_request_params
                 Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "hanamizuki_tmp.exe") -Destination (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe") -Force
@@ -3611,7 +3630,7 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 ComfyUI 扩展更新脚本中"
-        . "$InstallPath/update_node.ps1" @launch_args
+        . (Join-NormalizedPath $InstallPath "update_node.ps1") @launch_args
     }
 
     if ($script:BuildWithLaunch) {
