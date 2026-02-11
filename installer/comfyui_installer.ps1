@@ -34,14 +34,21 @@
     [switch]$DisableCUDAMalloc,
     [switch]$DisableEnvCheck
 )
+
+function Join-NormalizedPath {
+    $joined = $args[0]
+    for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
+}
+
 & {
     $target_prefix = $null
     $prefix_list = @("core", "ComfyUI*")
-    if ($script:CorePrefix -or (Test-Path "$script:InstallPath/core_prefix.txt")) {
-        $origin_core_prefix = if ($script:CorePrefix) { 
-            $script:CorePrefix 
-        } else { 
-            (Get-Content "$script:InstallPath/core_prefix.txt" -Raw).Trim()
+    if ($script:CorePrefix -or (Test-Path (Join-NormalizedPath $script:InstallPath "core_prefix.txt"))) {
+        $origin_core_prefix = if ($script:CorePrefix) {
+            $script:CorePrefix
+        } else {
+            (Get-Content (Join-NormalizedPath $script:InstallPath "core_prefix.txt") -Raw).Trim()
         }
         $origin_core_prefix = $origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
@@ -51,7 +58,7 @@
         } else {
             $target_prefix = $origin_core_prefix
         }
-    } 
+    }
     else {
         foreach ($i in $prefix_list) {
             $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -74,24 +81,24 @@ $script:CORE_MINIMUM_VER = "2.0.7"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
-    $python_path = "$script:InstallPath/python"
-    $python_extra_path = "$script:InstallPath/$env:CORE_PREFIX/python"
-    $python_script_path = "$script:InstallPath/python/Scripts"
-    $python_script_extra_path = "$script:InstallPath/$env:CORE_PREFIX/python/Scripts"
-    $python_bin_path = "$script:InstallPath/python/bin"
-    $python_bin_extra_path = "$script:InstallPath/$env:CORE_PREFIX/python/bin"
-    $git_path = "$script:InstallPath/git/bin"
-    $git_extra_path = "$script:InstallPath/$env:CORE_PREFIX/git/bin"
+    $python_path = Join-NormalizedPath $script:InstallPath "python"
+    $python_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python"
+    $python_script_path = Join-NormalizedPath $script:InstallPath "python" "Scripts"
+    $python_script_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "Scripts"
+    $python_bin_path = Join-NormalizedPath $script:InstallPath "python" "bin"
+    $python_bin_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "bin"
+    $git_path = Join-NormalizedPath $script:InstallPath "git" "bin"
+    $git_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git" "bin"
     $env:PATH = "${python_bin_extra_path}${sep}${python_extra_path}${sep}${python_script_extra_path}${sep}${git_extra_path}${sep}${python_bin_path}${sep}${python_path}${sep}${python_script_path}${sep}${git_path}${sep}${env:PATH}"
 }
 # 环境变量
-$env:COMFYUI_PATH = "$script:InstallPath/$env:CORE_PREFIX"
-$env:COMFYUI_ROOT = "$script:InstallPath/$env:CORE_PREFIX"
-$env:CACHE_HOME = "$script:InstallPath/cache"
+$env:COMFYUI_PATH = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+$env:COMFYUI_ROOT = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+$env:CACHE_HOME = Join-NormalizedPath $script:InstallPath "cache"
 $env:PIP_CONFIG_FILE = "nul"
 $env:UV_CONFIG_FILE = "nul"
-$env:PIP_CACHE_DIR = "$script:InstallPath/cache/pip"
-$env:UV_CACHE_DIR = "$script:InstallPath/cache/uv"
+$env:PIP_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "pip"
+$env:UV_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "uv"
 $env:PYTHONUTF8 = 1
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = 1
@@ -99,7 +106,7 @@ $env:PYTHONNOUSERSITE = 1
 $env:PYTHONFAULTHANDLER = 1
 $env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $env:PIP_NO_WARN_SCRIPT_LOCATION = 0
-$env:SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = $script:InstallPath
+$env:SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Join-NormalizedPath $script:InstallPath
 $env:SD_WEBUI_ALL_IN_ONE_LOGGER_NAME = "ComfyUI Installer"
 $env:SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL = 20
 $env:SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR = 1
@@ -181,19 +188,19 @@ function Write-FileWithStreamWriter {
 
 # 获取内核路径前缀状态
 function Get-CorePrefixStatus {
-    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($script:CorePrefix)) {
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt")) -or ($script:CorePrefix)) {
         Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
         if ($script:CorePrefix) {
             $origin_core_prefix = $script:CorePrefix
         } else {
-            $origin_core_prefix = (Get-Content "$PSScriptRoot/core_prefix.txt" -Raw).Trim()
+            $origin_core_prefix = (Get-Content (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Raw).Trim()
         }
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
             Write-Log "转换绝对路径为内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
         }
     }
     Write-Log "当前内核路径前缀: $env:CORE_PREFIX"
-    Write-Log "完整内核路径: $script:InstallPath\$env:CORE_PREFIX"
+    Write-Log "完整内核路径: $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"
 }
 
 
@@ -211,7 +218,7 @@ function Get-Version {
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($script:DisablePyPIMirror))) {
+    if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) -and (!($script:DisablePyPIMirror))) {
         Write-Log "使用 PyPI 镜像源"
     } else {
         Write-Log "检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源"
@@ -223,16 +230,16 @@ function Set-PyPIMirror {
 # 代理配置
 function Set-Proxy {
     $env:NO_PROXY = "localhost,127.0.0.1,::1"
-    if ((Test-Path "$PSScriptRoot/disable_proxy.txt") -or ($script:DisableProxy)) {
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt")) -or ($script:DisableProxy)) {
         $env:SD_WEBUI_ALL_IN_ONE_PROXY = 0
         Write-Log "检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理"
         return
     }
-    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($script:UseCustomProxy)) {
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "proxy.txt")) -or ($script:UseCustomProxy)) {
         if ($script:UseCustomProxy) {
             $proxy_value = $script:UseCustomProxy
         } else {
-            $proxy_value = (Get-Content "$PSScriptRoot/proxy.txt" -Raw).Trim()
+            $proxy_value = (Get-Content (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Raw).Trim()
         }
         $env:HTTP_PROXY = $proxy_value
         $env:HTTPS_PROXY = $proxy_value
@@ -247,7 +254,7 @@ function Set-Proxy {
 function Set-uv {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if (($script:DisableUV) -or (Test-Path "$PSScriptRoot/disable_uv.txt")) {
+    if (($script:DisableUV) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
         Write-Log "检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         $ArrayList.Add("--no-uv") | Out-Null
     } else {
@@ -260,19 +267,19 @@ function Set-uv {
 function Set-GithubMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if (Test-Path "$script:InstallPath/.gitconfig") {
-        Remove-Item -Path "$script:InstallPath/.gitconfig" -Force -Recurse
+    if (Test-Path (Join-NormalizedPath $script:InstallPath ".gitconfig")) {
+        Remove-Item -Path (Join-NormalizedPath $script:InstallPath ".gitconfig") -Force -Recurse
     }
-    if (($script:DisableGithubMirror) -or (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
+    if (($script:DisableGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
         Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         $ArrayList.Add("--no-github-mirror") | Out-Null
         return
     }
-    if (($script:UseCustomGithubMirror) -or (Test-Path "$PSScriptRoot/gh_mirror.txt")) {
+    if (($script:UseCustomGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt"))) {
         if ($script:UseCustomGithubMirror) {
             $github_mirror = $script:UseCustomGithubMirror
         } else {
-            $github_mirror = (Get-Content "$PSScriptRoot/gh_mirror.txt" -Raw).Trim()
+            $github_mirror = (Get-Content (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Raw).Trim()
         }
         Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         $ArrayList.Add("--custom-github-mirror") | Out-Null
@@ -345,7 +352,7 @@ if __name__ == '__main__':
 ".Trim()
 
     $pip_index_url = "https://pypi.python.org/simple"
-    if ((!($script:DisablePyPIMirror)) -and (!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt"))) {
+    if ((!($script:DisablePyPIMirror)) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt")))) {
         $pip_index_url = "https://mirrors.cloud.tencent.com/pypi/simple"
     }
     Write-Log "检测 SD WebUI All In One 内核是否需要更新"
@@ -375,8 +382,8 @@ function Install-ArchiveResource {
         [Parameter(Mandatory=$true)] [string]$ZipName        # 压缩包文件名
     )
 
-    $cache_zip = "$env:CACHE_HOME/$ZipName"
-    $cache_tmp_folder = "$env:CACHE_HOME/$($ResourceName)_tmp"
+    $cache_zip = Join-NormalizedPath $env:CACHE_HOME $ZipName
+    $cache_tmp_folder = Join-NormalizedPath $env:CACHE_HOME "$($ResourceName)_tmp"
     $success = $false
 
     for ($i = 0; $i -lt $Urls.Length; $i++) {
@@ -518,11 +525,7 @@ function Get-CurrentArchitecture {
     }
 }
 
-function Join-NormalizedPath {
-    $joined = $args[0]
-    for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
-    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
-}
+
 
 function Get-NormalizedFilePath {
     [CmdletBinding()]
@@ -560,7 +563,7 @@ function Install-Python {
             return
         }
     }
-    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath "$script:InstallPath/python" -ZipName $zip_name
+    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath (Join-NormalizedPath $script:InstallPath "python") -ZipName $zip_name
 }
 
 function Invoke-SmartCommand {
@@ -639,7 +642,7 @@ function Install-Git {
         }
         try {
             Write-Log "安装 Git 中"
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git", "-y"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
         }
@@ -683,7 +686,7 @@ function Install-WindowsAria2 {
         }
     }
 
-    Move-Item -Path "$env:CACHE_HOME/aria2c.exe" -Destination "$script:InstallPath/git/bin/aria2c.exe" -Force
+    Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe") -Destination (Join-NormalizedPath $script:InstallPath "git" "bin" "aria2c.exe") -Force
     Write-Log "Aria2 下载成功"
 }
 
@@ -729,7 +732,7 @@ function Install-Aria2 {
         }
         try {
             Write-Log "安装 Aria2 中"
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
         }
         catch {
@@ -763,10 +766,10 @@ function Invoke-Installation {
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
-    if (!(Test-Path "$script:InstallPath/launch_args.txt")) {
+    if (!(Test-Path (Join-NormalizedPath $script:InstallPath "launch_args.txt"))) {
         Write-Log "设置默认 ComfyUI 启动参数"
         $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
-        Write-FileWithStreamWriter -Encoding UTF8 "$script:InstallPath/launch_args.txt" -Value $content
+        Write-FileWithStreamWriter -Encoding UTF8 (Join-NormalizedPath $script:InstallPath "launch_args.txt") -Value $content
     }
 
     if (!($script:NoCleanCache)) {
@@ -775,7 +778,7 @@ function Invoke-Installation {
         & uv cache clean
     }
 
-    Set-Content -Encoding UTF8 -Path "$script:InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+    Set-Content -Encoding UTF8 -Path (Join-NormalizedPath $script:InstallPath "update_time.txt") -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
 }
 
 
@@ -1349,8 +1352,8 @@ Export-ModuleMember -Function ``
     Get-CurrentPlatform, ``
     Get-CurrentArchitecture
 ".Trim()
-    Write-Log "$(if (Test-Path "$script:InstallPath/modules.psm1") { "更新" } else { "生成" }) modules.psm1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/modules.psm1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
 }
 
 
@@ -1651,8 +1654,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/launch.ps1") { "更新" } else { "生成" }) launch.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/launch.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "launch.ps1")) { "更新" } else { "生成" }) launch.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "launch.ps1") -Value $content
 }
 
 
@@ -1781,8 +1784,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/update.ps1") { "更新" } else { "生成" }) update.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "update.ps1")) { "更新" } else { "生成" }) update.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "update.ps1") -Value $content
 }
 
 
@@ -1912,8 +1915,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/update_node.ps1") { "更新" } else { "生成" }) update_node.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/update_node.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "update_node.ps1")) { "更新" } else { "生成" }) update_node.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "update_node.ps1") -Value $content
 }
 
 
@@ -2163,8 +2166,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/launch_comfyui_installer.ps1") { "更新" } else { "生成" }) launch_comfyui_installer.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/launch_comfyui_installer.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "launch_comfyui_installer.ps1")) { "更新" } else { "生成" }) launch_comfyui_installer.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "launch_comfyui_installer.ps1") -Value $content
 }
 
 
@@ -2307,8 +2310,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/reinstall_pytorch.ps1") { "更新" } else { "生成" }) reinstall_pytorch.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/reinstall_pytorch.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "reinstall_pytorch.ps1")) { "更新" } else { "生成" }) reinstall_pytorch.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "reinstall_pytorch.ps1") -Value $content
 }
 
 
@@ -2441,8 +2444,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/download_models.ps1") { "更新" } else { "生成" }) download_models.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/download_models.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "download_models.ps1")) { "更新" } else { "生成" }) download_models.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "download_models.ps1") -Value $content
 }
 
 
@@ -3180,8 +3183,8 @@ function Main {
 Main
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/activate.ps1") { "更新" } else { "生成" }) activate.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/activate.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "activate.ps1")) { "更新" } else { "生成" }) activate.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "activate.ps1") -Value $content
 }
 
 
@@ -3211,8 +3214,8 @@ Write-Log `"执行 ComfyUI Installer 激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/terminal.ps1") { "更新" } else { "生成" }) terminal.ps1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/terminal.ps1" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "terminal.ps1") -Value $content
 }
 
 
@@ -3284,8 +3287,8 @@ ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
 因您的数据的产生、收集、处理、使用等任何相关事项存在违反法律法规等情况而造成的全部结果及责任均由您自行承担。
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/help.txt") { "更新" } else { "生成" }) help.txt 中"
-    Write-FileWithStreamWriter -Encoding UTF8 "$script:InstallPath/help.txt" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "help.txt")) { "更新" } else { "生成" }) help.txt 中"
+    Write-FileWithStreamWriter -Encoding UTF8 (Join-NormalizedPath $script:InstallPath "help.txt") -Value $content
 }
 
 
@@ -3312,35 +3315,35 @@ function Write-ManagerScripts {
 function Copy-InstallerConfig {
     Write-Log "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
 
-    if ((!($script:DisablePyPIMirror)) -and (Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_pypi_mirror.txt" -Destination "$script:InstallPath"
-        Write-Log "$PSScriptRoot/disable_pypi_mirror.txt -> $script:InstallPath/disable_pypi_mirror.txt" -Force
+    if ((!($script:DisablePyPIMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -Destination $script:InstallPath
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_pypi_mirror.txt")" -Force
     }
 
-    if ((!($script:DisableProxy)) -and (Test-Path "$PSScriptRoot/disable_proxy.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_proxy.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/disable_proxy.txt -> $script:InstallPath/disable_proxy.txt" -Force
-    } elseif ((!($script:DisableProxy)) -and ($script:UseCustomProxy -eq "") -and (Test-Path "$PSScriptRoot/proxy.txt") -and (!(Test-Path "$PSScriptRoot/disable_proxy.txt"))) {
-        Copy-Item -Path "$PSScriptRoot/proxy.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/proxy.txt -> $script:InstallPath/proxy.txt"
+    if ((!($script:DisableProxy)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_proxy.txt")" -Force
+    } elseif ((!($script:DisableProxy)) -and ($script:UseCustomProxy -eq "") -and (Test-Path (Join-NormalizedPath $PSScriptRoot "proxy.txt")) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt")))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "proxy.txt")"
     }
 
-    if ((!($script:DisableUV)) -and (Test-Path "$PSScriptRoot/disable_uv.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_uv.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/disable_uv.txt -> $script:InstallPath/disable_uv.txt" -Force
+    if ((!($script:DisableUV)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_uv.txt")" -Force
     }
 
-    if ((!($script:DisableGithubMirror)) -and (Test-Path "$PSScriptRoot/disable_gh_mirror.txt")) {
-        Copy-Item -Path "$PSScriptRoot/disable_gh_mirror.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/disable_gh_mirror.txt -> $script:InstallPath/disable_gh_mirror.txt"
-    } elseif ((!($script:DisableGithubMirror)) -and (!($script:UseCustomGithubMirror)) -and (Test-Path "$PSScriptRoot/gh_mirror.txt") -and (!(Test-Path "$PSScriptRoot/disable_gh_mirror.txt"))) {
-        Copy-Item -Path "$PSScriptRoot/gh_mirror.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/gh_mirror.txt -> $script:InstallPath/gh_mirror.txt"
+    if ((!($script:DisableGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_gh_mirror.txt")"
+    } elseif ((!($script:DisableGithubMirror)) -and (!($script:UseCustomGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt")) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt")))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "gh_mirror.txt")"
     }
 
-    if ((!($script:CorePrefix)) -and (Test-Path "$PSScriptRoot/core_prefix.txt")) {
-        Copy-Item -Path "$PSScriptRoot/core_prefix.txt" -Destination "$script:InstallPath" -Force
-        Write-Log "$PSScriptRoot/core_prefix.txt -> $script:InstallPath/core_prefix.txt" -Force
+    if ((!($script:CorePrefix)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")" -Force
     }
 }
 
@@ -3414,12 +3417,12 @@ if exist .\hanamizuki.exe (
 )
     ".Trim()
 
-    if ((!($Force)) -and (!(Test-Path "$script:InstallPath/hanamizuki.bat"))) {
+    if ((!($Force)) -and (!(Test-Path (Join-NormalizedPath $script:InstallPath "hanamizuki.bat")))) {
         return
     }
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/hanamizuki.bat") { "更新" } else { "生成" }) hanamizuki.bat 中"
-    Write-FileWithStreamWriter -Encoding GBK "$script:InstallPath/hanamizuki.bat" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "hanamizuki.bat")) { "更新" } else { "生成" }) hanamizuki.bat 中"
+    Write-FileWithStreamWriter -Encoding GBK (Join-NormalizedPath $script:InstallPath "hanamizuki.bat") -Value $content
 }
 
 
@@ -3436,10 +3439,10 @@ function Install-Hanamizuki {
         return
     }
 
-    New-Item -ItemType Directory -Path "$env:CACHE_HOME" -Force > $null
+    New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
 
-    if (Test-Path "$script:InstallPath/$env:CORE_PREFIX/hanamizuki.exe") {
-        Write-Log "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath("$script:InstallPath/$env:CORE_PREFIX/hanamizuki.exe"))"
+    if (Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe")) {
+        Write-Log "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath((Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe")))"
         Write-Log "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
         ForEach ($url in $urls) {
@@ -3451,8 +3454,8 @@ function Install-Hanamizuki {
                     OutFile = "$env:CACHE_HOME/hanamizuki_tmp.exe"
                 }
                 Invoke-WebRequest @web_request_params
-                Move-Item -Path "$env:CACHE_HOME/hanamizuki_tmp.exe" "$script:InstallPath/$env:CORE_PREFIX/hanamizuki.exe" -Force
-                Write-Log "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath("$script:InstallPath/$env:CORE_PREFIX/hanamizuki.exe"))"
+                Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "hanamizuki_tmp.exe") -Destination (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe") -Force
+                Write-Log "绘世启动器安装成功, 路径: $([System.IO.Path]::GetFullPath((Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe")))"
                 Write-Log "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
                 break
             }
@@ -3472,17 +3475,17 @@ function Install-Hanamizuki {
 
 # 配置绘世启动器运行环境
 function Initialize-HanamizukiEnv {
-    if (!(Test-Path "$script:InstallPath/$env:CORE_PREFIX/hanamizuki.exe")) {
+    if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe"))) {
         return
     }
 
     Write-HanamizukiScript -Force
 
     Write-Log "检查绘世启动器运行环境"
-    if (!(Test-Path "$script:InstallPath/$env:CORE_PREFIX/python/python.exe")) {
-        if (Test-Path "$script:InstallPath/python") {
-            Write-Log "尝试将 Python 移动至 $script:InstallPath\$env:CORE_PREFIX 中"
-            Move-Item -Path "$script:InstallPath/python" "$script:InstallPath/$env:CORE_PREFIX" -Force
+    if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "python.exe"))) {
+        if (Test-Path (Join-NormalizedPath $script:InstallPath "python")) {
+            Write-Log "尝试将 Python 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
+            Move-Item -Path (Join-NormalizedPath $script:InstallPath "python") -Destination (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
             if ($?) {
                 Write-Log "Python 路径移动成功"
             } else {
@@ -3494,10 +3497,10 @@ function Initialize-HanamizukiEnv {
         }
     }
 
-    if (!(Test-Path "$script:InstallPath/$env:CORE_PREFIX/git/bin/git.exe")) {
-        if (Test-Path "$script:InstallPath/git") {
-            Write-Log "尝试将 Git 移动至 $script:InstallPath\$env:CORE_PREFIX 中"
-            Move-Item -Path "$script:InstallPath/git" "$script:InstallPath/$env:CORE_PREFIX" -Force
+    if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git" "bin" "git.exe"))) {
+        if (Test-Path (Join-NormalizedPath $script:InstallPath "git")) {
+            Write-Log "尝试将 Git 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
+            Move-Item -Path (Join-NormalizedPath $script:InstallPath "git") -Destination (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
             if ($?) {
                 Write-Log "Git 路径移动成功"
             } else {
@@ -3567,7 +3570,7 @@ function Use-BuildMode {
         if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行重装 PyTorch 脚本中"
-        . "$InstallPath/reinstall_pytorch.ps1" @launch_args
+        . (Join-NormalizedPath $script:InstallPath "reinstall_pytorch.ps1") @launch_args
     }
 
     if ($script:BuildWitchModel) {
@@ -3580,7 +3583,7 @@ function Use-BuildMode {
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行模型安装脚本中"
-        . "$script:InstallPath/download_models.ps1" @launch_args
+        . (Join-NormalizedPath $script:InstallPath "download_models.ps1") @launch_args
     }
 
     if ($script:BuildWithUpdate) {
@@ -3594,7 +3597,7 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 ComfyUI 更新脚本中"
-        . "$InstallPath/update.ps1" @launch_args
+        . (Join-NormalizedPath $script:InstallPath "update.ps1") @launch_args
     }
 
     if ($script:BuildWithUpdateNode) {
@@ -3629,7 +3632,7 @@ function Use-BuildMode {
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 ComfyUI 启动脚本中"
-        . "$InstallPath/launch.ps1" @launch_args
+        . (Join-NormalizedPath $script:InstallPath "launch.ps1") @launch_args
     }
 
     # 清理缓存
@@ -3683,8 +3686,8 @@ if '%errorlevel%' NEQ '0' (
     pause
 ".Trim()
 
-    Write-Log "$(if (Test-Path "$script:InstallPath/configure_env.bat") { "更新" } else { "生成" }) configure_env.bat 中"
-    Write-FileWithStreamWriter -Encoding GBK "$script:InstallPath/configure_env.bat" -Value $content
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "configure_env.bat")) { "更新" } else { "生成" }) configure_env.bat 中"
+    Write-FileWithStreamWriter -Encoding GBK (Join-NormalizedPath $script:InstallPath "configure_env.bat") -Value $content
 }
 
 
@@ -3817,7 +3820,7 @@ function Main {
     if ($script:UseUpdateMode) {
         Write-Log "使用更新模式"
         Use-UpdateMode
-        Set-Content -Encoding UTF8 -Path "$script:InstallPath/update_time.txt" -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
+        Set-Content -Encoding UTF8 -Path (Join-NormalizedPath $script:InstallPath "update_time.txt") -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($script:BuildMode) { Write-Log "ComfyUI Installer 构建模式已启用" }
         
