@@ -78,7 +78,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 296
+$script:SD_WEBUI_INSTALLER_VERSION = 297
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.12"
@@ -643,13 +643,13 @@ function Install-Git {
         }
         if ($arch -eq "amd64") {
             $urls = @(
-                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/amd64/git-2.53.0-x86_64.zip",
+                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/amd64/portable_git-2.53.0-x86_64.zip",
                 "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/amd64/git-2.53.0-x86_64.zip"
             )
         }
         elseif ($arch -eq "arm64") {
             $urls = @(
-                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/aarch64/git-2.53.0-aarch64.zip",
+                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/aarch64/portable_git-2.53.0-aarch64.zip",
                 "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/aarch64/git-2.53.0-aarch64.zip"
             )
         }
