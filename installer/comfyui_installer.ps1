@@ -1535,7 +1535,7 @@ function Get-InstallerCmdletHelp {
 # 获取启动参数
 function Get-WebUILaunchArgs {
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((`$script:LaunchArg) or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"))) {
+    if ((`$script:LaunchArg) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"))) {
         if (`$script:LaunchArg) {
             `$launch_args = `$script:LaunchArg.Trim()
         } else {
