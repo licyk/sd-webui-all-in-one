@@ -407,7 +407,6 @@ def import_model_to_invokeai(
     logger.info("就地安装 (仅本地) 模式: %s", ("禁用" if install_model_to_local else "启用"))
 
     for model in model_list:
-        print(model, type(model))
         count += 1
         if _model_exists(model_manager, model):
             logger.info("[%s/%s] 模型 %s 已经存在，跳过导入", count, task_sum, model.name)

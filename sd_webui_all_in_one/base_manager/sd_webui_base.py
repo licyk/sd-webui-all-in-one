@@ -903,12 +903,21 @@ def install_sd_webui(
     )
 
     if not no_pre_download_model:
+        logger.info("预下载模型中")
         pre_download_model_for_webui(
             dtype="sd_webui",
             model_path=sd_webui_path / "models" / "Stable-diffusion",
             webui_base_path=sd_webui_path,
             model_name="ChenkinNoob-XL-V0.2",
             download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+        )
+        pre_download_model_for_webui(
+            dtype="sd_webui",
+            model_path=sd_webui_path / "models" / "VAE-approx",
+            webui_base_path=sd_webui_path,
+            model_name=["model", "vaeapprox-sdxl", "vaeapprox-sd3"],
+            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+            check_exists=False,
         )
 
     install_sd_webui_config(sd_webui_path)

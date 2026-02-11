@@ -44,6 +44,7 @@ DEFAULT_ENV_VARS = [
     ["PIP_PREFER_BINARY", "1"],
     ["PIP_YES", "1"],
     ["UV_PYTHON", Path(sys.executable).as_posix()],
+    ["UV_LINK_MODE", "copy"],
 ]
 """默认配置的环境变量"""
 

@@ -18,7 +18,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     uninstall_invokeai_model,
 )
 from sd_webui_all_in_one.config import INVOKEAI_ROOT_PATH
-from sd_webui_all_in_one.downloader import DownloadToolType
+from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import normalized_filepath
@@ -564,7 +564,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     model_lib_p.add_argument("--source", default="modelscope", dest="source", help="模型下载源类型")
     model_lib_p.add_argument("--name", dest="name", help="模型名称")
     model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
-    model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", help="下载工具")
+    model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     model_lib_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
     model_lib_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出模型列表并退出")
     model_lib_p.set_defaults(
@@ -584,7 +584,7 @@ def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
     model_url_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
     model_url_p.add_argument("--url", required=True, dest="url", help="模型下载地址")
     model_url_p.add_argument("--type", required=True, dest="type", help="模型类型")
-    model_url_p.add_argument("--downloader", default="aria2", dest="downloader", help="下载工具")
+    model_url_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     model_url_p.set_defaults(
         func=lambda args: install_model_from_url(
             sd_webui_path=args.invokeai_path,

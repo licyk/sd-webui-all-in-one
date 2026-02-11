@@ -344,8 +344,9 @@ def pre_download_model_for_webui(
     dtype: SupportedWebUiType,
     model_path: Path,
     webui_base_path: Path,
-    model_name: str,
+    model_name: str | list[str],
     download_resource_type: ModelDownloadUrlType,
+    check_exists: bool | None = True,
 ) -> Path | None:
     """为 WebUI 预下载模型
 
@@ -356,25 +357,29 @@ def pre_download_model_for_webui(
             预下载模型的路径
         webui_base_path (Path):
             WebUI 的根路径
-        model_name (str):
+        model_name (str | list[str]):
             预下载的模型名称
         download_resource_type (ModelDownloadUrlType):
             模型下载源类型
+        check_exists (bool | None):
+            检查模型目录中是否已经存在模型而跳过预下载模型
 
     Returns:
         (Path | None):
             模型的保存路径
     """
-    if model_path.is_dir() and not any(model_path.rglob("*.safetensors")):
-        logger.info("预下载模型中")
-        path = download_model(
-            dtype=dtype,
-            base_path=webui_base_path,
-            download_resource_type=download_resource_type,
-            model_name=model_name,
-        )
-        if len(path) > 0:
-            return path[0]
+    if check_exists:
+        if not model_path.is_dir() or any(model_path.rglob("*.safetensors")):
+            return None
+
+    path = download_model(
+        dtype=dtype,
+        base_path=webui_base_path,
+        download_resource_type=download_resource_type,
+        model_name=model_name,
+    )
+    if len(path) > 0:
+        return path[0]
 
     return None
 
@@ -639,7 +644,7 @@ def apply_hf_mirror(
         custom_env["HF_ENDPOINT"] = hf_mirror
         return custom_env
     if isinstance(hf_mirror, list):
-        for hf in hf_mirror: # pylint: disable=not-an-iterable
+        for hf in hf_mirror:  # pylint: disable=not-an-iterable
             test_url = f"{hf}/licyk/sd-model/resolve/main/README.md"
             req = urllib.request.Request(test_url, headers=headers)
             try:
