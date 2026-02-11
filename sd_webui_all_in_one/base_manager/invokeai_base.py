@@ -200,7 +200,8 @@ def sync_invokeai_component(
 
     try:
         logger.info("同步 PyTorch 组件中")
-        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm6.2", "other"]:
+        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm6.2", "other", "all"]:
+            logger.debug("使用无 xFormers 安装")
             install_pytorch(
                 torch_package=torch_without_xformers,
                 custom_env=custom_env_pytorch,
@@ -208,13 +209,14 @@ def sync_invokeai_component(
             )
         else:
             try:
-                # 先使用带有 xFormers 的尝试去安装
+                logger.debug("尝试加上 xFormer 进行安装")
                 install_pytorch(
                     torch_package=torch_with_xformers,
                     custom_env=custom_env_pytorch,
                     use_uv=use_uv,
                 )
             except RuntimeError:
+                logger.debug("尝试无 xFormers 安装")
                 install_pytorch(
                     torch_package=torch_without_xformers,
                     custom_env=custom_env_pytorch,

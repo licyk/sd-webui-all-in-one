@@ -2081,6 +2081,31 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
+        "name": "ChenkinNoob-XL-v0.2-Rectified-Flow",
+        "filename": "ChenkinNoob-XL-v0.2-Rectified-Flow.safetensors",
+        "url": {
+            "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/ChenkinNoob-XL-v0.2-Rectified-Flow.safetensors",
+            "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ChenkinNoob-XL-v0.2-Rectified-Flow.safetensors",
+        },
+        "dtype": "SDXL",
+        "supported_webui": [
+            "sd_webui",
+            "comfyui",
+            "invokeai",
+            "fooocus",
+            "sd_trainer",
+            "sd_scripts",
+        ],
+        "save_dir": {
+            "sd_webui": "models/Stable-diffusion",
+            "comfyui": "models/checkpoints",
+            "invokeai": "models/checkpoints",
+            "fooocus": "models/checkpoints",
+            "sd_trainer": "sd-models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
+        },
+    },
+    {
         "name": "PVCStyleModelMovable_nbxl12",
         "filename": "PVCStyleModelMovable_nbxl12.safetensors",
         "url": {
