@@ -79,7 +79,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
 $script:SD_TRAINER_INSTALLER_VERSION = 329
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.011"
+$script:CORE_MINIMUM_VER = "2.0.11"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
