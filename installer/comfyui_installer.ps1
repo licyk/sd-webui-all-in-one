@@ -1984,14 +1984,23 @@ param (
     [string]`$CorePrefix,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
+
+function Join-NormalizedPath {
+    `$joined = `$args[0]
+    for (`$i = 1; `$i -lt `$args.Count; `$i++) { `$joined = Join-Path `$joined `$args[`$i] }
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
+}
+
+`$script:InstallPath = `$script:InstallPath
+
 & {
     `$target_prefix = `$null
     `$prefix_list = @(`"core`", `"ComfyUI*`")
-    if (`$script:CorePrefix -or (Test-Path `"`$PSScriptRoot/core_prefix.txt`")) {
-        `$origin_core_prefix = if (`$script:CorePrefix) { 
+    if (`$script:CorePrefix -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"))) {
+        `$origin_core_prefix = if (`$script:CorePrefix) {
             `$script:CorePrefix 
         } else { 
-            (Get-Content `"`$PSScriptRoot/core_prefix.txt`" -Raw).Trim() 
+            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw).Trim()
         }
         `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
@@ -2047,48 +2056,6 @@ function Write-Log {
 }
 
 
-# 代理配置
-function Set-Proxy {
-    `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    # 检测是否禁用自动设置镜像源
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
-        Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
-        return
-    }
-
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) { # 本地存在代理配置
-        if (`$script:UseCustomProxy) {
-            `$proxy_value = `$script:UseCustomProxy
-        } else {
-            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$proxy_addr = `$(`$internet_setting.ProxyServer)
-        # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
-            `$proxy_value = `$matches[1]
-            # 去除 http / https 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"http://`${proxy_value}`"
-        } elseif (`$proxy_addr -match `"socks=(.*)`") {
-            `$proxy_value = `$matches[1]
-            # 去除 socks 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"socks://`${proxy_value}`"
-        } else {
-            `$proxy_value = `"http://`${proxy_addr}`"
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-}
-
-
 # 下载 ComfyUI Installer
 function Download-Installer {
     # 可用的下载源
@@ -2101,14 +2068,14 @@ function Download-Installer {
     )
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$PSScriptRoot/cache`" -Force > `$null
+    New-Item -ItemType Directory -Path (Join-NormalizedPath `$PSScriptRoot `"cache`") -Force > `$null
 
     ForEach (`$url in `$urls) {
         Write-Log `"正在下载最新的 ComfyUI Installer 脚本`"
         `$web_request_params = @{
             Uri = `$url
             UseBasicParsing = `$true
-            OutFile = `"`$PSScriptRoot/cache/comfyui_installer.ps1`"
+            OutFile = (Join-NormalizedPath `$PSScriptRoot `"cache`" `"comfyui_installer.ps1`")
         }
         Invoke-WebRequest @web_request_params
         if (`$?) {
@@ -2132,38 +2099,49 @@ function Download-Installer {
 # 获取本地配置文件参数
 function Get-LocalSetting {
     `$arg = @{}
-    if ((Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`") -or (`$script:DisablePyPIMirror)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) -or (`$script:DisablePyPIMirror)) {
         `$arg.Add(`"-DisablePyPIMirror`", `$true)
     }
 
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) -or (`$script:DisableProxy)) {
         `$arg.Add(`"-DisableProxy`", `$true)
     } else {
-        if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) {
+        if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) -or (`$script:UseCustomProxy)) {
             if (`$script:UseCustomProxy) {
                 `$proxy_value = `$script:UseCustomProxy
             } else {
-                `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
+                `$proxy_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()
             }
             `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$script:DisableUV)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) -or (`$script:DisableUV)) {
         `$arg.Add(`"-DisableUV`", `$true)
     }
 
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$script:DisableGithubMirror)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`")) -or (`$script:DisableGithubMirror)) {
         `$arg.Add(`"-DisableGithubMirror`", `$true)
     } else {
-        if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$script:UseCustomGithubMirror)) {
+        if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")) -or (`$script:UseCustomGithubMirror)) {
             if (`$script:UseCustomGithubMirror) {
                 `$github_mirror = `$script:UseCustomGithubMirror
             } else {
-                `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
+                `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw).Trim()
             }
             `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
         }
+    }
+
+    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
+        `$arg.Add(`"-DisableProxy`", `$true)
+    } elseif ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) {
+        if (`$script:UseCustomProxy) {
+            `$proxy_value = `$script:UseCustomProxy
+        } else {
+            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
+        }
+        `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
     }
 
     `$arg.Add(`"-InstallPath`", `$script:InstallPath)
@@ -2191,8 +2169,6 @@ function Get-ExtraArgs {
 
 
 function Main {
-    Set-Proxy
-
     `$status = Download-Installer
 
     if (`$status) {
@@ -2789,17 +2765,17 @@ catch {
 `$PIP_EXTRA_INDEX_ADDR_ORI = `"https://download.pytorch.org/whl`"
 `$PIP_FIND_ADDR = `"https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html`"
 `$PIP_FIND_ADDR_ORI = `"https://download.pytorch.org/whl/torch_stable.html`"
-`$USE_PIP_MIRROR = if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$script:DisablePyPIMirror))) { `$true } else { `$false }
+`$USE_PIP_MIRROR = if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`"))) -and (!(`$script:DisablePyPIMirror))) { `$true } else { `$false }
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
 # PATH
-`$PYTHON_PATH = `"`$PSScriptRoot/python`"
-`$PYTHON_EXTRA_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX/python`"
-`$PYTHON_SCRIPTS_PATH = `"`$PSScriptRoot/python/Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX/python/Scripts`"
-`$GIT_PATH = `"`$PSScriptRoot/git/bin`"
-`$GIT_EXTRA_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin`"
+`$PYTHON_PATH = Join-NormalizedPath `$PSScriptRoot `"python`"
+`$PYTHON_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
+`$PYTHON_SCRIPTS_PATH = Join-NormalizedPath `$PSScriptRoot `"python`" `"Scripts`"
+`$PYTHON_SCRIPTS_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"Scripts`"
+`$GIT_PATH = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`"
+`$GIT_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"git`" `"bin`"
 `$env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$env:PATH`"
 # 环境变量
 `$env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
@@ -2834,22 +2810,22 @@ catch {
 `$env:SYCL_CACHE_PERSISTENT = 1
 `$env:TF_CPP_MIN_LOG_LEVEL = 3
 `$env:SAFETENSORS_FAST_GPU = 1
-`$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:HF_HOME = `"`$PSScriptRoot/cache/huggingface`"
-`$env:MATPLOTLIBRC = `"`$PSScriptRoot/cache`"
-`$env:MODELSCOPE_CACHE = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:MS_CACHE_HOME = `"`$PSScriptRoot/cache/modelscope/hub`"
-`$env:SYCL_CACHE_DIR = `"`$PSScriptRoot/cache/libsycl_cache`"
-`$env:TORCH_HOME = `"`$PSScriptRoot/cache/torch`"
-`$env:U2NET_HOME = `"`$PSScriptRoot/cache/u2net`"
-`$env:XDG_CACHE_HOME = `"`$PSScriptRoot/cache`"
-`$env:PIP_CACHE_DIR = `"`$PSScriptRoot/cache/pip`"
-`$env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
-`$env:TORCHINDUCTOR_CACHE_DIR = `"`$PSScriptRoot/cache/torchinductor`"
-`$env:TRITON_CACHE_DIR = `"`$PSScriptRoot/cache/triton`"
-`$env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
-`$env:UV_PYTHON = `"`$PSScriptRoot/python/python.exe`"
-`$env:COMFYUI_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX`"
+`$env:CACHE_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`"
+`$env:HF_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`" `"huggingface`"
+`$env:MATPLOTLIBRC = Join-NormalizedPath `$PSScriptRoot `"cache`"
+`$env:MODELSCOPE_CACHE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"modelscope`" `"hub`"
+`$env:MS_CACHE_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`" `"modelscope`" `"hub`"
+`$env:SYCL_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"libsycl_cache`"
+`$env:TORCH_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`" `"torch`"
+`$env:U2NET_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`" `"u2net`"
+`$env:XDG_CACHE_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`"
+`$env:PIP_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"pip`"
+`$env:PYTHONPYCACHEPREFIX = Join-NormalizedPath `$PSScriptRoot `"cache`" `"pycache`"
+`$env:TORCHINDUCTOR_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"torchinductor`"
+`$env:TRITON_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"triton`"
+`$env:UV_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv`"
+`$env:UV_PYTHON = Join-NormalizedPath `$PSScriptRoot `"python`" `"python.exe`"
+`$env:COMFYUI_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
 `$env:COMFYUI_INSTALLER_ROOT = `$PSScriptRoot
 
 
@@ -2914,15 +2890,15 @@ function global:Install-Hanamizuki {
     )
     `$i = 0
 
-    if (!(Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX`")) {
-        Write-Log `"内核路径 `$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX 未找到, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+    if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$((Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX)) 未找到, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
         return
     }
 
-    New-Item -ItemType Directory -Path `"`$env:CACHE_HOME`" -Force > `$null
+    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
 
-    if (Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/hanamizuki.exe`") {
-        Write-Log `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath(`"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/hanamizuki.exe`"))`"
+    if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`")) {
+        Write-Log `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath((Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`")))`"
         Write-Log `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
         ForEach (`$url in `$urls) {
@@ -2931,11 +2907,11 @@ function global:Install-Hanamizuki {
                 `$web_request_params = @{
                     Uri = `$url
                     UseBasicParsing = `$true
-                    OutFile = `"`$env:CACHE_HOME/hanamizuki_tmp.exe`"
+                    OutFile = (Join-NormalizedPath `$env:CACHE_HOME `"hanamizuki_tmp.exe`")
                 }
                 Invoke-WebRequest @web_request_params
-                Move-Item -Path `"`$env:CACHE_HOME/hanamizuki_tmp.exe`" `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/hanamizuki.exe`" -Force
-                Write-Log `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath(`"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/hanamizuki.exe`"))`"
+                Move-Item -Path (Join-NormalizedPath `$env:CACHE_HOME `"hanamizuki_tmp.exe`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`") -Force
+                Write-Log `"绘世启动器安装成功, 路径: `$([System.IO.Path]::GetFullPath((Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`")))`"
                 Write-Log `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
                 break
             }
@@ -3020,10 +2996,10 @@ if exist .\hanamizuki.exe (
     Set-Content -Encoding Default -Path `"`$env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
 
     Write-Log `"检查绘世启动器运行环境`"
-    if (!(Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/python/python.exe`")) {
-        if (Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/python`") {
+    if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"))) {
+        if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"python`")) {
             Write-Log `"尝试将 Python 移动至 `$env:COMFYUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$env:COMFYUI_INSTALLER_ROOT/python`" `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX`" -Force
+            Move-Item -Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"python`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Python 路径移动成功`"
             } else {
@@ -3035,10 +3011,10 @@ if exist .\hanamizuki.exe (
         }
     }
 
-    if (!(Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/git/bin/git.exe`")) {
-        if (Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/git`") {
+    if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"git`" `"bin`" `"git.exe`"))) {
+        if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"git`")) {
             Write-Log `"尝试将 Git 移动至 `$env:COMFYUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
-            Move-Item -Path `"`$env:COMFYUI_INSTALLER_ROOT/git`" `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX`" -Force
+            Move-Item -Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"git`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Git 路径移动成功`"
             } else {
@@ -3099,16 +3075,16 @@ function Get-PyPIMirrorStatus {
 
 # HuggingFace 镜像源
 function Set-HuggingFaceMirror {
-    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$script:DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`")) -or (`$script:DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
         Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         return
     }
 
-    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$script:UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`")) -or (`$script:UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = (Get-Content `"`$PSScriptRoot/hf_mirror.txt`" -Raw).Trim()
+            `$hf_mirror_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Raw).Trim()
         }
         `$env:HF_ENDPOINT = `$hf_mirror_value
         Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
@@ -3121,26 +3097,26 @@ function Set-HuggingFaceMirror {
 
 # Github 镜像源
 function Set-GithubMirrorLegecy {
-    `$env:GIT_CONFIG_GLOBAL = `"`$PSScriptRoot/.gitconfig`" # 设置 Git 配置文件路径
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    `$env:GIT_CONFIG_GLOBAL = (Join-NormalizedPath `$PSScriptRoot `".gitconfig`") # 设置 Git 配置文件路径
+    if (Test-Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`")) {
+        Remove-Item -Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`") -Force -Recurse
     }
 
     # 默认 Git 配置
     git config --global --add safe.directory '*'
     git config --global core.longpaths true
 
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$script:DisableGithubMirror)) { # 禁用 Github 镜像源
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`")) -or (`$script:DisableGithubMirror)) { # 禁用 Github 镜像源
         Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         return
     }
 
     # 使用自定义 Github 镜像源
-    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$script:UseCustomGithubMirror)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")) -or (`$script:UseCustomGithubMirror)) {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
+            `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw).Trim()
         }
         git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
         Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
@@ -3158,8 +3134,8 @@ function Main {
     Set-GithubMirrorLegecy
     Get-PyPIMirrorStatus
 
-    if (Test-Path `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/python/python.exe`") {
-        `$env:UV_PYTHON = `"`$env:COMFYUI_INSTALLER_ROOT/`$env:CORE_PREFIX/python/python.exe`"
+    if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`")) {
+        `$env:UV_PYTHON = (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`")
     }
     Write-Log `"激活 SD Trainer Scripts Env`"
     Write-Log `"更多帮助信息可在 ComfyUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md`"
@@ -3198,7 +3174,7 @@ catch {
     exit 1
 }
 Write-Log `"执行 ComfyUI Installer 激活环境脚本`"
-powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
+powershell -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
