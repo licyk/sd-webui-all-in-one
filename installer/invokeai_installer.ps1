@@ -28,14 +28,23 @@
     [switch]$DisableCUDAMalloc,
     [switch]$DisableEnvCheck
 )
+
+function Join-NormalizedPath {
+    $joined = $args[0]
+    for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
+}
+
+$script:InstallPath = Join-NormalizedPath $script:InstallPath
+
 & {
     $target_prefix = $null
     $prefix_list = @("invokeai*")
-    if ($script:CorePrefix -or (Test-Path "$script:InstallPath/core_prefix.txt")) {
-        $origin_core_prefix = if ($script:CorePrefix) { 
-            $script:CorePrefix 
-        } else { 
-            (Get-Content "$script:InstallPath/core_prefix.txt" -Raw).Trim()
+    if ($script:CorePrefix -or (Test-Path (Join-NormalizedPath $script:InstallPath "core_prefix.txt"))) {
+        $origin_core_prefix = if ($script:CorePrefix) {
+            $script:CorePrefix
+        } else {
+            (Get-Content (Join-NormalizedPath $script:InstallPath "core_prefix.txt") -Raw).Trim()
         }
         $origin_core_prefix = $origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
@@ -45,7 +54,7 @@
         } else {
             $target_prefix = $origin_core_prefix
         }
-    } 
+    }
     else {
         foreach ($i in $prefix_list) {
             $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -61,29 +70,31 @@
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 300
+$script:INVOKEAI_INSTALLER_VERSION = 301
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.7"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
-    $python_path = "$script:InstallPath/python"
-    $python_extra_path = "$script:InstallPath/$env:CORE_PREFIX/python"
-    $python_script_path = "$script:InstallPath/python/Scripts"
-    $python_script_extra_path = "$script:InstallPath/$env:CORE_PREFIX/python/Scripts"
-    $git_path = "$script:InstallPath/git/bin"
-    $git_extra_path = "$script:InstallPath/$env:CORE_PREFIX/git/bin"
-    $env:PATH = "${python_extra_path}${sep}${python_script_extra_path}${sep}${git_extra_path}${sep}$python_path${sep}${python_script_path}${sep}${git_path}${sep}${env:PATH}"
+    $python_path = Join-NormalizedPath $script:InstallPath "python"
+    $python_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python"
+    $python_script_path = Join-NormalizedPath $script:InstallPath "python" "Scripts"
+    $python_script_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "Scripts"
+    $python_bin_path = Join-NormalizedPath $script:InstallPath "python" "bin"
+    $python_bin_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "bin"
+    $git_path = Join-NormalizedPath $script:InstallPath "git" "bin"
+    $git_extra_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git" "bin"
+    $env:PATH = "${python_bin_extra_path}${sep}${python_extra_path}${sep}${python_script_extra_path}${sep}${git_extra_path}${sep}${python_bin_path}${sep}${python_path}${sep}${python_script_path}${sep}${git_path}${sep}${env:PATH}"
 }
 # 环境变量
-$env:INVOKEAI_PATH = "$script:InstallPath/$env:CORE_PREFIX"
-$env:INVOKEAI_ROOT = "$script:InstallPath/$env:CORE_PREFIX"
-$env:CACHE_HOME = "$script:InstallPath/cache"
-$env:PIP_CONFIG_FILE = "nul"
-$env:UV_CONFIG_FILE = "nul"
-$env:PIP_CACHE_DIR = "$script:InstallPath/cache/pip"
-$env:UV_CACHE_DIR = "$script:InstallPath/cache/uv"
+$env:INVOKEAI_PATH = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+$env:INVOKEAI_ROOT = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+$env:CACHE_HOME = Join-NormalizedPath $script:InstallPath "cache"
+$env:PIP_CONFIG_FILE = Join-NormalizedPath $script:InstallPath "cache" "pip.ini"
+$env:UV_CONFIG_FILE = Join-NormalizedPath $script:InstallPath "cache" "uv.toml"
+$env:PIP_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "pip"
+$env:UV_CACHE_DIR = Join-NormalizedPath $script:InstallPath "cache" "uv"
 $env:PYTHONUTF8 = 1
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = 1
@@ -152,8 +163,8 @@ function Write-FileWithStreamWriter {
                     $encode = New-Object System.Text.UTF8Encoding($true)
                 }
             }
-            $absolutePath = [System.IO.Path]::GetFullPath($Path)
-            $writer = New-Object System.IO.StreamWriter($absolutePath, $false, $encode)
+            $absolute_path = [System.IO.Path]::GetFullPath($Path)
+            $writer = New-Object System.IO.StreamWriter($absolute_path, $false, $encode)
             try {
                 $writer.Write($Value)
             }
@@ -173,19 +184,19 @@ function Write-FileWithStreamWriter {
 
 # 获取内核路径前缀状态
 function Get-CorePrefixStatus {
-    if ((Test-Path "$PSScriptRoot/core_prefix.txt") -or ($script:CorePrefix)) {
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt")) -or ($script:CorePrefix)) {
         Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
         if ($script:CorePrefix) {
             $origin_core_prefix = $script:CorePrefix
         } else {
-            $origin_core_prefix = (Get-Content "$PSScriptRoot/core_prefix.txt" -Raw).Trim()
+            $origin_core_prefix = (Get-Content (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Raw).Trim()
         }
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
             Write-Log "转换绝对路径为内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
         }
     }
     Write-Log "当前内核路径前缀: $env:CORE_PREFIX"
-    Write-Log "完整内核路径: $script:InstallPath\$env:CORE_PREFIX"
+    Write-Log "完整内核路径: $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"
 }
 
 
@@ -203,7 +214,7 @@ function Get-Version {
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($script:DisablePyPIMirror))) {
+    if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) -and (!($script:DisablePyPIMirror))) {
         Write-Log "使用 PyPI 镜像源"
     } else {
         Write-Log "检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源"
@@ -215,26 +226,23 @@ function Set-PyPIMirror {
 # 代理配置
 function Set-Proxy {
     $env:NO_PROXY = "localhost,127.0.0.1,::1"
-    # 检测是否禁用自动设置镜像源
-    if ((Test-Path "$PSScriptRoot/disable_proxy.txt") -or ($script:DisableProxy)) {
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt")) -or ($script:DisableProxy)) {
+        $env:SD_WEBUI_ALL_IN_ONE_PROXY = 0
         Write-Log "检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理"
         return
     }
-
-    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if ((Test-Path "$PSScriptRoot/proxy.txt") -or ($script:UseCustomProxy)) { # 本地存在代理配置
+    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "proxy.txt")) -or ($script:UseCustomProxy)) {
         if ($script:UseCustomProxy) {
             $proxy_value = $script:UseCustomProxy
         } else {
-            $proxy_value = (Get-Content "$PSScriptRoot/proxy.txt" -Raw).Trim()
+            $proxy_value = (Get-Content (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Raw).Trim()
         }
         $env:HTTP_PROXY = $proxy_value
         $env:HTTPS_PROXY = $proxy_value
         Write-Log "检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理"
-    } elseif ($internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        $env:SD_WEBUI_ALL_IN_ONE_PROXY = 1
-        Write-Log "检测到系统设置了代理, 已读取系统中的代理配置并设置代理"
     }
+    $env:SD_WEBUI_ALL_IN_ONE_PROXY = 1
+    Write-Log "使用自动检测代理模式进行代理配置"
 }
 
 
@@ -242,7 +250,7 @@ function Set-Proxy {
 function Set-uv {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if ((Test-Path "$PSScriptRoot/disable_uv.txt") -or ($script:DisableUV)) {
+    if (($script:DisableUV) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
         Write-Log "检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器"
         $ArrayList.Add("--no-uv") | Out-Null
     } else {
@@ -251,27 +259,23 @@ function Set-uv {
     }
 }
 
-
 # 设置 Github 镜像源
 function Set-GithubMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
-    if (Test-Path "$script:InstallPath/.gitconfig") {
-        Remove-Item -Path "$script:InstallPath/.gitconfig" -Force -Recurse
+    if (Test-Path (Join-NormalizedPath $script:InstallPath ".gitconfig")) {
+        Remove-Item -Path (Join-NormalizedPath $script:InstallPath ".gitconfig") -Force -Recurse
     }
-
-    if ((Test-Path "$PSScriptRoot/disable_gh_mirror.txt") -or ($script:DisableGithubMirror)) { # 禁用 Github 镜像源
+    if (($script:DisableGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
         Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         $ArrayList.Add("--no-github-mirror") | Out-Null
         return
     }
-
-    # 使用自定义 Github 镜像源
-    if ((Test-Path "$PSScriptRoot/gh_mirror.txt") -or ($script:UseCustomGithubMirror)) {
+    if (($script:UseCustomGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt"))) {
         if ($script:UseCustomGithubMirror) {
             $github_mirror = $script:UseCustomGithubMirror
         } else {
-            $github_mirror = (Get-Content "$PSScriptRoot/gh_mirror.txt" -Raw).Trim()
+            $github_mirror = (Get-Content (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Raw).Trim()
         }
         Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
         $ArrayList.Add("--custom-github-mirror") | Out-Null
@@ -335,27 +339,24 @@ if __name__ == '__main__':
     print(is_core_need_update('$script:CORE_MINIMUM_VER'))
 ".Trim()
 
-    if ((!(Test-Path "$PSScriptRoot/disable_pypi_mirror.txt")) -and (!($script:DisablePyPIMirror))) {
+    $pip_index_url = "https://pypi.python.org/simple"
+    if ((!($script:DisablePyPIMirror)) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt")))) {
         $pip_index_url = "https://mirrors.cloud.tencent.com/pypi/simple"
-    } else {
-        $pip_index_url = "https://pypi.python.org/simple"
     }
-
     Write-Log "检测 SD WebUI All In One 内核是否需要更新"
     $status = $(python -c "$content")
-    if ($status -eq "True") {
-        Write-Log "更新 SD WebUI All In One 内核中"
-        & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" --index-url $pip_index_url
-        if ($?) {
-            Write-Log "SD WebUI All In One 内核更新成功"
-        } else {
-            Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
-            exit 1
-        }
-    } else {
+    if ($status -ne "True") {
         Write-Log "SD WebUI All In One 内核无需更新"
+        return
     }
+    Write-Log "更新 SD WebUI All In One 内核中"
+    & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" --index-url $pip_index_url
+    if (!($?)) {
+        Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
+        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        exit 1
+    }
+    Write-Log "SD WebUI All In One 内核更新成功"
 }
 
 
@@ -369,8 +370,8 @@ function Install-ArchiveResource {
         [Parameter(Mandatory=$true)] [string]$ZipName        # 压缩包文件名
     )
 
-    $cache_zip = "$env:CACHE_HOME/$ZipName"
-    $cache_tmp_folder = "$env:CACHE_HOME/$($ResourceName)_tmp"
+    $cache_zip = Join-NormalizedPath $env:CACHE_HOME $ZipName
+    $cache_tmp_folder = Join-NormalizedPath $env:CACHE_HOME "$($ResourceName)_tmp"
     $success = $false
 
     for ($i = 0; $i -lt $Urls.Length; $i++) {
@@ -393,7 +394,7 @@ function Install-ArchiveResource {
     }
 
     if (-not $success) {
-        Write-Log "$ResourceName 安装失败, 终止安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装" -Level ERROR
+        Write-Log "$ResourceName 安装失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
@@ -405,44 +406,245 @@ function Install-ArchiveResource {
     Write-Log "正在解压 $ResourceName"
     Expand-Archive -Path $cache_zip -DestinationPath $cache_tmp_folder -Force
 
-    if (Test-Path $DestPath) {
-        $random_string = [Guid]::NewGuid().ToString().Substring(0, 18)
-        Move-Item -Path $DestPath -Destination "$env:CACHE_HOME/$random_string" -Force
+    $inner_items = Get-ChildItem -Path $cache_tmp_folder
+    if ($inner_items.Count -eq 1 -and $inner_items[0].PSIsContainer) {
+        $move_source = $inner_items[0].FullName
+    } else {
+        $move_source = $cache_tmp_folder
     }
 
-    $parent_dir = [System.IO.Path]::GetDirectoryName($DestPath)
+    $parent_dir = Split-Path -Path $DestPath -Parent
     if (-not (Test-Path $parent_dir)) {
         New-Item -ItemType Directory -Path $parent_dir -Force > $null
     }
-    
-    Move-Item -Path $cache_tmp_folder -Destination $DestPath -Force
+
+    if (Test-Path $DestPath) {
+        $random_string = [Guid]::NewGuid().ToString().Substring(0, 8)
+        $old_backup = Join-Path $env:CACHE_HOME "backup_$random_string"
+        Move-Item -Path $DestPath -Destination $old_backup -Force
+    }
+
+    Move-Item -Path $move_source -Destination $DestPath -Force
+
+    Remove-Item -Path $cache_tmp_folder -Force -Recurse -ErrorAction SilentlyContinue
     Remove-Item -Path $cache_zip -Force -ErrorAction SilentlyContinue
-    
+
     Write-Log "$ResourceName 安装成功"
 }
 
+function Get-PythonDownloadUrl {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$Platform,
+        [Parameter(Mandatory = $true)]
+        [string]$Arch
+    )
+
+    $python_data = @(
+        @{ Name = "cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.10"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/aarch64/cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.10.19+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.11"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/aarch64/cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.11.14+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.12"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/aarch64/cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.12.12+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.13"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/aarch64/cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.13.12+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip"; Ver = "3.14"; Platform = "linux"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/aarch64/cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/aarch64/cpython-3.14.3+20260203-aarch64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.10"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.10.19+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.11"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.11.14+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.12"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.12.12+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.13"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.13.12+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip"; Ver = "3.14"; Platform = "linux"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/cpython-3.14.3+20260203-x86_64-unknown-linux-gnu-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.10"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/aarch64/cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.10.19+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.11"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/aarch64/cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.11.14+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.12"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/aarch64/cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.12.12+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.13"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/aarch64/cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.13.12+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip"; Ver = "3.14"; Platform = "macos"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/aarch64/cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/aarch64/cpython-3.14.3+20260203-aarch64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.10"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/amd64/cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.10.19+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.11"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/amd64/cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.11.14+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.12"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/amd64/cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.12.12+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.13"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/amd64/cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.13.12+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip"; Ver = "3.14"; Platform = "macos"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/macos/amd64/cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/macos/amd64/cpython-3.14.3+20260203-x86_64-apple-darwin-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.11"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/aarch64/cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.11.14+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.12"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/aarch64/cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.12.12+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.13"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/aarch64/cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.13.12+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip"; Ver = "3.14"; Platform = "windows"; Arch = "aarch64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/aarch64/cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/aarch64/cpython-3.14.3+20260203-aarch64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.10"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/amd64/cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.10.19+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.11"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/amd64/cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.11.14+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.12"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/amd64/cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.12.12+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.13"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/amd64/cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.13.12+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+        @{ Name = "cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip"; Ver = "3.14"; Platform = "windows"; Arch = "amd64"; Url = @("https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/windows/amd64/cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip", "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/windows/amd64/cpython-3.14.3+20260203-x86_64-pc-windows-msvc-install_only.zip") }
+    )
+
+    $result = $python_data | Where-Object { $_.Ver -eq $Version -and $_.Platform -eq $Platform -and $_.Arch -eq $Arch }
+    if ($result) {
+        return [PSCustomObject]$result | Select-Object Name, Url
+    }
+    else {
+        Write-Log "未找到匹配的 Python: $Version, 平台: $Platform, 架构: $Arch" -Level WARNING
+        return $null
+    }
+}
+
+function Get-CurrentPlatform {
+    if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
+        return "windows"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)) {
+        return "linux"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)) {
+        return "macos"
+    }
+    else {
+        return "unknown"
+    }
+}
+
+function Get-CurrentArchitecture {
+    $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+    if ($architecture -eq "x64") {
+        return "amd64" 
+    }
+    elseif ($architecture -eq "arm64") {
+        return "aarch64"
+    }
+    else {
+        return $architecture 
+    }
+}
+
+
+
+function Get-NormalizedFilePath {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $false)][string]$Filepath)
+    if (-not [string]::IsNullOrWhiteSpace($Filepath)) { return Join-NormalizedPath $Filepath }
+    return $null
+}
 
 # 安装 Python
 function Install-Python {
-    $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/python-3.11.11-amd64.zip",
-        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/python-3.11.11-amd64.zip"
+    if ($script:InstallPythonVersion) {
+        $py_ver = $script:InstallPythonVersion
+    }
+    else {
+        $py_ver = "3.12"
+    }
+    $platform = Get-CurrentPlatform
+    $arch = Get-CurrentArchitecture
+    $py_info = Get-PythonDownloadUrl -Version $py_ver -Platform $platform -Arch $arch
+    if ($py_info) {
+        $zip_name = $py_info.Name
+        $urls = $py_info.Url
+    } else {
+        Write-Log "不支持当前的平台安装: ($platform, $arch)"
+        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        exit 1
+    }
+    $python_cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($python_cmd) {
+        $python_path_prefix = Join-NormalizedPath $script:InstallPath "python"
+        $python_extra_path_prefix = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python"
+        $python_cmd = Get-NormalizedFilePath $python_cmd.Path
+        if (($python_cmd) -and (($python_cmd.ToString().StartsWith($python_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or ($python_cmd.ToString().StartsWith($python_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+            Write-Log "python 已安装"
+            return
+        }
+    }
+    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath (Join-NormalizedPath $script:InstallPath "python") -ZipName $zip_name
+}
+
+function Invoke-SmartCommand {
+    [CmdletBinding()]
+    param (
+        [string]$Command,
+        [string[]]$Arguments
     )
-    Install-ArchiveResource -Urls $urls -ResourceName "Python" -DestPath "$script:InstallPath/python" -ZipName "python-amd64.zip"
+    
+    if (((Get-CurrentPlatform) -eq "linux") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
+        & sudo $Command @Arguments
+    } else {
+        & $Command @Arguments
+    }
 }
 
 # 安装 Git
 function Install-Git {
-    $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/PortableGit.zip",
-        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/PortableGit.zip"
-    )
-    Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath "$script:InstallPath/git" -ZipName "PortableGit.zip"
+    $platform = Get-CurrentPlatform
+    $arch = Get-CurrentArchitecture
+    Write-Log "检测 Git 是否已安装"
+    if ($platform -eq "windows") {
+        $git_cmd = Get-Command git -ErrorAction SilentlyContinue
+        if ($git_cmd) {
+            $git_path_prefix = Join-NormalizedPath $script:InstallPath "git"
+            $git_extra_path_prefix = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git"
+            $git_cmd = Get-NormalizedFilePath $git_cmd.Path
+            if (($git_cmd) -and (($git_cmd.ToString().StartsWith($git_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or ($git_cmd.ToString().StartsWith($git_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+                Write-Log "Git 已安装"
+                return
+            }
+        }
+        if ($arch -eq "amd64") {
+            $urls = @(
+                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/amd64/git-2.53.0-x86_64.zip",
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/amd64/git-2.53.0-x86_64.zip"
+            )
+        }
+        elseif ($arch -eq "arm64") {
+            $urls = @(
+                "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/aarch64/git-2.53.0-aarch64.zip",
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/aarch64/git-2.53.0-aarch64.zip"
+            )
+        }
+        else {
+            Write-Log "不支持当前的平台安装: ($platform, $arch)"
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+        Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath (Join-NormalizedPath $script:InstallPath "git") -ZipName "PortableGit.zip"
+    }
+    elseif ($platform -eq "linux") {
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            Write-Log "Git 已安装"
+            return
+        }
+        try {
+            Write-Log "安装 Git 中"
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "git"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "git", "--noconfirm"); return }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git"); return }
+        }
+        catch {
+            Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
+    elseif ($platform -eq "macos") {
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            Write-Log "Git 已安装"
+            return
+        }
+        try {
+            Write-Log "安装 Git 中"
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git"); return }
+            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
+            if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
+        }
+        catch {
+            Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
 }
 
 
 # 下载 Aria2
-function Install-Aria2 {
+function Install-WindowsAria2 {
     $urls = @(
         "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe",
         "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe"
@@ -455,7 +657,7 @@ function Install-Aria2 {
             $web_request_params = @{
                 Uri = $url
                 UseBasicParsing = $true
-                OutFile = "$env:CACHE_HOME/aria2c.exe"
+                OutFile = (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe")
             }
             Invoke-WebRequest @web_request_params
             break
@@ -465,45 +667,85 @@ function Install-Aria2 {
             if ($i -lt $urls.Length) {
                 Write-Log "重试下载 Aria2 中" -Level WARNING
             } else {
-                Write-Log "Aria2 安装失败, 终止 InvokeAI 安装进程, 可尝试重新运行 InvokeAI Installer 重试失败的安装" -Level ERROR
+                Write-Log "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
                 if (!($script:BuildMode)) { Read-Host | Out-Null }
                 exit 1
             }
         }
     }
 
-    Move-Item -Path "$env:CACHE_HOME/aria2c.exe" -Destination "$script:InstallPath/git/bin/aria2c.exe" -Force
+    Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe") -Destination (Join-NormalizedPath $script:InstallPath "git" "bin" "aria2c.exe") -Force
     Write-Log "Aria2 下载成功"
+}
+
+function Install-Aria2 {
+    $platform = Get-CurrentPlatform
+    if ($platform -eq "windows") {
+        $aria2_cmd = Get-Command aria2c -ErrorAction SilentlyContinue
+        if ($aria2_cmd) {
+            $aria2_path_prefix = Join-NormalizedPath $script:InstallPath "git"
+            $aria2_extra_path_prefix = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git"
+            $aria2_cmd = Get-NormalizedFilePath $aria2_cmd.Path
+            if (($aria2_cmd) -and (($aria2_cmd.ToString().StartsWith($aria2_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or ($aria2_cmd.ToString().StartsWith($aria2_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+                Write-Log "aria2 已安装"
+                return
+            }
+        }
+        Install-WindowsAria2
+    }
+    elseif ($platform -eq "linux") {
+        if (Get-Command aria2c -ErrorAction SilentlyContinue) {
+            Write-Log "Aria2 已安装"
+            return
+        }
+        try {
+            Write-Log "安装 Aria2 中"
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "aria2"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "aria2", "--noconfirm"); return }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y"); return }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2"); return }
+        }
+        catch {
+            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
+    elseif ($platform -eq "macos") {
+        if (Get-Command aria2c -ErrorAction SilentlyContinue) {
+            Write-Log "Aria2 已安装"
+            return
+        }
+        try {
+            Write-Log "安装 Aria2 中"
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
+            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
+        }
+        catch {
+            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
+        }
+    }
 }
 
 # 安装
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
     New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "uv.toml") -Value " " -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "pip.ini") -Value " " -Encoding UTF8
 
     Write-Log "检测是否安装 Python"
-    if ((Test-Path "$script:InstallPath/python/python.exe") -or (Test-Path "$script:InstallPath/$env:CORE_PREFIX/python/python.exe")) {
-        Write-Log "Python 已安装"
-    } else {
-        Write-Log "Python 未安装"
-        Install-Python
-    }
+    Install-Python
 
     Write-Log "检测是否安装 Git"
-    if ((Test-Path "$script:InstallPath/git/bin/git.exe") -or (Test-Path "$script:InstallPath/$env:CORE_PREFIX/git/bin/git.exe")) {
-        Write-Log "Git 已安装"
-    } else {
-        Write-Log "Git 未安装"
-        Install-Git
-    }
+    Install-Git
 
     Write-Log "检测是否安装 Aria2"
-    if ((Test-Path "$script:InstallPath/git/bin/aria2c.exe") -or (Test-Path "$script:InstallPath/$env:CORE_PREFIX/git/bin/aria2c.exe")) {
-        Write-Log "Aria2 已安装"
-    } else {
-        Write-Log "Aria2 未安装"
-        Install-Aria2
-    }
+    Install-Aria2
 
     Update-SDWebUiAllInOne
     $launch_params = Get-LaunchCoreArgs
@@ -529,6 +771,8 @@ function Invoke-Installation {
 function Write-ModulesScript {
     $content = "
 param (
+    [string]`$OriginalScriptPath,
+    [string]`$LaunchCommandLine,
     [string]`$CorePrefix,
     [switch]`$DisableUpdate,
     [switch]`$BuildMode,
@@ -549,20 +793,22 @@ param (
 `$script:CORE_MINIMUM_VER = `"$script:CORE_MINIMUM_VER`"
 
 
-# 初始化模块
+# 初始化环境变量
 function Initialize-EnvPath {
     Write-Log `"初始化环境变量`"
-    `$python_path = `"`$PSScriptRoot/python`"
-    `$python_extra_path = `"`$PSScriptRoot/`$env:CORE_PREFIX/python`"
-    `$python_scripts_path = `"`$PSScriptRoot/python/Scripts`"
-    `$python_scripts_extra_path = `"`$PSScriptRoot/`$env:CORE_PREFIX/python/Scripts`"
-    `$git_path = `"`$PSScriptRoot/git/bin`"
-    `$git_extra_path = `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin`"
+    `$python_path = Join-NormalizedPath `$PSScriptRoot `"python`"
+    `$python_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
+    `$python_scripts_path = Join-NormalizedPath `$PSScriptRoot `"python`" `"Scripts`"
+    `$python_scripts_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"Scripts`"
+    `$python_bin_path = Join-NormalizedPath `$PSScriptRoot `"python`" `"bin`"
+    `$python_bin_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"bin`"
+    `$git_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`"
+    `$git_extra_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"git`" `"bin`"
     `$sep = `$([System.IO.Path]::PathSeparator)
-    `$env:PATH = `"`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
+    `$env:PATH = `"`${python_bin_extra_path}`${sep}`${python_extra_path}`${sep}`${python_scripts_extra_path}`${sep}`${git_extra_path}`${sep}`${python_bin_path}`${sep}`${python_path}`${sep}`${python_scripts_path}`${sep}`${git_path}`${sep}`${env:PATH}`"
 
-    `$env:UV_CONFIG_FILE = `"nul`"
-    `$env:PIP_CONFIG_FILE = `"nul`"
+    `$env:UV_CONFIG_FILE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv.toml`"
+    `$env:PIP_CONFIG_FILE = Join-NormalizedPath `$PSScriptRoot `"cache`" `"pip.ini`"
     `$env:PIP_DISABLE_PIP_VERSION_CHECK = 1
     `$env:PIP_NO_WARN_SCRIPT_LOCATION = 0
     `$env:UV_LINK_MODE = `"copy`"
@@ -571,9 +817,9 @@ function Initialize-EnvPath {
     `$env:PYTHONUNBUFFERED = 1
     `$env:PYTHONNOUSERSITE = 1
     `$env:PYTHONFAULTHANDLER = 1
-    `$env:CACHE_HOME = `"`$PSScriptRoot/cache`"
-    `$env:INVOKEAI_PATH = `"`$PSScriptRoot/`$env:CORE_PREFIX`"
-    `$env:INVOKEAI_ROOT = `"`$PSScriptRoot/`$env:CORE_PREFIX`"
+    `$env:CACHE_HOME = Join-NormalizedPath `$PSScriptRoot `"cache`"
+    `$env:INVOKEAI_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
+    `$env:INVOKEAI_ROOT = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
     `$env:SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = `$PSScriptRoot
     `$env:SD_WEBUI_ALL_IN_ONE_LOGGER_NAME = `"InvokeAI Installer`"
     `$env:SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL = 20
@@ -583,10 +829,14 @@ function Initialize-EnvPath {
     `$env:SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = 0
     `$env:SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = 1
     `$env:SD_WEBUI_ALL_IN_ONE_SET_CONFIG = 1
+
+    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"uv.toml`") -Value `" `" -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"pip.ini`") -Value `" `" -Encoding UTF8
 }
 
 
-# 消息输出
+# 日志输出
 function Write-Log {
     [CmdletBinding()]
     param(
@@ -611,7 +861,7 @@ function Write-Log {
 }
 
 
-# 写入文本文件
+# 将文本写入文件
 function Write-FileWithStreamWriter {
     [CmdletBinding()]
     param (
@@ -636,8 +886,8 @@ function Write-FileWithStreamWriter {
                     `$encode = New-Object System.Text.UTF8Encoding(`$true)
                 }
             }
-            `$absolutePath = [System.IO.Path]::GetFullPath(`$Path)
-            `$writer = New-Object System.IO.StreamWriter(`$absolutePath, `$false, `$encode)
+            `$absolute_path = Get-NormalizedFilePath `$Path
+            `$writer = New-Object System.IO.StreamWriter(`$absolute_path, `$false, `$encode)
             try {
                 `$writer.Write(`$Value)
             }
@@ -655,7 +905,15 @@ function Write-FileWithStreamWriter {
 }
 
 
-# 检查 SD WebUI ALL In One 内核版本
+# 路径拼接并规范化
+function Join-NormalizedPath {
+    `$joined = `$args[0]
+    for (`$i = 1; `$i -lt `$args.Count; `$i++) { `$joined = Join-Path `$joined `$args[`$i] }
+    return `$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
+}
+
+
+# 更新 SD WebUI All In One 内核
 function Update-SDWebUiAllInOne {
     `$content = `"
 import re
@@ -692,27 +950,24 @@ if __name__ == '__main__':
     print(is_core_need_update('`$script:CORE_MINIMUM_VER'))
 `".Trim()
 
-    if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$script:DisablePyPIMirror))) {
+    `$pip_index_url = `"https://pypi.python.org/simple`"
+    if ((!(`$script:DisablePyPIMirror)) -and (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")))) {
         `$pip_index_url = `"https://mirrors.cloud.tencent.com/pypi/simple`"
-    } else {
-        `$pip_index_url = `"https://pypi.python.org/simple`"
     }
-
     Write-Log `"检测 SD WebUI All In One 内核是否需要更新`"
     `$status = `$(python -c `"`$content`")
-    if (`$status -eq `"True`") {
-        Write-Log `"更新 SD WebUI All In One 内核中`"
-        & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" --index-url `$pip_index_url
-        if (`$?) {
-            Write-Log `"SD WebUI All In One 内核更新成功`"
-        } else {
-            Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`"
-            if (!(`$script:BuildMode)) { Read-Host | Out-Null }
-            exit 1
-        }
-    } else {
+    if (`$status -ne `"True`") {
         Write-Log `"SD WebUI All In One 内核无需更新`"
+        return
     }
+    Write-Log `"更新 SD WebUI All In One 内核中`"
+    & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" --index-url `$pip_index_url
+    if (!(`$?)) {
+        Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`" -Level ERROR
+        if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+        exit 1
+    }
+    Write-Log `"SD WebUI All In One 内核更新成功`"
 }
 
 
@@ -729,9 +984,9 @@ function Update-Installer {
     )
     `$i = 0
 
-    New-Item -ItemType Directory -Path `"`$env:CACHE_HOME`" -Force | Out-Null
+    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force | Out-Null
 
-    if ((Test-Path `"`$PSScriptRoot/disable_update.txt`") -or (`$script:DisableUpdate)) {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) -or (`$script:DisableUpdate)) {
         Write-Log `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 InvokeAI Installer 的自动检查更新功能`"
         return
     }
@@ -743,7 +998,7 @@ function Update-Installer {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = (Get-Content `"`$PSScriptRoot/update_time.txt`" -Raw).Trim() 2> `$null
+        `$last_update_time = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Raw).Trim() 2> `$null
         `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
@@ -755,7 +1010,7 @@ function Update-Installer {
     }
 
     if (`$time_span.TotalSeconds -gt `$script:UPDATE_TIME_SPAN) {
-        Set-Content -Encoding UTF8 -Path `"`$PSScriptRoot/update_time.txt`" -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
+        Set-Content -Encoding UTF8 -Path (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Value `$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`") # 记录更新时间
     } else {
         return
     }
@@ -766,11 +1021,11 @@ function Update-Installer {
             `$web_request_params = @{
                 Uri = `$url
                 UseBasicParsing = `$true
-                OutFile = `"`$env:CACHE_HOME/invokeai_installer.ps1`"
+                OutFile = (Join-NormalizedPath `$env:CACHE_HOME `"invokeai_installer.ps1`")
             }
             Invoke-WebRequest @web_request_params
             `$latest_version = [int]`$(
-                Get-Content `"`$env:CACHE_HOME/invokeai_installer.ps1`" |
+                Get-Content (Join-NormalizedPath `$env:CACHE_HOME `"invokeai_installer.ps1`") -Encoding UTF8 |
                 Select-String -Pattern `"INVOKEAI_INSTALLER_VERSION`" |
                 ForEach-Object { `$_.ToString() }
             )[0].Split(`"=`")[1].Trim()
@@ -793,7 +1048,7 @@ function Update-Installer {
     }
 
     Write-Log `"调用 InvokeAI Installer 进行更新中`"
-    & `"`$env:CACHE_HOME/invokeai_installer.ps1`" -InstallPath `"`$PSScriptRoot`" -UseUpdateMode
+    & (Join-NormalizedPath `$env:CACHE_HOME `"invokeai_installer.ps1`") -InstallPath `$PSScriptRoot -UseUpdateMode
 
     if (`$DisableRestart) {
         Write-Log `"更新结束, 已禁用自动重新启动`"
@@ -807,22 +1062,14 @@ function Update-Installer {
 }
 
 
-# 检查 Aria2 版本并更新
-function Update-Aria2 {
-    Write-Log `"检查 Aria2 是否需要更新`"
+# 更新 Aria2 (Windows) 版本
+function Update-WindowsAria2 {
     `$urls = @(
         `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`",
         `"https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe`"
     )
-    `$aria2_tmp_path = `"`$env:CACHE_HOME/aria2c.exe`"
-    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
-    if (!(`$?)) {
-        Write-Log `"更新 Aria2 中`"
-        New-Item -ItemType Directory -Path `"`$env:CACHE_HOME`" -Force > `$null
-    } else {
-        Write-Log `"Aria2 无需更新`"
-        return
-    }
+    `$aria2_tmp_path = Join-NormalizedPath `$env:CACHE_HOME `"aria2c.exe`"
+    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
 
     ForEach (`$url in `$urls) {
         Write-Log `"下载 Aria2 中`"
@@ -830,7 +1077,7 @@ function Update-Aria2 {
             `$web_request_params = @{
                 Uri = `$url
                 UseBasicParsing = `$true
-                OutFile = `"`$aria2_tmp_path`"
+                OutFile = `$aria2_tmp_path
             }
             Invoke-WebRequest @web_request_params
             break
@@ -840,25 +1087,112 @@ function Update-Aria2 {
             if (`$i -lt `$urls.Length) {
                 Write-Log `"重试下载 Aria2 中`" -Level WARNING
             } else {
-                Write-Log `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`"
+                Write-Log `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`" -Level ERROR
                 return
             }
         }
     }
 
-    if ((Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/git.exe`")) {
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/`$env:CORE_PREFIX/git/bin/aria2c.exe`" -Force
-    } elseif ((Test-Path `"`$PSScriptRoot/git/bin/aria2c.exe`") -or (Test-Path `"`$PSScriptRoot/git/bin/git.exe`")) {
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
-    } else {
-        New-Item -ItemType Directory -Path `"`$PSScriptRoot/git/bin`" -Force > `$null
-        Move-Item -Path `"`$env:CACHE_HOME/aria2c.exe`" -Destination `"`$PSScriptRoot/git/bin/aria2c.exe`" -Force
+    `$git_cmd = Get-Command git -ErrorAction SilentlyContinue
+    if (`$git_cmd) {
+        `$git_path_prefix = Join-NormalizedPath `$script:InstallPath `"git`"
+        `$git_extra_path_prefix = Join-NormalizedPath `$script:InstallPath `$env:CORE_PREFIX `"git`"
+        `$git_cmd = Get-NormalizedFilePath `$git_cmd.Path
+        if ((`$git_cmd) -and ((`$git_cmd.ToString().StartsWith(`$git_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$git_cmd.ToString().StartsWith(`$git_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+            `$aria2_bin_path = Join-NormalizedPath (Split-Path -Path `$git_cmd -Parent) `"aria2c.exe`"
+        }
+        else {
+            `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
+        }
     }
-    Write-Log `"Aria2 更新完成`"
+    else {
+        `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
+    }
+
+    New-Item -ItemType Directory -Path (Split-Path -Path `$aria2_bin_path -Parent) -Force | Out-Null
+    Move-Item -Path `$aria2_tmp_path -Destination `$aria2_bin_path -Force
 }
 
 
-# 显示 InvokeAI Installer 版本
+# 更新 Aria2
+function Update-Aria2 {
+    Write-Log `"检查 Aria2 是否需要更新`"
+    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
+    if (`$?) {
+        Write-Log `"Aria2 无需更新`"
+        return
+    }
+    Write-Log `"更新 Aria2 中`"
+    `$platform = Get-CurrentPlatform
+    if (`$platform -eq `"windows`") {
+        Update-WindowsAria2
+    }
+    elseif (`$platform -eq `"linux`") {
+        try {
+            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apt`" -Arguments @(`"update`"); Invoke-SmartCommand -Command `"apt`" -Arguments @(`"install`", `"--only-upgrade`", `"aria2`", `"-y`"); return }
+            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"yum`" -Arguments @(`"upgrade`", `"aria2`", `"-y`"); return }
+            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apk`" -Arguments @(`"add`", `"--upgrade`", `"aria2`"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"pacman`" -Arguments @(`"-S`", `"aria2`", `"--noconfirm`"); return }
+            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"zypper`" -Arguments @(`"update`", `"-y`", `"aria2`"); return }
+            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"nix-channel`" -Arguments @(`"--update`"); Invoke-SmartCommand -Command `"nix-env`" -Arguments @(`"-u`", `"aria2`"); return }
+        }
+        catch {
+            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
+        }
+    }
+    elseif (`$platform -eq `"macos`") {
+        try {
+            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"brew`" -Arguments @(`"upgrade`", `"aria2`"); return }
+            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"port`" -Arguments @(`"upgrade`", `"aria2`"); return }
+        }
+        catch {
+            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
+        }
+    }
+}
+
+
+# 获取当前平台
+function Get-CurrentPlatform {
+    if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
+        return `"windows`"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)) {
+        return `"linux`"
+    }
+    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)) {
+        return `"macos`"
+    }
+    else {
+        return `"unknown`"
+    }
+}
+
+
+# 获取当前架构
+function Get-CurrentArchitecture {
+    `$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+    if (`$architecture -eq `"x64`") {
+        return `"amd64`" 
+    }
+    elseif (`$architecture -eq `"arm64`") {
+        return `"aarch64`"
+    }
+    else {
+        return `$architecture 
+    }
+}
+
+# 获取规范化路径
+function Get-NormalizedFilePath {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = `$false)][string]`$Filepath)
+    if (-not [string]::IsNullOrWhiteSpace(`$Filepath)) { return Join-NormalizedPath `$Filepath }
+    return `$null
+}
+
+
+# 显示版本信息
 function Get-Version {
     `$ver = `$([string]`$script:INVOKEAI_INSTALLER_VERSION).ToCharArray()
     `$major = (`$ver[0..(`$ver.Length - 3)])
@@ -868,16 +1202,16 @@ function Get-Version {
 }
 
 
-# 设置路径前缀
+# 设置内核路径前缀
 function Set-CorePrefix {
     `$target_prefix = `$null
     `$prefix_list = @(`"invokeai*`")
-    if (`$script:CorePrefix -or (Test-Path `"`$PSScriptRoot/core_prefix.txt`")) {
+    if (`$script:CorePrefix -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"))) {
         Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
         `$origin_core_prefix = if (`$script:CorePrefix) { 
             `$script:CorePrefix 
         } else { 
-            (Get-Content `"`$PSScriptRoot/core_prefix.txt`" -Raw).Trim() 
+            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw -Encoding UTF8).Trim() 
         }
         `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
@@ -902,7 +1236,7 @@ function Set-CorePrefix {
         `$target_prefix = `"core`"
     }
     `$env:CORE_PREFIX = `$target_prefix
-    `$full_core_path = Join-Path `$PSScriptRoot `$env:CORE_PREFIX
+    `$full_core_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
     Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
     Write-Log `"完整内核路径: `$full_core_path`"
 }
@@ -910,66 +1244,34 @@ function Set-CorePrefix {
 
 # 代理配置
 function Set-Proxy {
+    [CmdletBinding()]
+    param ([Parameter()][switch]`$Legacy)
     `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
+    if (`$script:DisableProxy -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`"))) {
         Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
         return
     }
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) {
+    if (`$script:UseCustomProxy -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`"))) {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
+            `$proxy_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw -Encoding UTF8).Trim()
         }
         `$env:HTTP_PROXY = `$proxy_value
         `$env:HTTPS_PROXY = `$proxy_value
         Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) {
+        return
+    }
+    if (`$Legacy) {
+        `$proxy_value = & python -m sd_webui_all_in_one.cli_manager.main self-manager get-proxy
+        if (![string]::IsNullOrWhiteSpace(`$proxy_value)) {
+            `$env:HTTP_PROXY = `$proxy_value
+            `$env:HTTPS_PROXY = `$proxy_value
+            Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        }
+    } else {
         `$env:SD_WEBUI_ALL_IN_ONE_PROXY = 1
-        Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
-    }
-}
-
-
-# 代理配置 (传统方式)
-function Set-ProxyLegecy {
-    `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    # 检测是否禁用自动设置镜像源
-    if ((Test-Path `"`$PSScriptRoot/disable_proxy.txt`") -or (`$script:DisableProxy)) {
-        Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
-        return
-    }
-
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path `"`$PSScriptRoot/proxy.txt`") -or (`$script:UseCustomProxy)) { # 本地存在代理配置
-        if (`$script:UseCustomProxy) {
-            `$proxy_value = `$script:UseCustomProxy
-        } else {
-            `$proxy_value = (Get-Content `"`$PSScriptRoot/proxy.txt`" -Raw).Trim()
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$proxy_addr = `$(`$internet_setting.ProxyServer)
-        # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
-            `$proxy_value = `$matches[1]
-            # 去除 http / https 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"http://`${proxy_value}`"
-        } elseif (`$proxy_addr -match `"socks=(.*)`") {
-            `$proxy_value = `$matches[1]
-            # 去除 socks 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"socks://`${proxy_value}`"
-        } else {
-            `$proxy_value = `"http://`${proxy_addr}`"
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+        Write-Log `"使用自动检测代理模式进行代理配置`"
     }
 }
 
@@ -978,12 +1280,12 @@ function Set-ProxyLegecy {
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((!(Test-Path `"`$PSScriptRoot/disable_pypi_mirror.txt`")) -and (!(`$script:DisablePyPIMirror))) {
-        Write-Log `"使用 PyPI 镜像源`"
-    } else {
+    if (`$script:DisablePyPIMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`"))) {
         Write-Log `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
         `$ArrayList.Add(`"--no-pypi-mirror`") | Out-Null
+        return
     }
+    Write-Log `"使用 PyPI 镜像源`"
 }
 
 
@@ -991,23 +1293,23 @@ function Set-PyPIMirror {
 function Set-HuggingFaceMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((Test-Path `"`$PSScriptRoot/disable_hf_mirror.txt`") -or (`$script:DisableHuggingFaceMirror)) {
+    if (`$script:DisableHuggingFaceMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`"))) {
         Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         `$ArrayList.Add(`"--no-hf-mirror`") | Out-Null
         return
     }
-    if ((Test-Path `"`$PSScriptRoot/hf_mirror.txt`") -or (`$script:UseCustomHuggingFaceMirror)) {
+    if (`$script:UseCustomHuggingFaceMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`"))) {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = (Get-Content `"`$PSScriptRoot/hf_mirror.txt`" -Raw).Trim()
+            `$hf_mirror_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Raw -Encoding UTF8).Trim()
         }
         `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
         `$ArrayList.Add(`$hf_mirror_value) | Out-Null
         Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
-    } else {
-        Write-Log `"使用默认 HuggingFace 镜像源`"
+        return
     }
+    Write-Log `"使用默认 HuggingFace 镜像源`"
 }
 
 
@@ -1015,24 +1317,23 @@ function Set-HuggingFaceMirror {
 function Set-GithubMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
-    if (Test-Path `"`$PSScriptRoot/.gitconfig`") {
-        Remove-Item -Path `"`$PSScriptRoot/.gitconfig`" -Force -Recurse
+    if (Test-Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`")) {
+        Remove-Item -Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`") -Force -Recurse
     }
-    if ((Test-Path `"`$PSScriptRoot/disable_gh_mirror.txt`") -or (`$script:DisableGithubMirror)) {
+    if (`$script:DisableGithubMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`"))) {
         Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         `$ArrayList.Add(`"--no-github-mirror`") | Out-Null
         return
     }
-    if ((Test-Path `"`$PSScriptRoot/gh_mirror.txt`") -or (`$script:UseCustomGithubMirror)) {
+    if (`$script:UseCustomGithubMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`"))) {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = (Get-Content `"`$PSScriptRoot/gh_mirror.txt`" -Raw).Trim()
+            `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw -Encoding UTF8).Trim()
         }
         Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
         `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
         `$ArrayList.Add(`$github_mirror) | Out-Null
-        return
     }
 }
 
@@ -1041,7 +1342,7 @@ function Set-GithubMirror {
 function Set-uv {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((Test-Path `"`$PSScriptRoot/disable_uv.txt`") -or (`$script:DisableUV)) {
+    if (`$script:DisableUV -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`"))) {
         Write-Log `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
         `$ArrayList.Add(`"--no-uv`") | Out-Null
     } else {
@@ -1055,14 +1356,32 @@ function Set-uv {
 function Set-PyTorchCUDAMemoryAlloc {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
-    if ((Test-Path `"`$PSScriptRoot/disable_set_pytorch_cuda_memory_alloc.txt`") -or `$script:DisableCUDAMalloc) {
+    if (`$script:DisableCUDAMalloc -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`"))) {
         Write-Log `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件 / -DisableCUDAMalloc 命令行参数, 已禁用自动设置 CUDA 内存分配器`"
         `$ArrayList.Add(`"--no-cuda-malloc`") | Out-Null
     }
 }
 
 
-Export-ModuleMember -Function Initialize-EnvPath, Write-Log, Write-FileWithStreamWriter, Update-SDWebUiAllInOne, Update-Installer, Update-Aria2, Get-Version, Set-CorePrefix, Set-Proxy, Set-ProxyLegecy, Set-PyPIMirror, Set-HuggingFaceMirror, Set-GithubMirror, Set-uv, Set-PyTorchCUDAMemoryAlloc
+Export-ModuleMember -Function ``
+    Initialize-EnvPath, ``
+    Write-Log, ``
+    Write-FileWithStreamWriter, ``
+    Update-SDWebUiAllInOne, ``
+    Update-Installer, ``
+    Update-Aria2, ``
+    Get-Version, ``
+    Set-CorePrefix, ``
+    Set-Proxy, ``
+    Set-PyPIMirror, ``
+    Set-HuggingFaceMirror, ``
+    Set-GithubMirror, ``
+    Set-uv, ``
+    Set-PyTorchCUDAMemoryAlloc, ``
+    Join-NormalizedPath, ``
+    Get-NormalizedFilePath, ``
+    Get-CurrentPlatform, ``
+    Get-CurrentArchitecture
 ".Trim()
     Write-Log "$(if (Test-Path "$script:InstallPath/modules.psm1") { "更新" } else { "生成" }) modules.psm1 中"
     Write-FileWithStreamWriter -Encoding UTF8BOM -Path "$script:InstallPath/modules.psm1" -Value $content
