@@ -27,7 +27,7 @@
     # 仅在管理脚本中生效
     [switch]$DisableUpdate,
     [switch]$DisableHuggingFaceMirror,
-    [switch]$UseCustomHuggingFaceMirror,
+    [string]$UseCustomHuggingFaceMirror,
     [string]$LaunchArg,
     [switch]$EnableShortcut,
     [switch]$DisableCUDAMalloc,
@@ -75,7 +75,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 232
+$script:FOOOCUS_INSTALLER_VERSION = 233
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.17"
@@ -2578,7 +2578,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$DisableProxy,
-    [switch]`$UseCustomProxy
+    [string]`$UseCustomProxy
 )
 try {
     `$global:OriginalScriptPath = `$PSCommandPath
@@ -2843,7 +2843,7 @@ param (
     [string]`$CorePrefix,
     [switch]`$DisablePyPIMirror,
     [switch]`$DisableGithubMirror,
-    [switch]`$UseCustomGithubMirror,
+    [string]`$UseCustomGithubMirror,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableHuggingFaceMirror,
