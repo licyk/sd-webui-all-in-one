@@ -29,10 +29,10 @@ from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
 
 logger = get_logger(
-    name="SD Trainer Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

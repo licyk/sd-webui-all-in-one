@@ -6,11 +6,11 @@ import subprocess
 from functools import wraps
 
 from sdaio_utils.logger import get_logger
-from sdaio_utils.config import LOGGER_LEVEL, LOGGER_COLOR
+from sdaio_utils.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
 
 
 logger = get_logger(
-    name="uv Patcher",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

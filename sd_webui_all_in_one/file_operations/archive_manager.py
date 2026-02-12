@@ -10,11 +10,12 @@ from typing import Iterable
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
-    name="Archive Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

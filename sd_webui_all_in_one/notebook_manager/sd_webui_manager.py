@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
@@ -25,7 +25,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
 
 
 logger = get_logger(
-    name="SD WebUI Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

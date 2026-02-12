@@ -9,14 +9,14 @@ from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.file_operations.file_manager import get_file_list
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
 from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai, check_invokeai_env, install_invokeai, update_invokeai
 
 logger = get_logger(
-    name="InvokeAI Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

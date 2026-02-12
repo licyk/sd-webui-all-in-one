@@ -47,11 +47,11 @@ from typing import Literal
 
 from sd_webui_all_in_one.utils import in_jupyter
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 
 
 logger = get_logger(
-    name="CMD Runner",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

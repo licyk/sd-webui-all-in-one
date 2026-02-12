@@ -25,7 +25,7 @@ from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_confi
 from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, is_package_has_version, get_package_version
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, copy_files, remove_files
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
 from sd_webui_all_in_one.model_downloader.model_utils import download_model, export_model_list, display_model_table, search_models_from_library
@@ -34,7 +34,7 @@ from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import print_divider
 
 logger = get_logger(
-    name="Base Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

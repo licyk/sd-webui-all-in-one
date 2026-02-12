@@ -15,14 +15,14 @@ from sd_webui_all_in_one.downloader import DownloadToolType, download_file, down
 from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
 from sd_webui_all_in_one.utils import in_jupyter, clear_jupyter_output, print_divider
 from sd_webui_all_in_one.colab_tools import is_colab_environment, mount_google_drive
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.file_operations.file_manager import copy_files, display_directories, remove_files, move_files, sync_files_and_create_symlink
 from sd_webui_all_in_one.kaggle_tools import import_kaggle_input
 from sd_webui_all_in_one.cmd import run_cmd
 
 
 logger = get_logger(
-    name="Base Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

@@ -15,14 +15,14 @@ from typing import Any, Callable, Literal, TypeAlias, get_args
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, RETRY_TIMES
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, RETRY_TIMES, LOGGER_NAME
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.file_operations.archive_manager import extract_archive
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 
 
 logger = get_logger(
-    name="Downloader",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

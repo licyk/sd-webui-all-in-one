@@ -12,7 +12,7 @@ from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import configure_env_var, configure_pip
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
@@ -21,7 +21,7 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import SDTrainerBranchType
 
 
 logger = get_logger(
-    name="SD Trainer Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

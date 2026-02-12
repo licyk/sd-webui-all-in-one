@@ -18,7 +18,7 @@ from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH
+from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH, LOGGER_NAME
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
@@ -40,7 +40,7 @@ from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.pkg_manager import pip_install
 
 logger = get_logger(
-    name="SD WebUI Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

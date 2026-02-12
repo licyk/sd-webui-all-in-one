@@ -33,12 +33,12 @@ from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, get
 from sd_webui_all_in_one.package_analyzer.ver_cmp import version_decrement, version_increment
 from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
 from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_env_pytorch_type, get_pytorch_mirror_type, auto_detect_pytorch_device_category
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import print_divider, ANSIColor
 
 logger = get_logger(
-    name="InvokeAI Base Manager",
+    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

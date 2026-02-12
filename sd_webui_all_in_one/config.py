@@ -5,7 +5,7 @@ import sys
 import logging
 from pathlib import Path
 
-LOGGER_NAME = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_NAME", "SD WebUI All In One")
+LOGGER_NAME = None if os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_NAME") in ["none", "None", "NONE"] else os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_NAME", "SD WebUI All In One")
 """日志器名字"""
 
 LOGGER_LEVEL = int(os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", str(logging.INFO)))
@@ -69,25 +69,25 @@ ARIA2_MINIMUM_VER = "1.37.0"
 SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd())
 """SD WebUI All In One 运行时的起始目录"""
 
-SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "stable-diffusion-webui").as_posix()))
 """Stable Diffusion WebUI 根目录"""
 
-COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+COMFYUI_ROOT_PATH = Path(os.getenv("COMFYUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "ComfyUI").as_posix()))
 """ComfyUI 根目录"""
 
-FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+FOOOCUS_ROOT_PATH = Path(os.getenv("FOOOCUS_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "Fooocus").as_posix()))
 """Fooocus 根目录"""
 
-INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+INVOKEAI_ROOT_PATH = Path(os.getenv("INVOKEAI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "InvokeAI").as_posix()))
 """InvokeAI 根目录"""
 
-SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+SD_TRAINER_ROOT_PATH = Path(os.getenv("SD_TRAINER_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "SD-Trainer").as_posix()))
 """SD Trainer 根目录"""
 
-SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "SD-Scripts").as_posix()))
 """SD Scripts 根目录"""
 
-QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH.as_posix()))
+QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "qwen-tts-webui").as_posix()))
 """Qwen TTS WebUI 根目录"""
 
 SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]

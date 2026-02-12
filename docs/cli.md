@@ -1133,6 +1133,7 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR`: 是否启用自带的额外 PyPI 镜像源 (`1`|`True` 启用)。
 - `SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH`: 是否设置缓存路径 (`1`|`True` 启用)。
 - `SD_WEBUI_ALL_IN_ONE_SET_CONFIG`: 是否在启动时通过环境变量进行配置 (`1`|`True` 启用)。
+- `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH`：SD WebUI All In One 起始路径。
 
 ## 软件根目录配置
 可以通过以下环境变量自定义各软件的默认根目录：
