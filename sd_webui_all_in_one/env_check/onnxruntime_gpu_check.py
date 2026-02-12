@@ -316,6 +316,14 @@ def check_onnxruntime_gpu(
             _uninstall_onnxruntime_gpu()
             pip_install("onnxruntime-gpu==1.17.1", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
         elif ver == OrtType.CU130:
+            # 适用于 Cuda 13.x 的 onnxruntime-gpu 未发布正式版, 所以只要安装了就不检查版本对不对
+            # TODO: 发布正式版后修改该部分逻辑
+            try:
+                importlib.metadata.version("onnxruntime-gpu")
+                logger.info("Onnxruntime GPU 无版本问题")
+                return
+            except Exception:
+                pass
             _uninstall_onnxruntime_gpu()
             pip_install("onnxruntime-gpu>=1.23.2", "--no-cache-dir", use_uv=use_uv)
     except RuntimeError as e:

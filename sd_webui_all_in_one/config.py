@@ -66,7 +66,7 @@ PIP_MINIMUM_VER = "26.0"
 ARIA2_MINIMUM_VER = "1.37.0"
 """Aria2 最低版本要求版本号"""
 
-SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd())
+SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path(os.getenv("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd()))
 """SD WebUI All In One 运行时的起始目录"""
 
 SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "stable-diffusion-webui").as_posix()))
