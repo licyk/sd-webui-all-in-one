@@ -78,7 +78,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 302
+$script:SD_WEBUI_INSTALLER_VERSION = 303
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.17"
@@ -3014,7 +3014,7 @@ param (
 try {
     `$global:OriginalScriptPath = `$PSCommandPath
     `$global:LaunchCommandLine = `$MyInvocation.Line
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`" -PassThru -Force -ErrorAction Stop).Invoke({
         `$script:OriginalScriptPath = `$global:OriginalScriptPath
         `$script:LaunchCommandLine = `$global:LaunchCommandLine
         Remove-Variable OriginalScriptPath -Scope Global -Force
@@ -3098,7 +3098,6 @@ catch {
 `$env:TORCHINDUCTOR_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"torchinductor`"
 `$env:TRITON_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"triton`"
 `$env:UV_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv`"
-`$env:UV_PYTHON = Join-NormalizedPath `$PSScriptRoot `"python`" `"python.exe`"
 `$env:SD_WEBUI_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
 `$env:SD_WEBUI_INSTALLER_ROOT = `$PSScriptRoot
 
@@ -3414,9 +3413,16 @@ function Main {
     Set-GithubMirrorLegecy
     Get-PyPIMirrorStatus
 
-    if (Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`")) {
-        `$env:UV_PYTHON = Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"
+    `$python_cmd = Get-Command python -ErrorAction SilentlyContinue
+    if (`$python_cmd) {
+        `$python_path_prefix = Join-NormalizedPath `$PSScriptRoot `"python`"
+        `$python_extra_path_prefix = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
+        `$python_cmd = Get-NormalizedFilePath `$python_cmd.Path
+        if ((`$python_cmd) -and ((`$python_cmd.ToString().StartsWith(`$python_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$python_cmd.ToString().StartsWith(`$python_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
+            `$env:UV_PYTHON = `$python_cmd
+        }
     }
+
     Write-Log `"激活 SD WebUI Env`"
     Write-Log `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md`"
 }
