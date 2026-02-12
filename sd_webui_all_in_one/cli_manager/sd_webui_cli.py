@@ -23,7 +23,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
 from sd_webui_all_in_one.config import SD_WEBUI_ROOT_PATH
 from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
+from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorchDeviceType
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 
@@ -479,7 +479,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # install
     install_p = sd_sub.add_parser("install", help="安装 Stable Diffusion WebUI")
     install_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
-    install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", help="PyTorch 镜像源类型")
+    install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", choices=PYTORCH_DEVICE_LIST, help="PyTorch 镜像源类型")
     install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
     install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
     # install_p.add_argument("--use-pypi-mirror", action="store_true", dest="use_pypi_mirror", help="使用国内 PyPI 镜像源")

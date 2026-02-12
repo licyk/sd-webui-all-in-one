@@ -9,7 +9,6 @@ from typing import (
 
 PYTORCH_MIRROR_DICT = {
     "all": "https://download.pytorch.org/whl",
-    "other": "https://download.pytorch.org/whl",
     "cpu": "https://download.pytorch.org/whl/cpu",
     "xpu": "https://download.pytorch.org/whl/xpu",
     "rocm5.4.2": "https://download.pytorch.org/whl/rocm5.4.2",
@@ -36,7 +35,6 @@ PYTORCH_MIRROR_DICT = {
 
 PYTORCH_MIRROR_NJU_DICT = {
     "all": "https://mirror.nju.edu.cn/pytorch/whl",
-    "other": "https://mirror.nju.edu.cn/pytorch/whl",
     "cpu": "https://mirror.nju.edu.cn/pytorch/whl/cpu",
     "xpu": "https://mirror.nju.edu.cn/pytorch/whl/xpu",
     "rocm5.4.2": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2",

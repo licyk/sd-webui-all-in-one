@@ -112,7 +112,7 @@ def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
 
     if torch_version < CommonVersionComparison("2.0.0"):
         # torch < 2.0.0: default cu11x
-        return "other"
+        return "all"
     if CommonVersionComparison("2.0.0") <= torch_version < CommonVersionComparison("2.3.1"):
         # 2.0.0 <= torch < 2.3.1: default cu118
         return "cu118"
@@ -184,7 +184,7 @@ def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
     torch_version = CommonVersionComparison(torch_ver)
     if torch_version < CommonVersionComparison("2.4.0"):
         # torch < 2.4.0
-        return "other"
+        return "all"
     if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.5.0"):
         # 2.4.0 <= torch < 2.5.0
         return "rocm6.1"
@@ -218,13 +218,13 @@ def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
     torch_version = CommonVersionComparison(torch_ver)
     if torch_version < CommonVersionComparison("2.0.0"):
         # torch < 2.0.0
-        return "other"
+        return "all"
     if torch_version == CommonVersionComparison("2.0.0"):
         # torch == 2.0.0
         return "ipex_legacy_arc"
     if CommonVersionComparison("2.0.0") < torch_version < CommonVersionComparison("2.1.0"):
         # 2.0.0 < torch < 2.1.0
-        return "other"
+        return "all"
     if torch_version == CommonVersionComparison("2.1.0"):
         # torch == 2.1.0
         return "ipex_legacy_arc"
@@ -271,7 +271,7 @@ def get_pytorch_mirror_type(torch_ver: str, device_type: PyTorchDeviceTypeCatego
     if device_type == "cpu":
         return get_pytorch_mirror_type_cpu(torch_ver)
 
-    return "other"
+    return "all"
 
 
 def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
@@ -589,7 +589,9 @@ def get_avaliable_pytorch_device_type() -> list[str]:
     gpu_list = get_gpu_list()
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
-    device_list = ["cpu", "all"]
+    device_list = ["all"]
+    if sys.platform != "darwin":
+        device_list.append("cpu")
 
     gpu_avaliable = has_gpus(gpu_list)
     nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
