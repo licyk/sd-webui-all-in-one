@@ -655,7 +655,9 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # extension uninstall
     ext_uninstall_p = ext_sub.add_parser("uninstall", help="卸载扩展")
-    ext_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_uninstall_p.add_argument(
+        "--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录"
+    )
     ext_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
     ext_uninstall_p.set_defaults(
         func=lambda args: uninstall_extension(
@@ -711,7 +713,9 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
 
     # model uninstall
     model_uninstall_p = model_sub.add_parser("uninstall", help="卸载模型")
-    model_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    model_uninstall_p.add_argument(
+        "--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录"
+    )
     model_uninstall_p.add_argument("--name", required=True, dest="name", help="模型名称")
     model_uninstall_p.add_argument("--type", dest="type", help="模型类型")
     model_uninstall_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")

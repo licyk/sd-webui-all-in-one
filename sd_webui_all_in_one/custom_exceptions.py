@@ -1,6 +1,7 @@
 import traceback
 import os
 
+
 class AggregateError(Exception):
     """
     聚合异常类：用于在多个任务执行完成后，统一抛出所有捕获到的异常。
@@ -8,6 +9,7 @@ class AggregateError(Exception):
     Attributes:
         exceptions (List[Exception]): 存储所有捕获到的原始异常对象。
     """
+
     RED = "\033[31m"
     GREEN = "\033[32m"
     YELLOW = "\033[33m"
@@ -48,7 +50,7 @@ class AggregateError(Exception):
             if tb:
                 summary = traceback.extract_tb(tb)[-1]
                 filename = os.path.basename(summary.filename)
-                location_info = f'{self.CYAN}文件 `{filename}`, 第 `{summary.lineno}` 行, 在 `{summary.name}` 中{self.RESET}'
+                location_info = f"{self.CYAN}文件 `{filename}`, 第 `{summary.lineno}` 行, 在 `{summary.name}` 中{self.RESET}"
 
             exc_summary = f"{self.BOLD}{self.YELLOW}{type(exc).__name__}: {exc}{self.RESET}"
             stack_trace: str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))

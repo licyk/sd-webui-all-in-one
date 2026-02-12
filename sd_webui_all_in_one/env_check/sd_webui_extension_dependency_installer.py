@@ -38,9 +38,9 @@ def run_extension_installer(
     path_installer = extension_dir / "install.py"
     if not path_installer.is_file():
         return False
-    
+
     if custom_env is None:
-        env = os.environ.copy(  )
+        env = os.environ.copy()
     else:
         env = custom_env.copy()
 
@@ -49,7 +49,6 @@ def run_extension_installer(
     env["WEBUI_LAUNCH_LIVE_OUTPUT"] = "1"
 
     try:
-        
         run_cmd(
             command=[Path(sys.executable).as_posix(), path_installer.as_posix()],
             custom_env=env,

@@ -50,6 +50,7 @@ def get_proxy() -> str:
         addr = ""
     print(addr)
 
+
 def register_manager(subparsers: "argparse._SubParsersAction") -> None:
     """注册 SD WebUI All In One 模块及其子命令
 
@@ -90,6 +91,4 @@ def register_manager(subparsers: "argparse._SubParsersAction") -> None:
 
     # get-proxy
     get_proxy_p = sd_webui_all_in_one_sub.add_parser("get-proxy", help="获取系统代理地址")
-    get_proxy_p.set_defaults(
-        func=lambda args: get_proxy()
-    )
+    get_proxy_p.set_defaults(func=lambda args: get_proxy())

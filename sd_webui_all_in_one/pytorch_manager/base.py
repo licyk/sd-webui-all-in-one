@@ -120,6 +120,7 @@ PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "mps", "cp
 PYTORCH_DEVICE_CATEGORY_LIST: list[str] = list(get_args(PyTorchDeviceTypeCategory))
 """PyTorch 支持的设备类型列表 (不带版本号)"""
 
+
 class PyTorchMirrorType(TypedDict, total=False):
     """PyTorch 镜像源类型"""
 

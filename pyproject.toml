@@ -67,3 +67,7 @@ indent-width = 4
 lint.ignore = [
     "E402" # module-import-not-at-top-of-file
 ]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = false

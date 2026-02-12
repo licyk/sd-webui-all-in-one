@@ -352,6 +352,7 @@ def download_file(
     try:
         if selected_tool == "requests":
             import requests
+
             _ = requests
     except ImportError:
         logger.warning("未安装 requests, 将切换到 urllib 进行下载")

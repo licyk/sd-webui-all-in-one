@@ -361,10 +361,7 @@ def switch_fooocus_branch(
             input_err = (0, None)
 
             print(
-                "请选择要切换的 Fooocus 分支\n"
-                "提示:\n"
-                "1. 输入数字后回车即可选择切换到指定的分支\n"
-                "2. 输入 exit 后回车退出分支切换"
+                "请选择要切换的 Fooocus 分支\n提示:\n1. 输入数字后回车即可选择切换到指定的分支\n2. 输入 exit 后回车退出分支切换",
             )
             user_input = input("==> ").strip()
 

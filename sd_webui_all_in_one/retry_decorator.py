@@ -14,9 +14,12 @@ logger = get_logger(
 T = TypeVar("T")
 P = ParamSpec("P")
 
+
 class RetrySignalError(Exception):
     """仅供装饰器内部使用的重试信号异常"""
-    pass # pylint: disable=unnecessary-pass
+
+    pass  # pylint: disable=unnecessary-pass
+
 
 def retryable(
     times: int | None = 3,
@@ -78,7 +81,7 @@ def retryable(
                         raise ValueError(f"'{target_info}' 返回结果为空")
 
                     return cast(T, result)
-                except catch_exc as e: # pylint: disable=catching-non-exception
+                except catch_exc as e:  # pylint: disable=catching-non-exception
                     err = e
                     # 判断是否是内部信号触发的
                     error_msg = str(e) if isinstance(e, RetrySignalError) else f"{type(e).__name__}: {e}"

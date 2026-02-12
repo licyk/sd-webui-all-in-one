@@ -24,6 +24,7 @@ from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIS
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.invokeai_base import reinstall_invokeai_pytorch
 
+
 def install(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,

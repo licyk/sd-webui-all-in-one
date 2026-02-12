@@ -1,6 +1,6 @@
 """SD WebUI All In One 补丁模块初始化"""
 
-from sdaio_patches.uv_patch import patch_uv_to_subprocess # noqa: F401  # pylint: disable=unused-import
+from sdaio_patches.uv_patch import patch_uv_to_subprocess  # noqa: F401  # pylint: disable=unused-import
 
 
 # patch_uv_to_subprocess()

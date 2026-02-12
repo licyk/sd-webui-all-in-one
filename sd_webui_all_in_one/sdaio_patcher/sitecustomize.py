@@ -7,4 +7,4 @@
 # pylint: disable=wildcard-import
 # pylint: disable=wrong-import-position
 # pylint: disable=unused-import
-import sdaio_initializer # noqa: F401
+import sdaio_initializer  # noqa: F401

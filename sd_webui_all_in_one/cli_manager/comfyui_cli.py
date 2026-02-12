@@ -24,6 +24,7 @@ from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorc
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 
+
 def install(
     comfyui_path: Path,
     pytorch_mirror_type: PyTorchDeviceType | None = None,

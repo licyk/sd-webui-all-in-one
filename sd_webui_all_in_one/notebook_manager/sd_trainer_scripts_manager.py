@@ -179,7 +179,7 @@ class SDTrainerScriptsManager(BaseManager):
         install_manager_depend(
             use_uv=use_uv,
             custom_sys_pkg_cmd=custom_sys_pkg_cmd,
-        ) 
+        )
         install_sd_scripts(
             sd_scripts_path=sd_scripts_path,
             pytorch_mirror_type=pytorch_mirror_type,
