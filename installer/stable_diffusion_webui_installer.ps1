@@ -594,7 +594,7 @@ function Install-Python {
         $zip_name = $py_info.Name
         $urls = $py_info.Url
     } else {
-        Write-Log "不支持当前的平台安装: ($platform, $arch)"
+        Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
@@ -654,7 +654,7 @@ function Install-Git {
             )
         }
         else {
-            Write-Log "不支持当前的平台安装: ($platform, $arch)"
+            Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
             if (!($script:BuildMode)) { Read-Host | Out-Null }
             exit 1
         }
@@ -1508,7 +1508,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -1625,8 +1625,8 @@ function Get-WebUILaunchArgs {
 
 # 设置快捷启动方式
 function Add-Shortcut {
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
-        `$git_remote = `$(git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin)
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX `".git`"))) {
+        `$git_remote = `$(git -C (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui`") -or (`$branch -eq `"AUTOMATIC1111/stable-diffusion-webui.git`")) {
@@ -1655,6 +1655,11 @@ function Add-Shortcut {
         return
     }
 
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        Write-Log `"当前平台不支持创建快捷启动方式`" -Level WARNING
+        return
+    }
+
     Write-Log `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 Stable Diffusion WebUI 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
         Write-Log `"获取 Stable Diffusion WebUI 图标中`"
@@ -1665,7 +1670,7 @@ function Add-Shortcut {
         }
         Invoke-WebRequest @web_request_params
         if (!(`$?)) {
-            Write-Log `"获取 Stable Diffusion WebUI 图标失败, 无法创建 Stable Diffusion WebUI 快捷启动方式`"
+            Write-Log `"获取 Stable Diffusion WebUI 图标失败, 无法创建 Stable Diffusion WebUI 快捷启动方式`" -Level ERROR
             return
         }
     }
@@ -1673,16 +1678,16 @@ function Add-Shortcut {
     Write-Log `"更新 Stable Diffusion WebUI 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
-    `$shortcut_path = `"`$desktop\`$filename.lnk`"
+    `$shortcut_path = Join-NormalizedPath `$desktop `"`$filename.lnk`"
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
-    `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
+    `$shortcut.TargetPath = Join-NormalizedPath `$PSHome `"powershell.exe`"
     `$launch_script_path = `$(Get-Item (Join-NormalizedPath `$PSScriptRoot `"launch.ps1`")).FullName
     `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
 
     # 保存到桌面
     `$shortcut.Save()
-    `$start_menu_path = `"`$Env:APPDATA/Microsoft/Windows/Start Menu/Programs`"
+    `$start_menu_path = Join-NormalizedPath `$Env:APPDATA `"Microsoft`" `"Windows`" `"Start Menu`" `"Programs`"
     # 保存到开始菜单
     Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
 }
@@ -1690,7 +1695,7 @@ function Add-Shortcut {
 
 # 检测 Microsoft Visual C++ Redistributable
 function Test-MSVCPPRedistributable {
-    if (!(`$env:OS -like `"*Windows*`" -or `$IsWindows)) {
+    if ((Get-CurrentPlatform) -ne `"windows`") {
         Write-Log `"非 Windows 系统，跳过 Microsoft Visual C++ Redistributable 检测`"
         return
     }
@@ -1698,7 +1703,7 @@ function Test-MSVCPPRedistributable {
     Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
 
     if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
-        `$vc_runtime_dll_path = `"C:/Windows/System32/vcruntime140_1.dll`"
+        `$vc_runtime_dll_path = Join-NormalizedPath Join-NormalizedPath `"C:/`" `"Windows`" `"System32`" `"vcruntime140_1.dll`"
     } else {
         `$vc_runtime_dll_path = Join-NormalizedPath `$env:SYSTEMROOT `"System32`" `"vcruntime140_1.dll`"
     }
@@ -1708,7 +1713,7 @@ function Test-MSVCPPRedistributable {
         return
     }
 
-    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
+    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`" -Level WARNING
     Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
 
     Add-Type -AssemblyName PresentationFramework
@@ -1728,7 +1733,7 @@ function Test-MSVCPPRedistributable {
 function Test-WebUIEnv {
     param ([System.Collections.ArrayList]`$ArrayList)
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) -or (`$script:DisableEnvCheck)) {
-        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Stable Diffusion WebUI 运行环境检测, 这可能会导致 Stable Diffusion WebUI 运行环境中存在的问题无法被发现并解决`"
+        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Stable Diffusion WebUI 运行环境检测, 这可能会导致 Stable Diffusion WebUI 运行环境中存在的问题无法被发现并解决`" -Level WARNING
         `$ArrayList.Add(`"--no-check-env`") | Out-Null
     }
 }
@@ -1759,8 +1764,8 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -1778,7 +1783,7 @@ function Main {
         if (`$req) {
             Write-Log `"Stable Diffusion WebUI 正常退出`"
         } else {
-            Write-Log `"Stable Diffusion WebUI 出现异常, 已退出`"
+            Write-Log `"Stable Diffusion WebUI 出现异常, 已退出`" -Level ERROR
         }
         Read-Host | Out-Null
     }
@@ -1901,8 +1906,8 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2031,8 +2036,8 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2173,8 +2178,8 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path `"`$PSScriptRoot/`$env:CORE_PREFIX`")) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2389,9 +2394,9 @@ function Get-LocalSetting {
         @{ Key = `"sd_next_dev`";           Val = `"sd_next_dev`" }
     )
     `$detected_branch = `$null
-    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path `"`$PSScriptRoot/`$Env:CORE_PREFIX/.git`")) {
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX `".git`"))) {
         try {
-            `$remoteUrl = (git -C `"`$PSScriptRoot/`$Env:CORE_PREFIX`" remote get-url origin).Trim() -replace '\.git`$', ''
+            `$remoteUrl = (git -C (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) remote get-url origin).Trim() -replace '\.git`$', ''
             `$urlParts = `$remoteUrl -split '/'
             `$repoKey = `"`$(`$urlParts[-2])/`$(`$urlParts[-1])`"
             if (`$git_repo_map.ContainsKey(`$repoKey)) {
@@ -2724,7 +2729,7 @@ function Main {
     Update-Aria2
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2886,7 +2891,7 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`"), (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
             Write-Log `"请输入 `$name 地址, 示例:`"
-            `$examples | ForEach-Object { Write-Log `"  `$_`" -Level ERROR }
+            `$examples | ForEach-Object { Write-Log `"  `$_`" -Level INFO }
             `$addr = Get-UserInput
             if (`$addr) {
                 Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`") -Force -ErrorAction SilentlyContinue
@@ -3009,7 +3014,7 @@ param (
 try {
     `$global:OriginalScriptPath = `$PSCommandPath
     `$global:LaunchCommandLine = `$MyInvocation.Line
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
         `$script:OriginalScriptPath = `$global:OriginalScriptPath
         `$script:LaunchCommandLine = `$global:LaunchCommandLine
         Remove-Variable OriginalScriptPath -Scope Global -Force
@@ -3160,7 +3165,12 @@ function global:Install-Hanamizuki {
     `$i = 0
 
     if (!(Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 未找到, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`"
+        Write-Log `"内核路径 (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 未找到, 无法安装绘世启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
+        return
+    }
+
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        Write-Log `"当前平台不支持安装绘世启动器`" -Level WARNING
         return
     }
 
@@ -3189,7 +3199,7 @@ function global:Install-Hanamizuki {
                 if (`$i -lt `$urls.Length) {
                     Write-Log `"重试下载绘世启动器中`" -Level WARNING
                 } else {
-                    Write-Log `"下载绘世启动器失败`"
+                    Write-Log `"下载绘世启动器失败`" -Level ERRO
                     return
                 }
             }
@@ -3267,31 +3277,31 @@ if exist .\hanamizuki.exe (
     Write-Log `"检查绘世启动器运行环境`"
     if (!(Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"))) {
         if (Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"python`")) {
-            Write-Log `"尝试将 Python 移动至 `$env:SD_WEBUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
+            Write-Log `"尝试将 Python 移动至 `$(Join-NormalizedPath env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
             Move-Item -Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"python`") (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Python 路径移动成功`"
             } else {
-                Write-Log `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`"
+                Write-Log `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`" -Level ERROR
                 Write-Log `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
             }
         } else {
-            Write-Log `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境`"
+            Write-Log `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境`" -Level ERROR
         }
     }
 
     if (!(Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"git`" `"bin`" `"git.exe`"))) {
         if (Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"git`")) {
-            Write-Log `"尝试将 Git 移动至 `$env:SD_WEBUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
+            Write-Log `"尝试将 Git 移动至 `$(Join-NormalizedPath env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
             Move-Item -Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"git`") (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Git 路径移动成功`"
             } else {
-                Write-Log `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`"
+                Write-Log `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`" -Level ERROR
                 Write-Log `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
             }
         } else {
-            Write-Log `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境`"
+            Write-Log `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境`" -Level ERROR
         }
     }
 
@@ -3338,48 +3348,6 @@ function Get-PyPIMirrorStatus {
         Write-Log `"使用 PyPI 镜像源`"
     } else {
         Write-Log `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror, 命令行参数 已将 PyPI 源切换至官方源`"
-    }
-}
-
-
-# 代理配置
-function Set-Proxy {
-    `$env:NO_PROXY = `"localhost,127.0.0.1,::1`"
-    # 检测是否禁用自动设置镜像源
-    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) -or (`$script:DisableProxy)) {
-        Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件 / -DisableProxy 命令行参数, 禁用自动设置代理`"
-        return
-    }
-
-    `$internet_setting = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) -or (`$script:UseCustomProxy)) { # 本地存在代理配置
-        if (`$script:UseCustomProxy) {
-            `$proxy_value = `$script:UseCustomProxy
-        } else {
-            `$proxy_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-    } elseif (`$internet_setting.ProxyEnable -eq 1) { # 系统已设置代理
-        `$proxy_addr = `$(`$internet_setting.ProxyServer)
-        # 提取代理地址
-        if ((`$proxy_addr -match `"http=(.*?);`") -or (`$proxy_addr -match `"https=(.*?);`")) {
-            `$proxy_value = `$matches[1]
-            # 去除 http / https 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"http://`${proxy_value}`"
-        } elseif (`$proxy_addr -match `"socks=(.*)`") {
-            `$proxy_value = `$matches[1]
-            # 去除 socks 前缀
-            `$proxy_value = `$proxy_value.ToString().Replace(`"http://`", `"`").Replace(`"https://`", `"`")
-            `$proxy_value = `"socks://`${proxy_value}`"
-        } else {
-            `$proxy_value = `"http://`${proxy_addr}`"
-        }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
     }
 }
 
@@ -3440,7 +3408,7 @@ function Main {
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
-    Set-Proxy
+    Set-Proxy -Legacy
     Set-HuggingFaceMirror
     Set-GithubMirrorLegecy
     Get-PyPIMirrorStatus
@@ -3591,34 +3559,34 @@ function Copy-InstallerConfig {
     Write-Log "为 SD WebUI Installer 管理脚本复制 SD WebUI Installer 配置文件中"
 
     if ((!($script:DisablePyPIMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) {
-        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -Destination $script:InstallPath
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'disable_pypi_mirror.txt') -> $(Join-NormalizedPath $script:InstallPath 'disable_pypi_mirror.txt')" -Force
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_pypi_mirror.txt")"
     }
 
     if ((!($script:DisableProxy)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'disable_proxy.txt') -> $(Join-NormalizedPath $script:InstallPath 'disable_proxy.txt')" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_proxy.txt")"
     } elseif ((!($script:DisableProxy)) -and ($script:UseCustomProxy -eq "") -and (Test-Path (Join-NormalizedPath $PSScriptRoot "proxy.txt")) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt")))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'proxy.txt') -> $(Join-NormalizedPath $script:InstallPath 'proxy.txt')"
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "proxy.txt")"
     }
 
     if ((!($script:DisableUV)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'disable_uv.txt') -> $(Join-NormalizedPath $script:InstallPath 'disable_uv.txt')" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_uv.txt")"
     }
 
     if ((!($script:DisableGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'disable_gh_mirror.txt') -> $(Join-NormalizedPath $script:InstallPath 'disable_gh_mirror.txt')"
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_gh_mirror.txt")"
     } elseif ((!($script:DisableGithubMirror)) -and (!($script:UseCustomGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt")) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt")))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'gh_mirror.txt') -> $(Join-NormalizedPath $script:InstallPath 'gh_mirror.txt')"
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "gh_mirror.txt")"
     }
 
     if ((!($script:CorePrefix)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot 'core_prefix.txt') -> $(Join-NormalizedPath $script:InstallPath 'core_prefix.txt')" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")"
     }
 }
 
@@ -3714,6 +3682,11 @@ function Install-Hanamizuki {
         return
     }
 
+    if ((Get-CurrentPlatform) -ne "windows") {
+        Write-Log "当前平台不支持安装绘世启动器" -Level WARNING
+        return
+    }
+
     New-Item -ItemType Directory -Path "$env:CACHE_HOME" -Force > $null
 
     if (Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe")) {
@@ -3739,7 +3712,7 @@ function Install-Hanamizuki {
                 if ($i -lt $urls.Length) {
                     Write-Log "重试下载绘世启动器中" -Level WARNING
                 } else {
-                    Write-Log "下载绘世启动器失败"
+                    Write-Log "下载绘世启动器失败" -Level ERROR
                     return
                 }
             }
@@ -3759,7 +3732,7 @@ function Initialize-HanamizukiEnv {
     Write-Log "检查绘世启动器运行环境"
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "python.exe"))) {
         if (Test-Path (Join-NormalizedPath $script:InstallPath "python")) {
-            Write-Log "尝试将 Python 移动至 $script:InstallPath\$env:CORE_PREFIX 中"
+            Write-Log "尝试将 Python 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
             Move-Item -Path (Join-NormalizedPath $script:InstallPath "python") (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
             if ($?) {
                 Write-Log "Python 路径移动成功"
@@ -3774,7 +3747,7 @@ function Initialize-HanamizukiEnv {
 
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git" "bin" "git.exe"))) {
         if (Test-Path (Join-NormalizedPath $script:InstallPath "git")) {
-            Write-Log "尝试将 Git 移动至 $script:InstallPath\$env:CORE_PREFIX 中"
+            Write-Log "尝试将 Git 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
             Move-Item -Path (Join-NormalizedPath $script:InstallPath "git") (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
             if ($?) {
                 Write-Log "Git 路径移动成功"

@@ -552,7 +552,7 @@ function Install-Python {
         $zip_name = $py_info.Name
         $urls = $py_info.Url
     } else {
-        Write-Log "不支持当前的平台安装: ($platform, $arch)"
+        Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
         exit 1
     }
@@ -612,7 +612,7 @@ function Install-Git {
             )
         }
         else {
-            Write-Log "不支持当前的平台安装: ($platform, $arch)"
+            Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
             if (!($script:BuildMode)) { Read-Host | Out-Null }
             exit 1
         }
@@ -1447,7 +1447,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -1572,6 +1572,11 @@ function Add-Shortcut {
         return
     }
 
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        Write-Log `"当前平台不支持创建快捷启动方式`" -Level WARNING
+        return
+    }
+
     Write-Log `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 ComfyUI 快捷启动方式中`"
     if (!(Test-Path `"`$shortcut_icon`")) {
         Write-Log `"获取 ComfyUI 图标中`"
@@ -1582,7 +1587,7 @@ function Add-Shortcut {
         }
         Invoke-WebRequest @web_request_params
         if (!(`$?)) {
-            Write-Log `"获取 ComfyUI 图标失败, 无法创建 ComfyUI 快捷启动方式`"
+            Write-Log `"获取 ComfyUI 图标失败, 无法创建 ComfyUI 快捷启动方式`" -Level ERROR
             return
         }
     }
@@ -1590,9 +1595,9 @@ function Add-Shortcut {
     Write-Log `"更新 ComfyUI 快捷启动方式`"
     `$shell = New-Object -ComObject WScript.Shell
     `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
-    `$shortcut_path = `"`$desktop\`$filename.lnk`"
+    `$shortcut_path = Join-NormalizedPath `$desktop `"`$filename.lnk`"
     `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
-    `$shortcut.TargetPath = `"`$PSHome\powershell.exe`"
+    `$shortcut.TargetPath = Join-NormalizedPath `$PSHome `"powershell.exe`"
     `$launch_script_path = `$(Get-Item (Join-NormalizedPath `$PSScriptRoot `"launch.ps1`")).FullName
     `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
     `$shortcut.IconLocation = `$shortcut_icon
@@ -1607,7 +1612,7 @@ function Add-Shortcut {
 
 # 检测 Microsoft Visual C++ Redistributable
 function Test-MSVCPPRedistributable {
-    if (!(`$env:OS -like `"*Windows*`" -or `$IsWindows)) {
+    if ((Get-CurrentPlatform) -ne `"windows`") {
         Write-Log `"非 Windows 系统，跳过 Microsoft Visual C++ Redistributable 检测`"
         return
     }
@@ -1625,7 +1630,7 @@ function Test-MSVCPPRedistributable {
         return
     }
 
-    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`"
+    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`" -Level WARNING
     Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
 
     Add-Type -AssemblyName PresentationFramework
@@ -1645,7 +1650,7 @@ function Test-MSVCPPRedistributable {
 function Test-WebUIEnv {
     param ([System.Collections.ArrayList]`$ArrayList)
     if ((`$script:DisableEnvCheck) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`"))) {
-        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`"
+        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 ComfyUI 运行环境检测, 这可能会导致 ComfyUI 运行环境中存在的问题无法被发现并解决`" -Level WARNING
         `$ArrayList.Add(`"--no-check-env`") | Out-Null
     }
 }
@@ -1677,7 +1682,7 @@ function Main {
     Update-SDWebUiAllInOne
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -1695,7 +1700,7 @@ function Main {
         if (`$req) {
             Write-Log `"ComfyUI 正常退出`"
         } else {
-            Write-Log `"ComfyUI 出现异常, 已退出`"
+            Write-Log `"ComfyUI 出现异常, 已退出`" -Level ERROR
         }
         Read-Host | Out-Null
     }
@@ -1819,7 +1824,7 @@ function Main {
     Update-SDWebUiAllInOne
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -1949,7 +1954,7 @@ function Main {
     Update-SDWebUiAllInOne
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2220,7 +2225,7 @@ try {
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2449,7 +2454,7 @@ function Main {
     Update-Aria2
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$PSScriptRoot\`$env:CORE_PREFIX 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR
         Read-Host | Out-Null
         return
     }
@@ -2611,7 +2616,7 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`"), (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
             Write-Log `"请输入 `$name 地址, 示例:`"
-            `$examples | ForEach-Object { Write-Log `"  `$_`" -Level ERROR }
+            `$examples | ForEach-Object { Write-Log `"  `$_`" -Level INFO }
             `$addr = Get-UserInput
             if (`$addr) {
                 Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`") -Force -ErrorAction SilentlyContinue
@@ -2737,7 +2742,7 @@ try {
         LaunchCommandLine = `$script:MyInvocation.Line
         CorePrefix = `$script:CorePrefix
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2887,7 +2892,12 @@ function global:Install-Hanamizuki {
     `$i = 0
 
     if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$((Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX)) 未找到, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`"
+        Write-Log `"内核路径 `$((Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX)) 未找到, 无法安装绘世启动器, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR
+        return
+    }
+
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        Write-Log `"当前平台不支持安装绘世启动器`" -Level WARNING
         return
     }
 
@@ -2916,7 +2926,7 @@ function global:Install-Hanamizuki {
                 if (`$i -lt `$urls.Length) {
                     Write-Log `"重试下载绘世启动器中`" -Level WARNING
                 } else {
-                    Write-Log `"下载绘世启动器失败`"
+                    Write-Log `"下载绘世启动器失败`" -Level ERRO
                     return
                 }
             }
@@ -2989,36 +2999,36 @@ if exist .\hanamizuki.exe (
 )
     `".Trim()
 
-    Set-Content -Encoding Default -Path `"`$env:COMFYUI_INSTALLER_ROOT/hanamizuki.bat`" -Value `$content
+    Set-Content -Encoding Default -Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"hanamizuki.bat`") -Value `$content
 
     Write-Log `"检查绘世启动器运行环境`"
     if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"))) {
         if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"python`")) {
-            Write-Log `"尝试将 Python 移动至 `$env:COMFYUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
+            Write-Log `"尝试将 Python 移动至 `$(Join-NormalizedPath env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
             Move-Item -Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"python`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Python 路径移动成功`"
             } else {
-                Write-Log `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`"
+                Write-Log `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`" -Level ERROR
                 Write-Log `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
             }
         } else {
-            Write-Log `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 ComfyUI Installer 修复环境`"
+            Write-Log `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 ComfyUI Installer 修复环境`" -Level ERROR
         }
     }
 
     if (!(Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"git`" `"bin`" `"git.exe`"))) {
         if (Test-Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"git`")) {
-            Write-Log `"尝试将 Git 移动至 `$env:COMFYUI_INSTALLER_ROOT\`$env:CORE_PREFIX 中`"
+            Write-Log `"尝试将 Git 移动至 `$(Join-NormalizedPath env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
             Move-Item -Path (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `"git`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
             if (`$?) {
                 Write-Log `"Git 路径移动成功`"
             } else {
-                Write-Log `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`"
+                Write-Log `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`" -Level ERROR
                 Write-Log `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
             }
         } else {
-            Write-Log `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 ComfyUI Installer 修复环境`"
+            Write-Log `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 ComfyUI Installer 修复环境`" -Level ERROR
         }
     }
 
@@ -3275,13 +3285,13 @@ function Copy-InstallerConfig {
     Write-Log "为 ComfyUI Installer 管理脚本复制 ComfyUI Installer 配置文件中"
 
     if ((!($script:DisablePyPIMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) {
-        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -Destination $script:InstallPath
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_pypi_mirror.txt")" -Force
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_pypi_mirror.txt")"
     }
 
     if ((!($script:DisableProxy)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_proxy.txt")" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_proxy.txt")"
     } elseif ((!($script:DisableProxy)) -and ($script:UseCustomProxy -eq "") -and (Test-Path (Join-NormalizedPath $PSScriptRoot "proxy.txt")) -and (!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_proxy.txt")))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "proxy.txt") -> $(Join-NormalizedPath $script:InstallPath "proxy.txt")"
@@ -3289,7 +3299,7 @@ function Copy-InstallerConfig {
 
     if ((!($script:DisableUV)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_uv.txt")" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_uv.txt")"
     }
 
     if ((!($script:DisableGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
@@ -3302,7 +3312,7 @@ function Copy-InstallerConfig {
 
     if ((!($script:CorePrefix)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")" -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")"
     }
 }
 
@@ -3399,7 +3409,8 @@ function Install-Hanamizuki {
     }
 
     if ((Get-CurrentPlatform) -ne "windows") {
-        Write-Log "不支持当前的系统安装绘世启动器" -Level WARNING
+        Write-Log "当前平台不支持安装绘世启动器" -Level WARNING
+        return
     }
 
     New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
@@ -3427,7 +3438,7 @@ function Install-Hanamizuki {
                 if ($i -lt $urls.Length) {
                     Write-Log "重试下载绘世启动器中" -Level WARNING
                 } else {
-                    Write-Log "下载绘世启动器失败"
+                    Write-Log "下载绘世启动器失败" -Level ERROR
                     return
                 }
             }
