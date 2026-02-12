@@ -485,15 +485,15 @@ def install_pypatchmatch(
     tasks = [
         (
             [
-                "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/libpatchmatch_windows_amd64.dll",
-                "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/libpatchmatch_windows_amd64.dll",
+                "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/patchmatch/libpatchmatch_windows_amd64.dll",
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/patchmatch/libpatchmatch_windows_amd64.dll",
             ],
             "libpatchmatch_windows_amd64.dll",
         ),
         (
             [
-                "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/opencv_world460.dll",
-                "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/opencv_world460.dll",
+                "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/patchmatch/opencv_world460.dll",
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/patchmatch/opencv_world460.dll",
             ],
             "opencv_world460.dll",
         ),

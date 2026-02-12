@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 311
+$script:COMFYUI_INSTALLER_VERSION = 312
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.14"
+$script:CORE_MINIMUM_VER = "2.0.15"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -602,13 +602,13 @@ function Install-Git {
         if ($arch -eq "amd64") {
             $urls = @(
                 "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/amd64/portable_git-2.53.0-x86_64.zip",
-                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/amd64/git-2.53.0-x86_64.zip"
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/amd64/portable_git-2.53.0-x86_64.zip"
             )
         }
         elseif ($arch -eq "arm64") {
             $urls = @(
                 "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/aarch64/portable_git-2.53.0-aarch64.zip",
-                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/aarch64/git-2.53.0-aarch64.zip"
+                "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/aarch64/portable_git-2.53.0-aarch64.zip"
             )
         }
         else {
@@ -661,8 +661,8 @@ function Install-Git {
 # 下载 Aria2
 function Install-WindowsAria2 {
     $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe",
-        "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe"
+        "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/aria2/windows/amd64/aria2c.exe",
+        "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/aria2/windows/amd64/aria2c.exe"
     )
     $i = 0
 
@@ -1085,8 +1085,8 @@ function Update-Installer {
 # 更新 Aria2 (Windows) 版本
 function Update-WindowsAria2 {
     `$urls = @(
-        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/aria2c.exe`",
-        `"https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/aria2c.exe`"
+        `"https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/aria2/windows/amd64/aria2c.exe`",
+        `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/aria2/windows/amd64/aria2c.exe`"
     )
     `$aria2_tmp_path = Join-NormalizedPath `$env:CACHE_HOME `"aria2c.exe`"
     New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
@@ -1565,7 +1565,7 @@ function Get-WebUILaunchArgs {
 # 设置快捷启动方式
 function Add-Shortcut {
     `$filename = `"ComfyUI`"
-    `$url = `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/comfyui_icon.ico`"
+    `$url = `"https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/icon/comfyui_icon.ico`"
     `$shortcut_icon = Join-NormalizedPath `$PSScriptRoot `"comfyui_icon.ico`"
 
     if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) -and (!(`$script:EnableShortcut))) {
@@ -2885,7 +2885,8 @@ function global:prompt {
 # 安装绘世启动器
 function global:Install-Hanamizuki {
     `$urls = @(
-        `"https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe`",
+        `"https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/hanamizuki/hanamizuki.exe`",
+        `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/hanamizuki/hanamizuki.exe`",
         `"https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`",
         `"https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe`"
     )
@@ -3398,7 +3399,8 @@ if exist .\hanamizuki.exe (
 # 安装绘世启动器
 function Install-Hanamizuki {
     $urls = @(
-        "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe",
+        "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/hanamizuki/hanamizuki.exe",
+        "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/hanamizuki/hanamizuki.exe",
         "https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe",
         "https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe"
     )

@@ -628,9 +628,10 @@ SD WebUI Installer 部署出来的 Stable Diffusion WebUI 可以通过绘世启�
 
 |绘世启动器下载|
 |---|
-|[下载地址 1](https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/hanamizuki.exe)|
-|[下载地址 2](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
-|[下载地址 3](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+|[下载地址 1](https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/hanamizuki/hanamizuki.exe)|
+|[下载地址 2](https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/hanamizuki/hanamizuki.exe)|
+|[下载地址 3](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
+|[下载地址 4](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe)|
 
 
 ## 使用 SD WebUI Installer 管理已有的 Stable Diffusion WebUI

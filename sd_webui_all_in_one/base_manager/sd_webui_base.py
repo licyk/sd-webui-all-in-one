@@ -724,9 +724,9 @@ def install_clip_package(
     """
 
     if use_pypi_mirror:
-        pkg_url = "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/clip-1.0-py3-none-any.whl"
+        pkg_url = "https://modelscope.cn/models/licyks/wheels/resolve/master/clip/clip-1.0-py3-none-any.whl"
     else:
-        pkg_url = "https://huggingface.co/licyk/invokeai-core-model/resolve/main/pypatchmatch/clip-1.0-py3-none-any.whl"
+        pkg_url = "https://huggingface.co/licyk/wheel/resolve/main/clip/clip-1.0-py3-none-any.whl"
 
     logger.info("检测是否需要安装 CLIP 软件包")
     try:
