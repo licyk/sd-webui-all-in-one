@@ -71,10 +71,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 307
+$script:INVOKEAI_INSTALLER_VERSION = 308
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.13"
+$script:CORE_MINIMUM_VER = "2.0.14"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -2665,14 +2665,14 @@ function Main {
         `$menu = @(
             @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义 (地址: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()))`" } else { `"系统`" }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
-            @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=6;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
             @{ id=7;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
         )
 
@@ -2698,9 +2698,9 @@ function Main {
             `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
             `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
-            `"12`" { Update-Installer -DisableRestart }
+            `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
             `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md`" }
-            `"14`" { return }
+            `"14`" { Write-Log `"退出设置`"; return }
         }
     }
 }
@@ -2869,7 +2869,7 @@ function Get-InstallerCmdletHelp {
 
 # 提示符信息
 function global:prompt {
-    `"`$(Write-Host `"[SD Trainer Scripts Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
+    `"`$(Write-Host `"[InvokeAI Env]`" -ForegroundColor Green -NoNewLine) `$(Get-Location)> `"
 }
 
 
@@ -2979,7 +2979,7 @@ function Main {
     if (Test-Path (Join-NormalizedPath `$env:INVOKEAI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`")) {
         `$env:UV_PYTHON = Join-NormalizedPath `$env:INVOKEAI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"
     }
-    Write-Log `"激活 SD Trainer Scripts Env`"
+    Write-Log `"激活 InvokeAI Env`"
     Write-Log `"更多帮助信息可在 InvokeAI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md`"
 }
 
@@ -3051,7 +3051,7 @@ Github：https://github.com/licyk
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- invokeai：InvokeAI 存放模型、图片、配置文件等的文件夹。
+- invokea / corei：InvokeAI 存放模型、图片、配置文件等的文件夹。
 - models：使用模型下载脚本下载模型时模型的存放位置。
 
 详细的 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
@@ -3168,6 +3168,7 @@ function Use-InstallMode {
     }
 
     Write-Log "帮助文档可在 InvokeAI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 InvokeAI Installer 使用文档"
+    if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
     Write-Log "InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md"
     Write-Log "退出 InvokeAI Installer"
 

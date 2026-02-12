@@ -39,6 +39,7 @@ _✨快速部署，简单易用_
 - [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
   - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
+  - [SD Trainer Scripts Kaggle Jupyter NoteBook](#sd-trainer-scripts-kaggle-jupyter-notebook)
   - [SD Scripts Colab Jupyter NoteBook](#sd-scripts-colab-jupyter-notebook)
   - [SD Trainer Colab Jupyter NoteBook](#sd-trainer-colab-jupyter-notebook)
   - [HDM Train Kaggle Jupyter NoteBook](#hdm-train-kaggle-jupyter-notebook)
@@ -117,6 +118,19 @@ _✨快速部署，简单易用_
 >使用方法可阅读：  
 >[使用 HuggingFace / ModelScope 保存和下载文件 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-huggingface-or-modelscope-to-save-file/)  
 >[使用 Kaggle 进行模型训练 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-kaggle-to-training-sd-model)
+
+>[!Caution]
+>Kaggle 不允许上传 NSFW 的内容，尝试上传包含 NSFW 图片的训练集将导致 Kaggle 账号被封禁！
+
+
+## SD Trainer Scripts Kaggle Jupyter NoteBook
+[sd_trainer_scripts_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_scripts_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_scripts_kaggle.ipynb))：适用于 Kaggle 部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)，可用于不同种类的模型训练。
+
+>[!IMPORTANT]  
+>1. 使用方法可参考：  
+>[使用 HuggingFace / ModelScope 保存和下载文件 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-huggingface-or-modelscope-to-save-file/)  
+>[使用 Kaggle 进行模型训练 - licyk的小窝](https://licyk.netlify.app/2025/01/16/use-kaggle-to-training-sd-model)
+>2. 该 NoteBook 相对于 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)，在配置环境部分有点区别，并且使用的命令也有些改变，如果需要旧版可使用 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
 >[!Caution]
 >Kaggle 不允许上传 NSFW 的内容，尝试上传包含 NSFW 图片的训练集将导致 Kaggle 账号被封禁！
@@ -225,42 +239,42 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 ***
 
 # Installer
-适用于 Windows 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。不仅仅是部署工具，还是管理工具，实现环境的启动和维护。
+适用于 Windows / Linux / MacOS 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。不仅仅是部署工具，还是管理工具，实现环境的启动和维护。
 
 >[!IMPORTANT]  
 >1. Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
 >2. 基于 Installer 的构建模式，可实现整合包制作全自动化，由 Installer 自动构建的整合包可在此列表查看：[AI 绘画 / 训练整合包列表](https://licyk.github.io/t/sd_portable)
 >3. 由 Installer 制作的整合包说明可阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)
 
-[configure_env.bat](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/installer/configure_env.bat))：配置 Installer 运行环境的一键配置脚本，首次使用 Installer 时需要运行一次该脚本。
+[configure_env.bat](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/installer/configure_env.bat))：（仅适用 Windows 平台）配置 Installer 运行环境的一键配置脚本，首次使用 Installer 时需要运行一次该脚本。
 
 
 ## SD WebUI Installer
-Windows 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
+Windows / Linux / MacOS 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
 
 详细的说明[点击此处](docs/stable_diffusion_webui_installer.md)阅读。
 
 
 ## ComfyUI Installer
-Windows 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
+Windows / Linux / MacOS 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
 
 详细的说明[点击此处](docs/comfyui_installer.md)阅读。
 
 
 ## InvokeAI Installer
-Windows 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
+Windows / Linux / MacOS 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
 
 详细的说明[点击此处](docs/invokeai_installer.md)阅读。
 
 
 ## Fooocus Installer
-Windows 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
+Windows / Linux / MacOS 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
 
 详细的说明[点击此处](docs/fooocus_installer.md)阅读。
 
 
 ## SD-Trainer Installer
-Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
+Windows / Linux / MacOS 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
 
 详细的说明[点击此处](docs/sd_trainer_installer.md)阅读。
 
@@ -269,13 +283,13 @@ Windows 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-script
 >[!WARNING]  
 >此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](docs/sd_trainer_installer.md) 部署训练工具并使用。
 
-Windows 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [~~SimpleTuner~~](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
+Windows / Linux / MacOS 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [~~SimpleTuner~~](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
 
 详细的说明[点击此处](docs/sd_trainer_script_installer.md)阅读。
 
 
 ## Qwen TTS WebUI Installer
-Windows 平台一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的脚本，包含启动，管理 Qwen TTS WebUI 的工具。
+Windows / Linux / MacOS 平台一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的脚本，包含启动，管理 Qwen TTS WebUI 的工具。
 
 详细的说明[点击此处](docs/qwen_tts_webui_installer.md)阅读。
 

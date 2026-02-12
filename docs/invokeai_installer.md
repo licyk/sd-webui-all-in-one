@@ -11,6 +11,9 @@ _✨一键安装 InvokeAI_
 - [目录](#目录)
 - [简介](#简介)
 - [环境配置](#环境配置)
+  - [Windows](#windows)
+  - [Linux](#linux)
+  - [MacOS](#macos)
 - [安装](#安装)
 - [使用](#使用)
   - [启动 InvokeAI](#启动-invokeai)
@@ -22,8 +25,7 @@ _✨一键安装 InvokeAI_
     - [1. 直接更新](#1-直接更新)
     - [2. 使用 InvokeAI Installer 配置管理器进行更新](#2-使用-invokeai-installer-配置管理器进行更新)
     - [3. 运行 InvokeAI Installer 进行更新](#3-运行-invokeai-installer-进行更新)
-    - [4. 使用命令更新](#4-使用命令更新)
-    - [禁用 InvokeAI Installer 更新检查 / 自动应用更新](#禁用-invokeai-installer-更新检查--自动应用更新)
+    - [禁用 InvokeAI Installer 更新检查](#禁用-invokeai-installer-更新检查)
   - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
   - [设置 InvokeAI 中文](#设置-invokeai-中文)
   - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
@@ -78,14 +80,7 @@ _✨一键安装 InvokeAI_
     - [卸载某个软件包](#卸载某个软件包)
     - [解决 ModuleNotFoundError: No module named 'controlnet\_aux'](#解决-modulenotfounderror-no-module-named-controlnet_aux)
     - [使用 uv 安装软件包](#使用-uv-安装软件包)
-    - [更新 uv](#更新-uv)
-    - [更新 Aria2](#更新-aria2)
     - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
-    - [检查 InvokeAI Installer 更新](#检查-invokeai-installer-更新)
-    - [安装 InvokeAI 自定义节点](#安装-invokeai-自定义节点)
-    - [测试并启用 Github 镜像源](#测试并启用-github-镜像源)
-    - [使用 Git 下载项目](#使用-git-下载项目)
-    - [计算 InvokeAI 内核路径前缀](#计算-invokeai-内核路径前缀)
     - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
     - [更新到 InvokeAI RC 版](#更新到-invokeai-rc-版)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
@@ -94,11 +89,15 @@ _✨一键安装 InvokeAI_
 ***
 
 # 简介
-一个在 Windows 系统上部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows / Linux / MacOS 系统上部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 
 # 环境配置
+该脚本 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
+
+
+## Windows
 如果是初次使用 PowerShell 脚本，需要解除 Windows 系统对脚本的限制。
 
 Windows 系统默认未启用长路径支持，这可能会导致部分功能出现异常，需要启用 Windows 长路径支持来解决该问题。
@@ -115,10 +114,28 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 |[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
 |[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/configure_env.bat)|
 
+
+## Linux
+参考该文档安装 PowerShell：[在 Linux 上安装 PowerShell - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5)
+
+
+## MacOS
+参考该文档安装 PowerShell：[在 macOS 上安装 PowerShell - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-macos?view=powershell-7.5)
+
+再参考该文档安装 HomeBrew：[macOS（或 Linux）缺失的软件包的管理器 — Homebrew](https://brew.sh/zh-cn)
+
 ***
 
 # 安装
 将 InvokeAI Installer 下载至本地，右键`invokeai_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 InvokeAI Installer 将安装 InvokeAI 至本地。
+
+>[!IMPORTANT]  
+>右键菜单中点击`使用 PowerShell 运行`为 Windows 平台上的使用方法，如果需要在 Linux / MacOS 平台中运行，请打开终端并使用`pwsh`命令去运行，例如：
+>
+>```bash
+>pwsh invokeai_installer.ps1
+>```
+>对于其他 PowerShell 脚本也是类似的方法去运行。
 
 >[!NOTE]  
 >InvokeAI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
@@ -146,7 +163,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 ***
 
 # 使用
-在`InvokeAI`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
+在`InvokeAI`文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
 
 
 ## 启动 InvokeAI
@@ -182,7 +199,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 ## 更新 InvokeAI 管理脚本
 InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
 
-可选择下方 4 种方法中的其中 1 个方法进行更新。
+可选择下方 3 种方法中的其中 1 个方法进行更新。
 
 
 ### 1. 直接更新
@@ -197,11 +214,7 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 运行`launch_invokeai_installer.ps1`获取最新的 InvokeAI Installer 后，脚本会自动运行新版 InvokeAI Installer 进行更新。
 
 
-### 4. 使用命令更新
-参考[命令的使用](#命令的使用)的方法进入 InvokeAI Env，并运行`Check-InvokeAI-Installer-Update`命令进行更新。
-
-
-### 禁用 InvokeAI Installer 更新检查 / 自动应用更新
+### 禁用 InvokeAI Installer 更新检查
 >[!WARNING]  
 >通常不建议禁用 InvokeAI Installer 的更新检查，当 InvokeAI 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
@@ -209,8 +222,6 @@ InvokeAI Installer 的管理脚本在启动时会检查管理脚本的更新，�
 >该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
 
 如果要禁用更新检查，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 InvokeAI Installer 更新检查。
-
-如果需要手动确认 InvokeAI Installer 更新，可在脚本同级的目录创建`disable_auto_apply_update.txt`文件，这将禁用自动应用更新，需要手动输入`y`才会应用更新。
 
 
 ## 恢复被修改 / 删除的脚本
@@ -538,7 +549,7 @@ invokeai
 >[!IMPORTANT]  
 >该设置可通过[管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置)中提到的的`settings.ps1`进行修改。
 
-InvokeAI Installer 通过路径前缀在安装目录中寻找 InvokeAI 内核并使用。查找时通过遍历 InvokeAI Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`invokeai`。
+InvokeAI Installer 通过路径前缀在安装目录中寻找 InvokeAI 内核并使用。查找时通过遍历 InvokeAI Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`core`。
 
 内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`InvokeAI-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`InvokeAI-aki-v1`，再保存文件，此时 InvokeAI Installer 将对该内核文件夹进行启动和管理。
 
@@ -809,53 +820,9 @@ uv pip install <package_name>
 >uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
 
 
-### 更新 uv
-```powershell
-Update-uv
-```
-
-
-### 更新 Aria2
-```powershell
-Update-Aria2
-```
-
-
 ### 列出 InvokeAI Installer 内置命令
 ```powershell
 List-CMD
-```
-
-
-### 检查 InvokeAI Installer 更新
-```powershell
-Check-InvokeAI-Installer-Update
-```
-
-
-### 安装 InvokeAI 自定义节点
-```powershell
-Install-InvokeAI-Node <InvokeAI 自定义节点的下载地址>
-```
-
-
-### 测试并启用 Github 镜像源
-```powershell
-Test-Github-Mirror
-# 可用于加速从 Github 下载项目
-```
-
-
-### 使用 Git 下载项目
-```powershell
-Git-Clone <Repo Url> <Path>
-# <Repo Url> 为 Github 仓库的链接，<Path> 为下载到本地的路径，可不填
-```
-
-
-### 计算 InvokeAI 内核路径前缀
-```powershell
-Get-Core-Prefix <内核的绝对路径>
 ```
 
 

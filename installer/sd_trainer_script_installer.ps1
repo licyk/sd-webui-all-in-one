@@ -74,10 +74,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 219
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 220
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.13"
+$script:CORE_MINIMUM_VER = "2.0.14"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -2844,14 +2844,14 @@ function Main {
         `$menu = @(
             @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义 (地址: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()))`" } else { `"系统`" }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
-            @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=6;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
             @{ id=7;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"禁用`" `"启用`" `$true) },
-            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"禁用`" `"启用`" `$true) },
+            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
         )
 
@@ -2877,9 +2877,9 @@ function Main {
             `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
             `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
-            `"12`" { Update-Installer -DisableRestart }
+            `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
             `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
-            `"14`" { return }
+            `"14`" { Write-Log `"退出设置`"; return }
         }
     }
 }
@@ -3360,6 +3360,7 @@ function Use-InstallMode {
     }
 
     Write-Log "帮助文档可在 SD Trainer Script 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD Trainer Script Installer 使用文档"
+    if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
     Write-Log "SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
     Write-Log "退出 SD Trainer Script Installer"
 

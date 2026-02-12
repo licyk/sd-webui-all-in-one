@@ -11,6 +11,9 @@ _✨一键安装 Qwen TTS WebUI_
 - [目录](#目录)
 - [简介](#简介)
 - [环境配置](#环境配置)
+  - [Windows](#windows)
+  - [Linux](#linux)
+  - [MacOS](#macos)
 - [安装](#安装)
 - [使用](#使用)
   - [启动 Qwen TTS WebUI](#启动-qwen-tts-webui)
@@ -38,8 +41,7 @@ _✨一键安装 Qwen TTS WebUI_
     - [1. 直接更新](#1-直接更新)
     - [2. 使用 Qwen TTS WebUI Installer 配置管理器进行更新](#2-使用-qwen-tts-webui-installer-配置管理器进行更新)
     - [3. 运行 Qwen TTS WebUI Installer 进行更新](#3-运行-qwen-tts-webui-installer-进行更新)
-    - [4. 使用命令更新](#4-使用命令更新)
-    - [禁用 Qwen TTS WebUI Installer 更新检查 / 自动应用更新](#禁用-qwen-tts-webui-installer-更新检查--自动应用更新)
+    - [禁用 Qwen TTS WebUI Installer 更新检查](#禁用-qwen-tts-webui-installer-更新检查)
   - [设置 uv 包管理器](#设置-uv-包管理器)
   - [创建快捷启动方式](#创建快捷启动方式)
   - [设置内核路径前缀](#设置内核路径前缀)
@@ -69,25 +71,23 @@ _✨一键安装 Qwen TTS WebUI_
     - [更新仓库](#更新仓库)
     - [运行某个 Python 脚本](#运行某个-python-脚本)
     - [下载文件](#下载文件)
-    - [更新 uv](#更新-uv)
-    - [更新 Aria2](#更新-aria2)
-    - [测试可用的 Github 镜像源并应用](#测试可用的-github-镜像源并应用)
-    - [Git 下载命令](#git-下载命令)
     - [安装绘世启动器并自动配置绘世启动器所需的环境](#安装绘世启动器并自动配置绘世启动器所需的环境)
     - [列出 Qwen TTS WebUI Installer 内置命令](#列出-qwen-tts-webui-installer-内置命令)
-    - [检查 Qwen TTS WebUI Installer 更新](#检查-qwen-tts-webui-installer-更新)
-    - [计算 Qwen TTS WebUI 内核路径前缀](#计算-qwen-tts-webui-内核路径前缀)
     - [查看并切换 Qwen TTS WebUI 的版本](#查看并切换-qwen-tts-webui-的版本)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
 
 ***
 
 # 简介
-一个在 Windows 系统上部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows / Linux / MacOS 系统上部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 
 # 环境配置
+该脚本 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
+
+
+## Windows
 如果是初次使用 PowerShell 脚本，需要解除 Windows 系统对脚本的限制。
 
 Windows 系统默认未启用长路径支持，这可能会导致部分功能出现异常，需要启用 Windows 长路径支持来解决该问题。
@@ -104,10 +104,28 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 |[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
 |[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/configure_env.bat)|
 
+
+## Linux
+参考该文档安装 PowerShell：[在 Linux 上安装 PowerShell - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5)
+
+
+## MacOS
+参考该文档安装 PowerShell：[在 macOS 上安装 PowerShell - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-macos?view=powershell-7.5)
+
+再参考该文档安装 HomeBrew：[macOS（或 Linux）缺失的软件包的管理器 — Homebrew](https://brew.sh/zh-cn)
+
 ***
 
 # 安装
 右键`qwen_tts_webui_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 Qwen TTS WebUI Installer 将安装 Qwen TTS WebUI 至本地。
+
+>[!IMPORTANT]  
+>右键菜单中点击`使用 PowerShell 运行`为 Windows 平台上的使用方法，如果需要在 Linux / MacOS 平台中运行，请打开终端并使用`pwsh`命令去运行，例如：
+>
+>```bash
+>pwsh qwen_tts_webui_installer.ps1
+>```
+>对于其他 PowerShell 脚本也是类似的方法去运行。
 
 >[!NOTE]  
 >Qwen TTS WebUI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
@@ -136,7 +154,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 ***
 
 # 使用
-在`qwen-tts-webui`文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。
+在`qwen-tts-webui`文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
 
 
 ## 启动 Qwen TTS WebUI
@@ -386,7 +404,7 @@ Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\qwen-tts-w
 ## 更新 Qwen TTS WebUI 管理脚本
 Qwen TTS WebUI Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
 
-可选择下方 4 种方法中的其中 1 个方法进行更新。
+可选择下方 3 种方法中的其中 1 个方法进行更新。
 
 
 ### 1. 直接更新
@@ -401,11 +419,7 @@ Qwen TTS WebUI Installer 的管理脚本在启动时会检查管理脚本的更�
 运行`launch_qwen_tts_webui_installer.ps1`获取最新的 Qwen TTS WebUI Installer 后，脚本会自动运行新版 Qwen TTS WebUI Installer 进行更新。
 
 
-### 4. 使用命令更新
-参考[命令的使用](#命令的使用)的方法进入 Qwen TTS WebUI Env，并运行`Check-Qwen-TTS-WebUI-Installer-Update`命令进行更新。
-
-
-### 禁用 Qwen TTS WebUI Installer 更新检查 / 自动应用更新
+### 禁用 Qwen TTS WebUI Installer 更新检查
 >[!WARNING]  
 >通常不建议禁用 Qwen TTS WebUI Installer 的更新检查，当 Qwen TTS WebUI 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
 
@@ -413,8 +427,6 @@ Qwen TTS WebUI Installer 的管理脚本在启动时会检查管理脚本的更�
 >该设置可通过[管理 Qwen TTS WebUI Installer 设置](#管理-qwen-tts-webui-installer-设置)中提到的的`settings.ps1`进行修改。
 
 如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 Qwen TTS WebUI Installer 更新检查。
-
-如果需要手动确认 Qwen TTS WebUI Installer 更新，可在脚本同级的目录创建`disable_auto_apply_update.txt`文件，这将禁用自动应用更新，需要手动输入`y`才会应用更新。
 
 
 ## 设置 uv 包管理器
@@ -711,31 +723,6 @@ aria2c <url> -c -s 16 -x 16 -k 1M -d <dir> -o <output_file_name>
 ```
 
 
-### 更新 uv
-```powershell
-Update-uv
-```
-
-
-### 更新 Aria2
-```powershell
-Update-Aria2
-```
-
-
-### 测试可用的 Github 镜像源并应用
-```powershell
-Test-Github-Mirror
-```
-
-
-### Git 下载命令
-```powershell
-# <url> 为下载链接, <path> 为下载到的路径
-Git-Clone <url> <path>
-```
-
-
 ### 安装绘世启动器并自动配置绘世启动器所需的环境
 ```powershell
 Install-Hanamizuki
@@ -748,18 +735,6 @@ Install-Hanamizuki
 ### 列出 Qwen TTS WebUI Installer 内置命令
 ```powershell
 List-CMD
-```
-
-
-### 检查 Qwen TTS WebUI Installer 更新
-```powershell
-Check-Stable-Diffusion-WebUI-Installer-Update
-```
-
-
-### 计算 Qwen TTS WebUI 内核路径前缀
-```powershell
-Get-Core-Prefix <内核的绝对路径>
 ```
 
 
