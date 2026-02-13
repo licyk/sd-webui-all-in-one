@@ -426,6 +426,8 @@ function Install-ArchiveResource {
                 Uri = $Urls[$i]
                 UseBasicParsing = $true
                 OutFile = $cache_zip
+                TimeoutSec = 15
+                ErrorAction = "Stop"
             }
             Invoke-WebRequest @web_request_params
             $success = $true
@@ -704,6 +706,8 @@ function Install-WindowsAria2 {
                 Uri = $url
                 UseBasicParsing = $true
                 OutFile = (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe")
+                TimeoutSec = 15
+                ErrorAction = "Stop"
             }
             Invoke-WebRequest @web_request_params
             break
@@ -1068,6 +1072,8 @@ function Update-Installer {
                 Uri = `$url
                 UseBasicParsing = `$true
                 OutFile = (Join-NormalizedPath `$env:CACHE_HOME `"sd_trainer_script_installer.ps1`")
+                TimeoutSec = 15
+                ErrorAction = `"Stop`"
             }
             Invoke-WebRequest @web_request_params
             `$latest_version = [int]`$(
@@ -1124,6 +1130,8 @@ function Update-WindowsAria2 {
                 Uri = `$url
                 UseBasicParsing = `$true
                 OutFile = `$aria2_tmp_path
+                TimeoutSec = 15
+                ErrorAction = `"Stop`"
             }
             Invoke-WebRequest @web_request_params
             break
@@ -2399,6 +2407,8 @@ function Download-Installer {
             Uri = `$url
             UseBasicParsing = `$true
             OutFile = (Join-NormalizedPath `$PSScriptRoot `"cache`" `"sd_trainer_script_installer.ps1`")
+            TimeoutSec = 15
+            ErrorAction = `"Stop`"
         }
         Invoke-WebRequest @web_request_params
         if (`$?) {

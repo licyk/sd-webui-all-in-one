@@ -395,6 +395,8 @@ function Install-ArchiveResource {
                 Uri = $Urls[$i]
                 UseBasicParsing = $true
                 OutFile = $cache_zip
+                TimeoutSec = 15
+                ErrorAction = "Stop"
             }
             Invoke-WebRequest @web_request_params
             $success = $true
@@ -673,6 +675,8 @@ function Install-WindowsAria2 {
                 Uri = $url
                 UseBasicParsing = $true
                 OutFile = (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe")
+                TimeoutSec = 15
+                ErrorAction = "Stop"
             }
             Invoke-WebRequest @web_request_params
             break
@@ -1042,6 +1046,8 @@ function Update-Installer {
                 Uri = `$url
                 UseBasicParsing = `$true
                 OutFile = (Join-NormalizedPath `$env:CACHE_HOME `"comfyui_installer.ps1`")
+                TimeoutSec = 15
+                ErrorAction = `"Stop`"
             }
             Invoke-WebRequest @web_request_params
             `$latest_version = [int]`$(
@@ -1098,6 +1104,8 @@ function Update-WindowsAria2 {
                 Uri = `$url
                 UseBasicParsing = `$true
                 OutFile = `$aria2_tmp_path
+                TimeoutSec = 15
+                ErrorAction = `"Stop`"
             }
             Invoke-WebRequest @web_request_params
             break
@@ -2233,6 +2241,8 @@ function Download-Installer {
             Uri = `$url
             UseBasicParsing = `$true
             OutFile = (Join-NormalizedPath `$PSScriptRoot `"cache`" `"comfyui_installer.ps1`")
+            TimeoutSec = 15
+            ErrorAction = `"Stop`"
         }
         Invoke-WebRequest @web_request_params
         if (`$?) {
@@ -3060,6 +3070,8 @@ function global:Install-Hanamizuki {
                     Uri = `$url
                     UseBasicParsing = `$true
                     OutFile = (Join-NormalizedPath `$env:CACHE_HOME `"hanamizuki_tmp.exe`")
+                    TimeoutSec = 15
+                    ErrorAction = `"Stop`"
                 }
                 Invoke-WebRequest @web_request_params
                 Move-Item -Path (Join-NormalizedPath `$env:CACHE_HOME `"hanamizuki_tmp.exe`") (Join-NormalizedPath `$env:COMFYUI_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`") -Force
@@ -3580,6 +3592,8 @@ function Install-Hanamizuki {
                     Uri = $url
                     UseBasicParsing = $true
                     OutFile = Join-NormalizedPath $env:CACHE_HOME "hanamizuki_tmp.exe"
+                    TimeoutSec = 15
+                    ErrorAction = "Stop"
                 }
                 Invoke-WebRequest @web_request_params
                 Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "hanamizuki_tmp.exe") -Destination (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe") -Force
