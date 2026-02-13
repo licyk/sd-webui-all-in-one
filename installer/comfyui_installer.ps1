@@ -76,7 +76,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 318
+$script:COMFYUI_INSTALLER_VERSION = 319
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.18"
@@ -1821,6 +1821,7 @@ function Get-LaunchCoreArgs {
         Get-WebUILaunchArgs `$launch_params
         Set-PyTorchCUDAMemoryAlloc `$launch_params
         Test-WebUIEnv `$launch_params
+        `$launch_params.Add(`"--interactive`") | Out-Null
     }
     return `$launch_params
 }
