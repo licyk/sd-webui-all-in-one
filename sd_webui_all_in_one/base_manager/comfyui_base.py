@@ -145,9 +145,9 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "save_dir": "custom_nodes/ComfyUI-Restart-Sampler",
     },
     {
-        "name": "WeiLin-ComfyUI-prompt-all-in-one",
-        "url": "https://github.com/weilin9999/WeiLin-ComfyUI-prompt-all-in-one",
-        "save_dir": "custom_nodes/WeiLin-ComfyUI-prompt-all-in-one",
+        "name": "WeiLin-Comfyui-Tools",
+        "url": "https://github.com/weilin9999/WeiLin-Comfyui-Tools",
+        "save_dir": "custom_nodes/WeiLin-Comfyui-Tools",
     },
     {
         "name": "ComfyUI-HakuImg",

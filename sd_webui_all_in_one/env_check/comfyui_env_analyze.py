@@ -9,7 +9,7 @@ from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
-from sd_webui_all_in_one.utils import remove_duplicate_object_from_list
+from sd_webui_all_in_one.utils import remove_duplicate_object_from_list, print_divider
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.package_analyzer.pkg_check import (
     get_package_name,
@@ -637,7 +637,9 @@ def comfyui_conflict_analyzer(
         logger.warning("检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用")
         logger.warning("您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况")
         logger.warning("检测到冲突的依赖:")
+        print_divider("=")
         print(conflict_info)
+        print_divider("=")
         if interactive_mode and input("是否按顺序安装冲突组件依赖 (y/N): ").strip().lower() not in ["yes", "y"]:
             logger.info("忽略警告并继续启动 ComfyUI")
             return
