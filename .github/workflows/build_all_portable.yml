@@ -33,7 +33,7 @@ jobs:
               'build_sd_webui.yml'
             ];
 
-            const delay = 10 * 60 * 1000; // 10 minutes between triggers
+            const delay = 5 * 60 * 1000; // 5 minutes between triggers
             const monitorInterval = 60 * 1000; // 1 minute monitor interval
             const triggeredRuns = new Map(); // workflow_id -> { run_id, status, conclusion }
 
