@@ -1384,6 +1384,174 @@ function Set-PyTorchCUDAMemoryAlloc {
 }
 
 
+# 创建 Windows 快捷方式
+function Add-WindowsShortcut {
+    [CmdletBinding()]
+    param (
+        [string]`$Name,
+        [string]`$IconPath
+    )
+    `$shell = New-Object -ComObject WScript.Shell
+    `$desktop = `$([System.Environment]::GetFolderPath(`"Desktop`"))
+    `$shortcut_path = Join-NormalizedPath `$desktop `"`${Name}.lnk`"
+    `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
+    `$shortcut.TargetPath = (Get-Process -Id `$PID).Path
+    `$launch_script_path = Join-NormalizedPath `$PSScriptRoot `"launch.ps1`"
+    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
+    `$shortcut.IconLocation = `$IconPath
+    `$shortcut.Save()
+    Copy-Item -Path `$shortcut_path -Destination (Join-NormalizedPath `$([System.Environment]::GetFolderPath(`"ApplicationData`")) `"Microsoft`" `"Windows`" `"Start Menu`" `"Programs`") -Force
+}
+
+
+# 创建 Linux 快捷方式
+function Add-LinuxShortcut {
+    [CmdletBinding()]
+    param (
+        [string]`$Name,
+        [string]`$IconPath
+    )
+    `$pwsh_bin = (Get-Process -Id `$PID).Path
+    `$launch_script_path = Join-NormalizedPath `$PSScriptRoot `"launch.ps1`"
+    `$desktop = `$([System.Environment]::GetFolderPath(`"Desktop`"))
+    `$shortcut_path = Join-NormalizedPath `$desktop `"`${Name}.desktop`"
+    `$content = `"
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=`$Name
+Comment=Installer 启动脚本
+Icon=`$IconPath
+Exec=```"`$pwsh_bin```" -ExecutionPolicy Bypass -File ```"`$launch_script_path```" %f
+Terminal=true
+startupNotify=true
+Type=Application
+`".Trim()
+    Write-FileWithStreamWriter -Path `$shortcut_path -Encoding UTF8 -Value `$content
+    `$local_app_path = Join-NormalizedPath `$([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)) `".local`" `"share`" `"applications`"
+    `$local_app_shortcut_path = Join-NormalizedPath `$local_app_path `"`${Name}.desktop`"
+    New-Item -ItemType Directory -Path `$local_app_path -Force | Out-Null
+    Copy-Item -Path `$shortcut_path -Destination `$local_app_shortcut_path -Force
+    & chmod +x `"`$shortcut_path`"
+    & chmod +x `"`$local_app_shortcut_path`"
+}
+
+
+# 创建 MacOS 快捷方式
+function Add-MacOSShortcut {
+    [CmdletBinding()]
+    param (
+        [string]`$Name,
+        [string]`$IconPath
+    )
+
+    `$pwsh_bin = (Get-Process -Id `$PID).Path
+    `$launch_script_path = Join-NormalizedPath `$PSScriptRoot `"launch.ps1`"
+    `$desktop = `$([System.Environment]::GetFolderPath(`"Desktop`"))
+
+    `$app_path = Join-NormalizedPath `$desktop `"`${Name}.app`"
+    `$contents_path = Join-NormalizedPath `$app_path `"Contents`"
+    `$macos_path = Join-NormalizedPath `$contents_path `"MacOS`"
+    `$resources_path = Join-NormalizedPath `$contents_path `"Resources`"
+
+    New-Item -ItemType Directory -Path `$macos_path -Force | Out-Null
+    New-Item -ItemType Directory -Path `$resources_path -Force | Out-Null
+
+    `$executable_path = Join-NormalizedPath `$macos_path `"launcher`"
+    `$sh_content = @`"
+#!/bin/bash
+`"`$pwsh_bin`" -ExecutionPolicy Bypass -File `"`$launch_script_path`"
+`"@
+    Write-FileWithStreamWriter -Path `$executable_path -Encoding UTF8 -Value `$sh_content
+    & chmod +x `$executable_path
+
+    `$plist_path = Join-NormalizedPath `$contents_path `"Info.plist`"
+    `$plist_content = @`"
+<?xml version=`"1.0`" encoding=`"UTF-8`"?>
+<!DOCTYPE plist PUBLIC `"-//Apple//DTD PLIST 1.0//EN`" `"http://www.apple.com/DTDs/PropertyList-1.0.dtd`">
+<plist version=`"1.0`">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
+    <key>CFBundleName</key>
+    <string>`${Name}</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSBackgroundOnly</key>
+    <false/>
+</dict>
+</plist>
+`"@
+    Write-FileWithStreamWriter -Path `$plist_path -Encoding UTF8 -Value `$plist_content
+
+    if (Test-Path `$IconPath) {
+        Copy-Item -Path `$IconPath -Destination (Join-NormalizedPath `$resources_path `"AppIcon.icns`") -Force
+    }
+
+    `$applications_folder = `"/Applications`"
+    if (Test-Path `$applications_folder) {
+        Copy-Item -Path `$app_path -Destination `$applications_folder -Recurse -Force
+    }
+}
+
+
+# 下载应用图标
+function Get-AppIcon {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory=`$true)][Hashtable]`$IconMap)
+    `$platform = Get-CurrentPlatform
+    if (-not `$IconMap.ContainsKey(`$platform)) {
+        Write-Log `"未找到平台 [`$platform] 的图标配置`" -Level WARNING
+        return `$null
+    }
+    `$config = `$IconMap[`$platform]
+    `$fileName = `$config.FileName
+    `$localIconPath = Join-NormalizedPath `$PSScriptRoot `$fileName
+    if (Test-Path `$localIconPath) { return `$localIconPath }
+    foreach (`$url in `$config.Urls) {
+        try {
+            Write-Log `"正在下载 `$platform 图标: `$url`"
+            `$web_request_params = @{
+                Uri = `$url
+                UseBasicParsing = `$true
+                OutFile = `$localIconPath
+                TimeoutSec = 15
+                ErrorAction = `"Stop`"
+            }
+            Invoke-WebRequest @web_request_params
+            if (Test-Path `$localIconPath) { return `$localIconPath }
+        }
+        catch {
+            Write-Log `"链接失效: `$url`" -Level WARNING
+        }
+    }
+    return `$null
+}
+
+
+# 创建快捷方式
+function New-AppShortcut {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=`$true)][string]`$Name,
+        [Parameter(Mandatory=`$true)][Hashtable]`$IconMap
+    )
+    `$finalIconPath = Get-AppIcon -IconMap `$IconMap
+    if (-not `$finalIconPath) {
+        Write-Log `"图标获取失败，跳过创建快捷方式`" -Level ERROR
+        return
+    }
+    `$platform = Get-CurrentPlatform
+    switch (`$platform) {
+        `"windows`" { Add-WindowsShortcut -Name `$Name -IconPath `$finalIconPath }
+        `"linux`"   { Add-LinuxShortcut -Name `$Name -IconPath `$finalIconPath }
+        `"macos`"   { Add-MacOSShortcut -Name `$Name -IconPath `$finalIconPath }
+    }
+}
+
+
 Export-ModuleMember -Function ``
     Initialize-EnvPath, ``
     Write-Log, ``
@@ -1402,7 +1570,8 @@ Export-ModuleMember -Function ``
     Join-NormalizedPath, ``
     Get-NormalizedFilePath, ``
     Get-CurrentPlatform, ``
-    Get-CurrentArchitecture
+    Get-CurrentArchitecture, ``
+    New-AppShortcut
 ".Trim()
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
     Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
@@ -1447,7 +1616,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -1565,48 +1734,25 @@ function Get-WebUILaunchArgs {
 # 设置快捷启动方式
 function Add-Shortcut {
     `$filename = `"ComfyUI`"
-    `$url = `"https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/icon/comfyui_icon.ico`"
-    `$shortcut_icon = Join-NormalizedPath `$PSScriptRoot `"comfyui_icon.ico`"
-
+    `$IconConfig = @{
+        `"windows`" = @{
+            FileName = `"comfyui_icon.ico`"
+            Urls     = @(`"https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/icon/comfyui_icon.ico`", `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/icon/comfyui_icon.ico`")
+        }
+        `"linux`"   = @{
+            FileName = `"comfyui_icon.png`"
+            Urls     = @(`"https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/icon/comfyui_icon.png`", `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/icon/comfyui_icon.png`")
+        }
+        `"macos`"   = @{
+            FileName = `"comfyui_icon.icns`"
+            Urls     = @(`"https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/icon/comfyui_icon.icns`", `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/icon/comfyui_icon.icns`")
+        }
+    }
     if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) -and (!(`$script:EnableShortcut))) {
         return
     }
-
-    if ((Get-CurrentPlatform) -ne `"windows`") {
-        Write-Log `"当前平台不支持创建快捷启动方式`" -Level WARNING
-        return
-    }
-
     Write-Log `"检测到 enable_shortcut.txt 配置文件 / -EnableShortcut 命令行参数, 开始检查 ComfyUI 快捷启动方式中`"
-    if (!(Test-Path `"`$shortcut_icon`")) {
-        Write-Log `"获取 ComfyUI 图标中`"
-        `$web_request_params = @{
-            Uri = `$url
-            UseBasicParsing = `$true
-            OutFile = `$shortcut_icon
-        }
-        Invoke-WebRequest @web_request_params
-        if (!(`$?)) {
-            Write-Log `"获取 ComfyUI 图标失败, 无法创建 ComfyUI 快捷启动方式`" -Level ERROR
-            return
-        }
-    }
-
-    Write-Log `"更新 ComfyUI 快捷启动方式`"
-    `$shell = New-Object -ComObject WScript.Shell
-    `$desktop = [System.Environment]::GetFolderPath(`"Desktop`")
-    `$shortcut_path = Join-NormalizedPath `$desktop `"`$filename.lnk`"
-    `$shortcut = `$shell.CreateShortcut(`$shortcut_path)
-    `$shortcut.TargetPath = Join-NormalizedPath `$PSHome `"powershell.exe`"
-    `$launch_script_path = `$(Get-Item (Join-NormalizedPath `$PSScriptRoot `"launch.ps1`")).FullName
-    `$shortcut.Arguments = `"-ExecutionPolicy Bypass -File ```"`$launch_script_path```"`"
-    `$shortcut.IconLocation = `$shortcut_icon
-
-    # 保存到桌面
-    `$shortcut.Save()
-    `$start_menu_path = Join-NormalizedPath `$env:APPDATA `"Microsoft`" `"Windows`" `"Start Menu`" `"Programs`"
-    # 保存到开始菜单
-    Copy-Item -Path `"`$shortcut_path`" -Destination `"`$start_menu_path`" -Force
+    New-AppShortcut -IconMap `$IconConfig -Name `$filename
 }
 
 
