@@ -40,7 +40,7 @@ $Env:UV_PYTHON = "$PSScriptRoot/python/python.exe"
 
 
 # 消息输出
-function Print-Msg ($msg) {
+function Write-Log ($msg) {
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]" -ForegroundColor Yellow -NoNewline
     Write-Host "[Embed Python Installer]" -ForegroundColor Cyan -NoNewline
     Write-Host ":: " -ForegroundColor Blue -NoNewline
@@ -58,16 +58,18 @@ function Install-Python {
             Uri = $url
             UseBasicParsing = $true
             OutFile = "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip"
+            TimeoutSec = 15
+            ErrorAction = "Stop"
         }
-        Print-Msg "正在下载 Python"
+        Write-Log "正在下载 Python"
         Invoke-WebRequest @web_request_params
-        Print-Msg "正在解压 Python"
+        Write-Log "正在解压 Python"
         Expand-Archive -Path "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip" -DestinationPath "$PSScriptRoot/python" -Force
         Remove-Item -Path "$PSScriptRoot/python/cache/python-3.10.11-embed-amd64.zip"
-        Modify-PythonPath
-        Print-Msg "Python 安装成功"
+        Update-PythonPath
+        Write-Log "Python 安装成功"
     } catch {
-        Print-Msg "Python 安装失败, 可重新运行安装脚本重试失败的安装"
+        Write-Log "Python 安装失败, 可重新运行安装脚本重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -75,8 +77,8 @@ function Install-Python {
 
 
 # 修改 python310._pth 文件的内容
-function Modify-PythonPath {
-    Print-Msg "修改 python310._pth 文件内容"
+function Update-PythonPath {
+    Write-Log "修改 python310._pth 文件内容"
     $content = @("python310.zip", ".", "", "# Uncomment to run site.main() automatically", "import site")
     Set-Content -Path "$PSScriptRoot/python/python310._pth" -Value $content
 }
@@ -88,28 +90,30 @@ function Install-Pip {
 
     # 下载 get-pip.py
     try {
-        Print-Msg "正在下载 get-pip.py"
+        Write-Log "正在下载 get-pip.py"
         $web_request_params = @{
             Uri = $url
             UseBasicParsing = $true
             OutFile = "$PSScriptRoot/python/cache/get-pip.py"
+            TimeoutSec = 15
+            ErrorAction = "Stop"
         }
         Invoke-WebRequest @web_request_params
         # 执行 get-pip.py
-        Print-Msg "通过 get-pip.py 安装 Pip 中"
+        Write-Log "通过 get-pip.py 安装 Pip 中"
         python "$PSScriptRoot/python/cache/get-pip.py"
         if ($?) { # 检测是否安装成功
             Remove-Item -Path "$PSScriptRoot/python/cache/get-pip.py"
-            Print-Msg "Pip 安装成功"
+            Write-Log "Pip 安装成功"
         } else {
             Remove-Item -Path "$PSScriptRoot/python/cache/get-pip.py"
-            Print-Msg "Pip 安装失败, 可重新运行安装脚本重试失败的安装"
+            Write-Log "Pip 安装失败, 可重新运行安装脚本重试失败的安装"
             Read-Host | Out-Null
             exit 1
         }
     } catch {
-        Print-Msg "下载 get-pip.py 失败"
-        Print-Msg "Pip 安装失败, 可重新运行安装脚本重试失败的安装"
+        Write-Log "下载 get-pip.py 失败"
+        Write-Log "Pip 安装失败, 可重新运行安装脚本重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -118,12 +122,12 @@ function Install-Pip {
 
 # 下载 uv
 function Install-uv {
-    Print-Msg "正在下载 uv"
+    Write-Log "正在下载 uv"
     python -m pip install uv
     if ($?) {
-        Print-Msg "uv 下载成功"
+        Write-Log "uv 下载成功"
     } else {
-        Print-Msg "uv 下载失败, 可重新运行安装脚本重试失败的安装"
+        Write-Log "uv 下载失败, 可重新运行安装脚本重试失败的安装"
         Read-Host | Out-Null
         exit 1
     }
@@ -181,7 +185,7 @@ function global:prompt {
 
 
 # 消息输出
-function global:Print-Msg (`$msg) {
+function global:Write-Log (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[Embed Python Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
@@ -198,14 +202,14 @@ function Set-Proxy {
             `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
             `$Env:HTTP_PROXY = `$proxy_value
             `$Env:HTTPS_PROXY = `$proxy_value
-            Print-Msg `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
+            Write-Log `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
         } elseif (`$INTERNET_SETTING.ProxyEnable -eq 1) { # 系统已设置代理
             `$Env:HTTP_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
             `$Env:HTTPS_PROXY = `"http://`$(`$INTERNET_SETTING.ProxyServer)`"
-            Print-Msg `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
+            Write-Log `"检测到系统设置了代理, 已读取系统中的代理配置并设置代理`"
         }
     } else {
-        Print-Msg `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
+        Write-Log `"检测到本地存在 disable_proxy.txt 代理配置文件, 禁用自动设置代理`"
     }
 }
 
@@ -216,22 +220,22 @@ function Set-HuggingFace-Mirror {
         if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
             `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
             `$Env:HF_ENDPOINT = `$hf_mirror_value
-            Print-Msg `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
+            Write-Log `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
         } else { # 使用默认设置
             `$Env:HF_ENDPOINT = `"https://hf-mirror.com`"
-            Print-Msg `"使用默认 HuggingFace 镜像源`"
+            Write-Log `"使用默认 HuggingFace 镜像源`"
         }
     } else {
-        Print-Msg `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
+        Write-Log `"检测到本地存在 disable_mirror.txt 镜像源配置文件, 禁用自动设置 HuggingFace 镜像源`"
     }
 }
 
 
 function Main {
-    Print-Msg `"初始化中`"
+    Write-Log `"初始化中`"
     Set-Proxy
     Set-HuggingFace-Mirror
-    Print-Msg `"激活 Env`"
+    Write-Log `"激活 Env`"
 }
 
 ###################
@@ -246,14 +250,14 @@ Main
 # 快捷启动终端脚本, 启动后将自动运行环境激活脚本
 function Write-Launch-Terminal-Script {
     $content = "
-function Print-Msg (`$msg) {
+function Write-Log (`$msg) {
     Write-Host `"[`$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss`")]`" -ForegroundColor Yellow -NoNewline
     Write-Host `"[Embed Python Installer]`" -ForegroundColor Cyan -NoNewline
     Write-Host `":: `" -ForegroundColor Blue -NoNewline
     Write-Host `"`$msg`"
 }
 
-Print-Msg `"执行激活环境脚本`"
+Write-Log `"执行激活环境脚本`"
 powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 "
 
@@ -262,9 +266,9 @@ powershell -NoExit -File `"`$PSScriptRoot/activate.ps1`"
 
 
 function Main {
-    Print-Msg "初始化中"
-    Print-Msg "即将安装 Embed Python 的路径: $PSScriptRoot\python"
-    Print-Msg "提示: 提示: 若出现某个步骤执行失败, 可尝试再次运行 Embed Python 安装脚本"
+    Write-Log "初始化中"
+    Write-Log "即将安装 Embed Python 的路径: $PSScriptRoot\python"
+    Write-Log "提示: 提示: 若出现某个步骤执行失败, 可尝试再次运行 Embed Python 安装脚本"
 
     if (!(Test-Path "$PSScriptRoot/python")) {
         New-Item -ItemType Directory -Force -Path "$PSScriptRoot/python" > $null
@@ -273,37 +277,37 @@ function Main {
         New-Item -ItemType Directory -Force -Path "$PSScriptRoot/python/cache" > $null
     }
 
-    Print-Msg "检测是否安装 Python"
+    Write-Log "检测是否安装 Python"
     if (Test-Path "$PSScriptRoot/python/python.exe") {
-        Print-Msg "Python 已安装"
+        Write-Log "Python 已安装"
     } else {
-        Print-Msg "Python 未安装"
+        Write-Log "Python 未安装"
         Install-Python
     }
     
-    Print-Msg "检查是否安装 Pip"
+    Write-Log "检查是否安装 Pip"
     python -c "import pip" 2> $null
     if ($?) {
-        Print-Msg "Pip 已安装"
+        Write-Log "Pip 已安装"
     } else {
-        Print-Msg "Pip 未安装"
+        Write-Log "Pip 未安装"
         Install-Pip
     }
 
-    Print-Msg "检测是否安装 uv"
+    Write-Log "检测是否安装 uv"
     python -m pip show uv --quiet 2> $null
     if ($?) {
-        Print-Msg "uv 已安装"
+        Write-Log "uv 已安装"
     } else {
-        Print-Msg "uv 未安装"
+        Write-Log "uv 未安装"
         Install-uv
     }
 
     Write-Env-Activate-Script
     Write-Launch-Terminal-Script
-    Print-Msg "安装 Embed Python 结束, 安装路径为: $PSScriptRoot\python"
-    Print-Msg "$PSScriptRoot\python 目录中内置 terminal.ps1 脚本, 运行后将自动打开 PowerShell 进入 Embed Python 的环境, 或者手动打开 PowerShell 运行 activate.ps1 激活环境"
-    Print-Msg "退出 Embed Python 安装脚本"
+    Write-Log "安装 Embed Python 结束, 安装路径为: $PSScriptRoot\python"
+    Write-Log "$PSScriptRoot\python 目录中内置 terminal.ps1 脚本, 运行后将自动打开 PowerShell 进入 Embed Python 的环境, 或者手动打开 PowerShell 运行 activate.ps1 激活环境"
+    Write-Log "退出 Embed Python 安装脚本"
 }
 
 #################
