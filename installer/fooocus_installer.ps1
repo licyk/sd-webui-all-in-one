@@ -75,7 +75,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 235
+$script:FOOOCUS_INSTALLER_VERSION = 236
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.18"
@@ -2379,7 +2379,7 @@ function Get-LocalSetting {
     `$detected_branch = `$null
     if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX `".git`"))) {
         try {
-            `$remoteUrl = (git -C (Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX) remote get-url origin).Trim() -replace '\.git`$', ''
+            `$remoteUrl = (git -C `"`$(Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX)`" remote get-url origin).Trim() -replace '\.git`$', ''
             `$urlParts = `$remoteUrl -split '/'
             `$repoKey = `"`$(`$urlParts[-2])/`$(`$urlParts[-1])`"
             if (`$git_repo_map.ContainsKey(`$repoKey)) {

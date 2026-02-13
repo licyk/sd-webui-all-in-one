@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 315
+$script:INVOKEAI_INSTALLER_VERSION = 316
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.18"
@@ -2301,8 +2301,6 @@ function Get-ExtraArgs {
 
 
 function Main {
-    Set-Proxy
-
     `$status = Download-Installer
 
     if (`$status) {
