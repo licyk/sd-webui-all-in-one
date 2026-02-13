@@ -227,7 +227,7 @@ def get_git_repo_current_remote_branch(
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
 
     try:
-        return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "rev-parse", "--abbrev-ref", "--symbolic-full-name", r"'@{u}'"], live=False).strip()
+        return run_cmd([git_exec.as_posix(), "-C", path.as_posix(), "rev-parse", "--abbrev-ref", "--symbolic-full-name", r"@{u}"], live=False).strip()
     except RuntimeError as e:
         logger.debug("'%s' 仓库的当前所在分支无对应的远程分支: %s", path, e)
         return None
