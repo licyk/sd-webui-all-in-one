@@ -104,6 +104,11 @@ _✨快速部署，简单易用_
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
 - [Kohya GUI](https://github.com/bmaltais/kohya_ss)
 - [sd-scripts](https://github.com/kohya-ss/sd-scripts)
+- [ai-toolkit](https://github.com/ostris/ai-toolkit)
+- [finetrainers](https://github.com/a-r-r-o-w/finetrainers)
+- [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
+- [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
+- [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
 
 详细使用方法可查看 Notebook 中的说明，使用时请按顺序执行 Jupyter Notebook 单元。
 
@@ -184,7 +189,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 ## Qwen TTS WebUI Colab Jupyter NoteBook
 [qwen_tts_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/qwen_tts_webui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb))：适用于 Colab 一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)。
 
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ***
 

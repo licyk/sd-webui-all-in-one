@@ -22,7 +22,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
 )
 from sd_webui_all_in_one.config import SD_WEBUI_ROOT_PATH
 from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
-from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_URL_TYPE_LIST, ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorchDeviceType
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
@@ -673,7 +673,7 @@ def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")
     model_lib_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
-    model_lib_p.add_argument("--source", default="modelscope", dest="source", help="模型下载源类型")
+    model_lib_p.add_argument("--source", default="modelscope", dest="source", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="模型下载源类型")
     model_lib_p.add_argument("--name", dest="name", help="模型名称")
     model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
     model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")

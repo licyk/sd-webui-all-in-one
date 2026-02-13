@@ -17,7 +17,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
 )
 from sd_webui_all_in_one.config import FOOOCUS_ROOT_PATH
 from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
-from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_URL_TYPE_LIST, ModelDownloadUrlType
 from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorchDeviceType
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
@@ -485,7 +485,7 @@ def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")
     model_lib_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
-    model_lib_p.add_argument("--source", default="modelscope", dest="source", help="模型下载源类型")
+    model_lib_p.add_argument("--source", default="modelscope", dest="source", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="模型下载源类型")
     model_lib_p.add_argument("--name", dest="name", help="模型名称")
     model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
     model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")

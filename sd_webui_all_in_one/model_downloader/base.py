@@ -49,6 +49,9 @@ class ModelDownloadUrl(TypedDict, total=False):
 ModelDownloadUrlType: TypeAlias = Literal["huggingface", "modelscope"]
 """模型下载源类型"""
 
+MODEL_DOWNLOAD_URL_TYPE_LIST: list[str] = list(get_args(ModelDownloadUrlType))
+"""模型下载源类型列表"""
+
 
 class ModelCard(TypedDict):
     """模型下载信息"""
