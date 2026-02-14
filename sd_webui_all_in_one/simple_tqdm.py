@@ -1,7 +1,7 @@
 import shutil
 import sys
 import time
-from typing import Any, Iterable, TypeVar, Generic
+from typing import Any, Iterable, TypeVar, Generic, Iterator
 
 
 T = TypeVar("T")
@@ -90,7 +90,7 @@ class SimpleTqdm(Generic[T]):
 
     def __iter__(
         self,
-    ) -> Iterable[T]:
+    ) -> Iterator[T]:
         """迭代进度条封装的对象
 
         Yields:
