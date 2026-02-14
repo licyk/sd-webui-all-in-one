@@ -75,10 +75,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 237
+$script:FOOOCUS_INSTALLER_VERSION = 238
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.19"
+$script:CORE_MINIMUM_VER = "2.0.20"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -655,9 +655,12 @@ function Install-Git {
             if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "git", "-y"); return }
             if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "git", "-y"); return }
             if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "git"); return }
-            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "git", "--noconfirm"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-S", "git", "--noconfirm"); return }
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git"); return }
+            Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
@@ -675,6 +678,9 @@ function Install-Git {
             if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
+            Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
@@ -747,9 +753,12 @@ function Install-Aria2 {
             if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "aria2"); return }
-            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-Syyu", "aria2", "--noconfirm"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-S", "aria2", "--noconfirm"); return }
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2"); return }
+            Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
@@ -766,6 +775,9 @@ function Install-Aria2 {
             Write-Log "安装 Aria2 中"
             if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
+            Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
+            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
