@@ -1,33 +1,67 @@
 import os
 import argparse
 from pathlib import Path
-from typing import Union
-
 
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    normalized_filepath = lambda filepath: str(Path(filepath).absolute().as_posix())
 
-    parser.add_argument('docs_path', type=normalized_filepath, default=os.environ.get("docs_path", os.getcwd()), help="文档保存路径")
+    def _normalized_filepath(filepath) -> Path:
+        return Path(filepath).absolute()
+
+    parser.add_argument(
+        "docs_path",
+        type=_normalized_filepath,
+        default=Path(os.getenv("docs_path", os.getcwd())),
+        help="文档保存路径",
+    )
 
     return parser.parse_args()
 
 
-def write_content_to_file(content: Union[list, str], path: Union[str, Path]) -> None:
-    if len(content) == 0:
-        return
-    
-    if isinstance(content, str):
-        content = content.strip().split("\n")
+def write_content_to_file(
+    content: str | list[str],
+    save_path: Path,
+    encoding: str = "utf-8",
+    use_crlf: bool = False,
+) -> None:
+    if use_crlf:
+        newline = "\r\n"
+    else:
+        newline = "\n"
 
-    with open(path, 'w', encoding = 'utf8') as f:
-        for item in content:
-            f.write(item + '\n')
+    if isinstance(content, list):
+        content = f"{newline}".join(content)
+
+    with open(save_path, "w", encoding=encoding, newline=newline) as file:
+        file.write(content)
 
 
+def generate_launch_bat(psh_script: str) -> str:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+powershell -ExecutionPolicy Bypass -File "%__WorkPath__%\{{PSH_SCRIPT}}" %*
+exit %errorlevel%
+""".strip()
+    return content.replace(r"{{PSH_SCRIPT}}", psh_script)
 
-if __name__ == "__main__":
+
+def make_launch_scripts(base_path: Path, scripts: list[tuple[str, str]]) -> None:
+    for psh, name in scripts:
+        if not (base_path / psh).is_file():
+            continue
+        code = generate_launch_bat(psh)
+        write_content_to_file(
+            content=code,
+            save_path=base_path / name,
+            use_crlf=True,
+        )
+
+
+def main() -> None:
     args = get_args()
     help_content = """
 首次使用该需要双击运行 configure_env.bat 配置环境
@@ -61,6 +95,34 @@ https://space.bilibili.com/46497516
 因您的数据的产生、收集、处理、使用等任何相关事项存在违反法律法规等情况而造成的全部结果及责任均由您自行承担。
 """.strip()
 
-    write_content_to_file(help_content, os.path.join(args.docs_path, "说明.txt"))
-    write_content_to_file(sign_content, os.path.join(args.docs_path, "bilibili@licyk_.txt"))
-    write_content_to_file(user_agreement_content, os.path.join(args.docs_path, "用户协议.txt"))
+    write_content_to_file(
+        content=help_content,
+        save_path=args.docs_path / "说明.txt",
+    )
+    write_content_to_file(
+        content=sign_content,
+        save_path=args.docs_path / "bilibili@licyk_.txt",
+    )
+    write_content_to_file(
+        content=user_agreement_content,
+        save_path=args.docs_path / "用户协议.txt",
+    )
+    make_launch_scripts(
+        base_path=args.docs_path,
+        scripts=[
+            ("launch.ps1", "启动.bat"),
+            ("update.ps1", "更新内核.bat"),
+            ("update_extension.ps1", "更新扩展.bat"),
+            ("update_node.ps1", "更新扩展.bat"),
+            ("download_models.ps1", "下载模型.bat"),
+            ("switch_branch.ps1", "切换分支.bat"),
+            ("reinstall_pytorch.ps1", "重装 PyTorch.bat"),
+            ("settings.ps1", "打开 Installer 设置.bat"),
+            ("terminal.ps1", "打开终端.bat"),
+            ("train.ps1", "启动训练.bat"),
+        ],
+    )
+
+
+if __name__ == "__main__":
+    main()
