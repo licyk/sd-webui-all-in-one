@@ -64,7 +64,7 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
 
 
 def get_torch_version_worker(result_queue: Queue) -> None:
-    """在子进程中执行的任务函数，用于获取 Torch 版本信息
+    """在子进程中执行的任务函数, 用于获取 Torch 版本信息
 
     Args:
         result_queue (Queue): 用于返回结果的多进程队列
@@ -83,21 +83,21 @@ def get_torch_version_worker(result_queue: Queue) -> None:
 
         result_queue.put((torch_ver, cuda_ver, cudnn_ver))
     except Exception:
-        # 如果导入失败或发生异常，返回空值
+        # 如果导入失败或发生异常, 返回空值
         result_queue.put((None, None, None))
 
 
 def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]:
     """获取 Torch 的本体, CUDA, cuDNN 版本 (通过子进程隔离)
 
-    为了防止 torch 模块加载后无法从内存中彻底卸载，以及避免其占用显存
+    为了防止 torch 模块加载后无法从内存中彻底卸载, 以及避免其占用显存
 
     此处通过开辟一个独立的子进程来完成版本检查工作
 
     Returns:
         (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
     """
-    # 使用 'spawn' 模式创建上下文，确保子进程拥有完全独立的内存空间
+    # 使用 'spawn' 模式创建上下文, 确保子进程拥有完全独立的内存空间
     ctx = multiprocessing.get_context("spawn")
     result_queue = ctx.Queue()
 
@@ -110,19 +110,18 @@ def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]
         logger.debug("启动子进程检查 Torch 版本")
         process.start()
 
-        # 等待子进程返回结果，设置 15 秒超时防止意外卡死
-        # 获取结果后，子进程的任务就完成了
+        # 等待子进程返回结果, 设置 15 秒超时防止意外卡死
+        # 获取结果后, 子进程的任务就完成了
         torch_ver, cuda_ver, cudnn_ver = result_queue.get(timeout=15)
 
         process.join()
     except Exception as e:
         logger.debug("通过子进程获取 Torch 版本失败: %s", e)
-        # 发生异常时强制终止进程
-        if process.is_alive():
-            process.terminate()
     finally:
-        # 确保进程资源被回收
-        process.close()
+        if process.is_alive():
+            process.terminate() # 如果还活着, 强制终止
+            process.join()      # 终止后必须 join 释放僵尸进程资源
+        process.close() # 确保进程资源被回收
 
     logger.debug("子进程返回结果 - Torch: %s, CUDA: %s, cuDNN: %s", torch_ver, cuda_ver, cudnn_ver)
     return torch_ver, cuda_ver, cudnn_ver
