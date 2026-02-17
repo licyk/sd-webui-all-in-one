@@ -1500,7 +1500,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.4.1 (CUDA 11.8) + xFormers 0.0.28.post1",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.4.1+cu118 torchvision==0.19.1+cu118 torchaudio==2.4.1+cu118",
         "xformers_ver": "xformers===0.0.28.post1",
         "index_mirror": {
@@ -1519,7 +1519,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.4.1 (CUDA 12.1) + xFormers 0.0.28.post1",
         "dtype": "cu121",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121",
         "xformers_ver": "xformers===0.0.28.post1",
         "index_mirror": {
@@ -1633,7 +1633,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.0 (CUDA 11.8) + xFormers 0.0.28.post2",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.5.0+cu118 torchvision==0.20.0+cu118 torchaudio==2.5.0+cu118",
         "xformers_ver": "xformers==0.0.28.post2",
         "index_mirror": {
@@ -1652,7 +1652,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.0 (CUDA 12.1) + xFormers 0.0.28.post2",
         "dtype": "cu121",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.5.0+cu121 torchvision==0.20.0+cu121 torchaudio==2.5.0+cu121",
         "xformers_ver": "xformers==0.0.28.post2",
         "index_mirror": {
@@ -1766,7 +1766,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.1 (CUDA 11.8) + xFormers 0.0.28.post3",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.5.1+cu118 torchvision==0.20.1+cu118 torchaudio==2.5.1+cu118",
         "xformers_ver": "xformers==0.0.28.post3",
         "index_mirror": {
@@ -1785,7 +1785,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.5.1 (CUDA 12.1) + xFormers 0.0.28.post3",
         "dtype": "cu121",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121",
         "xformers_ver": "xformers==0.0.28.post3",
         "index_mirror": {
@@ -1918,7 +1918,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.6.0 (CUDA 11.8) + xFormers 0.0.29.post3",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118",
         "xformers_ver": "xformers==0.0.29.post3",
         "index_mirror": {
@@ -2070,7 +2070,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.7.0 (CUDA 11.8) + xFormers 0.0.30",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.7.0+cu118 torchvision==0.22.0+cu118 torchaudio==2.7.0+cu118",
         "xformers_ver": "xformers==0.0.30",
         "index_mirror": {
@@ -2222,7 +2222,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch 2.7.1 (CUDA 11.8) + xFormers 0.0.31.post1",
         "dtype": "cu118",
-        "platform": ["win32", "linux"],
+        "platform": ["linux"],
         "torch_ver": "torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118",
         "xformers_ver": "xformers==0.0.31.post1",
         "index_mirror": {

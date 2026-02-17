@@ -224,6 +224,17 @@ def reinstall_pytorch(
         if enable_force_reinstall:
             run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
+    def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
+        try:
+            _torch_ver = importlib.metadata.version("torch")
+        except Exception:
+            _torch_ver = None
+        try:
+            _xformers_ver = importlib.metadata.version("xformers")
+        except Exception:
+            _xformers_ver = None
+        return (_torch_ver, _xformers_ver)
+
     pytorch_list = export_pytorch_list()
 
     if list_only:
@@ -235,7 +246,6 @@ def reinstall_pytorch(
     display_model = True
     input_err = (0, None)
     enable_force_reinstall = False
-
     if interactive_mode:
         while True:
             if display_model:
@@ -251,7 +261,10 @@ def reinstall_pytorch(
             elif i == 2:
                 logger.warning("输入的数字有误, %s, 请重新输入", m)
             input_err = (0, None)
+            torch_ver, xformers_ver = _get_torch_and_xformers_ver()
             print(
+                f"当前已安装的 PyTorch 版本: {torch_ver}\n"
+                f"当前已安装的 xFormers 版本: {xformers_ver}\n"
                 "请选择 PyTorch 版本\n"
                 "提示:\n"
                 "1. PyTorch 版本通常来说选择最新版的即可\n"

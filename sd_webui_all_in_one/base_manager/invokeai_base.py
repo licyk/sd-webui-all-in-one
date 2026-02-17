@@ -1320,6 +1320,17 @@ def reinstall_invokeai_pytorch(
             use_uv=use_uv,
         )
 
+    def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
+        try:
+            _torch_ver = importlib.metadata.version("torch")
+        except Exception:
+            _torch_ver = None
+        try:
+            _xformers_ver = importlib.metadata.version("xformers")
+        except Exception:
+            _xformers_ver = None
+        return (_torch_ver, _xformers_ver)
+
     if list_only:
         print("".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
         return
@@ -1338,7 +1349,10 @@ def reinstall_invokeai_pytorch(
             if has_err:
                 logger.warning("输入有误, 请重试")
             has_err = False
+            torch_ver, xformers_ver = _get_torch_and_xformers_ver()
             print(
+                f"当前已安装的 PyTorch 版本: {torch_ver}\n"
+                f"当前已安装的 xFormers 版本: {xformers_ver}\n"
                 "请输入要重装的 PyTorch 类型:\n"
                 "提示:\n"
                 "1. 输入类型后回车即可开始 PyTorch 重装\n"

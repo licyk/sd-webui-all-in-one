@@ -641,10 +641,11 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
     pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
     device_list = set(get_avaliable_pytorch_device_type())
     new_pytorch_list: PyTorchVersionInfoList = []
+    current_platform = sys.platform
 
     for i in pytorch_list:
         supported = False
-        if i["dtype"] in device_list:
+        if i["dtype"] in device_list and current_platform in i["platform"]:
             supported = True
 
         i["supported"] = supported
