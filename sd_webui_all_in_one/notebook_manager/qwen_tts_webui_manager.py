@@ -54,8 +54,8 @@ class QwenTTSWebUIManager(BaseManager):
         if not self.mount_google_drive_for_notebook():
             return
 
-        drive_output = Path("/content/drive") / "MyDrive" / "fooocus_output"
-        fooocus_path = self.workspace / self.workfolder
+        drive_output = Path("/content/drive") / "MyDrive" / "qwen_tts_webui_output"
+        qwen_tts_webui_path = self.workspace / self.workfolder
         links: list[dict[str, str | bool]] = [
             {"link_dir": "outputs"},
             {"link_dir": "config.json", "is_file": True},
@@ -63,7 +63,7 @@ class QwenTTSWebUIManager(BaseManager):
         if extras is not None:
             links += extras
         self.link_to_google_drive(
-            base_dir=fooocus_path,
+            base_dir=qwen_tts_webui_path,
             drive_path=drive_output,
             links=links,
         )

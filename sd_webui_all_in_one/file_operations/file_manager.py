@@ -513,7 +513,7 @@ def display_directories(
     """
     for path in paths:
         if path is not None and path.is_dir():
-            logger.info("目录 '%s' 中的文件列表", path.name)
+            logger.info("目录 '%s' 中的文件列表", path)
             generate_dir_tree(
                 start_path=path,
                 max_depth=None if recursive else 1,
