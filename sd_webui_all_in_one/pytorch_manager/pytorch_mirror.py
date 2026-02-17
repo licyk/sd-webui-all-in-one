@@ -746,7 +746,7 @@ def find_latest_pytorch_info(dtype: PyTorchDeviceType) -> PyTorchVersionInfo:
         ValueError:
             PyTorch 支持的设备类型无效时
     """
-    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
+    pytorch_list = export_pytorch_list()
     pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
     if not pytorch_info_list:
         raise ValueError(f"PyTorch 类型不存在: '{dtype}'")
@@ -754,6 +754,8 @@ def find_latest_pytorch_info(dtype: PyTorchDeviceType) -> PyTorchVersionInfo:
     latest_info = pytorch_info_list[0]
 
     for info in pytorch_info_list:
+        if not info["supported"]:
+            continue
         current_torch = info["torch_ver"].split()[0]
         history_torch = latest_info["torch_ver"].split()[0]
         current_ver = get_package_version(current_torch) if is_package_has_version(current_torch) else "0.0"
