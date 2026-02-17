@@ -74,7 +74,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 234
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 235
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.24"
@@ -396,6 +396,7 @@ if __name__ == '__main__':
     }
     Write-Log "更新 SD WebUI All In One 内核中"
     & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" --index-url $pip_index_url
+    if (!($?)) { & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" }
     if (!($?)) {
         Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
@@ -1024,6 +1025,7 @@ if __name__ == '__main__':
     }
     Write-Log `"更新 SD WebUI All In One 内核中`"
     & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" --index-url `$pip_index_url
+    if (!(`$?)) { & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" }
     if (!(`$?)) {
         Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`" -Level ERROR
         if (!(`$script:BuildMode)) { Read-Host | Out-Null }
