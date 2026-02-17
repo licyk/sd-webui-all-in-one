@@ -262,7 +262,7 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
     },
     {
         "name": "sd-webui-prompt-all-in-one",
-        "url": "https://github.com/Physton/sd-webui-prompt-all-in-one",
+        "url": "https://github.com/licyk/sd-webui-prompt-all-in-one",
         "save_dir": "extensions/sd-webui-prompt-all-in-one",
         "supported_branch": [
             "sd_webui_main",
@@ -449,7 +449,7 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
     },
     {
         "name": "stable-diffusion-webui-model-toolkit",
-        "url": "https://github.com/arenasys/stable-diffusion-webui-model-toolkit",
+        "url": "https://github.com/licyk/stable-diffusion-webui-model-toolkit",
         "save_dir": "extensions/stable-diffusion-webui-model-toolkit",
         "supported_branch": [
             "sd_webui_main",

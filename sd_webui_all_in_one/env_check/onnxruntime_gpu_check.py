@@ -110,9 +110,9 @@ def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]
         logger.debug("启动子进程检查 Torch 版本")
         process.start()
 
-        # 等待子进程返回结果, 设置 15 秒超时防止意外卡死
+        # 等待子进程返回结果, 设置 100 秒超时防止意外卡死
         # 获取结果后, 子进程的任务就完成了
-        torch_ver, cuda_ver, cudnn_ver = result_queue.get(timeout=15)
+        torch_ver, cuda_ver, cudnn_ver = result_queue.get(timeout=100)
 
         process.join()
     except Exception as e:
