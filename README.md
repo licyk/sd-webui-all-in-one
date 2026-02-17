@@ -74,7 +74,7 @@ _✨快速部署，简单易用_
 - [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)
 - [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)
 - [SD.Next](https://github.com/vladmandic/automatic)
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+- [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
@@ -98,7 +98,7 @@ _✨快速部署，简单易用_
 - [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)
 - [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)
 - [SD.Next](https://github.com/vladmandic/automatic)
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+- [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
@@ -169,7 +169,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## ComfyUI Colab NoteBook
-[comfyui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/comfyui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/comfyui_colab.ipynb))：适用于 Colab 一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI)。
+[comfyui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/comfyui_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/comfyui_colab.ipynb))：适用于 Colab 一键部署 [ComfyUI](https://github.com/Comfy-Org/ComfyUI)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/comfyui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -261,7 +261,7 @@ Windows / Linux / MacOS 平台一键部署 [Stable-Diffusion-WebUI](https://gith
 
 
 ## ComfyUI Installer
-Windows / Linux / MacOS 平台一键部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
+Windows / Linux / MacOS 平台一键部署 [ComfyUI](https://github.com/Comfy-Org/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
 
 详细的说明[点击此处](docs/comfyui_installer.md)阅读。
 
@@ -288,7 +288,7 @@ Windows / Linux / MacOS 平台一键部署 [SD-Trainer](https://github.com/Akega
 >[!WARNING]  
 >此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](docs/sd_trainer_installer.md) 部署训练工具并使用。
 
-Windows / Linux / MacOS 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [~~SimpleTuner~~](https://github.com/bghira/SimpleTuner) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
+Windows / Linux / MacOS 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
 
 详细的说明[点击此处](docs/sd_trainer_script_installer.md)阅读。
 
@@ -311,7 +311,7 @@ Windows / Linux / MacOS 平台一键部署 [Qwen TTS WebUI](https://github.com/l
 |Build [SD WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) Portable|[![Build SD WebUI reForge](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_reforge.yml)|
 |Build [SD WebUI Forge Classic](https://github.com/Haoming02/sd-webui-forge-classic) Portable|[![SD WebUI Forge Classic](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_classic.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_classic.yml)|
 |Build [SD Next](https://github.com/vladmandic/automatic) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml)|
-|Build [ComfyUI](https://github.com/comfyanonymous/ComfyUI) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml)|
+|Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml)|
 |Build [Fooocus](https://github.com/lllyasviel/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
 |Build [InvokeAI](https://github.com/invoke-ai/InvokeAI) Portable|[![Build InvokeAI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml)|
 |Build [SD-Trainer](https://github.com/Akegarasu/lora-scripts) Portable|[![Build SD-Trainer](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml)|

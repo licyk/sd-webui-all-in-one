@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 323
+$script:COMFYUI_INSTALLER_VERSION = 324
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.22"
+$script:CORE_MINIMUM_VER = "2.0.23"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -3413,7 +3413,7 @@ https://comfyui-wiki.com/zh
 ########## Github 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
-ComfyUI 项目地址：https://github.com/comfyanonymous/ComfyUI
+ComfyUI 项目地址：https://github.com/Comfy-Org/ComfyUI
 
 
 ====================================================================

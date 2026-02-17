@@ -83,7 +83,7 @@ _✨一键安装 ComfyUI_
 ***
 
 # 简介
-一个在 Windows / Linux / MacOS 系统上部署 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的 PowerShell 脚本，并提供不同的管理工具。
+一个在 Windows / Linux / MacOS 系统上部署 [ComfyUI](https://github.com/Comfy-Org/ComfyUI) 的 PowerShell 脚本，并提供不同的管理工具。
 
 ***
 

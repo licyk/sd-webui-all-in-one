@@ -166,7 +166,7 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
     },
 ]
 
-COMFYUI_REPO_URL = "https://github.com/comfyanonymous/ComfyUI"
+COMFYUI_REPO_URL = "https://github.com/Comfy-Org/ComfyUI"
 """ComfyUI 仓库地址"""
 
 COMFYUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "comfy.settings.json"

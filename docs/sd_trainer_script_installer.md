@@ -94,7 +94,6 @@ _✨快速部署训练环境_
 支持部署的 SD-Trainer-Script 分支如下。
 
 - [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)
-- [~~bghira/SimpleTuner~~](https://github.com/bghira/SimpleTuner)
 - [ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)
 - [a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)
 - [tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
@@ -144,7 +143,6 @@ SD-Trainer-Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
 |配置文件名|对应安装的分支|
 |---|---|
 |`install_sd_scripts.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)|
-|~~`Install_simple_tuner.txt`~~|[~~bghira/SimpleTuner~~](https://github.com/bghira/SimpleTuner)|
 |`install_ai_toolkit.txt`|[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)|
 |`install_finetrainers.txt`|[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)|
 |`install_diffusion_pipe.txt`|[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)|
@@ -224,7 +222,6 @@ $ tree -L 1
 支持切换到的分支如下。
 
 - [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)
-- [~~bghira/SimpleTuner~~](https://github.com/bghira/SimpleTuner)
 - [ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)
 - [a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)
 - [tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
@@ -491,7 +488,7 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-InstallPath` <SD-Trainer-Script 安装路径>|指定安装 SD-Trainer-Script 的路径，使用绝对路径进行指定。|
 |`-CorePrefix` <内核路径前缀>|设置内核的路径前缀, 默认路径前缀为 core。|
 |`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`|
-|`-InstallBranch` <SD-Trainer-Script 分支名>|指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 的分支，SD-Trainer-Script 分支名对应的分支如下：</br>`sd_scripts`：[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)</br>~~`Simple_tuner`：[bghira/SimpleTuner](https://github.com/bghira/SimpleTuner)~~</br>`ai_toolkit`：[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)</br>`finetrainers`：[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)</br>`diffusion_pipe`：[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)</br>`musubi_tuner`：[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
+|`-InstallBranch` <SD-Trainer-Script 分支名>|指定 SD-Trainer-Script Installer 安装的 SD-Trainer-Script 的分支，SD-Trainer-Script 分支名对应的分支如下：</br>`sd_scripts`：[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)</br>`ai_toolkit`：[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)</br>`finetrainers`：[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)</br>`diffusion_pipe`：[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)</br>`musubi_tuner`：[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
 |`-UseUpdateMode`|使用 SD-Trainer-Script Installer 的更新脚本模式，不进行 SD-Trainer-Script 的安装。|
 |`-DisablePyPIMirror`|禁用 SD-Trainer-Script Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 SD-Trainer-Script Installer 自动设置代理服务器。|
