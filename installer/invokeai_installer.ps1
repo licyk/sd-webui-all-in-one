@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 326
+$script:INVOKEAI_INSTALLER_VERSION = 327
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.27"
@@ -1825,12 +1825,6 @@ function Main {
     Update-Installer
     Update-SDWebUiAllInOne
 
-    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 InvokeAI 是否已正确安装, 或者尝试运行 InvokeAI Installer 进行修复`" -Level ERROR
-        Read-Host | Out-Null
-        return
-    }
-
     Test-MSVCPPRedistributable
     `$launch_args = Get-LaunchCoreArgs
     Add-Shortcut
@@ -1966,12 +1960,6 @@ function Main {
     Set-Proxy
     Update-Installer
     Update-SDWebUiAllInOne
-
-    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 InvokeAI 是否已正确安装, 或者尝试运行 InvokeAI Installer 进行修复`" -Level ERROR
-        Read-Host | Out-Null
-        return
-    }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one.cli_manager.main invokeai update `$launch_args
@@ -2592,12 +2580,6 @@ function Main {
     Update-SDWebUiAllInOne
     Update-Aria2
 
-    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
-        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 InvokeAI 是否已正确安装, 或者尝试运行 InvokeAI Installer 进行修复`" -Level ERROR
-        Read-Host | Out-Null
-        return
-    }
-
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one.cli_manager.main invokeai model install-library `$launch_args
 
@@ -2929,14 +2911,6 @@ catch {
 `$PIP_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_INDEX_ADDR } else { `$PIP_INDEX_ADDR_ORI }
 `$PIP_EXTRA_INDEX_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_EXTRA_INDEX_ADDR } else { `$PIP_EXTRA_INDEX_ADDR_ORI }
 `$PIP_FIND_MIRROR = if (`$USE_PIP_MIRROR) { `$PIP_FIND_ADDR } else { `$PIP_FIND_ADDR_ORI }
-# PATH
-`$PYTHON_PATH = Join-NormalizedPath `$PSScriptRoot `"python`"
-`$PYTHON_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
-`$PYTHON_SCRIPTS_PATH = Join-NormalizedPath `$PSScriptRoot `"python`" `"Scripts`"
-`$PYTHON_SCRIPTS_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`" `"Scripts`"
-`$GIT_PATH = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`"
-`$GIT_EXTRA_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"git`" `"bin`"
-`$env:PATH = `"`$PYTHON_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$GIT_EXTRA_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_PATH`$([System.IO.Path]::PathSeparator)`$PYTHON_SCRIPTS_PATH`$([System.IO.Path]::PathSeparator)`$GIT_PATH`$([System.IO.Path]::PathSeparator)`$env:PATH`"
 # 环境变量
 `$env:PIP_INDEX_URL = `"`$PIP_INDEX_MIRROR`"
 `$env:PIP_EXTRA_INDEX_URL = if (`$PIP_EXTRA_INDEX_MIRROR -ne `$PIP_EXTRA_INDEX_MIRROR_PYTORCH) { `"`$PIP_EXTRA_INDEX_MIRROR `$PIP_EXTRA_INDEX_MIRROR_PYTORCH`".Trim() } else { `$PIP_EXTRA_INDEX_MIRROR }
