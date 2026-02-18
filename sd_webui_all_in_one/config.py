@@ -101,3 +101,6 @@ SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CACHE_PA
 
 SD_WEBUI_ALL_IN_ONE_SET_CONFIG = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CONFIG") in ["1", "True", "true"]
 """是否在启动时通过环境变量进行配置"""
+
+SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY = os.getenv("SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY") in ["1", "True", "true"]
+"""是否跳过安装 PyTorch 时设备的兼容性检查"""

@@ -7,6 +7,7 @@ import subprocess
 import sys
 from typing import TypedDict
 
+from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
@@ -645,8 +646,11 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
 
     for i in pytorch_list:
         supported = False
-        if i["dtype"] in device_list and current_platform in i["platform"]:
-            supported = True
+        if current_platform in i["platform"]:
+            if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY:
+                supported = True
+            elif i["dtype"] in device_list:
+                supported = True
 
         i["supported"] = supported
         new_pytorch_list.append(i)

@@ -15,6 +15,8 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Launch Qwen TTS WebUI Installer
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
         shell: pwsh
         run: |
           & "${{ github.workspace }}/installer/qwen_tts_webui_installer.ps1" `
