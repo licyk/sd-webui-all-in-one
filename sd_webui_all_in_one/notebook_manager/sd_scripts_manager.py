@@ -286,7 +286,7 @@ class SDScriptsManager(BaseManager):
         # 安装使用 sd-scripts 进行训练所需的其他软件包
         logger.info("安装其他 Python 模块中")
         try:
-            pip_install("lycoris-lora", "dadaptation", "open-clip-torch", use_uv=use_uv)
+            pip_install("lycoris-lora", "dadaptation", "open-clip-torch", "wandb", use_uv=use_uv)
         except Exception as e:
             logger.error("安装额外 Python 软件包时发生错误: %s", e)
         # 更新 urllib3

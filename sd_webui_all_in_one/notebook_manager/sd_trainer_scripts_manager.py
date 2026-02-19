@@ -199,7 +199,7 @@ class SDTrainerScriptsManager(BaseManager):
                 use_github_mirror=use_github_mirror,
                 custom_github_mirror=custom_github_mirror,
             )
-        pip_install("lycoris-lora", "dadaptation", "open-clip-torch", use_uv=use_uv)
+        pip_install("lycoris-lora", "dadaptation", "open-clip-torch", "wandb", use_uv=use_uv)
         pip_install("urllib3", "--upgrade", use_uv=use_uv)
         check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list)

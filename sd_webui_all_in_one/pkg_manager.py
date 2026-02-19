@@ -2,6 +2,7 @@
 
 import os
 import sys
+import importlib.metadata
 from typing import Any
 from pathlib import Path
 
@@ -119,17 +120,9 @@ def install_manager_depend(
         ]
     try:
         logger.info("安装自身组件依赖中")
-        pip_install("uv", "--upgrade", use_uv=False, custom_env=custom_env)
+        requires = [x.split(";")[0] for x in importlib.metadata.requires("sd-webui-all-in-one")]
         pip_install(
-            "modelscope",
-            "huggingface_hub",
-            "hf-xet",
-            "requests",
-            "tqdm",
-            "wandb",
-            "zstandard",
-            "py7zr",
-            "rarfile",
+            *requires,
             "--upgrade",
             use_uv=use_uv,
             custom_env=custom_env,

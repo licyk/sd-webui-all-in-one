@@ -4,12 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sd-webui-all-in-one"
-description = "支持部署多个 WebUI 的部署工具"
+description = "支持部署和管理多种 WebUI 的工具"
 requires-python = ">=3.10"
 readme = { content-type = "text/markdown", file = "README.md" }
 license = "GPL-3.0"
 dynamic = ["version"]
 authors = [ {name = "licyk"} ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: System Administrators",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: Utilities",
+]
 dependencies = []
 
 [project.optional-dependencies]
