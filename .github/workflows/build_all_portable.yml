@@ -102,8 +102,8 @@ jobs:
                 }
 
                 if (i < workflows.length - 1) {
-                  console.log(`等待 10 分钟后触发下一个...`);
-                  // During the 10 min wait, the interval will keep printing status
+                  console.log(`等待 5 分钟后触发下一个...`);
+                  // During the 5 min wait, the interval will keep printing status
                   await new Promise(r => setTimeout(r, delay));
                 }
               }
