@@ -28,6 +28,12 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
+      - name: Install FFmpeg
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/.github/install_ffmpeg.ps1" `
+            -InstallPath "${{ github.workspace }}/qwen_tts_webui/git/bin"
+
       - name: Make docs
         shell: pwsh
         run: |

@@ -44,7 +44,6 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/install_openpose_editor_assets.ps1" `
-            -TempPath "${{ github.workspace }}/temp" `
             -InstallPath "${{ github.workspace }}/sd_webui_reforge/core/extensions/sd-webui-openpose-editor/dist"
 
       - name: Launch SD WebUI reForge to init component
