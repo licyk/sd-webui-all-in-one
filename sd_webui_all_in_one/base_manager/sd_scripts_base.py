@@ -87,14 +87,14 @@ SD_SCRIPTS_BRANCH_INFO_DICT: list[SDTrainerBranchInfo] = [
         "name": "kohya-ss - sd-scripts 测试分支",
         "dtype": "sd_scripts_dev",
         "url": "https://github.com/kohya-ss/sd-scripts",
-        "branch": "main",
+        "branch": "dev",
         "use_submodule": False,
     },
     {
         "name": "kohya-ss - sd-scripts SD3 分支",
         "dtype": "sd_scripts_sd3",
         "url": "https://github.com/kohya-ss/sd-scripts",
-        "branch": "main",
+        "branch": "sd3",
         "use_submodule": False,
     },
     {
