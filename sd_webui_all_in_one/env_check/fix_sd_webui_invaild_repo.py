@@ -1,3 +1,5 @@
+"""修复 Stable Diffusion WebUI 无效模块仓库地址模块"""
+
 import os
 from pathlib import Path
 

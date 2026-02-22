@@ -1,3 +1,5 @@
+"""SD Scripts 命令行工具"""
+
 import argparse
 from pathlib import Path
 

@@ -1,3 +1,5 @@
+"""ComfyUI 管理器模块"""
+
 import os
 from pathlib import Path
 from typing import (

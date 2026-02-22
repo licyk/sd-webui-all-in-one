@@ -1,3 +1,5 @@
+"""InvokeAI 管理器模块"""
+
 import importlib.metadata
 import os
 import asyncio

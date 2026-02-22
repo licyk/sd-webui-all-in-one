@@ -1,3 +1,5 @@
+"""更新工具"""
+
 import importlib.metadata
 import re
 import sys

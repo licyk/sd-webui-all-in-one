@@ -1,3 +1,5 @@
+"""CLI 其他模块"""
+
 import argparse
 import sys
 

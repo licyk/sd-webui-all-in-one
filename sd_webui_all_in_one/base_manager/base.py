@@ -1,3 +1,5 @@
+"""管理器基类"""
+
 import os
 import sys
 import importlib.metadata

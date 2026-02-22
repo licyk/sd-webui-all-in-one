@@ -1,3 +1,5 @@
+"""Stable Diffusion WebUI 命令行工具"""
+
 import argparse
 import shlex
 from pathlib import Path

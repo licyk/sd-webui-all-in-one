@@ -1,3 +1,5 @@
+"""修复 accelerate 命令模块"""
+
 import importlib.metadata
 import sys
 from pathlib import Path

@@ -1,3 +1,5 @@
+"""Stable Diffusion WebUI 管理器模块"""
+
 import os
 import json
 import uuid

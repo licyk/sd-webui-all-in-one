@@ -1,3 +1,7 @@
+"""模型库"""
+
+# pylint: disable=line-too-long
+
 from typing import (
     TypedDict,
     Literal,

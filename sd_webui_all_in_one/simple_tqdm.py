@@ -1,3 +1,5 @@
+"""进度条工具"""
+
 import shutil
 import sys
 import time

@@ -1,3 +1,5 @@
+"""重试装饰器模块"""
+
 import time
 from functools import wraps
 from typing import (
