@@ -80,7 +80,9 @@ def warning_unexpected_params(
         logger.warning("请移除这些多余参数以避免引发错误")
 
 
-def remove_duplicate_object_from_list(origin: list[Any]) -> list[Any]:
+def remove_duplicate_object_from_list(
+    origin: list[Any],
+) -> list[Any]:
     """对`list`进行去重
 
     例如: [1, 2, 3, 2] -> [1, 2, 3]
@@ -99,7 +101,9 @@ def get_sdaio_patcher_path() -> Path:
     return SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
 
 
-def exec_from_path(path: Path) -> dict[str, Any] | None:
+def exec_from_path(
+    path: Path,
+) -> dict[str, Any] | None:
     """读取并执行指定路径的 Python 文件, 返回其全局命名空间
 
     Args:
@@ -120,7 +124,9 @@ def exec_from_path(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def load_source_directly(module_name: str) -> dict[str, Any] | None:
+def load_source_directly(
+    module_name: str,
+) -> dict[str, Any] | None:
     """在 sys.path 中搜索并直接加载指定的模块源码
 
     Args:
@@ -143,7 +149,9 @@ def load_source_directly(module_name: str) -> dict[str, Any] | None:
     return None
 
 
-def print_divider(char: str = "-") -> None:
+def print_divider(
+    char: str | None = "-",
+) -> None:
     """在终端中输出一整行分隔符
 
     Args:

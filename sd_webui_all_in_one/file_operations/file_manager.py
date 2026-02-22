@@ -384,7 +384,10 @@ def get_sync_files(
     return sync_file_list
 
 
-def sync_files(src_path: Path, dst_path: Path) -> None:
+def sync_files(
+    src_path: Path,
+    dst_path: Path,
+) -> None:
     """同步文件 (增量同步)
 
     Args:
@@ -478,7 +481,9 @@ def sync_files_and_create_symlink(
         raise RuntimeError(f"创建 '{src_path}' -> '{link_path}' 的路径链接时发生错误: {e}") from e
 
 
-def is_folder_empty(path: Path) -> None:
+def is_folder_empty(
+    path: Path,
+) -> None:
     """
     判断给定路径的文件夹是否为空
 

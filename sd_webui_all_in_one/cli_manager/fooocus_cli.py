@@ -336,7 +336,9 @@ def uninstall_model(
     )
 
 
-def register_fooocus(subparsers: "argparse._SubParsersAction") -> None:
+def register_fooocus(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 Fooocus 模块及其子命令
 
     Args:

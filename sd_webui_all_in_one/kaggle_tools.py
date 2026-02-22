@@ -17,7 +17,9 @@ logger = get_logger(
 )
 
 
-def get_kaggle_secret(key: str) -> str | None:
+def get_kaggle_secret(
+    key: str,
+) -> str | None:
     """获取 Kaggle Secret
 
     Args:

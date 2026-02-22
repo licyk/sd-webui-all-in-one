@@ -27,7 +27,9 @@ from sd_webui_all_in_one.pytorch_manager.base import (
 from sd_webui_all_in_one.utils import ANSIColor
 
 
-def get_pytorch_mirror_dict(use_cn_mirror: bool | None = False) -> dict[str, str]:
+def get_pytorch_mirror_dict(
+    use_cn_mirror: bool | None = False,
+) -> dict[str, str]:
     """获取 PyTorch 镜像源字典
 
     Args:
@@ -93,7 +95,9 @@ def get_cuda_version() -> float:
         return 0.0
 
 
-def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
+def get_pytorch_mirror_type_cuda(
+    torch_ver: str,
+) -> str:
     """获取 CUDA 类型的 PyTorch 镜像源类型
 
     Args:
@@ -177,7 +181,9 @@ def get_pytorch_mirror_type_cuda(torch_ver: str) -> str:
     return "cu130"
 
 
-def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
+def get_pytorch_mirror_type_rocm(
+    torch_ver: str,
+) -> str:
     """获取 ROCm 类型的 PyTorch 镜像源类型
 
     Args:
@@ -211,7 +217,9 @@ def get_pytorch_mirror_type_rocm(torch_ver: str) -> str:
     return "rocm7.1"
 
 
-def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
+def get_pytorch_mirror_type_ipex(
+    torch_ver: str,
+) -> str:
     """获取 IPEX 类型的 PyTorch 镜像源类型
 
     Args:
@@ -239,7 +247,9 @@ def get_pytorch_mirror_type_ipex(torch_ver: str) -> str:
     return "xpu"
 
 
-def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
+def get_pytorch_mirror_type_cpu(
+    torch_ver: str,
+) -> str:
     """获取 CPU 类型的 PyTorch 镜像源类型
 
     Args:
@@ -251,7 +261,10 @@ def get_pytorch_mirror_type_cpu(torch_ver: str) -> str:
     return "cpu"
 
 
-def get_pytorch_mirror_type(torch_ver: str, device_type: PyTorchDeviceTypeCategory) -> str:
+def get_pytorch_mirror_type(
+    torch_ver: str,
+    device_type: PyTorchDeviceTypeCategory,
+) -> str:
     """获取 PyTorch 镜像源类型
 
     Args:
@@ -738,7 +751,9 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
     return "cpu"
 
 
-def find_latest_pytorch_info(dtype: PyTorchDeviceType) -> PyTorchVersionInfo:
+def find_latest_pytorch_info(
+    dtype: PyTorchDeviceType,
+) -> PyTorchVersionInfo:
     """根据 PyTorch 类型在 PyTorch 版本下载信息列表中查找适合该类型的最新版本的 PyTorch 下载信息
 
     Args:
@@ -800,7 +815,9 @@ def get_pytorch_mirror(
     return url
 
 
-def display_pytorch_config(pytorch_list: PyTorchVersionInfoList) -> None:
+def display_pytorch_config(
+    pytorch_list: PyTorchVersionInfoList,
+) -> None:
     """显示 PyTorch 配置列表并标注当前平台是否支持
 
     Args:

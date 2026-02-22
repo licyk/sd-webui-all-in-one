@@ -427,7 +427,9 @@ def uninstall_model(
     )
 
 
-def register_comfyui(subparsers: "argparse._SubParsersAction") -> None:
+def register_comfyui(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 ComfyUI 模块及其子命令
 
     Args:

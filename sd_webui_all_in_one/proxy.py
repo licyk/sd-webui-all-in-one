@@ -187,7 +187,9 @@ def get_system_proxy_address() -> str | None:
     return None
 
 
-def set_proxy(addr: str) -> None:
+def set_proxy(
+    addr: str,
+) -> None:
     """通过环境变量配置代理
 
     Args:

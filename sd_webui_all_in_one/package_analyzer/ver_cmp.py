@@ -150,7 +150,9 @@ class CommonVersionComparison:
             return 0  # 版本号相同
 
 
-def version_increment(version: str) -> str:
+def version_increment(
+    version: str,
+) -> str:
     """增加版本号大小
 
     Args:
@@ -170,7 +172,9 @@ def version_increment(version: str) -> str:
     return ".".join(map(str, ver_parts))
 
 
-def version_decrement(version: str) -> str:
+def version_decrement(
+    version: str,
+) -> str:
     """减小版本号大小
 
     Args:

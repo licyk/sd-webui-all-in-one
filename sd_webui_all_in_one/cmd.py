@@ -61,7 +61,10 @@ logger = get_logger(
 )
 
 
-def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str:
+def preprocess_command(
+    command: list[str] | str,
+    shell: bool,
+) -> list[str] | str:
     """针对不同平台对命令进行预处理
 
     Args:

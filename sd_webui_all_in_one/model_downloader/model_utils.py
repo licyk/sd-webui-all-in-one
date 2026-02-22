@@ -26,7 +26,9 @@ logger = get_logger(
 )
 
 
-def export_model_list(dtype: SupportedWebUiType) -> ModelCardList:
+def export_model_list(
+    dtype: SupportedWebUiType,
+) -> ModelCardList:
     """导出模型列表
 
     Args:

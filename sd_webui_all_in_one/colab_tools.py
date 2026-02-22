@@ -55,7 +55,9 @@ def mount_google_drive(
         logger.info("Google Drive 已挂载")
 
 
-def get_colab_secret(key: str) -> str | None:
+def get_colab_secret(
+    key: str,
+) -> str | None:
     """获取 Colab 密钥
 
     Args:

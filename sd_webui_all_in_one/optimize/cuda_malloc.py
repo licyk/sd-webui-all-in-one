@@ -147,7 +147,9 @@ def is_nvidia_device():
     return False
 
 
-def get_pytorch_cuda_alloc_conf(is_cuda: bool | None = True) -> str | None:
+def get_pytorch_cuda_alloc_conf(
+    is_cuda: bool | None = True,
+) -> str | None:
     """获取用于配置 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量的配置
 
     Args:

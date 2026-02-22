@@ -378,7 +378,9 @@ def uninstall_model(
     )
 
 
-def register_invokeai(subparsers: "argparse._SubParsersAction") -> None:
+def register_invokeai(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 InvokeAI 模块及其子命令
 
     Args:

@@ -67,7 +67,9 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
     return ver.get("cuda_version"), ver.get("cudnn_version")
 
 
-def get_torch_version_worker(result_queue: Queue) -> None:
+def get_torch_version_worker(
+    result_queue: Queue,
+) -> None:
     """在子进程中执行的任务函数, 用于获取 Torch 版本信息
 
     Args:
@@ -152,7 +154,9 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         return None, None, None
 
 
-def need_install_ort_ver(skip_if_missing: bool = True) -> OrtType | None:
+def need_install_ort_ver(
+    skip_if_missing: bool | None = True,
+) -> OrtType | None:
     """判断需要安装的 onnxruntime 版本
 
     Args:

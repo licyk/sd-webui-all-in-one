@@ -55,7 +55,9 @@ def get_proxy() -> str:
     print(addr)
 
 
-def register_manager(subparsers: "argparse._SubParsersAction") -> None:
+def register_manager(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 SD WebUI All In One 模块及其子命令
 
     Args:

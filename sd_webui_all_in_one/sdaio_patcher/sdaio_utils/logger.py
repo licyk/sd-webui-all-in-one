@@ -51,7 +51,11 @@ class LoggingColoredFormatter(logging.Formatter):
         return super().format(colored_record)
 
 
-def get_logger(name: str | None = None, level: int | None = logging.INFO, color: bool | None = True) -> logging.Logger:
+def get_logger(
+    name: str | None = None,
+    level: int | None = logging.INFO,
+    color: bool | None = True,
+) -> logging.Logger:
     """获取 Loging 对象
 
     Args:

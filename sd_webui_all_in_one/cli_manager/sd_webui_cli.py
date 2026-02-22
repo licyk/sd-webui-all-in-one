@@ -452,7 +452,9 @@ def uninstall_model(
     )
 
 
-def register_sd_webui(subparsers: "argparse._SubParsersAction") -> None:
+def register_sd_webui(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 Stable Diffusion WebUI 模块及其子命令
 
     Args:

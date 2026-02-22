@@ -461,7 +461,9 @@ def launch_webui(
         raise RuntimeError(f"运行 {webui_name} 时出现错误: {e}") from e
 
 
-def get_repo_name_from_url(url: str) -> str:
+def get_repo_name_from_url(
+    url: str,
+) -> str:
     """从 Git 仓库链接中解析并返回仓库名称
 
     Args:

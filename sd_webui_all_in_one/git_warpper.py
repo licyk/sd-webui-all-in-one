@@ -593,7 +593,9 @@ def switch_commit(
         raise RuntimeError(f"切换 '{path}' 的 Git 指针到 '{commit}' 版本时失败: {e}") from e
 
 
-def is_git_repo(path: Path) -> bool:
+def is_git_repo(
+    path: Path,
+) -> bool:
     """检查该路径是否为 Git 仓库路径
 
     Args:

@@ -502,7 +502,9 @@ class RequirementParser(Parser):
         return "".join(result)
 
 
-def format_full_version(info: str) -> str:
+def format_full_version(
+    info: str,
+) -> str:
     """格式化完整的版本信息
 
     Args:

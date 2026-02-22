@@ -333,7 +333,9 @@ def uninstall_model(
     )
 
 
-def register_sd_trainer(subparsers: "argparse._SubParsersAction") -> None:
+def register_sd_trainer(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 SD Trainer 模块及其子命令
 
     Args:

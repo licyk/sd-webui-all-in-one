@@ -239,7 +239,9 @@ class TomlParser:
         return table
 
 
-def loads(data: str) -> TomlDict:
+def loads(
+    data: str,
+) -> TomlDict:
     """解析 TOML 格式的字符串并返回字典
 
     Args:
@@ -253,7 +255,9 @@ def loads(data: str) -> TomlDict:
     return TomlParser().loads(data)
 
 
-def load(fp: BinaryIO) -> TomlDict:
+def load(
+    fp: BinaryIO,
+) -> TomlDict:
     """解析 TOML 格式的二进制流并返回字典
 
     Args:

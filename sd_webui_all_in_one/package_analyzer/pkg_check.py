@@ -27,7 +27,9 @@ logger = get_logger(
 )
 
 
-def version_string_is_canonical(version: str) -> bool:
+def version_string_is_canonical(
+    version: str,
+) -> bool:
     """判断版本号标识符是否符合标准
 
     Args:
@@ -44,7 +46,9 @@ def version_string_is_canonical(version: str) -> bool:
     )
 
 
-def is_package_has_version(package: str) -> bool:
+def is_package_has_version(
+    package: str,
+) -> bool:
     """检查 Python 软件包是否指定版本号
 
     Args:
@@ -56,7 +60,9 @@ def is_package_has_version(package: str) -> bool:
     return package != (package.replace("===", "").replace("~=", "").replace("!=", "").replace("<=", "").replace(">=", "").replace("<", "").replace(">", "").replace("==", ""))
 
 
-def get_package_name(package: str) -> str:
+def get_package_name(
+    package: str,
+) -> str:
     """获取 Python 软件包的包名, 去除末尾的版本声明
 
     Args:
@@ -68,7 +74,9 @@ def get_package_name(package: str) -> str:
     return package.split("===")[0].split("~=")[0].split("!=")[0].split("<=")[0].split(">=")[0].split("<")[0].split(">")[0].split("==")[0].strip()
 
 
-def get_package_version(package: str) -> str:
+def get_package_version(
+    package: str,
+) -> str:
     """获取 Python 软件包的包版本号
 
     Args:
@@ -104,7 +112,9 @@ REPLACE_PACKAGE_NAME_DICT = {
 """Python 软件包名替换表"""
 
 
-def parse_wheel_filename(filename: str) -> str:
+def parse_wheel_filename(
+    filename: str,
+) -> str:
     """解析 Python wheel 文件名并返回 distribution 名称
 
     Args:
@@ -121,7 +131,9 @@ def parse_wheel_filename(filename: str) -> str:
     return match.group("distribution")
 
 
-def parse_wheel_version(filename: str) -> str:
+def parse_wheel_version(
+    filename: str,
+) -> str:
     """解析 Python wheel 文件名并返回 version 名称
 
     Args:
@@ -138,7 +150,9 @@ def parse_wheel_version(filename: str) -> str:
     return match.group("version")
 
 
-def parse_wheel_to_package_name(filename: str) -> str:
+def parse_wheel_to_package_name(
+    filename: str,
+) -> str:
     """解析 Python wheel 文件名并返回 <distribution>==<version>
 
     Args:
@@ -152,7 +166,9 @@ def parse_wheel_to_package_name(filename: str) -> str:
     return f"{distribution}=={version}"
 
 
-def remove_optional_dependence_from_package(filename: str) -> str:
+def remove_optional_dependence_from_package(
+    filename: str,
+) -> str:
     """移除 Python 软件包声明中可选依赖
 
     Args:
@@ -164,7 +180,9 @@ def remove_optional_dependence_from_package(filename: str) -> str:
     return re.sub(r"\[.*?\]", "", filename)
 
 
-def get_correct_package_name(name: str) -> str:
+def get_correct_package_name(
+    name: str,
+) -> str:
     """将原 Python 软件包名替换成正确的 Python 软件包名
 
     Args:
@@ -192,7 +210,9 @@ def parse_requirement(
     return parser.parse()
 
 
-def evaluate_marker(marker: Any) -> bool:
+def evaluate_marker(
+    marker: Any,
+) -> bool:
     """评估 marker 表达式, 判断当前环境是否符合要求
 
     Args:
@@ -277,7 +297,9 @@ def evaluate_marker(marker: Any) -> bool:
     return False
 
 
-def parse_requirement_to_list(text: str) -> list[str]:
+def parse_requirement_to_list(
+    text: str,
+) -> list[str]:
     """解析依赖声明并返回依赖列表
 
     Args:
@@ -316,7 +338,9 @@ def parse_requirement_to_list(text: str) -> list[str]:
     return dependencies
 
 
-def parse_requirement_list(requirements: list[str]) -> list[str]:
+def parse_requirement_list(
+    requirements: list[str],
+) -> list[str]:
     """将 Python 软件包声明列表解析成标准 Python 软件包名列表
 
     例如有以下的 Python 软件包声明列表:
@@ -482,7 +506,9 @@ def parse_requirement_list(requirements: list[str]) -> list[str]:
     return canonical_package_list
 
 
-def read_packages_from_requirements_file(file_path: str | Path) -> list[str]:
+def read_packages_from_requirements_file(
+    file_path: str | Path,
+) -> list[str]:
     """从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
     Args:
@@ -499,7 +525,9 @@ def read_packages_from_requirements_file(file_path: str | Path) -> list[str]:
         return []
 
 
-def get_package_version_from_library(package_name: str) -> str | None:
+def get_package_version_from_library(
+    package_name: str,
+) -> str | None:
     """获取已安装的 Python 软件包版本号
 
     Args:
@@ -528,7 +556,9 @@ def get_package_version_from_library(package_name: str) -> str | None:
     return ver
 
 
-def is_package_installed(package: str) -> bool:
+def is_package_installed(
+    package: str,
+) -> bool:
     """判断 Python 软件包是否已安装在环境中
 
     Args:
@@ -631,7 +661,9 @@ def is_package_installed(package: str) -> bool:
     return True
 
 
-def validate_requirements(requirement_path: str | Path) -> bool:
+def validate_requirements(
+    requirement_path: str | Path,
+) -> bool:
     """检测环境依赖是否完整
 
     Args:

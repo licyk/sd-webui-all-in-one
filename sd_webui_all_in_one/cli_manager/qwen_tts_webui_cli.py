@@ -175,7 +175,9 @@ def launch(
     )
 
 
-def register_qwen_tts_webui(subparsers: "argparse._SubParsersAction") -> None:
+def register_qwen_tts_webui(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 Qwen TTS WebUI 模块及其子命令
 
     Args:

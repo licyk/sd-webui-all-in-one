@@ -43,7 +43,9 @@ def configure_env_var() -> None:
         os.environ[e] = v
 
 
-def config_wandb_token(token: str | None = None) -> None:
+def config_wandb_token(
+    token: str | None = None,
+) -> None:
     """配置 WandB 所需 Token, 配置时将设置`WANDB_API_KEY`环境变量
 
     Args:

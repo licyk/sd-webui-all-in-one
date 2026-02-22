@@ -274,7 +274,9 @@ def uninstall_model(
     )
 
 
-def register_sd_scripts(subparsers: "argparse._SubParsersAction") -> None:
+def register_sd_scripts(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
     """注册 SD Scripts 模块及其子命令
 
     Args:
