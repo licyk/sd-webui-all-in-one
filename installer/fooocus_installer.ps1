@@ -75,10 +75,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 250
+$script:FOOOCUS_INSTALLER_VERSION = 251
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.29"
+$script:CORE_MINIMUM_VER = "2.0.30"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
