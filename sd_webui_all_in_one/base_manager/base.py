@@ -7,10 +7,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from sd_webui_all_in_one.downloader import DownloadToolType
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, set_git_base_config, set_github_mirror
-from sd_webui_all_in_one.pytorch_manager.base import (
-    PyTorchDeviceType,
+from sd_webui_all_in_one.mirror_manager import (
+    GITHUB_MIRROR_LIST,
+    HUGGINGFACE_MIRROR_LIST,
+    set_git_base_config,
+    set_github_mirror,
 )
+from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     auto_detect_avaliable_pytorch_type,
     find_latest_pytorch_info,
@@ -22,14 +25,35 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     query_pytorch_info_from_library,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, is_package_has_version, get_package_version
+from sd_webui_all_in_one.package_analyzer.pkg_check import (
+    get_package_name,
+    is_package_has_version,
+    get_package_version,
+)
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.file_operations.file_manager import is_folder_empty, copy_files, remove_files
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME, SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH
+from sd_webui_all_in_one.file_operations.file_manager import (
+    is_folder_empty,
+    copy_files,
+    remove_files,
+)
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
+)
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
-from sd_webui_all_in_one.model_downloader.model_utils import download_model, export_model_list, display_model_table, search_models_from_library
-from sd_webui_all_in_one.model_downloader.base import SupportedWebUiType, ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader.model_utils import (
+    download_model,
+    export_model_list,
+    display_model_table,
+    search_models_from_library,
+)
+from sd_webui_all_in_one.model_downloader.base import (
+    SupportedWebUiType,
+    ModelDownloadUrlType,
+)
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import print_divider
 

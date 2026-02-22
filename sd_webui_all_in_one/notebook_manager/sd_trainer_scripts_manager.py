@@ -10,11 +10,27 @@ from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
-from sd_webui_all_in_one.env_manager import config_wandb_token, configure_env_var, configure_pip
-from sd_webui_all_in_one.pkg_manager import install_manager_depend, pip_install
-from sd_webui_all_in_one.base_manager.sd_scripts_base import SDScriptsBranchType, check_sd_scripts_env, install_sd_scripts, update_sd_scripts
+from sd_webui_all_in_one.env_manager import (
+    config_wandb_token,
+    configure_env_var,
+    configure_pip,
+)
+from sd_webui_all_in_one.pkg_manager import (
+    install_manager_depend,
+    pip_install,
+)
+from sd_webui_all_in_one.base_manager.sd_scripts_base import (
+    SDScriptsBranchType,
+    check_sd_scripts_env,
+    install_sd_scripts,
+    update_sd_scripts,
+)
 
 
 logger = get_logger(

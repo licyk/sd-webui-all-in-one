@@ -8,7 +8,13 @@ from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.file_operations.file_manager import remove_files
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR, LOGGER_NAME, SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
+)
 from sd_webui_all_in_one.pytorch_manager.base import (
     PYPI_EXTRA_INDEX_MIRROR_CERNET,
     PYPI_INDEX_MIRROR_OFFICIAL,

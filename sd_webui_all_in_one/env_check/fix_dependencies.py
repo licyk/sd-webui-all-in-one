@@ -3,7 +3,11 @@
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.package_analyzer.pkg_check import validate_requirements
 

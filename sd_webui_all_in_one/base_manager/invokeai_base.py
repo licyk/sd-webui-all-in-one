@@ -4,7 +4,11 @@ import asyncio
 import re
 import sys
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, TypedDict
+from typing import (
+    Any,
+    Callable,
+    TypedDict,
+)
 from pathlib import Path
 
 
@@ -20,22 +24,57 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.downloader import DownloadToolType, download_file
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    download_file,
+)
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, get_pypi_mirror_config
+from sd_webui_all_in_one.file_operations.file_manager import (
+    copy_files,
+    move_files,
+    remove_files,
+)
+from sd_webui_all_in_one.mirror_manager import (
+    GITHUB_MIRROR_LIST,
+    HUGGINGFACE_MIRROR_LIST,
+    get_pypi_mirror_config,
+)
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
-from sd_webui_all_in_one.pkg_manager import install_pytorch, pip_install
-from sd_webui_all_in_one.package_analyzer.pkg_check import get_package_name, get_package_version, is_package_has_version
-from sd_webui_all_in_one.package_analyzer.ver_cmp import version_decrement, version_increment
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
-from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import get_env_pytorch_type, get_pytorch_mirror_type, auto_detect_pytorch_device_category
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.pkg_manager import (
+    install_pytorch,
+    pip_install,
+)
+from sd_webui_all_in_one.package_analyzer.pkg_check import (
+    get_package_name,
+    get_package_version,
+    is_package_has_version,
+)
+from sd_webui_all_in_one.package_analyzer.ver_cmp import (
+    version_decrement,
+    version_increment,
+)
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYTORCH_DEVICE_CATEGORY_LIST,
+    PyTorchDeviceTypeCategory,
+)
+from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
+    get_env_pytorch_type,
+    get_pytorch_mirror_type,
+    auto_detect_pytorch_device_category,
+)
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import print_divider, ANSIColor
+from sd_webui_all_in_one.utils import (
+    print_divider,
+    ANSIColor,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,

@@ -3,8 +3,18 @@ import json
 import uuid
 import urllib.request
 import importlib.metadata
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, TypedDict, Literal, TypeAlias, Callable, get_args
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
+from typing import (
+    Any,
+    TypedDict,
+    Literal,
+    TypeAlias,
+    Callable,
+    get_args,
+)
 from pathlib import Path
 
 from sd_webui_all_in_one.downloader import DownloadToolType
@@ -18,7 +28,12 @@ from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, ROOT_PATH, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    ROOT_PATH,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
@@ -33,9 +48,19 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, get_pypi_mirror_config
+from sd_webui_all_in_one.mirror_manager import (
+    GITHUB_MIRROR_LIST,
+    HUGGINGFACE_MIRROR_LIST,
+    get_pypi_mirror_config,
+)
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_operations.file_manager import copy_files, move_files, remove_files, generate_dir_tree, get_file_list
+from sd_webui_all_in_one.file_operations.file_manager import (
+    copy_files,
+    move_files,
+    remove_files,
+    generate_dir_tree,
+    get_file_list,
+)
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.pkg_manager import pip_install
 

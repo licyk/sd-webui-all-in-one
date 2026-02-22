@@ -1,4 +1,9 @@
-from typing import TypedDict, Literal, TypeAlias, get_args
+from typing import (
+    TypedDict,
+    Literal,
+    TypeAlias,
+    get_args,
+)
 
 SupportedWebUiType: TypeAlias = Literal[
     "sd_webui",

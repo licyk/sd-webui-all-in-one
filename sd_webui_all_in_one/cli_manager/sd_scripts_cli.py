@@ -14,9 +14,18 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     uninstall_sd_scripts_model,
 )
 from sd_webui_all_in_one.config import SD_SCRIPTS_ROOT_PATH
-from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
-from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_URL_TYPE_LIST, ModelDownloadUrlType
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorchDeviceType
+from sd_webui_all_in_one.downloader import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
+)
+from sd_webui_all_in_one.model_downloader.base import (
+    MODEL_DOWNLOAD_URL_TYPE_LIST,
+    ModelDownloadUrlType,
+)
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYTORCH_DEVICE_LIST,
+    PyTorchDeviceType,
+)
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 

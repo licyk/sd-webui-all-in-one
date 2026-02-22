@@ -1,7 +1,11 @@
 """TOML 格式解析工具, 用于将 TOML 字符串转换为 Python 字典对象"""
 
 import re
-from typing import Any, BinaryIO, TypeAlias
+from typing import (
+    Any,
+    BinaryIO,
+    TypeAlias,
+)
 
 
 TomlDict: TypeAlias = dict[str, Any]

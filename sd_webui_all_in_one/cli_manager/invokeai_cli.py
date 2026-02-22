@@ -18,9 +18,18 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     uninstall_invokeai_model,
 )
 from sd_webui_all_in_one.config import INVOKEAI_ROOT_PATH
-from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
-from sd_webui_all_in_one.model_downloader.base import MODEL_DOWNLOAD_URL_TYPE_LIST, ModelDownloadUrlType
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_CATEGORY_LIST, PyTorchDeviceTypeCategory
+from sd_webui_all_in_one.downloader import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
+)
+from sd_webui_all_in_one.model_downloader.base import (
+    MODEL_DOWNLOAD_URL_TYPE_LIST,
+    ModelDownloadUrlType,
+)
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYTORCH_DEVICE_CATEGORY_LIST,
+    PyTorchDeviceTypeCategory,
+)
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.invokeai_base import reinstall_invokeai_pytorch
 

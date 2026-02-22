@@ -11,14 +11,31 @@ from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
-from sd_webui_all_in_one.repo_manager import ApiType, RepoType
+from sd_webui_all_in_one.repo_manager import (
+    ApiType,
+    RepoType,
+)
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.env_manager import config_wandb_token, configure_env_var, configure_pip, generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.pkg_manager import install_manager_depend, install_pytorch, install_requirements, pip_install
+from sd_webui_all_in_one.env_manager import (
+    config_wandb_token,
+    configure_env_var,
+    configure_pip,
+    generate_uv_and_pip_env_mirror_config,
+)
+from sd_webui_all_in_one.pkg_manager import (
+    install_manager_depend,
+    install_pytorch,
+    install_requirements,
+    pip_install,
+)
 from sd_webui_all_in_one.base_manager.base import clone_repo
 
 

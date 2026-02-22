@@ -9,7 +9,10 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     launch_qwen_tts_webui,
 )
 from sd_webui_all_in_one.config import QWEN_TTS_WEBUI_ROOT_PATH
-from sd_webui_all_in_one.pytorch_manager.base import PYTORCH_DEVICE_LIST, PyTorchDeviceType
+from sd_webui_all_in_one.pytorch_manager.base import (
+    PYTORCH_DEVICE_LIST,
+    PyTorchDeviceType,
+)
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 

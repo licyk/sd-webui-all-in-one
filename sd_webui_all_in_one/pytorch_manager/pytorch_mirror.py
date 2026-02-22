@@ -10,7 +10,10 @@ from typing import TypedDict
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
-from sd_webui_all_in_one.package_analyzer.pkg_check import is_package_has_version, get_package_version
+from sd_webui_all_in_one.package_analyzer.pkg_check import (
+    is_package_has_version,
+    get_package_version,
+)
 from sd_webui_all_in_one.pytorch_manager.base import (
     PYTORCH_MIRROR_DICT,
     PYTORCH_MIRROR_NJU_DICT,

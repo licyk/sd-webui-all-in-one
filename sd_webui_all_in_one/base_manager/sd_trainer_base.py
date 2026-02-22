@@ -1,6 +1,13 @@
 import os
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, Literal, TypedDict, get_args
+from typing import (
+    Any,
+    Callable,
+    TypeAlias,
+    Literal,
+    TypedDict,
+    get_args,
+)
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
@@ -15,21 +22,36 @@ from sd_webui_all_in_one.base_manager.base import (
     print_divider,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.downloader import DownloadToolType, download_file
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    download_file,
+)
 from sd_webui_all_in_one.env_check.fix_accelerate_bin import check_accelerate_bin
 from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
 from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
-from sd_webui_all_in_one.file_operations.file_manager import generate_dir_tree, get_file_list, remove_files
-from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST, HUGGINGFACE_MIRROR_LIST, get_pypi_mirror_config
+from sd_webui_all_in_one.file_operations.file_manager import (
+    generate_dir_tree,
+    get_file_list,
+    remove_files,
+)
+from sd_webui_all_in_one.mirror_manager import (
+    GITHUB_MIRROR_LIST,
+    HUGGINGFACE_MIRROR_LIST,
+    get_pypi_mirror_config,
+)
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.utils import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,

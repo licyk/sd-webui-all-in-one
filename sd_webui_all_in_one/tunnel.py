@@ -14,14 +14,22 @@ import threading
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, TypedDict
+from typing import (
+    Any,
+    Callable,
+    TypedDict,
+)
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.downloader import download_file
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.cmd import preprocess_command
 
 

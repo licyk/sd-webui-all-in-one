@@ -11,7 +11,11 @@ from pathlib import Path
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 from sd_webui_all_in_one.utils import load_source_directly
 
@@ -119,9 +123,9 @@ def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]
         logger.debug("通过子进程获取 Torch 版本失败: %s", e)
     finally:
         if process.is_alive():
-            process.terminate() # 如果还活着, 强制终止
-            process.join()      # 终止后必须 join 释放僵尸进程资源
-        process.close() # 确保进程资源被回收
+            process.terminate()  # 如果还活着, 强制终止
+            process.join()  # 终止后必须 join 释放僵尸进程资源
+        process.close()  # 确保进程资源被回收
 
     logger.debug("子进程返回结果 - Torch: %s, CUDA: %s, cuDNN: %s", torch_ver, cuda_ver, cudnn_ver)
     return torch_ver, cuda_ver, cudnn_ver

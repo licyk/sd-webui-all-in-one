@@ -3,7 +3,10 @@
 import os
 import sys
 import platform
-from typing import Any, NamedTuple
+from typing import (
+    Any,
+    NamedTuple,
+)
 
 
 class ParsedPyWhlRequirement(NamedTuple):

@@ -8,7 +8,11 @@ from pathlib import Path
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.colab_tools import is_colab_environment
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 
 

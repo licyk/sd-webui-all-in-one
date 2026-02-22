@@ -7,9 +7,17 @@ from typing import Any
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import LOGGER_LEVEL, LOGGER_COLOR, LOGGER_NAME
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
-from sd_webui_all_in_one.package_analyzer.py_whl_parse import ParsedPyWhlRequirement, RequirementParser, get_parse_bindings
+from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
+    ParsedPyWhlRequirement,
+    RequirementParser,
+    get_parse_bindings,
+)
 
 
 logger = get_logger(
