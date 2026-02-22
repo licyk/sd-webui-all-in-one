@@ -80,7 +80,7 @@ class Parser:
         self.pos += 1
         return char
 
-    def skip_whitespace(self):
+    def skip_whitespace(self) -> None:
         """跳过空白字符（空格和制表符）"""
         while self.pos < self.len and self.text[self.pos] in " \t":
             self.pos += 1
@@ -141,7 +141,7 @@ class RequirementParser(Parser):
         """初始化依赖声明解析器
 
         Args:
-            text (str): 覫解析的依赖声明文本
+            text (str): 解析的依赖声明文本
             bindings (dict[str, str] | None): 环境变量绑定字典
         """
         super().__init__(text)

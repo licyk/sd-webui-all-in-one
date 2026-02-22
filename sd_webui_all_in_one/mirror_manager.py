@@ -14,7 +14,7 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PYPI_INDEX_MIRROR_OFFICIAL,
     PYPI_INDEX_MIRROR_TENCENT,
     PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
-    PYTORCH_FIND_LINKS_MIRROR_LICYK,
+    PYPI_EXTRA_INDEX_MIRROR_LICYK,
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
 )
 
@@ -331,14 +331,14 @@ def get_pypi_mirror_config(
     if use_cn_mirror:
         return generate_uv_and_pip_env_mirror_config(
             index_url=PYPI_INDEX_MIRROR_TENCENT,
-            extra_index_url=PYPI_EXTRA_INDEX_MIRROR_CERNET,
-            find_links=[PYTORCH_FIND_LINKS_MIRROR_ALIYUN, PYTORCH_FIND_LINKS_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
+            extra_index_url=[PYPI_EXTRA_INDEX_MIRROR_CERNET, PYPI_EXTRA_INDEX_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else PYPI_EXTRA_INDEX_MIRROR_CERNET,
+            find_links=PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
             origin_env=origin_env,
         )
     else:
         return generate_uv_and_pip_env_mirror_config(
             index_url=PYPI_INDEX_MIRROR_OFFICIAL,
-            extra_index_url=[],
-            find_links=[PYTORCH_FIND_LINKS_MIRROR_OFFICIAL, PYTORCH_FIND_LINKS_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
+            extra_index_url=[PYPI_EXTRA_INDEX_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else [],
+            find_links=PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
             origin_env=origin_env,
         )

@@ -68,6 +68,9 @@ PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
 PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 """PyPI 额外镜像源"""
 
+PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
+"""PyPI (licyk) 镜像源"""
+
 PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
 """PyTorch IPEX 镜像源 (CN)"""
 
@@ -79,9 +82,6 @@ PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_sta
 
 PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
 """PyTorch 阿里云镜像源 (非 PEP 503)"""
-
-PYTORCH_FIND_LINKS_MIRROR_LICYK = "https://licyk.github.io/t/pypi/index.html"
-"""PyTorch (licyk) 镜像源 (非 PEP 503)"""
 
 PyTorchDeviceType: TypeAlias = Literal[
     "cu113",
@@ -406,12 +406,12 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [],
-            "mirror": [],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
-            "official": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
-            "mirror": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
+            "official": [],
+            "mirror": [],
         },
     },
     {
@@ -577,12 +577,12 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [],
-            "mirror": [],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
-            "official": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
-            "mirror": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
+            "official": [],
+            "mirror": [],
         },
     },
     {
@@ -596,12 +596,12 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [],
-            "mirror": [],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
-            "official": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
-            "mirror": [PYTORCH_FIND_LINKS_MIRROR_LICYK],
+            "official": [],
+            "mirror": [],
         },
     },
     {
