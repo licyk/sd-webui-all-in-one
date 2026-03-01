@@ -21,7 +21,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/qwen_tts_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/qwen_tts_webui" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
             -DisablePyPIMirror `

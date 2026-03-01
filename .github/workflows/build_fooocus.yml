@@ -21,7 +21,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/fooocus_installer.ps1" `
             -InstallPath "${{ github.workspace }}/fooocus" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "fooocus_main" `

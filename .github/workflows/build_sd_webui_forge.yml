@@ -21,7 +21,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_forge" `
