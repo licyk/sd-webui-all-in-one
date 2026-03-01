@@ -22,7 +22,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/musubi_tuner" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "musubi_tuner_main" `

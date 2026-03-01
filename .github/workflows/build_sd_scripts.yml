@@ -21,7 +21,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/sd_trainer_script_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_scripts" `
-            -PyTorchMirrorType cu128 `
+            -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_scripts_dev" `

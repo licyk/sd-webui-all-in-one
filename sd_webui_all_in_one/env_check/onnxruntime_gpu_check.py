@@ -286,11 +286,14 @@ def check_onnxruntime_gpu(
             当修复 Onnxruntime GPU 版本问题发生错误时
     """
 
-    def _clean_env():
+    def _clean_env() -> None:
         custom_env.pop("PIP_EXTRA_INDEX_URL", None)
         custom_env.pop("UV_INDEX", None)
         custom_env.pop("PIP_FIND_LINKS", None)
         custom_env.pop("UV_FIND_LINKS", None)
+
+    def _uninstall_onnxruntime_gpu() -> None:
+        run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
 
     logger.info("检查 Onnxruntime GPU 版本问题中")
     ver = need_install_ort_ver(skip_if_missing)
@@ -301,9 +304,6 @@ def check_onnxruntime_gpu(
 
     if custom_env is None:
         custom_env = os.environ.copy()
-
-    def _uninstall_onnxruntime_gpu() -> None:
-        run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "onnxruntime-gpu", "-y"])
 
     try:
         if ver == OrtType.CU118:
@@ -328,7 +328,7 @@ def check_onnxruntime_gpu(
             custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
             custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
             _uninstall_onnxruntime_gpu()
-            pip_install("onnxruntime-gpu>=1.24.2", "--no-cache-dir", use_uv=use_uv)
+            pip_install("onnxruntime-gpu>=1.24.2", "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
     except RuntimeError as e:
         logger.error("修复 Onnxruntime GPU 版本问题时出现错误: %s", e)
         raise RuntimeError(f"修复 Onnxrunime GPU 版本问题时发生错误: {e}") from e
