@@ -75,7 +75,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 254
+$script:FOOOCUS_INSTALLER_VERSION = 255
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.33"
@@ -3319,15 +3319,7 @@ function global:sd-webui-all-in-one {
 }
 
 Set-Alias pip3 pip
-Set-Alias pip3.11 pip
-Set-Alias pip3.12 pip
-Set-Alias pip3.13 pip
-Set-Alias pip3.14 pip
 Set-Alias python3 python
-Set-Alias python3.11 python
-Set-Alias python3.12 python
-Set-Alias python3.13 python
-Set-Alias python3.14 python
 
 
 # 列出 Fooocus Installer 内置命令
