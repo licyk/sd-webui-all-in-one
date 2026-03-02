@@ -43,7 +43,6 @@ import sys
 import shlex
 import subprocess
 from pathlib import Path
-from typing import Literal
 
 from sd_webui_all_in_one.utils import in_jupyter
 from sd_webui_all_in_one.logger import get_logger
@@ -92,127 +91,106 @@ def preprocess_command(
 
 def run_cmd(
     command: str | list[str],
-    desc: str | None = None,
-    errdesc: str | None = None,
     custom_env: dict[str, str] | None = None,
     live: bool | None = True,
     shell: bool | None = None,
-    cwd: Path | str | None = None,
-    display_mode: Literal["terminal", "jupyter"] | None = None,
+    cwd: Path | None = None,
+    check: bool | None = True,
 ) -> str | None:
     """执行 Shell 命令
 
     Args:
-        command (str | list[str]): 要执行的命令
-        desc (str | None): 执行命令的描述
-        errdesc (str | None): 执行命令报错时的描述
-        custom_env (dict[str, str] | None): 自定义环境变量
-        live (bool | None): 是否实时输出命令执行日志
-        shell (bool | None): 是否使用内置 Shell 执行命令
-        cwd (Path | str | None): 执行进程时的起始路径
-        display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+        command (str | list[str]):
+            要执行的命令
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (bool | None):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | str | None):
+            执行进程时的起始路径
+        check (bool | None):
+            检查进程退出状态, 当异常退出时引发 RuntimeError
     Returns:
-        (str | None): 命令执行时输出的内容
+        (str | None):
+            命令执行时输出的内容, 当 live=True / 执行命令发生错误时输出内容为 None
     Raises:
-        RuntimeError: 当命令执行失败时
+        RuntimeError:
+            当命令执行失败时
     """
+
+    def _run_in_jupyter(
+        command: str | list[str],
+        custom_env: dict[str, str] | None = None,
+        shell: bool | None = None,
+        cwd: Path | None = None,
+    ) -> subprocess.Popen:
+        process = subprocess.Popen(
+            command,
+            shell=shell,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            encoding="utf-8",
+            env=custom_env,
+            cwd=cwd,
+        )
+
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            if sys.stdout and hasattr(sys.stdout, "flush"):
+                sys.stdout.flush()
+
+        process.wait()
+        return process
 
     if shell is None:
         shell = sys.platform != "win32"
 
-    if desc is not None:
-        logger.info(desc)
-
     if custom_env is None:
-        custom_env = os.environ
+        custom_env = os.environ.copy()
 
     command_to_exec = preprocess_command(command=command, shell=shell)
 
-    if display_mode is None:
-        if in_jupyter():
-            display_mode = "jupyter"
-        else:
-            display_mode = "terminal"
+    kwargs = {
+        "args": command_to_exec,
+        "shell": shell,
+        "env": custom_env,
+        "cwd": cwd,
+        "encoding": "utf-8",
+        "errors": "ignore",
+    }
 
-    cwd = Path(cwd) if not isinstance(cwd, Path) and cwd is not None else cwd
-    logger.debug("执行命令时使用的显示模式: %s", display_mode)
-    logger.debug("使用的输出模式: %s", ("实时输出" if live else "非实时输出"))
+    if not live:
+        kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
-    if live:
-        if display_mode == "jupyter":
-            process_output = []
-            process = subprocess.Popen(
-                command_to_exec,
-                shell=shell,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1,
-                encoding="utf-8",
-                env=custom_env,
-                cwd=cwd,
-            )
+    logger.debug("执行命令的参数: %s", kwargs)
 
-            for line in process.stdout:
-                process_output.append(line)
-                print(line, end="", flush=True)
-                if sys.stdout and hasattr(sys.stdout, "flush"):
-                    sys.stdout.flush()
+    if live and in_jupyter():
+        logger.debug("使用 _run_in_jupyter() 执行命令")
+        result = _run_in_jupyter(
+            command=command_to_exec,
+            custom_env=custom_env,
+            shell=shell,
+            cwd=cwd,
+        )
+    else:
+        logger.debug("使用 subprocess.run() 执行命令")
+        result: subprocess.CompletedProcess[str] = subprocess.run(**kwargs)  # pylint: disable=subprocess-run-check
 
-            process.wait()
-            if process.returncode != 0:
-                raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
-命令: {command_to_exec}
-错误代码: {process.returncode}""")
+    if check and result.returncode != 0:
+        errors = [
+            "执行命令时发生错误",
+            f"命令: {command_to_exec}",
+            f"错误代码: {result.returncode}",
+        ]
+        if result.stdout:
+            errors.append(f"标准输出: {result.stdout}")
+        if result.stderr:
+            errors.append(f"错误输出: {result.stderr}")
 
-            return "".join(process_output)
-
-        if display_mode == "terminal":
-            result: subprocess.CompletedProcess[str] = subprocess.run(
-                command_to_exec,
-                shell=shell,
-                env=custom_env,
-                cwd=cwd,
-                bufsize=1,
-                text=True,
-                encoding="utf-8",
-                errors="ignore",
-            )
-            if result.returncode != 0:
-                raise RuntimeError(f"""{errdesc or "执行命令时发生错误"}
-命令: {command_to_exec}
-错误代码: {result.returncode}""")
-
-            try:
-                # 当 subprocess.run() 使用 PIPE 捕获输出时, result 才有输出内容
-                return result.stdout
-            except Exception:
-                # 未使用 PIPE 时 subprocess.run() 可以实时输出内容, 但是 result 将为 None
-                return None
-
-        logger.warning("未知的显示模式: %s, 将切换到非实时输出模式", display_mode)
-
-    # 非实时输出模式
-    result: subprocess.CompletedProcess[bytes] = subprocess.run(
-        command_to_exec,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-        env=custom_env,
-        cwd=cwd,
-        bufsize=1,
-        text=True,
-        encoding="utf-8",
-        errors="ignore",
-    )
-
-    if result.returncode != 0:
-        message = f"""{errdesc or "执行命令时发生错误"}
-命令: {command_to_exec}
-错误代码: {result.returncode}
-标准输出: {result.stdout if len(result.stdout) > 0 else ""}
-错误输出: {result.stderr if len(result.stderr) > 0 else ""}
-"""
-        raise RuntimeError(message)
+        raise RuntimeError("\n".join(errors))
 
     return result.stdout
