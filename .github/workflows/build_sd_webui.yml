@@ -50,6 +50,7 @@ jobs:
         env:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
+        continue-on-error: true
         run: |
           Set-Location -Path "${{ github.workspace }}/sd_webui/core"
           & "${{ github.workspace }}/sd_webui/core/python/python.exe" `

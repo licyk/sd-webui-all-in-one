@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 360
+$script:SD_TRAINER_INSTALLER_VERSION = 361
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.32"
+$script:CORE_MINIMUM_VER = "2.0.33"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -806,7 +806,7 @@ function Invoke-Installation {
     Update-SDWebUiAllInOne
     $launch_params = Get-LaunchCoreArgs
 
-    & python -m sd_webui_all_in_one.cli_manager.main sd-trainer install $launch_params
+    & python -m sd_webui_all_in_one sd-trainer install $launch_params
     if (!($?)) {
         Write-Log "运行 SD WebUI All In One 安装 SD Trainer 时发生了错误, 终止 SD Trainer 安装进程, 可尝试重新运行 SD Trainer Installer 重试失败的安装" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
@@ -1193,7 +1193,7 @@ function Update-WindowsAria2 {
 # 更新 Aria2
 function Update-Aria2 {
     Write-Log `"检查 Aria2 是否需要更新`"
-    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
+    & python -m sd_webui_all_in_one self-manager check-aria2
     if (`$?) {
         Write-Log `"Aria2 无需更新`"
         return
@@ -1340,7 +1340,7 @@ function Set-Proxy {
         return
     }
     if (`$Legacy) {
-        `$proxy_value = & python -m sd_webui_all_in_one.cli_manager.main self-manager get-proxy
+        `$proxy_value = & python -m sd_webui_all_in_one self-manager get-proxy
         if (![string]::IsNullOrWhiteSpace(`$proxy_value)) {
             `$env:HTTP_PROXY = `$proxy_value
             `$env:HTTPS_PROXY = `$proxy_value
@@ -1908,9 +1908,9 @@ function Main {
 
     if (`$script:BuildMode) {
         Write-Log `"SD Trainer Installer 构建模式已启用, 仅检查 SD Trainer 运行环境`"
-        & python -m sd_webui_all_in_one.cli_manager.main sd-trainer check-env `$launch_args
+        & python -m sd_webui_all_in_one sd-trainer check-env `$launch_args
     } else {
-        & python -m sd_webui_all_in_one.cli_manager.main sd-trainer launch `$launch_args
+        & python -m sd_webui_all_in_one sd-trainer launch `$launch_args
         `$req = `$?
         if (`$req) {
             Write-Log `"SD Trainer 正常退出`"
@@ -2045,7 +2045,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-trainer update `$launch_args
+    & python -m sd_webui_all_in_one sd-trainer update `$launch_args
 
     Write-Log `"退出 SD Trainer 更新脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -2186,7 +2186,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-trainer switch `$launch_args
+    & python -m sd_webui_all_in_one sd-trainer switch `$launch_args
 
     Write-Log `"退出 SD Trainer 分支切换脚本`"
 
@@ -2588,7 +2588,7 @@ function Main {
     Update-SDWebUiAllInOne
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-trainer reinstall-pytorch `$launch_args
+    & python -m sd_webui_all_in_one sd-trainer reinstall-pytorch `$launch_args
 
     Write-Log `"退出 PyTorch 重装脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -2716,7 +2716,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-trainer model install-library `$launch_args
+    & python -m sd_webui_all_in_one sd-trainer model install-library `$launch_args
 
     Write-Log `"退出模型下载脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -3307,13 +3307,19 @@ function global:pip {
 }
 
 function global:sd-webui-all-in-one {
-    & python -m sd_webui_all_in_one.cli_manager.main @args
+    & python -m sd_webui_all_in_one @args
 }
 
 Set-Alias pip3 pip
 Set-Alias pip3.11 pip
+Set-Alias pip3.12 pip
+Set-Alias pip3.13 pip
+Set-Alias pip3.14 pip
 Set-Alias python3 python
 Set-Alias python3.11 python
+Set-Alias python3.12 python
+Set-Alias python3.13 python
+Set-Alias python3.14 python
 
 
 # 列出 SD Trainer Installer 内置命令

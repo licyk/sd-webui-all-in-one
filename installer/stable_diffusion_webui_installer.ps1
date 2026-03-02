@@ -78,10 +78,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 325
+$script:SD_WEBUI_INSTALLER_VERSION = 326
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.32"
+$script:CORE_MINIMUM_VER = "2.0.33"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -825,7 +825,7 @@ function Invoke-Installation {
     $launch_params = Get-LaunchCoreArgs
 
     
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui install $launch_params
+    & python -m sd_webui_all_in_one sd-webui install $launch_params
     if (!($?)) {
         Write-Log "运行 SD WebUI All In One 安装 Stable Diffusion WebUI 时发生了错误, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装" -Level ERROR
         if (!($script:BuildMode)) { Read-Host | Out-Null }
@@ -1220,7 +1220,7 @@ function Update-WindowsAria2 {
 # 更新 Aria2
 function Update-Aria2 {
     Write-Log `"检查 Aria2 是否需要更新`"
-    & python -m sd_webui_all_in_one.cli_manager.main self-manager check-aria2
+    & python -m sd_webui_all_in_one self-manager check-aria2
     if (`$?) {
         Write-Log `"Aria2 无需更新`"
         return
@@ -1367,7 +1367,7 @@ function Set-Proxy {
         return
     }
     if (`$Legacy) {
-        `$proxy_value = & python -m sd_webui_all_in_one.cli_manager.main self-manager get-proxy
+        `$proxy_value = & python -m sd_webui_all_in_one self-manager get-proxy
         if (![string]::IsNullOrWhiteSpace(`$proxy_value)) {
             `$env:HTTP_PROXY = `$proxy_value
             `$env:HTTPS_PROXY = `$proxy_value
@@ -1943,9 +1943,9 @@ function Main {
 
     if (`$script:BuildMode) {
         Write-Log `"SD WebUI Installer 构建模式已启用, 仅检查 Stable Diffusion WebUI 运行环境`"
-        & python -m sd_webui_all_in_one.cli_manager.main sd-webui check-env `$launch_args
+        & python -m sd_webui_all_in_one sd-webui check-env `$launch_args
     } else {
-        & python -m sd_webui_all_in_one.cli_manager.main sd-webui launch `$launch_args
+        & python -m sd_webui_all_in_one sd-webui launch `$launch_args
         `$req = `$?
         if (`$req) {
             Write-Log `"Stable Diffusion WebUI 正常退出`"
@@ -2080,7 +2080,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui update `$launch_args
+    & python -m sd_webui_all_in_one sd-webui update `$launch_args
 
     Write-Log `"退出 Stable Diffusion WebUI 更新脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -2210,7 +2210,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui extension update `$launch_args
+    & python -m sd_webui_all_in_one sd-webui extension update `$launch_args
 
     Write-Log `"退出 Stable Diffusion WebUI 扩展更新脚本`"
 
@@ -2352,7 +2352,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui switch `$launch_args
+    & python -m sd_webui_all_in_one sd-webui switch `$launch_args
 
     Write-Log `"退出 Stable Diffusion WebUI 分支切换脚本`"
 
@@ -2768,7 +2768,7 @@ function Main {
     Update-SDWebUiAllInOne
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui reinstall-pytorch `$launch_args
+    & python -m sd_webui_all_in_one sd-webui reinstall-pytorch `$launch_args
 
     Write-Log `"退出 PyTorch 重装脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -2902,7 +2902,7 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
-    & python -m sd_webui_all_in_one.cli_manager.main sd-webui model install-library `$launch_args
+    & python -m sd_webui_all_in_one sd-webui model install-library `$launch_args
 
     Write-Log `"退出模型下载脚本`"
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
@@ -3475,13 +3475,19 @@ function global:pip {
 }
 
 function global:sd-webui-all-in-one {
-    & python -m sd_webui_all_in_one.cli_manager.main @args
+    & python -m sd_webui_all_in_one @args
 }
 
 Set-Alias pip3 pip
 Set-Alias pip3.11 pip
+Set-Alias pip3.12 pip
+Set-Alias pip3.13 pip
+Set-Alias pip3.14 pip
 Set-Alias python3 python
 Set-Alias python3.11 python
+Set-Alias python3.12 python
+Set-Alias python3.13 python
+Set-Alias python3.14 python
 
 
 # 列出 SD WebUI Installer 内置命令
