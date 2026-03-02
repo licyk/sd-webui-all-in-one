@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import logging
 
 from sd_webui_all_in_one.proxy import get_system_proxy_address
 from sd_webui_all_in_one.updater import (
@@ -10,7 +11,12 @@ from sd_webui_all_in_one.updater import (
     check_and_update_pip,
 )
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
-from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
+from sd_webui_all_in_one.config import (
+    SD_WEBUI_ALL_IN_ONE_PATCHER_PATH,
+    LOGGER_NAME,
+)
+from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
+from sd_webui_all_in_one.logger import set_all_loggers_level
 
 
 def check_pip(
@@ -44,17 +50,26 @@ def get_patcher_path() -> None:
     print(SD_WEBUI_ALL_IN_ONE_PATCHER_PATH)
 
 
-def get_proxy() -> str:
-    """获取当前系统中的代理地址
-
-    Returns:
-        str:
-            代理地址
-    """
+def get_proxy() -> None:
+    """获取当前系统中的代理地址"""
     addr = get_system_proxy_address()
     if addr is None:
         addr = ""
     print(addr)
+
+
+def get_cuda_malloc() -> None:
+    """获取支持当前设备的 CUDA 内存分配器配置"""
+    from sd_webui_all_in_one import config
+
+    config.LOGGER_LEVEL = logging.CRITICAL
+    set_all_loggers_level(
+        level=logging.CRITICAL,
+        prefix=LOGGER_NAME,
+    )
+    conf = get_cuda_malloc_var()
+    if conf is not None:
+        print(conf)
 
 
 def register_manager(
@@ -100,3 +115,7 @@ def register_manager(
     # get-proxy
     get_proxy_p = sd_webui_all_in_one_sub.add_parser("get-proxy", help="获取系统代理地址")
     get_proxy_p.set_defaults(func=lambda args: get_proxy())
+
+    # get-cuda-malloc
+    get_cuda_malloc_p = sd_webui_all_in_one_sub.add_parser("get-cuda-malloc", help="获取支持当前设备的 CUDA 内存分配器配置")
+    get_cuda_malloc_p.set_defaults(func=lambda args: get_cuda_malloc())

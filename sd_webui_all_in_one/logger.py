@@ -94,3 +94,23 @@ def get_logger(
     fn, lno, func, _ = logger.findCaller(stack_info=False, stacklevel=2)
     logger.debug("Logger 初始化完成, 位置: %s:%s in %s", fn, lno, func)
     return logger
+
+
+def set_all_loggers_level(
+    level: int,
+    prefix: str = "sd_webui_all_in_one",
+) -> None:
+    """批量设置指定前缀开头的 Logger 等级
+
+    Args:
+        level (int):
+            日志级别
+        prefix (str):
+            日志器所属的前缀
+    """
+    loggers = [logging.getLogger(name) for name in logging.Logger.manager.loggerDict]
+    loggers.append(logging.getLogger())
+
+    for logger in loggers:
+        if logger.name.startswith(prefix) or logger.name == "root":
+            logger.setLevel(level)

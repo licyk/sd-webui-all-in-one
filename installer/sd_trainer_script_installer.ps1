@@ -13,6 +13,7 @@
     [string]$UseCustomGithubMirror,
     [string]$InstallBranch,
     [switch]$BuildMode,
+    [switch]$BuildWithLaunch,
     [switch]$BuildWithUpdate,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
@@ -74,10 +75,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 247
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 248
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.33"
+$script:CORE_MINIMUM_VER = "2.0.34"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1841,137 +1842,14 @@ function Set-PyTorch-CUDA-Memory-Alloc {
         return
     }
 
-    `$content = `"
-import os
-import importlib.util
-import subprocess
+    `$conf = `$(python -m sd_webui_all_in_one self-manager get-cuda-malloc)
 
-#Can't use pytorch to get the GPU names because the cuda malloc has to be set before the first import.
-def get_gpu_names():
-    if os.name == 'nt':
-        import ctypes
-
-        # Define necessary C structures and types
-        class DISPLAY_DEVICEA(ctypes.Structure):
-            _fields_ = [
-                ('cb', ctypes.c_ulong),
-                ('DeviceName', ctypes.c_char * 32),
-                ('DeviceString', ctypes.c_char * 128),
-                ('StateFlags', ctypes.c_ulong),
-                ('DeviceID', ctypes.c_char * 128),
-                ('DeviceKey', ctypes.c_char * 128)
-            ]
-
-        # Load user32.dll
-        user32 = ctypes.windll.user32
-
-        # Call EnumDisplayDevicesA
-        def enum_display_devices():
-            device_info = DISPLAY_DEVICEA()
-            device_info.cb = ctypes.sizeof(device_info)
-            device_index = 0
-            gpu_names = set()
-
-            while user32.EnumDisplayDevicesA(None, device_index, ctypes.byref(device_info), 0):
-                device_index += 1
-                gpu_names.add(device_info.DeviceString.decode('utf-8'))
-            return gpu_names
-        return enum_display_devices()
-    else:
-        gpu_names = set()
-        out = subprocess.check_output(['nvidia-smi', '-L'])
-        for l in out.split(b'\n'):
-            if len(l) > 0:
-                gpu_names.add(l.decode('utf-8').split(' (UUID')[0])
-        return gpu_names
-
-blacklist = {'GeForce GTX TITAN X', 'GeForce GTX 980', 'GeForce GTX 970', 'GeForce GTX 960', 'GeForce GTX 950', 'GeForce 945M',
-                'GeForce 940M', 'GeForce 930M', 'GeForce 920M', 'GeForce 910M', 'GeForce GTX 750', 'GeForce GTX 745', 'Quadro K620',
-                'Quadro K1200', 'Quadro K2200', 'Quadro M500', 'Quadro M520', 'Quadro M600', 'Quadro M620', 'Quadro M1000',
-                'Quadro M1200', 'Quadro M2000', 'Quadro M2200', 'Quadro M3000', 'Quadro M4000', 'Quadro M5000', 'Quadro M5500', 'Quadro M6000',
-                'GeForce MX110', 'GeForce MX130', 'GeForce 830M', 'GeForce 840M', 'GeForce GTX 850M', 'GeForce GTX 860M',
-                'GeForce GTX 1650', 'GeForce GTX 1630', 'Tesla M4', 'Tesla M6', 'Tesla M10', 'Tesla M40', 'Tesla M60'
-                }
-
-
-def cuda_malloc_supported():
-    try:
-        names = get_gpu_names()
-    except:
-        names = set()
-    for x in names:
-        if 'NVIDIA' in x:
-            for b in blacklist:
-                if b in x:
-                    return False
-    return True
-
-
-def is_nvidia_device():
-    try:
-        names = get_gpu_names()
-    except:
-        names = set()
-    for x in names:
-        if 'NVIDIA' in x:
-            return True
-    return False
-
-
-def get_pytorch_cuda_alloc_conf(is_cuda = True):
-    if is_nvidia_device():
-        if cuda_malloc_supported():
-            if is_cuda:
-                return 'cuda_malloc'
-            else:
-                return 'pytorch_malloc'
-        else:
-            return 'pytorch_malloc'
-    else:
-        return None
-
-
-def main():
-    try:
-        version = ''
-        torch_spec = importlib.util.find_spec('torch')
-        for folder in torch_spec.submodule_search_locations:
-            ver_file = os.path.join(folder, 'version.py')
-            if os.path.isfile(ver_file):
-                spec = importlib.util.spec_from_file_location('torch_version_import', ver_file)
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                version = module.__version__
-        if int(version[0]) >= 2: #enable by default for torch version 2.0 and up
-            if '+cu' in version: #only on cuda torch
-                print(get_pytorch_cuda_alloc_conf())
-            else:
-                print(get_pytorch_cuda_alloc_conf(False))
-        else:
-            print(None)
-    except Exception as _:
-        print(None)
-
-
-if __name__ == '__main__':
-    main()
-`".Trim()
-
-    `$status = `$(python -c `"`$content`")
-    switch (`$status) {
-        cuda_malloc {
-            Write-Log `"设置 CUDA 内存分配器为 CUDA 内置异步分配器`"
-            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"backend:cudaMallocAsync`" # PyTorch 将弃用该参数
-            `$Env:PYTORCH_ALLOC_CONF = `"backend:cudaMallocAsync`"
-        }
-        pytorch_malloc {
-            Write-Log `"设置 CUDA 内存分配器为 PyTorch 原生分配器`"
-            `$Env:PYTORCH_CUDA_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`" # PyTorch 将弃用该参数
-            `$Env:PYTORCH_ALLOC_CONF = `"garbage_collection_threshold:0.9,max_split_size_mb:512`"
-        }
-        Default {
-            Write-Log `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`"
-        }
+    if (`$conf) {
+        Write-Log `"配置 CUDA 内存分配器`"
+        `$Env:PYTORCH_CUDA_ALLOC_CONF = `$conf
+        `$Env:PYTORCH_ALLOC_CONF = `$conf
+    } else {
+        Write-Log `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`" -Level WARNING
     }
 }
 
@@ -3628,6 +3506,27 @@ function Use-BuildMode {
         . (Join-NormalizedPath $InstallPath "update.ps1") @launch_args
     }
 
+    if ($script:BuildWithLaunch) {
+        $launch_args = @{}
+        $launch_args.Add("-BuildMode", $true)
+        if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
+        if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
+        if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
+        if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
+        if ($script:DisableHuggingFaceMirror) { $launch_args.Add("-DisableHuggingFaceMirror", $true) }
+        if ($script:UseCustomHuggingFaceMirror) { $launch_args.Add("-UseCustomHuggingFaceMirror", $script:UseCustomHuggingFaceMirror) }
+        if ($script:DisableGithubMirror) { $launch_args.Add("-DisableGithubMirror", $true) }
+        if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
+        if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
+        if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
+        if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
+        if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
+        if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
+        if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
+        Write-Log "执行 Stable Diffusion WebUI 启动脚本中"
+        . (Join-NormalizedPath $InstallPath "init.ps1") @launch_args
+    }
+
     # 清理缓存
     if (!($script:NoCleanCache)) {
         Write-Log "清理下载 Python 软件包的缓存中"
@@ -3747,7 +3646,7 @@ function Get-InstallerCmdletHelp {
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
             - download_models.ps1       (对应 -BuildWitchModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
-            - launch.ps1                (对应 -BuildWithLaunch 参数)
+            - init.ps1                  (对应 -BuildWithLaunch 参数)
             - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
 
     -BuildWithUpdate
