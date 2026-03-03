@@ -4,6 +4,7 @@ import ctypes
 import shutil
 import importlib.util
 from pathlib import Path
+
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,

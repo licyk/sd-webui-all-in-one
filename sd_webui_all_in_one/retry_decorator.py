@@ -23,7 +23,10 @@ logger = get_logger(
 )
 
 T = TypeVar("T")
+"""泛型类型变量"""
+
 P = ParamSpec("P")
+"""参数规范类型变量"""
 
 
 class RetrySignalError(Exception):
@@ -43,8 +46,10 @@ def retryable(
     """通用的重试装饰器
 
     该装饰器会为原函数注入以下参数:
-        - retry_times (int | None): 重试次数
-        - retry_delay (float | None): 重试延迟
+        - **retry_times** *(int | None)*:
+            重试次数
+        - **retry_delay** *(float | None)*:
+            重试延迟
 
     Args:
         times (int | None):

@@ -60,11 +60,11 @@ def get_onnxruntime_support_cuda_version() -> tuple[str | None, str | None]:
     Returns:
         (tuple[str | None, str | None]): onnxruntime 支持的 CUDA, cuDNN 版本
     """
-    ver = load_source_directly("onnxruntime.capi.version_info")
-    if ver is None:
-        return None, None
-
-    return ver.get("cuda_version"), ver.get("cudnn_version")
+    ver1 = load_source_directly("onnxruntime.capi.version_info") or {}
+    ver2 = load_source_directly("onnxruntime.capi.build_and_package_info") or {}
+    cuda_ver = ver1.get("cuda_version") or ver2.get("cuda_version")
+    cuddn_ver = ver1.get("cudnn_version")
+    return cuda_ver, cuddn_ver
 
 
 def get_torch_version_worker(
@@ -211,6 +211,10 @@ def need_install_ort_ver(
             if CommonVersionComparison("12.0") <= CommonVersionComparison(ort_support_cuda_ver) < CommonVersionComparison("13.0"):
                 # CUDA 版本为 12.x, torch 和 ort 的 CUDA 版本匹配
 
+                # cuDNN 版本可能不存在, 则默认版本正确
+                if ort_support_cudnn_ver is None:
+                    return None
+
                 # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
                 if CommonVersionComparison(ort_support_cudnn_ver) > CommonVersionComparison(cuddn_ver):
                     # ort cuDNN 版本 > torch cuDNN 版本
@@ -301,7 +305,7 @@ def check_onnxruntime_gpu(
         try:
             pip_install(ver, "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
         except RuntimeError as e:
-            logger.warning("安装 Onnxruntime GPU 发生错误: %e", e)
+            logger.warning("安装 Onnxruntime GPU 发生错误: %s", e)
             logger.warning("更换安装策略进行重试安装中")
             # 先安装 Onnxruntime GPU 本体
             pip_install(ver, "--no-cache-dir", "--no-deps", use_uv=use_uv, custom_env=custom_env)

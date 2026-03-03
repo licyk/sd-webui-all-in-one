@@ -13,6 +13,7 @@ from typing import (
 
 
 T = TypeVar("T")
+"""泛型类型变量"""
 
 
 class SimpleTqdm(Generic[T]):
