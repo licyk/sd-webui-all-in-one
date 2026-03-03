@@ -53,9 +53,8 @@ def get_patcher_path() -> None:
 def get_proxy() -> None:
     """获取当前系统中的代理地址"""
     addr = get_system_proxy_address()
-    if addr is None:
-        addr = ""
-    print(addr)
+    if addr is not None:
+        print(addr)
 
 
 def get_cuda_malloc() -> None:
@@ -65,7 +64,7 @@ def get_cuda_malloc() -> None:
     config.LOGGER_LEVEL = logging.CRITICAL
     set_all_loggers_level(
         level=logging.CRITICAL,
-        prefix=LOGGER_NAME,
+        prefix=LOGGER_NAME if LOGGER_NAME is not None else "sd_webui_all_in_one",
     )
     conf = get_cuda_malloc_var()
     if conf is not None:
