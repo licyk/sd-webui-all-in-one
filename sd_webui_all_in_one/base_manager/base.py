@@ -167,7 +167,7 @@ def install_pytorch_for_webui(
         use_uv (bool | None):
             是否使用 uv 进行 PyTorch 安装
     """
-    logger.info("检查 PyTorc / xFormers 是否需要安装")
+    logger.info("检查 PyTorch / xFormers 是否需要安装")
     need_install_pytorch = False
     need_install_xformers = False
     if pytorch_package is not None:
