@@ -33,7 +33,11 @@ from sd_webui_all_in_one.config import (
     SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
     DEFAULT_ENV_VARS,
 )
-from sd_webui_all_in_one.proxy import set_proxy, get_system_proxy_address
+from sd_webui_all_in_one.proxy import (
+    set_proxy,
+    get_system_proxy_address,
+    test_proxy_connectivity,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -55,8 +59,12 @@ os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
 if SD_WEBUI_ALL_IN_ONE_PROXY:
     proxy_address = get_system_proxy_address()
     if proxy_address is not None:
-        logger.debug("配置系统代理: %s", proxy_address)
-        set_proxy(proxy_address)
+        logger.debug("检测到系统代理: %s", proxy_address)
+        if test_proxy_connectivity(proxy_address):
+            logger.debug("代理连通性测试成功，配置系统代理: %s", proxy_address)
+            set_proxy(proxy_address)
+        else:
+            logger.debug("代理 %s 连通性测试失败，跳过代理配置", proxy_address)
 
 if SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH:
     logger.debug("设置缓存路径")

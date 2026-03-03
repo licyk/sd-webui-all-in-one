@@ -4,6 +4,8 @@ import os
 import sys
 import re
 import configparser
+import socket
+from urllib.parse import urlparse
 from pathlib import Path
 
 from sd_webui_all_in_one.config import (
@@ -187,6 +189,49 @@ def get_system_proxy_address() -> str | None:
         return get_macos_proxy_address()
 
     return None
+
+
+def test_proxy_connectivity(
+    proxy_addr: str,
+    timeout: int = 5,
+) -> bool:
+    """测试代理地址是否可以连通
+
+    Args:
+        proxy_addr (str):
+            代理地址, 支持 http:// 和 socks:// 协议
+        timeout (int):
+            超时时间 (秒), 默认为 5 秒
+
+    Returns:
+        (bool):
+            代理服务器是否可以连通
+    """
+    try:
+        parsed_proxy = urlparse(proxy_addr)
+        proxy_host = parsed_proxy.hostname
+        proxy_port = parsed_proxy.port
+
+        # 验证代理地址格式
+        if not proxy_host or not proxy_port:
+            logger.debug("代理地址格式不正确: %s", proxy_addr)
+            return False
+
+        # 对于所有类型的代理 (HTTP/HTTPS/SOCKS), 都使用 TCP 连接测试代理服务器是否可访问
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect((proxy_host, proxy_port))
+            sock.close()
+            logger.debug("代理服务器 %s 连接成功", proxy_addr)
+            return True
+        except (socket.timeout, socket.error) as e:
+            logger.debug("代理服务器 %s 连接失败: %s", proxy_addr, e)
+            return False
+
+    except Exception as e:
+        logger.debug("测试代理 %s 时出现错误: %s", proxy_addr, e)
+        return False
 
 
 def set_proxy(
