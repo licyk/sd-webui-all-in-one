@@ -33,6 +33,7 @@ from sd_webui_all_in_one.mirror_manager import (
     HUGGINGFACE_MIRROR_LIST,
     get_pypi_mirror_config,
 )
+from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
@@ -56,17 +57,26 @@ QWEN_TTS_WEBUI_REPO = "https://github.com/licyk/qwen-tts-webui"
 
 def install_qwen_tts_webui_config(
     qwen_tts_webui_path: Path,
-    use_cn_model_mirror: bool | None = False,
+    download_resource_type: ModelDownloadUrlType | None = False,
 ) -> None:
     """安装 Qwen TTS WebUI 配置文件
     Args:
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
+        download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
 
     """
     preset_path = qwen_tts_webui_path / "config.json"
+    if download_resource_type == "huggingface":
+        preset = QWEN_TTS_WEBUI_PRESET_HF_PATH
+    elif download_resource_type == "modelscope":
+        preset = QWEN_TTS_WEBUI_PRESET_MS_PATH
+    else:
+        raise ValueError(f"未知的下载配置源类型: {download_resource_type}")
+
     if not preset_path.exists():
-        copy_files(QWEN_TTS_WEBUI_PRESET_MS_PATH if use_cn_model_mirror else QWEN_TTS_WEBUI_PRESET_HF_PATH, preset_path)
+        copy_files(preset, preset_path)
 
 
 def install_qwen_tts_webui(
@@ -78,7 +88,7 @@ def install_qwen_tts_webui(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Qwen TTS WebUI
 
@@ -99,8 +109,8 @@ def install_qwen_tts_webui(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
 
     Raises:
         ValueError:
@@ -162,7 +172,7 @@ def install_qwen_tts_webui(
 
     install_qwen_tts_webui_config(
         qwen_tts_webui_path=qwen_tts_webui_path,
-        use_cn_model_mirror=use_cn_model_mirror,
+        download_resource_type=model_download_resource_type,
     )
 
     logger.info("安装 Qwen TTS WebUI 完成")

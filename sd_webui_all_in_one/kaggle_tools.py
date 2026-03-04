@@ -38,7 +38,7 @@ def get_kaggle_secret(
     try:
         return UserSecretsClient().get_secret(key)
     except Exception:
-        logger.error("密钥 %s 不存在")
+        logger.error("密钥 %s 不存在", key)
         return None
 
 

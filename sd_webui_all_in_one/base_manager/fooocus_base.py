@@ -146,20 +146,31 @@ def display_fooocus_branch_list(
 
 def install_fooocus_config(
     fooocus_path: Path,
-    use_cn_model_mirror: bool | None = False,
+    download_resource_type: ModelDownloadUrlType | None = False,
 ) -> None:
     """安装 Fooocus 配置文件
+
     Args:
         fooocus_path (Path):
             Fooocus 根目录
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
 
+    Raises:
+        ValueError:
+            未知的下载配置源类型时
     """
     preset_path = fooocus_path / "presets" / "sd_webui_all_in_one.json"
     translate_path = fooocus_path / "language" / "zh.json"
     if not preset_path.exists():
-        copy_files(FOOOCUS_PRESET_MS_PATH if use_cn_model_mirror else FOOOCUS_PRESET_HF_PATH, preset_path)
+        if download_resource_type == "huggingface":
+            preset = FOOOCUS_PRESET_HF_PATH
+        elif download_resource_type == "modelscope":
+            preset = FOOOCUS_PRESET_MS_PATH
+        else:
+            raise ValueError(f"未知的下载配置源类型: {download_resource_type}")
+
+        copy_files(preset, preset_path)
     if not translate_path.exists():
         copy_files(FOOOCUS_TRANSLATE_ZH_PATH, translate_path)
 
@@ -175,7 +186,7 @@ def install_fooocus(
     custom_github_mirror: str | list[str] | None = None,
     install_branch: FooocusBranchType | None = None,
     no_pre_download_model: bool | None = False,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Fooocus
 
@@ -200,8 +211,8 @@ def install_fooocus(
             安装的 Fooocus 分支
         no_pre_download_model (bool | None):
             是否禁用预下载模型
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
 
     Raises:
         ValueError:
@@ -293,12 +304,12 @@ def install_fooocus(
             model_path=fooocus_path / "models" / "checkpoints",
             webui_base_path=fooocus_path,
             model_name="ChenkinNoob-XL-V0.2",
-            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+            download_resource_type=model_download_resource_type,
         )
 
     install_fooocus_config(
         fooocus_path=fooocus_path,
-        use_cn_model_mirror=use_cn_model_mirror,
+        download_resource_type=model_download_resource_type,
     )
 
     logger.info("安装 Fooocus 完成")

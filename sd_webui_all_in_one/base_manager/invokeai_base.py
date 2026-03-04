@@ -572,7 +572,7 @@ def install_invokeai(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
     no_pre_download_model: bool | None = False,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 InvokeAI
 
@@ -593,8 +593,8 @@ def install_invokeai(
             自定义 Github 镜像源
         no_pre_download_model (bool | None):
             是否禁用预下载模型
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
     """
     logger.info("准备 InvokeAI 安装配置")
 
@@ -629,7 +629,7 @@ def install_invokeai(
                 model_path=invokeai_path / "models" / "checkpoints",
                 webui_base_path=invokeai_path,
                 model_name="ChenkinNoob-XL-V0.2",
-                download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+                download_resource_type=model_download_resource_type,
             )
             import_model_to_invokeai(model_list=([save_paths] if save_paths is not None else []))
 

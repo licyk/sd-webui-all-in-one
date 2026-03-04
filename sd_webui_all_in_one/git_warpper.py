@@ -268,7 +268,7 @@ def get_git_repo_main_branch(
         except RuntimeError:
             logger.debug("未在 '%s' 找到 '%s' 所属的主分支", path, remote_name)
     else:
-        logger.debug("'%s' 不存在远程源, 尝试查找本地")
+        logger.debug("'%s' 不存在远程源, 尝试查找本地", path)
 
     try:
         branches = run_cmd([git_exec.as_posix(), "-C", path.as_posix(), " for-each-ref", "--format=%(refname:short)", "refs/heads/"], live=False).splitlines()

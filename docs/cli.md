@@ -174,7 +174,7 @@ sd-webui-all-in-one sd-webui install [选项]
   - `--install-branch <分支>`: 安装的 Stable Diffusion WebUI 分支（如 `master`, `v1.6.0` 等）。
   - `--no-pre-download-extension`: 禁用预下载 Stable Diffusion WebUI 扩展。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 Stable Diffusion WebUI
 ```bash
@@ -354,7 +354,7 @@ sd-webui-all-in-one comfyui install [选项]
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
   - `--no-pre-download-extension`: 禁用预下载 ComfyUI 扩展。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 ComfyUI
 ```bash
@@ -529,7 +529,7 @@ sd-webui-all-in-one fooocus install [选项]
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
   - `--install-branch <分支>`: 安装的 Fooocus 分支。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 Fooocus
 ```bash
@@ -652,7 +652,7 @@ sd-webui-all-in-one invokeai install [选项]
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 InvokeAI
 ```bash
@@ -809,7 +809,7 @@ sd-webui-all-in-one qwen-tts-webui install [选项]
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 Qwen TTS WebUI
 ```bash
@@ -881,7 +881,7 @@ sd-webui-all-in-one sd-trainer install [选项]
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
   - `--install-branch <分支>`: 安装的 SD Trainer 分支。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 SD Trainer
 ```bash
@@ -1010,7 +1010,7 @@ sd-webui-all-in-one sd-scripts install [选项]
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
   - `--install-branch <分支>`: 安装的 SD Scripts 分支。
   - `--no-pre-download-model`: 禁用预下载模型。
-  - `--no-cn-model-mirror`: 不使用国内镜像下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
 
 ## 更新 SD Scripts
 ```bash

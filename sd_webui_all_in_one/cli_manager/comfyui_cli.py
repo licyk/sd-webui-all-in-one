@@ -47,7 +47,7 @@ def install(
     custom_github_mirror: str | list[str] | None = None,
     no_pre_download_extension: bool | None = False,
     no_pre_download_model: bool | None = False,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 ComfyUI
 
@@ -72,8 +72,8 @@ def install(
             是否禁用预下载 ComfyUI 扩展
         no_pre_download_model (bool | None):
             是否禁用预下载模型
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
     """
     install_comfyui(
         comfyui_path=comfyui_path,
@@ -86,7 +86,7 @@ def install(
         custom_github_mirror=custom_github_mirror,
         no_pre_download_extension=no_pre_download_extension,
         no_pre_download_model=no_pre_download_model,
-        use_cn_model_mirror=use_cn_model_mirror,
+        model_download_resource_type=model_download_resource_type,
     )
 
 
@@ -474,7 +474,7 @@ def register_comfyui(
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     install_p.add_argument("--no-pre-download-extension", action="store_true", dest="no_pre_download_extension", help="禁用预下载扩展")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
-    install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
+    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     install_p.set_defaults(
         func=lambda args: install(
             comfyui_path=args.comfyui_path,
@@ -487,7 +487,7 @@ def register_comfyui(
             custom_github_mirror=args.custom_github_mirror,
             no_pre_download_extension=args.no_pre_download_extension,
             no_pre_download_model=args.no_pre_download_model,
-            use_cn_model_mirror=args.use_cn_model_mirror,
+            model_download_resource_type=args.model_download_resource_type,
         )
     )
 

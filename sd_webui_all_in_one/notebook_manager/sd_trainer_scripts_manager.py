@@ -207,7 +207,7 @@ class SDTrainerScriptsManager(BaseManager):
             custom_github_mirror=custom_github_mirror,
             install_branch=install_branch,
             no_pre_download_model=no_pre_download_model,
-            use_cn_model_mirror=use_cn_model_mirror,
+            model_download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
         if update_core:
             update_sd_scripts(

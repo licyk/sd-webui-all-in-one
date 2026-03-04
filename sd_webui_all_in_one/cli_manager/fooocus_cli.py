@@ -45,7 +45,7 @@ def install(
     custom_github_mirror: str | list[str] | None = None,
     install_branch: FooocusBranchType | None = None,
     no_pre_download_model: bool | None = False,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Fooocus
 
@@ -70,8 +70,8 @@ def install(
             安装的 Fooocus 分支
         no_pre_download_model (bool | None):
             是否禁用预下载模型
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
     """
     install_fooocus(
         fooocus_path=fooocus_path,
@@ -84,7 +84,7 @@ def install(
         custom_github_mirror=custom_github_mirror,
         install_branch=install_branch,
         no_pre_download_model=no_pre_download_model,
-        use_cn_model_mirror=use_cn_model_mirror,
+        model_download_resource_type=model_download_resource_type,
     )
 
 
@@ -383,7 +383,7 @@ def register_fooocus(
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     install_p.add_argument("--install-branch", type=str, dest="install_branch", choices=FOOOCUS_BRANCH_LIST, help="安装的分支")
     install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
-    install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
+    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     install_p.set_defaults(
         func=lambda args: install(
             fooocus_path=args.fooocus_path,
@@ -396,7 +396,7 @@ def register_fooocus(
             custom_github_mirror=args.custom_github_mirror,
             install_branch=args.install_branch,
             no_pre_download_model=args.no_pre_download_model,
-            use_cn_model_mirror=args.use_cn_model_mirror,
+            model_download_resource_type=args.model_download_resource_type,
         )
     )
 

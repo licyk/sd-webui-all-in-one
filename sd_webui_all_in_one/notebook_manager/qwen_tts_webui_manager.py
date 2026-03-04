@@ -257,7 +257,7 @@ class QwenTTSWebUIManager(BaseManager):
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
-            use_cn_model_mirror=use_cn_model_mirror,
+            model_download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
 
         if update_core:

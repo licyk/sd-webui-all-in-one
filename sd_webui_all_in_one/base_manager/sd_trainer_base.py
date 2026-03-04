@@ -136,7 +136,7 @@ def install_sd_trainer(
     custom_github_mirror: str | list[str] | None = None,
     install_branch: SDTrainerBranchType | None = None,
     no_pre_download_model: bool | None = False,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 SD Trainer
 
@@ -161,8 +161,8 @@ def install_sd_trainer(
             安装的 SD Trainer 分支
         no_pre_download_model (bool | None):
             是否禁用预下载模型
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
 
     Raises:
         ValueError:
@@ -253,7 +253,7 @@ def install_sd_trainer(
             model_path=sd_trainer_path / "sd-models",
             webui_base_path=sd_trainer_path,
             model_name="ChenkinNoob-XL-V0.2",
-            download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
+            download_resource_type=model_download_resource_type,
         )
 
     logger.info("安装 SD Trainer 完成")

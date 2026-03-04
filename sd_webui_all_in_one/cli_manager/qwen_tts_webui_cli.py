@@ -11,6 +11,10 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     launch_qwen_tts_webui,
 )
 from sd_webui_all_in_one.config import QWEN_TTS_WEBUI_ROOT_PATH
+from sd_webui_all_in_one.model_downloader.base import (
+    MODEL_DOWNLOAD_URL_TYPE_LIST,
+    ModelDownloadUrlType,
+)
 from sd_webui_all_in_one.pytorch_manager.base import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -28,7 +32,7 @@ def install(
     use_uv: bool | None = True,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_cn_model_mirror: bool | None = True,
+    model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Qwen TTS WebUI
 
@@ -49,8 +53,8 @@ def install(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_cn_model_mirror (bool | None):
-            是否使用国内镜像下载模型
+        model_download_resource_type (ModelDownloadUrlType | None):
+            下载模型使用的下载源
     """
     install_qwen_tts_webui(
         qwen_tts_webui_path=qwen_tts_webui_path,
@@ -61,7 +65,7 @@ def install(
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
-        use_cn_model_mirror=use_cn_model_mirror,
+        model_download_resource_type=model_download_resource_type,
     )
 
 
@@ -222,7 +226,7 @@ def register_qwen_tts_webui(
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--no-cn-model-mirror", action="store_false", dest="use_cn_model_mirror", help="不使用国内镜像下载模型")
+    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     install_p.set_defaults(
         func=lambda args: install(
             qwen_tts_webui_path=args.qwen_tts_webui_path,
@@ -233,7 +237,7 @@ def register_qwen_tts_webui(
             use_uv=args.use_uv,
             use_github_mirror=args.use_github_mirror,
             custom_github_mirror=args.custom_github_mirror,
-            use_cn_model_mirror=args.use_cn_model_mirror,
+            model_download_resource_type=args.model_download_resource_type,
         )
     )
 

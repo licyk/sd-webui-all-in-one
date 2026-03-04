@@ -44,7 +44,7 @@ def mount_google_drive(
     if not path.exists():
         logger.info("挂载 Google Drive 中, 请根据提示进行操作")
         try:
-            from google.colab import drive
+            from google.colab import drive  # pylint: disable=import-error  # type: ignore
 
             drive.mount(path.as_posix())
             logger.info("Google Dirve 挂载完成")
@@ -66,7 +66,7 @@ def get_colab_secret(
         (str | None): 密钥名称对应的值
     """
     try:
-        from google.colab import userdata
+        from google.colab import userdata  # pylint: disable=import-error  # type: ignore
     except Exception as e:
         logger.error("导入 Colab 工具失败, 无法获取 Colab Secret: %s", e)
         return None

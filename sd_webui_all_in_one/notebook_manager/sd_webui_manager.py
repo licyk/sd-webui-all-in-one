@@ -374,7 +374,7 @@ class SDWebUIManager(BaseManager):
             install_branch=install_branch,
             no_pre_download_extension=no_pre_download_extension,
             no_pre_download_model=no_pre_download_model,
-            use_cn_model_mirror=use_cn_model_mirror,
+            model_download_resource_type="modelscope" if use_cn_model_mirror else "huggingface",
         )
 
         if extension_list is not None:
