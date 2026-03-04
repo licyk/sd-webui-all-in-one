@@ -1,6 +1,8 @@
 import traceback
 import os
 
+from sd_webui_all_in_one.ansi_color import ANSIColor
+
 
 class AggregateError(Exception):
     """
@@ -9,14 +11,6 @@ class AggregateError(Exception):
     Attributes:
         exceptions (List[Exception]): 存储所有捕获到的原始异常对象。
     """
-
-    RED = "\033[31m"
-    GREEN = "\033[32m"
-    YELLOW = "\033[33m"
-    BLUE = "\033[34m"
-    CYAN = "\033[36m"
-    BOLD = "\033[1m"
-    RESET = "\033[0m"
 
     def __init__(
         self,
@@ -41,7 +35,7 @@ class AggregateError(Exception):
             str:
                 堆栈日志字符串
         """
-        base_message = f"{self.BOLD}{self.RED}{super().__str__()}{self.RESET}"
+        base_message = f"{ANSIColor.BOLD}{ANSIColor.RED}{super().__str__()}{ANSIColor.RESET}"
         output = [base_message]
 
         for i, exc in enumerate(self.exceptions, start=1):
@@ -50,11 +44,11 @@ class AggregateError(Exception):
             if tb:
                 summary = traceback.extract_tb(tb)[-1]
                 filename = os.path.basename(summary.filename)
-                location_info = f"{self.CYAN}文件 `{filename}`, 第 `{summary.lineno}` 行, 在 `{summary.name}` 中{self.RESET}"
+                location_info = f"{ANSIColor.CYAN}文件 `{filename}`, 第 `{summary.lineno}` 行, 在 `{summary.name}` 中{ANSIColor.RESET}"
 
-            exc_summary = f"{self.BOLD}{self.YELLOW}{type(exc).__name__}: {exc}{self.RESET}"
+            exc_summary = f"{ANSIColor.BOLD}{ANSIColor.YELLOW}{type(exc).__name__}: {exc}{ANSIColor.RESET}"
             stack_trace: str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-            header = f"{self.BOLD}{self.RED}[错误 #{i}]{self.RESET}"
+            header = f"{ANSIColor.BOLD}{ANSIColor.RED}[错误 #{i}]{ANSIColor.RESET}"
             output.append(f"\n{header} ({location_info}): {exc_summary}\n{stack_trace}")
 
         return "".join(output)

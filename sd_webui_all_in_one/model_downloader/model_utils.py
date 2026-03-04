@@ -19,7 +19,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import ANSIColor
+from sd_webui_all_in_one.ansi_color import ANSIColor
 
 logger = get_logger(
     name=LOGGER_NAME,

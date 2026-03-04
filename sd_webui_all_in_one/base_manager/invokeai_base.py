@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
@@ -75,7 +76,6 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import (
     print_divider,
-    ANSIColor,
 )
 
 logger = get_logger(

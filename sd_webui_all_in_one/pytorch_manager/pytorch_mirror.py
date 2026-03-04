@@ -24,7 +24,7 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
-from sd_webui_all_in_one.utils import ANSIColor
+from sd_webui_all_in_one.ansi_color import ANSIColor
 
 
 def get_pytorch_mirror_dict(

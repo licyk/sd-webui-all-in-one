@@ -78,10 +78,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 333
+$script:SD_WEBUI_INSTALLER_VERSION = 334
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.39"
+$script:CORE_MINIMUM_VER = "2.0.40"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)

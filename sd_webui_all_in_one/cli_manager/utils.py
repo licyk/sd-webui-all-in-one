@@ -4,7 +4,10 @@ import argparse
 import sys
 import logging
 
-from sd_webui_all_in_one.proxy import get_system_proxy_address
+from sd_webui_all_in_one.proxy import (
+    get_system_proxy_address,
+    test_proxy_connectivity,
+)
 from sd_webui_all_in_one.updater import (
     check_aria2_version,
     check_and_update_uv,
@@ -53,7 +56,7 @@ def get_patcher_path() -> None:
 def get_proxy() -> None:
     """获取当前系统中的代理地址"""
     addr = get_system_proxy_address()
-    if addr is not None:
+    if addr is not None and test_proxy_connectivity(addr):
         print(addr)
 
 
