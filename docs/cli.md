@@ -327,8 +327,8 @@ sd-webui-all-in-one sd-webui reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
@@ -502,8 +502,8 @@ sd-webui-all-in-one comfyui reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
@@ -629,8 +629,8 @@ sd-webui-all-in-one fooocus reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
@@ -854,8 +854,8 @@ sd-webui-all-in-one qwen-tts-webui reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
@@ -983,8 +983,8 @@ sd-webui-all-in-one sd-trainer reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
@@ -1095,8 +1095,8 @@ sd-webui-all-in-one sd-scripts reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
-  - `--pytorch-name <名称>`: PyTorch 版本组合名称。
-  - `--pytorch-index <索引>`: PyTorch 版本组合索引值。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。

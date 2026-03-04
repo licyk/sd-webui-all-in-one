@@ -75,10 +75,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 254
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 255
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.40"
+$script:CORE_MINIMUM_VER = "2.0.41"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -345,6 +345,8 @@ function Get-LaunchCoreArgs {
         $launch_params.Add("--install-branch") | Out-Null
         $launch_params.Add($target_branch) | Out-Null
     }
+    $launch_params.Add("--model-resource") | Out-Null
+    $launch_params.Add("modelscope") | Out-Null
     return $launch_params
 }
 
@@ -2554,7 +2556,7 @@ function Get-LaunchCoreArgs {
     Set-PyPIMirror `$launch_params
     Set-uv `$launch_params
     if (`$script:BuildWithTorch) {
-        `$launch_params.Add(`"--pytorch-index`") | Out-Null
+        `$launch_params.Add(`"--index`") | Out-Null
         `$launch_params.Add(`$BuildWithTorch) | Out-Null
     }
     if (`$script:BuildWithTorchReinstall) {

@@ -443,8 +443,8 @@ def register_comfyui(
 
     # reinstall-pytorch
     reinstall_pytorch_p = comfy_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
-    reinstall_pytorch_p.add_argument("--pytorch-name", type=str, dest="pytorch_name", help="PyTorch 版本组合名称")
-    reinstall_pytorch_p.add_argument("--pytorch-index", type=int, dest="pytorch_index", help="PyTorch 版本组合索引值")
+    reinstall_pytorch_p.add_argument("--name", type=str, dest="name", help="PyTorch 版本组合名称")
+    reinstall_pytorch_p.add_argument("--index", type=int, dest="index", help="PyTorch 版本组合索引值")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
@@ -452,8 +452,8 @@ def register_comfyui(
     reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
     reinstall_pytorch_p.set_defaults(
         func=lambda args: reinstall_pytorch(
-            pytorch_name=args.pytorch_name,
-            pytorch_index=args.pytorch_index,
+            pytorch_name=args.name,
+            pytorch_index=args.index,
             use_pypi_mirror=args.use_pypi_mirror,
             use_uv=args.use_uv,
             interactive_mode=args.interactive_mode,
