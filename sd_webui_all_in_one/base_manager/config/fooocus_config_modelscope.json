@@ -1,5 +1,5 @@
 {
-    "default_model": "noobaiXLNAIXL_vPred10Version.safetensors",
+    "default_model": "ChenkinNoob-XL-V0.2.safetensors",
     "previous_default_models": [],
     "default_refiner": "None",
     "default_refiner_switch": 0.8,
@@ -51,15 +51,15 @@
     "default_output_format": "png",
     "default_image_number": 1,
     "checkpoint_downloads": {
-        "noobaiXLNAIXL_vPred10Version.safetensors": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/noobaiXLNAIXL_vPred10Version.safetensors"
+        "ChenkinNoob-XL-V0.2.safetensors": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ChenkinNoob-XL-V0.2.safetensors"
     },
     "lora_downloads": {
-        "sd_xl_offset_example-lora_1.0.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/sd_xl_offset_example-lora_1.0.safetensors",
-        "Fixhands_anime_bdsqlsz_V1.safetensors": "https://huggingface.co/licyk/sd-lora/resolve/main/sdxl/style/Fixhands_anime_bdsqlsz_V1.safetensors"
+        "sd_xl_offset_example-lora_1.0.safetensors": "https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/sd_xl_offset_example-lora_1.0.safetensors",
+        "Fixhands_anime_bdsqlsz_V1.safetensors": "https://modelscope.cn/models/licyks/sd-lora/resolve/master/sdxl/style/Fixhands_anime_bdsqlsz_V1.safetensors"
     },
     "embeddings_downloads": {},
     "vae_downloads": {
-        "sdxl_fp16_fix_vae.safetensors": "https://huggingface.co/licyk/sd-vae/resolve/main/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
+        "sdxl_fp16_fix_vae.safetensors": "https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors"
     },
     "available_aspect_ratios": [
         "704*1408",
