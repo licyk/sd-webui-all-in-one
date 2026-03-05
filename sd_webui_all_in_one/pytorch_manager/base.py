@@ -251,7 +251,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "dtype": "rocm_rdna3",
         "platform": ["linux"],
         "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
-        "xformers_ver": "",
+        "xformers_ver": None,
         "index_mirror": {
             "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
             "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
@@ -270,7 +270,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "dtype": "rocm_rdna3.5",
         "platform": ["linux"],
         "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
-        "xformers_ver": "",
+        "xformers_ver": None,
         "index_mirror": {
             "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
             "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
@@ -289,7 +289,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "dtype": "rocm_rdna4",
         "platform": ["linux"],
         "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
-        "xformers_ver": "",
+        "xformers_ver": None,
         "index_mirror": {
             "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
             "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
@@ -308,7 +308,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "dtype": "rocm_win",
         "platform": ["win32"],
         "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel rocm-sdk-libraries-custom",
-        "xformers_ver": "",
+        "xformers_ver": None,
         "index_mirror": {
             "official": [PYPI_INDEX_MIRROR_OFFICIAL],
             "mirror": [PYPI_INDEX_MIRROR_TENCENT],
