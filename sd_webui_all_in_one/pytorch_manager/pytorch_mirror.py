@@ -23,6 +23,7 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
+    ROCM_MIRROR_DICT,
 )
 from sd_webui_all_in_one.ansi_color import ANSIColor
 
@@ -809,6 +810,10 @@ def get_pytorch_mirror(
             未找到对应的 PyTorch 镜像源时
     """
     url = PYTORCH_MIRROR_NJU_DICT.get(dtype) if use_cn_mirror else PYTORCH_MIRROR_DICT.get(dtype)
+
+    if url is None:
+        url = ROCM_MIRROR_DICT.get(dtype)
+
     if url is None:
         raise ValueError(f"未找到 '{dtype}' 对应的 PyTorch 镜像源")
 

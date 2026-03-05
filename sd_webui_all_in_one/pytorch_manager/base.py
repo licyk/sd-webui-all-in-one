@@ -7,81 +7,16 @@ from typing import (
     get_args,
 )
 
-PYTORCH_MIRROR_DICT = {
-    "all": "https://download.pytorch.org/whl",
-    "cpu": "https://download.pytorch.org/whl/cpu",
-    "xpu": "https://download.pytorch.org/whl/xpu",
-    "rocm5.4.2": "https://download.pytorch.org/whl/rocm5.4.2",
-    "rocm5.6": "https://download.pytorch.org/whl/rocm5.6",
-    "rocm5.7": "https://download.pytorch.org/whl/rocm5.7",
-    "rocm6.0": "https://download.pytorch.org/whl/rocm6.0",
-    "rocm6.1": "https://download.pytorch.org/whl/rocm6.1",
-    "rocm6.2": "https://download.pytorch.org/whl/rocm6.2",
-    "rocm6.2.4": "https://download.pytorch.org/whl/rocm6.2.4",
-    "rocm6.3": "https://download.pytorch.org/whl/rocm6.3",
-    "rocm6.4": "https://download.pytorch.org/whl/rocm6.4",
-    "rocm7.1": "https://download.pytorch.org/whl/rocm7.1",
-    "cu113": "https://download.pytorch.org/whl/cu113",
-    "cu117": "https://download.pytorch.org/whl/cu117",
-    "cu118": "https://download.pytorch.org/whl/cu118",
-    "cu121": "https://download.pytorch.org/whl/cu121",
-    "cu124": "https://download.pytorch.org/whl/cu124",
-    "cu126": "https://download.pytorch.org/whl/cu126",
-    "cu128": "https://download.pytorch.org/whl/cu128",
-    "cu129": "https://download.pytorch.org/whl/cu129",
-    "cu130": "https://download.pytorch.org/whl/cu130",
-}
-"""PyTorch 镜像源字典"""
 
-PYTORCH_MIRROR_NJU_DICT = {
-    "all": "https://mirror.nju.edu.cn/pytorch/whl",
-    "cpu": "https://mirror.nju.edu.cn/pytorch/whl/cpu",
-    "xpu": "https://mirror.nju.edu.cn/pytorch/whl/xpu",
-    "rocm5.4.2": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2",
-    "rocm5.6": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.6",
-    "rocm5.7": "https://mirror.nju.edu.cn/pytorch/whl/rocm5.7",
-    "rocm6.0": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.0",
-    "rocm6.1": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.1",
-    "rocm6.2": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2",
-    "rocm6.2.4": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4",
-    "rocm6.3": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.3",
-    "rocm6.4": "https://mirror.nju.edu.cn/pytorch/whl/rocm6.4",
-    "rocm7.1": "https://mirror.nju.edu.cn/pytorch/whl/rocm7.1",
-    "cu113": "https://mirror.nju.edu.cn/pytorch/whl/cu113",
-    "cu117": "https://mirror.nju.edu.cn/pytorch/whl/cu117",
-    "cu118": "https://mirror.nju.edu.cn/pytorch/whl/cu118",
-    "cu121": "https://mirror.nju.edu.cn/pytorch/whl/cu121",
-    "cu124": "https://mirror.nju.edu.cn/pytorch/whl/cu124",
-    "cu126": "https://mirror.nju.edu.cn/pytorch/whl/cu126",
-    "cu128": "https://mirror.nju.edu.cn/pytorch/whl/cu128",
-    "cu129": "https://mirror.nju.edu.cn/pytorch/whl/cu129",
-    "cu130": "https://mirror.nju.edu.cn/pytorch/whl/cu130",
-}
-"""PyTorch 国内镜像源 (NJU) 字典"""
+PyTorchMirrorKind: TypeAlias = Literal[
+    "index_url",
+    "extra_index_url",
+    "find_links",
+]
+"""PyTorch 镜像源地址类型"""
 
-PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
-"""PyPI 主镜像源"""
-
-PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
-"""PyPI 腾讯主镜像源"""
-
-PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
-"""PyPI 额外镜像源"""
-
-PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
-"""PyPI (licyk) 镜像源"""
-
-PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
-"""PyTorch IPEX 镜像源 (CN)"""
-
-PYTORCH_IPEX_EXTRA_INDEX_MIRROR_US = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
-"""PyTorch IPEX 镜像源 (US)"""
-
-PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_stable.html"
-"""PyTorch 镜像源 (非 PEP 503)"""
-
-PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
-"""PyTorch 阿里云镜像源 (非 PEP 503)"""
+PyTorchMirrorInfo: TypeAlias = tuple[str, PyTorchMirrorKind]
+"""PyTorch 镜像源地址信息"""
 
 PyTorchDeviceType: TypeAlias = Literal[
     "cu113",
@@ -113,6 +48,102 @@ PyTorchDeviceType: TypeAlias = Literal[
 
 PYTORCH_DEVICE_LIST: list[str] = list(get_args(PyTorchDeviceType))
 """PyTorch 支持的设备类型列表"""
+
+PyTorchMirrorMap: TypeAlias = dict[PyTorchDeviceType, PyTorchMirrorInfo]
+"""
+PyTorch 镜像配置映射表类型
+
+用于存储不同硬件环境对应的安装源信息:
+- key: 具体的设备版本标识符
+- value: 包含两个元素的元组:
+    1. str: PyTorch 官方或镜像站的 Wheel 仓库地址
+    2. PyTorchMirrorKind: 对应的 Pip 安装指令类型 ("index_url" | "extra_index_url" | "find_links")
+"""
+
+PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
+    "all": ("https://download.pytorch.org/whl", "index_url"),
+    "cpu": ("https://download.pytorch.org/whl/cpu", "index_url"),
+    "xpu": ("https://download.pytorch.org/whl/xpu", "index_url"),
+    "rocm5.4.2": ("https://download.pytorch.org/whl/rocm5.4.2", "index_url"),
+    "rocm5.6": ("https://download.pytorch.org/whl/rocm5.6", "index_url"),
+    "rocm5.7": ("https://download.pytorch.org/whl/rocm5.7", "index_url"),
+    "rocm6.0": ("https://download.pytorch.org/whl/rocm6.0", "index_url"),
+    "rocm6.1": ("https://download.pytorch.org/whl/rocm6.1", "index_url"),
+    "rocm6.2": ("https://download.pytorch.org/whl/rocm6.2", "index_url"),
+    "rocm6.2.4": ("https://download.pytorch.org/whl/rocm6.2.4", "index_url"),
+    "rocm6.3": ("https://download.pytorch.org/whl/rocm6.3", "index_url"),
+    "rocm6.4": ("https://download.pytorch.org/whl/rocm6.4", "index_url"),
+    "rocm7.1": ("https://download.pytorch.org/whl/rocm7.1", "index_url"),
+    "cu113": ("https://download.pytorch.org/whl/cu113", "index_url"),
+    "cu117": ("https://download.pytorch.org/whl/cu117", "index_url"),
+    "cu118": ("https://download.pytorch.org/whl/cu118", "index_url"),
+    "cu121": ("https://download.pytorch.org/whl/cu121", "index_url"),
+    "cu124": ("https://download.pytorch.org/whl/cu124", "index_url"),
+    "cu126": ("https://download.pytorch.org/whl/cu126", "index_url"),
+    "cu128": ("https://download.pytorch.org/whl/cu128", "index_url"),
+    "cu129": ("https://download.pytorch.org/whl/cu129", "index_url"),
+    "cu130": ("https://download.pytorch.org/whl/cu130", "index_url"),
+}
+"""PyTorch 镜像源字典"""
+
+PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
+    "all": ("https://mirror.nju.edu.cn/pytorch/whl", "index_url"),
+    "cpu": ("https://mirror.nju.edu.cn/pytorch/whl/cpu", "index_url"),
+    "xpu": ("https://mirror.nju.edu.cn/pytorch/whl/xpu", "index_url"),
+    "rocm5.4.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2", "index_url"),
+    "rocm5.6": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.6", "index_url"),
+    "rocm5.7": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.7", "index_url"),
+    "rocm6.0": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.0", "index_url"),
+    "rocm6.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.1", "index_url"),
+    "rocm6.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.2", "index_url"),
+    "rocm6.2.4": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4", "index_url"),
+    "rocm6.3": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.3", "index_url"),
+    "rocm6.4": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.4", "index_url"),
+    "rocm7.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.1", "index_url"),
+    "cu113": ("https://mirror.nju.edu.cn/pytorch/whl/cu113", "index_url"),
+    "cu117": ("https://mirror.nju.edu.cn/pytorch/whl/cu117", "index_url"),
+    "cu118": ("https://mirror.nju.edu.cn/pytorch/whl/cu118", "index_url"),
+    "cu121": ("https://mirror.nju.edu.cn/pytorch/whl/cu121", "index_url"),
+    "cu124": ("https://mirror.nju.edu.cn/pytorch/whl/cu124", "index_url"),
+    "cu126": ("https://mirror.nju.edu.cn/pytorch/whl/cu126", "index_url"),
+    "cu128": ("https://mirror.nju.edu.cn/pytorch/whl/cu128", "index_url"),
+    "cu129": ("https://mirror.nju.edu.cn/pytorch/whl/cu129", "index_url"),
+    "cu130": ("https://mirror.nju.edu.cn/pytorch/whl/cu130", "index_url"),
+}
+"""PyTorch 国内镜像源 (NJU) 字典"""
+
+# 参考: https://github.com/Comfy-Org/ComfyUI-Launcher-Environments
+ROCM_MIRROR_DICT: PyTorchMirrorMap = {
+    "rocm_rdna3": ("https://repo.amd.com/rocm/whl/gfx110X-dgpu", "index_url"),
+    "rocm_rdna3.5": ("https://repo.amd.com/rocm/whl/gfx1151", "index_url"),
+    "rocm_rdna4": ("https://repo.amd.com/rocm/whl/gfx120X-all", "index_url"),
+    "rocm_win": ("https://repo.radeon.com/rocm/windows/rocm-rel-7.2", "find_links"),  # 非 PEP 503
+}
+"""PyTorch RoCM 镜像源字典"""
+
+PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
+"""PyPI 主镜像源"""
+
+PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
+"""PyPI 腾讯主镜像源"""
+
+PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
+"""PyPI 额外镜像源"""
+
+PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
+"""PyPI (licyk) 镜像源"""
+
+PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
+"""PyTorch IPEX 镜像源 (CN)"""
+
+PYTORCH_IPEX_EXTRA_INDEX_MIRROR_US = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
+"""PyTorch IPEX 镜像源 (US)"""
+
+PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_stable.html"
+"""PyTorch 镜像源 (非 PEP 503)"""
+
+PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
+"""PyTorch 阿里云镜像源 (非 PEP 503)"""
 
 PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "mps", "cpu"]
 """PyTorch 支持的设备类型 (不带版本号)"""
@@ -2777,8 +2808,8 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "torch_ver": "torch==2.10.0+rocm7.1 torchvision==0.25.0+rocm7.1 torchaudio==2.10.0+rocm7.1",
         "xformers_ver": "xformers==0.0.34",
         "index_mirror": {
-            "official": PYTORCH_MIRROR_DICT["rocm7.1"],
-            "mirror": PYTORCH_MIRROR_NJU_DICT["rocm7.1"],
+            "official": [PYTORCH_MIRROR_DICT["rocm7.1"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm7.1"][0]],
         },
         "extra_index_mirror": {
             "official": [],
