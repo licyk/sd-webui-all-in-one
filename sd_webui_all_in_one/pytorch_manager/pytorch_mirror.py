@@ -732,6 +732,9 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
     intel_xpu_avaliable = has_intel_xpu(gpu_list)
     amd_gpu_avaliable = has_amd_gpu(gpu_list)
 
+    if sys.platform == "darwin":
+        return "mps"
+
     if not gpu_avaliable:
         return "cpu"
 

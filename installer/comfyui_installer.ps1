@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 351
+$script:COMFYUI_INSTALLER_VERSION = 352
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.45"
+$script:CORE_MINIMUM_VER = "2.0.46"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -3863,7 +3863,7 @@ function Get-InstallerCmdletHelp {
         例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Donwload 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, xpu, ipex_legacy_arc, cpu, directml, all
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: 指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
 
     -InstallPythonVersion <Python 版本>
         指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
