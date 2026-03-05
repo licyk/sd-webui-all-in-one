@@ -484,34 +484,33 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 
 |参数|作用|
 |---|---|
-|`-InstallPath` <Qwen TTS WebUI 安装路径>|指定安装 Qwen TTS WebUI 的路径，使用绝对路径进行指定。|
-|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀, 默认路径前缀为 core。|
-|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: `cpu`, `xpu`, `cu11x`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`|
-|`-UseUpdateMode`|使用 Qwen TTS WebUI Installer 的更新脚本模式，不进行 Qwen TTS WebUI 的安装。|
+|`-Help`|获取 Qwen TTS WebUI Installer 的帮助信息。|
+|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀，默认路径前缀为 `core`。|
+|`-InstallPath` <安装 Qwen TTS WebUI 的绝对路径>|指定 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 的路径，使用绝对路径表示。<br>例如：`./qwen_tts_webui_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。|
+|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`|
+|`-InstallPythonVersion` <Python 版本>|指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`|
+|`-UseUpdateMode`|指定 Qwen TTS WebUI Installer 使用更新模式，只对 Qwen TTS WebUI Installer 的管理脚本进行更新。|
 |`-DisablePyPIMirror`|禁用 Qwen TTS WebUI Installer 使用 PyPI 镜像源，使用 PyPI 官方源下载 Python 软件包。|
 |`-DisableProxy`|禁用 Qwen TTS WebUI Installer 自动设置代理服务器。|
-|`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。|
-|`-DisableUV`|禁用 Qwen TTS WebUI Installer 使用 uv 安装 Python 软件包，使用 Pip 安装 Python 软件包。|
+|`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。例如：`-UseCustomProxy "http://127.0.0.1:10809"`|
+|`-DisableUV`|禁用 Qwen TTS WebUI Installer 使用 uv 安装 Python 软件包，改用 Pip 安装。|
 |`-DisableGithubMirror`|禁用 Qwen TTS WebUI Installer 自动设置 Github 镜像源。|
-|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。</br>可用的 Github 镜像站地址:</br>`https://ghfast.top/https://github.com`</br>`https://mirror.ghproxy.com/https://github.com`</br>`https://ghproxy.net/https://github.com`</br>`https://gh.api.99988866.xyz/https://github.com`</br>`https://gh-proxy.com/https://github.com`</br>`https://ghps.cc/https://github.com`</br>`https://gh.idayer.com/https://github.com`</br>`https://ghproxy.1888866.xyz/github.com`</br>`https://slink.ltd/https://github.com`</br>`https://github.boki.moe/github.com`</br>`https://github.moeyy.xyz/https://github.com`</br>`https://gh-proxy.net/https://github.com`</br>`https://gh-proxy.ygxz.in/https://github.com`</br>`https://wget.la/https://github.com`</br>`https://kkgithub.com`</br>`https://gitclone.com/github.com`|
-|`-BuildMode`|启用 Qwen TTS WebUI Installer 构建模式，在基础安装流程结束后将调用 Qwen TTS WebUI Installer 管理脚本执行剩余的安装任务，并且出现错误时不再暂停 Qwen TTS WebUI Installer 的执行，而是直接退出。<br>当指定调用多个 Qwen TTS WebUI Installer 脚本时，将按照优先顺序执行 (按从上到下的顺序)：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`，`-BuildWithTorchReinstall`参数<br><li>`update.ps1`：对应`-BuildWithUpdate`参数<br><li>`launch.ps1`：对应`-BuildWithLaunch`参数|
-|`-BuildWithUpdate`|(需添加`-BuildMode`启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 update.ps1 脚本，更新 Qwen TTS WebUI 内核。|
-|`-BuildWithLaunch`|(需添加`-BuildMode`启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 launch.ps1 脚本，执行启动 Qwen TTS WebUI 前的环境检查流程，但跳过启动 Qwen TTS WebUI。|
-|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 reinstall_pytorch.ps1 脚本，根据 PyTorch 版本编号安装指定的 PyTorch 版本。<br>PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看。|
-|`-BuildWithTorchReinstall`|(需添加`-BuildMode`启用 Qwen TTS WebUI Installer 构建模式，并且添加 -BuildWithTorch) 在 Qwen TTS WebUI Installer 构建模式下，执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装。|
-|`-NoPreDownloadModel`|安装 Qwen TTS WebUI 时跳过预下载模型。|
-|`-PyTorchPackage` <PyTorch 软件包>|(需要同时搭配`-xFormersPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本，如`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`，在例子中指定的 PyTorch 软件包中指定了 torch 的版本，也就是`2.3.0+cu118`这个版本，`+`号后面的参数将作为指定 PyTorch 镜像源的参数，则这个例子中将会指定 PyTorch 镜像源的类型为`cu118`。若缺少`+`号和后面的参数，则根据 torch 的版本决定要设置的 PyTorch 镜像源类型。|
-|`-xFormersPackage` <xFormers 软件包>|(需要同时搭配`-PyTorchPackage`一起使用，否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本，如`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
-|`-NoCleanCache`|安装结束后保留下载 Python 软件包缓存。|
-|`-DisableUpdate`|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 Qwen TTS WebUI Installer 更新检查。|
-|`-DisableHuggingFaceMirror`|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 HuggingFace 镜像源，不使用 HuggingFace 镜像源下载文件。|
-|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>。|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址，例如代理服务器地址为 https://hf-mirror.com，则使用`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`设置 HuggingFace 镜像源地址。|
-|`-LaunchArg` <Qwen TTS WebUI 启动参数>|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 设置 Qwen TTS WebUI 自定义启动参数，如启用 --in-browser 和 --async-cuda-allocation，则使用`-LaunchArg "--in-browser --async-cuda-allocation"`进行启用。|
-|`-EnableShortcut`|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 创建 Qwen TTS WebUI 启动快捷方式。|
-|`-DisableCUDAMalloc`|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 Qwen TTS WebUI Installer 通过`PYTORCH_CUDA_ALLOC_CONF`/`PYTORCH_ALLOC_CONF`环境变量设置 CUDA 内存分配器。|
-|`-DisableEnvCheck`|(仅在 Qwen TTS WebUI Installer 构建模式下生效，并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 Qwen TTS WebUI Installer 检查 Qwen TTS WebUI 运行环境中存在的问题，禁用后可能会导致 Qwen TTS WebUI 环境中存在的问题无法被发现并修复。|
-|`-DisableAutoApplyUpdate`|(仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 Qwen TTS WebUI Installer 自动应用新版本更新。|
-|`-Help`|显示 Qwen TTS WebUI Installer 可用的命令行参数。|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。例如：`https://ghfast.top/https://github.com` 等。|
+|`-BuildMode`|启用构建模式，在基础安装结束后将调用管理脚本执行剩余任务。出现错误时不再暂停而是直接退出。<br>多个脚本将按以下优先级执行：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`/`-BuildWithTorchReinstall`<br><li>`update.ps1`：对应`-BuildWithUpdate`<br><li>`launch.ps1`：对应`-BuildWithLaunch`|
+|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`) 调用 `reinstall_pytorch.ps1` 脚本，根据版本编号安装指定的 PyTorch 版本。编号可运行该脚本查看。|
+|`-BuildWithTorchReinstall`|(需添加`-BuildMode`及`-BuildWithTorch`) 执行 PyTorch 指定版本安装时使用强制重新安装模式。|
+|`-BuildWithUpdate`|(需添加`-BuildMode`) 安装流程结束后调用 `update.ps1` 脚本，更新 Qwen TTS WebUI 内核。|
+|`-BuildWithLaunch`|(需添加`-BuildMode`) 安装流程结束后调用 `launch.ps1` 脚本，执行启动前的环境检查，但跳过启动 Qwen TTS WebUI。|
+|`-PyTorchPackage` <PyTorch 软件包>|(需搭配`-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`|
+|`-xFormersPackage` <xFormers 软件包>|(需搭配`-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
+|`-NoCleanCache`|安装结束后保留下载的 Python 软件包缓存。|
+|`-DisableUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用 Qwen TTS WebUI Installer 更新检查。|
+|`-DisableHuggingFaceMirror`|(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。|
+|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`|
+|`-LaunchArg` <Qwen TTS WebUI 启动参数>|(仅在构建模式生效且只作用于管理脚本) 设置 Qwen TTS WebUI 自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`|
+|`-EnableShortcut`|(仅在构建模式生效且只作用于管理脚本) 创建 Qwen TTS WebUI 启动快捷方式。|
+|`-DisableCUDAMalloc`|(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。|
+|`-DisableEnvCheck`|(仅在构建模式生效且只作用于管理脚本) 禁用检查 Qwen TTS WebUI 运行环境问题。|
 
 例如在`D:/Download`这个路径安装 Qwen TTS WebUI，则在 Qwen TTS WebUI Installer 所在路径打开 PowerShell，使用参数运行 Qwen TTS WebUI Installer。
 
