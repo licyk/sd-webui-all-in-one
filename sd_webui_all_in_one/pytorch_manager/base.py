@@ -38,6 +38,10 @@ PyTorchDeviceType: TypeAlias = Literal[
     "rocm6.3",
     "rocm6.4",
     "rocm7.1",
+    "rocm_rdna3",
+    "rocm_rdna3.5",
+    "rocm_rdna4",
+    "rocm_win",
     "xpu",
     "ipex_legacy_arc",
     "cpu",
@@ -113,13 +117,13 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
 """PyTorch 国内镜像源 (NJU) 字典"""
 
 # 参考: https://github.com/Comfy-Org/ComfyUI-Launcher-Environments
-ROCM_MIRROR_DICT: PyTorchMirrorMap = {
+PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
     "rocm_rdna3": ("https://repo.amd.com/rocm/whl/gfx110X-dgpu", "index_url"),
     "rocm_rdna3.5": ("https://repo.amd.com/rocm/whl/gfx1151", "index_url"),
     "rocm_rdna4": ("https://repo.amd.com/rocm/whl/gfx120X-all", "index_url"),
     "rocm_win": ("https://repo.radeon.com/rocm/windows/rocm-rel-7.2", "find_links"),  # 非 PEP 503
 }
-"""PyTorch RoCM 镜像源字典"""
+"""PyTorch ROCm 镜像源字典"""
 
 PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
 """PyPI 主镜像源"""
@@ -234,6 +238,82 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "find_links": {
             "official": [],
             "mirror": [],
+        },
+    },
+    {
+        "name": "Torch ROCm (RDNA3)",
+        "dtype": "rocm_rdna3",
+        "platform": ["linux"],
+        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
+        "xformers_ver": "",
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch ROCm (RDNA3.5)",
+        "dtype": "rocm_rdna3.5",
+        "platform": ["linux"],
+        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
+        "xformers_ver": "",
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch ROCm (RDNA4)",
+        "dtype": "rocm_rdna4",
+        "platform": ["linux"],
+        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
+        "xformers_ver": "",
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch ROCm (Windows)",
+        "dtype": "rocm_win",
+        "platform": ["win32"],
+        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel rocm-sdk-libraries-custom",
+        "xformers_ver": "",
+        "index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [],
+        },
+        "find_links": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
         },
     },
     {

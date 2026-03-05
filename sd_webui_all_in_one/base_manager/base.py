@@ -88,7 +88,19 @@ def prepare_pytorch_install_info(
         (tuple[str, | None, str | None, dict[str, str]]):
             PyTorch 软件包版本声明, xFormers 软件包版本声明, 带有 PyPI 镜像源配置的环境变量字典
     """
+    def _update_mirror(dtype: str) -> None:
+        url, kind = get_pytorch_mirror(
+            dtype=dtype,
+            use_cn_mirror=use_cn_mirror,
+        )
+        mirrors[kind] = url
+
     torch_part: list[str] = []
+    mirrors: dict[str, str | list[str] | None] = {
+        "index_url": [],
+        "extra_index_url": [],
+        "find_links": []
+    }
 
     # 配置 PyTorch 软件包列表
     if custom_pytorch_package is None:
@@ -98,9 +110,9 @@ def prepare_pytorch_install_info(
             dtype = auto_detect_avaliable_pytorch_type()
         pytorch_info = find_latest_pytorch_info(dtype)
         device_type = pytorch_info["dtype"]
-        index_url = pytorch_info["index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["index_mirror"]["official"]
-        extra_index_url = pytorch_info["extra_index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["extra_index_mirror"]["official"]
-        find_links = pytorch_info["find_links"]["mirror"] if use_cn_mirror else pytorch_info["find_links"]["official"]
+        mirrors["index_url"] = pytorch_info["index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["index_mirror"]["official"]
+        mirrors["extra_index_url"] = pytorch_info["extra_index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["extra_index_mirror"]["official"]
+        mirrors["find_links"] = pytorch_info["find_links"]["mirror"] if use_cn_mirror else pytorch_info["find_links"]["official"]
         torch_ver = pytorch_info["torch_ver"]
         xformers_ver = pytorch_info["xformers_ver"]
     else:
@@ -108,43 +120,25 @@ def prepare_pytorch_install_info(
         torch_part = [x for x in custom_pytorch_package.split() if get_package_name(x) == "torch"]
         torch_ver = custom_pytorch_package
         xformers_ver = custom_xformers_package
-        extra_index_url = []
-        find_links = []
 
     # 配置 PyTorch 镜像源
     if pytorch_mirror_type is not None:
-        index_url = get_pytorch_mirror(
-            dtype=pytorch_mirror_type,
-            use_cn_mirror=use_cn_mirror,
-        )
+        _update_mirror(pytorch_mirror_type)
     elif torch_part and is_package_has_version(torch_part[0]):
         # 声明了 PyTorch 版本
         if "+" in torch_part[0]:
             # 存在类型声明
-            index_url = get_pytorch_mirror(
-                dtype=torch_part[0].split("+")[-1],
-                use_cn_mirror=use_cn_mirror,
-            )
+            _update_mirror(torch_part[0].split("+")[-1])
         else:
             # 不存在类型声明时
-            index_url = get_pytorch_mirror(
-                dtype=get_pytorch_mirror_type(
-                    torch_ver=get_package_version(torch_part[0]),
-                    device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
-                ),
-                use_cn_mirror=use_cn_mirror,
-            )
+            _update_mirror(get_pytorch_mirror_type(
+                torch_ver=get_package_version(torch_part[0]),
+                device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
+            ))
     else:
-        index_url = get_pytorch_mirror(
-            dtype=auto_detect_avaliable_pytorch_type(),
-            use_cn_mirror=use_cn_mirror,
-        )
+        _update_mirror(auto_detect_avaliable_pytorch_type())
 
-    custom_env = generate_uv_and_pip_env_mirror_config(
-        index_url=index_url,
-        extra_index_url=extra_index_url,
-        find_links=find_links,
-    )
+    custom_env = generate_uv_and_pip_env_mirror_config(**mirrors)
 
     return (torch_ver, xformers_ver, custom_env)
 

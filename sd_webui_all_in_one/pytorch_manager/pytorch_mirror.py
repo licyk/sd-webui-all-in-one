@@ -18,29 +18,15 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PYTORCH_MIRROR_DICT,
     PYTORCH_MIRROR_NJU_DICT,
     PYTORCH_DOWNLOAD_DICT,
+    PyTorchMirrorInfo,
     PyTorchVersionInfoList,
     PyTorchVersionInfo,
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
-    ROCM_MIRROR_DICT,
+    PYTORCH_ROCM_MIRROR_DICT,
 )
 from sd_webui_all_in_one.ansi_color import ANSIColor
-
-
-def get_pytorch_mirror_dict(
-    use_cn_mirror: bool | None = False,
-) -> dict[str, str]:
-    """获取 PyTorch 镜像源字典
-
-    Args:
-        use_cn_mirror (bool | None): 是否使用国内镜像 (NJU)
-    Returns:
-        (dict[str, str]): PyTorch 镜像源字典的副本, 键为设备类型 (如 "cu118", "rocm6.1" 等), 值为对应的 PyTorch wheel 下载地址
-    """
-    if use_cn_mirror:
-        PYTORCH_MIRROR_NJU_DICT.copy()
-    return PYTORCH_MIRROR_DICT.copy()
 
 
 def get_cuda_comp_cap() -> float:
@@ -646,6 +632,9 @@ def get_avaliable_pytorch_device_type() -> list[str]:
 
             device_list.append(ver)
 
+    if amd_gpu_avaliable and sys.platform == "win32":
+        device_list.append("rocm_win")
+
     return device_list
 
 
@@ -718,8 +707,11 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
     if intel_xpu_avaliable:
         return "xpu"
 
-    if amd_gpu_avaliable and sys.platform == "linux":
-        return "rocm7.1"
+    if amd_gpu_avaliable:
+        if sys.platform == "linux":
+            return "rocm7.1"
+        if sys.platform == "win32":
+            return "rocm_win"
 
     return "cpu"
 
@@ -746,8 +738,11 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
     if intel_xpu_avaliable:
         return "xpu"
 
-    if amd_gpu_avaliable and sys.platform == "linux":
-        return "rocm"
+    if amd_gpu_avaliable:
+        if sys.platform == "linux":
+            return "rocm7.1"
+        if sys.platform == "win32":
+            return "rocm_win"
 
     return "cpu"
 
@@ -792,7 +787,7 @@ def find_latest_pytorch_info(
 def get_pytorch_mirror(
     dtype: PyTorchDeviceType,
     use_cn_mirror: bool | None = False,
-) -> str:
+) -> PyTorchMirrorInfo:
     """根据 PyTorch 类型获取对应的 PyTorch 镜像源
 
     Args:
@@ -802,8 +797,8 @@ def get_pytorch_mirror(
             是否使用国内镜像源
 
     Returns:
-        str:
-            PyTorch 镜像源
+        PyTorchMirrorInfo:
+            PyTorch 镜像源信息
 
     Raises:
         ValueError:
@@ -812,7 +807,7 @@ def get_pytorch_mirror(
     url = PYTORCH_MIRROR_NJU_DICT.get(dtype) if use_cn_mirror else PYTORCH_MIRROR_DICT.get(dtype)
 
     if url is None:
-        url = ROCM_MIRROR_DICT.get(dtype)
+        url = PYTORCH_ROCM_MIRROR_DICT.get(dtype)
 
     if url is None:
         raise ValueError(f"未找到 '{dtype}' 对应的 PyTorch 镜像源")
