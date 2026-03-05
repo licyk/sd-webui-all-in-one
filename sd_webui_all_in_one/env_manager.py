@@ -2,6 +2,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -25,7 +26,7 @@ def configure_pip() -> None:
     os.environ["UV_HTTP_TIMEOUT"] = "30"
     os.environ["UV_CONCURRENT_DOWNLOADS"] = "50"
     os.environ["UV_INDEX_STRATEGY"] = "unsafe-best-match"
-    os.environ["UV_PYTHON"] = sys.executable
+    os.environ["UV_PYTHON"] = Path(sys.executable).as_posix()
     os.environ["UV_NO_PROGRESS"] = "1"
     os.environ["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
     os.environ["PIP_NO_WARN_SCRIPT_LOCATION"] = "0"

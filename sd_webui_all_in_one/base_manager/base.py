@@ -242,7 +242,7 @@ def reinstall_pytorch(
 
     def _uninstall() -> None:
         if enable_force_reinstall:
-            run_cmd([Path(sys.executable), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
+            run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
         try:

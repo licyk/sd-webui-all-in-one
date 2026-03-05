@@ -53,7 +53,7 @@ def pip_install(
     check_and_update_pip(custom_env=custom_env)
 
     if use_uv:
-        custom_env["UV_PYTHON"] = sys.executable
+        custom_env["UV_PYTHON"] = Path(sys.executable).as_posix()
         check_and_update_uv(custom_env=custom_env)
 
         try:
