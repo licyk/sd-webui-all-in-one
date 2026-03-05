@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 348
+$script:INVOKEAI_INSTALLER_VERSION = 349
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.46"
@@ -2399,9 +2399,9 @@ function Get-InstallerCmdletHelp {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
-        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+    -BuildWithTorch <PyTorch 类型>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
+        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -DisablePyPIMirror
         禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
@@ -2435,7 +2435,7 @@ function Get-LaunchCoreArgs {
     Set-PyPIMirror `$launch_params
     Set-uv `$launch_params
     if (`$script:BuildWithTorch) {
-        `$launch_params.Add(`"--index`") | Out-Null
+        `$launch_params.Add(`"--device-type`") | Out-Null
         `$launch_params.Add(`$BuildWithTorch) | Out-Null
     }
     if (!(`$script:BuildMode)) {
@@ -3530,9 +3530,9 @@ function Get-InstallerCmdletHelp {
     -BuildWithLaunch
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本, 执行启动 InvokeAI 前的环境检查流程, 但跳过启动 InvokeAI
 
-    -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
-        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+    -BuildWithTorch <PyTorch 类型>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
+        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWitchModel <模型编号列表>
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
