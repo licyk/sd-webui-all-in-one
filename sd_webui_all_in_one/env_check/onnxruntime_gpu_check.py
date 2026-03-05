@@ -1,4 +1,4 @@
-"""Onnxruntime GPU 检查工具"""
+"""ONNXRuntime GPU 检查工具"""
 
 import os
 import sys
@@ -28,7 +28,7 @@ logger = get_logger(
 
 
 class OrtType(str, Enum):
-    """onnxruntime-gpu 的类型
+    """ONNXRuntime GPU 的类型
 
     版本说明:
     - CU130: CU13.x
@@ -39,10 +39,10 @@ class OrtType(str, Enum):
     PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的
 
     Attributes:
-        CU130 (str): CUDA 13.x 版本的 onnxruntime-gpu
-        CU121CUDNN8 (str): CUDA 12.1 + cuDNN 8 版本的 onnxruntime-gpu
-        CU121CUDNN9 (str): CUDA 12.1 + cuDNN 9 版本的 onnxruntime-gpu
-        CU118 (str): CUDA 11.8 版本的 onnxruntime-gpu
+        CU130 (str): CUDA 13.x 版本的 ONNXRuntime GPU
+        CU121CUDNN8 (str): CUDA 12.1 + cuDNN 8 版本的 ONNXRuntime GPU
+        CU121CUDNN9 (str): CUDA 12.1 + cuDNN 9 版本的 ONNXRuntime GPU
+        CU118 (str): CUDA 11.8 版本的 ONNXRuntime GPU
     """
 
     CU130 = "cu130"
@@ -162,12 +162,12 @@ def need_install_ort_ver(
     Args:
         skip_if_missing (bool | None):
             当 onnxruntime 未安装时是否跳过检查
-            - `True`: 未安装时则不给出需要安装的 Onnxruntime GPU 版本
-            - `False`: 即使 Onnxruntime GPU 未安装也给出推荐安装的 Onnxruntime GPU 版本
+            - `True`: 未安装时则不给出需要安装的 ONNXRuntime GPU 版本
+            - `False`: 即使 ONNXRuntime GPU 未安装也给出推荐安装的 ONNXRuntime GPU 版本
 
     Returns:
         OrtType:
-            需要安装的 onnxruntime-gpu 类型
+            需要安装的 ONNXRuntime GPU 类型
     """
     # 检测是否安装了 Torch
     torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver_subprocess()
@@ -177,25 +177,25 @@ def need_install_ort_ver(
         logger.debug("缺少 Torch / CUDA / cuDNN 版本")
         if not skip_if_missing:
             try:
-                logger.debug("检查 Onnxruntime GPU 是否已安装")
+                logger.debug("检查 ONNXRuntime GPU 是否已安装")
                 _ = importlib.metadata.version("onnxruntime-gpu")
             except Exception:
-                logger.debug("Onnxruntime GPU 未安装, 使用默认版本进行安装")
-                # onnxruntime-gpu 没有安装时
+                logger.debug("ONNXRuntime GPU 未安装, 使用默认版本进行安装")
+                # ONNXRuntime GPU 没有安装时
                 return OrtType.CU130
-        logger.debug("跳过安装 Onnxruntime GPU")
+        logger.debug("跳过安装 ONNXRuntime GPU")
         return None
 
     # onnxruntime 记录的 cuDNN 支持版本只有一位数, 所以 Torch 的 cuDNN 版本只能截取一位
     cuddn_ver = cuddn_ver[0]
 
-    # 检测是否安装了 onnxruntime-gpu
+    # 检测是否安装了 ONNXRuntime GPU
     ort_support_cuda_ver, ort_support_cudnn_ver = get_onnxruntime_support_cuda_version()
     logger.debug("cuddn_ver: %s, ort_support_cuda_ver: %s, ort_support_cudnn_ver: %s", cuddn_ver, ort_support_cuda_ver, ort_support_cudnn_ver)
     # 通常 onnxruntime 的 CUDA 版本和 cuDNN 版本会同时存在, 所以只需要判断 CUDA 版本是否存在即可
     if ort_support_cuda_ver is not None:
         # 当 onnxruntime 已安装
-        logger.debug("检测到 Onnxruntime GPU 声明的 CUDA / cuDNN 版本, 开始检测是否匹配 PyTorch 中的 CUDA / cuDNN 版本")
+        logger.debug("检测到 ONNXRuntime GPU 声明的 CUDA / cuDNN 版本, 开始检测是否匹配 PyTorch 中的 CUDA / cuDNN 版本")
 
         # 判断 Torch 中的 CUDA 版本
         if CommonVersionComparison(cuda_ver) >= CommonVersionComparison("13.0"):
@@ -238,20 +238,20 @@ def need_install_ort_ver(
             else:
                 return OrtType.CU118
     else:
-        logger.debug("未检测到 Onnxruntime GPU 声明的 CUDA / cuDNN 版本")
+        logger.debug("未检测到 ONNXRuntime GPU 声明的 CUDA / cuDNN 版本")
         if skip_if_missing:
             return None
 
-        logger.debug("确定需要安装的 Onnxruntime GPU 版本")
+        logger.debug("确定需要安装的 ONNXRuntime GPU 版本")
         if sys.platform != "win32":
-            # 非 Windows 平台未在 Onnxruntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
+            # 非 Windows 平台未在 ONNXRuntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
             # 所以需要跳过检查, 直接给出版本
-            logger.debug("非 Windows 版本, 当 Onnxruntime GPU 未安装时给出默认版本")
+            logger.debug("非 Windows 版本, 当 ONNXRuntime GPU 未安装时给出默认版本")
             try:
                 _ = importlib.metadata.version("onnxruntime-gpu")
                 return None
             except Exception as _:
-                # onnxruntime-gpu 没有安装时
+                # ONNXRuntime GPU 没有安装时
                 return OrtType.CU130
 
         if CommonVersionComparison(cuda_ver) >= CommonVersionComparison("13.0"):
@@ -273,21 +273,21 @@ def check_onnxruntime_gpu(
     skip_if_missing: bool | None = False,
     custom_env: dict[str, str] | None = None,
 ) -> None:
-    """检查并修复 Onnxruntime GPU 版本问题
+    """检查并修复 ONNXRuntime GPU 版本问题
 
     Args:
         use_uv (bool | None):
             是否使用 uv 安装依赖
         skip_if_missing (bool | None):
             当 onnxruntime 未安装时是否跳过检查
-            - `True`: 未安装时则不给出需要安装的 Onnxruntime GPU 版本
-            - `False`: 即使 Onnxruntime GPU 未安装也给出推荐安装的 Onnxruntime GPU 版本
+            - `True`: 未安装时则不给出需要安装的 ONNXRuntime GPU 版本
+            - `False`: 即使 ONNXRuntime GPU 未安装也给出推荐安装的 ONNXRuntime GPU 版本
         custom_env (dict[str, str] | None):
             环境变量字典
 
     Raises:
         RuntimeError:
-            当修复 Onnxruntime GPU 版本问题发生错误时
+            当修复 ONNXRuntime GPU 版本问题发生错误时
     """
 
     def _clean_env() -> None:
@@ -305,18 +305,18 @@ def check_onnxruntime_gpu(
         try:
             pip_install(ver, "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
         except RuntimeError as e:
-            logger.warning("安装 Onnxruntime GPU 发生错误: %s", e)
+            logger.warning("安装 ONNXRuntime GPU 发生错误: %s", e)
             logger.warning("更换安装策略进行重试安装中")
-            # 先安装 Onnxruntime GPU 本体
+            # 先安装 ONNXRuntime GPU 本体
             pip_install(ver, "--no-cache-dir", "--no-deps", use_uv=use_uv, custom_env=custom_env)
             # 补全剩余的依赖
             pip_install(ver, use_uv=use_uv, custom_env=origin_env)
 
-    logger.info("检查 Onnxruntime GPU 版本问题中")
+    logger.info("检查 ONNXRuntime GPU 版本问题中")
     ver = need_install_ort_ver(skip_if_missing)
-    logger.debug("需要安装的 Onnxruntime GPU 版本类型: %s", ver)
+    logger.debug("需要安装的 ONNXRuntime GPU 版本类型: %s", ver)
     if ver is None:
-        logger.info("Onnxruntime GPU 无版本问题")
+        logger.info("ONNXRuntime GPU 无版本问题")
         return
 
     if custom_env is None:
@@ -349,7 +349,7 @@ def check_onnxruntime_gpu(
             _uninstall_onnxruntime_gpu()
             _install_onnxruntime_gpu("onnxruntime-gpu>=1.24.2")
     except RuntimeError as e:
-        logger.error("修复 Onnxruntime GPU 版本问题时出现错误: %s", e)
+        logger.error("修复 ONNXRuntime GPU 版本问题时出现错误: %s", e)
         raise RuntimeError(f"修复 Onnxrunime GPU 版本问题时发生错误: {e}") from e
 
-    logger.info("Onnxruntime GPU 版本问题修复完成")
+    logger.info("ONNXRuntime GPU 版本问题修复完成")
