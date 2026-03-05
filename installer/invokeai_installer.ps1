@@ -12,11 +12,11 @@
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
     [switch]$BuildMode,
+    [string]$BuildWithTorch,
+    [string]$BuildWithModel,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithUpdateNode,
     [switch]$BuildWithLaunch,
-    [string]$BuildWithTorch,
-    [string]$BuildWitchModel,
     [switch]$NoPreDownloadModel,
     [switch]$NoCleanCache,
 
@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 350
+$script:INVOKEAI_INSTALLER_VERSION = 351
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.46"
@@ -2478,7 +2478,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [string]`$BuildWitchModel,
+    [string]`$BuildWithModel,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -2518,7 +2518,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -2530,7 +2530,7 @@ function Get-InstallerCmdletHelp {
     -BuildMode
         启用 InvokeAI Installer 构建模式
 
-    -BuildWitchModel <模型编号列表>
+    -BuildWithModel <模型编号列表>
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
@@ -2557,9 +2557,9 @@ function Get-InstallerCmdletHelp {
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
-    if (`$script:BuildWitchModel) {
+    if (`$script:BuildWithModel) {
         `$launch_params.Add(`"--index`") | Out-Null
-        `$launch_params.Add(`$script:BuildWitchModel) | Out-Null
+        `$launch_params.Add(`$script:BuildWithModel) | Out-Null
     }
     if (!(`$script:BuildMode)) {
         `$launch_params.Add(`"--interactive`") | Out-Null
@@ -3350,10 +3350,10 @@ function Use-BuildMode {
         . (Join-NormalizedPath $InstallPath "reinstall_pytorch.ps1") @launch_args
     }
 
-    if ($script:BuildWitchModel) {
+    if ($script:BuildWithModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
-        $launch_args.Add("-BuildWitchModel", $script:BuildWitchModel)
+        $launch_args.Add("-BuildWithModel", $script:BuildWithModel)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
@@ -3472,18 +3472,18 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 InvokeAI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <InvokeAI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 InvokeAI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithTorch <PyTorch 类型>] [-BuildWithModel <模型编号列表>] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-NoPreDownloadModel] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <InvokeAI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
         获取 InvokeAI Installer 的帮助信息
 
     -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
+        设置内核的路径前缀, 默认路径前缀为 core
 
     -InstallPath <安装 InvokeAI 的绝对路径>
         指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
-        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Donwload 这个路径
+        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Download`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Download 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cuda, rocm, xpu, mps, cpu
@@ -3516,10 +3516,18 @@ function Get-InstallerCmdletHelp {
         启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
         当指定调用多个 InvokeAI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch 参数)
-            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - download_models.ps1       (对应 -BuildWithModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
             - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
+
+    -BuildWithTorch <PyTorch 类型>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
+        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithModel <模型编号列表>
+        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update.ps1 脚本, 更新 InvokeAI 内核
@@ -3530,22 +3538,8 @@ function Get-InstallerCmdletHelp {
     -BuildWithLaunch
         (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本, 执行启动 InvokeAI 前的环境检查流程, 但跳过启动 InvokeAI
 
-    -BuildWithTorch <PyTorch 类型>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
-        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
-
-    -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
-        模型编号可运行 download_models.ps1 脚本进行查看
-
     -NoPreDownloadModel
         安装 InvokeAI 时跳过预下载模型
-
-    -PyTorchPackage <PyTorch 软件包>
-        (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
-
-    -xFormersPackage <xFormers 软件包>
-        (需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
 
     -NoCleanCache
         安装结束后保留下载 Python 软件包缓存

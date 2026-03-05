@@ -12,10 +12,10 @@
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
     [switch]$BuildMode,
-    [switch]$BuildWithUpdate,
-    [switch]$BuildWithLaunch,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
+    [switch]$BuildWithUpdate,
+    [switch]$BuildWithLaunch,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
     [switch]$NoCleanCache,
@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 156
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 157
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.46"
@@ -3210,7 +3210,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Qwen TTS WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-PyTorchPackage <PyTorch 软件包>] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Qwen TTS WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 Qwen TTS WebUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWithUpdate] [-BuildWithLaunch] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <Qwen TTS WebUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -3221,10 +3221,10 @@ function Get-InstallerCmdletHelp {
 
     -InstallPath <安装 Qwen TTS WebUI 的绝对路径>
         指定 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 的路径, 使用绝对路径表示
-        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 到 D:\Donwload 这个路径
+        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Download`", 这将指定 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 到 D:\Download 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: 指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
 
     -InstallPythonVersion <Python 版本>
         指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
@@ -3257,18 +3257,18 @@ function Get-InstallerCmdletHelp {
             - update.ps1                (对应 -BuildWithUpdate 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
 
-    -BuildWithUpdate
-        (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 update.ps1 脚本, 更新 Qwen TTS WebUI 内核
-
-    -BuildWithLaunch
-        (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 launch.ps1 脚本, 执行启动 Qwen TTS WebUI 前的环境检查流程, 但跳过启动 Qwen TTS WebUI
-
     -BuildWithTorch <PyTorch 版本编号>
         (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
         PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     -BuildWithTorchReinstall
         (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 Qwen TTS WebUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -BuildWithUpdate
+        (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 update.ps1 脚本, 更新 Qwen TTS WebUI 内核
+
+    -BuildWithLaunch
+        (需添加 -BuildMode 启用 Qwen TTS WebUI Installer 构建模式) Qwen TTS WebUI Installer 执行完基础安装流程后调用 Qwen TTS WebUI Installer 的 launch.ps1 脚本, 执行启动 Qwen TTS WebUI 前的环境检查流程, 但跳过启动 Qwen TTS WebUI
 
     -PyTorchPackage <PyTorch 软件包>
         (需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"

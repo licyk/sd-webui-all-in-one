@@ -1,7 +1,7 @@
 ﻿param (
     [switch]$Help,
     [string]$CorePrefix,
-    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer-Scripts"),
+    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "SD-Trainer-Script"),
     [string]$PyTorchMirrorType,
     [string]$InstallPythonVersion,
     [switch]$UseUpdateMode,
@@ -13,12 +13,12 @@
     [string]$UseCustomGithubMirror,
     [string]$InstallBranch,
     [switch]$BuildMode,
-    [switch]$BuildWithLaunch,
-    [switch]$BuildWithUpdate,
     [int]$BuildWithTorch,
     [switch]$BuildWithTorchReinstall,
-    [string]$BuildWitchModel,
-    [string]$BuildWitchBranch,
+    [string]$BuildWithModel,
+    [string]$BuildWithBranch,
+    [switch]$BuildWithUpdate,
+    [switch]$BuildWithLaunch,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
     [string]$xFormersPackage,
@@ -75,7 +75,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 261
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 262
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.46"
@@ -324,9 +324,6 @@ function Get-LaunchCoreArgs {
     Set-GithubMirror $launch_params
     if ($script:NoPreDownloadModel) {
         $launch_params.Add("--no-pre-download-model") | Out-Null
-    }
-    if ($script:NoPreDownloadNode) {
-        $launch_params.Add("--no-pre-download-extension") | Out-Null
     }
     if ($script:PyTorchMirrorType) {
         $launch_params.Add("--pytorch-mirror-type") | Out-Null
@@ -1637,7 +1634,7 @@ function Write-TrainScript {
 Set-Location `$PSScriptRoot
 # 此处的代码不要修改或者删除, 否则可能会出现意外情况
 # 
-# SD-Trainer-Script 环境初始化后提供以下变量便于使用
+# SD Trainer Script 环境初始化后提供以下变量便于使用
 # 
 # `${ROOT_PATH}               当前目录
 # `${SD_SCRIPTS_PATH}         训练脚本所在目录
@@ -2056,7 +2053,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [string]`$BuildWitchBranch,
+    [string]`$BuildWithBranch,
     [switch]`$DisableUpdate,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
@@ -2102,7 +2099,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchBranch <SD Trainer Script 分支编号>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
+    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithBranch <SD Trainer Script 分支编号>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
 
 参数:
     -Help
@@ -2114,7 +2111,7 @@ function Get-InstallerCmdletHelp {
     -BuildMode
         启用 SD Trainer Script Installer 构建模式
 
-    -BuildWitchBranch <SD Trainer Script 分支编号>
+    -BuildWithBranch <SD Trainer Script 分支编号>
         (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 switch_branch.ps1 脚本, 根据 SD Trainer Script 分支编号切换到对应的 SD Trainer Script 分支
         SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 
@@ -2149,7 +2146,7 @@ function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
     if (`$script:BuildMode) {
         `$launch_params.Add(`"--branch`") | Out-Null
-        `$launch_params.Add(`$script:BuildWitchBranch) | Out-Null
+        `$launch_params.Add(`$script:BuildWithBranch) | Out-Null
     } else {
         `$launch_params.Add(`"--interactive`") | Out-Null
     }
@@ -2202,6 +2199,7 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
+    [string]`$InstallBranch,
     [string]`$CorePrefix,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
@@ -2602,7 +2600,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [string]`$BuildWitchModel,
+    [string]`$BuildWithModel,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -2636,7 +2634,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -2648,7 +2646,7 @@ function Get-InstallerCmdletHelp {
     -BuildMode
         启用 SD Trainer Script Installer 构建模式
 
-    -BuildWitchModel <模型编号列表>
+    -BuildWithModel <模型编号列表>
         (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
@@ -2675,9 +2673,9 @@ function Get-InstallerCmdletHelp {
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
-    if (`$script:BuildWitchModel) {
+    if (`$script:BuildWithModel) {
         `$launch_params.Add(`"--index`") | Out-Null
-        `$launch_params.Add(`$script:BuildWitchModel) | Out-Null
+        `$launch_params.Add(`$script:BuildWithModel) | Out-Null
     }
     if (!(`$script:BuildMode)) {
         `$launch_params.Add(`"--interactive`") | Out-Null
@@ -3273,26 +3271,26 @@ Write-Log `"执行 SD Trainer Script Installer 激活环境脚本`"
 function Write-ReadMe {
     $content = "
 ====================================================================
-SD-Trainer-Script Installer created by licyk
+SD Trainer Script Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ====================================================================
 ########## 使用帮助 ##########
 
-这是关于 SD-Trainer-Script 的简单使用文档。
+这是关于 SD Trainer Script 的简单使用文档。
 
-使用 SD-Trainer-Script Installer 进行安装并安装成功后，将在当前目录生成 SD-Trainer-Script 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+使用 SD Trainer Script Installer 进行安装并安装成功后，将在当前目录生成 SD Trainer Script 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
-- init.ps1：初始化 SD-Trainer-Script 运行环境。
+- init.ps1：初始化 SD Trainer Script 运行环境。
 - train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 - update.ps1：更新 SD-Trainer-Script。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-- switch_branch.ps1：切换 SD-Trainer-Script 分支。
-- settings.ps1：管理 SD-Trainer-Script Installer 的设置。
+- switch_branch.ps1：切换 SD Trainer Script 分支。
+- settings.ps1：管理 SD Trainer Script Installer 的设置。
 - terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
 - activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- launch_sd_trainer_script_installer.ps1：获取最新的 SD-Trainer-Script Installer 安装脚本并运行。
+- launch_sd_trainer_script_installer.ps1：获取最新的 SD Trainer Script Installer 安装脚本并运行。
 - configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
 
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
@@ -3301,7 +3299,7 @@ Github：https://github.com/licyk
 - sd-scripts / core：SD-Trainer-Script 内核。
 - models：使用模型下载脚本下载模型时模型的存放位置。
 
-详细的 SD-Trainer-Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
+详细的 SD Trainer Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 
 其他的一些训练模型的教程：
 https://sd-moadel-doc.maozi.io
@@ -3465,10 +3463,10 @@ function Use-BuildMode {
         . (Join-NormalizedPath $InstallPath "reinstall_pytorch.ps1") @launch_args
     }
 
-    if ($script:BuildWitchModel) {
+    if ($script:BuildWithModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
-        $launch_args.Add("-BuildWitchModel", $script:BuildWitchModel)
+        $launch_args.Add("-BuildWithModel", $script:BuildWithModel)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
@@ -3478,10 +3476,10 @@ function Use-BuildMode {
         . (Join-NormalizedPath $script:InstallPath "download_models.ps1") @launch_args
     }
 
-    if ($script:BuildWitchBranch) {
+    if ($script:BuildWithBranch) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
-        $launch_args.Add("-BuildWitchBranch", $script:BuildWitchBranch)
+        $launch_args.Add("-BuildWithBranch", $script:BuildWithBranch)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -3589,7 +3587,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD Trainer Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-InstallBranch <安装的 SD Trainer Script 分支>] [-BuildMode] [-BuildWithUpdate] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD Trainer Script 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 SD Trainer Script 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-InstallBranch <安装的 SD Trainer Script 分支>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWithModel <模型编号列表>] [-BuildWithBranch <SD Trainer Script 分支编号>] [-BuildWithUpdate] [-BuildWithLaunch] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <SD Trainer Script 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -3600,10 +3598,10 @@ function Get-InstallerCmdletHelp {
 
     -InstallPath <安装 SD Trainer Script 的绝对路径>
         指定 SD Trainer Script Installer 安装 SD Trainer Script 的路径, 使用绝对路径表示
-        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 SD Trainer Script Installer 安装 SD Trainer Script 到 D:\Donwload 这个路径
+        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Download`", 这将指定 SD Trainer Script Installer 安装 SD Trainer Script 到 D:\Download 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: 指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
 
     -InstallPythonVersion <Python 版本>
         指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
@@ -3630,7 +3628,7 @@ function Get-InstallerCmdletHelp {
         使用自定义的 Github 镜像站地址
 
     -InstallBranch <安装的 SD Trainer Script 分支>
-        指定 SD Trainer Script Installer 安装的 SD-Trainer-Script 分支 (sd_scripts_main, sd_scripts_dev, sd_scripts_sd3, ai_toolkit_main, finetrainers_main, diffusion_pipe_main, musubi_tuner_main)
+        指定 SD Trainer Script Installer 安装的 SD Trainer Script 分支 (sd_scripts_main, sd_scripts_dev, sd_scripts_sd3, ai_toolkit_main, finetrainers_main, diffusion_pipe_main, musubi_tuner_main)
         例如: ./$($script:MyInvocation.MyCommand.Name) -InstallBranch `"sd_scripts_sd3`", 这将指定 SD Trainer Script Installer 安装 kohya-ss - sd-scripts SD3 分支
         未指定该参数时, 默认安装 kohya-ss/sd-scripts 分支
         支持指定安装的分支如下:
@@ -3646,16 +3644,10 @@ function Get-InstallerCmdletHelp {
         启用 SD Trainer Script Installer 构建模式, 在基础安装流程结束后将调用 SD Trainer Script Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 SD Trainer Script Installer 的执行, 而是直接退出
         当指定调用多个 SD Trainer Script Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
-            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - download_models.ps1       (对应 -BuildWithModel 参数)
+            - switch_branch.ps1         (对应 -BuildWithBranch 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
             - init.ps1                  (对应 -BuildWithLaunch 参数)
-            - switch_branch.ps1         (对应 -BuildWitchBranch 参数)
-
-    -BuildWithUpdate
-        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 update.ps1 脚本, 更新 SD Trainer Script 内核
-
-    -BuildWithLaunch
-        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 launch.ps1 脚本, 执行启动 SD Trainer Script 前的环境检查流程, 但跳过启动 SD Trainer Script
 
     -BuildWithTorch <PyTorch 版本编号>
         (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
@@ -3664,12 +3656,19 @@ function Get-InstallerCmdletHelp {
     -BuildWithTorchReinstall
         (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式, 并且添加 -BuildWithTorch) 在 SD Trainer Script Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
 
-    -BuildWitchModel <模型编号列表>
+    -BuildWithModel <模型编号列表>
         (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
-    -NoPreDownloadNode
-        安装 SD Trainer Script 时跳过安装 SD Trainer Script 扩展
+    -BuildWithBranch <SD Trainer Script 分支编号>
+        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 switch_branch.ps1 脚本, 根据 SD Trainer Script 分支编号切换到对应的 SD Trainer Script 分支
+        SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
+
+    -BuildWithUpdate
+        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 update.ps1 脚本, 更新 SD Trainer Script 内核
+
+    -BuildWithLaunch
+        (需添加 -BuildMode 启用 SD Trainer Script Installer 构建模式) SD Trainer Script Installer 执行完基础安装流程后调用 SD Trainer Script Installer 的 launch.ps1 脚本, 执行启动 SD Trainer Script 前的环境检查流程, 但跳过启动 SD Trainer Script
 
     -NoPreDownloadModel
         安装 SD Trainer Script 时跳过预下载模型

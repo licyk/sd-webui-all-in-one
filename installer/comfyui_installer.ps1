@@ -12,12 +12,12 @@
     [switch]$DisableGithubMirror,
     [string]$UseCustomGithubMirror,
     [switch]$BuildMode,
+    [int]$BuildWithTorch,
+    [switch]$BuildWithTorchReinstall,
+    [string]$BuildWithModel,
     [switch]$BuildWithUpdate,
     [switch]$BuildWithUpdateNode,
     [switch]$BuildWithLaunch,
-    [int]$BuildWithTorch,
-    [switch]$BuildWithTorchReinstall,
-    [string]$BuildWitchModel,
     [switch]$NoPreDownloadNode,
     [switch]$NoPreDownloadModel,
     [string]$PyTorchPackage,
@@ -76,7 +76,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 352
+$script:COMFYUI_INSTALLER_VERSION = 353
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.46"
@@ -2522,7 +2522,7 @@ param (
     [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$BuildMode,
-    [string]`$BuildWitchModel,
+    [string]`$BuildWithModel,
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisableUpdate
@@ -2562,7 +2562,7 @@ catch {
 function Get-InstallerCmdletHelp {
     `$content = `"
 使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWitchModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
+    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
 
 参数:
     -Help
@@ -2574,7 +2574,7 @@ function Get-InstallerCmdletHelp {
     -BuildMode
         启用 ComfyUI Installer 构建模式
 
-    -BuildWitchModel <模型编号列表>
+    -BuildWithModel <模型编号列表>
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
         模型编号可运行 download_models.ps1 脚本进行查看
 
@@ -2601,9 +2601,9 @@ function Get-InstallerCmdletHelp {
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
-    if (`$script:BuildWitchModel) {
+    if (`$script:BuildWithModel) {
         `$launch_params.Add(`"--index`") | Out-Null
-        `$launch_params.Add(`$script:BuildWitchModel) | Out-Null
+        `$launch_params.Add(`$script:BuildWithModel) | Out-Null
     }
     if (!(`$script:BuildMode)) {
         `$launch_params.Add(`"--interactive`") | Out-Null
@@ -3727,10 +3727,10 @@ function Use-BuildMode {
         . (Join-NormalizedPath $script:InstallPath "reinstall_pytorch.ps1") @launch_args
     }
 
-    if ($script:BuildWitchModel) {
+    if ($script:BuildWithModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
-        $launch_args.Add("-BuildWitchModel", $script:BuildWitchModel)
+        $launch_args.Add("-BuildWithModel", $script:BuildWithModel)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
         if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
@@ -3849,7 +3849,7 @@ if '%errorlevel%' NEQ '0' (
 function Get-InstallerCmdletHelp {
     $content = "
 使用:
-    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWitchModel <模型编号列表>] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-xFormersPackage <xFormers 软件包>] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
+    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 ComfyUI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-BuildWithTorchReinstall] [-BuildWithModel <模型编号列表>] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-NoPreDownloadNode] [-NoPreDownloadModel] [-PyTorchPackage <PyTorch 软件包>] [-xFormersPackage <xFormers 软件包>] [-InstallHanamizuki] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <ComfyUI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
 
 参数:
     -Help
@@ -3860,10 +3860,10 @@ function Get-InstallerCmdletHelp {
 
     -InstallPath <安装 ComfyUI 的绝对路径>
         指定 ComfyUI Installer 安装 ComfyUI 的路径, 使用绝对路径表示
-        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Donwload`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Donwload 这个路径
+        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Download`", 这将指定 ComfyUI Installer 安装 ComfyUI 到 D:\Download 这个路径
 
     -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: 指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
+        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
 
     -InstallPythonVersion <Python 版本>
         指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
@@ -3893,10 +3893,21 @@ function Get-InstallerCmdletHelp {
         启用 ComfyUI Installer 构建模式, 在基础安装流程结束后将调用 ComfyUI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 ComfyUI Installer 的执行, 而是直接退出
         当指定调用多个 ComfyUI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
             - reinstall_pytorch.ps1     (对应 -BuildWithTorch, -BuildWithTorchReinstall 参数)
-            - download_models.ps1       (对应 -BuildWitchModel 参数)
+            - download_models.ps1       (对应 -BuildWithModel 参数)
             - update.ps1                (对应 -BuildWithUpdate 参数)
             - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
             - launch.ps1                (对应 -BuildWithLaunch 参数)
+
+    -BuildWithTorch <PyTorch 版本编号>
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
+        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
+
+    -BuildWithTorchReinstall
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
+
+    -BuildWithModel <模型编号列表>
+        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+        模型编号可运行 download_models.ps1 脚本进行查看
 
     -BuildWithUpdate
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 update.ps1 脚本, 更新 ComfyUI 内核
@@ -3906,17 +3917,6 @@ function Get-InstallerCmdletHelp {
 
     -BuildWithLaunch
         (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 launch.ps1 脚本, 执行启动 ComfyUI 前的环境检查流程, 但跳过启动 ComfyUI
-
-    -BuildWithTorch <PyTorch 版本编号>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 版本编号安装指定的 PyTorch 版本
-        PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
-
-    -BuildWithTorchReinstall
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式, 并且添加 -BuildWithTorch) 在 ComfyUI Installer 构建模式下, 执行 reinstall_pytorch.ps1 脚本对 PyTorch 进行指定版本安装时使用强制重新安装
-
-    -BuildWitchModel <模型编号列表>
-        (需添加 -BuildMode 启用 ComfyUI Installer 构建模式) ComfyUI Installer 执行完基础安装流程后调用 ComfyUI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
-        模型编号可运行 download_models.ps1 脚本进行查看
 
     -NoPreDownloadNode
         安装 ComfyUI 时跳过安装 ComfyUI 扩展
