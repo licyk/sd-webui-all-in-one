@@ -182,6 +182,9 @@ def get_pytorch_mirror_type_rocm(
     if torch_version < CommonVersionComparison("2.4.0"):
         # torch < 2.4.0
         return "all"
+    if sys.platform == "win32":
+        # 使用 Windows 版本的 PyTorch
+        return "rocm_win"
     if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.5.0"):
         # 2.4.0 <= torch < 2.5.0
         return "rocm6.1"
@@ -627,7 +630,7 @@ def get_avaliable_pytorch_device_type() -> list[str]:
 
     if amd_gpu_avaliable and sys.platform == "linux":
         for ver in PYTORCH_DEVICE_LIST:
-            if not ver.startswith("rocm"):
+            if not ver.startswith("rocm") or ver == "rocm_win":
                 continue
 
             device_list.append(ver)
@@ -739,10 +742,7 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
         return "xpu"
 
     if amd_gpu_avaliable:
-        if sys.platform == "linux":
-            return "rocm7.1"
-        if sys.platform == "win32":
-            return "rocm_win"
+        return "rocm"
 
     return "cpu"
 

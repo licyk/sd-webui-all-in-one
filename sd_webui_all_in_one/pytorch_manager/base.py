@@ -7,6 +7,32 @@ from typing import (
     get_args,
 )
 
+PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
+"""PyPI 主镜像源"""
+
+PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
+"""PyPI 腾讯主镜像源"""
+
+PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
+"""PyPI 额外镜像源"""
+
+PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
+"""PyPI (licyk) 镜像源"""
+
+PYPI_EXTRA_INDEX_MIRROR_LICYK_HF = "https://licyk.github.io/t/pypi_hf"
+"""PyPI (licyk HuggingFace) 镜像源"""
+
+PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
+"""PyTorch IPEX 镜像源 (CN)"""
+
+PYTORCH_IPEX_EXTRA_INDEX_MIRROR_US = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
+"""PyTorch IPEX 镜像源 (US)"""
+
+PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_stable.html"
+"""PyTorch 镜像源 (非 PEP 503)"""
+
+PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
+"""PyTorch 阿里云镜像源 (非 PEP 503)"""
 
 PyTorchMirrorKind: TypeAlias = Literal[
     "index_url",
@@ -67,7 +93,9 @@ PyTorch 镜像配置映射表类型
 PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "all": ("https://download.pytorch.org/whl", "index_url"),
     "cpu": ("https://download.pytorch.org/whl/cpu", "index_url"),
+    "directml": (PYPI_INDEX_MIRROR_OFFICIAL, "index_url"),
     "xpu": ("https://download.pytorch.org/whl/xpu", "index_url"),
+    "ipex_legacy_arc": (PYPI_EXTRA_INDEX_MIRROR_LICYK_HF, "index_url"),
     "rocm5.4.2": ("https://download.pytorch.org/whl/rocm5.4.2", "index_url"),
     "rocm5.6": ("https://download.pytorch.org/whl/rocm5.6", "index_url"),
     "rocm5.7": ("https://download.pytorch.org/whl/rocm5.7", "index_url"),
@@ -93,7 +121,9 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
 PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
     "all": ("https://mirror.nju.edu.cn/pytorch/whl", "index_url"),
     "cpu": ("https://mirror.nju.edu.cn/pytorch/whl/cpu", "index_url"),
+    "directml": (PYPI_INDEX_MIRROR_TENCENT, "index_url"),
     "xpu": ("https://mirror.nju.edu.cn/pytorch/whl/xpu", "index_url"),
+    "ipex_legacy_arc": (PYPI_EXTRA_INDEX_MIRROR_LICYK, "index_url"),
     "rocm5.4.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2", "index_url"),
     "rocm5.6": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.6", "index_url"),
     "rocm5.7": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.7", "index_url"),
@@ -124,30 +154,6 @@ PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
     "rocm_win": ("https://repo.radeon.com/rocm/windows/rocm-rel-7.2", "find_links"),  # 非 PEP 503
 }
 """PyTorch ROCm 镜像源字典"""
-
-PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
-"""PyPI 主镜像源"""
-
-PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
-"""PyPI 腾讯主镜像源"""
-
-PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
-"""PyPI 额外镜像源"""
-
-PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
-"""PyPI (licyk) 镜像源"""
-
-PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
-"""PyTorch IPEX 镜像源 (CN)"""
-
-PYTORCH_IPEX_EXTRA_INDEX_MIRROR_US = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
-"""PyTorch IPEX 镜像源 (US)"""
-
-PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_stable.html"
-"""PyTorch 镜像源 (非 PEP 503)"""
-
-PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
-"""PyTorch 阿里云镜像源 (非 PEP 503)"""
 
 PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "mps", "cpu"]
 """PyTorch 支持的设备类型 (不带版本号)"""
@@ -517,7 +523,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK_HF],
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
@@ -688,7 +694,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK_HF],
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
@@ -707,7 +713,7 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
         },
         "extra_index_mirror": {
-            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
+            "official": [PYPI_EXTRA_INDEX_MIRROR_LICYK_HF],
             "mirror": [PYPI_EXTRA_INDEX_MIRROR_LICYK],
         },
         "find_links": {
