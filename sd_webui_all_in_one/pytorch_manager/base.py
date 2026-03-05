@@ -119,7 +119,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
 """PyTorch 镜像源字典"""
 
 PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
-    "all": ("https://mirror.nju.edu.cn/pytorch/whl", "index_url"),
+    "all": ("https://download.pytorch.org/whl", "index_url"),
     "cpu": ("https://mirror.nju.edu.cn/pytorch/whl/cpu", "index_url"),
     "directml": (PYPI_INDEX_MIRROR_TENCENT, "index_url"),
     "xpu": ("https://mirror.nju.edu.cn/pytorch/whl/xpu", "index_url"),
