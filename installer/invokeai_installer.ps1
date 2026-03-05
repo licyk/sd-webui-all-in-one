@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 346
+$script:INVOKEAI_INSTALLER_VERSION = 347
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.44"
@@ -3489,7 +3489,7 @@ function Get-InstallerCmdletHelp {
         指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cuda, rocm, xpu, mps, cpu
 
     -InstallPythonVersion <Python 版本>
-        指定要安装的 Python 版本, 如 -InstallPythonVersion `"3.10.11`"
+        指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
 
     -UseUpdateMode
         指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新
