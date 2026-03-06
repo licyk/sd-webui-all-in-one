@@ -78,11 +78,11 @@ disable = [
 ]
 
 [tool.pylint.format]
-max-line-length = 180
+max-line-length = 200
 ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
 
 [tool.ruff]
-line-length = 180
+line-length = 200
 indent-width = 4
 lint.ignore = [
     "E402" # module-import-not-at-top-of-file

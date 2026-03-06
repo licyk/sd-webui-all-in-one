@@ -348,7 +348,7 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
             显卡信息列表
     """
     try:
-        cmd = ["powershell", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
+        cmd = ["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         gpus = json.loads(result.stdout)
         if isinstance(gpus, dict):
