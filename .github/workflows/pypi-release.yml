@@ -39,7 +39,7 @@ jobs:
       - name: Build Wheel
         shell: bash
         run: |
-          python -m build "${{ github.workspace }}" --outdir "${{ github.workspace }}/dist" --skip-existing
+          python -m build "${{ github.workspace }}" --outdir "${{ github.workspace }}/dist"
 
       - name: Upload to PyPI
         shell: bash
@@ -47,4 +47,4 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
-          python -m twine upload "${{ github.workspace }}/dist"/*
+          python -m twine upload "${{ github.workspace }}/dist"/* --skip-existing
