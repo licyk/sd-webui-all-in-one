@@ -76,7 +76,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 274
+$script:FOOOCUS_INSTALLER_VERSION = 275
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.50"
@@ -3499,7 +3499,7 @@ Github：https://github.com/licyk
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- Fooocus / core：Fooocus 内核。
+- core：Fooocus 内核。
 
 详细的 Fooocus Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/fooocus_installer.md
 

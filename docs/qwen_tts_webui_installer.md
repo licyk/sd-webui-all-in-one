@@ -84,16 +84,10 @@ _✨一键安装 Qwen TTS WebUI_
 ***
 
 # 环境配置
-该脚本 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
+该脚本在 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
 
 
 ## Windows
-如果是初次使用 PowerShell 脚本，需要解除 Windows 系统对脚本的限制。
-
-Windows 系统默认未启用长路径支持，这可能会导致部分功能出现异常，需要启用 Windows 长路径支持来解决该问题。
-
-以上两个问题可以通过自动环境配置进行修复。
-
 下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
@@ -191,7 +185,7 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 或者是在 Qwen TTS WebUI 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 Qwen TTS WebUI Env：
 
 ```powershell
-.\activate.ps1
+./activate.ps1
 ```
 
 这样就进入 Qwen TTS WebUI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
@@ -205,30 +199,25 @@ Windows 系统默认未启用长路径支持，这可能会导致部分功能出
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_qwen_tts_webui_installer.ps1`重新生成这些脚本。
 
 ```
-$ tree -L 2
-.
+D:/Downloads
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
-├── qwen-tts-webui                           # 这是 Qwen TTS WebUI 文件夹
-│   ├── configure_env.bat             # 配置环境的脚本
-│   ├── activate.ps1                  # 进入 Qwen TTS WebUI Env 的脚本
-│   ├── cache                         # 缓存文件夹
-│   ├── download_models.ps1           # 下载模型的脚本
-│   ├── launch_qwen_tts_webui_installer.ps1  # 获取最新的 Qwen TTS WebUI Installer 并运行的脚本
-│   ├── git                           # Git 目录
-│   ├── help.txt                      # 帮助文档
-│   ├── launch.ps1                    # 启动 Qwen TTS WebUI 的脚本
-│   ├── core                       # Qwen TTS WebUI 路径
-│   ├── python                        # Python 目录
-│   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
-│   ├── switch_branch.ps1             # 切换 Qwen TTS WebUI 分支的脚本
-│   ├── settings.ps1                  # 管理 Qwen TTS WebUI Installer 设置的脚本
-│   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 Qwen TTS WebUI Installer 的虚拟环境脚本
-│   └── update.ps1                    # 更新 Qwen TTS WebUI 的脚本
-├── qwen_tts_webui_installer.ps1             # Qwen TTS WebUI Installer 一般放在 Qwen TTS WebUI 文件夹外面，和 Qwen TTS WebUI 文件夹同级
+├── qwen-tts-webui                            # 这是 Qwen TTS WebUI 文件夹
+│   ├── configure_env.bat                     # 配置环境的脚本
+│   ├── activate.ps1                          # 进入 Qwen TTS WebUI Env 的脚本
+│   ├── cache                                 # 缓存文件夹
+│   ├── launch_qwen_tts_webui_installer.ps1   # 获取最新的 Qwen TTS WebUI Installer 并运行的脚本
+│   ├── git                                   # Git 目录
+│   ├── help.txt                              # 帮助文档
+│   ├── launch.ps1                            # 启动 Qwen TTS WebUI 的脚本
+│   ├── core                                  # Qwen TTS WebUI 内核目录
+│   ├── python                                # Python 目录
+│   ├── reinstall_pytorch.ps1                 # 重新安装 PyTorch 的脚本
+│   ├── settings.ps1                          # 管理 Qwen TTS WebUI Installer 设置的脚本
+│   ├── terminal.ps1                          # 自动打开 PowerShell 并激活 Qwen TTS WebUI Installer 的虚拟环境脚本
+│   └── update.ps1                            # 更新 Qwen TTS WebUI 的脚本
+├── qwen_tts_webui_installer.ps1              # Qwen TTS WebUI Installer 一般放在 Qwen TTS WebUI 文件夹外面，和 Qwen TTS WebUI 文件夹同级
 └── QQ Files
-
-8 directories, 9 files
 ```
 
 
@@ -462,8 +451,6 @@ Qwen TTS WebUI Installer 通过路径前缀在安装目录中寻找 Qwen TTS Web
 
 如果使用相对路径，此时需要知道 Qwen TTS WebUI Installer 所在路径，比如`D:/Downloads/qwen-tts-webui`，则可以得出内核路径前缀为`../../Tools/AI/Qwen-TTS-WebUI-aki-v1.1`。
 
-相对路径可使用[命令的使用](#命令的使用)中的[计算 Qwen TTS WebUI 内核路径前缀](#计算-qwen-tts-webui-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 Qwen TTS WebUI 内核的绝对路径转换为内核路径前缀。
-
 
 ## 管理 Qwen TTS WebUI Installer 设置
 运行`settings.ps1`，根据提示进行设置管理和调整。
@@ -515,7 +502,7 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 例如在`D:/Download`这个路径安装 Qwen TTS WebUI，则在 Qwen TTS WebUI Installer 所在路径打开 PowerShell，使用参数运行 Qwen TTS WebUI Installer。
 
 ```powershell
-.\qwen_tts_webui_installer.ps1 -InstallPath "D:/Download"
+./qwen_tts_webui_installer.ps1 -InstallPath "D:/Download"
 ```
 
 
@@ -645,7 +632,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 在`qwen-tts-webui`文件夹打开 PowerShell，输入下面的命令激活 Qwen TTS WebUI Env：
 
 ```powershell
-.\activate.ps1
+./activate.ps1
 ```
 
 >[!IMPORTANT]  

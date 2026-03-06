@@ -105,16 +105,10 @@ _✨快速部署训练环境_
 ***
 
 # 环境配置
-该脚本 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
+该脚本在 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
 
 
 ## Windows
-如果是初次使用 PowerShell 脚本，需要解除 Windows 系统对脚本的限制。
-
-Windows 系统默认未启用长路径支持，这可能会导致部分功能出现异常，需要启用 Windows 长路径支持来解决该问题。
-
-以上两个问题可以通过自动环境配置进行修复。
-
 下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
 |环境配置脚本下载|
@@ -239,7 +233,7 @@ $ tree -L 1
 或者是在 SD-Trainer-Script 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 SD-Trainer-Script Env：
 
 ```powershell
-.\activate.ps1
+./activate.ps1
 ```
 
 这样就进入 SD-Trainer-Script 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
@@ -253,8 +247,7 @@ $ tree -L 1
 如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_sd_trainer_script_installer.ps1`重新生成这些脚本。
 
 ```
-$ tree -L 2
-.
+D:/Downloads
 ├── BaiduNetworkDownloads
 │   └── 新建 文本文档.txt
 ├── SD-Trainer-Script                           # 这是 SD-Trainer-Script 文件夹
@@ -266,8 +259,7 @@ $ tree -L 2
 │   ├── git                                     # Git 目录
 │   ├── help.txt                                # 帮助文档
 │   ├── init.ps1                                # 初始化训练环境的脚本
-│   ├── sd-scripts                              # SD-Trainer-Script 路径
-│   ├── models                                  # download_models.ps1 下载模型脚本下载模型的路径
+│   ├── core                                    # SD-Trainer-Script 内核目录
 │   ├── python                                  # Python 目录
 │   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本
 │   ├── switch_branch.ps1                       # 切换 SD-Trainer-Script 分支的脚本
@@ -276,8 +268,6 @@ $ tree -L 2
 │   └── update.ps1                              # 更新 SD-Trainer-Script 的脚本
 ├── sd_trainer_script_installer.ps1             # SD-Trainer-Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
 └── QQ Files
-
-8 directories, 9 files
 ```
 
 
@@ -463,8 +453,6 @@ SD-Trainer-Script Installer 通过路径前缀在安装目录中寻找 SD-Traine
 
 如果使用相对路径，此时需要知道 SD-Trainer-Script Installer 所在路径，比如`D:/Downloads/SD-Trainer-Script`，则可以得出内核路径前缀为`../../Tools/AI/sd-scripts-aki-v1.1`。
 
-相对路径可使用[命令的使用](#命令的使用)中的[计算 SD-Trainer-Script 内核路径前缀](#计算-sd-trainer-script-内核路径前缀)进行计算，或者直接使用`settings.ps1`配置内核路径前缀，可自动将 SD-Trainer-Script 内核的绝对路径转换为内核路径前缀。
-
 
 ## 管理 SD-Trainer-Script Installer 设置
 运行`settings.ps1`，根据提示进行设置管理和调整。
@@ -516,12 +504,11 @@ SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-EnableShortcut`|(仅在构建模式生效且只作用于管理脚本) 创建 SD Trainer Script 启动快捷方式。|
 |`-DisableCUDAMalloc`|(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。|
 |`-DisableEnvCheck`|(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。|
-|`-DisableAutoApplyUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用自动应用新版本更新。|
 
 例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer-Script Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer-Script Installer。
 
 ```powershell
-.\sd_trainer_script_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
+./sd_trainer_script_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
 ```
 
 
@@ -707,7 +694,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 在`SD-Trainer-Script`文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer-Script Env：
 
 ```powershell
-.\activate.ps1
+./activate.ps1
 ```
 
 >[!IMPORTANT]  

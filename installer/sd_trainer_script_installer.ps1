@@ -75,7 +75,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 266
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 267
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.50"
@@ -3296,8 +3296,7 @@ Github：https://github.com/licyk
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- sd-scripts / core：SD-Trainer-Script 内核。
-- models：使用模型下载脚本下载模型时模型的存放位置。
+- core：SD Trainer Script 内核。
 
 详细的 SD Trainer Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
 

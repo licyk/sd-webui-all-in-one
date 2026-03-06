@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 355
+$script:INVOKEAI_INSTALLER_VERSION = 356
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.50"
@@ -3199,8 +3199,7 @@ Github：https://github.com/licyk
 - cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
 - python：Python 的存放路径，InvokeAI 安装的位置在此处，如果需要重装 InvokeAI，可将该文件夹删除，并使用 InvokeAI Installer 重新部署 InvokeAI。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
 - git：Git 的存放路径。
-- invokea / corei：InvokeAI 存放模型、图片、配置文件等的文件夹。
-- models：使用模型下载脚本下载模型时模型的存放位置。
+- core：InvokeAI 存放模型、图片、配置文件等的文件夹。
 
 详细的 InvokeAI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
 
