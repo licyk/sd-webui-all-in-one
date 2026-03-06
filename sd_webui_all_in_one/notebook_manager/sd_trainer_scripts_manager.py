@@ -160,7 +160,7 @@ class SDTrainerScriptsManager(BaseManager):
             enable_cuda_malloc (bool | None):
                 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
-                自定义调用系统包管理器命令, 设置为 True / None 为使用默认的调用命令, 设置为 False 则禁用该功能
+                自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
             update_core (bool | None):
                 安装时更新内核和扩展
         """
