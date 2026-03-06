@@ -12,7 +12,10 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     get_gpu_list,
     has_gpus,
 )
-from sd_webui_all_in_one.tunnel import TunnelManager
+from sd_webui_all_in_one.tunnel import (
+    TunnelManager,
+    TunnelUrl,
+)
 from sd_webui_all_in_one.repo_manager import (
     ApiType,
     RepoManager,
@@ -530,7 +533,7 @@ class BaseManager:
         use_zrok: bool | None = False,
         zrok_token: str | None = None,
         webui_name: str | None = "WebUI",
-    ) -> None:
+    ) -> TunnelUrl:
         """获取内网穿透地址
 
         Args:
@@ -556,6 +559,10 @@ class BaseManager:
                 检查内网穿透是否启动成功
             webui_name (str | None):
                 WebUI 的名称
+
+        Returns:
+            TunnelUrl:
+                内网穿透的地址字典
         """
         logger.info("为 %s 启动内网穿透", webui_name)
         tun = self.tun_manager.start_tunnel(
@@ -575,8 +582,11 @@ class BaseManager:
         print(f"原 {webui_name} 访问地址: {tun['local_url']}")
         print(f"{webui_name} 的内网穿透地址: ")
         for k, v in tun.items():
+            if k == "local_url":
+                continue
             print(f"- {k}: {v}")
         print_divider("=")
+        return tun
 
     def download_file_from_url(
         self,
