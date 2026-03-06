@@ -39,7 +39,7 @@ jobs:
       - name: Build Wheel
         shell: bash
         run: |
-          python -m build "${{ github.workspace }}" --outdir "${{ github.workspace }}/dist"
+          python -m build "${{ github.workspace }}" --outdir "${{ github.workspace }}/dist" --skip-existing
 
       - name: Upload to PyPI
         shell: bash
