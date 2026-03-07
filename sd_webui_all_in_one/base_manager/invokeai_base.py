@@ -602,7 +602,6 @@ def run_invokeai() -> None:
                     logger.info("通过浏览器打开 InvokeAI 访问地址 '%s' 中", url)
                     logger.info("如果需要禁用自动打开浏览器, 可通过 --disable-auto-launch 参数禁用该功能")
                     try:
-                        # TODO: webbrowser.open() 会导致 Python 主进程退出时阻塞, 需更换更好的调用浏览器方式
                         webbrowser.open(f"http://{host}:{port}")
                     except Exception as e:
                         logger.warning("打开浏览器时发生错误: %s", e)
@@ -856,6 +855,7 @@ def launch_invokeai(
         raise KeyboardInterrupt()
     except KeyboardInterrupt:
         logger.info("已退出 InvokeAI")
+        os._exit(0)
     except Exception as e:
         raise RuntimeError("运行 InvokeAI 时发生错误") from e
 
