@@ -5,6 +5,12 @@ import os
 import asyncio
 import re
 import sys
+import time
+import copy
+import traceback
+import threading
+import socket
+import webbrowser
 from tempfile import TemporaryDirectory
 from typing import (
     Any,
@@ -563,6 +569,80 @@ def install_pypatchmatch(
     logger.info("PyPatchMatch 组件安装完成")
 
 
+def run_invokeai() -> None:
+    """启动 InvokeAI"""
+    import uvicorn
+    import invokeai.frontend.cli.arg_parser
+    from invokeai.frontend.cli.arg_parser import _parser, InvokeAIArgs
+    from invokeai.app.run_app import run_app
+
+    # 备份原始对象
+    original_parser = copy.deepcopy(_parser)
+    original_uvicorn_serve = uvicorn.Server.serve
+
+    # 标记是否成功运行
+    run_successful = False
+    try:
+        # 修改 _parser
+        _parser.add_argument("--disable-auto-launch", action="store_true", help="禁止自动启动浏览器打开 InvokeAI 界面")
+        args = InvokeAIArgs.parse_args()
+
+        async def _patched_serve(
+            self: uvicorn.Server,
+            sockets: list[socket.socket] | None = None,
+        ) -> None:
+            # 从 Server 实例的 config 中获取配置
+            host = self.config.host
+            port = self.config.port
+            url = f"http://{host}:{port}"
+            logger.debug("获取到的 InvokeAI 访问地址: %s", url)
+            if not args.disable_auto_launch:
+                def _open_browser():
+                    time.sleep(2)  # 等待服务器完全启动
+                    logger.debug("通过浏览器打开 InvokeAI 访问地址中")
+                    try:
+                        # TODO: webbrowser.open() 会导致 Python 主进程退出时阻塞, 需更换更好的调用浏览器方式
+                        webbrowser.open(f"http://{host}:{port}")
+                    except Exception as e:
+                        logger.warning("打开浏览器时发生错误: %s", e)
+
+                # 在新线程中打开浏览器，避免阻塞
+                threading.Thread(target=_open_browser, daemon=True).start()
+
+            # 调用原始的 serve 方法
+            return await original_uvicorn_serve(self, sockets)
+
+        # 应用 Monkey patch
+        uvicorn.Server.serve = _patched_serve
+
+        # 运行 InvokeAI
+        run_app()
+
+        # 如果执行到这里，说明运行成功
+        run_successful = True
+    except KeyboardInterrupt:
+        logger.debug("捕获到 Ctrl + C 中断信号")
+        run_successful = True
+    except Exception as e:
+        traceback.print_exc()
+        logger.error("运行时发生 %s 错误: %s", type(e).__name__, e)
+    finally:
+        logger.debug("清理 Monkey patches")
+        # 恢复 uvicorn.Server.serve
+        uvicorn.Server.serve = original_uvicorn_serve
+
+        # 恢复原始的 _parser
+        invokeai.frontend.cli.arg_parser._parser = original_parser  # pylint: disable=protected-access
+
+        # 重置 InvokeAIArgs 的状态
+        InvokeAIArgs.args = None
+        InvokeAIArgs.did_parse = False
+
+        if not run_successful:
+            logger.warning("检测到异常, 尝试使用原始配置重新启动")
+            run_app()
+
+
 def install_invokeai(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,
@@ -737,6 +817,10 @@ def launch_invokeai(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
+
+    Raises:
+        RuntimeError:
+            InvokeAI 运行发生错误时
     """
 
     logger.info("准备 InvokeAI 启动环境")
@@ -760,16 +844,19 @@ def launch_invokeai(
             custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
             custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
 
+    os.environ.update(custom_env)
     logger.info("启动 InvokeAI 中")
-    from invokeai.app.run_app import run_app
 
     if launch_args is not None:
         sys.argv = [sys.argv[0]] + launch_args
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
     try:
-        sys.exit(run_app())
+        run_invokeai()
+        raise KeyboardInterrupt()
     except KeyboardInterrupt:
         logger.info("已退出 InvokeAI")
+    except Exception as e:
+        raise RuntimeError("运行 InvokeAI 时发生错误") from e
 
 
 def install_invokeai_custom_nodes(
@@ -1381,11 +1468,7 @@ def reinstall_invokeai_pytorch(
     if interactive_mode:
         while True:
             print_divider("=")
-            print(
-                "\n".join(
-                    [f"- {ANSIColor.GOLD}{i}{ANSIColor.RESET}. {ANSIColor.WHITE}{d}{ANSIColor.RESET}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]
-                )
-            )
+            print("\n".join([f"- {ANSIColor.GOLD}{i}{ANSIColor.RESET}. {ANSIColor.WHITE}{d}{ANSIColor.RESET}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))
             print_divider("=")
             if has_err:
                 logger.warning("输入有误, 请重试")
