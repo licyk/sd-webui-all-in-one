@@ -71,10 +71,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 163
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 164
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.50"
+$script:CORE_MINIMUM_VER = "2.0.51"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1478,7 +1478,7 @@ function Add-MacOSShortcut {
 `"`$pwsh_bin`" -ExecutionPolicy Bypass -File `"`$launch_script_path`"
 `"@
     Write-FileWithStreamWriter -Path `$executable_path -Encoding UTF8 -Value `$sh_content
-    & chmod +x `$executable_path
+    & chmod +x `"`$executable_path`"
 
     `$plist_path = Join-NormalizedPath `$contents_path `"Info.plist`"
     `$plist_content = @`"
@@ -1733,7 +1733,7 @@ function Get-WebUILaunchArgs {
         if (`$script:LaunchArg) {
             `$launch_args = `$script:LaunchArg.Trim()
         } else {
-            `$launch_args = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Raw).Trim()
+            `$launch_args = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Raw)
         }
         if ([string]::IsNullOrEmpty(`$launch_args)) {
             return
