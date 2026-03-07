@@ -78,7 +78,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 347
+$script:SD_WEBUI_INSTALLER_VERSION = 348
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.50"
@@ -150,9 +150,9 @@ function Write-Log {
 function Write-FileWithStreamWriter {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)][string]$Value,
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Value,
         [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][ValidateSet("GBK", "UTF8", "UTF8BOM")][string]$Encoding
+        [Parameter(Mandatory = $false)][ValidateSet("GBK", "UTF8", "UTF8BOM")][string]$Encoding = "UTF8"
     )
     process {
         try {
@@ -811,8 +811,8 @@ function Install-Aria2 {
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
     New-Item -ItemType Directory -Path $env:CACHE_HOME -Force > $null
-    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "uv.toml") -Value " " -Encoding UTF8
-    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "pip.ini") -Value " " -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "uv.toml") -Value "" -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "pip.ini") -Value "" -Encoding UTF8
 
     Write-Log "检测是否安装 Python"
     Install-Python
@@ -931,8 +931,8 @@ function Initialize-EnvPath {
     `$env:SD_WEBUI_ALL_IN_ONE_SET_CONFIG = 1
 
     New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
-    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"uv.toml`") -Value `" `" -Encoding UTF8
-    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"pip.ini`") -Value `" `" -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"uv.toml`") -Value `"`" -Encoding UTF8
+    Write-FileWithStreamWriter -Path (Join-NormalizedPath `$env:CACHE_HOME `"pip.ini`") -Value `"`" -Encoding UTF8
 }
 
 
@@ -965,9 +965,9 @@ function Write-Log {
 function Write-FileWithStreamWriter {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = `$true)][string]`$Value,
+        [Parameter(Mandatory = `$true)][AllowEmptyString()][string]`$Value,
         [Parameter(Mandatory = `$true)][string]`$Path,
-        [Parameter(Mandatory = `$true)][ValidateSet(`"GBK`", `"UTF8`", `"UTF8BOM`")][string]`$Encoding
+        [Parameter(Mandatory = `$false)][ValidateSet(`"GBK`", `"UTF8`", `"UTF8BOM`")][string]`$Encoding = `"UTF8`"
     )
     process {
         try {
