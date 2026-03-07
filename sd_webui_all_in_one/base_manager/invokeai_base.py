@@ -599,7 +599,8 @@ def run_invokeai() -> None:
             if not args.disable_auto_launch:
                 def _open_browser():
                     time.sleep(2)  # 等待服务器完全启动
-                    logger.debug("通过浏览器打开 InvokeAI 访问地址中")
+                    logger.info("通过浏览器打开 InvokeAI 访问地址 '%s' 中", url)
+                    logger.lnfo("如果需要禁用自动打开浏览器, 可通过 --disable-auto-launch 参数禁用该功能")
                     try:
                         # TODO: webbrowser.open() 会导致 Python 主进程退出时阻塞, 需更换更好的调用浏览器方式
                         webbrowser.open(f"http://{host}:{port}")
