@@ -1,13 +1,13 @@
 <div align="center">
 
-# SD-Trainer-Script Installer
+# SD Trainer Script Installer
 
 _✨快速部署训练环境_
 
 </div>
 
 # 目录
-- [SD-Trainer-Script Installer](#sd-trainer-script-installer)
+- [SD Trainer Script Installer](#sd-trainer-script-installer)
 - [目录](#目录)
 - [简介](#简介)
 - [环境配置](#环境配置)
@@ -16,54 +16,68 @@ _✨快速部署训练环境_
   - [MacOS](#macos)
 - [安装](#安装)
 - [使用](#使用)
-  - [启动训练脚本](#启动训练脚本)
-  - [更新 SD-Trainer-Script](#更新-sd-trainer-script)
-  - [切换 SD-Trainer-Script 分支](#切换-sd-trainer-script-分支)
-  - [进入 SD-Trainer-Script 所在的 Python 环境](#进入-sd-trainer-script-所在的-python-环境)
-  - [获取最新的 SD-Trainer-Script Installer 并运行](#获取最新的-sd-trainer-script-installer-并运行)
-  - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
-  - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
-  - [设置 Github 镜像源](#设置-github-镜像源)
-  - [设置 PyPI 镜像源](#设置-pypi-镜像源)
-  - [配置代理](#配置代理)
-    - [1. 使用系统代理](#1-使用系统代理)
-    - [2. 使用配置文件](#2-使用配置文件)
-    - [禁用自动设置代理](#禁用自动设置代理)
-  - [添加模型](#添加模型)
-  - [模型训练的方法](#模型训练的方法)
-  - [重装 SD-Trainer-Script](#重装-sd-trainer-script)
-  - [重装 Python 环境](#重装-python-环境)
-  - [重装 Git](#重装-git)
-  - [重装 PyTorch](#重装-pytorch)
-  - [卸载 SD-Trainer-Script](#卸载-sd-trainer-script)
-  - [移动 SD-Trainer-Script 的路径](#移动-sd-trainer-script-的路径)
-  - [更新 SD-Trainer-Script 管理脚本](#更新-sd-trainer-script-管理脚本)
-    - [1. 直接更新](#1-直接更新)
-    - [2. 使用 SD-Trainer-Script Installer 配置管理器进行更新](#2-使用-sd-trainer-script-installer-配置管理器进行更新)
-    - [3. 运行 SD-Trainer-Script Installer 进行更新](#3-运行-sd-trainer-script-installer-进行更新)
-    - [禁用 SD-Trainer-Script Installer 更新检查](#禁用-sd-trainer-script-installer-更新检查)
-  - [设置 uv 包管理器](#设置-uv-包管理器)
-  - [设置内核路径前缀](#设置内核路径前缀)
-  - [管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-script-installer-设置)
-  - [SD-Trainer-Script Installer 对 Python / Git 环境的识别](#sd-trainer-script-installer-对-python--git-环境的识别)
-  - [使用命令运行 SD-Trainer-Script Installer](#使用命令运行-sd-trainer-script-installer)
-  - [SD-Trainer-Script Installer 构建模式和普通安装模式](#sd-trainer-script-installer-构建模式和普通安装模式)
-  - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
-  - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
-  - [启用 Windows 长路径支持](#启用-windows-长路径支持)
-  - [SD-Trainer-Script 提示'Torch is not able to use GPU'](#sd-trainer-script-提示torch-is-not-able-to-use-gpu)
-  - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
-  - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
-  - [RuntimeError: Error(s) in loading state\_dict for UNet2DConditionModel](#runtimeerror-errors-in-loading-state_dict-for-unet2dconditionmodel)
-  - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
-  - [RuntimeError: NaN detected in latents: X:\\xxx\\xxx\\xx.png](#runtimeerror-nan-detected-in-latents-xxxxxxxxxpng)
-  - [CUDA out of memory](#cuda-out-of-memory)
-  - [DefaultCPUAllocator: not enough memory](#defaultcpuallocator-not-enough-memory)
-  - [Loss?](#loss)
-  - [训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?](#训练素材中图片的分辨率不一致而且有些图片的分辨率很大需要裁剪)
-  - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
-  - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
-  - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
+  - [基础操作](#基础操作)
+    - [启动训练脚本](#启动训练脚本)
+    - [更新 SD-Trainer-Script](#更新-sd-trainer-script)
+    - [切换 SD-Trainer-Script 分支](#切换-sd-trainer-script-分支)
+  - [环境管理](#环境管理)
+    - [进入 SD-Trainer-Script 所在的 Python 环境](#进入-sd-trainer-script-所在的-python-环境)
+    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
+    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
+  - [配置管理](#配置管理)
+    - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
+    - [设置 Github 镜像源](#设置-github-镜像源)
+    - [设置 PyPI 镜像源](#设置-pypi-镜像源)
+    - [配置代理](#配置代理)
+      - [1. 使用系统代理](#1-使用系统代理)
+      - [2. 使用配置文件](#2-使用配置文件)
+      - [禁用自动设置代理](#禁用自动设置代理)
+  - [资源管理](#资源管理)
+    - [添加模型](#添加模型)
+    - [模型训练的方法](#模型训练的方法)
+  - [维护与修复](#维护与修复)
+    - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
+    - [重装 SD-Trainer-Script](#重装-sd-trainer-script)
+    - [重装 Python 环境](#重装-python-环境)
+    - [重装 Git](#重装-git)
+    - [重装 PyTorch](#重装-pytorch)
+    - [卸载 SD-Trainer-Script](#卸载-sd-trainer-script)
+    - [移动 SD-Trainer-Script 的路径](#移动-sd-trainer-script-的路径)
+  - [高级功能](#高级功能)
+    - [设置 uv 包管理器](#设置-uv-包管理器)
+    - [设置内核路径前缀](#设置内核路径前缀)
+    - [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置)
+    - [SD Trainer Script Installer 对 Python / Git 环境的识别](#sd-trainer-script-installer-对-python--git-环境的识别)
+    - [使用命令运行 SD Trainer Script Installer](#使用命令运行-sd-trainer-script-installer)
+    - [SD Trainer Script Installer 构建模式和普通安装模式](#sd-trainer-script-installer-构建模式和普通安装模式)
+    - [编写训练脚本](#编写训练脚本)
+      - [如何编写](#如何编写)
+      - [kohya-ss/sd-scripts 训练命令参考](#kohya-sssd-scripts-训练命令参考)
+      - [使用 TensorBoard 查看训练情况](#使用-tensorboard-查看训练情况)
+  - [更新管理](#更新管理)
+    - [获取最新的 SD Trainer Script Installer 并运行](#获取最新的-sd-trainer-script-installer-并运行)
+    - [更新 SD-Trainer-Script 管理脚本](#更新-sd-trainer-script-管理脚本)
+      - [1. 直接更新](#1-直接更新)
+      - [2. 使用 SD Trainer Script Installer 配置管理器进行更新](#2-使用-sd-trainer-script-installer-配置管理器进行更新)
+      - [3. 运行 SD Trainer Script Installer 进行更新](#3-运行-sd-trainer-script-installer-进行更新)
+      - [禁用 SD Trainer Script Installer 更新检查](#禁用-sd-trainer-script-installer-更新检查)
+  - [故障排查](#故障排查)
+    - [运行脚本时出现中文乱码](#运行脚本时出现中文乱码)
+    - [无法使用 PowerShell 运行](#无法使用-powershell-运行)
+    - [启用 Windows 长路径支持](#启用-windows-长路径支持)
+    - [SD-Trainer-Script 提示'Torch is not able to use GPU'](#sd-trainer-script-提示torch-is-not-able-to-use-gpu)
+    - [PowerShell 中出现 xFormers 报错](#powershell-中出现-xformers-报错)
+    - [ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE](#error-these-packages-do-not-match-the-hashes-from-the-requirements-file)
+    - [RuntimeError: Error(s) in loading state\_dict for UNet2DConditionModel](#runtimeerror-errors-in-loading-state_dict-for-unet2dconditionmodel)
+    - [UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte](#unicodedecodeerror-utf-8-codec-cant-decode-byte-xxxx-in-position-xxx-invalid-continuation-byte)
+    - [RuntimeError: NaN detected in latents: X:\\xxx\\xxx\\xx.png](#runtimeerror-nan-detected-in-latents-xxxxxxxxxpng)
+    - [CUDA out of memory](#cuda-out-of-memory)
+    - [DefaultCPUAllocator: not enough memory](#defaultcpuallocator-not-enough-memory)
+    - [Loss?](#loss)
+    - [训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪？](#训练素材中图片的分辨率不一致而且有些图片的分辨率很大需要裁剪)
+    - [AssertError: caption file is empty: xxx\\xxxxxx\\xx\\2\_xxx\\xxxxxxx.txt](#asserterror-caption-file-is-empty-xxxxxxxxxxx2_xxxxxxxxxxtxt)
+    - [NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to\_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.](#notimplemenrederror-cannot-cppy-out-of-meta-tensor-no-data-please-use-torchnnmoduleto_empty-instead-of-torchnnmoduleto-when-moving-module-from-mera-to-a-different-device)
+    - [Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.](#microsoft-visual-c-redistributable-is-not-installed-this-may-lead-to-the-dll-load-failure)
   - [命令的使用](#命令的使用)
     - [1. 使用自动环境激活脚本](#1-使用自动环境激活脚本)
     - [2. 手动输入命令激活](#2-手动输入命令激活)
@@ -77,14 +91,10 @@ _✨快速部署训练环境_
     - [更新仓库](#更新仓库)
     - [运行某个 Python 脚本](#运行某个-python-脚本)
     - [下载文件](#下载文件)
-    - [列出 SD-Trainer-Script Installer 内置命令](#列出-sd-trainer-script-installer-内置命令)
-    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
+    - [列出 SD Trainer Script Installer 内置命令](#列出-sd-trainer-script-installer-内置命令)
+    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本-1)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
-    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
-  - [编写训练脚本](#编写训练脚本)
-    - [如何编写](#如何编写)
-    - [kohya-ss/sd-scripts 训练命令参考](#kohya-sssd-scripts-训练命令参考)
-    - [使用 TensorBoard 查看训练情况](#使用-tensorboard-查看训练情况)
+    - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径-1)
 
 ***
 
@@ -132,9 +142,9 @@ _✨快速部署训练环境_
 ***
 
 # 安装
-SD-Trainer-Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 分支，如果需要指定安装的分支，需要在 SD-Trainer-Script Installer 所在路径创建配置文件，以下为不同配置文件对应的 SD-Trainer-Script 分支。
+SD Trainer Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 分支，如果需要指定安装的分支，需要在 SD Trainer Script Installer 所在路径创建配置文件，以下为不同配置文件对应的 SD-Trainer-Script 分支。
 
-|配置文件名|对应安装的分支|
+|配置文件名 | 对应安装的分支|
 |---|---|
 |`install_sd_scripts.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)|
 |`install_ai_toolkit.txt`|[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)|
@@ -142,10 +152,9 @@ SD-Trainer-Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
 |`install_diffusion_pipe.txt`|[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)|
 |`install_musubi_tuner.txt`|[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
 
-创建配置文件后，将 SD-Trainer-Script Installer 下载至本地，和配置文件放在一起，如下所示。
+创建配置文件后，将 SD Trainer Script Installer 下载至本地，和配置文件放在一起，如下所示。
 
 ```
-$ tree -L 1
 .
 ├── 119966207_p0_master1200.jpg
 ├── 437A9AE81C043B83110F55316EC7789E.png
@@ -153,14 +162,12 @@ $ tree -L 1
 ├── BaiduNetdiskWorkspace
 ├── install_simple_tuner.txt            # 这是配置文件
 ├── QQDownloads
-├── sd_trainer_script_installer.ps1     # 这是 SD-Trainer-Script Installer
+├── sd_trainer_script_installer.ps1     # 这是 SD Trainer Script Installer
 ├── z-noob_artist.csv
 └── 得意黑_横屏.prtextstyle
-
-4 directories, 6 files
 ```
 
-右键`sd_trainer_script_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD-Trainer-Script Installer 将安装 SD-Trainer-Script 至本地。
+右键 `sd_trainer_script_installer.ps1` 脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 SD Trainer Script Installer 将安装 SD-Trainer-Script 至本地。
 
 >[!IMPORTANT]  
 >右键菜单中点击`使用 PowerShell 运行`为 Windows 平台上的使用方法，如果需要在 Linux / MacOS 平台中运行，请打开终端并使用`pwsh`命令去运行，例如：
@@ -171,7 +178,7 @@ $ tree -L 1
 >对于其他 PowerShell 脚本也是类似的方法去运行。
 
 >[!NOTE]  
->SD-Trainer-Script Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
+>SD Trainer Script Installer 在安装时还可以通过其他配置文件指定其他参数，可阅读以下的说明：
 >- [设置 Github 镜像源](#设置-github-镜像源)
 >- [设置 PyPI 镜像源](#设置-pypi-镜像源)
 >- [设置 uv 包管理器](#设置-uv-包管理器)
@@ -180,7 +187,7 @@ $ tree -L 1
 >
 >通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
-|SD-Trainer-Script Installer 下载地址|
+|SD Trainer Script Installer 下载地址|
 |---|
 |[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
 |[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
@@ -188,30 +195,33 @@ $ tree -L 1
 |[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1)|
 |[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_script_installer.ps1)|
 
-在 SD-Trainer-Script Installer 成功安装 SD-Trainer-Script 后，在`SD-Trainer-Script`文件夹中可以看到 SD-Trainer-Script 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD-Trainer-Script Installer。
+在 SD Trainer Script Installer 成功安装 SD-Trainer-Script 后，在 `SD-Trainer-Script` 文件夹中可以看到 SD-Trainer-Script 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD Trainer Script Installer。
 
 >[!NOTE]  
->1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](#环境配置)中的方法进行解除。
->2. SD-Trainer-Script Installer 支持使用在命令行中通过参数配置 SD-Trainer-Script 的安装参数，具体说明可阅读[使用命令运行 SD-Trainer-Script Installer](#使用命令运行-sd-trainer-script-installer)。
+>1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照 [环境配置](#环境配置) 中的方法进行解除。
+>2. SD Trainer Script Installer 支持使用在命令行中通过参数配置 SD-Trainer-Script 的安装参数，具体说明可阅读 [使用命令运行 SD Trainer Script Installer](#使用命令运行-sd-trainer-script-installer)。
 
 ***
 
 # 使用
-在`SD-Trainer-Script`文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
+在 `SD-Trainer-Script` 文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
+
+***
+
+## 基础操作
+
+### 启动训练脚本
+编写并运行 `train.ps1` 脚本。
+
+训练脚本中的内容需要自行编写，编写方法请参考 [编写训练脚本](#编写训练脚本) 部分的内容。
 
 
-## 启动训练脚本
-编写并运行`train.ps1`脚本。
-
-训练脚本中的内容需要自行编写，编写方法请参考[编写训练脚本](#编写训练脚本)部分的内容。
+### 更新 SD-Trainer-Script
+运行 `update.ps1` 脚本，如果遇到更新 SD-Trainer-Script 失败的情况可尝试重新运行 `update.ps1` 脚本。
 
 
-## 更新 SD-Trainer-Script
-运行`update.ps1`脚本，如果遇到更新 SD-Trainer-Script 失败的情况可尝试重新运行`update.ps1`脚本。
-
-
-## 切换 SD-Trainer-Script 分支
-运行`switch_branch.ps1`脚本，根据提示选择分支并切换。
+### 切换 SD-Trainer-Script 分支
+运行 `switch_branch.ps1` 脚本，根据提示选择分支并切换。
 
 支持切换到的分支如下。
 
@@ -222,13 +232,16 @@ $ tree -L 1
 - [kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
 
 >[!NOTE]  
->切换分支后，因为不同分支需要的依赖版本不一致，需要对依赖进行更新，可通过运行`update.ps1`进行依赖更新，保证 SD-Trainer-Script 能够正常运行。
+>切换分支后，因为不同分支需要的依赖版本不一致，需要对依赖进行更新，可通过运行 `update.ps1` 进行依赖更新，保证 SD-Trainer-Script 能够正常运行。
 
+***
 
-## 进入 SD-Trainer-Script 所在的 Python 环境
-如果需要使用 Python、Pip、SD-Trainer-Script 的命令时，请勿将 SD-Trainer-Script 的`python`文件夹添加到环境变量，这将会导致不良的后果产生。
+## 环境管理
 
-正确的方法是运行`terminal.ps1`脚本，这将打开 PowerShell 并自动执行`activate.ps1`，此时就进入了 SD-Trainer-Script 所在的 Python。
+### 进入 SD-Trainer-Script 所在的 Python 环境
+如果需要使用 Python、Pip、SD-Trainer-Script 的命令时，请勿将 SD-Trainer-Script 的 `python` 文件夹添加到环境变量，这将会导致不良的后果产生。
+
+正确的方法是运行 `terminal.ps1` 脚本，这将打开 PowerShell 并自动执行 `activate.ps1`，此时就进入了 SD-Trainer-Script 所在的 Python。
 
 或者是在 SD-Trainer-Script 目录中打开 PowerShell，在 PowerShell 中运行下面的命令进入 SD-Trainer-Script Env：
 
@@ -239,550 +252,12 @@ $ tree -L 1
 这样就进入 SD-Trainer-Script 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
 
 
-## 获取最新的 SD-Trainer-Script Installer 并运行
-运行`launch_sd_trainer_script_installer.ps1`脚本，如果下载成功将会把 SD-Trainer-Script Installer 下载到`cache`目录中并运行。
-
-
-## 恢复被修改 / 删除的脚本
-如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次`launch_sd_trainer_script_installer.ps1`重新生成这些脚本。
-
-```
-D:/Downloads
-├── BaiduNetworkDownloads
-│   └── 新建 文本文档.txt
-├── SD-Trainer-Script                           # 这是 SD-Trainer-Script 文件夹
-│   ├── configure_env.bat                       # 配置环境的脚本
-│   ├── activate.ps1                            # 进入 SD-Trainer-Script Env 的脚本
-│   ├── cache                                   # 缓存文件夹
-│   ├── download_models.ps1                     # 下载模型的脚本
-│   ├── launch_sd_trainer_script_installer.ps1  # 获取最新的 SD-Trainer-Script Installer 并运行的脚本
-│   ├── git                                     # Git 目录
-│   ├── help.txt                                # 帮助文档
-│   ├── init.ps1                                # 初始化训练环境的脚本
-│   ├── core                                    # SD-Trainer-Script 内核目录
-│   ├── python                                  # Python 目录
-│   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本
-│   ├── switch_branch.ps1                       # 切换 SD-Trainer-Script 分支的脚本
-│   ├── settings.ps1                            # 管理 SD-Trainer-Script Installer 设置的脚本
-│   ├── terminal.ps1                            # 自动打开 PowerShell 并激活 SD-Trainer-Script Installer 的虚拟环境脚本
-│   └── update.ps1                              # 更新 SD-Trainer-Script 的脚本
-├── sd_trainer_script_installer.ps1             # SD-Trainer-Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
-└── QQ Files
-```
-
-
-## 设置 HuggingFace 镜像
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-SD-Trainer-Script Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建`hf_mirror.txt`文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
-
-|可用的 HuggingFace 镜像源|
-|---|
-|https://hf-mirror.com|
-|https://huggingface.sukaka.top|
-
-如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建`disable_hf_mirror.txt`文件，再次启动脚本时将禁用 HuggingFace 镜像源。
-
-
-## 设置 Github 镜像源
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-SD-Trainer-Script Installer 为了加速访问 Github 的速度，加快下载和更新 SD-Trainer-Script 的速度，默认在启动脚本时自动检测可用的 Github 镜像源并设置。如果需要自定义 Github 镜像源，可以在和脚本同级的目录创建`gh_mirror.txt`文件，在文件中填写 Github 镜像源的地址后保存，再次启动脚本时将取消自动检测可用的 Github 镜像源，而是读取该文件的配置并设置 Github 镜像源。
-
-|可用的 Github 镜像源|
-|---|
-|https://ghfast.top/https://github.com|
-|https://mirror.ghproxy.com/https://github.com|
-|https://gh.api.99988866.xyz/https://github.com|
-|https://gitclone.com/github.com|
-|https://gh-proxy.com/https://github.com|
-|https://ghps.cc/https://github.com|
-|https://gh.idayer.com/https://github.com|
-|https://ghproxy.1888866.xyz/github.com|
-|https://slink.ltd/https://github.com|
-|https://github.boki.moe/github.com|
-|https://github.moeyy.xyz/https://github.com|
-|https://gh-proxy.net/https://github.com|
-|https://gh-proxy.ygxz.in/https://github.com|
-|https://wget.la/https://github.com|
-|https://kkgithub.com|
-|https://ghproxy.net/https://github.com|
-
-如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建`disable_gh_mirror.txt`文件，再次启动脚本时将禁用 Github 镜像源。
-
-
-## 设置 PyPI 镜像源
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-SD-Trainer-Script Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包，如果需要禁用 PyPI 镜像源，可以在脚本同级目录创建`disable_pypi_mirror.txt`文件，再次运行脚本时将 PyPI 源切换至官方源。
-
-
-## 配置代理
-如果出现某些文件无法下载，比如在控制台出现`由于连接芳在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败`之类的报错时，可以尝试配置代理，有以下两种方法。
-
-### 1. 使用系统代理
-在代理软件中启用系统代理，再运行脚本，这时候脚本将自动读取系统中的代理配置并设置代理。
-
-
-### 2. 使用配置文件
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-在和脚本同级的路径中创建一个`proxy.txt`文件，在文件中填写代理地址，如`http://127.0.0.1:10809`，保存后运行脚本，这时候脚本会自动读取这个配置文件中的代理配置并设置代理。
-
->[!NOTE]  
->**配置文件**的优先级高于**系统代理**配置，所以当同时使用了两种方式配置代理，脚本将优先使用**配置文件**中的代理配置。
-
-
-### 禁用自动设置代理
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-在和脚本同级的路径中创建一个`disable_proxy.txt`文件，再次启动脚本时将禁用设置代理。
-
-
-## 添加模型
-在 SD-Trainer-Script 中可以选择本地已下载的模型，如果没有下载某些用于训练的模型（非融合模型），可以使用`download_models.ps1`脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
-
-
-## 模型训练的方法
-推荐的哔哩哔哩 UP 主：
-- 青龙圣者：https://space.bilibili.com/219296
-- 秋葉aaaki：https://space.bilibili.com/12566101
-- 琥珀青葉：https://space.bilibili.com/507303431
-观看这些 UP 主的视频可获得一些训练模型的教程。
-
-其他的一些训练模型的教程：
-- https://sd-moadel-doc.maozi.io
-- https://rentry.org/59xed3
-- https://civitai.com/articles/2056
-- https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
-- https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
-- https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
-- https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
-- https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
-- https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
-
-除了上面的教程，也可以通过哔哩哔哩、Google 等平台搜索教程。
-
-
-## 重装 SD-Trainer-Script
-将`SD-Trainer-Script`文件夹中的`sd-scripts`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新部署 SD-Trainer-Script。
-
->[!NOTE]  
->如果`sd-scripts`文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除`sd-scripts`文件夹。
-
-
-## 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将`SD-Trainer-Script/python`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新构建 Python 环境。
-
-
-## 重装 Git
-将`SD-Trainer-Script/git`文件夹删除，然后运行`launch_sd_trainer_script_installer.ps1`重新下载 Git。
-
-
-## 重装 PyTorch
-运行`reinstall_pytorch.ps1`脚本，并根据脚本提示的内容进行操作。
-
-
-## 卸载 SD-Trainer-Script
-使用 SD-Trainer-Script Installer 安装 SD-Trainer-Script 后，所有的文件都存放在`SD-Trainer-Script`文件夹中，只需要删除`SD-Trainer-Script`文件夹即可卸载 SD-Trainer-Script。
-
-如果有 SD-Trainer-Script 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
-```powershell
-Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Trainer-Script.lnk" -Force
-Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer-Script.lnk" -Force
-```
-
-
-## 移动 SD-Trainer-Script 的路径
-直接将`SD-Trainer-Script`文件夹移动到别的路径即可。
-
-
-## 更新 SD-Trainer-Script 管理脚本
-SD-Trainer-Script Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
-
-可选择下方 3 种方法中的其中 1 个方法进行更新。
-
-
-### 1. 直接更新
-当检测到有新版的 SD-Trainer-Script Installer 时将自动应用更新。
-
-
-### 2. 使用 SD-Trainer-Script Installer 配置管理器进行更新
-运行`settings.ps1`，选择`更新 SD-Trainer-Script Installer 管理脚本`功能进行更新，更新完成后需关闭 SD-Trainer-Script Installer 管理脚本以应用更新。
-
-
-### 3. 运行 SD-Trainer-Script Installer 进行更新
-运行`launch_sd_trainer_script_installer.ps1`获取最新的 SD-Trainer-Script Installer 后，脚本会自动运行新版 SD-Trainer-Script Installer 进行更新。
-
-
-### 禁用 SD-Trainer-Script Installer 更新检查
->[!WARNING]  
->通常不建议禁用 SD-Trainer-Script Installer 的更新检查，当 SD-Trainer-Script 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
-
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-如果要禁用更新，可以在脚本同级的目录创建`disable_update.txt`文件，这将禁用 SD-Trainer-Script Installer 更新检查。
-
-
-## 设置 uv 包管理器
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-installer-设置)中提到的的`settings.ps1`进行修改。
-
-SD-Trainer-Script Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
-如需禁用 uv，可在脚本所在目录创建一个`disable_uv.txt`文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
-
->[!NOTE]  
->当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
-
-
-## 设置内核路径前缀
->[!IMPORTANT]  
->该设置可通过[管理 SD-Trainer-Script Installer 设置](#管理-sd-trainer-script-installer-设置)中提到的的`settings.ps1`进行修改。
-
-SD-Trainer-Script Installer 通过路径前缀在安装目录中寻找 SD-Trainer-Script 内核并使用。查找时通过遍历 SD-Trainer-Script Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀`core`。
-
-内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为`SD-Trainer-Script-aki-v1`，此时可在当前路径创建`core_prefix.txt`文件，并在文件中将刚刚的名称写进该文件中，即`SD-Trainer-Script-aki-v1`，再保存文件，此时 SD-Trainer-Script Installer 将对该内核文件夹进行启动和管理。
-
-内核路径前缀除了可以使用名称，还可以使用绝对路径或者相对路径，即 SD-Trainer-Script Installer 可以启动和管理在当前脚本所在路径之外的 SD-Trainer-Script。比如 SD-Trainer-Script 所在路径为`D:/Tools/AI/sd-scripts-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
-
-如果使用相对路径，此时需要知道 SD-Trainer-Script Installer 所在路径，比如`D:/Downloads/SD-Trainer-Script`，则可以得出内核路径前缀为`../../Tools/AI/sd-scripts-aki-v1.1`。
-
-
-## 管理 SD-Trainer-Script Installer 设置
-运行`settings.ps1`，根据提示进行设置管理和调整。
-
-
-## SD-Trainer-Script Installer 对 Python / Git 环境的识别
-SD-Trainer-Script Installer 通常情况下不会去调用系统环境中的 Python / Git，所以在安装过程会安装一个独立的 Python / Git 避免收到系统环境中的 Python / Git 影响。
-
-SD-Trainer-Script Installer 可以识别到的 Python 路径为`SD-Trainer-Script/python`和`SD-Trainer-Script/sd-scripts/python`，当两者同时存在时，优先使用后者。
-
-可以识别到的 Git 路径为`SD-Trainer-Script/git`和`SD-Trainer-Script/sd-scripts/git`，当两者同时存在时，优先使用后者。
-
-如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer-Script 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD-Trainer-Script Installer 重新安装 Python / Git。
-
-
-## 使用命令运行 SD-Trainer-Script Installer
-SD-Trainer-Script Installer 支持使用命令参数设置安装 SD-Trainer-Script 的参数，支持的参数如下。
-
-|参数|作用|
-|---|---|
-|`-Help`|获取 SD Trainer Script Installer 的帮助信息。|
-|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀，默认路径前缀为 `core`。|
-|`-InstallPath` <安装 SD Trainer Script 的绝对路径>|指定 SD Trainer Script Installer 安装 SD Trainer Script 的路径，使用绝对路径表示。<br>例如：`./sd_trainer_script_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。|
-|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`|
-|`-InstallPythonVersion` <Python 版本>|指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`|
-|`-InstallBranch` <安装的 SD Trainer Script 分支>|指定安装的分支。未指定时默认安装 `kohya-ss/sd-scripts`。<br>支持的分支如下：<br><li>`sd_scripts_main`: kohya-ss - sd-scripts 主分支<br><li>`sd_scripts_dev`: kohya-ss - sd-scripts 测试分支<br><li>`sd_scripts_sd3`: kohya-ss - sd-scripts SD3 分支<br><li>`ai_toolkit_main`: ostris - ai-toolkit 分支<br><li>`finetrainers_main`: a-r-r-o-w - finetrainers 分支<br><li>`diffusion_pipe_main`: tdrussell - diffusion-pipe 分支<br><li>`musubi_tuner_main`: kohya-ss - musubi-tuner 分支|
-|`-UseUpdateMode`|指定 SD Trainer Script Installer 使用更新模式，只对管理脚本进行更新。|
-|`-DisablePyPIMirror`|禁用 SD Trainer Script Installer 使用 PyPI 镜像源，改用 PyPI 官方源。|
-|`-DisableProxy`|禁用 SD Trainer Script Installer 自动设置代理服务器。|
-|`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。例如：`-UseCustomProxy "http://127.0.0.1:10809"`|
-|`-DisableUV`|禁用 SD Trainer Script Installer 使用 uv 安装 Python 软件包，改用 Pip 安装。|
-|`-DisableGithubMirror`|禁用 SD Trainer Script Installer 自动设置 Github 镜像源。|
-|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。例如：`https://ghfast.top/https://github.com` 等。|
-|`-BuildMode`|启用构建模式，在基础安装结束后将调用管理脚本执行剩余任务。出现错误时不再暂停而是直接退出。<br>多个脚本将按以下优先级执行：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`/`-BuildWithTorchReinstall`<br><li>`download_models.ps1`：对应`-BuildWithModel`<br><li>`switch_branch.ps1`：对应`-BuildWithBranch`<br><li>`update.ps1`：对应`-BuildWithUpdate`<br><li>`init.ps1`：对应`-BuildWithLaunch`|
-|`-BuildWithTorch` <PyTorch 版本编号>|(需添加`-BuildMode`) 调用 `reinstall_pytorch.ps1` 脚本，根据版本编号安装指定的 PyTorch 版本。编号可运行该脚本查看。|
-|`-BuildWithTorchReinstall`|(需添加`-BuildMode`及`-BuildWithTorch`) 执行 PyTorch 指定版本安装时使用强制重新安装模式。|
-|`-BuildWithModel` <模型编号列表>|(需添加`-BuildMode`) 调用 `download_models.ps1` 脚本，根据编号列表下载模型。编号可运行该脚本查看。|
-|`-BuildWithBranch` <SD Trainer Script 分支编号>|(需添加`-BuildMode`) 调用 `switch_branch.ps1` 脚本，根据分支编号切换分支。编号可运行该脚本查看。|
-|`-BuildWithUpdate`|(需添加`-BuildMode`) 安装流程结束后调用 `update.ps1` 脚本，更新 SD Trainer Script 内核。|
-|`-BuildWithLaunch`|(需添加`-BuildMode`) 安装流程结束后调用 `launch.ps1` (对应构建列表中的 `init.ps1`) 脚本，执行启动前的环境检查，但跳过启动程序。|
-|`-NoPreDownloadModel`|安装 SD Trainer Script 时跳过预下载模型。|
-|`-PyTorchPackage` <PyTorch 软件包>|(需搭配`-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`|
-|`-xFormersPackage` <xFormers 软件包>|(需搭配`-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
-|`-NoCleanCache`|安装结束后保留下载的 Python 软件包缓存。|
-|`-DisableUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用 SD Trainer Script Installer 更新检查。|
-|`-DisableHuggingFaceMirror`|(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。|
-|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`|
-|`-LaunchArg` <SD Trainer Script 启动参数>|(仅在构建模式生效且只作用于管理脚本) 设置自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`|
-|`-EnableShortcut`|(仅在构建模式生效且只作用于管理脚本) 创建 SD Trainer Script 启动快捷方式。|
-|`-DisableCUDAMalloc`|(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。|
-|`-DisableEnvCheck`|(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。|
-
-例如在`D:/Download`这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD-Trainer-Script Installer 所在路径打开 PowerShell，使用参数运行 SD-Trainer-Script Installer。
-
-```powershell
-./sd_trainer_script_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
-```
-
-
-## SD-Trainer-Script Installer 构建模式和普通安装模式
-SD-Trainer-Script Installer 主要由两部分构成：安装脚本和环境管理脚本。
-
-在 SD-Trainer-Script Installer 默认的普通安装模式下，只执行最基础的安装流程，而像其他的流程，如 PyTorch 版本更换，模型安装，运行环境检查和修复等并不会执行，这些步骤是在 SD-Trainer-Script Installer 管理脚本中进行，如执行`init.ps1`，`reinstall_pytorch.ps1`脚本等。
-
-而 SD-Trainer-Script Installer 构建模式允许在执行基础安装流程后，调用 SD-Trainer-Script Installer 管理脚本完成这些步骤。基于这个特性，启用构建模式的 SD-Trainer-Script Installer 可用于整合包制作，搭配自动化平台可实现全自动制作整合包。
-
-构建模式需要使用命令行参数进行启用，具体可阅读[使用命令运行 SD-Trainer-Script Installer](#使用命令运行-sd-trainer-script-installer)中的参数说明。
-
->[!IMPORTANT]  
->通常安装 SD-Trainer-Script 并不需要使用 SD-Trainer-Script Installer 构建模式进行安装，使用默认的普通安装模式即可。构建模式多用于自动化制作整合包。
-
-使用 Github Action 提供的容器可用于运行 SD-Trainer-Script Installer 并启用构建模式，实现自动化制作整合包，Github Action 工作流代码可参考：[build_sd_scripts.yml · licyk/sd-webui-all-in-one](https://github.com/licyk/sd-webui-all-in-one/blob/main/.github/workflows/build_sd_scripts.yml)
-
-
-## 运行脚本时出现中文乱码
-这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
-
-1. 按下`Win + R`键，输入`control`后回车启动控制面板。
-2. 点击`时钟和区域`->`区域`
-3. 在弹出的区域设置窗口中点击顶部的`管理`，再点击`更改系统区域设置`.
-4. 在弹出的窗口中将`使用 Unicode UTF-8 提供全球语言支持`取消勾选，然后一直点击确定保存设置，并重启电脑。
-
-
-## 无法使用 PowerShell 运行
-运行 PowerShell 脚本时出现以下错误。
-
-```
-.\sd_trainer_script_installer.ps1 : 无法加载文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1。
-未对文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1进行数字签名。无法在当前系统上运行该脚本。
-有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
-所在位置 行:1 字符: 1
-+ .\sd_trainer_script_installer.ps1
-+ ~~~~~~~~~~~~~~~~~~~~~~~~
-   + CategoryInfo          : SecurityError: (:) []，PSSecurityException
-   + FullyQualifiedErrorId : UnauthorizedAccess
-```
-
-或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
-
-这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
-
-```powershell
-Set-ExecutionPolicy Unrestricted -Scope CurrentUser
-```
-
-或者使用[环境配置](#环境配置)中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
-
->[!NOTE]  
->关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
-
-
-## 启用 Windows 长路径支持
-使用管理员权限打开 PowerShell，运行以下命令：
-
-```powershell
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-```
-
->[!NOTE]  
->关于 Windows 长路径支持的说明：[最大路径长度限制 ### Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
-
-
-## SD-Trainer-Script 提示'Torch is not able to use GPU'
-尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用`reinstall_pytorch.ps1`重装 PyTorch。
-
->[!NOTE]  
->Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
-
-如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
-
-```powershell
-nvidia-smi
-```
-
-可以看到 PowerShell 中显示的以下信息。
-
-```
-Fri Jun  7 19:07:00 2024
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 552.44                 Driver Version: 552.44         CUDA Version: 12.4     |
-|-----------------------------------------+------------------------+----------------------+
-| GPU  Name                     TCC/WDDM  | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|                                         |                        |               MIG M. |
-|=========================================+========================+======================|
-|   0  NVIDIA GeForce RTX 4060 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
-| N/A   51C    P0             16W /   95W |       0MiB /   8188MiB |      0%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
-
-+-----------------------------------------------------------------------------------------+
-| Processes:                                                                              |
-|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
-|        ID   ID                                                               Usage      |
-|=========================================================================================|
-|  No running processes found                                                             |
-+-----------------------------------------------------------------------------------------+
-```
-
-`CUDA Version`后面显示的数字即为显卡驱动支持最高的 CUDA 版本。
-
-
-## PowerShell 中出现 xFormers 报错
-在控制台中出现有关 xFormers 的警告信息，类似下面的内容。
-
-```
-WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built for:
-    PyTorch 2.2.1+cu118 with CUDA 1108 (you have 2.2.2+cu121)
-    Python  3.10.11 (you have 3.10.11)
-  Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
-  Memory-efficient attention, SwiGLU, sparse and more won't be available.
-```
-
-这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行`reinstall_pytorch.ps1`重装 PyTorch。
-
-
-## ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
-运行 SD-Trainer-Script Installer 时出现以下类似的错误。
-
-```
-ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
-    rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
-        Expected sha256 90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7
-             Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
-```
-
-这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将`SD-Trainer-Script/cache/pip`文件夹删除，再重新运行 SD-Trainer-Script Installer。
-
-
-## RuntimeError: Error(s) in loading state_dict for UNet2DConditionModel
-检查训练参数是否正确，确认是否选择对应大模型版本的训练参数。
-
-
-## UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte
-检查训练参数中是否存在中文，如模型文件名是否包含中文等。
-
-
-## RuntimeError: NaN detected in latents: X:\xxx\xxx\xx.png
-检查图片是否有问题，如果是训练 SDXL 的 LoRA，请外挂一个 [sdxl_fp16_fix](https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors) 的 VAE 或者使用 BF16 精度进行训练。
-
-
-## CUDA out of memory
-确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
-
-
-## DefaultCPUAllocator: not enough memory
-尝试增加系统的虚拟内存，或者增加内存条。
-
-
-## Loss?
-当 Loss 不为 nan 或者大于 1 时没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
-
-
-## 训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪?
-请使用 SD-Trainer-Script 的 arb 桶，这将自动处理不同分辨率的图片，无需手动进行图片裁剪。
-
-
-## AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
-这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。
-
-
-## NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
-训练使用的模型可能有问题，尝试更换模型。
-
-
-## Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
-
-
-## 命令的使用
-使用命令前需要激活环境，有以下 2 种方式激活。
-
-
-### 1. 使用自动环境激活脚本
-运行`terminal.ps1`后将自动打开 PowerShell 并激活 SD-Trainer-Script Env。
-
-
-### 2. 手动输入命令激活
-在`SD-Trainer-Script`文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer-Script Env：
-
-```powershell
-./activate.ps1
-```
-
->[!IMPORTANT]  
->在 PowerShell 中一定要显示`[SD-Trainer-Script Env]`才算进入了环境，这样才能使用下面的命令。
-
-
-## 常用命令
-
-### 清理安装时产生的 Pip 缓存
-```powershell
-python -m pip cache purge
-```
-
-
-### 安装某个 Python 软件包
-```powershell
-# 命令中的 <package_name> 替换成具体的 Python 软件包名 
-python -m pip install <package_name>
-```
-
-
-### 更新某个软件包
-```powershell
-# 命令中的 <package_name> 替换成具体的 Python 软件包名
-python -m pip install <package_name> -U
-```
-
-
-### 重装某个软件包
-```powershell
-# 命令中的 <package_name> 替换成具体的 Python 软件包名
-python -m pip install <package_name> --force-reinstall
-```
-
-
-### 卸载某个软件包
-```powershell
-# 命令中的 <package_name> 替换成具体的 Python 软件包名
-python -m pip uninstall <package_name>
-```
-
->[!NOTE]  
->推荐使用`python -m pip`的写法，`pip`的写法也可用。SD-Trainer-Script Installer 默认将`pip`命令链接到`python -m pip`避免直接调用`pip`。  
->参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
-
-
-### 使用 uv 安装软件包
-```powershell
-# 命令中的 <package_name> 替换成具体的 Python 软件包名
-uv pip install <package_name>
-```
-
->[!NOTE]  
->uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
-
-
-### 更新仓库
-```powershell
-git pull --recurse-submodules
-```
-
-
-### 运行某个 Python 脚本
-```powershell
-# 命令中的 <python_script.py> 替换成要执行的 Python 脚本路径
-python <python_script.py>
-```
-
-
-### 下载文件
-```powershell
-# 命令中的 <url> 替换成下载链接，<dir> 替换成下载到的路径，<output_file_name> 替换成保存的文件名
-aria2c <url> -c -s 16 -x 16 -k 1M -d <dir> -o <output_file_name>
-```
-
-
-### 列出 SD-Trainer-Script Installer 内置命令
-```powershell
-List-CMD
-```
-
-
 ### 查看并切换 SD-Trainer-Script 的版本
 ```powershell
 # 列出当前的所有版本
 git -C sd-scripts tag
 # 运行该命令后将进入 Git 的交互式界面
-# 使用 u 键上翻， d 键下翻，或者使用方向键翻页，使用 q 键退出
+# 使用 u 键上翻，d 键下翻，或者使用方向键翻页，使用 q 键退出
 # 一般 git tag 命令将列出下面类似的输出
 # v0.1.0
 # v0.2.0
@@ -820,26 +295,6 @@ git -C sd-scripts log
 git -C sd-scripts reset --hard --recurse-submodules <Git Commit Hash>
 ```
 
-
-### 将 LoRA 模型融进 Stable Diffusion 模型中
-```powershell
-# 先下载融合 LoRA 的工具
-git clone https://github.com/KohakuBlueleaf/LyCORIS
-
-# 接下来就能进行模型融合了，比如我要融合的 LoRA 模型为 artist_all_in_one_2-000036.safetensors，Stable Diffusion 模型为 animagine-xl-3.1.safetensors，先把这 2 个模型放到当前的文件夹，接下来就可以进行模型融合
-python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-000036.safetensors licyk_style_v0.1.safetensors --is_sdxl --dtype fp16
-
-# 解释上面命令的意思：
-# animagine-xl-3.1.safetensors 为 Stable Diffusion 模型
-# artist_all_in_one_2-000036.safetensors 为 LoRA 模型
-# licyk_style_v0.1.safetensors 为融合后要保存的模型名称
-# --is_sdxl 参数指定了模型类型为 SDXL，如果模型类型为 SD 2.x 则改为 --is_v2，如果模型类型为 SD 1.x 则不需要加参数
-# --dtype fp16 指定保存的模型精度为 fp16，常用的模型精度为 fp16、bf16
-# 融合完成后在当前文件夹中就可以看到融合好的 Stable Diffusion 模型
-# 注意，融合模型需要大于或等于 64G 的内存，如果内存低于这个大小可能会大量使用虚拟内存进行补足，增大硬盘的读写消耗
-```
-
-
 ### 查看 Git / Python 命令实际调用的路径
 ```powershell
 # 查看 Git 命令调用的路径
@@ -852,20 +307,287 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 # (Get-Command <command>).Source
 ```
 
+***
 
-## 编写训练脚本
+## 配置管理
+
+### 设置 HuggingFace 镜像
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+SD Trainer Script Installer 生成的 PowerShell 脚本中已设置了 HuggingFace 镜像源，如果需要自定义 HuggingFace 镜像源，可以在和脚本同级的目录创建 `hf_mirror.txt` 文件，在文件中填写 HuggingFace 镜像源的地址后保存，再次启动脚本时将读取该文件的配置并设置 HuggingFace 镜像源。
+
+|可用的 HuggingFace 镜像源 |
+|---|
+|https://hf-mirror.com|
+|https://huggingface.sukaka.top|
+
+如果需要禁用设置 HuggingFace 镜像源，在和脚本同级的目录中创建 `disable_hf_mirror.txt` 文件，再次启动脚本时将禁用 HuggingFace 镜像源。
+
+
+### 设置 Github 镜像源
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+SD Trainer Script Installer 为了加速访问 Github 的速度，加快下载和更新 SD-Trainer-Script 的速度，默认在启动脚本时自动检测可用的 Github 镜像源并设置。如果需要自定义 Github 镜像源，可以在和脚本同级的目录创建 `gh_mirror.txt` 文件，在文件中填写 Github 镜像源的地址后保存，再次启动脚本时将取消自动检测可用的 Github 镜像源，而是读取该文件的配置并设置 Github 镜像源。
+
+|可用的 Github 镜像源 |
+|---|
+|https://ghfast.top/https://github.com|
+|https://mirror.ghproxy.com/https://github.com|
+|https://gh.api.99988866.xyz/https://github.com|
+|https://gitclone.com/github.com|
+|https://gh-proxy.com/https://github.com|
+|https://ghps.cc/https://github.com|
+|https://gh.idayer.com/https://github.com|
+|https://ghproxy.1888866.xyz/github.com|
+|https://slink.ltd/https://github.com|
+|https://github.boki.moe/github.com|
+|https://github.moeyy.xyz/https://github.com|
+|https://gh-proxy.net/https://github.com|
+|https://gh-proxy.ygxz.in/https://github.com|
+|https://wget.la/https://github.com|
+|https://kkgithub.com|
+|https://ghproxy.net/https://github.com|
+
+如果需要禁用设置 Github 镜像源，在和脚本同级的目录中创建 `disable_gh_mirror.txt` 文件，再次启动脚本时将禁用 Github 镜像源。
+
+
+### 设置 PyPI 镜像源
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+SD Trainer Script Installer 默认启用了 PyPI镜像源加速下载 Python 软件包，如果需要禁用 PyPI镜像源，可以在脚本同级目录创建 `disable_pypi_mirror.txt` 文件，再次运行脚本时将 PyPI 源切换至官方源。
+
+
+### 配置代理
+如果出现某些文件无法下载，比如在控制台出现`由于连接芳在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败`之类的报错时，可以尝试配置代理，有以下两种方法。
+
+#### 1. 使用系统代理
+在代理软件中启用系统代理，再运行脚本，这时候脚本将自动读取系统中的代理配置并设置代理。
+
+
+#### 2. 使用配置文件
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+在和脚本同级的路径中创建一个 `proxy.txt` 文件，在文件中填写代理地址，如 `http://127.0.0.1:10809`，保存后运行脚本，这时候脚本会自动读取这个配置文件中的代理配置并设置代理。
+
+>[!NOTE]  
+>**配置文件**的优先级高于**系统代理**配置，所以当同时使用了两种方式配置代理，脚本将优先使用**配置文件**中的代理配置。
+
+
+#### 禁用自动设置代理
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+在和脚本同级的路径中创建一个 `disable_proxy.txt` 文件，再次启动脚本时将禁用设置代理。
+
+***
+
+## 资源管理
+
+### 添加模型
+在 SD-Trainer-Script 中可以选择本地已下载的模型，如果没有下载某些用于训练的模型（非融合模型），可以使用 `download_models.ps1` 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
+
+
+### 模型训练的方法
+推荐的哔哩哔哩 UP 主：
+- 青龙圣者：https://space.bilibili.com/219296
+- 秋葉aaaki：https://space.bilibili.com/12566101
+- 琥珀青葉：https://space.bilibili.com/507303431
+观看这些 UP 主的视频可获得一些训练模型的教程。
+
+其他的一些训练模型的教程：
+- https://sd-moadel-doc.maozi.io
+- https://rentry.org/59xed3
+- https://civitai.com/articles/2056
+- https://civitai.com/articles/124/lora-analogy-about-lora-trainning-and-using
+- https://civitai.com/articles/143/some-shallow-understanding-of-lora-training-lora
+- https://civitai.com/articles/632/why-this-lora-can-not-bring-good-result-lora
+- https://civitai.com/articles/726/an-easy-way-to-make-a-cosplay-lora-cosplay-lora
+- https://civitai.com/articles/2135/lora-quality-improvement-some-experiences-about-datasets-and-captions-lora
+- https://civitai.com/articles/2297/ways-to-make-a-character-lora-that-is-easier-to-change-clothes-lora
+
+除了上面的教程，也可以通过哔哩哔哩、Google 等平台搜索教程。
+
+***
+
+## 维护与修复
+
+### 恢复被修改 / 删除的脚本
+如果不小心把某个脚本修改了导致无法使用，或者是误删除了，可以运行一次 `launch_sd_trainer_script_installer.ps1` 重新生成这些脚本。
+
+```
+D:/Downloads
+├── BaiduNetworkDownloads
+│   └── 新建 文本文档.txt
+├── SD-Trainer-Script                           # 这是 SD-Trainer-Script 文件夹
+│   ├── configure_env.bat                       # 配置环境的脚本
+│   ├── activate.ps1                            # 进入 SD-Trainer-Script Env 的脚本
+│   ├── cache                                   # 缓存文件夹
+│   ├── download_models.ps1                     # 下载模型的脚本
+│   ├── launch_sd_trainer_script_installer.ps1  # 获取最新的 SD Trainer Script Installer 并运行的脚本
+│   ├── git                                     # Git 目录
+│   ├── help.txt                                # 帮助文档
+│   ├── init.ps1                                # 初始化训练环境的脚本
+│   ├── core                                    # SD-Trainer-Script 内核目录
+│   ├── python                                  # Python 目录
+│   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本
+│   ├── switch_branch.ps1                       # 切换 SD-Trainer-Script 分支的脚本
+│   ├── settings.ps1                            # 管理 SD Trainer Script Installer 设置的脚本
+│   ├── terminal.ps1                            # 自动打开 PowerShell 并激活 SD Trainer Script Installer 的虚拟环境脚本
+│   └── update.ps1                              # 更新 SD-Trainer-Script 的脚本
+├── sd_trainer_script_installer.ps1             # SD Trainer Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
+└── QQ Files
+```
+
+
+### 重装 SD-Trainer-Script
+将 `SD-Trainer-Script` 文件夹中的 `sd-scripts` 文件夹删除，然后运行 `launch_sd_trainer_script_installer.ps1` 重新部署 SD-Trainer-Script。
+
+>[!NOTE]  
+>如果 `sd-scripts` 文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除 `sd-scripts` 文件夹。
+
+
+### 重装 Python 环境
+如果 Python 环境出现严重损坏，可以将 `SD-Trainer-Script/python` 文件夹删除，然后运行 `launch_sd_trainer_script_installer.ps1` 重新构建 Python 环境。
+
+
+### 重装 Git
+将 `SD-Trainer-Script/git` 文件夹删除，然后运行 `launch_sd_trainer_script_installer.ps1` 重新下载 Git。
+
+
+### 重装 PyTorch
+运行 `reinstall_pytorch.ps1` 脚本，并根据脚本提示的内容进行操作。
+
+
+### 卸载 SD-Trainer-Script
+使用 SD Trainer Script Installer 安装 SD-Trainer-Script 后，所有的文件都存放在 `SD-Trainer-Script` 文件夹中，只需要删除 `SD-Trainer-Script` 文件夹即可卸载 SD-Trainer-Script。
+
+如果有 SD-Trainer-Script 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
+```powershell
+Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Trainer-Script.lnk" -Force
+Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer-Script.lnk" -Force
+```
+
+
+### 移动 SD-Trainer-Script 的路径
+直接将 `SD-Trainer-Script` 文件夹移动到别的路径即可。
+
+***
+
+## 高级功能
+
+### 设置 uv 包管理器
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+SD Trainer Script Installer 默认使用了 uv 作为 Python 包管理器，大大加快管理 Python 软件包的速度（如安装 Python 软件包）。
+如需禁用 uv，可在脚本所在目录创建一个 `disable_uv.txt` 文件，这将禁用 uv，并使用 Pip 作为 Python 包管理器。
+
+>[!NOTE]  
+>当 uv 安装 Python 软件包失败时，将切换至 Pip 重试 Python 软件包的安装。
+
+
+### 设置内核路径前缀
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+SD Trainer Script Installer 通过路径前缀在安装目录中寻找 SD-Trainer-Script 内核并使用。查找时通过遍历 SD Trainer Script Installer 内部预设的列表，若该预设名有对应的文件夹名，则将该预设名作为内核路径前缀，并对该文件夹中的内核进行启动和管理。当未找到任何内核文件夹时，使用默认的内核路径前缀 `core`。
+
+内核路径前缀可手动指定，若内核文件夹在脚本所在路径中的名称为 `SD-Trainer-Script-aki-v1`，此时可在当前路径创建 `core_prefix.txt` 文件，并在文件中将刚刚的名称写进该文件中，即`SD-Trainer-Script-aki-v1`，再保存文件，此时 SD Trainer Script Installer 将对该内核文件夹进行启动和管理。
+
+内核路径前缀除了可以使用名称，还可以使用绝对路径或者相对路径，即 SD Trainer Script Installer 可以启动和管理在当前脚本所在路径之外的 SD-Trainer-Script。比如 SD-Trainer-Script 所在路径为`D:/Tools/AI/sd-scripts-aki-v1.1`。如果使用绝对路径，则直接将这个路径作为内核路径前缀，推荐使用这个方式，比较简单。
+
+如果使用相对路径，此时需要知道 SD Trainer Script Installer 所在路径，比如`D:/Downloads/SD-Trainer-Script`，则可以得出内核路径前缀为`../../Tools/AI/sd-scripts-aki-v1.1`。
+
+
+### 管理 SD Trainer Script Installer 设置
+运行 `settings.ps1`，根据提示进行设置管理和调整。
+
+
+### SD Trainer Script Installer 对 Python / Git 环境的识别
+SD Trainer Script Installer 通常情况下不会去调用系统环境中的 Python / Git，所以在安装过程会安装一个独立的 Python / Git 避免收到系统环境中的 Python / Git 影响。
+
+SD Trainer Script Installer 可以识别到的 Python 路径为 `SD-Trainer-Script/python`和`SD-Trainer-Script/sd-scripts/python`，当两者同时存在时，优先使用后者。
+
+可以识别到的 Git 路径为 `SD-Trainer-Script/git`和`SD-Trainer-Script/sd-scripts/git`，当两者同时存在时，优先使用后者。
+
+如果这两个路径 Python / Git 都不存在时，此时 SD-Trainer-Script 的管理脚本将会调用系统环境中的 Python / Git，这可能会带来不好的结果，所以出现这种情况时就需要运行 SD Trainer Script Installer 重新安装 Python / Git。
+
+
+### 使用命令运行 SD Trainer Script Installer
+SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Script 的参数，支持的参数如下。
+
+|参数 | 作用|
+|---|---|
+|`-Help`|获取 SD Trainer Script Installer 的帮助信息。|
+|`-CorePrefix` <内核路径前缀>|设置内核的路径前缀，默认路径前缀为 `core`。|
+|`-InstallPath` <安装 SD Trainer Script 的绝对路径>|指定 SD Trainer Script Installer 安装 SD Trainer Script 的路径，使用绝对路径表示。<br>例如：`./sd_trainer_script_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。|
+|`-PyTorchMirrorType` <PyTorch 镜像源类型>|指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`|
+|`-InstallPythonVersion` <Python 版本>|指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`|
+|`-InstallBranch` <安装的 SD Trainer Script 分支>|指定安装的分支。未指定时默认安装 `kohya-ss/sd-scripts`。<br>支持的分支如下：<br><li>`sd_scripts_main`: kohya-ss - sd-scripts 主分支<br><li>`sd_scripts_dev`: kohya-ss - sd-scripts 测试分支<br><li>`sd_scripts_sd3`: kohya-ss - sd-scripts SD3 分支<br><li>`ai_toolkit_main`: ostris - ai-toolkit 分支<br><li>`finetrainers_main`: a-r-r-o-w - finetrainers 分支<br><li>`diffusion_pipe_main`: tdrussell - diffusion-pipe 分支<br><li>`musubi_tuner_main`: kohya-ss - musubi-tuner 分支|
+|`-UseUpdateMode`|指定 SD Trainer Script Installer 使用更新模式，只对管理脚本进行更新。|
+|`-DisablePyPIMirror`|禁用 SD Trainer Script Installer 使用 PyPI镜像源，改用 PyPI 官方源。|
+|`-DisableProxy`|禁用 SD Trainer Script Installer 自动设置代理服务器。|
+|`-UseCustomProxy` <代理服务器地址>|使用自定义的代理服务器地址。例如：`-UseCustomProxy "http://127.0.0.1:10809"`|
+|`-DisableUV`|禁用 SD Trainer Script Installer 使用 uv 安装 Python 软件包，改用 Pip 安装。|
+|`-DisableGithubMirror`|禁用 SD Trainer Script Installer 自动设置 Github 镜像源。|
+|`-UseCustomGithubMirror` <Github 镜像站地址>|使用自定义的 Github 镜像站地址。例如：`https://ghfast.top/https://github.com` 等。|
+|`-BuildMode`|启用构建模式，在基础安装结束后将调用管理脚本执行剩余任务。出现错误时不再暂停而是直接退出。<br>多个脚本将按以下优先级执行：<br><li>`reinstall_pytorch.ps1`：对应`-BuildWithTorch`/`-BuildWithTorchReinstall`<br><li>`download_models.ps1`：对应`-BuildWithModel`<br><li>`switch_branch.ps1`：对应`-BuildWithBranch`<br><li>`update.ps1`：对应`-BuildWithUpdate`<br><li>`init.ps1`：对应`-BuildWithLaunch`|
+|`-BuildWithTorch` <PyTorch 版本编号>|(需添加 `-BuildMode`) 调用 `reinstall_pytorch.ps1` 脚本，根据版本编号安装指定的 PyTorch 版本。编号可运行该脚本查看。|
+|`-BuildWithTorchReinstall`|(需添加 `-BuildMode`及`-BuildWithTorch`) 执行 PyTorch 指定版本安装时使用强制重新安装模式。|
+|`-BuildWithModel` <模型编号列表>|(需添加 `-BuildMode`) 调用 `download_models.ps1` 脚本，根据编号列表下载模型。编号可运行该脚本查看。|
+|`-BuildWithBranch` <SD Trainer Script 分支编号>|(需添加 `-BuildMode`) 调用 `switch_branch.ps1` 脚本，根据分支编号切换分支。编号可运行该脚本查看。|
+|`-BuildWithUpdate`|(需添加 `-BuildMode`) 安装流程结束后调用 `update.ps1` 脚本，更新 SD Trainer Script 内核。|
+|`-BuildWithLaunch`|(需添加 `-BuildMode`) 安装流程结束后调用 `launch.ps1` (对应构建列表中的 `init.ps1`) 脚本，执行启动前的环境检查，但跳过启动程序。|
+|`-NoPreDownloadModel`|安装 SD Trainer Script 时跳过预下载模型。|
+|`-PyTorchPackage` <PyTorch 软件包>|(需搭配 `-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`|
+|`-xFormersPackage` <xFormers 软件包>|(需搭配 `-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
+|`-NoCleanCache`|安装结束后保留下载的 Python 软件包缓存。|
+|`-DisableUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用 SD Trainer Script Installer 更新检查。|
+|`-DisableHuggingFaceMirror`|(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。|
+|`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`|
+|`-LaunchArg` <SD Trainer Script 启动参数>|(仅在构建模式生效且只作用于管理脚本) 设置自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`|
+|`-EnableShortcut`|(仅在构建模式生效且只作用于管理脚本) 创建 SD Trainer Script 启动快捷方式。|
+|`-DisableCUDAMalloc`|(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。|
+|`-DisableEnvCheck`|(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。|
+
+例如在 `D:/Download` 这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD Trainer Script Installer 所在路径打开 PowerShell，使用参数运行 SD Trainer Script Installer。
+
+```powershell
+./sd_trainer_script_installer.ps1 -InstallPath "D:/Download" -InstallBranch "kohya_gui"
+```
+
+
+### SD Trainer Script Installer 构建模式和普通安装模式
+SD Trainer Script Installer 主要由两部分构成：安装脚本和环境管理脚本。
+
+在 SD Trainer Script Installer 默认的普通安装模式下，只执行最基础的安装流程，而像其他的流程，如 PyTorch 版本更换，模型安装，运行环境检查和修复等并不会执行，这些步骤是在 SD Trainer Script Installer 管理脚本中进行，如执行 `init.ps1`，`reinstall_pytorch.ps1` 脚本等。
+
+而 SD Trainer Script Installer 构建模式允许在执行基础安装流程后，调用 SD Trainer Script Installer 管理脚本完成这些步骤。基于这个特性，启用构建模式的 SD Trainer Script Installer 可用于整合包制作，搭配自动化平台可实现全自动制作整合包。
+
+构建模式需要使用命令行参数进行启用，具体可阅读 [使用命令运行 SD Trainer Script Installer](#使用命令运行-sd-trainer-script-installer) 中的参数说明。
+
+>[!IMPORTANT]  
+>通常安装 SD-Trainer-Script 并不需要使用 SD Trainer Script Installer 构建模式进行安装，使用默认的普通安装模式即可。构建模式多用于自动化制作整合包。
+
+使用 Github Action 提供的容器可用于运行 SD Trainer Script Installer 并启用构建模式，实现自动化制作整合包，Github Action 工作流代码可参考：[build_sd_scripts.yml · licyk/sd-webui-all-in-one](https://github.com/licyk/sd-webui-all-in-one/blob/main/.github/workflows/build_sd_scripts.yml)
+
+
+### 编写训练脚本
 进行模型训练需要编写代码来调用训练器进行训练，下面将介绍如何进行编写。
 
-
-### 如何编写
-SD-Trainer-Script Installer 在安装时将会生成一个`train.ps1`脚本，可用于编写训练命令。该脚本的内容如下
+#### 如何编写
+SD Trainer Script Installer 在安装时将会生成一个 `train.ps1` 脚本，可用于编写训练命令。该脚本的内容如下
 
 ```powershell
 #################################################
-# 初始化基础环境变量, 以正确识别到运行环境
+# 初始化基础环境变量，以正确识别到运行环境
 & "$PSScriptRoot/init.ps1"
 Set-Location $PSScriptRoot
-# 此处的代码不要修改或者删除, 否则可能会出现意外情况
+# 此处的代码不要修改或者删除，否则可能会出现意外情况
 # 
 # SD-Trainer-Script 环境初始化后提供以下变量便于使用
 # 
@@ -877,8 +599,8 @@ Set-Location $PSScriptRoot
 # ${PYTHON_EXEC}             Python 解释器路径
 # 
 # 下方可编写训练代码
-# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
-# 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
+# 编写训练命令可参考：https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+# 编写结束后，该文件必须使用 UTF-8 with BOM 编码保存
 #################################################
 
 
@@ -886,13 +608,13 @@ Set-Location $PSScriptRoot
 
 
 #################################################
-Write-Host "训练结束, 退出训练脚本"
+Write-Host "训练结束，退出训练脚本"
 Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 ```
 
-该脚本在执行时将会运行`init.ps1`用于初始化环境（在`& "$PSScriptRoot/init.ps1"`部分），使训练所需的环境能够被正确识别，这是必须的步骤。在执行完`init.ps1`后将设置一些路径变量可供使用，并且将会显示出来，可以在部分路径变量指出的路径放置训练所需的文件方便使用。
+该脚本在执行时将会运行 `init.ps1` 用于初始化环境（在`& "$PSScriptRoot/init.ps1"`部分），使训练所需的环境能够被正确识别，这是必须的步骤。在执行完 `init.ps1` 后将设置一些路径变量可供使用，并且将会显示出来，可以在部分路径变量指出的路径放置训练所需的文件方便使用。
 
-`Set-Location $PSScriptRoot`将切换目录到`train.ps1`所在路径。
+`Set-Location $PSScriptRoot` 将切换目录到 `train.ps1` 所在路径。
 
 必要的步骤执行后，下方的训练命令就可以执行了，这里尝试编写一个训练模型命令。以下的训练命令基于 [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)，不同的训练器所使用的训练参数各不同，需阅读项目的文档进行了解。
 
@@ -984,17 +706,17 @@ Read-Host | Out-Null # 训练结束后保持控制台不被关闭
 
 这是一段在 SDXL 模型上训练 LoRA 的训练命令，每一行参数使用 ` 符号进行换行，而最后一行参数则不需要该符号进行换行。
 
-在最后一行`Read-Host | Out-Null`是为了在训练结束后保持控制台不被关闭。
+在最后一行 `Read-Host | Out-Null` 是为了在训练结束后保持控制台不被关闭。
 
-训练命令编写完成后，将该文件保存下来，再运行`train.ps1`即可开始训练。
+训练命令编写完成后，将该文件保存下来，再运行 `train.ps1` 即可开始训练。
 
-除了编辑`train.ps1`进行训练，也可以自行创建 PowerShell 脚本并按照要求进行编写。
+除了编辑 `train.ps1` 进行训练，也可以自行创建 PowerShell 脚本并按照要求进行编写。
 
 >[!WARNING]  
->`train.ps1`文件或者其他 PowerShell 脚本需要将保存编码设置为`UTF-8 BOM`，否则将出现乱码或者运行异常的问题。
+>`train.ps1` 文件或者其他 PowerShell 脚本需要将保存编码设置为`UTF-8 BOM`，否则将出现乱码或者运行异常的问题。
 
 
-### kohya-ss/sd-scripts 训练命令参考
+#### kohya-ss/sd-scripts 训练命令参考
 下面是 [kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 不同的训练参数例子，可用于参考。
 
 ```powershell
@@ -2242,12 +1964,12 @@ python -m accelerate.commands.launch `
 ```
 
 
-### 使用 TensorBoard 查看训练情况
-这里可以编写一个`tensorboard.ps1`脚本用于运行 TensorBoard。
+#### 使用 TensorBoard 查看训练情况
+这里可以编写一个 `tensorboard.ps1` 脚本用于运行 TensorBoard。
 
 
 ```powershell
-# 初始化基础环境变量, 以正确识别到运行环境
+# 初始化基础环境变量，以正确识别到运行环境
 & "$PSScriptRoot/init.ps1"
 
 # TensorBoard 日志路径
@@ -2264,3 +1986,322 @@ python -m tensorboard.main `
 ```
 
 保存后右键运行即可启动。
+
+***
+
+## 更新管理
+
+### 获取最新的 SD Trainer Script Installer 并运行
+运行 `launch_sd_trainer_script_installer.ps1` 脚本，如果下载成功将会把 SD Trainer Script Installer 下载到 `cache` 目录中并运行。
+
+
+### 更新 SD-Trainer-Script 管理脚本
+SD Trainer Script Installer 的管理脚本在启动时会检查管理脚本的更新，如果有新版本可更新将会提示。
+
+可选择下方 3 种方法中的其中 1 个方法进行更新。
+
+
+#### 1. 直接更新
+当检测到有新版的 SD Trainer Script Installer 时将自动应用更新。
+
+
+#### 2. 使用 SD Trainer Script Installer 配置管理器进行更新
+运行 `settings.ps1`，选择`更新 SD Trainer Script Installer 管理脚本` 功能进行更新，更新完成后需关闭 SD Trainer Script Installer 管理脚本以应用更新。
+
+
+#### 3. 运行 SD Trainer Script Installer 进行更新
+运行 `launch_sd_trainer_script_installer.ps1` 获取最新的 SD Trainer Script Installer 后，脚本会自动运行新版 SD Trainer Script Installer 进行更新。
+
+
+#### 禁用 SD Trainer Script Installer 更新检查
+>[!WARNING]  
+>通常不建议禁用 SD Trainer Script Installer 的更新检查，当 SD-Trainer-Script 管理脚本有重要更新（如功能性修复）时将得不到及时提示。
+
+>[!IMPORTANT]  
+>该设置可通过 [管理 SD Trainer Script Installer 设置](#管理-sd-trainer-script-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+如果要禁用更新，可以在脚本同级的目录创建 `disable_update.txt` 文件，这将禁用 SD Trainer Script Installer 更新检查。
+
+***
+
+## 故障排查
+
+### 运行脚本时出现中文乱码
+这可能是 Windows 系统中启用了 UTF 8 编码，可以按照下列方法解决。
+
+1. 按下 `Win + R` 键，输入 `control` 后回车启动控制面板。
+2. 点击 `时钟和区域`->`区域`
+3. 在弹出的区域设置窗口中点击顶部的 `管理`，再点击 `更改系统区域设置`.
+4. 在弹出的窗口中将 `使用 Unicode UTF-8 提供全球语言支持` 取消勾选，然后一直点击确定保存设置，并重启电脑。
+
+
+### 无法使用 PowerShell 运行
+运行 PowerShell 脚本时出现以下错误。
+
+```
+.\sd_trainer_script_installer.ps1 : 无法加载文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1。
+未对文件 D:\SD-Trainer-Script\sd_trainer_script_installer.ps1 进行数字签名。无法在当前系统上运行该脚本。
+有关运行脚本和设置执行策略的详细信息，请参阅 https:/go.microsoft.com/fwlink/?LinkID=135170 中的 about_Execution_Policies。
+所在位置 行:1 字符：1
++ .\sd_trainer_script_installer.ps1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : SecurityError: (:) []，PSSecurityException
+    + FullyQualifiedErrorId : UnauthorizedAccess
+```
+
+或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
+
+这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
+
+```powershell
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+```
+
+或者使用 [环境配置](#环境配置) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+
+>[!NOTE]  
+>关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
+
+
+### 启用 Windows 长路径支持
+使用管理员权限打开 PowerShell，运行以下命令：
+
+```powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+
+>[!NOTE]  
+>关于 Windows 长路径支持的说明：[最大路径长度限制 ### Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/fileio/maximum-file-path-limitation)
+
+
+### SD-Trainer-Script 提示'Torch is not able to use GPU'
+尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用 `reinstall_pytorch.ps1` 重装 PyTorch。
+
+>[!NOTE]  
+>Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
+
+如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
+
+```powershell
+nvidia-smi
+```
+
+可以看到 PowerShell 中显示的以下信息。
+
+```
+Fri Jun  7 19:07:00 2024
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 552.44                 Driver Version: 552.44         CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                     TCC/WDDM  | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4060 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
+| N/A   51C    P0             16W /   95W |       0MiB /   8188MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+```
+
+`CUDA Version` 后面显示的数字即为显卡驱动支持最高的 CUDA 版本。
+
+
+### PowerShell 中出现 xFormers 报错
+在控制台中出现有关 xFormers 的警告信息，类似下面的内容。
+
+```
+WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built for:
+    PyTorch 2.2.1+cu118 with CUDA 1108 (you have 2.2.2+cu121)
+    Python  3.10.11 (you have 3.10.11)
+  Please reinstall xformers (see https://github.com/facebookresearch/xformers#installing-xformers)
+  Memory-efficient attention, SwiGLU, sparse and more won't be available.
+```
+
+这是因为 xFormers 所适配的 CUDA 版本和 PyTorch 所带的 CUDA 版本不一致，请运行 `reinstall_pytorch.ps1` 重装 PyTorch。
+
+
+### ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE
+运行 SD Trainer Script Installer 时出现以下类似的错误。
+
+```
+ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you have updated the package versions, please update the hashes. Otherwise, examine the package contents carefully; someone may have tampered with them.
+    rsa<5,>=3.1.4 from https://mirrors.cloud.tencent.com/pypi/packages/49/97/fa78e3d2f65c02c8e1268b9aba606569fe97f6c8f7c2d74394553347c145/rsa-4.9-py3-none-any.whl#sha256=90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 (from google-auth<3,>=1.6.3->tensorboard==2.10.1->-r requirements.txt (line 12)):
+        Expected sha256 90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7
+             Got        b7593b59699588c6ce7347aecf17263295c079efb3677553c2a81b08e857f838
+```
+
+这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 `SD-Trainer-Script/cache/pip` 文件夹删除，再重新运行 SD Trainer Script Installer。
+
+
+### RuntimeError: Error(s) in loading state_dict for UNet2DConditionModel
+检查训练参数是否正确，确认是否选择对应大模型版本的训练参数。
+
+
+### UnicodeDecodeError: 'utf-8' codec can't decode byte xxxx in position xxx: invalid continuation byte
+检查训练参数中是否存在中文，如模型文件名是否包含中文等。
+
+
+### RuntimeError: NaN detected in latents: X:\xxx\xxx\xx.png
+检查图片是否有问题，如果是训练 SDXL 的 LoRA，请外挂一个 [sdxl_fp16_fix](https://modelscope.cn/models/licyks/sd-vae/resolve/master/sdxl_1.0/sdxl_fp16_fix_vae.safetensors) 的 VAE 或者使用 BF16 精度进行训练。
+
+
+### CUDA out of memory
+确认显卡的显存大小是否满足训练要求（显存最低要求 > 6G），如果满足，重新调整训练参数。
+
+
+### DefaultCPUAllocator: not enough memory
+尝试增加系统的虚拟内存，或者增加内存条。
+
+
+### Loss?
+当 Loss 不为 nan 或者大于 1 时没必要看。想要看练出来的模型效果如何，直接用模型进行跑图测试，Loss 并不能准确的代表训练出来的模型的好坏。
+
+
+### 训练素材中图片的分辨率不一致，而且有些图片的分辨率很大，需要裁剪？
+请使用 SD-Trainer-Script 的 arb 桶，这将自动处理不同分辨率的图片，无需手动进行图片裁剪。
+
+
+### AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
+这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。
+
+
+### NotImplemenredError: Cannot cppy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from mera to a different device.
+训练使用的模型可能有问题，尝试更换模型。
+
+
+### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+
+***
+
+## 命令的使用
+使用命令前需要激活环境，有以下 2 种方式激活。
+
+
+### 1. 使用自动环境激活脚本
+运行 `terminal.ps1` 后将自动打开 PowerShell 并激活 SD-Trainer-Script Env。
+
+
+### 2. 手动输入命令激活
+在 `SD-Trainer-Script` 文件夹打开 PowerShell，输入下面的命令激活 SD-Trainer-Script Env：
+
+```powershell
+./activate.ps1
+```
+
+>[!IMPORTANT]  
+>在 PowerShell 中一定要显示 `[SD-Trainer-Script Env]` 才算进入了环境，这样才能使用下面的命令。
+
+***
+
+## 常用命令
+
+### 清理安装时产生的 Pip 缓存
+```powershell
+python -m pip cache purge
+```
+
+
+### 安装某个 Python 软件包
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名 
+python -m pip install <package_name>
+```
+
+
+### 更新某个软件包
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
+python -m pip install <package_name> -U
+```
+
+
+### 重装某个软件包
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
+python -m pip install <package_name> --force-reinstall
+```
+
+
+### 卸载某个软件包
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
+python -m pip uninstall <package_name>
+```
+
+>[!NOTE]  
+>推荐使用 `python -m pip` 的写法，`pip` 的写法也可用。SD Trainer Script Installer 默认将 `pip` 命令链接到 `python -m pip` 避免直接调用 `pip`。  
+>参考：[Deprecate pip, pipX, and pipX.Y · Issue #3164 · pypa/pip](https://github.com/pypa/pip/issues/3164)
+
+
+### 使用 uv 安装软件包
+```powershell
+# 命令中的 <package_name> 替换成具体的 Python 软件包名
+uv pip install <package_name>
+```
+
+>[!NOTE]  
+>uv 命令的用法可参考：[uv docs](https://docs.astral.sh/uv)
+
+
+### 更新仓库
+```powershell
+git pull --recurse-submodules
+```
+
+
+### 运行某个 Python 脚本
+```powershell
+# 命令中的 <python_script.py> 替换成要执行的 Python 脚本路径
+python <python_script.py>
+```
+
+
+### 下载文件
+```powershell
+# 命令中的 <url> 替换成下载链接，<dir> 替换成下载到的路径，<output_file_name> 替换成保存的文件名
+aria2c <url> -c -s 16 -x 16 -k 1M -d <dir> -o <output_file_name>
+```
+
+
+### 列出 SD Trainer Script Installer 内置命令
+```powershell
+List-CMD
+```
+
+
+### 查看并切换 SD-Trainer-Script 的版本
+（已在 [环境管理](#环境管理) 章节中说明）
+
+
+### 将 LoRA 模型融进 Stable Diffusion 模型中
+```powershell
+# 先下载融合 LoRA 的工具
+git clone https://github.com/KohakuBlueleaf/LyCORIS
+
+# 接下来就能进行模型融合了，比如我要融合的 LoRA 模型为 artist_all_in_one_2-000036.safetensors，Stable Diffusion 模型为 animagine-xl-3.1.safetensors，先把这 2 个模型放到当前的文件夹，接下来就可以进行模型融合
+python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-000036.safetensors licyk_style_v0.1.safetensors --is_sdxl --dtype fp16
+
+# 解释上面命令的意思：
+# animagine-xl-3.1.safetensors 为 Stable Diffusion 模型
+# artist_all_in_one_2-000036.safetensors 为 LoRA 模型
+# licyk_style_v0.1.safetensors 为融合后要保存的模型名称
+# --is_sdxl 参数指定了模型类型为 SDXL，如果模型类型为 SD 2.x 则改为 --is_v2，如果模型类型为 SD 1.x 则不需要加参数
+# --dtype fp16 指定保存的模型精度为 fp16，常用的模型精度为 fp16、bf16
+# 融合完成后在当前文件夹中就可以看到融合好的 Stable Diffusion 模型
+# 注意，融合模型需要大于或等于 64G 的内存，如果内存低于这个大小可能会大量使用虚拟内存进行补足，增大硬盘的读写消耗
+```
+
+
+### 查看 Git / Python 命令实际调用的路径
+（已在 [环境管理](#环境管理) 章节中说明）
+
+***
