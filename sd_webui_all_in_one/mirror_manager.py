@@ -145,9 +145,9 @@ def test_github_mirror(
                 logger.info("该镜像源可用")
                 return gh
             except Exception:
-                logger.info("镜像源不可用")
+                logger.warning("镜像源不可用")
 
-    logger.info("无可用的 Github 镜像源")
+    logger.error("无可用的 Github 镜像源")
     return None
 
 
