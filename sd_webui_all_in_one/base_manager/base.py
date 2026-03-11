@@ -692,7 +692,7 @@ def apply_hf_mirror(
             except Exception:
                 logger.warning("该镜像源不可用")
 
-        logger.error("无可用的 HuggingFace 镜像源")
+        logger.warning("无可用的 HuggingFace 镜像源")
         return custom_env
 
     raise ValueError(f"传入的 HuggingFace 镜像源列表类型不支持: {type(hf_mirror)}")

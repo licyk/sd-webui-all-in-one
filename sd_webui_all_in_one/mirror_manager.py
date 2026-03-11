@@ -147,7 +147,7 @@ def test_github_mirror(
             except Exception:
                 logger.warning("镜像源不可用")
 
-    logger.error("无可用的 Github 镜像源")
+    logger.warning("无可用的 Github 镜像源")
     return None
 
 
@@ -263,7 +263,7 @@ def set_github_mirror(
                     if config_path.exists():
                         remove_files(config_path)
         else:
-            logger.info("未知镜像源参数类型: %s", type(mirror))
+            logger.error("未知镜像源参数类型: %s", type(mirror))
             raise ValueError(f"未知镜像源参数类型: {type(mirror)}")
 
     if config_path is None:
