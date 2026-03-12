@@ -4,7 +4,7 @@
 
 _✨快速部署，简单易用_
   <p align="center">
-    <a href="https://github.com/licyk/ani2xcur-cli/stargazers" style="margin: 2px;">
+    <a href="https://github.com/licyk/sd-webui-all-in-one/stargazers" style="margin: 2px;">
       <img src="https://img.shields.io/github/stars/licyk/sd-webui-all-in-one?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
     </a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/issues">

@@ -186,7 +186,7 @@ _✨一键安装 Qwen TTS WebUI_
 >Qwen TTS WebUI 默认使用的启动参数：
 >
 >```
->
+>--api
 >```
 
 ***
