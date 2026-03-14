@@ -302,15 +302,10 @@ def check_onnxruntime_gpu(
     def _install_onnxruntime_gpu(
         ver: str,
     ) -> None:
-        try:
-            pip_install(ver, "--no-cache-dir", use_uv=use_uv, custom_env=custom_env)
-        except RuntimeError as e:
-            logger.warning("安装 ONNXRuntime GPU 发生错误: %s", e)
-            logger.warning("更换安装策略进行重试安装中")
-            # 先安装 ONNXRuntime GPU 本体
-            pip_install(ver, "--no-cache-dir", "--no-deps", use_uv=use_uv, custom_env=custom_env)
-            # 补全剩余的依赖
-            pip_install(ver, use_uv=use_uv, custom_env=origin_env)
+        # 先安装 ONNXRuntime GPU 本体
+        pip_install(ver, "--no-cache-dir", "--no-deps", use_uv=use_uv, custom_env=custom_env)
+        # 补全剩余的依赖
+        pip_install(ver, use_uv=use_uv, custom_env=origin_env)
 
     logger.info("检查 ONNXRuntime GPU 版本问题中")
     ver = need_install_ort_ver(skip_if_missing)
@@ -325,6 +320,7 @@ def check_onnxruntime_gpu(
     origin_env = custom_env.copy()
 
     try:
+        logger.info("修复 ONNXRuntime GPU 版本问题中")
         if ver == OrtType.CU118:
             _clean_env()
             custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/simple/"
