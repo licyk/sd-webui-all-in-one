@@ -1,5 +1,5 @@
-import os
 import argparse
+import shutil
 from pathlib import Path
 
 
@@ -9,12 +9,7 @@ def get_args() -> argparse.Namespace:
     def _normalized_filepath(filepath) -> Path:
         return Path(filepath).absolute()
 
-    parser.add_argument(
-        "docs_path",
-        type=_normalized_filepath,
-        default=Path(os.getenv("docs_path", os.getcwd())),
-        help="文档保存路径",
-    )
+    parser.add_argument("docs_path", type=_normalized_filepath, help="文档保存路径")
 
     return parser.parse_args()
 
@@ -33,6 +28,7 @@ def write_content_to_file(
     if isinstance(content, list):
         content = f"{newline}".join(content)
 
+    print(f"[INFO] 写入文本到: {save_path}")
     with open(save_path, "w", encoding=encoding, newline=newline) as file:
         file.write(content)
 
@@ -54,6 +50,7 @@ def make_launch_scripts(base_path: Path, scripts: list[tuple[str, str]]) -> None
         if not (base_path / psh).is_file():
             continue
         code = generate_launch_bat(psh)
+        print(f"[INFO] 生成快捷启动脚本: {name} -> {psh}")
         write_content_to_file(
             content=code,
             save_path=base_path / name,
@@ -61,8 +58,30 @@ def make_launch_scripts(base_path: Path, scripts: list[tuple[str, str]]) -> None
         )
 
 
+def install_hanamizuki_bg(
+    docs_path: Path,
+) -> None:
+    bg_path = Path(__file__).parent / "head_image.jpg"
+    if not bg_path.exists():
+        print(f"[WARNING] 未在 {bg_path} 找到绘世启动器头图")
+        return
+
+    save_path = docs_path / "core" / ".launcher" / "head_image.jpg"
+    hanamizuki_exe = docs_path / "core" / "hanamizuki.exe"
+    if not hanamizuki_exe.exists():
+        return
+
+    if not (docs_path / "core").exists():
+        print("[WARNING] 未找到内核路径")
+
+    print(f"[INFO] 复制绘世启动器头图到 {save_path}")
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(bg_path, save_path)
+
+
 def main() -> None:
     args = get_args()
+    docs_path: Path = args.docs_path
     help_content = """
 首次使用该需要双击运行 configure_env.bat 配置环境
 运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
@@ -97,18 +116,18 @@ https://space.bilibili.com/46497516
 
     write_content_to_file(
         content=help_content,
-        save_path=args.docs_path / "说明.txt",
+        save_path=docs_path / "说明.txt",
     )
     write_content_to_file(
         content=sign_content,
-        save_path=args.docs_path / "bilibili@licyk_.txt",
+        save_path=docs_path / "bilibili@licyk_.txt",
     )
     write_content_to_file(
         content=user_agreement_content,
-        save_path=args.docs_path / "用户协议.txt",
+        save_path=docs_path / "用户协议.txt",
     )
     make_launch_scripts(
-        base_path=args.docs_path,
+        base_path=docs_path,
         scripts=[
             ("launch.ps1", "启动.bat"),
             ("update.ps1", "更新内核.bat"),
@@ -122,6 +141,7 @@ https://space.bilibili.com/46497516
             ("train.ps1", "启动训练.bat"),
         ],
     )
+    install_hanamizuki_bg(docs_path)
 
 
 if __name__ == "__main__":
