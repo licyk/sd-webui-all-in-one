@@ -8,6 +8,8 @@ jobs:
   Build-Musubi-Tuner:
     name: Build Musubi Tuner
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5

@@ -7,6 +7,8 @@ jobs:
   Build-Fooocus:
     name: Build Fooocus
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
