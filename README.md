@@ -1,6 +1,7 @@
 <div align="center">
 
 # SD WebUI All In One
+![SD WebUI All In One](.github/head_image.jpg)
 
 _✨快速部署，简单易用_
   <p align="center">
