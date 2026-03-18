@@ -1,5 +1,6 @@
 """ComfyUI 环境检查工具"""
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -656,6 +657,14 @@ def comfyui_conflict_analyzer(
 
     task_sum = len(req_list)
     count = 0
+    if custom_env is None:
+        custom_env = os.environ.copy()
+
+    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
+        custom_env["PYTHONPATH"] = comfyui_root_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
+    else:
+        custom_env["PYTHONPATH"] = comfyui_root_path.as_posix()
+
     err: list[Exception] = []
     for req in req_list:
         count += 1

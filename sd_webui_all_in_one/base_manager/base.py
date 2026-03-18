@@ -448,6 +448,14 @@ def launch_webui(
     if webui_name is None:
         webui_name = "WebUI"
 
+    if custom_env is None:
+        custom_env = os.environ.copy()
+
+    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
+        custom_env["PYTHONPATH"] = webui_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
+    else:
+        custom_env["PYTHONPATH"] = webui_path.as_posix()
+
     cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
     try:
         run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
