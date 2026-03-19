@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 391
+$script:SD_TRAINER_INSTALLER_VERSION = 392
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.58"
+$script:CORE_MINIMUM_VER = "2.0.59"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1210,7 +1210,7 @@ function Update-Aria2 {
             if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apt`" -Arguments @(`"update`"); Invoke-SmartCommand -Command `"apt`" -Arguments @(`"install`", `"--only-upgrade`", `"aria2`", `"-y`"); return }
             if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"yum`" -Arguments @(`"upgrade`", `"aria2`", `"-y`"); return }
             if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apk`" -Arguments @(`"add`", `"--upgrade`", `"aria2`"); return }
-            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"pacman`" -Arguments @(`"-S`", `"aria2`", `"--noconfirm`"); return }
+            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"pacman`" -Arguments @(`"-Sy`", `"aria2`", `"--noconfirm`"); return }
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"zypper`" -Arguments @(`"update`", `"-y`", `"aria2`"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"nix-channel`" -Arguments @(`"--update`"); Invoke-SmartCommand -Command `"nix-env`" -Arguments @(`"-u`", `"aria2`"); return }
         }

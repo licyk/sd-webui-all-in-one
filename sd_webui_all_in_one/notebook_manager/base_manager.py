@@ -63,19 +63,24 @@ class BaseManager:
     """管理工具基础类
 
     Attributes:
-        workspace (Path): 工作区路径
-        workfolder (str): 工作区的文件夹名称
-        repo (RepoManager): 仓库管理器实例, 用于 HuggingFace / ModelScope 仓库操作
-        tun (TunnelManager): 隧道管理器实例, 用于内网穿透
-        tcmalloc (TCMalloc): TCMalloc 内存分配器实例
-        copy_files (Callable): 文件复制函数引用
-        import_kaggle_input (Callable): Kaggle Input 导入函数引用
-        display_model_and_dataset_dir (Callable): 展示模型 / 数据集目录函数引用
-        clear_up (Callable): 清理 Jupyter 输出函数引用
-        download_file (Callable): 文件下载函数引用
-        download_archive_and_unpack (Callable): 下载压缩包并解压的函数引用
-        run_cmd (Callable): Shell 命令执行函数引用
-        remove_files (Callable): 删除文件函数引用
+        workspace (Path):
+            工作区路径
+        workfolder (str):
+            工作区的文件夹名称
+        repo (RepoManager):
+            仓库管理器实例, 用于 HuggingFace / ModelScope 仓库操作
+        tun (TunnelManager):
+            隧道管理器实例, 用于内网穿透
+        tcmalloc (TCMalloc):
+            TCMalloc 内存分配器实例
+        copy_files (Callable):
+            文件复制函数引用
+        remove_files (Callable):
+            删除文件函数引用
+        move_files (Callable):
+            移动文件函数引用
+        run_cmd (Callable):
+            Shell 命令执行函数引用
     """
 
     def __init__(
@@ -89,11 +94,16 @@ class BaseManager:
         """管理工具初始化
 
         Args:
-            workspace (str | Path): 工作区路径
-            workfolder (str): 工作区的文件夹名称
-            hf_token (str | None): HuggingFace Token
-            ms_token (str | None): ModelScope Token
-            port (int | None): 内网穿透端口
+            workspace (str | Path):
+                工作区路径
+            workfolder (str):
+                工作区的文件夹名称
+            hf_token (str | None):
+                HuggingFace Token
+            ms_token (str | None):
+                ModelScope Token
+            port (int | None):
+                内网穿透端口
         """
         self.workspace = Path(workspace)
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -237,9 +247,12 @@ class BaseManager:
         ```
 
         Args:
-            base_dir (Path | str): 链接的根路径
-            drive_path (Path | str): 链接到的 Google Drive 的路径
-            links (list[dict[str, str | bool]]): 要进行链接文件的路径表
+            base_dir (Path | str):
+                链接的根路径
+            drive_path (Path | str):
+                链接到的 Google Drive 的路径
+            links (list[dict[str, str | bool]]):
+                要进行链接文件的路径表
         """
         for link in links:
             link_dir = link.get("link_dir")
@@ -265,10 +278,12 @@ class BaseManager:
         """解析命令行参数字符串，返回参数列表
 
         Args:
-            launch_args (str): 命令行参数字符串
+            launch_args (str):
+                命令行参数字符串
 
         Returns:
-            list[str]: 解析后的参数列表
+            list[str]:
+                解析后的参数列表
         """
         return shlex.split(launch_args)
 
@@ -276,10 +291,12 @@ class BaseManager:
         """将命令列表转换为命令字符串
 
         Args:
-            cmd_list (list[str]): 命令列表
+            cmd_list (list[str]):
+                命令列表
 
         Returns:
-            str: 命令字符串
+            str:
+                命令字符串
         """
         return shlex.join(cmd_list)
 
@@ -293,10 +310,14 @@ class BaseManager:
         """启动 WebUI
 
         Args:
-            name (str): 启动的名称
-            base_path (Path | str): 启动时得的根目录
-            cmd (list[str] | str | None): 启动 WebUI 的参数
-            display_mode (Literal["terminal", "jupyter"] | None): 执行子进程时使用的输出模式
+            name (str):
+                启动的名称
+            base_path (Path | str):
+                启动时得的根目录
+            cmd (list[str] | str | None):
+                启动 WebUI 的参数
+            display_mode (Literal["terminal", "jupyter"] | None):
+                执行子进程时使用的输出模式
         """
 
         if display_mode is None:

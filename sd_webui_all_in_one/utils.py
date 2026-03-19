@@ -24,7 +24,8 @@ def in_jupyter() -> bool:
     """检测当前环境是否在 Jupyter 中
 
     Returns:
-        bool: 是否在 Jupyter 中
+        bool:
+            是否在 Jupyter 中
     """
     try:
         shell = get_ipython()  # type: ignore
@@ -46,7 +47,8 @@ def clear_jupyter_output() -> None:
     """清理 Jupyter Notebook 输出内容
 
     Returns:
-        bool: 清理输出结果
+        bool:
+            清理输出结果
     """
     try:
         from IPython.display import clear_output
@@ -64,9 +66,12 @@ def warning_unexpected_params(
     """显示多余参数警告
 
     Args:
-        message (str): 提示信息
-        args (tuple[Any, ...]): 额外的位置参数
-        kwargs (dict[str, Any]): 额外的关键字参数
+        message (str):
+            提示信息
+        args (tuple[Any, ...]):
+            额外的位置参数
+        kwargs (dict[str, Any]):
+            额外的关键字参数
     """
     if args or kwargs:
         logger.warning(message)
@@ -87,10 +92,12 @@ def remove_duplicate_object_from_list(
     例如: [1, 2, 3, 2] -> [1, 2, 3]
 
     Args:
-        origin (list[Any]): 原始的`list`
+        origin (list[Any]):
+            原始的`list`
 
     Returns:
-        list[Any]: 去重后的`list`
+        list[Any]:
+            去重后的`list`
     """
     return list(set(origin))
 

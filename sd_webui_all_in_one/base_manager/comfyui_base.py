@@ -55,7 +55,10 @@ from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
-from sd_webui_all_in_one.env_check.comfyui_env_analyze import comfyui_conflict_analyzer
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
+    comfyui_conflict_analyzer,
+    check_comfyui_manager_dependence,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -421,6 +424,7 @@ def check_comfyui_env(
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
         (py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv, "custom_env": custom_env}),
+        (check_comfyui_manager_dependence, {"comfyui_root_path": comfyui_path, "use_uv": use_uv, "custom_env": custom_env}),
         (
             comfyui_conflict_analyzer,
             {

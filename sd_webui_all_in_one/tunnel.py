@@ -173,7 +173,8 @@ class TunnelManager:
         """使用 Gradio 进行内网穿透
 
         Returns:
-            str: 使用内网穿透得到的访问地址
+            str:
+                使用内网穿透得到的访问地址
 
         Raises:
             RuntimeError:

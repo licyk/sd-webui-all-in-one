@@ -26,6 +26,7 @@ from sd_webui_all_in_one.package_analyzer.pkg_check import (
     is_package_installed,
     parse_requirement_list,
     read_packages_from_requirements_file,
+    validate_requirements,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 
@@ -699,3 +700,45 @@ def comfyui_conflict_analyzer(
         raise AggregateError("安装 ComfyUI 依赖时出现错误", err)
 
     logger.info("ComfyUI 环境检查完成")
+
+
+def check_comfyui_manager_dependence(
+    comfyui_root_path: Path,
+    use_uv: bool | None = True,
+    custom_env: dict[str, str] | None = None,
+) -> None:
+    """检查 ComfyUI Manager 依赖
+
+    Args:
+        comfyui_root_path (Path):
+            ComfyUI 根目录
+        use_uv (bool | None):
+            是否使用 uv 安装依赖
+        custom_env (dict[str, str] | None):
+            环境变量字典
+
+    Raises:
+        RuntimeError:
+            安装 ComfyUI Manager 依赖发生错误时
+    """
+    comfyui_manager_requirement = comfyui_root_path / "manager_requirements.txt"
+    if not comfyui_manager_requirement.is_file():
+        logger.debug("ComfyUI Manager 依赖表不存在, 跳过 ComfyUI Manager 依赖检查")
+        return
+
+    logger.info("检查 ComfyUI Manager 依赖中")
+    if not validate_requirements(comfyui_manager_requirement):
+        logger.info("安装 ComfyUI Manager 依赖中")
+        try:
+            install_requirements(
+                path=comfyui_manager_requirement,
+                use_uv=use_uv,
+                custom_env=custom_env,
+                cwd=comfyui_root_path,
+            )
+            logger.info("安装 ComfyUI Manager 依赖完成")
+        except RuntimeError as e:
+            logger.error("安装 ComfyUI Manager 依赖出现错误: %s", e)
+            raise RuntimeError(f"安装 ComfyUI Manager 依赖出现错误: {e}") from e
+    else:
+        logger.info("检查 ComfyUI Manager 依赖完成")
