@@ -1199,9 +1199,9 @@ def set_sd_webui_extension_download_list_mirror(
                         origin_env["WEBUI_EXTENSIONS_INDEX"] = f"{mirror_prefix}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
                         return origin_env
             except Exception:
-                logger.info("该镜像源不可用")
+                logger.warning("该镜像源不可用")
 
-        logger.info("无可用的 Github 镜像源")
+        logger.warning("无可用的 Github 镜像源")
         return origin_env
 
     raise ValueError(f"传入的 Github 镜像源列表类型不支持: {type(github_mirror)}")
