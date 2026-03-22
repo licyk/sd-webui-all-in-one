@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 368
+$script:INVOKEAI_INSTALLER_VERSION = 369
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.60"
@@ -1558,132 +1558,6 @@ function New-AppShortcut {
 }
 
 
-# 获取 Installer 配置文件信息
-function Get-ConfigFileInfo {
-    [CmdletBinding()]
-    param ([Parameter(Mandatory = `$true)][string]`$ConfigFileName)
-    `$config_path = Join-NormalizedPath `$PSScriptRoot `$ConfigFileName
-    if (Test-Path `$config_path) {
-        return `"`$(`$ConfigFileName) 配置文件: '`$(Get-Content `$config_path -Encoding UTF8 -Raw)'`"
-    } else {
-        return `"`$(`$ConfigFileName) 配置文件: 不存在 / 未配置`"
-    }
-}
-
-
-# 运行并记录 SD WebUI All In One 启动信息
-function Invoke-WithLogging {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = `$true)]
-        [scriptblock]`$ScriptBlock,
-        [Parameter(Mandatory = `$false)]
-        [string]`$LogPrefix = `"log`"
-    )
-
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    `$OutputEncoding = [System.Text.Encoding]::UTF8
-
-    `$computer_name = [System.Environment]::MachineName
-    try {
-        `$os_desc = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
-    } catch {
-        `$os_desc = [System.Environment]::OSVersion.VersionString
-    }
-
-    `$current_user = if ((Get-CurrentPlatform) -eq `"windows`") {
-        [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    } else {
-        `$env:USER
-    }
-    `$clr_ver = if (`$PSVersionTable.CLRVersion) { `$PSVersionTable.CLRVersion.ToString() } else { `"N/A (.NET Core/5+)`" }
-
-    `$header = @`"
-================================================================================
-                    SD WebUI All In One - 运行日志
-================================================================================
-
-[问题反馈指南]
-当遇到错误时，请访问 Issue 页面反馈问题，并提供以下信息:
-
-1. 使用的安装器 (例如: InvokeAI Installer)
-2. 问题的详细描述
-3. 复现问题的具体步骤
-4. 附上本日志文件
-
-Issue 页面地址: https://github.com/licyk/sd-webui-all-in-one/issues
-
-================================================================================
-                            系统环境信息
-================================================================================
-
-开始时间: `$(`$(Get-Date).ToString(`"yyyy-MM-dd HH:mm:ss`"))
-用户名: `$current_user
-计算机名: `$computer_name
-操作系统: `$os_desc
-工作目录: `$((Get-Location).Path)
-进程 ID: `$PID
-
-PowerShell 版本: `$(`$PSVersionTable.PSVersion.ToString())
-PowerShell 版本类型: `$(`$PSVersionTable.PSEdition)
-.NET 版本: `$clr_ver
-主机应用程序: `$([System.Environment]::CommandLine)
-
-InvokeAI Installer 版本: `$script:INVOKEAI_INSTALLER_VERSION
-SD WebUI All In One 版本: `$(try { & python -m sd_webui_all_in_one --version } catch {})
-
-`$(Get-ConfigFileInfo 'core_prefix.txt')
-`$(Get-ConfigFileInfo 'disable_pypi_mirror.txt')
-`$(Get-ConfigFileInfo 'disable_proxy.txt')
-`$(Get-ConfigFileInfo 'proxy.txt')
-`$(Get-ConfigFileInfo 'disable_uv.txt')
-`$(Get-ConfigFileInfo 'disable_gh_mirror.txt')
-`$(Get-ConfigFileInfo 'gh_mirror.txt')
-`$(Get-ConfigFileInfo 'disable_hf_mirror.txt')
-`$(Get-ConfigFileInfo 'hf_mirror.txt')
-`$(Get-ConfigFileInfo 'launch_args.txt')
-`$(Get-ConfigFileInfo 'disable_update.txt')
-`$(Get-ConfigFileInfo 'disable_set_pytorch_cuda_memory_alloc.txt')
-`$(Get-ConfigFileInfo 'enable_shortcut.txt')
-`$(Get-ConfigFileInfo 'disable_check_env.txt')
-
-================================================================================
-                            运行日志输出
-================================================================================
-`"@
-
-    `$log_dir = Join-NormalizedPath `$PSScriptRoot `"cache`" `"logs`"
-    New-Item -ItemType Directory -Path `$log_dir -Force | Out-Null
-    `$log_path = Join-Path `$log_dir (`"{0}_{1}.txt`" -f `$LogPrefix, (Get-Date -Format `"yyyyMMdd_HHmmss`"))
-    Write-Log `"开始记录 SD WebUI All In One 启动日志, 日志保存路径: `$log_path`"
-    `$header | Tee-Object -FilePath `$log_path -Append | Out-Null
-
-    try {
-        & `$ScriptBlock *>&1 | ForEach-Object {
-            `$line = `$_
-            # 如果是 PowerShell 包装的错误记录 (Native 程序输出到 stderr 的内容)
-            if (`$line -is [System.Management.Automation.ErrorRecord]) {
-                # 尝试从 TargetObject 获取原始文本，如果为空则取 Exception.Message
-                if (`$null -ne `$line.TargetObject) {
-                    `$line = `$line.TargetObject.ToString()
-                } else {
-                    `$line = `$line.Exception.Message
-                }
-            }
-            # 确保即使是 null 也会转换为空字符串, 防止 Tee-Object 报错
-            if (`$null -eq `$line) { `$line = `"`" }
-            # 直接输出处理后的纯字符串
-            `$line
-        } | Out-String -Stream | Tee-Object -FilePath `$log_path -Append
-    }
-    catch {
-        Write-Log `"SD WebUI All In One 运行时出现异常, 请检查控制台日志以排查错误, 日志路径: `$log_path`" -Level ERROR
-        Invoke-Item `$log_path
-        throw `$_
-    }
-}
-
-
 Export-ModuleMember -Function ``
     Initialize-EnvPath, ``
     Write-Log, ``
@@ -1703,8 +1577,7 @@ Export-ModuleMember -Function ``
     Get-NormalizedFilePath, ``
     Get-CurrentPlatform, ``
     Get-CurrentArchitecture, ``
-    New-AppShortcut, ``
-    Invoke-WithLogging
+    New-AppShortcut
 ".Trim()
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
     Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
@@ -1749,7 +1622,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Invoke-WithLogging`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -1962,14 +1835,11 @@ function Main {
         Write-Log `"InvokeAI Installer 构建模式已启用, 仅检查 InvokeAI 运行环境`"
         & python -m sd_webui_all_in_one invokeai check-env `$launch_args
     } else {
-        try {
-            Invoke-WithLogging -LogPrefix `"invokeai_launch_log`" -ScriptBlock {
-                & python -m sd_webui_all_in_one invokeai launch `$launch_args
-                if (!(`$?)) { throw }
-                Write-Log `"InvokeAI 正常退出`"
-            }
-        }
-        catch {
+        & python -m sd_webui_all_in_one invokeai launch `$launch_args
+        `$req = `$?
+        if (`$req) {
+            Write-Log `"InvokeAI 正常退出`"
+        } else {
             Write-Log `"InvokeAI 出现异常, 已退出, 请检查控制台日志`" -Level ERROR
         }
         Read-Host | Out-Null
