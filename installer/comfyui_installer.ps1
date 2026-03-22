@@ -76,7 +76,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 369
+$script:COMFYUI_INSTALLER_VERSION = 370
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.60"
@@ -1676,7 +1676,7 @@ SD WebUI All In One 版本: `$(try { & python -m sd_webui_all_in_one --version }
 `"@
 
     `$log_dir = Join-NormalizedPath `$PSScriptRoot `"cache`" `"logs`"
-    if (!(Test-Path `$log_dir)) { New-Item -ItemType Directory -Path `$log_dir | Out-Null }
+    New-Item -ItemType Directory -Path `$log_dir -Force | Out-Null
     `$log_path = Join-Path `$log_dir (`"{0}_{1}.txt`" -f `$LogPrefix, (Get-Date -Format `"yyyyMMdd_HHmmss`"))
     Write-Log `"开始记录 SD WebUI All In One 启动日志, 日志保存路径: `$log_path`"
     `$header | Tee-Object -FilePath `$log_path -Append | Out-Null
