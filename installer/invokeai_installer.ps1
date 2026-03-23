@@ -71,7 +71,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 369
+$script:INVOKEAI_INSTALLER_VERSION = 370
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.60"
@@ -1840,7 +1840,21 @@ function Main {
         if (`$req) {
             Write-Log `"InvokeAI 正常退出`"
         } else {
-            Write-Log `"InvokeAI 出现异常, 已退出, 请检查控制台日志`" -Level ERROR
+            `$help_msg = @`"
+
+
+            [问题反馈指南]
+            当遇到错误时，请访问 Issue 页面反馈问题，并提供以下信息:
+
+            1. 使用的安装器 (例如: InvokeAI Installer)
+            2. 使用的操作系统
+            3. 问题的详细描述
+            4. 复现问题的具体步骤
+            5. 控制台中所有的日志信息
+
+            Issue 页面地址: https://github.com/licyk/sd-webui-all-in-one/issues
+`"@
+            Write-Log `"InvokeAI 出现异常, 已退出, 请检查控制台日志`${help_msg}`" -Level ERROR
         }
         Read-Host | Out-Null
     }
