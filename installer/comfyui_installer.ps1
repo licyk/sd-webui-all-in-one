@@ -76,10 +76,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 372
+$script:COMFYUI_INSTALLER_VERSION = 373
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.60"
+$script:CORE_MINIMUM_VER = "2.0.61"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -3994,7 +3994,6 @@ function Main {
         Set-Content -Encoding UTF8 -Path (Join-NormalizedPath $script:InstallPath "update_time.txt") -Value $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") # 记录更新时间
     } else {
         if ($script:BuildMode) { Write-Log "ComfyUI Installer 构建模式已启用" }
-        
         Write-Log "使用安装模式"
         Use-InstallMode
     }

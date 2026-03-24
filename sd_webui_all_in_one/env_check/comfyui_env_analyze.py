@@ -741,4 +741,4 @@ def check_comfyui_manager_dependence(
             logger.error("安装 ComfyUI Manager 依赖出现错误: %s", e)
             raise RuntimeError(f"安装 ComfyUI Manager 依赖出现错误: {e}") from e
     else:
-        logger.info("检查 ComfyUI Manager 依赖完成")
+        logger.info("ComfyUI Manager 依赖检查完成")
