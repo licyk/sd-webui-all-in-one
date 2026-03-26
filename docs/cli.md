@@ -1149,6 +1149,7 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_SET_CONFIG`: 是否在启动时通过环境变量进行配置 (`1`|`True` 启用)。
 - `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH`：SD WebUI All In One 起始路径。
 - `SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY`：是否跳过安装 PyTorch 时设备的兼容性检查。
+- `SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR`：是否在运行 WebUI 并发生错误时向上抛出堆栈错误。
 
 ## 软件根目录配置
 可以通过以下环境变量自定义各软件的默认根目录：

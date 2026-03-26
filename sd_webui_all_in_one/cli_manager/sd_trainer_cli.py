@@ -2,6 +2,7 @@
 
 import argparse
 import shlex
+import sys
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_trainer_base import (
@@ -17,7 +18,13 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import (
     list_sd_trainer_models,
     uninstall_sd_trainer_model,
 )
-from sd_webui_all_in_one.config import SD_TRAINER_ROOT_PATH
+from sd_webui_all_in_one.config import (
+    SD_TRAINER_ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
 from sd_webui_all_in_one.downloader import (
     DOWNLOAD_TOOL_TYPE_LIST,
     DownloadToolType,
@@ -32,6 +39,14 @@ from sd_webui_all_in_one.pytorch_manager.base import (
 )
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def install(
@@ -219,16 +234,23 @@ def launch(
         launch_args = shlex.split(launch_args)
     elif launch_args is None:
         launch_args = []
-    launch_sd_trainer(
-        sd_trainer_path=sd_trainer_path,
-        launch_args=launch_args,
-        use_hf_mirror=use_hf_mirror,
-        custom_hf_mirror=custom_hf_mirror,
-        use_github_mirror=use_github_mirror,
-        custom_github_mirror=custom_github_mirror,
-        use_pypi_mirror=use_pypi_mirror,
-        use_cuda_malloc=use_cuda_malloc,
-    )
+
+    try:
+        launch_sd_trainer(
+            sd_trainer_path=sd_trainer_path,
+            launch_args=launch_args,
+            use_hf_mirror=use_hf_mirror,
+            custom_hf_mirror=custom_hf_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
+            use_cuda_malloc=use_cuda_malloc,
+        )
+    except WebUiRuntimeError as e:
+        if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
+            raise e
+        logger.error("运行 ComfyUI 时异常退出: %s", e)
+        sys.exit(1)
 
 
 def install_model_from_library(

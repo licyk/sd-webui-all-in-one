@@ -1,3 +1,5 @@
+"""自定义异常类"""
+
 import traceback
 import os
 
@@ -52,3 +54,9 @@ class AggregateError(Exception):
             output.append(f"\n{header} ({location_info}): {exc_summary}\n{stack_trace}")
 
         return "".join(output)
+
+
+class WebUiRuntimeError(Exception):
+    """运行 WebUI 进程异常类"""
+
+    pass  # pylint: disable=unnecessary-pass

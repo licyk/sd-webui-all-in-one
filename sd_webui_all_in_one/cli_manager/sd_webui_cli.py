@@ -2,6 +2,7 @@
 
 import argparse
 import shlex
+import sys
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
@@ -22,7 +23,13 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_models,
     uninstall_sd_webui_model,
 )
-from sd_webui_all_in_one.config import SD_WEBUI_ROOT_PATH
+from sd_webui_all_in_one.config import (
+    SD_WEBUI_ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
 from sd_webui_all_in_one.downloader import (
     DOWNLOAD_TOOL_TYPE_LIST,
     DownloadToolType,
@@ -37,6 +44,14 @@ from sd_webui_all_in_one.pytorch_manager.base import (
 )
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def install(
@@ -231,16 +246,23 @@ def launch(
         launch_args = shlex.split(launch_args)
     elif launch_args is None:
         launch_args = []
-    launch_sd_webui(
-        sd_webui_path=sd_webui_path,
-        launch_args=launch_args,
-        use_hf_mirror=use_hf_mirror,
-        custom_hf_mirror=custom_hf_mirror,
-        use_github_mirror=use_github_mirror,
-        custom_github_mirror=custom_github_mirror,
-        use_pypi_mirror=use_pypi_mirror,
-        use_cuda_malloc=use_cuda_malloc,
-    )
+
+    try:
+        launch_sd_webui(
+            sd_webui_path=sd_webui_path,
+            launch_args=launch_args,
+            use_hf_mirror=use_hf_mirror,
+            custom_hf_mirror=custom_hf_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
+            use_cuda_malloc=use_cuda_malloc,
+        )
+    except WebUiRuntimeError as e:
+        if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
+            raise e
+        logger.error("运行 ComfyUI 时异常退出: %s", e)
+        sys.exit(1)
 
 
 def install_extension(
@@ -647,9 +669,7 @@ def register_sd_webui(
 
     # extension uninstall
     ext_uninstall_p = ext_sub.add_parser("uninstall", help="卸载扩展")
-    ext_uninstall_p.add_argument(
-        "--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录"
-    )
+    ext_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     ext_uninstall_p.add_argument("--name", required=True, dest="name", help="扩展名称")
     ext_uninstall_p.set_defaults(
         func=lambda args: uninstall_extension(
@@ -705,9 +725,7 @@ def register_sd_webui(
 
     # model uninstall
     model_uninstall_p = model_sub.add_parser("uninstall", help="卸载模型")
-    model_uninstall_p.add_argument(
-        "--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录"
-    )
+    model_uninstall_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
     model_uninstall_p.add_argument("--name", required=True, dest="name", help="模型名称")
     model_uninstall_p.add_argument("--type", dest="type", help="模型类型")
     model_uninstall_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")

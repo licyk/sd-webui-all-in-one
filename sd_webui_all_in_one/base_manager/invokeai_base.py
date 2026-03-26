@@ -80,9 +80,9 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import (
-    print_divider,
-)
+from sd_webui_all_in_one.utils import print_divider
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -597,6 +597,7 @@ def run_invokeai() -> None:
             url = f"http://{host}:{port}"
             logger.debug("获取到的 InvokeAI 访问地址: %s", url)
             if not args.disable_auto_launch:
+
                 def _open_browser():
                     time.sleep(2)  # 等待服务器完全启动
                     logger.info("通过浏览器打开 InvokeAI 访问地址 '%s' 中", url)
@@ -819,7 +820,7 @@ def launch_invokeai(
             是否启用 CUDA Malloc 显存优化
 
     Raises:
-        RuntimeError:
+        WebUiRuntimeError:
             InvokeAI 运行发生错误时
     """
 
@@ -857,7 +858,7 @@ def launch_invokeai(
         logger.info("已退出 InvokeAI")
         os._exit(0)
     except Exception as e:
-        raise RuntimeError("运行 InvokeAI 时发生错误") from e
+        raise WebUiRuntimeError("运行 InvokeAI 时发生错误") from e
 
 
 def install_invokeai_custom_nodes(

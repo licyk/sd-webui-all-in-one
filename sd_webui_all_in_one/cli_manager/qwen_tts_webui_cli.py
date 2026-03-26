@@ -2,6 +2,7 @@
 
 import argparse
 import shlex
+import sys
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
@@ -10,7 +11,13 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     check_qwen_tts_webui_env,
     launch_qwen_tts_webui,
 )
-from sd_webui_all_in_one.config import QWEN_TTS_WEBUI_ROOT_PATH
+from sd_webui_all_in_one.config import (
+    QWEN_TTS_WEBUI_ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
 from sd_webui_all_in_one.model_downloader.base import (
     MODEL_DOWNLOAD_URL_TYPE_LIST,
     ModelDownloadUrlType,
@@ -21,6 +28,14 @@ from sd_webui_all_in_one.pytorch_manager.base import (
 )
 from sd_webui_all_in_one.utils import normalized_filepath
 from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def install(
@@ -169,16 +184,23 @@ def launch(
         launch_args = shlex.split(launch_args)
     elif launch_args is None:
         launch_args = []
-    launch_qwen_tts_webui(
-        qwen_tts_webui_path=qwen_tts_webui_path,
-        launch_args=launch_args,
-        use_hf_mirror=use_hf_mirror,
-        custom_hf_mirror=custom_hf_mirror,
-        use_github_mirror=use_github_mirror,
-        custom_github_mirror=custom_github_mirror,
-        use_pypi_mirror=use_pypi_mirror,
-        use_cuda_malloc=use_cuda_malloc,
-    )
+
+    try:
+        launch_qwen_tts_webui(
+            qwen_tts_webui_path=qwen_tts_webui_path,
+            launch_args=launch_args,
+            use_hf_mirror=use_hf_mirror,
+            custom_hf_mirror=custom_hf_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
+            use_cuda_malloc=use_cuda_malloc,
+        )
+    except WebUiRuntimeError as e:
+        if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
+            raise e
+        logger.error("运行 ComfyUI 时异常退出: %s", e)
+        sys.exit(1)
 
 
 def register_qwen_tts_webui(
@@ -216,9 +238,7 @@ def register_qwen_tts_webui(
 
     # install
     install_p = qwen_tts_webui_sub.add_parser("install", help="安装 Qwen TTS WebUI")
-    install_p.add_argument(
-        "--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录"
-    )
+    install_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", choices=PYTORCH_DEVICE_LIST, help="PyTorch 镜像源类型")
     install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
     install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
@@ -243,9 +263,7 @@ def register_qwen_tts_webui(
 
     # update
     update_p = qwen_tts_webui_sub.add_parser("update", help="更新 Qwen TTS WebUI")
-    update_p.add_argument(
-        "--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录"
-    )
+    update_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     update_p.set_defaults(
@@ -258,9 +276,7 @@ def register_qwen_tts_webui(
 
     # check-env
     check_p = qwen_tts_webui_sub.add_parser("check-env", help="检查 Qwen TTS WebUI 运行环境")
-    check_p.add_argument(
-        "--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录"
-    )
+    check_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
@@ -277,9 +293,7 @@ def register_qwen_tts_webui(
 
     # launch
     launch_p = qwen_tts_webui_sub.add_parser("launch", help="启动 Qwen TTS WebUI")
-    launch_p.add_argument(
-        "--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录"
-    )
+    launch_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--theme dark")')
     launch_p.add_argument("--no-hf-mirror", action="store_false", dest="use_hf_mirror", help="禁用 HuggingFace 镜像源")
     launch_p.add_argument("--custom-hf-mirror", type=str, dest="custom_hf_mirror", help="自定义 HuggingFace 镜像源")

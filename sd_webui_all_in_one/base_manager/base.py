@@ -58,6 +58,7 @@ from sd_webui_all_in_one.model_downloader.base import (
 )
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import print_divider
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -439,7 +440,7 @@ def launch_webui(
             自定义环境变量
 
     Raises:
-        RuntimeError:
+        WebUiRuntimeError:
             运行 WebUI 时出现错误
     """
     if launch_args is None:
@@ -462,7 +463,7 @@ def launch_webui(
     except KeyboardInterrupt:
         logger.info("已关闭 %s", webui_name)
     except RuntimeError as e:
-        raise RuntimeError(f"运行 {webui_name} 时出现错误: {e}") from e
+        raise WebUiRuntimeError(f"运行 {webui_name} 时出现错误: {e}") from e
 
 
 def get_repo_name_from_url(
