@@ -13,6 +13,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.utils import append_python_path
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -44,18 +45,21 @@ def run_extension_installer(
         return False
 
     if custom_env is None:
-        env = os.environ.copy()
+        custom_env = os.environ.copy()
     else:
-        env = custom_env.copy()
+        custom_env = custom_env.copy()
 
-    py_path = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = f"{sd_webui_base_path}{os.pathsep}{py_path}"
-    env["WEBUI_LAUNCH_LIVE_OUTPUT"] = "1"
+    custom_env = append_python_path(
+        new_path=sd_webui_base_path,
+        origin_env=custom_env,
+    )
+
+    custom_env["WEBUI_LAUNCH_LIVE_OUTPUT"] = "1"
 
     try:
         run_cmd(
             command=[Path(sys.executable).as_posix(), path_installer.as_posix()],
-            custom_env=env,
+            custom_env=custom_env,
             cwd=sd_webui_base_path,
         )
         return True

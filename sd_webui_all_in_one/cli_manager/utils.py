@@ -3,6 +3,7 @@
 import argparse
 import sys
 import logging
+import os
 
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
@@ -74,6 +75,34 @@ def get_cuda_malloc() -> None:
         print(conf)
 
 
+def get_env_config() -> None:
+    """获取 SD WebUI All In One 使用的环境变量信息"""
+    env = [
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_NAME",
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL",
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR",
+        "SD_WEBUI_ALL_IN_ONE_RETRY_TIMES",
+        "SD_WEBUI_ALL_IN_ONE_PATCHER",
+        "SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH",
+        "SD_WEBUI_ROOT",
+        "COMFYUI_ROOT",
+        "FOOOCUS_ROOT",
+        "INVOKEAI_ROOT",
+        "SD_TRAINER_ROOT",
+        "SD_SCRIPTS_ROOT",
+        "QWEN_TTS_WEBUI_ROOT",
+        "SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR",
+        "SD_WEBUI_ALL_IN_ONE_PROXY",
+        "SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH",
+        "SD_WEBUI_ALL_IN_ONE_SET_CONFIG",
+        "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY",
+        "SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR",
+        "SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH",
+    ]
+    for e in env:
+        print(f"{e}: '{os.getenv(e)}'")
+
+
 def register_manager(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -121,3 +150,7 @@ def register_manager(
     # get-cuda-malloc
     get_cuda_malloc_p = sd_webui_all_in_one_sub.add_parser("get-cuda-malloc", help="获取支持当前设备的 CUDA 内存分配器配置")
     get_cuda_malloc_p.set_defaults(func=lambda args: get_cuda_malloc())
+
+    # get-env-config
+    get_env_config_p = sd_webui_all_in_one_sub.add_parser("get-env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
+    get_env_config_p.set_defaults(func=lambda args: get_env_config())

@@ -2,6 +2,7 @@
 
 import shutil
 import sys
+import os
 from typing import Any
 from pathlib import Path
 from sd_webui_all_in_one.logger import get_logger
@@ -183,3 +184,33 @@ def normalized_filepath(
 
     logger.debug("解析成绝对路径后的路径: '%s'", filepath)
     return filepath
+
+
+def append_python_path(
+    new_path: Path,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """为环境变量中的 PYTHONPATH 环境变量追加路径
+
+    Args:
+        new_path (Path):
+            追加的新路径
+        origin_env (dict[str, str]):
+            原始的环境变量字典
+
+    Returns:
+        (dict[str, str]):
+            追加 PYTHONPATH 后的环境变量字典
+    """
+
+    if origin_env is None:
+        custom_env = os.environ.copy()
+    else:
+        custom_env = origin_env.copy()
+
+    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
+        custom_env["PYTHONPATH"] = new_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
+    else:
+        custom_env["PYTHONPATH"] = new_path.as_posix()
+
+    return custom_env

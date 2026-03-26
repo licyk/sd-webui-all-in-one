@@ -60,3 +60,9 @@ class WebUiRuntimeError(Exception):
     """运行 WebUI 进程异常类"""
 
     pass  # pylint: disable=unnecessary-pass
+
+
+class RetrySignalError(Exception):
+    """仅供装饰器内部使用的重试信号异常"""
+
+    pass  # pylint: disable=unnecessary-pass

@@ -9,6 +9,7 @@ from typing import (
     cast,
 )
 
+from sd_webui_all_in_one.custom_exceptions import RetrySignalError
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -27,12 +28,6 @@ T = TypeVar("T")
 
 P = ParamSpec("P")
 """参数规范类型变量"""
-
-
-class RetrySignalError(Exception):
-    """仅供装饰器内部使用的重试信号异常"""
-
-    pass  # pylint: disable=unnecessary-pass
 
 
 def retryable(

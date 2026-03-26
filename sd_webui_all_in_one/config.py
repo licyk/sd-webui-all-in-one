@@ -107,3 +107,6 @@ SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY = os.getenv("SD_WEBUI_ALL_IN
 
 SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR = os.getenv("SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR") not in ["0", "False", "false"]
 """是否在运行 WebUI 并发生错误时向上抛出堆栈错误"""
+
+SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH = os.getenv("SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH") not in ["0", "False", "false"]
+"""是否在运行 WebUI 前检查运行环境并发生错误时向上抛出堆栈错误"""

@@ -3,6 +3,7 @@
 import argparse
 import shlex
 import sys
+import traceback
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.invokeai_base import (
@@ -23,6 +24,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
 from sd_webui_all_in_one.config import (
     INVOKEAI_ROOT_PATH,
     SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
     LOGGER_NAME,
     LOGGER_LEVEL,
     LOGGER_COLOR,
@@ -178,12 +180,21 @@ def launch(
             是否在启动前检查运行环境
     """
     if check_launch_env:
-        check_invokeai_env(
-            use_uv=use_uv,
-            use_pypi_mirror=use_pypi_mirror,
-            use_github_mirror=use_github_mirror,
-            custom_github_mirror=custom_github_mirror,
-        )
+        try:
+            check_invokeai_env(
+                use_uv=use_uv,
+                use_pypi_mirror=use_pypi_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+        except Exception as e:
+            if SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH:
+                raise e
+
+            traceback.print_exc()
+            logger.error("检查 InvokeAI 运行环境时发生了错误: %s", e)
+            logger.warning("该问题并非致命, 但这可能会导致 InvokeAI 运行时发生问题")
+
     if isinstance(launch_args, str):
         launch_args = shlex.split(launch_args)
     elif launch_args is None:
@@ -201,7 +212,8 @@ def launch(
     except WebUiRuntimeError as e:
         if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
             raise e
-        logger.error("运行 ComfyUI 时异常退出: %s", e)
+
+        logger.error("运行 InvokeAI 时异常退出: %s", e)
         sys.exit(1)
 
 

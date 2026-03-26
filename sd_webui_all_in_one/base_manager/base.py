@@ -57,7 +57,10 @@ from sd_webui_all_in_one.model_downloader.base import (
     ModelDownloadUrlType,
 )
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.utils import print_divider
+from sd_webui_all_in_one.utils import (
+    print_divider,
+    append_python_path,
+)
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 
 logger = get_logger(
@@ -89,6 +92,7 @@ def prepare_pytorch_install_info(
         (tuple[str, | None, str | None, dict[str, str]]):
             PyTorch 软件包版本声明, xFormers 软件包版本声明, 带有 PyPI 镜像源配置的环境变量字典
     """
+
     def _update_mirror(dtype: str) -> None:
         url, kind = get_pytorch_mirror(
             dtype=dtype,
@@ -97,11 +101,7 @@ def prepare_pytorch_install_info(
         mirrors[kind] = url
 
     torch_part: list[str] = []
-    mirrors: dict[str, str | list[str] | None] = {
-        "index_url": [],
-        "extra_index_url": [],
-        "find_links": []
-    }
+    mirrors: dict[str, str | list[str] | None] = {"index_url": [], "extra_index_url": [], "find_links": []}
 
     # 配置 PyTorch 软件包列表
     if custom_pytorch_package is None:
@@ -132,10 +132,12 @@ def prepare_pytorch_install_info(
             _update_mirror(torch_part[0].split("+")[-1])
         else:
             # 不存在类型声明时
-            _update_mirror(get_pytorch_mirror_type(
-                torch_ver=get_package_version(torch_part[0]),
-                device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
-            ))
+            _update_mirror(
+                get_pytorch_mirror_type(
+                    torch_ver=get_package_version(torch_part[0]),
+                    device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
+                )
+            )
     else:
         _update_mirror(auto_detect_avaliable_pytorch_type())
 
@@ -452,10 +454,10 @@ def launch_webui(
     if custom_env is None:
         custom_env = os.environ.copy()
 
-    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
-        custom_env["PYTHONPATH"] = webui_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
-    else:
-        custom_env["PYTHONPATH"] = webui_path.as_posix()
+    custom_env = append_python_path(
+        new_path=webui_path,
+        origin_env=custom_env,
+    )
 
     cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
     try:

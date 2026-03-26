@@ -122,6 +122,9 @@ _✨小巧，强大的命令工具_
   - [检查并更新 Pip](#检查并更新-pip)
   - [检查并更新 uv](#检查并更新-uv)
   - [获取补丁路径](#获取补丁路径)
+  - [获取当前系统代理配置](#获取当前系统代理配置)
+  - [获取适合当前系统的 CUDA 内存分配器配置](#获取适合当前系统的-cuda-内存分配器配置)
+  - [获取 SD WebUI ALl In One 使用的环境变量配置](#获取-sd-webui-all-in-one-使用的环境变量配置)
 - [SD WebUI All In One 环境变量配置](#sd-webui-all-in-one-环境变量配置)
   - [基础配置](#基础配置)
   - [软件根目录配置](#软件根目录配置)
@@ -1133,6 +1136,21 @@ sd-webui-all-in-one self-manager check-uv [选项]
 sd-webui-all-in-one self-manager get-patcher
 ```
 
+## 获取当前系统代理配置
+```bash
+sd-webui-all-in-one self-manager get-proxy
+```
+
+## 获取适合当前系统的 CUDA 内存分配器配置
+```bash
+sd-webui-all-in-one self-manager get-cuda-malloc
+```
+
+## 获取 SD WebUI ALl In One 使用的环境变量配置
+```bash
+sd-webui-all-in-one self-manager get-env-config
+```
+
 
 # SD WebUI All In One 环境变量配置
 SD WebUI All In One 支持通过环境变量来调整其行为。
@@ -1150,6 +1168,7 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH`：SD WebUI All In One 起始路径。
 - `SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY`：是否跳过安装 PyTorch 时设备的兼容性检查。
 - `SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR`：是否在运行 WebUI 并发生错误时向上抛出堆栈错误。
+- `SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH`：是否在运行 WebUI 前检查运行环境并发生错误时向上抛出堆栈错误。
 
 ## 软件根目录配置
 可以通过以下环境变量自定义各软件的默认根目录：

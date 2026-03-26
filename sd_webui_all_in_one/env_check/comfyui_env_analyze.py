@@ -17,6 +17,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.utils import (
     remove_duplicate_object_from_list,
     print_divider,
+    append_python_path,
 )
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.package_analyzer.pkg_check import (
@@ -661,10 +662,10 @@ def comfyui_conflict_analyzer(
     if custom_env is None:
         custom_env = os.environ.copy()
 
-    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
-        custom_env["PYTHONPATH"] = comfyui_root_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
-    else:
-        custom_env["PYTHONPATH"] = comfyui_root_path.as_posix()
+    custom_env = append_python_path(
+        new_path=comfyui_root_path,
+        origin_env=custom_env,
+    )
 
     err: list[Exception] = []
     for req in req_list:
