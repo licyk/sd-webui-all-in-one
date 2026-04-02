@@ -3,6 +3,7 @@
 import shutil
 import sys
 import os
+import socket
 from typing import Any
 from pathlib import Path
 from sd_webui_all_in_one.logger import get_logger
@@ -214,3 +215,41 @@ def append_python_path(
         custom_env["PYTHONPATH"] = new_path.as_posix()
 
     return custom_env
+
+
+def is_port_in_use(
+    port: int,
+) -> bool:
+    """检测端口是否被占用
+
+    Args:
+        port (int):
+            要查询的端口
+
+    Returns:
+        bool:
+            端口被占用时返回 True
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex(("localhost", port)) == 0
+
+
+def find_port(
+    port: int,
+) -> int:
+    """寻找未被占用的服务器端口
+
+    Args:
+        port (int):
+            要查询的端口
+
+    Returns:
+        int: 可用的端口
+    """
+    if is_port_in_use(port):
+        logger.debug("%s 端口已占用, 寻找新端口", port)
+        return find_port(port=port + 1)
+    else:
+        logger.debug("%s 端口可用", port)
+        return port
