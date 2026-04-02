@@ -425,7 +425,7 @@ class Aria2RpcServer:
             "aria2c",
             "--enable-rpc=true",
             f"--rpc-listen-port={self.port}",
-            "--rpc-listen-all=true",
+            "--rpc-listen-all=false",
             "--rpc-allow-origin-all=true",
             f"--dir={self.download_dir.as_posix()}",
             f"--max-concurrent-downloads={self.max_concurrent_downloads}",
