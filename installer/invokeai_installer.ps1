@@ -159,7 +159,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 376
+$script:INVOKEAI_INSTALLER_VERSION = 377
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
@@ -1350,7 +1350,7 @@ function Get-HelpMessage {
     }
     `$usage = @`"
 使用:
-    `${script:PSCommandPath} `$(foreach (`$i in `$display_params.Name) { `"[`$i]`" })
+    `${script:OriginalScriptPath} `$(foreach (`$i in `$display_params.Name) { `"[`$i]`" })
 `"@
     `$param_info = @`"
 参数:
