@@ -55,7 +55,7 @@ jobs:
             )
             $data = @()
 
-            ForEach ($i in $installer_list) {
+            foreach ($i in $installer_list) {
                 $ver = Get-Installer-Version $i[0] $i[1]
                 if (!$ver) {
                     $has_error = $true

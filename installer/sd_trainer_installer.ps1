@@ -184,7 +184,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 401
+$script:SD_TRAINER_INSTALLER_VERSION = 402
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
@@ -809,7 +809,7 @@ function Install-WindowsAria2 {
     )
     $i = 0
 
-    ForEach ($url in $urls) {
+    foreach ($url in $urls) {
         Write-Log "正在下载 Aria2"
         try {
             $web_request_params = @{
@@ -1200,7 +1200,7 @@ function Update-Installer {
         return
     }
 
-    ForEach (`$url in `$urls) {
+    foreach (`$url in `$urls) {
         Write-Log `"检查 SD Trainer Installer 更新中`"
         try {
             `$web_request_params = @{
@@ -1258,7 +1258,7 @@ function Update-WindowsAria2 {
     `$aria2_tmp_path = Join-NormalizedPath `$env:CACHE_HOME `"aria2c.exe`"
     New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
 
-    ForEach (`$url in `$urls) {
+    foreach (`$url in `$urls) {
         Write-Log `"下载 Aria2 中`"
         try {
             `$web_request_params = @{
@@ -1438,7 +1438,7 @@ function Get-HelpMessage {
 )
 `"@
     `$docs_url = `"更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md`"
-    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `$docs_url) -ForegroundColor White
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url) -ForegroundColor White
     exit 0
 }
 
@@ -1885,7 +1885,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2141,7 +2141,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2259,7 +2259,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2435,7 +2435,7 @@ function Download-Installer {
 
     New-Item -ItemType Directory -Path (Join-NormalizedPath `$PSScriptRoot `"cache`") -Force > `$null
 
-    ForEach (`$url in `$urls) {
+    foreach (`$url in `$urls) {
         Write-Log `"正在下载最新的 SD Trainer Installer 脚本`"
         `$web_request_params = @{
             Uri = `$url
@@ -2545,7 +2545,7 @@ function Get-LocalSetting {
 function Get-ExtraArgs {
     `$extra_args = New-Object System.Collections.ArrayList
 
-    ForEach (`$a in `$ExtraArgs) {
+    foreach (`$a in `$ExtraArgs) {
         `$extra_args.Add(`$a) | Out-Null
     }
 
@@ -2646,7 +2646,7 @@ try {
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2759,7 +2759,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2861,7 +2861,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3130,13 +3130,27 @@ try {
         LaunchCommandLine = `$script:MyInvocation.Line
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
+        DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableGithubMirror = `$script:DisableGithubMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
+        UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
         `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
+        `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
     }, `$config)
 }
 catch {
@@ -3243,7 +3257,7 @@ function global:Install-Hanamizuki {
         Write-Log `"绘世启动器已安装, 路径: `$([System.IO.Path]::GetFullPath((Join-NormalizedPath `$env:SD_TRAINER_INSTALLER_ROOT `$env:CORE_PREFIX `"hanamizuki.exe`")))`"
         Write-Log `"可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器`"
     } else {
-        ForEach (`$url in `$urls) {
+        foreach (`$url in `$urls) {
             Write-Log `"下载绘世启动器中`"
             try {
                 `$web_request_params = @{
@@ -3508,7 +3522,7 @@ try {
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3772,7 +3786,7 @@ function Install-Hanamizuki {
         Write-Log "绘世启动器已安装, 路径: $([System.IO.Path]::GetFullPath((Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX 'hanamizuki.exe')))"
         Write-Log "可以进入该路径启动绘世启动器, 也可运行 hanamizuki.bat 启动绘世启动器"
     } else {
-        ForEach ($url in $urls) {
+        foreach ($url in $urls) {
             Write-Log "下载绘世启动器中"
             try {
                 $web_request_params = @{
@@ -4069,7 +4083,7 @@ $(
 )
 "@
     $docs_url = "更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md"
-    Write-Host $($usage + "`n`n" + $param_info + $docs_url) -ForegroundColor White
+    rite-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
     exit 0
 }
 

@@ -11,7 +11,7 @@ $model_list = @(
 $vae_approx_path = $VAEApproxPath
 New-Item -ItemType Directory -Path "$vae_approx_path" -Force
 
-ForEach ($url in $model_list) {
+foreach ($url in $model_list) {
     $filename = Split-Path $url -Leaf
     $model_path = Join-Path -Path $vae_approx_path -ChildPath $filename
     if (Test-Path $model_path) {

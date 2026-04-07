@@ -52,7 +52,7 @@ jobs:
         shell: pwsh
         run: |
           $file_list = Get-ChildItem -Path "**/*.ps1" -Filter *.ps1 -Recurse
-          ForEach ($file in $file_list) {
+          foreach ($file in $file_list) {
               Invoke-ScriptAnalyzer -Path "$file" -Recurse -OutVariable issues -Severity @("Error", "ParseError")
               $errors = $issues.Where({$_.Severity -eq 'Error'})
               $parse_errors = $issues.Where({$_.Severity -eq 'ParseError'})
