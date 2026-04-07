@@ -1,33 +1,121 @@
 ﻿param (
-    [switch]$Help,
-    [string]$CorePrefix,
-    [string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "InvokeAI"),
-    [string]$PyTorchMirrorType,
-    [string]$InstallPythonVersion,
-    [switch]$UseUpdateMode,
-    [switch]$DisablePyPIMirror,
-    [switch]$DisableProxy,
-    [string]$UseCustomProxy,
-    [switch]$DisableUV,
-    [switch]$DisableGithubMirror,
-    [string]$UseCustomGithubMirror,
-    [switch]$BuildMode,
-    [string]$BuildWithTorch,
-    [string]$BuildWithModel,
-    [switch]$BuildWithUpdate,
-    [switch]$BuildWithUpdateNode,
-    [switch]$BuildWithLaunch,
-    [switch]$NoPreDownloadModel,
-    [switch]$NoCleanCache,
+    [Parameter(HelpMessage=@"
+获取 InvokeAI Installer 的帮助信息
+"@)][switch]$Help,
+
+    [Parameter(HelpMessage=@"
+设置内核的路径前缀, 默认路径前缀为 core
+"@)][string]$CorePrefix,
+
+    [Parameter(HelpMessage=@"
+指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
+"@)][string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "InvokeAI"),
+
+    [Parameter(HelpMessage=@"
+指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cuda, rocm, xpu, mps, cpu
+"@)][string]$PyTorchMirrorType,
+
+    [Parameter(HelpMessage=@"
+指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
+"@)][string]$InstallPythonVersion,
+
+    [Parameter(HelpMessage=@"
+指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新
+"@)][switch]$UseUpdateMode,
+
+    [Parameter(HelpMessage=@"
+禁用 InvokeAI Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+"@)][switch]$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@"
+禁用 InvokeAI Installer 自动设置代理服务器
+"@)][switch]$DisableProxy,
+
+    [Parameter(HelpMessage=@"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+"@)][string]$UseCustomProxy,
+
+    [Parameter(HelpMessage=@"
+禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+"@)][switch]$DisableUV,
+
+    [Parameter(HelpMessage=@"
+禁用 InvokeAI Installer 自动设置 Github 镜像源
+"@)][switch]$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@"
+使用自定义的 Github 镜像站地址
+"@)][string]$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@"
+启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
+当指定调用多个 InvokeAI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
+    - reinstall_pytorch.ps1     (对应 -BuildWithTorch 参数)
+    - download_models.ps1       (对应 -BuildWithModel 参数)
+    - update.ps1                (对应 -BuildWithUpdate 参数)
+    - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
+    - launch.ps1                (对应 -BuildWithLaunch 参数)
+"@)][switch]$BuildMode,
+
+    [Parameter(HelpMessage=@"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
+PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
+"@)][string]$BuildWithTorch,
+
+    [Parameter(HelpMessage=@"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+模型编号可运行 download_models.ps1 脚本进行查看
+"@)][string]$BuildWithModel,
+
+    [Parameter(HelpMessage=@"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update.ps1 脚本, 更新 InvokeAI 内核
+"@)][switch]$BuildWithUpdate,
+
+    [Parameter(HelpMessage=@"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update_node.ps1 脚本, 更新 InvokeAI 扩展
+"@)][switch]$BuildWithUpdateNode,
+
+    [Parameter(HelpMessage=@"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本, 执行启动 InvokeAI 前的环境检查流程, 但跳过启动 InvokeAI
+"@)][switch]$BuildWithLaunch,
+
+    [Parameter(HelpMessage=@"
+安装 InvokeAI 时跳过预下载模型
+"@)][switch]$NoPreDownloadModel,
+
+    [Parameter(HelpMessage=@"
+安装结束后保留下载 Python 软件包缓存
+"@)][switch]$NoCleanCache,
+
 
     # 仅在管理脚本中生效
-    [switch]$DisableUpdate,
-    [switch]$DisableHuggingFaceMirror,
-    [string]$UseCustomHuggingFaceMirror,
-    [string]$LaunchArg,
-    [switch]$EnableShortcut,
-    [switch]$DisableCUDAMalloc,
-    [switch]$DisableEnvCheck
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查
+"@)][switch]$DisableUpdate,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+"@)][switch]$DisableHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+"@)][string]$UseCustomHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 设置 InvokeAI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg `"--fast --auto-launch`" 进行启用
+"@)][string]$LaunchArg,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式
+"@)][switch]$EnableShortcut,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+"@)][switch]$DisableCUDAMalloc,
+
+    [Parameter(HelpMessage=@"
+(仅在 InvokeAI Installer 构建模式下生效, 且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题, 禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复
+"@)][switch]$DisableEnvCheck
 )
 
 function Join-NormalizedPath {
@@ -794,6 +882,7 @@ function Write-ModulesScript {
 param (
     [string]`$OriginalScriptPath,
     [string]`$LaunchCommandLine,
+    [switch]`$Help,
     [string]`$CorePrefix,
     [switch]`$DisableUpdate,
     [switch]`$BuildMode,
@@ -1231,6 +1320,57 @@ function Get-Version {
 }
 
 
+# 获取帮助信息
+function Get-HelpMessage {
+    if (!(`$script:Help)) { return }
+    `$script = Get-Command `$script:OriginalScriptPath
+    `$common = [System.Management.Automation.Internal.CommonParameters].GetProperties().Name
+    `$display_params = `$script.Parameters.Values | Where-Object { `$_.Name -notin `$common } | ForEach-Object {
+        `$p_name = `$_.Name
+        `$p_type = `$_.ParameterType.Name
+        if (`$_.ParameterType -eq [switch]) {
+            `$format = `"-`$p_name`"
+        }
+        else {
+            # 处理数组类型的显示逻辑
+            # 如果是数组, PowerShell 习惯在类型名后加 []
+            if (`$_.ParameterType.IsArray) {
+                # 移除原类型名中的 [] 或 System. 前缀, 统一格式
+                `$clean_type = `"`$(`$_.ParameterType.GetElementType().Name)[]`"
+            } else {
+                `$clean_type = `$p_type
+            }
+            `$format = `"-`$p_name <`$clean_type>`"
+        }
+        `$help_msg = `$_.Attributes.HelpMessage
+        [PSCustomObject]@{
+            Name = `$format
+            HelpMessage = `$help_msg
+        }
+    }
+    `$usage = @`"
+使用:
+    `${script:PSCommandPath} `$(foreach (`$i in `$display_params.Name) { `"[`$i]`" })
+`"@
+    `$param_info = @`"
+参数:
+`$(
+    foreach (`$i in `$display_params) {
+        `$text = `"    `$(`$i.Name)`"
+        if (`$i.HelpMessage) {
+            `$indented_help = (`$i.HelpMessage -split `"```r?```n`" | ForEach-Object { `"        `$_`" }) -join `"```n`"
+            `$text += `"```n`$indented_help`"
+        }
+        `$text + `"```n```n`"
+    }
+)
+`"@
+    `$docs_url = `"更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md`"
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `$docs_url) -ForegroundColor White
+    exit 0
+}
+
+
 # 设置内核路径前缀
 function Set-CorePrefix {
     `$target_prefix = `$null
@@ -1568,6 +1708,7 @@ Export-ModuleMember -Function ``
     Update-Installer, ``
     Update-Aria2, ``
     Get-Version, ``
+    Get-HelpMessage, ``
     Set-CorePrefix, ``
     Set-Proxy, ``
     Set-PyPIMirror, ``
@@ -1590,27 +1731,75 @@ Export-ModuleMember -Function ``
 function Write-LaunchScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUpdate,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$DisableUV,
-    [string]`$LaunchArg,
-    [switch]`$EnableShortcut,
-    [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableEnvCheck
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 InvokeAI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+`"@)][switch]`$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+`"@)][switch]`$DisableHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+`"@)][string]`$UseCustomHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置 Github 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 Github 镜像站地址
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+`"@)][switch]`$DisableUV,
+
+    [Parameter(HelpMessage=@`"
+设置 InvokeAI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+`"@)][string]`$LaunchArg,
+
+    [Parameter(HelpMessage=@`"
+创建 InvokeAI 启动快捷方式
+`"@)][switch]`$EnableShortcut,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+`"@)][switch]`$DisableCUDAMalloc,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题, 禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复
+`"@)][switch]`$DisableEnvCheck
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableUV = `$script:DisableUV
         DisableProxy = `$script:DisableProxy
@@ -1624,10 +1813,11 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableUV = `$cfg.DisableUV
         `$script:DisableProxy = `$cfg.DisableProxy
@@ -1650,67 +1840,6 @@ catch {
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
 }
-
-
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-DisablePyPIMirror] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-DisableUV] [-LaunchArg <InvokeAI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUpdate
-        禁用 InvokeAI Installer 更新检查
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableHuggingFaceMirror
-        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
-
-    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
-
-    -DisableUV
-        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-    -LaunchArg <InvokeAI 启动参数>
-        设置 InvokeAI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
-
-    -EnableShortcut
-        创建 InvokeAI 启动快捷方式
-
-    -DisableCUDAMalloc
-        禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
-
-    -DisableEnvCheck
-        禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题, 禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
-
 
 
 # 获取启动参数
@@ -1821,7 +1950,7 @@ function Get-LaunchCoreArgs {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -1876,19 +2005,43 @@ Main
 function Write-UpdateScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [switch]`$DisableUpdate,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUV
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 InvokeAI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+`"@)][switch]`$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+`"@)][switch]`$DisableUV
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
@@ -1897,10 +2050,11 @@ try {
         DisablePyPIMirror = `$script:DisablePyPIMirror
         DisableUV = `$script:DisableUV
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Set-uv`", `"Set-PyPIMirror`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Set-uv`", `"Set-PyPIMirror`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
@@ -1920,47 +2074,6 @@ catch {
 }
 
 
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisablePyPIMirror] [-DisableUV]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式
-
-    -DisableUpdate
-        禁用 InvokeAI Installer 更新检查
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUV
-        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
-
-
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
@@ -1971,7 +2084,7 @@ function Get-LaunchCoreArgs {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -2000,19 +2113,43 @@ Main
 function Write-UpdateNodeScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [switch]`$DisableUpdate,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 invokeai
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 InvokeAI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置 Github 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 Github 镜像站地址
+`"@)][string]`$UseCustomGithubMirror
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
@@ -2021,10 +2158,11 @@ try {
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
@@ -2044,48 +2182,6 @@ catch {
 }
 
 
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableUpdate] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像源地址>]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式
-
-    -DisableUpdate
-        禁用 InvokeAI Installer 更新检查
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableGithubMirror
-        禁用 InvokeAI Installer 自动设置 Github 镜像源
-
-    -UseCustomGithubMirror <Github 镜像站地址>
-        使用自定义的 Github 镜像站地址
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
-
-
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
@@ -2095,7 +2191,7 @@ function Get-LaunchCoreArgs {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -2354,20 +2450,48 @@ Main
 function Write-PyTorchReInstallScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [string]`$BuildWithTorch,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableUpdate,
-    [switch]`$DisableUV,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 InvokeAI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
+PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
+`"@)][string]`$BuildWithTorch,
+
+    [Parameter(HelpMessage=@`"
+禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+`"@)][switch]`$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+`"@)][switch]`$DisableUV,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableUV = `$script:DisableUV
         DisableProxy = `$script:DisableProxy
@@ -2376,10 +2500,11 @@ try {
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableUV = `$cfg.DisableUV
         `$script:DisableProxy = `$cfg.DisableProxy
@@ -2396,52 +2521,6 @@ catch {
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
-}
-
-
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithTorch <PyTorch 版本编号>] [-DisablePyPIMirror] [-DisableUpdate] [-DisableUV] [-DisableProxy] [-UseCustomProxy]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式
-
-    -BuildWithTorch <PyTorch 类型>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
-        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableUpdate
-        禁用 InvokeAI Installer 更新检查
-
-    -DisableUV
-        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
 }
 
 
@@ -2462,7 +2541,7 @@ function Get-LaunchCoreArgs {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -2491,28 +2570,51 @@ Main
 function Write-DownloadModelScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$BuildMode,
-    [string]`$BuildWithModel,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisableUpdate
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 InvokeAI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+(需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
+模型编号可运行 download_models.ps1 脚本进行查看
+`"@)][string]`$BuildWithModel,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
@@ -2527,46 +2629,6 @@ catch {
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if (!(`$script:BuildMode)) { Read-Host | Out-Null }
     exit 1
-}
-
-
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-BuildMode] [-BuildWithModel <模型编号列表>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUpdate]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式
-
-    -BuildWithModel <模型编号列表>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
-        模型编号可运行 download_models.ps1 脚本进行查看
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableUpdate
-        禁用 InvokeAI Installer 更新检查
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
 }
 
 
@@ -2589,7 +2651,7 @@ function Get-LaunchCoreArgs {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -2619,23 +2681,36 @@ Main
 function Write-SettingsScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy
 )
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
     }
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
@@ -2648,35 +2723,6 @@ catch {
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     Read-Host | Out-Null
     exit 1
-}
-
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisableProxy] [-UseCustomProxy]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$script:Help) {
-        Write-Host `$content
-        exit 0
-    }
 }
 
 
@@ -2822,7 +2868,7 @@ function Get-UserInput {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -2887,26 +2933,56 @@ Read-Host | Out-Null
 function Write-EnvActivateScript {
     $content = "
 param (
-    [switch]`$Help,
-    [string]`$CorePrefix,
-    [switch]`$DisablePyPIMirror,
-    [switch]`$DisableGithubMirror,
-    [string]`$UseCustomGithubMirror,
-    [switch]`$DisableProxy,
-    [string]`$UseCustomProxy,
-    [switch]`$DisableHuggingFaceMirror,
-    [string]`$UseCustomHuggingFaceMirror
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+`"@)][switch]`$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置 Github 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 Github 镜像站地址
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+`"@)][switch]`$DisableHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+`"@)][string]`$UseCustomHuggingFaceMirror
 )
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
-    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-NormalizedFilePath`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-        `$script:CorePrefix = `$script:CorePrefix
-    })
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
+        CorePrefix = `$script:CorePrefix
+    }
+    (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
+        `$script:CorePrefix = `$cfg.CorePrefix
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -2978,52 +3054,6 @@ catch {
 `$env:UV_CACHE_DIR = Join-NormalizedPath `$PSScriptRoot `"cache`" `"uv`"
 `$env:INVOKEAI_PATH = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
 `$env:INVOKEAI_INSTALLER_ROOT = `$PSScriptRoot
-
-
-
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    `$content = `"
-使用:
-    ./`$(`$script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-DisablePyPIMirror] [-DisableGithubMirror] [-UseCustomGithubMirror <github 镜像源地址>] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 invokeai
-
-    -DisablePyPIMirror
-        禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableGithubMirror
-        禁用 InvokeAI Installer 自动设置 Github 镜像源
-
-    -UseCustomGithubMirror <Github 镜像站地址>
-        使用自定义的 Github 镜像站地址
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-
-    -DisableHuggingFaceMirror
-        禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
-
-    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-`".Trim()
-
-    if (`$Help) {
-        Write-Host `$content
-        exit 0
-    }
-}
 
 
 # 提示符信息
@@ -3124,7 +3154,7 @@ function Set-GithubMirrorLegecy {
 
 
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
@@ -3161,14 +3191,15 @@ Main
 function Write-LaunchTerminalScript {
     $content = "
 try {
-    `$global:OriginalScriptPath = `$PSCommandPath
-    `$global:LaunchCommandLine = `$MyInvocation.Line
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+    }
     (Import-Module `"`$PSScriptRoot/modules.psm1`" -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
-        `$script:OriginalScriptPath = `$global:OriginalScriptPath
-        `$script:LaunchCommandLine = `$global:LaunchCommandLine
-        Remove-Variable OriginalScriptPath -Scope Global -Force
-        Remove-Variable LaunchCommandLine -Scope Global -Force
-    })
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+    }, `$config)
 }
 catch {
     Write-Error `"导入 Installer 模块发生错误: `$_`"
@@ -3483,117 +3514,60 @@ if '%errorlevel%' NEQ '0' (
 }
 
 
-# 帮助信息
-function Get-InstallerCmdletHelp {
-    $content = "
-使用:
-    ./$($script:MyInvocation.MyCommand.Name) [-Help] [-CorePrefix <内核路径前缀>] [-InstallPath <安装 InvokeAI 的绝对路径>] [-PyTorchMirrorType <PyTorch 镜像源类型>] [-InstallPythonVersion <Python 版本>] [-UseUpdateMode] [-DisablePyPIMirror] [-DisableProxy] [-UseCustomProxy <代理服务器地址>] [-DisableUV] [-DisableGithubMirror] [-UseCustomGithubMirror <Github 镜像站地址>] [-BuildMode] [-BuildWithTorch <PyTorch 类型>] [-BuildWithModel <模型编号列表>] [-BuildWithUpdate] [-BuildWithUpdateNode] [-BuildWithLaunch] [-NoPreDownloadModel] [-NoCleanCache] [-DisableUpdate] [-DisableHuggingFaceMirror] [-UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>] [-LaunchArg <InvokeAI 启动参数>] [-EnableShortcut] [-DisableCUDAMalloc] [-DisableEnvCheck]
-
-参数:
-    -Help
-        获取 InvokeAI Installer 的帮助信息
-
-    -CorePrefix <内核路径前缀>
-        设置内核的路径前缀, 默认路径前缀为 core
-
-    -InstallPath <安装 InvokeAI 的绝对路径>
-        指定 InvokeAI Installer 安装 InvokeAI 的路径, 使用绝对路径表示
-        例如: ./$($script:MyInvocation.MyCommand.Name) -InstallPath `"D:\Download`", 这将指定 InvokeAI Installer 安装 InvokeAI 到 D:\Download 这个路径
-
-    -PyTorchMirrorType <PyTorch 镜像源类型>
-        指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cuda, rocm, xpu, mps, cpu
-
-    -InstallPythonVersion <Python 版本>
-        指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
-
-    -UseUpdateMode
-        指定 InvokeAI Installer 使用更新模式, 只对 InvokeAI Installer 的管理脚本进行更新
-
-    -DisablePyPIMirror
-        禁用 InvokeAI Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-
-    -DisableProxy
-        禁用 InvokeAI Installer 自动设置代理服务器
-
-    -UseCustomProxy <代理服务器地址>
-        使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
-
-    -DisableUV
-        禁用 InvokeAI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-
-    -DisableGithubMirror
-        禁用 InvokeAI Installer 自动设置 Github 镜像源
-
-    -UseCustomGithubMirror <Github 镜像站地址>
-        使用自定义的 Github 镜像站地址
-
-    -BuildMode
-        启用 InvokeAI Installer 构建模式, 在基础安装流程结束后将调用 InvokeAI Installer 管理脚本执行剩余的安装任务, 并且出现错误时不再暂停 InvokeAI Installer 的执行, 而是直接退出
-        当指定调用多个 InvokeAI Installer 脚本时, 将按照优先顺序执行 (按从上到下的顺序)
-            - reinstall_pytorch.ps1     (对应 -BuildWithTorch 参数)
-            - download_models.ps1       (对应 -BuildWithModel 参数)
-            - update.ps1                (对应 -BuildWithUpdate 参数)
-            - update_node.ps1           (对应 -BuildWithUpdateNode 参数)
-            - launch.ps1                (对应 -BuildWithLaunch 参数)
-
-    -BuildWithTorch <PyTorch 类型>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 reinstall_pytorch.ps1 脚本, 根据 PyTorch 类型安装指定的 PyTorch 版本
-        PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
-
-    -BuildWithModel <模型编号列表>
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 download_models.ps1 脚本, 根据模型编号列表下载指定的模型
-        模型编号可运行 download_models.ps1 脚本进行查看
-
-    -BuildWithUpdate
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update.ps1 脚本, 更新 InvokeAI 内核
-
-    -BuildWithUpdateNode
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 update_node.ps1 脚本, 更新 InvokeAI 扩展
-
-    -BuildWithLaunch
-        (需添加 -BuildMode 启用 InvokeAI Installer 构建模式) InvokeAI Installer 执行完基础安装流程后调用 InvokeAI Installer 的 launch.ps1 脚本, 执行启动 InvokeAI 前的环境检查流程, 但跳过启动 InvokeAI
-
-    -NoPreDownloadModel
-        安装 InvokeAI 时跳过预下载模型
-
-    -NoCleanCache
-        安装结束后保留下载 Python 软件包缓存
-
-    -DisableUpdate
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 更新检查
-
-    -DisableHuggingFaceMirror
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
-
-    -UseCustomHuggingFaceMirror <HuggingFace 镜像源地址>
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
-
-    -LaunchArg <InvokeAI 启动参数>
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 设置 InvokeAI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg `"--fast --auto-launch`" 进行启用
-
-    -EnableShortcut
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 创建 InvokeAI 启动快捷方式
-
-    -DisableCUDAMalloc
-        (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
-
-    -DisableEnvCheck
-        (仅在 InvokeAI Installer 构建模式下生效, 且只作用于 InvokeAI Installer 管理脚本) 禁用 InvokeAI Installer 检查 InvokeAI 运行环境中存在的问题, 禁用后可能会导致 InvokeAI 环境中存在的问题无法被发现并修复
-
-
-更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md
-".Trim()
-
-    if ($script:Help) {
-        Write-Host $content
-        exit 0
+# 获取帮助信息
+function Get-HelpMessage {
+    if (!($script:Help)) { return }
+    $script = Get-Command $script:PSCommandPath
+    $common = [System.Management.Automation.Internal.CommonParameters].GetProperties().Name
+    $display_params = $script.Parameters.Values | Where-Object { $_.Name -notin $common } | ForEach-Object {
+        $p_name = $_.Name
+        $p_type = $_.ParameterType.Name
+        if ($_.ParameterType -eq [switch]) {
+            $format = "-$p_name"
+        }
+        else {
+            # 处理数组类型的显示逻辑
+            # 如果是数组, PowerShell 习惯在类型名后加 []
+            if ($_.ParameterType.IsArray) {
+                # 移除原类型名中的 [] 或 System. 前缀, 统一格式
+                $clean_type = "$($_.ParameterType.GetElementType().Name)[]"
+            } else {
+                $clean_type = $p_type
+            }
+            $format = "-$p_name <$clean_type>"
+        }
+        $help_msg = $_.Attributes.HelpMessage
+        [PSCustomObject]@{
+            Name = $format
+            HelpMessage = $help_msg
+        }
     }
+    $usage = @"
+使用:
+    ${script:PSCommandPath} $(foreach ($i in $display_params.Name) { "[$i]" })
+"@
+    $param_info = @"
+参数:
+$(
+    foreach ($i in $display_params) {
+        $text = "    $($i.Name)"
+        if ($i.HelpMessage) {
+            $indented_help = ($i.HelpMessage -split "`r?`n" | ForEach-Object { "        $_" }) -join "`n"
+            $text += "`n$indented_help"
+        }
+        $text + "`n`n"
+    }
+)
+"@
+    $docs_url = "更多的帮助信息请阅读 InvokeAI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/invokeai_installer.md"
+    Write-Host $($usage + "`n`n" + $param_info + $docs_url) -ForegroundColor White
+    exit 0
 }
 
 
 # 主程序
 function Main {
-    Get-InstallerCmdletHelp
+    Get-HelpMessage
     Get-Version
     Get-CorePrefixStatus
 
