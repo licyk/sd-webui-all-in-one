@@ -156,7 +156,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 184
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 185
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
@@ -3337,7 +3337,7 @@ $(
 )
 "@
     $docs_url = "更多的帮助信息请阅读 Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
-    rite-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
     exit 0
 }
 

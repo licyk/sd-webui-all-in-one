@@ -178,7 +178,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 379
+$script:COMFYUI_INSTALLER_VERSION = 380
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
@@ -3956,7 +3956,7 @@ $(
 )
 "@
     $docs_url = "更多的帮助信息请阅读 ComfyUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/comfyui_installer.md"
-    rite-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
     exit 0
 }
 
