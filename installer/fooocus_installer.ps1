@@ -9,7 +9,7 @@
 
     [Parameter(HelpMessage=@"
 指定 Fooocus Installer 安装 Fooocus 的路径, 使用绝对路径表示
-"@)][string]$InstallPath = (Join-Path -Path "$PSScriptRoot" -ChildPath "Fooocus"),
+"@)][string]$InstallPath,
 
     [Parameter(HelpMessage=@"
 指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
@@ -32,7 +32,7 @@
 "@)][switch]$DisableProxy,
 
     [Parameter(HelpMessage=@"
-使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy "http://127.0.0.1:10809" 设置代理服务器地址
 "@)][string]$UseCustomProxy,
 
     [Parameter(HelpMessage=@"
@@ -98,11 +98,11 @@ Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][switch]$NoPreDownloadModel,
 
     [Parameter(HelpMessage=@"
-(需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage `"torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`"
+(需要同时搭配 -xFormersPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 PyTorch 版本, 如 -PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"
 "@)][string]$PyTorchPackage,
 
     [Parameter(HelpMessage=@"
-(需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage `"xformers===0.0.26.post1+cu118`"
+(需要同时搭配 -PyTorchPackage 一起使用, 否则可能会出现 PyTorch 和 xFormers 不匹配的问题) 指定要安装 xFormers 版本, 如 -xFormersPackage "xformers===0.0.26.post1+cu118"
 "@)][string]$xFormersPackage,
 
     [Parameter(HelpMessage=@"
@@ -124,11 +124,11 @@ Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][switch]$DisableHuggingFaceMirror,
 
     [Parameter(HelpMessage=@"
-(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
+(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror "https://hf-mirror.com" 设置 HuggingFace 镜像源地址
 "@)][string]$UseCustomHuggingFaceMirror,
 
     [Parameter(HelpMessage=@"
-(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 设置 Fooocus 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg `"--fast --auto-launch`" 进行启用
+(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 设置 Fooocus 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg "--fast --auto-launch" 进行启用
 "@)][string]$LaunchArg,
 
     [Parameter(HelpMessage=@"
@@ -148,6 +148,10 @@ function Join-NormalizedPath {
     $joined = $args[0]
     for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
+}
+
+if (-not $script:InstallPath) {
+    $script:InstallPath = Join-NormalizedPath $PSScriptRoot "Fooocus"
 }
 
 $script:InstallPath = Join-NormalizedPath $script:InstallPath
@@ -185,7 +189,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 297
+$script:FOOOCUS_INSTALLER_VERSION = 298
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
