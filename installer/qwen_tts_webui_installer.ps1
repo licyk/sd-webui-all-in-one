@@ -160,7 +160,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 186
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 187
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.0.65"
@@ -1615,11 +1615,22 @@ function Add-MacOSShortcut {
     New-Item -ItemType Directory -Path `$macos_path -Force | Out-Null
     New-Item -ItemType Directory -Path `$resources_path -Force | Out-Null
 
+    `$working_dir_for_shell = `$PSScriptRoot.Replace('`"', '\`"').Replace('$', '\$')
+    `$pwsh_bin_for_shell = `$pwsh_bin.Replace('`"', '\`"').Replace('$', '\$')
+    `$launch_script_for_shell = `$launch_script_path.Replace('`"', '\`"').Replace('$', '\$')
+
     `$executable_path = Join-NormalizedPath `$macos_path `"launcher`"
     `$sh_content = @`"
 #!/bin/bash
-`"`$pwsh_bin`" -ExecutionPolicy Bypass -File `"`$launch_script_path`"
+
+osascript <<'APPLESCRIPT'
+tell application `"Terminal`"
+    activate
+    do script `"cd \`"`$working_dir_for_shell\`" || exit 1; exec \`"`$pwsh_bin_for_shell\`" -NoExit -ExecutionPolicy Bypass -File \`"`$launch_script_for_shell\`"`"
+end tell
+APPLESCRIPT
 `"@
+    `$sh_content = `$sh_content.Replace(`"```r```n`", `"```n`").Replace(`"```r`", `"```n`")
     Write-FileWithStreamWriter -Path `$executable_path -Encoding UTF8 -Value `$sh_content
     & chmod +x `"`$executable_path`"
 
@@ -1635,10 +1646,22 @@ function Add-MacOSShortcut {
     <string>AppIcon.icns</string>
     <key>CFBundleName</key>
     <string>`${Name}</string>
+    <key>CFBundleDisplayName</key>
+    <string>`${Name}</string>
+    <key>CFBundleIdentifier</key>
+    <string>local.sdwebuiallinone.`$(`$Name.ToLower() -replace '[^a-z0-9]', '')</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
     <key>LSBackgroundOnly</key>
     <false/>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.13</string>
 </dict>
 </plist>
 `"@
