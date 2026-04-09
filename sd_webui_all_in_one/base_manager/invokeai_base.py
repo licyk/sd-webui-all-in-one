@@ -32,7 +32,10 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
 )
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.custom_exceptions import AggregateError
+from sd_webui_all_in_one.custom_exceptions import (
+    AggregateError,
+    WebUiRuntimeError,
+)
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
@@ -81,7 +84,6 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import print_divider
-from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 
 
 logger = get_logger(
@@ -712,7 +714,8 @@ def install_invokeai(
                 model_name="ChenkinNoob-XL-V0.2",
                 download_resource_type=model_download_resource_type,
             )
-            import_model_to_invokeai(model_list=([save_paths] if save_paths is not None else []))
+            if save_paths is not None:
+                import_model_to_invokeai(model_list=[save_paths])
 
     logger.info("安装 InvokeAI 完成")
 

@@ -160,10 +160,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 187
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 188
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.65"
+$script:CORE_MINIMUM_VER = "2.0.66"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -904,7 +904,8 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
-    [switch]`$DisableCUDAMalloc
+    [switch]`$DisableCUDAMalloc,
+    [switch]`$DisableModelMirror
 )
 # Qwen TTS WebUI Installer 版本和检查更新间隔
 `$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = $script:QWEN_TTS_WEBUI_INSTALLER_VERSION
@@ -1468,6 +1469,21 @@ function Set-PyPIMirror {
 }
 
 
+# 设置模型下载源
+function Set-ModelMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]`$ArrayList)
+    `$ArrayList.Add(`"--source`") | Out-Null
+    if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`"))) -and (!(`$script:DisableModelMirror))) {
+        Write-Log `"使用 ModelScope 模型下载源`"
+        `$ArrayList.Add(`"modelscope`") | Out-Null
+    } else {
+        Write-Log `"检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源`"
+        `$ArrayList.Add(`"huggingface`") | Out-Null
+    }
+}
+
+
 # HuggingFace 镜像源
 function Set-HuggingFaceMirror {
     [CmdletBinding()]
@@ -1744,6 +1760,7 @@ Export-ModuleMember -Function ``
     Get-HelpMessage, ``
     Set-CorePrefix, ``
     Set-Proxy, ``
+    Set-ModelMirror, ``
     Set-PyPIMirror, ``
     Set-HuggingFaceMirror, ``
     Set-GithubMirror, ``

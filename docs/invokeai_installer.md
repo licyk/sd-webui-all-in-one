@@ -37,6 +37,7 @@ _✨一键安装 InvokeAI_
       - [禁用自动设置代理](#禁用自动设置代理)
   - [资源管理](#资源管理)
     - [添加模型](#添加模型)
+    - [设置模型下载源](#设置模型下载源)
     - [InvokeAI 的使用方法](#invokeai-的使用方法)
     - [启用 InvokeAI 低显存模式](#启用-invokeai-低显存模式)
   - [维护与修复](#维护与修复)
@@ -149,6 +150,7 @@ _✨一键安装 InvokeAI_
 >- [设置 uv 包管理器](#设置-uv-包管理器)
 >- [配置代理](#配置代理)
 >- [设置内核路径前缀](#设置内核路径前缀)
+>- [设置模型下载源](#设置模型下载源)
 >
 >通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
@@ -336,6 +338,13 @@ InvokeAI Installer 默认启用了 PyPI镜像源加速下载 Python 软件包，
 
 ### 添加模型
 如果没有下载模型，可以使用 `download_models.ps1` 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。在 InvokeAI 左侧栏选择模型管理器，在模型管理器中可以添加本地的模型或者下载模型，可以和 SD WebUI / InvokeAI 共享模型。具体可以查看 [Installing Models - InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI/installation/050_INSTALLING_MODELS/)。
+
+
+### 设置模型下载源
+>[!IMPORTANT]  
+>该设置可通过 [管理 InvokeAI Installer 设置](#管理-invokeai-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+使用 `download_models.ps1` 脚本下载模型时，默认使用的下载源为 [ModelScope](https://modelscope.cn)，如果需要切换到 [HuggingFace](https://huggingface.co) 下载源，可以在和脚本同级的路径中创建一个 `disable_model_mirror.txt` 文件，再次启动 `download_models.ps1` 脚本时下载模型将使用 [HuggingFace](https://huggingface.co) 下载源。
 
 
 ### InvokeAI 的使用方法

@@ -101,7 +101,11 @@ def prepare_pytorch_install_info(
         mirrors[kind] = url
 
     torch_part: list[str] = []
-    mirrors: dict[str, str | list[str] | None] = {"index_url": [], "extra_index_url": [], "find_links": []}
+    mirrors: dict[str, str | list[str] | None] = {
+        "index_url": [],
+        "extra_index_url": [],
+        "find_links": [],
+    }
 
     # 配置 PyTorch 软件包列表
     if custom_pytorch_package is None:

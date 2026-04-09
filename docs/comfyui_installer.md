@@ -36,6 +36,7 @@ _✨一键安装 ComfyUI_
   - [资源管理](#资源管理)
     - [共享 Stable Diffusion WebUI 的模型](#共享-stable-diffusion-webui-的模型)
     - [下载模型](#下载模型)
+    - [设置模型下载源](#设置模型下载源)
     - [ComfyUI 使用方法](#comfyui-使用方法)
   - [维护与修复](#维护与修复)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
@@ -142,6 +143,7 @@ _✨一键安装 ComfyUI_
 >- [设置 uv 包管理器](#设置-uv-包管理器)
 >- [配置代理](#配置代理)
 >- [设置内核路径前缀](#设置内核路径前缀)
+>- [设置模型下载源](#设置模型下载源)
 >
 >通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
@@ -459,6 +461,13 @@ comfyui:
 
 ### 下载模型
 可以使用 `download_models.ps1` 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
+
+
+### 设置模型下载源
+>[!IMPORTANT]  
+>该设置可通过 [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+
+使用 `download_models.ps1` 脚本下载模型时，默认使用的下载源为 [ModelScope](https://modelscope.cn)，如果需要切换到 [HuggingFace](https://huggingface.co) 下载源，可以在和脚本同级的路径中创建一个 `disable_model_mirror.txt` 文件，再次启动 `download_models.ps1` 脚本时下载模型将使用 [HuggingFace](https://huggingface.co) 下载源。
 
 
 ### ComfyUI 使用方法

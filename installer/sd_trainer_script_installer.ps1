@@ -113,6 +113,10 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 安装结束后保留下载 Python 软件包缓存
 "@)][switch]$NoCleanCache,
 
+    [Parameter(HelpMessage=@"
+不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型
+"@)][switch]$DisableModelMirror,
+
 
     # 仅在管理脚本中生效
     [Parameter(HelpMessage=@"
@@ -189,10 +193,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 290
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 291
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.0.65"
+$script:CORE_MINIMUM_VER = "2.0.66"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -342,6 +346,21 @@ function Set-PyPIMirror {
 }
 
 
+# 设置模型下载源
+function Set-ModelMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]$ArrayList)
+    $ArrayList.Add("--model-resource") | Out-Null
+    if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt"))) -and (!($script:DisableModelMirror))) {
+        Write-Log "使用 ModelScope 模型下载源"
+        $ArrayList.Add("modelscope") | Out-Null
+    } else {
+        Write-Log "检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源"
+        $ArrayList.Add("huggingface") | Out-Null
+    }
+}
+
+
 # 代理配置
 function Set-Proxy {
     $env:NO_PROXY = "localhost,127.0.0.1,::1"
@@ -436,6 +455,7 @@ function Get-LaunchCoreArgs {
     Set-PyPIMirror $launch_params
     Set-Proxy
     Set-GithubMirror $launch_params
+    Set-ModelMirror $launch_params
     if ($script:NoPreDownloadModel) {
         $launch_params.Add("--no-pre-download-model") | Out-Null
     }
@@ -456,8 +476,6 @@ function Get-LaunchCoreArgs {
         $launch_params.Add("--install-branch") | Out-Null
         $launch_params.Add($target_branch) | Out-Null
     }
-    $launch_params.Add("--model-resource") | Out-Null
-    $launch_params.Add("modelscope") | Out-Null
     return $launch_params
 }
 
@@ -962,7 +980,8 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
-    [switch]`$DisableCUDAMalloc
+    [switch]`$DisableCUDAMalloc,
+    [switch]`$DisableModelMirror
 )
 # SD Trainer Script Installer 版本和检查更新间隔
 `$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = $script:SD_TRAINER_SCRIPT_INSTALLER_VERSION
@@ -1526,6 +1545,21 @@ function Set-PyPIMirror {
 }
 
 
+# 设置模型下载源
+function Set-ModelMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]`$ArrayList)
+    `$ArrayList.Add(`"--source`") | Out-Null
+    if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`"))) -and (!(`$script:DisableModelMirror))) {
+        Write-Log `"使用 ModelScope 模型下载源`"
+        `$ArrayList.Add(`"modelscope`") | Out-Null
+    } else {
+        Write-Log `"检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源`"
+        `$ArrayList.Add(`"huggingface`") | Out-Null
+    }
+}
+
+
 # HuggingFace 镜像源
 function Set-HuggingFaceMirror {
     [CmdletBinding()]
@@ -1803,6 +1837,7 @@ Export-ModuleMember -Function ``
     Set-CorePrefix, ``
     Set-Proxy, ``
     Set-PyPIMirror, ``
+    Set-ModelMirror, ``
     Set-HuggingFaceMirror, ``
     Set-GithubMirror, ``
     Set-uv, ``
@@ -2748,7 +2783,11 @@ param (
 
     [Parameter(HelpMessage=@`"
 禁用 SD Trainer Script Installer 更新检查
-`"@)][switch]`$DisableUpdate
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型
+`"@)][switch]`$DisableModelMirror
 )
 try {
     `$config = @{
@@ -2760,8 +2799,9 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        DisableModelMirror = `$script:DisableModelMirror
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2771,6 +2811,7 @@ try {
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:DisableModelMirror = `$cfg.DisableModelMirror
     }, `$config)
 }
 catch {
@@ -2793,8 +2834,7 @@ function Get-LaunchCoreArgs {
     if (!(`$script:BuildMode)) {
         `$launch_params.Add(`"--interactive`") | Out-Null
     }
-    `$launch_params.Add(`"--source`") | Out-Null
-    `$launch_params.Add(`"modelscope`") | Out-Null
+    Set-ModelMirror `$launch_params
     `$launch_params.Add(`"--downloader`") | Out-Null
     `$launch_params.Add(`"aria2`") | Out-Null
     return `$launch_params
@@ -3017,16 +3057,17 @@ function Main {
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=6;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=7;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=9; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
+            @{ id=6;  n=`"模型下载源`"; v=`$(Get-ToggleStatus `"disable_model_mirror.txt`" `"ModelScope`" `"HuggingFace`" `$true) },
+            @{ id=7;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
+            @{ id=8;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
+            @{ id=9;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"12. 检查更新 | 13. 文档 | 14. 退出`"
+        Write-Log `"13. 检查更新 | 14. 文档 | 15. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
@@ -3036,20 +3077,21 @@ function Main {
             `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"HuggingFace`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
             `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
             `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
-            `"6`"  { 
+            `"6`"  { Set-ToggleSetting `"disable_model_mirror.txt`" `"模型下载源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`")) }
+            `"7`"  { 
                 Write-Log `"请输入启动参数 (直接回车删除):`"
                 `$args = Get-UserInput
                 if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
                 else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
             }
-            `"7`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
-            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
-            `"9`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
-            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
-            `"11`" { Update-Core-Prefix }
-            `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
-            `"14`" { Write-Log `"退出设置`"; return }
+            `"8`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
+            `"9`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
+            `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
+            `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
+            `"12`" { Update-Core-Prefix }
+            `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
+            `"15`" { Write-Log `"退出设置`"; return }
         }
     }
 }
@@ -3505,6 +3547,11 @@ function Copy-InstallerConfig {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")"
     }
+
+    if ((!($script:DisableModelMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_model_mirror.txt")"
+    }
 }
 
 
@@ -3571,6 +3618,7 @@ function Use-BuildMode {
         if ($script:UseCustomProxy) { $launch_args.Add("-UseCustomProxy", $script:UseCustomProxy) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
+        if ($script:DisableModelMirror) { $launch_args.Add("-DisableModelMirror", $true) }
         Write-Log "执行模型安装脚本中"
         . (Join-NormalizedPath $script:InstallPath "download_models.ps1") @launch_args
     }

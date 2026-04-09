@@ -32,8 +32,6 @@ _✨一键安装 Qwen TTS WebUI_
       - [1. 使用系统代理](#1-使用系统代理)
       - [2. 使用配置文件](#2-使用配置文件)
       - [禁用自动设置代理](#禁用自动设置代理)
-  - [资源管理](#资源管理)
-    - [下载模型](#下载模型)
   - [维护与修复](#维护与修复)
     - [恢复被修改 / 删除的脚本](#恢复被修改--删除的脚本)
     - [使用 Qwen TTS WebUI Installer 管理已有的 Qwen TTS WebUI](#使用-qwen-tts-webui-installer-管理已有的-qwen-tts-webui)
@@ -337,13 +335,6 @@ Qwen TTS WebUI Installer 默认启用了 PyPI镜像源加速下载 Python 软件
 >该设置可通过 [管理 Qwen TTS WebUI Installer 设置](#管理-qwen-tts-webui-installer-设置) 中提到的的 `settings.ps1` 进行修改。
 
 在和脚本同级的路径中创建一个 `disable_proxy.txt` 文件，再次启动脚本时将禁用设置代理。
-
-***
-
-## 资源管理
-
-### 下载模型
-可以使用 `download_models.ps1` 脚本下载模型。这里也推荐使用 [HuggingFace](https://huggingface.co) 或者 [Civitai](https://civitai.com) 下载模型。
 
 ***
 
