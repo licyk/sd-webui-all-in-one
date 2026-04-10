@@ -229,7 +229,7 @@ class RequirementParser(Parser):
             return ParsedPyWhlRequirement(name, extras, url, marker)
         else:
             versions: list[tuple[str, str]] = []
-            if not self.eof() and self.peek() not in (";", ","):
+            if not self.eof() and self.peek() not in (";",):
                 versions = self.parse_versionspec()
                 self.skip_whitespace()
 
@@ -244,7 +244,10 @@ class RequirementParser(Parser):
 
         PEP 508 标识符规则::
 
-            identifier = letterOrDigit (letterOrDigit | '-' | '_' | '.')*
+            identifier_end = letterOrDigit | (('-' | '_' | '.' )* letterOrDigit)
+            identifier    = letterOrDigit identifier_end*
+
+        标识符必须以字母或数字开头和结尾.
 
         Returns:
             str: 解析得到的标识符
@@ -252,11 +255,20 @@ class RequirementParser(Parser):
         Raises:
             ValueError: 当找不到有效标识符时
         """
+        # PEP 508: 标识符必须以字母或数字开头
+        if self.pos >= self.len or not self.text[self.pos].isalnum():
+            raise ValueError("应为预期标识符 (必须以字母或数字开头)")
 
         def is_identifier_char(c: str) -> bool:
             return c.isalnum() or c in "-_."
 
         result = self.read_while(is_identifier_char)
+
+        # PEP 508: 标识符必须以字母或数字结尾, 去除尾部的 '-', '_', '.'
+        while result and not result[-1].isalnum():
+            self.pos -= 1
+            result = result[:-1]
+
         if not result:
             raise ValueError("应为预期标识符")
         return result

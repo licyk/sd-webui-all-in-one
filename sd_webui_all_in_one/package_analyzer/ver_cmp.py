@@ -153,7 +153,9 @@ class CommonVersionComparison:
 def version_increment(
     version: str,
 ) -> str:
-    """增加版本号大小
+    """增加版本号最后一段的数值
+
+    仅对最后一段 +1, 不进行跨段进位 (版本号段没有固定上限).
 
     Args:
         version (str): 初始版本号
@@ -163,19 +165,16 @@ def version_increment(
     version = "".join(re.findall(r"\d|\.", version))
     ver_parts = list(map(int, version.split(".")))
     ver_parts[-1] += 1
-
-    for i in range(len(ver_parts) - 1, 0, -1):
-        if ver_parts[i] == 10:
-            ver_parts[i] = 0
-            ver_parts[i - 1] += 1
-
     return ".".join(map(str, ver_parts))
 
 
 def version_decrement(
     version: str,
 ) -> str:
-    """减小版本号大小
+    """减小版本号最后一段的数值
+
+    仅对最后一段 -1, 不进行跨段借位 (版本号段没有固定上限).
+    如果最后一段已经是 0, 则结果为负数 (调用者应自行处理边界情况).
 
     Args:
         version (str): 初始版本号
@@ -185,13 +184,4 @@ def version_decrement(
     version = "".join(re.findall(r"\d|\.", version))
     ver_parts = list(map(int, version.split(".")))
     ver_parts[-1] -= 1
-
-    for i in range(len(ver_parts) - 1, 0, -1):
-        if ver_parts[i] == -1:
-            ver_parts[i] = 9
-            ver_parts[i - 1] -= 1
-
-    while len(ver_parts) > 1 and ver_parts[0] == 0:
-        ver_parts.pop(0)
-
     return ".".join(map(str, ver_parts))

@@ -8,7 +8,6 @@
 """
 
 import importlib.metadata
-from typing import Callable
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
@@ -66,10 +65,52 @@ def get_package_version_from_library(
     return ver
 
 
+def _parse_package_spec(
+    package: str,
+) -> tuple[str, list[tuple[str, str]], bool]:
+    """将包声明解析为 ``(包名, 版本约束列表, 是否为URL依赖)``
+
+    优先使用 PEP 508 解析器, 失败时回退到按操作符优先级从长到短匹配.
+    支持多版本约束 (PEP 440: 逗号等价于逻辑 AND).
+
+    Args:
+        package (str):
+            包声明字符串, 如 ``'requests>=2.0,<3.0'``
+
+    Returns:
+        tuple[str, list[tuple[str, str]], bool]:
+            ``(包名, [(操作符, 版本号), ...], 是否为URL依赖)`` 元组.
+            如果没有版本约束则列表为空.
+    """
+    # 优先使用 PEP 508 解析器
+    parsed = _try_parse_requirement(package)
+    if parsed is not None:
+        if isinstance(parsed.specifier, list) and len(parsed.specifier) > 0:
+            return (parsed.name, parsed.specifier, False)
+        elif isinstance(parsed.specifier, str):
+            # URL 依赖
+            return (parsed.name, [("@", parsed.specifier)], True)
+        else:
+            return (parsed.name, [], False)
+
+    # 回退: 按长度从长到短匹配操作符
+    operators = ["===", "~=", "==", "!=", "<=", ">=", "<", ">"]
+    for op in operators:
+        if op in package:
+            parts = package.split(op, 1)
+            return (parts[0].strip(), [(op, parts[1].strip())], False)
+
+    return (package.strip(), [], False)
+
+
 def _split_package_spec(
     package: str,
 ) -> tuple[str, str, str | None]:
     """将包声明分割为 ``(包名, 操作符, 版本号)``
+
+    .. deprecated::
+        此函数仅返回第一个版本约束, 对于多约束声明不完整.
+        请使用 :func:`_parse_package_spec` 代替.
 
     优先使用 PEP 508 解析器, 失败时回退到按操作符优先级从长到短匹配.
 
@@ -81,40 +122,75 @@ def _split_package_spec(
         tuple[str, str, str | None]:
             ``(包名, 操作符, 版本号)`` 元组, 如果没有版本约束则操作符为空字符串, 版本号为 ``None``
     """
-    # 优先使用 PEP 508 解析器
-    parsed = _try_parse_requirement(package)
-    if parsed is not None:
-        if isinstance(parsed.specifier, list) and len(parsed.specifier) > 0:
-            op, ver = parsed.specifier[0]
-            return (parsed.name, op, ver)
-        elif isinstance(parsed.specifier, str):
-            # URL 依赖
-            return (parsed.name, "@", parsed.specifier)
-        else:
-            return (parsed.name, "", None)
-
-    # 回退: 按长度从长到短匹配操作符
-    operators = ["===", "~=", "==", "!=", "<=", ">=", "<", ">"]
-    for op in operators:
-        if op in package:
-            parts = package.split(op, 1)
-            return (parts[0].strip(), op, parts[1].strip())
-
-    return (package.strip(), "", None)
+    name, specs, _is_url = _parse_package_spec(package)
+    if specs:
+        op, ver = specs[0]
+        return (name, op, ver)
+    return (name, "", None)
 
 
-# 版本比较操作符分发表
-_VERSION_OPS: dict[str, Callable[[str, str, PyWhlVersionComparison], bool]] = {
-    "===": lambda env_ver, pkg_ver, _cmp: env_ver.lower() == pkg_ver.lower(),
-    "==": lambda _env_ver, pkg_ver, cmp: cmp == PyWhlVersionComparison(pkg_ver),
-    "~=": lambda env_ver, pkg_ver, cmp: cmp.compatible_version_matcher(pkg_ver)(env_ver),
-    "!=": lambda _env_ver, pkg_ver, cmp: cmp != PyWhlVersionComparison(pkg_ver),
-    "<=": lambda _env_ver, pkg_ver, cmp: cmp <= PyWhlVersionComparison(pkg_ver),
-    ">=": lambda _env_ver, pkg_ver, cmp: cmp >= PyWhlVersionComparison(pkg_ver),
-    "<": lambda _env_ver, pkg_ver, cmp: cmp < PyWhlVersionComparison(pkg_ver),
-    ">": lambda _env_ver, pkg_ver, cmp: cmp > PyWhlVersionComparison(pkg_ver),
-}
-"""版本比较操作符到比较函数的映射表"""
+def _check_version_constraint(
+    env_ver: str,
+    op: str,
+    pkg_ver: str,
+    cmp: PyWhlVersionComparison,
+) -> bool:
+    """检查单个版本约束是否满足
+
+    根据 PEP 440 规范实现各操作符的语义:
+    - ``===``: 任意相等 (简单字符串比较, 不区分大小写)
+    - ``==``: 版本匹配 (支持通配符 ``.*``, 忽略 candidate 的 local version)
+    - ``!=``: 版本排除 (``==`` 的取反, 支持通配符)
+    - ``~=``: 兼容性版本匹配
+    - ``>=``, ``<=``: 包含性有序比较 (忽略 local version)
+    - ``>``, ``<``: 排他性有序比较 (忽略 local version, 有 post/pre-release 特殊规则)
+
+    Args:
+        env_ver (str):
+            已安装的版本号
+        op (str):
+            版本比较操作符
+        pkg_ver (str):
+            约束中指定的版本号
+        cmp (PyWhlVersionComparison):
+            用已安装版本初始化的比较器
+
+    Returns:
+        bool: 如果约束满足则返回 ``True``
+    """
+    if op == "===":
+        # PEP 440: 任意相等, 简单字符串比较
+        return env_ver.lower() == pkg_ver.lower()
+
+    if op == "==":
+        # PEP 440: 版本匹配 (支持通配符, 忽略 local version)
+        return cmp.version_match(pkg_ver, env_ver)
+
+    if op == "!=":
+        # PEP 440: 版本排除 (== 的取反)
+        return not cmp.version_match(pkg_ver, env_ver)
+
+    if op == "~=":
+        # PEP 440: 兼容性版本匹配
+        return cmp.compatible_version_matcher(pkg_ver)(env_ver)
+
+    if op == ">=":
+        # PEP 440: 包含性有序比较, 忽略 local version
+        return cmp.compare_versions(env_ver, pkg_ver, ignore_local=True) >= 0
+
+    if op == "<=":
+        # PEP 440: 包含性有序比较, 忽略 local version
+        return cmp.compare_versions(env_ver, pkg_ver, ignore_local=True) <= 0
+
+    if op == ">":
+        # PEP 440: 排他性大于比较
+        return cmp.exclusive_gt(env_ver, pkg_ver)
+
+    if op == "<":
+        # PEP 440: 排他性小于比较
+        return cmp.exclusive_lt(env_ver, pkg_ver)
+
+    return False
 
 
 def is_package_installed(
@@ -122,42 +198,43 @@ def is_package_installed(
 ) -> bool:
     """判断 Python 软件包是否已安装在环境中
 
-    使用 PEP 508 解析器解析包声明, 然后检查已安装版本是否满足约束.
+    使用 PEP 508 解析器解析包声明, 然后检查已安装版本是否满足所有约束.
+    PEP 440 规定逗号等价于逻辑 AND, 候选版本必须满足所有版本约束.
 
     Args:
         package (str):
-            Python 软件包声明字符串, 如 ``'requests>=2.0'``
+            Python 软件包声明字符串, 如 ``'requests>=2.0,<3.0'``
 
     Returns:
         bool: 如果软件包未安装或未安装正确的版本则返回 ``False``
     """
-    pkg_name, op, pkg_version = _split_package_spec(package)
+    pkg_name, specs, _is_url = _parse_package_spec(package)
 
     env_pkg_version = get_package_version_from_library(pkg_name)
     logger.debug(
-        "已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, pkg_version: %s",
+        "已安装 Python 软件包检测: pkg_name: %s, env_pkg_version: %s, specs: %s",
         pkg_name,
         env_pkg_version,
-        pkg_version,
+        specs,
     )
 
     if env_pkg_version is None:
         return False
 
-    if pkg_version is not None and op:
-        cmp = PyWhlVersionComparison(env_pkg_version)
-        check_fn = _VERSION_OPS.get(op)
+    if not specs:
+        # 无版本约束, 只要安装了就行
+        return True
 
-        if check_fn:
-            logger.debug("包含条件: %s", op)
-            logger.debug("%s %s %s ?", env_pkg_version, op, pkg_version)
-            result = check_fn(env_pkg_version, pkg_version, cmp)
-            if result:
-                logger.debug("%s %s %s 条件成立", env_pkg_version, op, pkg_version)
-                return True
+    cmp = PyWhlVersionComparison(env_pkg_version)
 
-        logger.debug("%s 需要安装", package)
-        return False
+    # PEP 440: 逗号等价于逻辑 AND, 必须满足所有约束
+    for op, pkg_version in specs:
+        logger.debug("%s %s %s ?", env_pkg_version, op, pkg_version)
+        if not _check_version_constraint(env_pkg_version, op, pkg_version, cmp):
+            logger.debug("%s %s %s 条件不成立", env_pkg_version, op, pkg_version)
+            logger.debug("%s 需要安装", package)
+            return False
+        logger.debug("%s %s %s 条件成立", env_pkg_version, op, pkg_version)
 
     return True
 

@@ -342,6 +342,7 @@ class PyWhlVersionComparison:
         self,
         v1: PyWhlVersionComponent,
         v2: PyWhlVersionComponent,
+        ignore_local: bool = False,
     ) -> int:
         """比较两个已解析的版本号组件
 
@@ -358,6 +359,10 @@ class PyWhlVersionComparison:
                 第 1 个 Python 版本号标识符组件
             v2 (PyWhlVersionComponent):
                 第 2 个 Python 版本号标识符组件
+            ignore_local (bool):
+                是否忽略 local version 部分进行比较, 默认为 ``False``.
+                PEP 440 规定有序比较 (``>=``, ``<=``, ``>``, ``<``) 和版本匹配 (``==``, ``!=``)
+                在 specifier 不含 local version 时应忽略 candidate 的 local version.
 
         Returns:
             int: 如果 v1 > v2 则返回正数, v1 < v2 则返回负数, v1 == v2 则返回 ``0``
@@ -384,7 +389,9 @@ class PyWhlVersionComparison:
         elif key1 > key2:
             return 1
 
-        # 4. 比较 local version
+        # 4. 比较 local version (可选忽略)
+        if ignore_local:
+            return 0
         return self._compare_local_version(v1, v2)
 
     @staticmethod
@@ -496,6 +503,7 @@ class PyWhlVersionComparison:
         self,
         version1: str,
         version2: str,
+        ignore_local: bool = False,
     ) -> int:
         """比较两个版本字符串
 
@@ -504,13 +512,15 @@ class PyWhlVersionComparison:
                 版本号 1
             version2 (str):
                 版本号 2
+            ignore_local (bool):
+                是否忽略 local version 部分, 默认为 ``False``
 
         Returns:
             int: 如果 version1 > version2 则返回正数, 小于则返回负数, 相等则返回 ``0``
         """
         v1 = self.parse_version(version1)
         v2 = self.parse_version(version2)
-        return self.compare_version_objects(v1, v2)
+        return self.compare_version_objects(v1, v2, ignore_local=ignore_local)
 
     def compatible_version_matcher(
         self,
@@ -551,7 +561,8 @@ class PyWhlVersionComparison:
                 target_prefix = target_prefix + (0,) * (prefix_length - len(target_prefix))
             if target_prefix != prefix_pattern:
                 return False
-            return self.compare_version_objects(target, spec) >= 0
+            # PEP 440: 有序比较忽略 local version
+            return self.compare_version_objects(target, spec, ignore_local=True) >= 0
 
         return _is_compatible
 
@@ -560,7 +571,13 @@ class PyWhlVersionComparison:
         spec: str,
         version: str,
     ) -> bool:
-        """PEP 440 版本前缀匹配
+        """PEP 440 版本匹配 (``==`` 操作符语义)
+
+        PEP 440 规则:
+        - 通配符匹配: ``== 1.1.*`` 匹配所有 ``1.1.x`` 版本 (包括 pre/post/dev release)
+        - 精确匹配: ``== 1.1`` 只匹配 ``1.1`` (含零填充, 如 ``1.1.0``)
+        - 如果 spec 不含 local version label, 则忽略 candidate 的 local version
+        - 如果 spec 含 local version label, 则用严格字符串相等比较 local 部分
 
         Args:
             spec (str):
@@ -571,24 +588,143 @@ class PyWhlVersionComparison:
         Returns:
             bool: 是否匹配
         """
-        spec_parts = spec.split("+", 1)
-        spec_main = spec_parts[0].rstrip(".*")
         has_wildcard = spec.endswith(".*") and "+" not in spec
-
-        try:
-            spec_ver = self.parse_version(spec_main)
-        except ValueError:
-            return False
-
-        target_ver = self.parse_version(version.split("+", 1)[0])
+        spec_has_local = "+" in spec
 
         if has_wildcard:
+            spec_main = spec.split("+", 1)[0].rstrip(".*")
+            try:
+                spec_ver = self.parse_version(spec_main)
+            except ValueError:
+                return False
+
+            target_ver = self.parse_version(version.split("+", 1)[0])
+
             return (
                 target_ver.release[: len(spec_ver.release)] == spec_ver.release
                 and target_ver.epoch == spec_ver.epoch
             )
         else:
-            return self.compare_versions(spec_main, version) == 0
+            if spec_has_local:
+                # 如果 spec 含 local version, 公共部分用 PEP 440 比较, local 部分用严格字符串相等
+                spec_main, spec_local = spec.split("+", 1)
+                ver_parts = version.split("+", 1)
+                ver_main = ver_parts[0]
+                ver_local = ver_parts[1] if len(ver_parts) > 1 else None
+
+                if ver_local is None:
+                    return False
+
+                # 公共部分比较 (忽略 local)
+                if self.compare_versions(spec_main, ver_main, ignore_local=True) != 0:
+                    return False
+
+                # local 部分严格字符串相等 (规范化后)
+                spec_local_norm = spec_local.replace("-", ".").replace("_", ".").lower()
+                ver_local_norm = ver_local.replace("-", ".").replace("_", ".").lower()
+                return spec_local_norm == ver_local_norm
+            else:
+                # spec 不含 local version, 忽略 candidate 的 local version
+                return self.compare_versions(spec, version, ignore_local=True) == 0
+
+    def exclusive_gt(
+        self,
+        candidate: str,
+        spec: str,
+    ) -> bool:
+        """PEP 440 排他性大于比较 (``>`` 操作符)
+
+        PEP 440 规则:
+        - ``>V`` **MUST NOT** allow a post-release of V unless V itself is a post release
+        - ``>V`` **MUST NOT** match a local version of V
+        - 忽略 candidate 的 local version
+
+        Args:
+            candidate (str):
+                候选版本号 (已安装版本)
+            spec (str):
+                规范版本号 (约束中指定的版本)
+
+        Returns:
+            bool: 如果 candidate 满足 ``> spec`` 则返回 ``True``
+        """
+        candidate_ver = self.parse_version(candidate)
+        spec_ver = self.parse_version(spec)
+
+        # 忽略 candidate 的 local version 进行比较
+        cmp_result = self.compare_version_objects(candidate_ver, spec_ver, ignore_local=True)
+
+        if cmp_result <= 0:
+            return False
+
+        # >V MUST NOT match a local version of V (即 candidate 不能是 spec 的 local version 变体)
+        # 如果公共部分相等, 且 candidate 只是多了 local version, 则不匹配
+        public_cmp = self.compare_version_objects(candidate_ver, spec_ver, ignore_local=True)
+        if public_cmp == 0:
+            return False  # candidate 的公共部分等于 spec, 只是 local 不同
+
+        # >V MUST NOT allow a post-release of V unless V itself is a post release
+        if spec_ver.post_n is None and candidate_ver.post_n is not None:
+            # spec 不是 post-release, 检查 candidate 是否是 spec 的 post-release
+            # 构造一个没有 post 的 candidate 来比较 release 部分
+            candidate_no_post = PyWhlVersionComponent(
+                epoch=candidate_ver.epoch,
+                release=candidate_ver.release,
+                pre_l=candidate_ver.pre_l,
+                pre_n=candidate_ver.pre_n,
+                post_n=None,
+                dev_n=candidate_ver.dev_n,
+                local=None,
+                is_wildcard=False,
+            )
+            # 如果去掉 post 后与 spec 的公共部分相等, 则这是 spec 的 post-release, 不允许
+            if self.compare_version_objects(candidate_no_post, spec_ver, ignore_local=True) == 0:
+                return False
+
+        return True
+
+    def exclusive_lt(
+        self,
+        candidate: str,
+        spec: str,
+    ) -> bool:
+        """PEP 440 排他性小于比较 (``<`` 操作符)
+
+        PEP 440 规则:
+        - ``<V`` **MUST NOT** allow a pre-release of V unless V itself is a pre-release
+        - 忽略 candidate 的 local version
+
+        Args:
+            candidate (str):
+                候选版本号 (已安装版本)
+            spec (str):
+                规范版本号 (约束中指定的版本)
+
+        Returns:
+            bool: 如果 candidate 满足 ``< spec`` 则返回 ``True``
+        """
+        candidate_ver = self.parse_version(candidate)
+        spec_ver = self.parse_version(spec)
+
+        # 忽略 candidate 的 local version 进行比较
+        cmp_result = self.compare_version_objects(candidate_ver, spec_ver, ignore_local=True)
+
+        if cmp_result >= 0:
+            return False
+
+        # <V MUST NOT allow a pre-release of V unless V itself is a pre-release
+        if spec_ver.pre_l is None and spec_ver.dev_n is None:
+            # spec 不是 pre-release 也不是 dev release
+            if candidate_ver.pre_l is not None or candidate_ver.dev_n is not None:
+                # candidate 是 pre-release 或 dev release
+                # 检查 candidate 是否是 spec 的 pre-release (即 release 部分相同)
+                max_len = max(len(candidate_ver.release), len(spec_ver.release))
+                c_rel = candidate_ver.release + (0,) * (max_len - len(candidate_ver.release))
+                s_rel = spec_ver.release + (0,) * (max_len - len(spec_ver.release))
+                if c_rel == s_rel and candidate_ver.epoch == spec_ver.epoch:
+                    return False
+
+        return True
 
     def is_v1_ge_v2(
         self,

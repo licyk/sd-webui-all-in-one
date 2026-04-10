@@ -95,6 +95,12 @@ def _compare_marker_versions(
     except Exception:
         # 回退到字符串比较
         if op == "~=":
+            # ~= X.Y 等价于 >= X.Y, == X.*
+            # 字符串回退: 检查前缀匹配 + 字符串 >=
+            parts = right.split(".")
+            if len(parts) >= 2:
+                prefix = ".".join(parts[:-1]) + "."
+                return left >= right and left.startswith(prefix)
             return left >= right
         if op == "===":
             return left == right
@@ -319,22 +325,15 @@ def parse_requirement_list(
         if len(possble_requirement) == 0:
             continue
         elif len(possble_requirement) == 1:
-            requirement = possble_requirement[0]
+            # 单个约束, 直接添加 (已由 parse_requirement_to_list 标准化)
+            format_package_name = remove_optional_dependence_from_package(possble_requirement[0].strip())
+            package_list.append(format_package_name)
         else:
+            # 多个约束 (如 protobuf<5,>=4.25.3 -> ["protobuf<5", "protobuf>=4.25.3"])
+            # 递归处理每个独立约束
             requirements_list = parse_requirement_list(possble_requirement)
             package_list += requirements_list
             continue
-
-        multi_requirements = requirement.split(",")
-        if len(multi_requirements) > 1:
-            package_name = get_package_name(multi_requirements[0].strip())
-            for package_name_with_version_marked in multi_requirements:
-                version_symbol = str.replace(package_name_with_version_marked, package_name, "", 1)
-                format_package_name = remove_optional_dependence_from_package(f"{package_name}{version_symbol}".strip())
-                package_list.append(format_package_name)
-        else:
-            format_package_name = remove_optional_dependence_from_package(multi_requirements[0].strip())
-            package_list.append(format_package_name)
 
     for p in package_list:
         p = p.lower().strip()
