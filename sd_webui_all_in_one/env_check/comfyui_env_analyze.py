@@ -21,10 +21,12 @@ from sd_webui_all_in_one.utils import (
 )
 from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
+    check_version_constraint,
     get_package_name,
     get_package_version,
     is_package_has_version,
     is_package_installed,
+    parse_package_spec,
     parse_requirement_list,
     read_packages_from_requirements_file,
     validate_requirements,
@@ -367,140 +369,149 @@ def fitter_has_version_package(
     return [p for p in package_list if is_package_has_version(p)]
 
 
+def _is_constraint_pair_conflicting(
+    op1: str,
+    ver1: str,
+    op2: str,
+    ver2: str,
+) -> bool:
+    """检测两个单独的版本约束条件是否不可同时满足
+
+    通过检查两个约束定义的版本区间是否存在交集来判断冲突.
+    复用 :func:`check_version_constraint` 进行 PEP 440 合规的版本比较.
+
+    Args:
+        op1 (str):
+            第 1 个约束的操作符 (如 ``'>=``, ``'=='``, ``'~='`` 等)
+        ver1 (str):
+            第 1 个约束的版本号
+        op2 (str):
+            第 2 个约束的操作符
+        ver2 (str):
+            第 2 个约束的版本号
+
+    Returns:
+        bool: 如果两个约束不可同时满足则返回 ``True``
+    """
+    cmp = PyWhlVersionComparison(ver1)
+
+    # == 或 === 是精确约束, 检查该精确版本是否满足另一个约束
+    if op1 in ("==", "==="):
+        cmp2 = PyWhlVersionComparison(ver1)
+        if not check_version_constraint(ver1, op2, ver2, cmp2):
+            logger.debug("冲突约束: %s%s vs %s%s (精确版本 %s 不满足 %s%s)", op1, ver1, op2, ver2, ver1, op2, ver2)
+            return True
+        return False
+
+    if op2 in ("==", "==="):
+        cmp2 = PyWhlVersionComparison(ver2)
+        if not check_version_constraint(ver2, op1, ver1, cmp2):
+            logger.debug("冲突约束: %s%s vs %s%s (精确版本 %s 不满足 %s%s)", op1, ver1, op2, ver2, ver2, op1, ver1)
+            return True
+        return False
+
+    # != 约束几乎不会与范围约束产生冲突 (除非范围只包含被排除的版本, 这种情况极为罕见)
+    if op1 == "!=" or op2 == "!=":
+        return False
+
+    # ~= 展开为 >= ver, == ver_prefix.* 后检测
+    # ~= X.Y.Z 等价于 >= X.Y.Z, == X.Y.*
+    if op1 == "~=":
+        # ~= ver1 等价于 >= ver1 (下界), 检测下界是否与 op2 冲突
+        if _is_constraint_pair_conflicting(">=", ver1, op2, ver2):
+            return True
+        # 还需检测 ~= 的上界 (== prefix.*) 是否与 op2 冲突
+        # ~= X.Y.Z 的上界约束等价于 < X.(Y+1).0
+        # 但精确计算上界较复杂, 这里用 compatible_version_matcher 来验证
+        # 如果 op2 是下界约束 (>, >=), 检查 ver2 是否超出 ~= 的兼容范围
+        if op2 in (">", ">="):
+            matcher = cmp.compatible_version_matcher(ver1)
+            # 如果 ver2 本身不在兼容范围内, 且 ver2 >= ver1, 则存在冲突
+            # 因为 op2 要求 > ver2 或 >= ver2, 而 ~= ver1 的上界低于 ver2
+            if not matcher(ver2) and PyWhlVersionComparison(ver2) >= PyWhlVersionComparison(ver1):
+                logger.debug("冲突约束: ~=%s vs %s%s (兼容范围不包含 %s)", ver1, op2, ver2, ver2)
+                return True
+        return False
+
+    if op2 == "~=":
+        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1)
+
+    # 范围约束之间的冲突检测: >, >=, <, <=
+    # 下界 vs 上界: 检查下界是否超过上界
+    lower_ops = {">", ">="}
+    upper_ops = {"<", "<="}
+
+    if op1 in lower_ops and op2 in upper_ops:
+        # op1 是下界, op2 是上界
+        cmp_result = PyWhlVersionComparison(ver1).compare_versions(ver1, ver2, ignore_local=True)
+        if op1 == ">=" and op2 == "<=":
+            # >= ver1, <= ver2: 冲突当 ver1 > ver2
+            if cmp_result > 0:
+                logger.debug("冲突约束: >=%s vs <=%s (%s > %s)", ver1, ver2, ver1, ver2)
+                return True
+        elif op1 == ">=" and op2 == "<":
+            # >= ver1, < ver2: 冲突当 ver1 >= ver2
+            if cmp_result >= 0:
+                logger.debug("冲突约束: >=%s vs <%s (%s >= %s)", ver1, ver2, ver1, ver2)
+                return True
+        elif op1 == ">" and op2 == "<=":
+            # > ver1, <= ver2: 冲突当 ver1 >= ver2
+            if cmp_result >= 0:
+                logger.debug("冲突约束: >%s vs <=%s (%s >= %s)", ver1, ver2, ver1, ver2)
+                return True
+        elif op1 == ">" and op2 == "<":
+            # > ver1, < ver2: 冲突当 ver1 >= ver2
+            if cmp_result >= 0:
+                logger.debug("冲突约束: >%s vs <%s (%s >= %s)", ver1, ver2, ver1, ver2)
+                return True
+        return False
+
+    if op1 in upper_ops and op2 in lower_ops:
+        # 交换后递归检测
+        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1)
+
+    # 同方向的范围约束 (如 > 和 >=, 或 < 和 <=) 不会互相冲突
+    return False
+
+
 def detect_conflict_package(
     pkg1: str,
     pkg2: str,
 ) -> bool:
-    """检测 Python 软件包版本号声明是否存在冲突
+    """检测两个 Python 软件包版本声明是否存在冲突
+
+    使用 PEP 508 解析器解析版本约束, 然后对每对约束条件进行可满足性检测.
+    复用 :func:`parse_package_spec` 和 :func:`check_version_constraint` 实现
+    完整的 PEP 440 操作符支持.
 
     Args:
         pkg1 (str):
-            第 1 个 Python 软件包名称
+            第 1 个 Python 软件包版本声明
         pkg2 (str):
-            第 2 个 Python 软件包名称
+            第 2 个 Python 软件包版本声明
 
     Returns:
-        bool: 如果 Python 软件包版本声明出现冲突则返回`True`
+        bool: 如果 Python 软件包版本声明出现冲突则返回 ``True``
     """
-    # 进行 2 次循环, 第 2 次循环时交换版本后再进行判断
-    for i in range(2):
-        if i == 1:
-            if pkg1 == pkg2:
-                break
+    _, specs1, is_url1 = parse_package_spec(pkg1)
+    _, specs2, is_url2 = parse_package_spec(pkg2)
 
-            pkg1, pkg2 = pkg2, pkg1
+    # URL 依赖或无版本约束不参与冲突检测
+    if is_url1 or is_url2 or not specs1 or not specs2:
+        return False
 
-        ver1 = get_package_version(pkg1)
-        ver2 = get_package_version(pkg2)
-        logger.debug("冲突依赖检测: pkg1: %s, pkg2: %s, ver1: %s, ver2: %s", pkg1, pkg2, ver1, ver2)
+    logger.debug("冲突依赖检测: pkg1: %s, specs1: %s, pkg2: %s, specs2: %s", pkg1, specs1, pkg2, specs2)
 
-        # >=, <=
-        if ">=" in pkg1 and "<=" in pkg2:
-            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, <
-        if ">=" in pkg1 and "<" in pkg2 and "=" not in pkg2:
-            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, <=
-        if ">" in pkg1 and "=" not in pkg1 and "<=" in pkg2:
-            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, <
-        if ">" in pkg1 and "=" not in pkg1 and "<" in pkg2 and "=" not in pkg2:
-            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, ==
-        if ">" in pkg1 and "=" not in pkg1 and "==" in pkg2:
-            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, ==
-        if ">=" in pkg1 and "==" in pkg2:
-            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <, ==
-        if "<" in pkg1 and "=" not in pkg1 and "==" in pkg2:
-            if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s <= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <=, ==
-        if "<=" in pkg1 and "==" in pkg2:
-            if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s < %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # !=, ==
-        if "!=" in pkg1 and "==" in pkg2:
-            if PyWhlVersionComparison(ver1) == PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s == %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >, ~=
-        if ">" in pkg1 and "=" not in pkg1 and "~=" in pkg2:
-            if PyWhlVersionComparison(ver1) >= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s >= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # >=, ~=
-        if ">=" in pkg1 and "~=" in pkg2:
-            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <, ~=
-        if "<" in pkg1 and "=" not in pkg1 and "~=" in pkg2:
-            if PyWhlVersionComparison(ver1) <= PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s <= %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # <=, ~=
-        if "<=" in pkg1 and "~=" in pkg2:
-            if PyWhlVersionComparison(ver1) < PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s < %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # !=, ~=
-        # 这个也没什么必要
-        # if '!=' in pkg1 and '~=' in pkg2:
-        #     if is_v1_c_eq_v2(ver1, ver2):
-        #         logger.debug(
-        #             '冲突依赖: %s, %s, 版本冲突: %s ~= %s',
-        #             pkg1, pkg2, ver1, ver2)
-        #         return True
-
-        # ~=, == / ~=, ===
-        if ("~=" in pkg1 and "==" in pkg2) or ("~=" in pkg1 and "===" in pkg2):
-            if PyWhlVersionComparison(ver1) > PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s > %s", pkg1, pkg2, ver1, ver2)
-                return True
-
-        # ~=, ~=
-        # ~= 类似 >= V.N, == V.*, 所以该部分的比较没必要使用
-        # if '~=' in pkg1 and '~=' in pkg2:
-        #     if not is_v1_c_eq_v2(ver1, ver2):
-        #         logger.debug(
-        #             '冲突依赖: %s, %s, 版本冲突: %s !~= %s',
-        #             pkg1, pkg2, ver1, ver2)
-        #         return True
-
-        # ==, == / ===, ===
-        if ("==" in pkg1 and "==" in pkg2) or ("===" in pkg1 and "===" in pkg2):
-            if PyWhlVersionComparison(ver1) != PyWhlVersionComparison(ver2):
-                logger.debug("冲突依赖: %s, %s, 版本冲突: %s != %s", pkg1, pkg2, ver1, ver2)
-                return True
+    # 对两组约束中的每对条件进行冲突检测
+    for op1, ver1 in specs1:
+        for op2, ver2 in specs2:
+            try:
+                if _is_constraint_pair_conflicting(op1, ver1, op2, ver2):
+                    logger.debug("冲突依赖: %s vs %s (约束 %s%s 与 %s%s 冲突)", pkg1, pkg2, op1, ver1, op2, ver2)
+                    return True
+            except (ValueError, TypeError) as e:
+                logger.debug("冲突检测异常: %s%s vs %s%s: %s", op1, ver1, op2, ver2, e)
+                continue
 
     return False
 
@@ -510,24 +521,35 @@ def detect_conflict_package_from_list(
 ) -> list[str]:
     """检测 Python 软件包版本声明列表中存在冲突的软件包
 
+    先按规范化包名分组, 再仅对同名包组内的约束进行冲突检测.
+    相比全量 O(n²) 比较, 大幅减少无效比较次数.
+
     Args:
         package_list (list[str]):
             Python 软件包版本声明列表
 
     Returns:
         list[str]:
-            冲突的 Python 软件包列表
+            冲突的 Python 软件包名列表
     """
-    conflict_package = []
-    for i in package_list:
-        for j in package_list:
-            # 截取包名并规范化
-            pkg1 = normalize_package_name(get_package_name(i))
-            pkg2 = normalize_package_name(get_package_name(j))
-            if pkg1 == pkg2 and detect_conflict_package(i, j):
-                conflict_package.append(get_package_name(i))
+    # 1. 一次性解析所有包, 按规范化包名分组
+    groups: dict[str, list[str]] = {}
+    for pkg in package_list:
+        name = normalize_package_name(get_package_name(pkg))
+        groups.setdefault(name, []).append(pkg)
 
-    return remove_duplicate_object_from_list(conflict_package)
+    # 2. 只对同名包组内的约束进行冲突检测
+    conflict_packages: list[str] = []
+    for _norm_name, entries in groups.items():
+        if len(entries) < 2:
+            continue
+
+        for i in range(len(entries)):
+            for j in range(i + 1, len(entries)):
+                if detect_conflict_package(entries[i], entries[j]):
+                    conflict_packages.append(get_package_name(entries[i]))
+
+    return remove_duplicate_object_from_list(conflict_packages)
 
 
 def display_comfyui_environment_dict(

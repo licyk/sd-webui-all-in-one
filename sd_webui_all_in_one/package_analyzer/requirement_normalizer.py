@@ -26,7 +26,7 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.package_analyzer.version_utils import (
     get_correct_package_name,
-    get_package_version,
+    get_package_version_specs,
     is_package_has_version,
     remove_optional_dependence_from_package,
     version_string_is_canonical,
@@ -161,7 +161,8 @@ def parse_requirement_list(
             canonical_package_list.append(new_p)
             continue
 
-        if version_string_is_canonical(get_package_version(p)):
+        specs = get_package_version_specs(p)
+        if specs and all(version_string_is_canonical(ver) for _, ver in specs):
             canonical_package_list.append(p)
         else:
             logger.debug("%s 软件包名的版本不符合标准", p)

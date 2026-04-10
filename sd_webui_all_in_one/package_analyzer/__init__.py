@@ -23,6 +23,7 @@ from sd_webui_all_in_one.package_analyzer.version_utils import (
     is_package_has_version,
     get_package_name,
     get_package_version,
+    get_package_version_specs,
     remove_optional_dependence_from_package,
     get_correct_package_name,
 )
@@ -62,6 +63,8 @@ from sd_webui_all_in_one.package_analyzer.installation_checker import (
     get_package_version_from_library,
     is_package_installed,
     validate_requirements,
+    parse_package_spec,
+    check_version_constraint,
 )
 
 # PEP 440 版本比较
@@ -83,6 +86,7 @@ __all__ = [
     "is_package_has_version",
     "get_package_name",
     "get_package_version",
+    "get_package_version_specs",
     "remove_optional_dependence_from_package",
     "get_correct_package_name",
     # wheel_parser
@@ -106,6 +110,8 @@ __all__ = [
     "get_package_version_from_library",
     "is_package_installed",
     "validate_requirements",
+    "parse_package_spec",
+    "check_version_constraint",
     # py_ver_cmp
     "PyWhlVersionComparison",
     "PyWhlVersionMatcher",

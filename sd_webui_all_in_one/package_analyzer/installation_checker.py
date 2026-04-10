@@ -63,7 +63,7 @@ def get_package_version_from_library(
     return ver
 
 
-def _parse_package_spec(
+def parse_package_spec(
     package: str,
 ) -> tuple[str, list[tuple[str, str]], bool]:
     """将包声明解析为 ``(包名, 版本约束列表, 是否为URL依赖)``
@@ -101,6 +101,10 @@ def _parse_package_spec(
     return (package.strip(), [], False)
 
 
+# 保留旧名作为别名, 兼容内部调用
+_parse_package_spec = parse_package_spec
+
+
 def _split_package_spec(
     package: str,
 ) -> tuple[str, str, str | None]:
@@ -108,7 +112,7 @@ def _split_package_spec(
 
     .. deprecated::
         此函数仅返回第一个版本约束, 对于多约束声明不完整.
-        请使用 :func:`_parse_package_spec` 代替.
+        请使用 :func:`parse_package_spec` 代替.
 
     优先使用 PEP 508 解析器, 失败时回退到按操作符优先级从长到短匹配.
 
@@ -120,14 +124,14 @@ def _split_package_spec(
         tuple[str, str, str | None]:
             ``(包名, 操作符, 版本号)`` 元组, 如果没有版本约束则操作符为空字符串, 版本号为 ``None``
     """
-    name, specs, _is_url = _parse_package_spec(package)
+    name, specs, _is_url = parse_package_spec(package)
     if specs:
         op, ver = specs[0]
         return (name, op, ver)
     return (name, "", None)
 
 
-def _check_version_constraint(
+def check_version_constraint(
     env_ver: str,
     op: str,
     pkg_ver: str,
@@ -206,7 +210,7 @@ def is_package_installed(
     Returns:
         bool: 如果软件包未安装或未安装正确的版本则返回 ``False``
     """
-    pkg_name, specs, _is_url = _parse_package_spec(package)
+    pkg_name, specs, _is_url = parse_package_spec(package)
 
     env_pkg_version = get_package_version_from_library(pkg_name)
     logger.debug(
@@ -228,7 +232,7 @@ def is_package_installed(
     # PEP 440: 逗号等价于逻辑 AND, 必须满足所有约束
     for op, pkg_version in specs:
         logger.debug("%s %s %s ?", env_pkg_version, op, pkg_version)
-        if not _check_version_constraint(env_pkg_version, op, pkg_version, cmp):
+        if not check_version_constraint(env_pkg_version, op, pkg_version, cmp):
             logger.debug("%s %s %s 条件不成立", env_pkg_version, op, pkg_version)
             logger.debug("%s 需要安装", package)
             return False

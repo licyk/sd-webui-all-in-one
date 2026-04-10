@@ -62,6 +62,7 @@ from sd_webui_all_in_one.pkg_manager import (
 from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
     get_package_version,
+    get_package_version_specs,
     is_package_has_version,
     version_decrement,
     version_increment,
@@ -110,14 +111,33 @@ def get_invokeai_require_torch_version() -> str:
             torch_version = require.split(";")[0]
             break
 
-    if torch_version.startswith("torch>") and not torch_version.startswith("torch>="):
-        return version_increment(get_package_version(torch_version))
-    elif torch_version.startswith("torch<") and not torch_version.startswith("torch<="):
-        return version_decrement(get_package_version(torch_version))
-    elif torch_version.startswith("torch!="):
-        return version_increment(get_package_version(torch_version))
-    else:
+    specs = get_package_version_specs(torch_version)
+    if not specs:
         return get_package_version(torch_version)
+
+    # 按操作符优先级选择最合适的版本约束:
+    # 优先使用精确匹配 (==, ===), 其次使用下界 (>=, >), 最后使用上界 (<, <=)
+    specs_dict: dict[str, str] = {op: ver for op, ver in specs}
+
+    if "==" in specs_dict:
+        return specs_dict["=="]
+    if "===" in specs_dict:
+        return specs_dict["==="]
+    if "~=" in specs_dict:
+        return specs_dict["~="]
+    if ">=" in specs_dict:
+        return specs_dict[">="]
+    if ">" in specs_dict:
+        return version_increment(specs_dict[">"])
+    if "!=" in specs_dict:
+        return version_increment(specs_dict["!="])
+    if "<" in specs_dict:
+        return version_decrement(specs_dict["<"])
+    if "<=" in specs_dict:
+        return specs_dict["<="]
+
+    # 回退: 返回第一个约束的版本号
+    return specs[0][1]
 
 
 def get_pytorch_mirror_type_for_ivnokeai(

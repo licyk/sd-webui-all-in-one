@@ -12,9 +12,9 @@ from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
     get_parse_bindings,
 )
 from sd_webui_all_in_one.package_analyzer.installation_checker import (
-    _parse_package_spec,
+    parse_package_spec as _parse_package_spec,
     _split_package_spec,
-    _check_version_constraint,
+    check_version_constraint as _check_version_constraint,
 )
 from sd_webui_all_in_one.package_analyzer.requirement_parser import (
     parse_requirement,
@@ -26,6 +26,7 @@ from sd_webui_all_in_one.package_analyzer.version_utils import (
     is_package_has_version,
     get_package_name,
     get_package_version,
+    get_package_version_specs,
     remove_optional_dependence_from_package,
 )
 from sd_webui_all_in_one.package_analyzer.wheel_parser import (
@@ -608,6 +609,30 @@ class TestVersionUtils:
     def test_get_package_version(self):
         assert get_package_version("torch==2.3.0") == "2.3.0"
         assert get_package_version("requests>=2.0") == "2.0"
+        # 多约束声明仍返回第一个版本号 (向后兼容)
+        assert get_package_version("protobuf>=4.25.3,<5") == "4.25.3"
+
+    def test_get_package_version_specs(self):
+        # 单约束
+        assert get_package_version_specs("torch==2.3.0") == [("==", "2.3.0")]
+        assert get_package_version_specs("requests>=2.0") == [(">=", "2.0")]
+
+        # 多约束
+        assert get_package_version_specs("protobuf>=4.25.3,<5") == [(">=", "4.25.3"), ("<", "5")]
+        assert get_package_version_specs("numpy>=1.20,<2.0,!=1.24.0") == [
+            (">=", "1.20"),
+            ("<", "2.0"),
+            ("!=", "1.24.0"),
+        ]
+
+        # 无版本约束
+        assert get_package_version_specs("numpy") == []
+
+        # 兼容性版本
+        assert get_package_version_specs("requests~=2.28") == [("~=", "2.28")]
+
+        # 精确匹配
+        assert get_package_version_specs("foo===1.0.0-custom") == [("===", "1.0.0-custom")]
 
     def test_remove_optional_dependence(self):
         assert remove_optional_dependence_from_package("diffusers[torch]==0.10.2") == "diffusers==0.10.2"

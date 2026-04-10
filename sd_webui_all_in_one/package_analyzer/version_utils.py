@@ -155,10 +155,15 @@ def get_package_version(
 
     使用 PEP 508 解析器提取第一个版本约束的版本号.
 
+    .. note::
+        此函数仅返回第一个版本约束的版本号. 对于多约束声明 (如 ``protobuf>=4.25.3,<5``),
+        只会返回 ``'4.25.3'``. 如需获取所有版本约束, 请使用 :func:`get_package_version_specs`.
+
     使用示例:
         ```python
         get_package_version("torch==2.3.0")  # "2.3.0"
         get_package_version("requests>=2.0")  # "2.0"
+        get_package_version("protobuf>=4.25.3,<5")  # "4.25.3" (仅第一个)
         ```
 
     Args:
@@ -166,7 +171,7 @@ def get_package_version(
             Python 软件包声明字符串
 
     Returns:
-        str: Python 软件包的版本号字符串
+        str: Python 软件包的第一个版本约束的版本号字符串
     """
     parsed = _try_parse_requirement(package)
     if parsed is not None and isinstance(parsed.specifier, list) and len(parsed.specifier) > 0:
@@ -193,6 +198,49 @@ def get_package_version(
         .pop()
         .strip()
     )
+
+
+def get_package_version_specs(
+    package: str,
+) -> list[tuple[str, str]]:
+    """获取 Python 软件包声明中的所有版本约束
+
+    使用 PEP 508 解析器提取所有版本约束的 ``(操作符, 版本号)`` 列表.
+    PEP 440 规定逗号等价于逻辑 AND, 候选版本必须满足所有版本约束.
+
+    使用示例:
+        ```python
+        get_package_version_specs("protobuf>=4.25.3,<5")
+        # [(">=", "4.25.3"), ("<", "5")]
+
+        get_package_version_specs("torch==2.3.0")
+        # [("==", "2.3.0")]
+
+        get_package_version_specs("numpy")
+        # []
+        ```
+
+    Args:
+        package (str):
+            Python 软件包声明字符串
+
+    Returns:
+        list[tuple[str, str]]:
+            版本约束列表, 每项为 ``(操作符, 版本号)`` 元组.
+            如果没有版本约束则返回空列表.
+    """
+    parsed = _try_parse_requirement(package)
+    if parsed is not None and isinstance(parsed.specifier, list):
+        return list(parsed.specifier)
+
+    # 解析失败时回退到按操作符匹配 (只能提取第一个约束)
+    operators = ["===", "~=", "==", "!=", "<=", ">=", "<", ">"]
+    for op in operators:
+        if op in package:
+            parts = package.split(op, 1)
+            return [(op, parts[1].strip())]
+
+    return []
 
 
 def remove_optional_dependence_from_package(
