@@ -1,3 +1,5 @@
+"""Aria2 下载工具"""
+
 import os
 from pathlib import Path
 from urllib.parse import urlparse

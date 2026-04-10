@@ -1,3 +1,5 @@
+"""Requests 下载器"""
+
 from pathlib import Path
 from urllib.parse import urlparse
 

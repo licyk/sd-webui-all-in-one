@@ -1,3 +1,5 @@
+"""多线程下载类"""
+
 import datetime
 import queue
 import threading

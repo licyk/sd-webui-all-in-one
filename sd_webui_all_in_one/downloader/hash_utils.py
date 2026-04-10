@@ -1,3 +1,5 @@
+"""文件哈希值验证工具"""
+
 import hashlib
 from pathlib import Path
 

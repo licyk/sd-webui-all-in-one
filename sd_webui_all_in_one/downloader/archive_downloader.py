@@ -1,3 +1,5 @@
+"""压缩包下载工具"""
+
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory

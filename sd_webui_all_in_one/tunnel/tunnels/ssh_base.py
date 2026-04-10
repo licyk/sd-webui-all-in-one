@@ -28,9 +28,9 @@ logger = get_logger(
 
 class SSHTunnel(BaseTunnel):
     """SSH 隧道基类
-    
-    提供基于 SSH 的内网穿透通用实现。子类需要提供具体的 SSH 参数和 URL 匹配模式。
-    
+
+    提供基于 SSH 的内网穿透通用实现. 子类需要提供具体的 SSH 参数和 URL 匹配模式. 
+
     Attributes:
         ssh_args (list[str]):
             SSH 连接参数（不包括基础的 ssh 命令和密钥参数）
@@ -49,7 +49,7 @@ class SSHTunnel(BaseTunnel):
         line_limit: int = 30,
     ) -> None:
         """初始化 SSH 隧道
-        
+
         Args:
             port (int):
                 要进行端口映射的端口
@@ -60,7 +60,7 @@ class SSHTunnel(BaseTunnel):
             url_pattern (re.Pattern[str]):
                 用于匹配内网穿透地址的正则表达式
             line_limit (int):
-                内网穿透地址所在的输出行数限制，默认 30
+                内网穿透地址所在的输出行数限制, 默认 30
         """
         super().__init__(port, workspace)
         self.ssh_args = ssh_args
@@ -69,9 +69,11 @@ class SSHTunnel(BaseTunnel):
         self._ssh_key_path: Optional[Path] = None
         self._temp_dir: Optional[TemporaryDirectory] = None
 
-    def _get_or_create_ssh_key(self,) -> Path:
+    def _get_or_create_ssh_key(
+        self,
+    ) -> Path:
         """获取或创建 SSH 密钥
-        
+
         Returns:
             Path: SSH 密钥路径
         """
@@ -80,7 +82,7 @@ class SSHTunnel(BaseTunnel):
 
         if not ssh_path.exists():
             if not gen_ssh_key(ssh_path):
-                # 如果在工作区创建失败，使用临时目录
+                # 如果在工作区创建失败, 使用临时目录
                 self._temp_dir = TemporaryDirectory()
                 ssh_path = Path(self._temp_dir.name) / ssh_name
                 gen_ssh_key(ssh_path)
@@ -88,12 +90,14 @@ class SSHTunnel(BaseTunnel):
         self._ssh_key_path = ssh_path
         return ssh_path
 
-    def start(self,) -> str:
+    def start(
+        self,
+    ) -> str:
         """启动 SSH 隧道
-        
+
         Returns:
             str: 内网穿透地址
-            
+
         Raises:
             RuntimeError: 启动内网穿透失败时
         """
@@ -139,7 +143,7 @@ class SSHTunnel(BaseTunnel):
             try:
                 line = output_queue.get(timeout=10)
                 lines.append(line)
-                
+
                 # 打印警告信息
                 if line.startswith("Warning"):
                     print(line, end="")
@@ -159,13 +163,15 @@ class SSHTunnel(BaseTunnel):
 
         raise RuntimeError("未捕获到内网穿透地址")
 
-    def stop(self,) -> None:
+    def stop(
+        self,
+    ) -> None:
         """停止 SSH 隧道
-        
-        终止 SSH 进程并清理临时目录。
+
+        终止 SSH 进程并清理临时目录. 
         """
         super().stop()
-        
+
         # 清理临时目录
         if self._temp_dir:
             try:

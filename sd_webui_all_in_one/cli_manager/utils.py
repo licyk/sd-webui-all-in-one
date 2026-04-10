@@ -4,6 +4,8 @@ import argparse
 import sys
 import logging
 import os
+import time
+from pathlib import Path
 
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
@@ -18,9 +20,24 @@ from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import (
     SD_WEBUI_ALL_IN_ONE_PATCHER_PATH,
     LOGGER_NAME,
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
 )
 from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
 from sd_webui_all_in_one.logger import set_all_loggers_level
+from sd_webui_all_in_one.tunnel import TunnelManager
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.utils import (
+    print_divider,
+    normalized_filepath,
+)
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def check_pip(
@@ -103,6 +120,85 @@ def get_env_config() -> None:
         print(f"{e}: '{os.getenv(e)}'")
 
 
+def start_tunnel(
+    port: int,
+    workspace: Path | None = None,
+    use_ngrok: bool = False,
+    ngrok_token: str | None = None,
+    use_cloudflare: bool | None = False,
+    use_remote_moe: bool | None = False,
+    use_localhost_run: bool | None = False,
+    use_gradio: bool | None = False,
+    use_pinggy_io: bool | None = False,
+    use_zrok: bool | None = False,
+    zrok_token: str | None = None,
+) -> None:
+    """启动内网穿透
+
+    Args:
+        port (int):
+            要进行端口映射的端口
+        workspace (Path | None):
+            工作区路径，默认为当前目录
+        use_ngrok (bool | None):
+            启用 Ngrok 内网穿透
+        ngrok_token (str | None):
+            Ngrok 账号 Token
+        use_cloudflare (bool | None):
+            启用 CloudFlare 内网穿透
+        use_remote_moe (bool | None):
+            启用 remote.moe 内网穿透
+        use_localhost_run (bool | None):
+            使用 localhost.run 内网穿透
+        use_gradio (bool | None):
+            使用 Gradio 内网穿透
+        use_pinggy_io (bool | None):
+            使用 pinggy.io 内网穿透
+        use_zrok (bool | None):
+            使用 Zrok 内网穿透
+        zrok_token (str | None):
+            Zrok 账号 Token
+    """
+    if workspace is None:
+        workspace = Path.cwd()
+
+    logger.info("启动内网穿透，端口: %s", port)
+    logger.info("工作区: %s", workspace)
+
+    try:
+        with TunnelManager(workspace=workspace, port=port) as manager:
+            tunnel_url = manager.start_tunnel(
+                use_ngrok=use_ngrok,
+                ngrok_token=ngrok_token,
+                use_cloudflare=use_cloudflare,
+                use_remote_moe=use_remote_moe,
+                use_localhost_run=use_localhost_run,
+                use_gradio=use_gradio,
+                use_pinggy_io=use_pinggy_io,
+                use_zrok=use_zrok,
+                zrok_token=zrok_token,
+                check=False,
+            )
+
+            print_divider()
+            logger.info("本地地址: %s", tunnel_url["local_url"])
+            logger.info("内网穿透地址:")
+            for service, url in tunnel_url.items():
+                if service != "local_url" and url:
+                    print(f"  - {service}: {url}")
+            print_divider()
+            logger.info("按 Ctrl + C 停止内网穿透")
+
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                logger.info("正在停止内网穿透")
+    except Exception as e:
+        logger.error("启动内网穿透失败: %s", e)
+        sys.exit(1)
+
+
 def register_manager(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -154,3 +250,32 @@ def register_manager(
     # get-env-config
     get_env_config_p = sd_webui_all_in_one_sub.add_parser("get-env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
+
+    # start-tunnel
+    start_tunnel_p = sd_webui_all_in_one_sub.add_parser("start-tunnel", help="启动内网穿透")
+    start_tunnel_p.add_argument("port", type=int, help="要进行端口映射的端口")
+    start_tunnel_p.add_argument("--workspace", type=normalized_filepath, default=SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH, help="工作区路径（默认为当前目录）")
+    start_tunnel_p.add_argument("--ngrok", action="store_true", help="启用 Ngrok 内网穿透")
+    start_tunnel_p.add_argument("--ngrok-token", type=str, default=None, help="Ngrok 账号 Token")
+    start_tunnel_p.add_argument("--cloudflare", action="store_true", help="启用 CloudFlare 内网穿透")
+    start_tunnel_p.add_argument("--remote-moe", action="store_true", help="启用 remote.moe 内网穿透")
+    start_tunnel_p.add_argument("--localhost-run", action="store_true", help="启用 localhost.run 内网穿透")
+    start_tunnel_p.add_argument("--gradio", action="store_true", help="启用 Gradio 内网穿透")
+    start_tunnel_p.add_argument("--pinggy-io", action="store_true", help="启用 pinggy.io 内网穿透")
+    start_tunnel_p.add_argument("--zrok", action="store_true", help="启用 Zrok 内网穿透")
+    start_tunnel_p.add_argument("--zrok-token", type=str, default=None, help="Zrok 账号 Token")
+    start_tunnel_p.set_defaults(
+        func=lambda args: start_tunnel(
+            port=args.port,
+            workspace=args.workspace,
+            use_ngrok=args.ngrok,
+            ngrok_token=args.ngrok_token,
+            use_cloudflare=args.cloudflare,
+            use_remote_moe=args.remote_moe,
+            use_localhost_run=args.localhost_run,
+            use_gradio=args.gradio,
+            use_pinggy_io=args.pinggy_io,
+            use_zrok=args.zrok,
+            zrok_token=args.zrok_token,
+        )
+    )

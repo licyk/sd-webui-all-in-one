@@ -116,6 +116,15 @@ class BaseManager:
         self.move_files = move_files
         self.run_cmd = run_cmd
 
+    def stop_all_tunnels(
+        self,
+    ) -> None:
+        """停止所有内网穿透
+
+        终止所有已启动的内网穿透进程。
+        """
+        self.tun_manager.stop_all()
+
     def restart_repo_manager(
         self,
         hf_token: str | None = None,
@@ -274,8 +283,11 @@ class BaseManager:
                 traceback.print_exc()
                 logger.error("链接文件时发生错误: %s", e)
 
-    def parse_cmd_str_to_list(self, launch_args: str) -> list[str]:
-        """解析命令行参数字符串，返回参数列表
+    def parse_cmd_str_to_list(
+        self,
+        launch_args: str,
+    ) -> list[str]:
+        """解析命令行参数字符串, 返回参数列表
 
         Args:
             launch_args (str):
@@ -287,7 +299,10 @@ class BaseManager:
         """
         return shlex.split(launch_args)
 
-    def parse_cmd_list_to_str(self, cmd_list: list[str]) -> str:
+    def parse_cmd_list_to_str(
+        self,
+        cmd_list: list[str],
+    ) -> str:
         """将命令列表转换为命令字符串
 
         Args:
@@ -538,7 +553,9 @@ class BaseManager:
             num_threads=num_threads,
         )
 
-    def clear_output(self) -> None:
+    def clear_output(
+        self,
+    ) -> None:
         """清理 Jupyter Notebook 的输出"""
         clear_jupyter_output()
 
@@ -556,6 +573,25 @@ class BaseManager:
         webui_name: str | None = "WebUI",
     ) -> TunnelUrl:
         """获取内网穿透地址
+
+        支持两种使用方式:
+        1. 直接调用（原有用法）: 返回 TunnelUrl 字典
+        2. 使用上下文管理器: 通过 tun_manager 使用 with 语句
+
+        Examples:
+            ```python
+            # 方式1: 直接调用（原有用法）
+            manager = BaseManager(workspace="/workspace", workfolder="sd-webui")
+            tunnel_url = manager.get_tunnel_url(use_cloudflare=True)
+            # 需要手动停止: manager.stop_all_tunnels()
+
+            # 方式2: 使用上下文管理器（推荐）
+            manager = BaseManager(workspace="/workspace", workfolder="sd-webui")
+            with manager.tun_manager:
+                tunnel_url = manager.get_tunnel_url(use_cloudflare=True)
+                # 做其他操作...
+            # 退出时自动停止所有内网穿透
+            ```
 
         Args:
             use_ngrok (bool | None):

@@ -1,3 +1,5 @@
+"""下载器类型定义"""
+
 from typing import (
     Literal,
     TypeAlias,

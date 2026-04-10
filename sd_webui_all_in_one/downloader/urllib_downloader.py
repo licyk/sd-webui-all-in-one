@@ -1,3 +1,5 @@
+"""Urllib 下载器"""
+
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse

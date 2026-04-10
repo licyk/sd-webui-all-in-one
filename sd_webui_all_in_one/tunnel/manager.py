@@ -32,17 +32,17 @@ logger = get_logger(
 
 class TunnelManager:
     """内网穿透管理器
-    
-    支持多种内网穿透服务，并提供上下文管理器接口用于自动资源清理。
-    
+
+    支持多种内网穿透服务, 并提供上下文管理器接口用于自动资源清理.
+
     使用示例:
         ```python
-        # 推荐用法：使用上下文管理器
+        # 推荐用法: 使用上下文管理器
         with TunnelManager(workspace=Path("/workspace"), port=7860) as manager:
             tunnel_url = manager.start_tunnel(use_cloudflare=True)
             print(f"访问地址: {tunnel_url}")
         # 退出时自动停止所有内网穿透
-        
+
         # 手动管理
         manager = TunnelManager(workspace=Path("/workspace"), port=7860)
         try:
@@ -51,7 +51,7 @@ class TunnelManager:
         finally:
             manager.stop_all()
         ```
-    
+
     Attributes:
         workspace (Path):
             工作区路径
@@ -59,9 +59,13 @@ class TunnelManager:
             要进行端口映射的端口
     """
 
-    def __init__(self, workspace: Path, port: int) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        port: int,
+    ) -> None:
         """初始化内网穿透管理器
-        
+
         Args:
             workspace (Path):
                 工作区路径
@@ -73,24 +77,34 @@ class TunnelManager:
         self._tracker = ProcessTracker()
         self._tunnel_url: Optional[TunnelUrl] = None
 
-    def __enter__(self) -> "TunnelManager":
+    def __enter__(
+        self,
+    ) -> "TunnelManager":
         """进入上下文管理器
-        
+
         Returns:
             TunnelManager: 管理器实例
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        """退出上下文管理器，自动清理所有资源
-        
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
+    ) -> bool:
+        """退出上下文管理器, 自动清理所有资源
+
         Args:
-            exc_type: 异常类型
-            exc_val: 异常值
-            exc_tb: 异常追踪
-            
+            exc_type (type[BaseException] | None):
+                异常类型
+            exc_val (BaseException | None):
+                异常值
+            exc_tb (Any | None):
+                异常追踪信息
+
         Returns:
-            bool: 总是返回 False，不抑制异常
+            bool: 总是返回 False, 不抑制异常
         """
         self.stop_all()
         return False
@@ -109,7 +123,7 @@ class TunnelManager:
         check: bool | None = True,
     ) -> TunnelUrl:
         """启动内网穿透
-        
+
         Args:
             use_ngrok (bool | None):
                 启用 Ngrok 内网穿透
@@ -131,10 +145,10 @@ class TunnelManager:
                 Zrok 账号 Token
             check (bool | None):
                 检查内网穿透是否启动成功
-                
+
         Returns:
             TunnelUrl: 内网穿透地址字典
-            
+
         Raises:
             AggregateError:
                 当 check=True 且启动内网穿透发生错误时
@@ -142,7 +156,7 @@ class TunnelManager:
         tunnel_url: TunnelUrl = {"local_url": f"http://127.0.0.1:{self.port}"}
         errors: list[Exception] = []
 
-        # 定义任务列表：(是否启用, 键名, 隧道类, 参数)
+        # 定义任务列表: (是否启用, 键名, 隧道类, 参数)
         tasks: list[tuple[bool, str, Callable, list[Any]]] = [
             (use_cloudflare, "cloudflare", CloudflareTunnel, [self.port, self.workspace]),
             (use_ngrok, "ngrok", NgrokTunnel, [self.port, self.workspace, ngrok_token] if ngrok_token else None),
@@ -174,32 +188,38 @@ class TunnelManager:
         # 保存结果
         self._tunnel_url = tunnel_url
 
-        # 如果有错误且需要检查，抛出聚合异常
+        # 如果有错误且需要检查, 抛出聚合异常
         if errors:
-            raise AggregateError(f"内网穿透启动部分失败，共 {len(errors)} 个错误。", errors)
+            raise AggregateError(f"内网穿透启动部分失败, 共 {len(errors)} 个错误. ", errors)
 
         return tunnel_url
 
-    def stop_all(self) -> None:
+    def stop_all(
+        self,
+    ) -> None:
         """停止所有内网穿透
-        
-        终止所有已启动的内网穿透进程。
+
+        终止所有已启动的内网穿透进程.
         """
         self._tracker.stop_all()
 
     @property
-    def tunnel_url(self) -> Optional[TunnelUrl]:
+    def tunnel_url(
+        self,
+    ) -> TunnelUrl | None:
         """获取内网穿透地址
-        
+
         Returns:
-            Optional[TunnelUrl]: 内网穿透地址字典，如果未启动则返回 None
+            (TunnelUrl | None): 内网穿透地址字典, 如果未启动则返回 None
         """
         return self._tunnel_url
 
     @property
-    def running_tunnels_count(self) -> int:
+    def running_tunnels_count(
+        self,
+    ) -> int:
         """获取运行中的隧道数量
-        
+
         Returns:
             int: 运行中的隧道数量
         """

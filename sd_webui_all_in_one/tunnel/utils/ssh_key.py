@@ -19,7 +19,9 @@ logger = get_logger(
 )
 
 
-def gen_ssh_key(path: Path) -> bool:
+def gen_ssh_key(
+    path: Path,
+) -> bool:
     """生成 SSH 密钥
 
     Args:
@@ -27,9 +29,8 @@ def gen_ssh_key(path: Path) -> bool:
             生成 SSH 密钥的路径
 
     Returns:
-        bool: 生成成功时返回 True，失败时返回 False
+        bool: 生成成功时返回 True, 失败时返回 False
     """
-    path = Path(path) if not isinstance(path, Path) and path is not None else path
     try:
         arg_string = f'ssh-keygen -t rsa -b 4096 -N "" -q -f {path.as_posix()}'
         args = shlex.split(arg_string)

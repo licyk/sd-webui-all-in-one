@@ -21,13 +21,17 @@ logger = get_logger(
 
 class CloudflareTunnel(BaseTunnel):
     """CloudFlare 内网穿透
-    
-    使用 pycloudflared 库实现 CloudFlare 内网穿透。
+
+    使用 pycloudflared 库实现 CloudFlare 内网穿透. 
     """
 
-    def __init__(self, port: int, workspace: Path,) -> None:
+    def __init__(
+        self,
+        port: int,
+        workspace: Path,
+    ) -> None:
         """初始化 CloudFlare 内网穿透
-        
+
         Args:
             port (int):
                 要进行端口映射的端口
@@ -37,17 +41,19 @@ class CloudflareTunnel(BaseTunnel):
         super().__init__(port, workspace)
         self._cloudflare_tunnel = None
 
-    def start(self,) -> str:
+    def start(
+        self,
+    ) -> str:
         """启动 CloudFlare 内网穿透
-        
+
         Returns:
             str: CloudFlare 内网穿透生成的访问地址
-            
+
         Raises:
             RuntimeError: 启动 CloudFlare 内网穿透失败时
         """
         logger.info("启动 CloudFlare 内网穿透")
-        
+
         # 导入或安装 pycloudflared
         try:
             from pycloudflared import try_cloudflare
@@ -68,10 +74,12 @@ class CloudflareTunnel(BaseTunnel):
             logger.error("启动 CloudFlare 内网穿透时出现了错误: %s", e)
             raise RuntimeError(f"启动 CloudFlare 内网穿透时出现了错误: {e}") from e
 
-    def stop(self,) -> None:
+    def stop(
+        self,
+    ) -> None:
         """停止 CloudFlare 内网穿透
-        
-        终止 CloudFlare 隧道进程。
+
+        终止 CloudFlare 隧道进程. 
         """
         if self._cloudflare_tunnel:
             try:
@@ -82,5 +90,5 @@ class CloudflareTunnel(BaseTunnel):
                 logger.info("CloudFlare 内网穿透已停止")
             except Exception as e:
                 logger.error("停止 CloudFlare 内网穿透时发生错误: %s", e)
-        
+
         super().stop()

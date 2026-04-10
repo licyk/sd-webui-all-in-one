@@ -21,13 +21,17 @@ logger = get_logger(
 
 class PinggyIoTunnel(SSHTunnel):
     """pinggy.io 内网穿透
-    
-    使用 SSH 连接到 pinggy.io 服务实现内网穿透。
+
+    使用 SSH 连接到 pinggy.io 服务实现内网穿透. 
     """
 
-    def __init__(self, port: int, workspace: Path,) -> None:
+    def __init__(
+        self,
+        port: int,
+        workspace: Path,
+    ) -> None:
         """初始化 pinggy.io 内网穿透
-        
+
         Args:
             port (int):
                 要进行端口映射的端口
@@ -36,7 +40,7 @@ class PinggyIoTunnel(SSHTunnel):
         """
         ssh_args = ["-p", "443", f"-R0:127.0.0.1:{port}", "free.pinggy.io"]
         url_pattern = re.compile(r"(?P<url>https?://\S+\.pinggy\.link)")
-        
+
         super().__init__(
             port=port,
             workspace=workspace,
@@ -44,15 +48,17 @@ class PinggyIoTunnel(SSHTunnel):
             url_pattern=url_pattern,
             line_limit=10,
         )
-        
+
         logger.info("初始化 pinggy.io 内网穿透")
 
-    def start(self,) -> str:
+    def start(
+        self,
+    ) -> str:
         """启动 pinggy.io 内网穿透
-        
+
         Returns:
             str: pinggy.io 内网穿透生成的访问地址
-            
+
         Raises:
             RuntimeError: 启动内网穿透失败时
         """

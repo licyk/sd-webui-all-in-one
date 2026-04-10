@@ -14,7 +14,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
 
-from sd_webui_all_in_one.cmd import preprocess_command, run_cmd
+from sd_webui_all_in_one.cmd import (
+    preprocess_command,
+    run_cmd,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
@@ -34,17 +37,22 @@ logger = get_logger(
 
 class ZrokTunnel(BaseTunnel):
     """Zrok 内网穿透
-    
-    使用 Zrok 实现内网穿透。需要提供 Zrok Token。
-    
+
+    使用 Zrok 实现内网穿透. 需要提供 Zrok Token. 
+
     Attributes:
         zrok_token (str):
             Zrok 账号 Token
     """
 
-    def __init__(self, port: int, workspace: Path, zrok_token: str,) -> None:
+    def __init__(
+        self,
+        port: int,
+        workspace: Path,
+        zrok_token: str,
+    ) -> None:
         """初始化 Zrok 内网穿透
-        
+
         Args:
             port (int):
                 要进行端口映射的端口
@@ -57,12 +65,14 @@ class ZrokTunnel(BaseTunnel):
         self.zrok_token = zrok_token
         self._zrok_bin: Optional[Path] = None
 
-    def _get_latest_zrok_release(self,) -> list[list[str]]:
+    def _get_latest_zrok_release(
+        self,
+    ) -> list[list[str]]:
         """获取最新的 Zrok 发行内容下载列表
-        
+
         Returns:
             list[list[str]]: 获取到的发行版下载列表 [[文件名, 下载链接], ...]
-            
+
         Raises:
             FileNotFoundError: 获取 Zrok 发行版本列表失败时
         """
@@ -75,7 +85,7 @@ class ZrokTunnel(BaseTunnel):
         logger.info("获取 Zrok 发行版本列表")
         response = requests.get(url=url, data=data)
         res = response.json()
-        
+
         if response.status_code < 200 or response.status_code > 300:
             logger.error("获取 Zrok 发行版本列表失败")
             raise FileNotFoundError("获取 Zrok 发行版本列表失败")
@@ -85,18 +95,22 @@ class ZrokTunnel(BaseTunnel):
             file_list.append([i.get("name"), i.get("browser_download_url")])
         return file_list
 
-    def _get_appropriate_zrok_package(self, packages: list[list[str]],) -> tuple[str, str]:
+    def _get_appropriate_zrok_package(
+        self,
+        packages: list[list[str]],
+    ) -> tuple[str, str]:
         """获取适合当前平台的 Zrok 版本
-        
+
         Args:
             packages (list[list[str]]): 发行版下载列表
-            
+
         Returns:
             tuple[str, str]: (文件名, 下载链接)
-            
+
         Raises:
             OSError: 未找到适合当前平台的 Zrok 时
         """
+
         def _get_current_platform_and_arch() -> tuple[str, str]:
             _arch = platform.machine()
             _platform = sys.platform
@@ -136,12 +150,14 @@ class ZrokTunnel(BaseTunnel):
         logger.error("未找到适合当前平台的 Zrok")
         raise OSError("未找到适合当前平台的 Zrok")
 
-    def _install_zrok(self,) -> Path:
+    def _install_zrok(
+        self,
+    ) -> Path:
         """安装 Zrok
-        
+
         Returns:
             Path: Zrok 可执行文件路径
-            
+
         Raises:
             RuntimeError: Zrok 安装失败时
         """
@@ -151,7 +167,7 @@ class ZrokTunnel(BaseTunnel):
             bin_extension_name = ""
 
         zrok_bin = self.workspace / f"zrok{bin_extension_name}"
-        
+
         # 检查是否已安装
         if zrok_bin.is_file():
             try:
@@ -162,7 +178,7 @@ class ZrokTunnel(BaseTunnel):
                 pass
 
         logger.info("安装 Zrok 中")
-        
+
         # 备份旧版本
         if zrok_bin.exists():
             shutil.move(zrok_bin, zrok_bin.parent / f"zrok_{uuid.uuid4()}")
@@ -189,17 +205,19 @@ class ZrokTunnel(BaseTunnel):
                 logger.error("Zrok 安装失败: %s", e)
                 raise RuntimeError(f"Zrok 安装时发生错误: {e}") from e
 
-    def start(self,) -> str:
+    def start(
+        self,
+    ) -> str:
         """启动 Zrok 内网穿透
-        
+
         Returns:
             str: Zrok 内网穿透地址
-            
+
         Raises:
             RuntimeError: 启动 Zrok 内网穿透失败时
         """
         logger.info("启动 Zrok 内网穿透中")
-        
+
         # 安装 Zrok
         self._zrok_bin = self._install_zrok()
 
@@ -265,7 +283,7 @@ class ZrokTunnel(BaseTunnel):
                 if isinstance(item, tuple):
                     if item[0] == "URL":
                         url = item[1]
-                        # 如果 URL 没有协议前缀，添加 https://
+                        # 如果 URL 没有协议前缀, 添加 https://
                         if not url.startswith(("http://", "https://")):
                             url = f"https://{url}"
                         self._url = url
@@ -280,20 +298,22 @@ class ZrokTunnel(BaseTunnel):
             except queue.Empty:
                 # 检查进程是否已退出
                 if self._process.poll() is not None:
-                    logger.error("Zrok 进程意外退出，退出码: %s", self._process.poll())
+                    logger.error("Zrok 进程意外退出, 退出码: %s", self._process.poll())
                     logger.error("收集到的输出行数: %d", len(lines_collected))
                     if lines_collected:
                         logger.error("最后几行输出: %s", lines_collected[-5:])
                     break
 
-        logger.error("启动 Zrok 内网穿透失败，超时或进程退出")
+        logger.error("启动 Zrok 内网穿透失败, 超时或进程退出")
         logger.error("总共收集到 %d 行输出", len(lines_collected))
         raise RuntimeError("启动 Zrok 内网穿透失败")
 
-    def stop(self,) -> None:
+    def stop(
+        self,
+    ) -> None:
         """停止 Zrok 内网穿透
-        
-        先禁用 Zrok，再终止进程。
+
+        先禁用 Zrok, 再终止进程. 
         """
         # 禁用 Zrok
         if self._zrok_bin:
@@ -303,6 +323,6 @@ class ZrokTunnel(BaseTunnel):
                 logger.info("Zrok 已禁用")
             except Exception as e:
                 logger.error("禁用 Zrok 失败: %s", e)
-        
+
         # 终止进程
         super().stop()

@@ -22,13 +22,17 @@ logger = get_logger(
 
 class GradioTunnel(BaseTunnel):
     """Gradio 内网穿透
-    
-    使用 gradio-tunneling 库实现 Gradio 内网穿透。
+
+    使用 gradio-tunneling 库实现 Gradio 内网穿透. 
     """
 
-    def __init__(self, port: int, workspace: Path,) -> None:
+    def __init__(
+        self,
+        port: int,
+        workspace: Path,
+    ) -> None:
         """初始化 Gradio 内网穿透
-        
+
         Args:
             port (int):
                 要进行端口映射的端口
@@ -38,17 +42,19 @@ class GradioTunnel(BaseTunnel):
         super().__init__(port, workspace)
         self._tunnel = None  # 保存 Tunnel 对象引用
 
-    def start(self,) -> str:
+    def start(
+        self,
+    ) -> str:
         """启动 Gradio 内网穿透
-        
+
         Returns:
             str: Gradio 内网穿透生成的访问地址
-            
+
         Raises:
             RuntimeError: 启动 Gradio 内网穿透失败时
         """
         logger.info("启动 Gradio 内网穿透")
-        
+
         # 导入或安装 gradio-tunneling
         try:
             from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
@@ -69,7 +75,7 @@ class GradioTunnel(BaseTunnel):
                 raise RuntimeError("无法从 Gradio API 服务器获取共享链接")
             payload = response.json()[0]
             remote_host, remote_port = payload["host"], int(payload["port"])
-            
+
             # 创建并启动隧道
             share_token = secrets.token_urlsafe(32)
             self._tunnel = Tunnel(
@@ -86,10 +92,12 @@ class GradioTunnel(BaseTunnel):
             logger.error("启动 Gradio 内网穿透时出现错误: %s", e)
             raise RuntimeError(f"启动 Gradio 内网穿透时出现了错误: {e}") from e
 
-    def stop(self,) -> None:
+    def stop(
+        self,
+    ) -> None:
         """停止 Gradio 内网穿透
-        
-        调用 Tunnel.kill() 方法来终止隧道进程。
+
+        调用 Tunnel.kill() 方法来终止隧道进程. 
         """
         if self._tunnel:
             try:
@@ -98,5 +106,5 @@ class GradioTunnel(BaseTunnel):
                 logger.info("Gradio 内网穿透已停止")
             except Exception as e:
                 logger.error("停止 Gradio 内网穿透时发生错误: %s", e)
-        
+
         super().stop()
