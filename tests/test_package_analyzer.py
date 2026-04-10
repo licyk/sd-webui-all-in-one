@@ -2,13 +2,11 @@
 
 基于 PEP 440 和 PEP 508 规范编写的测试用例.
 """
+# pylint: disable=unused-variable
 
 import pytest
 
-from sd_webui_all_in_one.package_analyzer.py_ver_cmp import (
-    PyWhlVersionComparison,
-    PyWhlVersionComponent,
-)
+from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
     RequirementParser,
     get_parse_bindings,
@@ -199,15 +197,26 @@ class TestPEP440VersionOrdering:
 
     def test_pep440_full_ordering(self):
         versions = [
-            "1.0.dev456", "1.0a1", "1.0a2.dev456", "1.0a12.dev456",
-            "1.0a12", "1.0b1.dev456", "1.0b2", "1.0b2.post345.dev456",
-            "1.0b2.post345", "1.0rc1.dev456", "1.0rc1", "1.0",
-            "1.0.post456.dev34", "1.0.post456", "1.1.dev1",
+            "1.0.dev456",
+            "1.0a1",
+            "1.0a2.dev456",
+            "1.0a12.dev456",
+            "1.0a12",
+            "1.0b1.dev456",
+            "1.0b2",
+            "1.0b2.post345.dev456",
+            "1.0b2.post345",
+            "1.0rc1.dev456",
+            "1.0rc1",
+            "1.0",
+            "1.0.post456.dev34",
+            "1.0.post456",
+            "1.1.dev1",
         ]
         cmp = PyWhlVersionComparison("1.0")
         for i in range(len(versions) - 1):
             result = cmp.compare_versions(versions[i], versions[i + 1])
-            assert result < 0, f"{versions[i]} should be < {versions[i+1]}"
+            assert result < 0, f"{versions[i]} should be < {versions[i + 1]}"
 
 
 # ============================================================================
@@ -421,9 +430,7 @@ class TestMultipleVersionConstraints:
         assert len(specs) == 0
 
     def test_parse_url_dependency(self):
-        name, specs, is_url = _parse_package_spec(
-            "pip @ https://github.com/pypa/pip/archive/1.3.1.zip"
-        )
+        name, specs, is_url = _parse_package_spec("pip @ https://github.com/pypa/pip/archive/1.3.1.zip")
         assert name == "pip"
         assert is_url is True
 
@@ -467,17 +474,13 @@ class TestPEP508RequirementParsing:
 
     def test_url_dependency(self):
         bindings = get_parse_bindings()
-        result = parse_requirement(
-            "pip @ https://github.com/pypa/pip/archive/1.3.1.zip", bindings
-        )
+        result = parse_requirement("pip @ https://github.com/pypa/pip/archive/1.3.1.zip", bindings)
         assert result.name == "pip"
         assert isinstance(result.specifier, str)
 
     def test_name_with_marker(self):
         bindings = get_parse_bindings()
-        result = parse_requirement(
-            "argparse;python_version<'2.7'", bindings
-        )
+        result = parse_requirement("argparse;python_version<'2.7'", bindings)
         assert result.name == "argparse"
         assert result.marker is not None
 

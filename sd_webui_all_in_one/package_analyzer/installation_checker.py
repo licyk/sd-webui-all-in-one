@@ -18,12 +18,8 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
 from sd_webui_all_in_one.package_analyzer.version_utils import _try_parse_requirement
-from sd_webui_all_in_one.package_analyzer.requirement_normalizer import (
-    parse_requirement_list,
-)
-from sd_webui_all_in_one.package_analyzer.requirement_parser import (
-    read_packages_from_requirements_file,
-)
+from sd_webui_all_in_one.package_analyzer.requirement_normalizer import parse_requirement_list
+from sd_webui_all_in_one.package_analyzer.requirement_parser import read_packages_from_requirements_file
 
 
 logger = get_logger(

@@ -2,7 +2,6 @@
 
 import os
 import sys
-import importlib.metadata
 from typing import Any
 from pathlib import Path
 
@@ -17,6 +16,7 @@ from sd_webui_all_in_one.updater import (
     check_and_update_uv,
     check_and_update_pip,
 )
+from sd_webui_all_in_one.package_analyzer import get_categorized_dependencies
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -127,7 +127,13 @@ def install_manager_depend(
         ]
     try:
         logger.info("安装自身组件依赖中")
-        requires = [x.split(";")[0] for x in importlib.metadata.requires("sd-webui-all-in-one")]
+        deps = get_categorized_dependencies("sd-webui-all-in-one")
+        requires = deps["mandatory"]
+        for name, data in deps["optional"].items():
+            if name in ("full", "tunnel"):
+                continue
+            requires += data
+
         pip_install(
             *requires,
             "--upgrade",

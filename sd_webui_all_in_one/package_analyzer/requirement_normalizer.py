@@ -31,12 +31,8 @@ from sd_webui_all_in_one.package_analyzer.version_utils import (
     remove_optional_dependence_from_package,
     version_string_is_canonical,
 )
-from sd_webui_all_in_one.package_analyzer.wheel_parser import (
-    parse_wheel_to_package_name,
-)
-from sd_webui_all_in_one.package_analyzer.requirement_parser import (
-    parse_requirement_to_list,
-)
+from sd_webui_all_in_one.package_analyzer.wheel_parser import parse_wheel_to_package_name
+from sd_webui_all_in_one.package_analyzer.requirement_parser import parse_requirement_to_list
 
 
 logger = get_logger(
@@ -120,12 +116,7 @@ def parse_requirement_list(
         ):
             continue
 
-        if (
-            requirement.startswith("-e git+http")
-            or requirement.startswith("git+http")
-            or requirement.startswith("-e git+ssh://")
-            or requirement.startswith("git+ssh://")
-        ):
+        if requirement.startswith("-e git+http") or requirement.startswith("git+http") or requirement.startswith("-e git+ssh://") or requirement.startswith("git+ssh://"):
             egg_match = re.search(r"egg=([^#&]+)", requirement)
             if egg_match:
                 package_list.append(egg_match.group(1).split("-")[0])

@@ -50,6 +50,13 @@ from sd_webui_all_in_one.package_analyzer.requirement_normalizer import (
     parse_requirement_list,
 )
 
+# 依赖分类
+from sd_webui_all_in_one.package_analyzer.dependency_categorizer import (
+    PackageDependencies,
+    format_requirement,
+    get_categorized_dependencies,
+)
+
 # 安装状态检查
 from sd_webui_all_in_one.package_analyzer.installation_checker import (
     get_package_version_from_library,
@@ -90,6 +97,10 @@ __all__ = [
     "evaluate_marker",
     "parse_requirement_to_list",
     "parse_requirement_list",
+    # dependency_categorizer
+    "PackageDependencies",
+    "format_requirement",
+    "get_categorized_dependencies",
     "read_packages_from_requirements_file",
     # installation_checker
     "get_package_version_from_library",
