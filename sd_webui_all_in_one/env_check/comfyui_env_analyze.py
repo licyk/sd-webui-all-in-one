@@ -23,7 +23,6 @@ from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
     check_version_constraint,
     get_package_name,
-    get_package_version,
     is_package_has_version,
     is_package_installed,
     parse_package_spec,
@@ -434,7 +433,7 @@ def _is_constraint_pair_conflicting(
         return False
 
     if op2 == "~=":
-        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1)
+        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1) # pylint: disable=arguments-out-of-order
 
     # 范围约束之间的冲突检测: >, >=, <, <=
     # 下界 vs 上界: 检查下界是否超过上界
@@ -468,7 +467,7 @@ def _is_constraint_pair_conflicting(
 
     if op1 in upper_ops and op2 in lower_ops:
         # 交换后递归检测
-        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1)
+        return _is_constraint_pair_conflicting(op2, ver2, op1, ver1) # pylint: disable=arguments-out-of-order
 
     # 同方向的范围约束 (如 > 和 >=, 或 < 和 <=) 不会互相冲突
     return False

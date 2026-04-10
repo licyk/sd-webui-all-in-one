@@ -166,6 +166,16 @@ class ZrokTunnel(BaseTunnel):
         else:
             bin_extension_name = ""
 
+        zrok_local_bin = shutil.which("zrok")
+        if zrok_local_bin is not None:
+            logger.info("本地已安装 Zrok")
+            return Path(zrok_local_bin)
+        
+        zrok2_local_bin = shutil.which("zrok2")
+        if zrok2_local_bin is not None:
+            logger.info("本地已安装 Zrok2")
+            return Path(zrok2_local_bin)
+
         zrok_bin = self.workspace / f"zrok{bin_extension_name}"
 
         # 检查是否已安装
