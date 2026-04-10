@@ -377,9 +377,7 @@ def get_sync_files(
         sync_file_list = []
     else:
         dst_files_set = set(dst_files)  # 加快统计速度
-        sync_file_list = [
-            x for x in tqdm(src_files, desc="计算需要同步的文件") if (dst_path / x.relative_to(src_path if not src_is_file else src_path.parent)) not in dst_files_set
-        ]
+        sync_file_list = [x for x in tqdm(src_files, desc="计算需要同步的文件") if (dst_path / x.relative_to(src_path if not src_is_file else src_path.parent)) not in dst_files_set]
     logger.info("要进行同步的文件数量: %s", len(sync_file_list))
     return sync_file_list
 
