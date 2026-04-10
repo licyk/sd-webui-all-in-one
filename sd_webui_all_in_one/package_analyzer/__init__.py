@@ -2,14 +2,19 @@
 
 提供 Python 软件包的版本比较、依赖解析、安装验证等功能.
 
-模块结构:
-    - ``version_utils``: 版本字符串工具 (canonical 检查、包名/版本提取)
-    - ``wheel_parser``: Wheel 文件名解析
-    - ``requirement_parser``: PEP 508 依赖声明解析与 requirements 标准化
-    - ``installation_checker``: 安装状态检查与依赖验证
-    - ``py_ver_cmp``: PEP 440 版本比较器
-    - ``py_whl_parse``: PEP 508 解析器基础设施
-    - ``ver_cmp``: 通用版本比较器
+模块分层结构:
+    底层:
+        - ``py_whl_parse``: PEP 508 解析器基础设施
+        - ``py_ver_cmp``: PEP 440 版本比较器
+        - ``ver_cmp``: 通用版本比较器
+    中层:
+        - ``version_utils``: 版本字符串工具 (canonical 检查、包名/版本提取)
+        - ``wheel_parser``: Wheel 文件名解析
+        - ``requirement_parser``: PEP 508 依赖声明解析与 marker 评估
+    高层:
+        - ``requirement_normalizer``: 依赖声明标准化 (组合中层模块完成 requirements 列表标准化)
+    最高层:
+        - ``installation_checker``: 安装状态检查与依赖验证
 """
 
 # 版本字符串工具
@@ -39,8 +44,10 @@ from sd_webui_all_in_one.package_analyzer.requirement_parser import (
     parse_requirement,
     evaluate_marker,
     parse_requirement_to_list,
-    parse_requirement_list,
     read_packages_from_requirements_file,
+)
+from sd_webui_all_in_one.package_analyzer.requirement_normalizer import (
+    parse_requirement_list,
 )
 
 # 安装状态检查
