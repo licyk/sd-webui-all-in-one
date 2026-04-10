@@ -10,6 +10,9 @@ _✨小巧，强大的命令工具_
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml">
       <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml/badge.svg" alt="Ruff Lint">
     </a>
+    <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pytest.yml">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pytest.yml/badge.svg" alt="Pytest">
+    </a>
     <a href="https://pypi.org/project/sd-webui-all-in-one" style="margin: 2px;">
       <img src="https://img.shields.io/pypi/v/sd-webui-all-in-one" alt="PyPI">
     </a>

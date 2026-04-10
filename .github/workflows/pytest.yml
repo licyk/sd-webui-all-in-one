@@ -1,0 +1,41 @@
+name: Pytest
+
+on:
+  push:
+    paths:
+      - "sd_webui_all_in_one/**"
+      - "tests/**"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - "sd_webui_all_in_one/**"
+      - "tests/**"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+jobs:
+  Pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -e .
+
+      - name: Run pytest
+        run: |
+          pytest
