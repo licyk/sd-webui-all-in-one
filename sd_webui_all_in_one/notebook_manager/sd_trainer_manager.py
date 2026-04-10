@@ -22,7 +22,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,
 )
-from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
 from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
     pip_install,

@@ -19,8 +19,8 @@ from sd_webui_all_in_one.utils import (
     print_divider,
     append_python_path,
 )
-from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
-from sd_webui_all_in_one.package_analyzer.pkg_check import (
+from sd_webui_all_in_one.package_analyzer import (
+    PyWhlVersionComparison,
     get_package_name,
     get_package_version,
     is_package_has_version,

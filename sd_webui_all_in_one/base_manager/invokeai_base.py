@@ -59,12 +59,10 @@ from sd_webui_all_in_one.pkg_manager import (
     install_pytorch,
     pip_install,
 )
-from sd_webui_all_in_one.package_analyzer.pkg_check import (
+from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
     get_package_version,
     is_package_has_version,
-)
-from sd_webui_all_in_one.package_analyzer.ver_cmp import (
     version_decrement,
     version_increment,
 )

@@ -9,7 +9,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
 
 
 logger = get_logger(

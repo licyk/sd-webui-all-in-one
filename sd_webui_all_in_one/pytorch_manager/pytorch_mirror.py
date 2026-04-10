@@ -8,9 +8,9 @@ import sys
 from typing import TypedDict
 
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
-from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
-from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
-from sd_webui_all_in_one.package_analyzer.pkg_check import (
+from sd_webui_all_in_one.package_analyzer import (
+    CommonVersionComparison,
+    PyWhlVersionComparison,
     is_package_has_version,
     get_package_version,
 )

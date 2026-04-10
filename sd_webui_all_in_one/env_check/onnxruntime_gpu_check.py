@@ -16,7 +16,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
+from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 from sd_webui_all_in_one.utils import load_source_directly
 
 

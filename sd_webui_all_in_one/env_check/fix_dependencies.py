@@ -9,7 +9,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
-from sd_webui_all_in_one.package_analyzer.pkg_check import validate_requirements
+from sd_webui_all_in_one.package_analyzer import validate_requirements
 
 
 logger = get_logger(

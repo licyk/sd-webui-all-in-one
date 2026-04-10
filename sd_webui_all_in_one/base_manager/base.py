@@ -27,7 +27,7 @@ from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
     query_pytorch_info_from_library,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.package_analyzer.pkg_check import (
+from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
     is_package_has_version,
     get_package_version,
