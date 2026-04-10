@@ -1,4 +1,11 @@
-"""Python 软件包检查工具"""
+"""Python 软件包检查工具
+
+提供 Python 软件包的版本检查、依赖解析和安装验证功能.
+
+参考:
+    - https://peps.python.org/pep-0440/
+    - https://peps.python.org/pep-0508/
+"""
 
 import os
 import re
@@ -27,65 +34,178 @@ logger = get_logger(
 )
 
 
+# PEP 440 Appendix B: canonical version regex (含 local version)
+_CANONICAL_VERSION_REGEX = re.compile(
+    r"^([1-9][0-9]*!)?"  # epoch
+    r"(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*"  # release
+    r"((a|b|rc)(0|[1-9][0-9]*))?"  # pre-release
+    r"(\.post(0|[1-9][0-9]*))?"  # post-release
+    r"(\.dev(0|[1-9][0-9]*))?"  # dev-release
+    r"(\+[a-z0-9]+(\.[a-z0-9]+)*)?$"  # local version
+)
+
+
 def version_string_is_canonical(
     version: str,
 ) -> bool:
-    """判断版本号标识符是否符合标准
+    """判断版本号标识符是否符合 PEP 440 canonical 格式
 
     Args:
-        version (str): 版本号字符串
+        version (str):
+            版本号字符串
+
     Returns:
-        bool: 如果版本号标识符符合 PEP 440 标准, 则返回`True`
+        bool: 如果版本号标识符符合 PEP 440 canonical 格式则返回 ``True``
     """
-    return (
-        re.match(
-            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
-            version,
-        )
-        is not None
-    )
+    return _CANONICAL_VERSION_REGEX.match(version) is not None
+
+
+def _try_parse_requirement(
+    package: str,
+) -> ParsedPyWhlRequirement | None:
+    """尝试使用 PEP 508 解析器解析软件包声明
+
+    Args:
+        package (str):
+            Python 软件包声明字符串
+
+    Returns:
+        ParsedPyWhlRequirement | None: 解析成功返回结果, 失败返回 ``None``
+    """
+    try:
+        parser = RequirementParser(package.strip())
+        return parser.parse()
+    except Exception:
+        return None
 
 
 def is_package_has_version(
     package: str,
 ) -> bool:
-    """检查 Python 软件包是否指定版本号
+    """检查 Python 软件包声明是否包含版本约束
+
+    使用 PEP 508 解析器解析软件包声明, 检查是否存在版本说明符.
+
+    使用示例:
+        ```python
+        is_package_has_version("torch==2.3.0")  # True
+        is_package_has_version("numpy")  # False
+        is_package_has_version("requests>=2.0,<3.0")  # True
+        ```
 
     Args:
-        package (str): Python 软件包名
+        package (str):
+            Python 软件包声明字符串
 
     Returns:
-        bool: 如果 Python 软件包存在版本声明, 如`torch==2.3.0`, 则返回`True`
+        bool: 如果软件包声明包含版本约束则返回 ``True``
     """
-    return package != (package.replace("===", "").replace("~=", "").replace("!=", "").replace("<=", "").replace(">=", "").replace("<", "").replace(">", "").replace("==", ""))
+    parsed = _try_parse_requirement(package)
+    if parsed is not None:
+        # 如果是 URL 依赖 (str), 视为有版本约束
+        if isinstance(parsed.specifier, str):
+            return True
+        # 如果有版本说明符列表且非空
+        return len(parsed.specifier) > 0
+
+    # 解析失败时回退到字符串检测
+    return package != (
+        package.replace("===", "")
+        .replace("~=", "")
+        .replace("!=", "")
+        .replace("<=", "")
+        .replace(">=", "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace("==", "")
+    )
 
 
 def get_package_name(
     package: str,
 ) -> str:
-    """获取 Python 软件包的包名, 去除末尾的版本声明
+    """获取 Python 软件包的包名, 去除版本声明和 extras
+
+    使用 PEP 508 解析器提取包名.
+
+    使用示例:
+        ```python
+        get_package_name("torch==2.3.0")  # "torch"
+        get_package_name("requests[security]>=2.0")  # "requests"
+        get_package_name("numpy")  # "numpy"
+        ```
 
     Args:
-        package (str): Python 软件包名
+        package (str):
+            Python 软件包声明字符串
 
     Returns:
-        str: 返回去除版本声明后的 Python 软件包名
+        str: 去除版本声明后的 Python 软件包名
     """
-    return package.split("===")[0].split("~=")[0].split("!=")[0].split("<=")[0].split(">=")[0].split("<")[0].split(">")[0].split("==")[0].strip()
+    parsed = _try_parse_requirement(package)
+    if parsed is not None:
+        return parsed.name
+
+    # 解析失败时回退到字符串分割
+    return (
+        package.split("===")[0]
+        .split("~=")[0]
+        .split("!=")[0]
+        .split("<=")[0]
+        .split(">=")[0]
+        .split("<")[0]
+        .split(">")[0]
+        .split("==")[0]
+        .split("[")[0]
+        .strip()
+    )
 
 
 def get_package_version(
     package: str,
 ) -> str:
-    """获取 Python 软件包的包版本号
+    """获取 Python 软件包声明中的版本号
+
+    使用 PEP 508 解析器提取第一个版本约束的版本号.
+
+    使用示例:
+        ```python
+        get_package_version("torch==2.3.0")  # "2.3.0"
+        get_package_version("requests>=2.0")  # "2.0"
+        ```
 
     Args:
-        package (str): Python 软件包名
+        package (str):
+            Python 软件包声明字符串
 
-    返回值:
-        str: 返回 Python 软件包的包版本号
+    Returns:
+        str: Python 软件包的版本号字符串
     """
-    return package.split("===").pop().split("~=").pop().split("!=").pop().split("<=").pop().split(">=").pop().split("<").pop().split(">").pop().split("==").pop().strip()
+    parsed = _try_parse_requirement(package)
+    if parsed is not None and isinstance(parsed.specifier, list) and len(parsed.specifier) > 0:
+        # 返回第一个版本约束的版本号
+        return parsed.specifier[0][1]
+
+    # 解析失败时回退到字符串分割
+    return (
+        package.split("===")
+        .pop()
+        .split("~=")
+        .pop()
+        .split("!=")
+        .pop()
+        .split("<=")
+        .pop()
+        .split(">=")
+        .pop()
+        .split("<")
+        .pop()
+        .split(">")
+        .pop()
+        .split("==")
+        .pop()
+        .strip()
+    )
 
 
 WHEEL_PATTERN = r"""
@@ -104,7 +224,7 @@ WHEEL_PATTERN = r"""
     (?P<platform>[^-]+)         # 平台标签
     \.whl$                      # 固定后缀
 """
-"""解析 Python Wheel 名的的正则表达式"""
+"""解析 Python Wheel 文件名的正则表达式"""
 
 REPLACE_PACKAGE_NAME_DICT = {
     "sam2": "SAM-2",
@@ -118,11 +238,14 @@ def parse_wheel_filename(
     """解析 Python wheel 文件名并返回 distribution 名称
 
     Args:
-        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        filename (str):
+            wheel 文件名, 例如 ``pydantic-1.10.15-py3-none-any.whl``
+
     Returns:
-        str: distribution 名称, 例如 pydantic
+        str: distribution 名称, 例如 ``pydantic``
+
     Raises:
-        ValueError: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP 491 规范
     """
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -134,14 +257,17 @@ def parse_wheel_filename(
 def parse_wheel_version(
     filename: str,
 ) -> str:
-    """解析 Python wheel 文件名并返回 version 名称
+    """解析 Python wheel 文件名并返回版本号
 
     Args:
-        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        filename (str):
+            wheel 文件名, 例如 ``pydantic-1.10.15-py3-none-any.whl``
+
     Returns:
-        str: version 名称, 例如 1.10.15
+        str: 版本号, 例如 ``1.10.15``
+
     Raises:
-        ValueError: 如果文件名不符合 PEP491 规范
+        ValueError: 如果文件名不符合 PEP 491 规范
     """
     match = re.fullmatch(WHEEL_PATTERN, filename, re.VERBOSE)
     if not match:
@@ -153,13 +279,14 @@ def parse_wheel_version(
 def parse_wheel_to_package_name(
     filename: str,
 ) -> str:
-    """解析 Python wheel 文件名并返回 <distribution>==<version>
+    """解析 Python wheel 文件名并返回 ``<distribution>==<version>``
 
     Args:
-        filename (str): wheel 文件名, 例如 pydantic-1.10.15-py3-none-any.whl
+        filename (str):
+            wheel 文件名, 例如 ``pydantic-1.10.15-py3-none-any.whl``
 
     Returns:
-        str: <distribution>==<version> 名称, 例如 pydantic==1.10.15
+        str: ``<distribution>==<version>`` 格式, 例如 ``pydantic==1.10.15``
     """
     distribution = parse_wheel_filename(filename)
     version = parse_wheel_version(filename)
@@ -169,13 +296,20 @@ def parse_wheel_to_package_name(
 def remove_optional_dependence_from_package(
     filename: str,
 ) -> str:
-    """移除 Python 软件包声明中可选依赖
+    """移除 Python 软件包声明中的可选依赖 (extras)
+
+    使用示例:
+        ```python
+        remove_optional_dependence_from_package("diffusers[torch]==0.10.2")
+        # "diffusers==0.10.2"
+        ```
 
     Args:
-        filename (str): Python 软件包名
+        filename (str):
+            Python 软件包声明字符串
 
     Returns:
-        str: 移除可选依赖后的软件包名, e.g. diffusers[torch]==0.10.2 -> diffusers==0.10.2
+        str: 移除可选依赖后的软件包名
     """
     return re.sub(r"\[.*?\]", "", filename)
 
@@ -186,7 +320,9 @@ def get_correct_package_name(
     """将原 Python 软件包名替换成正确的 Python 软件包名
 
     Args:
-        name (str): 原 Python 软件包名
+        name (str):
+            原 Python 软件包名
+
     Returns:
         str: 替换成正确的软件包名, 如果原有包名正确则返回原包名
     """
@@ -197,11 +333,13 @@ def parse_requirement(
     text: str,
     bindings: dict[str, str],
 ) -> ParsedPyWhlRequirement:
-    """解析依赖声明的主函数
+    """解析 PEP 508 依赖声明
 
     Args:
-        text (str): 依赖声明文本
-        bindings (dict[str, str]): 解析 Python 软件包名的语法字典
+        text (str):
+            依赖声明文本
+        bindings (dict[str, str]):
+            PEP 508 环境变量绑定字典
 
     Returns:
         ParsedPyWhlRequirement: 解析结果元组
@@ -213,10 +351,17 @@ def parse_requirement(
 def evaluate_marker(
     marker: Any,
 ) -> bool:
-    """评估 marker 表达式, 判断当前环境是否符合要求
+    """评估 PEP 508 marker 表达式, 判断当前环境是否符合要求
+
+    PEP 508 规则:
+    - 版本比较操作符 (``<``, ``<=``, ``>``, ``>=``, ``==``, ``!=``, ``~=``) 使用 PEP 440 语义
+    - ``in`` / ``not in`` 使用字符串包含语义
+    - ``and`` / ``or`` 使用逻辑运算
 
     Args:
-        marker (Any): marker 表达式
+        marker (Any):
+            marker 表达式 (嵌套元组结构)
+
     Returns:
         bool: 评估结果
     """
@@ -232,10 +377,9 @@ def evaluate_marker(
 
             if op == "and":
                 return left and right
-            else:  # 'or'
+            else:
                 return left or right
         else:
-            # 处理比较操作
             left = marker[1]
             right = marker[2]
 
@@ -257,12 +401,11 @@ def evaluate_marker(
                     elif op == "!=":
                         return left_ver != right_ver
                     elif op == "~=":
-                        return left_ver >= ~right_ver
+                        matcher = right_ver.compatible_version_matcher(str(right).lower())
+                        return matcher(str(left).lower())
                     elif op == "===":
-                        # 任意相等, 直接比较字符串
                         return str(left).lower() == str(right).lower()
                 except Exception:
-                    # 如果版本比较失败, 回退到字符串比较
                     left_str = str(left).lower()
                     right_str = str(right).lower()
                     if op == "<":
@@ -278,21 +421,15 @@ def evaluate_marker(
                     elif op == "!=":
                         return left_str != right_str
                     elif op == "~=":
-                        # 简化处理
                         return left_str >= right_str
                     elif op == "===":
                         return left_str == right_str
 
-            # 处理 in 和 not in 操作
             elif op == "in":
-                # 将右边按逗号分割, 检查左边是否在其中
-                values = [v.strip() for v in str(right).lower().split(",")]
-                return str(left).lower() in values
+                return str(left).lower() in str(right).lower()
 
             elif op == "not in":
-                # 将右边按逗号分割, 检查左边是否不在其中
-                values = [v.strip() for v in str(right).lower().split(",")]
-                return str(left).lower() not in values
+                return str(left).lower() not in str(right).lower()
 
     return False
 
@@ -302,10 +439,21 @@ def parse_requirement_to_list(
 ) -> list[str]:
     """解析依赖声明并返回依赖列表
 
+    将单个 PEP 508 依赖声明解析为标准化的依赖列表.
+    如果声明包含多个版本约束, 每个约束会生成一个独立的依赖项.
+
+    使用示例:
+        ```python
+        parse_requirement_to_list("protobuf<5,>=4.25.3")
+        # ["protobuf<5", "protobuf>=4.25.3"]
+        ```
+
     Args:
-        text (str): 依赖声明
+        text (str):
+            依赖声明字符串
+
     Returns:
-        list[str]: 解析后的依赖声明表
+        list[str]: 解析后的依赖声明列表
     """
     try:
         bindings = get_parse_bindings()
@@ -314,25 +462,18 @@ def parse_requirement_to_list(
         logger.debug("解析失败: %s", e)
         return []
 
-    # 检查marker条件
     if not evaluate_marker(marker):
         return []
 
-    # 构建依赖列表
-    dependencies = []
+    dependencies: list[str] = []
 
-    # 如果是 URL 依赖
     if isinstance(version_specs, str):
-        # URL 依赖只返回包名
         dependencies.append(name)
     else:
-        # 版本依赖
         if version_specs:
-            # 有版本约束, 为每个约束创建一个依赖项
             for op, version in version_specs:
                 dependencies.append(f"{name}{op}{version}")
         else:
-            # 没有版本约束, 只返回包名
             dependencies.append(name)
 
     return dependencies
@@ -343,65 +484,46 @@ def parse_requirement_list(
 ) -> list[str]:
     """将 Python 软件包声明列表解析成标准 Python 软件包名列表
 
-    例如有以下的 Python 软件包声明列表:
-    ```python
-    requirements = [
-        'torch==2.3.0',
-        'diffusers[torch]==0.10.2',
-        'NUMPY',
-        '-e .',
-        '--index-url https://pypi.python.org/simple',
-        '--extra-index-url https://download.pytorch.org/whl/cu124',
-        '--find-links https://download.pytorch.org/whl/torch_stable.html',
-        '-e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds',
-        'git+https://github.com/WASasquatch/img2texture.git',
-        'https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl',
-        'prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer',
-        'protobuf<5,>=4.25.3',
-    ]
-    ```
+    处理各种格式的软件包声明, 包括:
+    - 标准 PEP 508 声明: ``torch==2.3.0``
+    - 带 extras 的声明: ``diffusers[torch]==0.10.2``
+    - Git 仓库引用: ``git+https://github.com/user/repo.git``
+    - Wheel URL: ``https://example.com/package-1.0-py3-none-any.whl``
+    - 带注释的声明: ``package==1.0 # comment``
 
-    上述例子中的软件包名声明列表将解析成:
-    ```python
-        requirements = [
+    使用示例:
+        ```python
+        parse_requirement_list([
             'torch==2.3.0',
-            'diffusers==0.10.2',
-            'numpy',
-            'mgds',
-            'img2texture',
-            'pydantic==1.10.15',
-            'prodigy-plus-schedule-free==1.9.1',
-            'protobuf<5',
-            'protobuf>=4.25.3',
-        ]
-    ```
+            'diffusers[torch]==0.10.2',
+            'NUMPY',
+            'protobuf<5,>=4.25.3',
+        ])
+        # ['torch==2.3.0', 'diffusers==0.10.2', 'numpy', 'protobuf<5', 'protobuf>=4.25.3']
+        ```
 
     Args:
-        requirements (list[str]): Python 软件包名声明列表
+        requirements (list[str]):
+            Python 软件包声明列表
 
     Returns:
-        list[str]: 将 Python 软件包名声明列表解析成标准声明列表
+        list[str]: 标准化后的 Python 软件包声明列表
     """
 
     def _extract_repo_name(url_string: str) -> str | None:
         """从包含 Git 仓库 URL 的字符串中提取仓库名称
 
         Args:
-            url_string (str): 包含 Git 仓库 URL 的字符串
+            url_string (str):
+                包含 Git 仓库 URL 的字符串
 
         Returns:
-            (str | None): 提取到的仓库名称, 如果未找到则返回 None
+            str | None: 提取到的仓库名称, 如果未找到则返回 ``None``
         """
-        # 模式1: 匹配 git+https:// 或 git+ssh:// 开头的 URL
-        # 模式2: 匹配直接以 git+ 开头的 URL
         patterns = [
-            # 匹配 git+protocol://host/path/to/repo.git 格式
             r"git\+[a-z]+://[^/]+/(?:[^/]+/)*([^/@]+?)(?:\.git)?(?:@|$)",
-            # 匹配 git+https://host/owner/repo.git 格式
             r"git\+https://[^/]+/[^/]+/([^/@]+?)(?:\.git)?(?:@|$)",
-            # 匹配 git+ssh://git@host:owner/repo.git 格式
             r"git\+ssh://git@[^:]+:[^/]+/([^/@]+?)(?:\.git)?(?:@|$)",
-            # 通用模式: 匹配最后一个斜杠后的内容, 直到遇到 @ 或 .git 或字符串结束
             r"/([^/@]+?)(?:\.git)?(?:@|$)",
         ]
 
@@ -415,8 +537,6 @@ def parse_requirement_list(
     package_list: list[str] = []
     canonical_package_list: list[str] = []
     for requirement in requirements:
-        # 清理注释内容
-        # prodigy-plus-schedule-free==1.9.1 # prodigy+schedulefree optimizer -> prodigy-plus-schedule-free==1.9.1
         requirement = re.sub(r"\s*#.*$", "", requirement).strip()
         logger.debug("原始 Python 软件包名: %s", requirement)
 
@@ -433,16 +553,12 @@ def parse_requirement_list(
         ):
             continue
 
-        # -e git+https://github.com/Nerogar/mgds.git@2c67a5a#egg=mgds -> mgds
-        # git+https://github.com/WASasquatch/img2texture.git -> img2texture
-        # git+https://github.com/deepghs/waifuc -> waifuc
-        # -e git+https://github.com/Nerogar/mgds.git@2c67a5a -> mgds
-        # git+ssh://git@github.com:licyk/sd-webui-all-in-one@dev -> sd-webui-all-in-one
-        # git+https://gitlab.com/user/my-project.git@main -> my-project
-        # git+ssh://git@bitbucket.org:team/repo-name.git@develop -> repo-name
-        # https://github.com/another/repo.git -> repo
-        # git@github.com:user/repository.git -> repository
-        if requirement.startswith("-e git+http") or requirement.startswith("git+http") or requirement.startswith("-e git+ssh://") or requirement.startswith("git+ssh://"):
+        if (
+            requirement.startswith("-e git+http")
+            or requirement.startswith("git+http")
+            or requirement.startswith("-e git+ssh://")
+            or requirement.startswith("git+ssh://")
+        ):
             egg_match = re.search(r"egg=([^#&]+)", requirement)
             if egg_match:
                 package_list.append(egg_match.group(1).split("-")[0])
@@ -458,14 +574,11 @@ def parse_requirement_list(
             package_list.append(package_name)
             continue
 
-        # https://github.com/Panchovix/pydantic-fixreforge/releases/download/main_v1/pydantic-1.10.15-py3-none-any.whl -> pydantic==1.10.15
         if requirement.startswith("https://") or requirement.startswith("http://"):
             package_name = parse_wheel_to_package_name(os.path.basename(requirement))
             package_list.append(package_name)
             continue
 
-        # 常规 Python 软件包声明
-        # 解析版本列表
         possble_requirement = parse_requirement_to_list(requirement)
         if len(possble_requirement) == 0:
             continue
@@ -487,7 +600,6 @@ def parse_requirement_list(
             format_package_name = remove_optional_dependence_from_package(multi_requirements[0].strip())
             package_list.append(format_package_name)
 
-    # 处理包名大小写并统一成小写
     for p in package_list:
         p = p.lower().strip()
         logger.debug("预处理后的 Python 软件包名: %s", p)
@@ -512,10 +624,11 @@ def read_packages_from_requirements_file(
     """从 requirements.txt 文件中读取 Python 软件包版本声明列表
 
     Args:
-        file_path (str | Path): requirements.txt 文件路径
+        file_path (str | Path):
+            requirements.txt 文件路径
 
     Returns:
-        list[str]: 从 requirements.txt 文件中读取的 Python 软件包声明列表
+        list[str]: 从文件中读取的 Python 软件包声明列表
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -530,30 +643,70 @@ def get_package_version_from_library(
 ) -> str | None:
     """获取已安装的 Python 软件包版本号
 
+    依次尝试原始包名、小写包名、下划线转连字符包名进行查找.
+
     Args:
-        package_name (str): Python 软件包名
+        package_name (str):
+            Python 软件包名
 
     Returns:
-        (str | None): 如果获取到 Python 软件包版本号则返回版本号字符串, 否则返回`None`
+        str | None: 如果获取到版本号则返回版本号字符串, 否则返回 ``None``
     """
     try:
         ver = importlib.metadata.version(package_name)
-    except Exception as _:
+    except Exception:
         ver = None
 
     if ver is None:
         try:
             ver = importlib.metadata.version(package_name.lower())
-        except Exception as _:
+        except Exception:
             ver = None
 
     if ver is None:
         try:
             ver = importlib.metadata.version(package_name.replace("_", "-"))
-        except Exception as _:
+        except Exception:
             ver = None
 
     return ver
+
+
+def _split_package_spec(
+    package: str,
+) -> tuple[str, str, str | None]:
+    """将包声明分割为 ``(包名, 操作符, 版本号)``
+
+    优先使用 PEP 508 解析器, 失败时回退到按操作符优先级从长到短匹配.
+
+    Args:
+        package (str):
+            包声明字符串, 如 ``'requests>=2.0'``
+
+    Returns:
+        tuple[str, str, str | None]:
+            ``(包名, 操作符, 版本号)`` 元组, 如果没有版本约束则操作符为空字符串, 版本号为 ``None``
+    """
+    # 优先使用 PEP 508 解析器
+    parsed = _try_parse_requirement(package)
+    if parsed is not None:
+        if isinstance(parsed.specifier, list) and len(parsed.specifier) > 0:
+            op, ver = parsed.specifier[0]
+            return (parsed.name, op, ver)
+        elif isinstance(parsed.specifier, str):
+            # URL 依赖
+            return (parsed.name, "@", parsed.specifier)
+        else:
+            return (parsed.name, "", None)
+
+    # 回退: 按长度从长到短匹配操作符
+    operators = ["===", "~=", "==", "!=", "<=", ">=", "<", ">"]
+    for op in operators:
+        if op in package:
+            parts = package.split(op, 1)
+            return (parts[0].strip(), op, parts[1].strip())
+
+    return (package.strip(), "", None)
 
 
 def is_package_installed(
@@ -561,31 +714,16 @@ def is_package_installed(
 ) -> bool:
     """判断 Python 软件包是否已安装在环境中
 
+    使用 PEP 508 解析器解析包声明, 然后检查已安装版本是否满足约束.
+
     Args:
-        package (str): Python 软件包名
+        package (str):
+            Python 软件包声明字符串, 如 ``'requests>=2.0'``
 
     Returns:
-        bool: 如果 Python 软件包未安装或者未安装正确的版本, 则返回`False`
+        bool: 如果软件包未安装或未安装正确的版本则返回 ``False``
     """
-    # 分割 Python 软件包名和版本号
-    if "===" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("===")]
-    elif "~=" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("~=")]
-    elif "!=" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("!=")]
-    elif "<=" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("<=")]
-    elif ">=" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split(">=")]
-    elif "<" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("<")]
-    elif ">" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split(">")]
-    elif "==" in package:
-        pkg_name, pkg_version = [x.strip() for x in package.split("==")]
-    else:
-        pkg_name, pkg_version = package.strip(), None
+    pkg_name, op, pkg_version = _split_package_spec(package)
 
     env_pkg_version = get_package_version_from_library(pkg_name)
     logger.debug(
@@ -598,60 +736,59 @@ def is_package_installed(
     if env_pkg_version is None:
         return False
 
-    if pkg_version is not None:
-        # ok = env_pkg_version === / == pkg_version
-        if "===" in package or "==" in package:
-            logger.debug("包含条件: === / ==")
+    if pkg_version is not None and op:
+        cmp = PyWhlVersionComparison(env_pkg_version)
+
+        if op in ("===", "=="):
+            logger.debug("包含条件: %s", op)
             logger.debug("%s == %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) == PyWhlVersionComparison(pkg_version):
+            if op == "===" and env_pkg_version.lower() == pkg_version.lower():
+                logger.debug("%s === %s 条件成立", env_pkg_version, pkg_version)
+                return True
+            elif op == "==" and cmp == PyWhlVersionComparison(pkg_version):
                 logger.debug("%s == %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version ~= pkg_version
-        if "~=" in package:
+        elif op == "~=":
             logger.debug("包含条件: ~=")
             logger.debug("%s ~= %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) == ~PyWhlVersionComparison(pkg_version):
-                logger.debug("%s == %s 条件成立", env_pkg_version, pkg_version)
+            matcher = cmp.compatible_version_matcher(pkg_version)
+            if matcher(env_pkg_version):
+                logger.debug("%s ~= %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version != pkg_version
-        if "!=" in package:
+        elif op == "!=":
             logger.debug("包含条件: !=")
             logger.debug("%s != %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) != PyWhlVersionComparison(pkg_version):
+            if cmp != PyWhlVersionComparison(pkg_version):
                 logger.debug("%s != %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version <= pkg_version
-        if "<=" in package:
+        elif op == "<=":
             logger.debug("包含条件: <=")
             logger.debug("%s <= %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) <= PyWhlVersionComparison(pkg_version):
+            if cmp <= PyWhlVersionComparison(pkg_version):
                 logger.debug("%s <= %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version >= pkg_version
-        if ">=" in package:
+        elif op == ">=":
             logger.debug("包含条件: >=")
             logger.debug("%s >= %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) >= PyWhlVersionComparison(pkg_version):
+            if cmp >= PyWhlVersionComparison(pkg_version):
                 logger.debug("%s >= %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version < pkg_version
-        if "<" in package:
+        elif op == "<":
             logger.debug("包含条件: <")
             logger.debug("%s < %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) < PyWhlVersionComparison(pkg_version):
+            if cmp < PyWhlVersionComparison(pkg_version):
                 logger.debug("%s < %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
-        # ok = env_pkg_version > pkg_version
-        if ">" in package:
+        elif op == ">":
             logger.debug("包含条件: >")
             logger.debug("%s > %s ?", env_pkg_version, pkg_version)
-            if PyWhlVersionComparison(env_pkg_version) > PyWhlVersionComparison(pkg_version):
+            if cmp > PyWhlVersionComparison(pkg_version):
                 logger.debug("%s > %s 条件成立", env_pkg_version, pkg_version)
                 return True
 
@@ -666,11 +803,14 @@ def validate_requirements(
 ) -> bool:
     """检测环境依赖是否完整
 
+    读取 requirements 文件并检查所有依赖是否已正确安装.
+
     Args:
-        requirement_path (str | Path): 依赖文件路径
+        requirement_path (str | Path):
+            依赖文件路径
 
     Returns:
-        bool: 如果有缺失依赖则返回`False`
+        bool: 如果有缺失依赖则返回 ``False``
     """
     origin_requires = read_packages_from_requirements_file(requirement_path)
     requires = parse_requirement_list(origin_requires)
