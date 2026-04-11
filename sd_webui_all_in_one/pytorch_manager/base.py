@@ -16,10 +16,10 @@ PYPI_INDEX_MIRROR_TENCENT = "https://mirrors.cloud.tencent.com/pypi/simple"
 PYPI_EXTRA_INDEX_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 """PyPI 额外镜像源"""
 
-PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/t/pypi"
+PYPI_EXTRA_INDEX_MIRROR_LICYK = "https://licyk.github.io/wheels/pypi"
 """PyPI (licyk) 镜像源"""
 
-PYPI_EXTRA_INDEX_MIRROR_LICYK_HF = "https://licyk.github.io/t/pypi_hf"
+PYPI_EXTRA_INDEX_MIRROR_LICYK_HF = "https://licyk.github.io/wheels/pypi_hf"
 """PyPI (licyk HuggingFace) 镜像源"""
 
 PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN = "https://pytorch-extension.intel.com/release-whl/stable/xpu/cn"
