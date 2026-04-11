@@ -52,7 +52,10 @@ from sd_webui_all_in_one.mirror_manager import (
     get_pypi_mirror_config,
 )
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
-from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
+from sd_webui_all_in_one.optimize.cuda_malloc import (
+    get_cuda_malloc_var,
+    apply_pytorch_alloc_conf,
+)
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
@@ -585,8 +588,10 @@ def launch_fooocus(
     if use_cuda_malloc:
         cuda_malloc_config = get_cuda_malloc_var()
         if cuda_malloc_config is not None:
-            custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
-            custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
+            custom_env = apply_pytorch_alloc_conf(
+                config=cuda_malloc_config,
+                origin_env=custom_env,
+            )
 
     logger.info("启动 Fooocus 中")
     launch_webui(

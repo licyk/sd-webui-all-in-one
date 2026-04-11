@@ -38,7 +38,7 @@ logger = get_logger(
 class ZrokTunnel(BaseTunnel):
     """Zrok 内网穿透
 
-    使用 Zrok 实现内网穿透. 需要提供 Zrok Token. 
+    使用 Zrok 实现内网穿透. 需要提供 Zrok Token.
 
     Attributes:
         zrok_token (str):
@@ -170,7 +170,7 @@ class ZrokTunnel(BaseTunnel):
         if zrok_local_bin is not None:
             logger.info("本地已安装 Zrok")
             return Path(zrok_local_bin)
-        
+
         zrok2_local_bin = shutil.which("zrok2")
         if zrok2_local_bin is not None:
             logger.info("本地已安装 Zrok2")
@@ -323,7 +323,7 @@ class ZrokTunnel(BaseTunnel):
     ) -> None:
         """停止 Zrok 内网穿透
 
-        先禁用 Zrok, 再终止进程. 
+        先禁用 Zrok, 再终止进程.
         """
         # 禁用 Zrok
         if self._zrok_bin:

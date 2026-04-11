@@ -1,14 +1,13 @@
 """依赖导出工具"""
 
 from importlib.metadata import requires
-from typing import TypedDict 
+from typing import TypedDict
 
 from sd_webui_all_in_one.package_analyzer import (
     evaluate_marker,
     parse_requirement,
 )
 from sd_webui_all_in_one.package_analyzer.py_whl_parse import get_parse_bindings
-
 
 
 class PackageDependencies(TypedDict):
@@ -106,7 +105,7 @@ def get_categorized_dependencies(
         deps = get_categorized_dependencies("requests")
         print(deps["mandatory"])  # ['urllib3>=1.21.1,<3']
         print(deps["optional"])   # {'socks': ['PySocks>=1.5.6,!=1.5.7']}
-        ```    """
+        ```"""
     raw_reqs = requires(package_name)
     bindings = get_parse_bindings()
     result: PackageDependencies = {"mandatory": [], "optional": {}}

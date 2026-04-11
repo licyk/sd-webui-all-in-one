@@ -4,6 +4,7 @@ import os
 import ctypes
 import subprocess
 import importlib.util
+from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -209,11 +210,49 @@ def get_cuda_malloc_var() -> str | None:
         return None
 
 
+def apply_pytorch_alloc_conf(
+    config: str,
+    origin_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """配置 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量
+
+    Args:
+        config (str):
+            追加的新配置
+        origin_env (dict[str, str]):
+            原始的环境变量字典
+
+    Returns:
+        (dict[str, str]):
+            追加 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 后的环境变量字典
+    """
+
+    def _add_var(var: str) -> None:
+        if var in custom_env and custom_env[var]:
+            custom_env[var] = config + "," + custom_env[var]
+        else:
+            custom_env[var] = config
+
+    if origin_env is None:
+        custom_env = os.environ.copy()
+    else:
+        custom_env = origin_env.copy()
+
+    _add_var("PYTORCH_CUDA_ALLOC_CONF")
+    _add_var("PYTORCH_ALLOC_CONF")
+
+    return custom_env
+
+
 def set_cuda_malloc() -> None:
     """配置 CUDA Malloc 内存优化, 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量进行配置"""
     malloc_var = get_cuda_malloc_var()
     if malloc_var is None:
         return
 
-    os.environ["PYTORCH_ALLOC_CONF"] = malloc_var
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = malloc_var
+    os.environ.update(
+        apply_pytorch_alloc_conf(
+            config=malloc_var,
+            origin_env=os.environ.copy(),
+        )
+    )

@@ -2118,6 +2118,31 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         },
     },
     {
+        "name": "ChenkinNoob-XL-V0.5",
+        "filename": "ChenkinNoob-XL-V0.5.safetensors",
+        "url": {
+            "huggingface": "https://huggingface.co/licyk/sd-model/resolve/main/sdxl_1.0/ChenkinNoob-XL-V0.5.safetensors",
+            "modelscope": "https://modelscope.cn/models/licyks/sd-model/resolve/master/sdxl_1.0/ChenkinNoob-XL-V0.5.safetensors",
+        },
+        "dtype": "SDXL",
+        "supported_webui": [
+            "sd_webui",
+            "comfyui",
+            "invokeai",
+            "fooocus",
+            "sd_trainer",
+            "sd_scripts",
+        ],
+        "save_dir": {
+            "sd_webui": "models/Stable-diffusion",
+            "comfyui": "models/checkpoints",
+            "invokeai": "models/checkpoints",
+            "fooocus": "models/checkpoints",
+            "sd_trainer": "sd-models/checkpoints",
+            "sd_scripts": "sd-models/checkpoints",
+        },
+    },
+    {
         "name": "PVCStyleModelMovable_nbxl12",
         "filename": "PVCStyleModelMovable_nbxl12.safetensors",
         "url": {
@@ -6959,6 +6984,27 @@ MODEL_DOWNLOAD_DICT: ModelCardList = [
         "url": {
             "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/noobaiXLControlnet_epsTile.safetensors",
             "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/noobaiXLControlnet_epsTile.safetensors",
+        },
+        "dtype": "SDXL ControlNet",
+        "supported_webui": [
+            "sd_webui",
+            "comfyui",
+            "invokeai",
+            "fooocus",
+        ],
+        "save_dir": {
+            "sd_webui": "models/ControlNet",
+            "comfyui": "models/controlnet",
+            "invokeai": "models/controlNet",
+            "fooocus": "models/controlnet",
+        },
+    },
+    {
+        "name": "Chenkin-UniControl-XL",
+        "filename": "Chenkin-UniControl-XL.safetensors",
+        "url": {
+            "huggingface": "https://huggingface.co/licyk/sd_control_collection/resolve/main/Chenkin-UniControl-XL.safetensors",
+            "modelscope": "https://modelscope.cn/models/licyks/sd_control_collection/resolve/master/Chenkin-UniControl-XL.safetensors",
         },
         "dtype": "SDXL ControlNet",
         "supported_webui": [

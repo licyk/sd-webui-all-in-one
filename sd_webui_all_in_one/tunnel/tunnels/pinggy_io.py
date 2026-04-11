@@ -22,7 +22,7 @@ logger = get_logger(
 class PinggyIoTunnel(SSHTunnel):
     """pinggy.io 内网穿透
 
-    使用 SSH 连接到 pinggy.io 服务实现内网穿透. 
+    使用 SSH 连接到 pinggy.io 服务实现内网穿透.
     """
 
     def __init__(

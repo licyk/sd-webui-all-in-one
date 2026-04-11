@@ -22,7 +22,7 @@ logger = get_logger(
 class NgrokTunnel(BaseTunnel):
     """Ngrok 内网穿透
 
-    使用 pyngrok 库实现 Ngrok 内网穿透. 
+    使用 pyngrok 库实现 Ngrok 内网穿透.
 
     Attributes:
         ngrok_token (str):
@@ -100,7 +100,7 @@ class NgrokTunnel(BaseTunnel):
     ) -> None:
         """停止 Ngrok 内网穿透
 
-        断开所有 Ngrok 隧道连接. 
+        断开所有 Ngrok 隧道连接.
         """
         if self._ngrok_module:
             try:

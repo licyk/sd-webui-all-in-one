@@ -29,7 +29,7 @@ logger = get_logger(
 class SSHTunnel(BaseTunnel):
     """SSH 隧道基类
 
-    提供基于 SSH 的内网穿透通用实现. 子类需要提供具体的 SSH 参数和 URL 匹配模式. 
+    提供基于 SSH 的内网穿透通用实现. 子类需要提供具体的 SSH 参数和 URL 匹配模式.
 
     Attributes:
         ssh_args (list[str]):
@@ -168,7 +168,7 @@ class SSHTunnel(BaseTunnel):
     ) -> None:
         """停止 SSH 隧道
 
-        终止 SSH 进程并清理临时目录. 
+        终止 SSH 进程并清理临时目录.
         """
         super().stop()
 

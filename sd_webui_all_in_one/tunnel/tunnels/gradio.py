@@ -23,7 +23,7 @@ logger = get_logger(
 class GradioTunnel(BaseTunnel):
     """Gradio 内网穿透
 
-    使用 gradio-tunneling 库实现 Gradio 内网穿透. 
+    使用 gradio-tunneling 库实现 Gradio 内网穿透.
     """
 
     def __init__(
@@ -97,7 +97,7 @@ class GradioTunnel(BaseTunnel):
     ) -> None:
         """停止 Gradio 内网穿透
 
-        调用 Tunnel.kill() 方法来终止隧道进程. 
+        调用 Tunnel.kill() 方法来终止隧道进程.
         """
         if self._tunnel:
             try:

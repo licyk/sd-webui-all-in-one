@@ -600,10 +600,7 @@ class PyWhlVersionComparison:
 
             target_ver = self.parse_version(version.split("+", 1)[0])
 
-            return (
-                target_ver.release[: len(spec_ver.release)] == spec_ver.release
-                and target_ver.epoch == spec_ver.epoch
-            )
+            return target_ver.release[: len(spec_ver.release)] == spec_ver.release and target_ver.epoch == spec_ver.epoch
         else:
             if spec_has_local:
                 # 如果 spec 含 local version, 公共部分用 PEP 440 比较, local 部分用严格字符串相等

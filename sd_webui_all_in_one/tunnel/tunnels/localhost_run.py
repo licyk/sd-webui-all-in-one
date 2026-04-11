@@ -22,7 +22,7 @@ logger = get_logger(
 class LocalhostRunTunnel(SSHTunnel):
     """localhost.run 内网穿透
 
-    使用 SSH 连接到 localhost.run 服务实现内网穿透. 
+    使用 SSH 连接到 localhost.run 服务实现内网穿透.
     """
 
     def __init__(

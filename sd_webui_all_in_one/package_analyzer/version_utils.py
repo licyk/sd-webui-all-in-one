@@ -96,16 +96,7 @@ def is_package_has_version(
         return len(parsed.specifier) > 0
 
     # 解析失败时回退到字符串检测
-    return package != (
-        package.replace("===", "")
-        .replace("~=", "")
-        .replace("!=", "")
-        .replace("<=", "")
-        .replace(">=", "")
-        .replace("<", "")
-        .replace(">", "")
-        .replace("==", "")
-    )
+    return package != (package.replace("===", "").replace("~=", "").replace("!=", "").replace("<=", "").replace(">=", "").replace("<", "").replace(">", "").replace("==", ""))
 
 
 def get_package_name(
@@ -134,18 +125,7 @@ def get_package_name(
         return parsed.name
 
     # 解析失败时回退到字符串分割
-    return (
-        package.split("===")[0]
-        .split("~=")[0]
-        .split("!=")[0]
-        .split("<=")[0]
-        .split(">=")[0]
-        .split("<")[0]
-        .split(">")[0]
-        .split("==")[0]
-        .split("[")[0]
-        .strip()
-    )
+    return package.split("===")[0].split("~=")[0].split("!=")[0].split("<=")[0].split(">=")[0].split("<")[0].split(">")[0].split("==")[0].split("[")[0].strip()
 
 
 def get_package_version(
@@ -179,25 +159,7 @@ def get_package_version(
         return parsed.specifier[0][1]
 
     # 解析失败时回退到字符串分割
-    return (
-        package.split("===")
-        .pop()
-        .split("~=")
-        .pop()
-        .split("!=")
-        .pop()
-        .split("<=")
-        .pop()
-        .split(">=")
-        .pop()
-        .split("<")
-        .pop()
-        .split(">")
-        .pop()
-        .split("==")
-        .pop()
-        .strip()
-    )
+    return package.split("===").pop().split("~=").pop().split("!=").pop().split("<=").pop().split(">=").pop().split("<").pop().split(">").pop().split("==").pop().strip()
 
 
 def get_package_version_specs(

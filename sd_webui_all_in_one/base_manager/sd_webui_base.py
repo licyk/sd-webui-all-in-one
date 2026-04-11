@@ -25,7 +25,10 @@ from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntim
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
 from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
-from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
+from sd_webui_all_in_one.optimize.cuda_malloc import (
+    get_cuda_malloc_var,
+    apply_pytorch_alloc_conf,
+)
 from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
@@ -1269,8 +1272,10 @@ def launch_sd_webui(
     if use_cuda_malloc:
         cuda_malloc_config = get_cuda_malloc_var()
         if cuda_malloc_config is not None:
-            custom_env["PYTORCH_ALLOC_CONF"] = cuda_malloc_config
-            custom_env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_malloc_config
+            custom_env = apply_pytorch_alloc_conf(
+                config=cuda_malloc_config,
+                origin_env=custom_env,
+            )
 
     logger.info("启动 Stable Diffusion WebUI 中")
     launch_webui(

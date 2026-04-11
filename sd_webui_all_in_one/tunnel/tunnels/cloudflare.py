@@ -22,7 +22,7 @@ logger = get_logger(
 class CloudflareTunnel(BaseTunnel):
     """CloudFlare 内网穿透
 
-    使用 pycloudflared 库实现 CloudFlare 内网穿透. 
+    使用 pycloudflared 库实现 CloudFlare 内网穿透.
     """
 
     def __init__(
@@ -79,7 +79,7 @@ class CloudflareTunnel(BaseTunnel):
     ) -> None:
         """停止 CloudFlare 内网穿透
 
-        终止 CloudFlare 隧道进程. 
+        终止 CloudFlare 隧道进程.
         """
         if self._cloudflare_tunnel:
             try:
