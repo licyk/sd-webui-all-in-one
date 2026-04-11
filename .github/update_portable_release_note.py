@@ -127,7 +127,7 @@ def main() -> None:
     3. 生成 Stable 和 Nightly 版本的下载链接表格
     4. 将完整的 Markdown 内容写入到发布说明文件
     """
-    portable_list_url: str = "https://github.com/licyk/t/raw/gh-pages/sd_portable/portable_list.json"
+    portable_list_url: str = "https://github.com/licyk/resources/raw/gh-pages/portable_list.json"
 
     # 获取便携包列表数据
     print("正在下载便携包列表...")
@@ -142,7 +142,7 @@ def main() -> None:
         "详细说明与使用请阅读：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)",
         "---",
         f"- 更新时间：`{update_time}`",
-        "- 所有历史版本下载：[AI 绘画 / 训练整合包下载列表](https://licyk.github.io/t/sd_portable)",
+        "- 所有历史版本下载：[AI 绘画 / 训练整合包下载列表](https://licyk.github.io/t/#/sd_portable)",
         "- 建议使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 解压整合包",
         "- Nightly 整合包相比 Stable 整合包，版本较新，推荐使用",
         "---",
