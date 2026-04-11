@@ -4,7 +4,6 @@ import os
 import ctypes
 import subprocess
 import importlib.util
-from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
