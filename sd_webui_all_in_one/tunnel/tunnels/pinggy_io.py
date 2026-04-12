@@ -39,7 +39,7 @@ class PinggyIoTunnel(SSHTunnel):
                 工作区路径
         """
         ssh_args = ["-p", "443", f"-R0:127.0.0.1:{port}", "free.pinggy.io"]
-        url_pattern = re.compile(r"(?P<url>https?://\S+\.pinggy\.link)")
+        url_pattern = re.compile(r"(?P<url>https?://\S+\.pinggy\S*\.link)")
 
         super().__init__(
             port=port,

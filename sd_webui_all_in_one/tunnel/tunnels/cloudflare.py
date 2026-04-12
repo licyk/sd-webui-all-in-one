@@ -10,6 +10,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
+from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 
 
 logger = get_logger(
@@ -59,7 +60,11 @@ class CloudflareTunnel(BaseTunnel):
             from pycloudflared import try_cloudflare
         except ImportError:
             try:
-                pip_install("pycloudflared")
+                custom_env = get_auto_pypi_mirror_config()
+                pip_install(
+                    "pycloudflared",
+                    custom_env=custom_env,
+                )
                 from pycloudflared import try_cloudflare
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 CloudFlare 内网穿透失败: %s", e)

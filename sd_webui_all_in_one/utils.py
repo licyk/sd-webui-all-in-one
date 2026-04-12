@@ -4,6 +4,8 @@ import shutil
 import sys
 import os
 import socket
+import urllib.request
+import urllib.error
 from typing import Any
 from pathlib import Path
 from sd_webui_all_in_one.logger import get_logger
@@ -253,3 +255,38 @@ def find_port(
     else:
         logger.debug("%s 端口可用", port)
         return port
+
+
+def network_gfw_test(
+    timeout: int | None = 3,
+) -> bool:
+    """检查当前网络环境是否被 GFW 阻挡
+
+    Args:
+        timeout (int | None):
+            超时时间设置
+
+    Returns:
+        bool:
+            当未被阻挡时则返回 True
+    """
+    try:
+        proxy_support = urllib.request.ProxyHandler()
+        opener = urllib.request.build_opener(proxy_support)
+        urllib.request.install_opener(opener)
+        with urllib.request.urlopen("https://www.google.com", timeout=timeout) as response:
+            if response.status == 200:
+                logger.debug("测试链接正常访问")
+                return True
+            else:
+                logger.debug("测试链接访问失败: %s", response.status)
+                return False
+    except urllib.error.HTTPError as e:
+        logger.debug("测试链接访问失败 (HTTPError): %s", e.code)
+        return False
+    except urllib.error.URLError as e:
+        logger.debug("测试链接访问失败 (URLError): %s", e.reason)
+        return False
+    except Exception as e:
+        logger.debug("测试链接访问失败: %s", e)
+        return False

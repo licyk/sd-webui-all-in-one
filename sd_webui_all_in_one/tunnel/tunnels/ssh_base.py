@@ -106,6 +106,7 @@ class SSHTunnel(BaseTunnel):
         # 构建完整的 SSH 命令
         command = [
             "ssh",
+            "-T",  # 禁用伪终端分配
             "-o",
             "StrictHostKeyChecking=no",
             "-i",
@@ -118,6 +119,7 @@ class SSHTunnel(BaseTunnel):
         self._process = subprocess.Popen(
             command_to_exec,
             shell=True,
+            # stdin=subprocess.DEVNULL, # 配置 stdin 会导致 Ctrl + C 中断程序失效
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True,

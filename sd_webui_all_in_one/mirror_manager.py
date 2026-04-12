@@ -23,6 +23,7 @@ from sd_webui_all_in_one.pytorch_manager.base import (
     PYPI_EXTRA_INDEX_MIRROR_LICYK,
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
 )
+from sd_webui_all_in_one.utils import network_gfw_test
 
 
 logger = get_logger(
@@ -347,4 +348,29 @@ def get_pypi_mirror_config(
             extra_index_url=[PYPI_EXTRA_INDEX_MIRROR_LICYK] if SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR else [],
             find_links=PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
             origin_env=origin_env,
+        )
+
+
+def get_auto_pypi_mirror_config(
+    custom_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """为安装 Pip 和 uv 配置所需的镜像源, 根据网络的可连接性分配合适的镜像源
+
+    Args:
+        custom_env (dict[str, str] | None):
+            原始的环境变量
+
+    Returns:
+        (dict[str, str]):
+            配置 PyPI 镜像源后的环境变量
+    """
+    if network_gfw_test():
+        return get_pypi_mirror_config(
+            use_cn_mirror=False,
+            origin_env=custom_env,
+        )
+    else:
+        return get_pypi_mirror_config(
+            use_cn_mirror=True,
+            origin_env=custom_env,
         )

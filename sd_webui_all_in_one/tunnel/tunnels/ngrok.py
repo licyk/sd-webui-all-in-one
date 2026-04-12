@@ -10,6 +10,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
+from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 
 
 logger = get_logger(
@@ -68,7 +69,11 @@ class NgrokTunnel(BaseTunnel):
             from pyngrok.exception import PyngrokError
         except ImportError:
             try:
-                pip_install("pyngrok")
+                custom_env = get_auto_pypi_mirror_config()
+                pip_install(
+                    "pyngrok",
+                    custom_env=custom_env,
+                )
                 from pyngrok import conf, ngrok
                 from pyngrok.exception import PyngrokError
             except (RuntimeError, ImportError) as e:

@@ -160,10 +160,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 193
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 194
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.1.0"
+$script:CORE_MINIMUM_VER = "2.1.1"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)

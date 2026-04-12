@@ -12,7 +12,6 @@ import uuid
 import platform
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional
 
 from sd_webui_all_in_one.cmd import (
     preprocess_command,
@@ -63,7 +62,7 @@ class ZrokTunnel(BaseTunnel):
         """
         super().__init__(port, workspace)
         self.zrok_token = zrok_token
-        self._zrok_bin: Optional[Path] = None
+        self._zrok_bin: Path | None = None
 
     def _get_latest_zrok_release(
         self,

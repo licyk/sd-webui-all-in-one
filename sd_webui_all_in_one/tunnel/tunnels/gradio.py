@@ -11,6 +11,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
+from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 
 
 logger = get_logger(
@@ -61,7 +62,11 @@ class GradioTunnel(BaseTunnel):
             import requests
         except ImportError:
             try:
-                pip_install("gradio-tunneling")
+                custom_env = get_auto_pypi_mirror_config()
+                pip_install(
+                    "gradio-tunneling",
+                    custom_env=custom_env,
+                )
                 from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
                 import requests
             except (RuntimeError, ImportError) as e:
