@@ -23,7 +23,7 @@ function Get-Portable-Metadata {
     param([string]$Uri = "https://licyk.github.io/resources/portable_list.json")
 
     try {
-        Write-Host "[数据管理] 下载整合包数据中" -ForegroundColor Yellow
+        Write-Host "[数据管理] 下载整合包数据中 ..." -ForegroundColor Yellow
         $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 10 -ErrorAction Stop
         return $response.Content | ConvertFrom-Json
     }
@@ -38,7 +38,7 @@ function Get-Aria2-Executable {
     $binPath = Join-Path ([IO.Path]::GetTempPath()) "aria2c.exe"
     $localBinPath = Get-Command aria2c -ErrorAction SilentlyContinue
 
-    if ($null -eq $localBinPath) { return $localBinPath.Source }
+    if ($null -ne $localBinPath) { return $localBinPath.Source }
     if (Test-Path $binPath) {
         try { 
             & "$binPath" --version > $null
@@ -57,8 +57,8 @@ function Get-7za-Executable {
     $localBinPath = Get-Command 7za -ErrorAction SilentlyContinue
     $localBinPath7z = Get-Command 7z -ErrorAction SilentlyContinue
 
-    if ($null -eq $localBinPath) { return $localBinPath.Source }
-    if ($null -eq $localBinPath7z) { return $localBinPath7z.Source }
+    if ($null -ne $localBinPath) { return $localBinPath.Source }
+    if ($null -ne $localBinPath7z) { return $localBinPath7z.Source }
     if (Test-Path $binPath) {
         try { 
             & "$binPath" > $null
@@ -120,6 +120,7 @@ function Invoke-Extraction {
     $ps = [powershell]::Create().AddScript({
         param($bin, $file, $dir)
         $proc = Start-Process -FilePath $bin -ArgumentList "x `"$file`" -o`"$dir`" -y" -Wait -PassThru -NoNewWindow
+        $proc.EnableRaisingEvents = $true
 
         # 解压完成后的异步弹窗逻辑
         Add-Type -AssemblyName PresentationFramework
