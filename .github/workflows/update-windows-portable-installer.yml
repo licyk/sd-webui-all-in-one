@@ -1,0 +1,48 @@
+name: Update Windows Portable Installer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/sd_portable_downloader.ps1
+  workflow_dispatch:
+
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install Dependences
+        shell: bash
+        run: |
+          pip install psh2bat requests requests-toolbelt
+
+      - name: Convert PowerShell script to Bat script
+        shell: bash
+        run: |
+          python -m psh2bat "${{ github.workspace }}/.github/sd_portable_downloader.ps1" --output-path "${{ github.workspace }}/sd_portable_downloader.bat"
+
+      - name: Upload to portable release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          github_release_tag: portable
+          github_files: sd_portable_downloader.bat
+          gitee_owner: licyk
+          gitee_repo: sd-webui-all-in-one
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_upload_retry_times: 3
+          gitee_release_id: 435278
+          gitee_files: sd_portable_downloader.bat
+        run: |
+          bash "${{ github.workspace }}/.github/github_release.sh"
+          python "${{ github.workspace }}/.github/gitee_release.py"
