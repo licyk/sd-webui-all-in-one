@@ -33,5 +33,5 @@ jobs:
           PYTHONUTF8: 1
           PYTHONIOENCODING: utf-8
         run: |
-          pip install requests
+          pip install requests requests-toolbelt
           python "${{ github.workspace }}/.github/update_portable_release_note.py"
