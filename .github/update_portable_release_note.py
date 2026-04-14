@@ -5,6 +5,8 @@
 """
 
 import subprocess
+import os
+import sys
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from typing import Any
@@ -162,6 +164,10 @@ def main() -> None:
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
         release_note_file: Path = tmp_dir / "portable_release_note.md"
+        os.environ["gitee_owner"] = "licyk"
+        os.environ["gitee_repo"] = "sd-webui-all-in-one"
+        os.environ["gitee_release_id"] = "portable"
+        os.environ["gitee_release_body_file"] = release_note_file.as_posix()
 
         # 写入文件
         with open(release_note_file, "w", encoding="utf-8") as f:
@@ -177,6 +183,16 @@ def main() -> None:
                 release_note_file.as_posix(),
                 "--repo",
                 "licyk/sd-webui-all-in-one",
+            ],
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+        )
+        subprocess.run(
+            [
+                Path(sys.executable).as_posix(),
+                (Path(__file__).parent / "gitee_release.py").as_posix(),
             ],
             text=True,
             encoding="utf-8",

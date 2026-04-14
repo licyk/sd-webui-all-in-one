@@ -25,6 +25,8 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          gitee_token: ${{ secrets.gitee_token }}
+          gitee_upload_retry_times: 3
           PIP_BREAK_SYSTEM_PACKAGES: 1
           PIP_DISABLE_PIP_VERSION_CHECK: 1
           PIP_NO_WARN_SCRIPT_LOCATION: 0

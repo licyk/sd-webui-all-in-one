@@ -41,7 +41,7 @@ jobs:
           gitee_repo: sd-webui-all-in-one
           gitee_token: ${{ secrets.gitee_token }}
           gitee_upload_retry_times: 3
-          gitee_release_id: 435278
+          gitee_release_id: portable
           gitee_files: sd_portable_downloader.bat
         run: |
           bash "${{ github.workspace }}/.github/github_release.sh"
