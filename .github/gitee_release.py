@@ -7,6 +7,7 @@ import os, glob
 import requests,json,time
 from requests_toolbelt import MultipartEncoder
 from functools import wraps
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 retry_times = os.environ.get("gitee_upload_retry_times", "0")
 try:
@@ -222,6 +223,9 @@ def set_result(name, result):
 def upload_assets(gitee_files, gitee_client, gitee_repo, gitee_release_id):
     result = []
     uploaded_path = set()
+    upload_tasks = []
+    
+    # Collect all files to upload
     for file_path_pattern in gitee_files:
         file_path_pattern = file_path_pattern.strip()
         recursive = True if "**" in file_path_pattern else False
@@ -231,11 +235,27 @@ def upload_assets(gitee_files, gitee_client, gitee_repo, gitee_release_id):
         for file_path in files:
             if file_path in uploaded_path or os.path.isdir(file_path):
                 continue
-            success, msg = gitee_client.upload_asset(gitee_repo, gitee_release_id, file_name = os.path.basename(file_path), file_path = file_path)
-            if not success:
-                raise Exception("Upload file asset failed: " + msg)
-            result.append(msg)
+            upload_tasks.append((os.path.basename(file_path), file_path))
             uploaded_path.add(file_path)
+    
+    # Upload files using thread pool
+    max_workers = min(4, len(upload_tasks)) if upload_tasks else 1
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_file = {
+            executor.submit(gitee_client.upload_asset, gitee_repo, gitee_release_id, file_name=file_name, file_path=file_path): (file_name, file_path)
+            for file_name, file_path in upload_tasks
+        }
+        
+        for future in as_completed(future_to_file):
+            file_name, file_path = future_to_file[future]
+            try:
+                success, msg = future.result()
+                if not success:
+                    raise Exception(f"Upload file asset failed for {file_name}: {msg}")
+                result.append(msg)
+            except Exception as exc:
+                raise Exception(f"Upload file {file_name} generated an exception: {exc}")
+    
     return result
     
 def create_release():
