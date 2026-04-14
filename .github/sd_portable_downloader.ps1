@@ -62,6 +62,39 @@ function Open-Url {
     try { Start-Process $Url } catch { Write-Warning "无法打开链接: $Url" }
 }
 
+function Invoke-WebRequest-Async {
+    param([string]$Uri, [string]$OutFile)
+
+    # 检查当前线程是否有关联的 Dispatcher (UI 线程)
+    $dispatcher = [System.Windows.Threading.Dispatcher]::FromThread([System.Threading.Thread]::CurrentThread)
+    if ($null -eq $dispatcher) {
+        # 非 UI 线程，直接同步执行
+        Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile
+    } else {
+        # UI 线程，使用后台运行空间下载，并保持 UI 响应
+        $rs = [runspacefactory]::CreateRunspace()
+        $rs.Open()
+        $ps = [powershell]::Create().AddScript({
+            param($u, $o)
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $o
+        }).AddArgument($Uri).AddArgument($OutFile)
+        $ps.Runspace = $rs
+        $async = $ps.BeginInvoke()
+        while (-not $async.IsCompleted) {
+            # 允许 UI 处理事件循环
+            $dispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+            Start-Sleep -Milliseconds 100
+        }
+        try {
+            $ps.EndInvoke($async)
+        } finally {
+            $ps.Dispose()
+            $rs.Close()
+        }
+    }
+}
+
 function Get-Aria2-Executable {
     $binUrl = "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/aria2/windows/amd64/aria2c.exe"
     $binPath = Join-Path ([IO.Path]::GetTempPath()) "aria2c.exe"
@@ -82,7 +115,7 @@ function Get-Aria2-Executable {
     }
 
     Write-Host "[环境] 正在下发 Aria2 核心组件..." -ForegroundColor Yellow
-    Invoke-WebRequest -UseBasicParsing -Uri $binUrl -OutFile $binPath
+    Invoke-WebRequest-Async -Uri $binUrl -OutFile $binPath
     return $binPath
 }
 
@@ -111,7 +144,7 @@ function Get-7za-Executable {
     }
 
     Write-Host "[环境] 正在下发 7-Zip 解压组件..." -ForegroundColor Yellow
-    Invoke-WebRequest -UseBasicParsing -Uri $binUrl -OutFile $binPath
+    Invoke-WebRequest-Async -Uri $binUrl -OutFile $binPath
     return $binPath
 }
 
@@ -125,7 +158,6 @@ function Invoke-DownloadTask {
 
     if ($State.IsDownloading) { 
         Write-Host "[任务] 拒绝启动：已有正在运行的任务" -ForegroundColor Red
-        Show-Async-MsgBox -Message "检测到并发冲突：已有任务正在运行。" -Title "警告" -Icon "Warning"
         return $null 
     }
 
@@ -176,8 +208,10 @@ function Invoke-Extraction {
         # 解压完成后的异步弹窗逻辑
         Add-Type -AssemblyName PresentationFramework
         if ($proc.ExitCode -eq 0) {
+            Write-Host "[后处理] 文件解压完成，源文件 ${file} 已解压至 ${dir}" -ForegroundColor Cyan
             [System.Windows.MessageBox]::Show("解压已成功完成！`n`n源文件：$file`n解压至：$dir", "解压成功", "OK", "Information")
         } else {
+            Write-Host "[后处理] 文件解压发生错误" -ForegroundColor Red
             [System.Windows.MessageBox]::Show("解压过程中出现错误。`n退出码: $($proc.ExitCode)", "解压失败", "OK", "Error")
         }
         return $proc.ExitCode
@@ -260,15 +294,23 @@ function Invoke-Refresh {
     }
 
     $ps = [powershell]::Create().AddScript({
-        param([string]$Uri)
-        try {
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 15 -ErrorAction Stop
-            return $response.Content | ConvertFrom-Json
-        } catch {
-            return "ERROR: " + $_.Exception.Message
+        param([string[]]$Uris)
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $lastError = ""
+        foreach ($Uri in $Uris) {
+            try {
+                $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 15 -ErrorAction Stop
+                $json = $response.Content | ConvertFrom-Json
+                if ($null -ne $json) { return $json }
+            } catch {
+                $lastError = $_.Exception.Message
+            }
         }
-    }).AddArgument("https://licyk.github.io/resources/portable_list.json")
+        return "ERROR: " + $lastError
+    }).AddArgument(@(
+        "https://licyk.github.io/resources/portable_list.json",
+        "https://gitee.com/licyk/resources/raw/gh-pages/portable_list.json"
+    ))
 
     $ps.RunspacePool = $Global:DownloadRunspacePool
     $asyncResult = $ps.BeginInvoke()
@@ -325,20 +367,55 @@ function Invoke-DownloadAction {
         return
     }
 
+    if ($State.IsDownloading) { 
+        Write-Host "[UI] 拦截下载请求：已有正在运行的任务" -ForegroundColor Red
+        Show-Async-MsgBox -Message "检测到并发冲突：已有任务正在运行。`n请等待当前下载完成后再试。" -Title "警告" -Icon "Warning"
+        return
+    }
+
     $rowData = $Button.DataContext
     $selected = $rowData.SelectedVersion
     Write-Host "[UI] 用户点击下载: $($selected.Name)" -ForegroundColor Cyan
-    
-    # 路径可视化增强
-    $fullDest = Join-Path $savePath $selected.Name
-    Show-Async-MsgBox -Message "任务已开始后台下载：`n$($selected.Name)`n`n保存路径：`n$fullDest" -Title "任务下发"
 
     $taskId = Invoke-DownloadTask -Url $selected.Url -OutDir $savePath -SaveName $selected.Name -State $State
-    if ($null -ne $taskId) { $UI.StopBtn.IsEnabled = $true }
+    if ($null -ne $taskId) { 
+        $UI.StopBtn.IsEnabled = $true 
+        $fullDest = Join-Path $savePath $selected.Name
+        Show-Async-MsgBox -Message "任务已开始后台下载：`n$($selected.Name)`n`n保存路径：`n$fullDest" -Title "任务下发"
+    }
+}
+
+function Set-Proxy {
+    $Env:NO_PROXY = "localhost,127.0.0.1,::1"
+
+    $internet_setting = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if ($internet_setting.ProxyEnable -ne 1) {
+        Write-Host "[环境] 未从系统中检测到代理，跳过设置代理" -ForegroundColor Blue
+        return
+    }
+    $proxy_addr = $($internet_setting.ProxyServer)
+    # 提取代理地址
+    if (($proxy_addr -match "http=(.*?);") -or ($proxy_addr -match "https=(.*?);")) {
+        $proxy_value = $matches[1]
+        # 去除 http / https 前缀
+        $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
+        $proxy_value = "http://${proxy_value}"
+    } elseif ($proxy_addr -match "socks=(.*)") {
+        $proxy_value = $matches[1]
+        # 去除 socks 前缀
+        $proxy_value = $proxy_value.ToString().Replace("http://", "").Replace("https://", "")
+        $proxy_value = "socks://${proxy_value}"
+    } else {
+        $proxy_value = "http://${proxy_addr}"
+    }
+    $Env:HTTP_PROXY = $proxy_value
+    $Env:HTTPS_PROXY = $proxy_value
+    Write-Host "[环境] 检测到系统设置了代理，已读取系统中的代理配置并设置代理，代理地址: $proxy_value" -ForegroundColor Green
 }
 
 function Start-App {
     Write-Host "[APP] 初始化中..." -ForegroundColor Yellow
+    Set-Proxy
     # 实时检测 Windows 深色模式
     $isDarkMode = $false
     try {
