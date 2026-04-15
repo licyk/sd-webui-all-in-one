@@ -79,10 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:VERSION = 100
-$script:OriginalScriptPath = $MyInvocation.MyCommand.Definition
-$script:OriginalArgs = $PSBoundParameters
-
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 100
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -198,111 +195,6 @@ function Invoke-WebRequest-Async {
             $rs.Close()
         }
     }
-}
-
-function Invoke-SelfUpdate {
-    param($UI)
-
-    $urls = @(
-        "https://github.com/licyk/sd-webui-all-in-one/raw/main/.github/sd_portable_downloader.ps1",
-        "https://gitee.com/licyk/sd-webui-all-in-one/raw/main/.github/sd_portable_downloader.ps1"
-    )
-
-    $currentVersion = $script:VERSION
-    $originalPath = $script:OriginalScriptPath
-    $originalArgs = $script:OriginalArgs
-
-    Write-Host "[更新] 正在以后台方式检查脚本更新..." -ForegroundColor Gray
-
-    # 确保全局 RunspacePool 存在
-    if ($null -eq $Global:DownloadRunspacePool) {
-        $Global:DownloadRunspacePool = [runspacefactory]::CreateRunspacePool(1, 1)
-        $Global:DownloadRunspacePool.Open()
-    }
-
-    $ps = [powershell]::Create().AddScript({
-        param($urls, $currentVersion, $originalPath, $originalArgs)
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        
-        $tempFile = [IO.Path]::Combine([IO.Path]::GetTempPath(), "sd_portable_downloader_update.ps1")
-        $updateFound = $false
-        $latestVersion = 0
-        $errors = @()
-
-        foreach ($url in $urls) {
-            try {
-                Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tempFile -TimeoutSec 15 -ErrorAction Stop
-                if (Test-Path $tempFile) {
-                    $content = Get-Content $tempFile -Raw -Encoding UTF8
-                    if ($content -match "\`$script:VERSION\s*=\s*(\d+)") {
-                        $latestVersion = [int]$matches[1]
-                        if ($latestVersion -gt $currentVersion) {
-                            $updateFound = $true
-                            break
-                        } else {
-                            # 已是最新版本，跳过其他源
-                            return @{ Success = $false; UpToDate = $true }
-                        }
-                    } else {
-                        $errors += "无法在源中解析到版本号: $url"
-                    }
-                }
-            } catch {
-                $errors += "访问源失败 ($url): $($_.Exception.Message)"
-            }
-        }
-
-        if ($updateFound) {
-            try {
-                Copy-Item -Path $tempFile -Destination $originalPath -Force
-                $argsString = "-ExecutionPolicy Bypass -File `"$originalPath`""
-                foreach ($key in $originalArgs.Keys) {
-                    $argsString += " -$key `"$($originalArgs[$key])`""
-                }
-                return @{ Success = $true; LatestVersion = $latestVersion; ArgsString = $argsString }
-            } catch {
-                return @{ Success = $false; Error = "替换脚本文件失败: $($_.Exception.Message)" }
-            }
-        }
-        
-        if ($errors.Count -gt 0) {
-            return @{ Success = $false; Error = ($errors -join "`n") }
-        }
-
-        return @{ Success = $false }
-    }).AddArgument($urls).AddArgument($currentVersion).AddArgument($originalPath).AddArgument($originalArgs)
-
-    $ps.RunspacePool = $Global:DownloadRunspacePool
-    $asyncResult = $ps.BeginInvoke()
-
-    $monitorTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $monitorTimer.Interval = [TimeSpan]::FromMilliseconds(500)
-    $tickAction = {
-        if ($asyncResult.IsCompleted) {
-            $monitorTimer.Stop()
-            try {
-                $result = $ps.EndInvoke($asyncResult)
-                if ($result.Success) {
-                    Write-Host "[更新] 发现新版本 $($result.LatestVersion)，已应用更新，准备重启..." -ForegroundColor Green
-                    Start-Process powershell -ArgumentList $result.ArgsString
-                    $UI.Window.Dispatcher.Invoke([Action]{ $UI.Window.Close() })
-                } elseif ($result.Error) {
-                    Write-Host "[更新] 更新检查失败: $($result.Error)" -ForegroundColor Red
-                    Show-Async-MsgBox -Message "脚本更新检查失败：`n$($result.Error)" -Title "更新错误" -Icon "Error"
-                } else {
-                    Write-Host "[更新] 当前已是最新版本" -ForegroundColor Gray
-                }
-            } catch {
-                Write-Host "[更新] 更新检查出现严重错误: $($_.Exception.Message)" -ForegroundColor Red
-                Show-Async-MsgBox -Message "更新检查出现错误：`n$($_.Exception.Message)" -Title "更新错误" -Icon "Error"
-            } finally {
-                $ps.Dispose()
-            }
-        }
-    }.GetNewClosure()
-
-    $monitorTimer.Add_Tick($tickAction)
-    $monitorTimer.Start()
 }
 
 function Get-Aria2-Executable {
@@ -1526,7 +1418,6 @@ function Start-App {
 
         & $script:UpdateDiskInfo -UI $UI
         Invoke-Refresh -UI $UI -State $State
-        Invoke-SelfUpdate -UI $UI
     })
     $window.ShowDialog() | Out-Null
     $timer.Stop()
