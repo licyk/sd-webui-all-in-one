@@ -153,13 +153,9 @@ function Invoke-DownloadTask {
         [Parameter(Mandatory)] [string]$Url,
         [Parameter(Mandatory)] [string]$OutDir,
         [Parameter(Mandatory)] [string]$SaveName,
-        [Parameter(Mandatory)] [Object]$State
+        [Parameter(Mandatory)] [Object]$State,
+        [Parameter(Mandatory)] [Object]$QueueTask
     )
-
-    if ($State.IsDownloading) { 
-        Write-Host "[任务] 拒绝启动：已有正在运行的任务" -ForegroundColor Red
-        return $null 
-    }
 
     $bin = Get-Aria2-Executable
     $launch_args = "-c -x 16 -s 64 -k 1M --file-allocation=none --summary-interval=0 --console-log-level=error -d `"$OutDir`" `"$Url`" -o `"$SaveName`""
@@ -167,58 +163,58 @@ function Invoke-DownloadTask {
     try {
         Write-Host "[任务] 正在启动 Aria2 下载引擎..." -ForegroundColor Blue
         Write-Host "[任务] 目标: $SaveName" -ForegroundColor Gray
-        Write-Host "[任务] 目录: $OutDir" -ForegroundColor Gray
 
         $process = Start-Process -FilePath $bin -ArgumentList $launch_args -PassThru -NoNewWindow
         $process.EnableRaisingEvents = $true
 
         $taskInfo = [PSCustomObject]@{ 
-            Id       = "Task-" + [guid]::NewGuid().Guid.Substring(0, 8)
-            Process  = $process; 
-            SaveName = $SaveName; 
-            OutDir   = $OutDir 
+            Id        = "Task-" + [guid]::NewGuid().Guid.Substring(0, 8)
+            Process   = $process; 
+            SaveName  = $SaveName; 
+            OutDir    = $OutDir;
+            QueueTask = $QueueTask
         }
 
         $State.CurrentTask = $taskInfo
-        $State.IsDownloading = $true
         $State.IsCancelled = $false
         Write-Host "[任务] 引擎启动成功 [PID: $($process.Id)]" -ForegroundColor Green
+
+        Show-Async-MsgBox -Message "任务已开始下载：`n$SaveName`n`n保存路径：`n$OutDir" -Title "下载启动"
         return $taskInfo.Id
     }
     catch {
         Write-Host "[任务] 启动下载任务失败: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Error "启动下载任务失败: $_"
+        $QueueTask.Status = "失败"
+        Show-Async-MsgBox -Message "无法启动下载任务：`n$($_.Exception.Message)" -Title "启动失败" -Icon "Error"
         return $null
     }
 }
 
-function Invoke-Extraction {
-    param([string]$FilePath, [string]$ExtractDir)
+function Start-ExtractionTask {
+    param([string]$FilePath, [string]$ExtractDir, [Object]$State, [Object]$QueueTask)
 
     $bin = Get-7za-Executable
-    Write-Host "[后处理] 正在解压文件: $FilePath ..." -ForegroundColor Cyan
+    Write-Host "[后处理] 正在启动解压任务: $FilePath ..." -ForegroundColor Cyan
 
-    $rs = [runspacefactory]::CreateRunspace()
-    $rs.Open()
-    $ps = [powershell]::Create().AddScript({
-        param($bin, $file, $dir)
-        $proc = Start-Process -FilePath $bin -ArgumentList "x `"$file`" -o`"$dir`" -y" -Wait -PassThru -NoNewWindow
-        $proc.EnableRaisingEvents = $true
+    try {
+        $process = Start-Process -FilePath $bin -ArgumentList "x `"$FilePath`" -o`"$ExtractDir`" -y" -PassThru -NoNewWindow
+        $process.EnableRaisingEvents = $true
 
-        # 解压完成后的异步弹窗逻辑
-        Add-Type -AssemblyName PresentationFramework
-        if ($proc.ExitCode -eq 0) {
-            Write-Host "[后处理] 文件解压完成，源文件 ${file} 已解压至 ${dir}" -ForegroundColor Cyan
-            [System.Windows.MessageBox]::Show("解压已成功完成！`n`n源文件：$file`n解压至：$dir", "解压成功", "OK", "Information")
-        } else {
-            Write-Host "[后处理] 文件解压发生错误" -ForegroundColor Red
-            [System.Windows.MessageBox]::Show("解压过程中出现错误。`n退出码: $($proc.ExitCode)", "解压失败", "OK", "Error")
+        $State.CurrentExtractionTask = [PSCustomObject]@{ 
+            Process    = $process; 
+            FilePath   = $FilePath; 
+            ExtractDir = $ExtractDir;
+            QueueTask  = $QueueTask
         }
-        return $proc.ExitCode
-    }).AddArgument($bin).AddArgument($FilePath).AddArgument($ExtractDir)
-
-    $ps.Runspace = $rs
-    $ps.BeginInvoke() | Out-Null
+        Write-Host "[后处理] 解压引擎启动成功 [PID: $($process.Id)]" -ForegroundColor Green
+        return $process
+    }
+    catch {
+        Write-Host "[后处理] 启动解压失败: $($_.Exception.Message)" -ForegroundColor Red
+        $QueueTask.Status = "失败"
+        Show-Async-MsgBox -Message "无法启动解压任务：`n$($_.Exception.Message)" -Title "解压失败" -Icon "Error"
+        return $null
+    }
 }
 
 function Find-Visual-Element {
@@ -367,22 +363,22 @@ function Invoke-DownloadAction {
         return
     }
 
-    if ($State.IsDownloading) { 
-        Write-Host "[UI] 拦截下载请求：已有正在运行的任务" -ForegroundColor Red
-        Show-Async-MsgBox -Message "检测到并发冲突：已有任务正在运行。`n请等待当前下载完成后再试。" -Title "警告" -Icon "Warning"
-        return
-    }
-
     $rowData = $Button.DataContext
     $selected = $rowData.SelectedVersion
-    Write-Host "[UI] 用户点击下载: $($selected.Name)" -ForegroundColor Cyan
+    Write-Host "[UI] 用户点击添加任务: $($selected.Name)" -ForegroundColor Cyan
 
-    $taskId = Invoke-DownloadTask -Url $selected.Url -OutDir $savePath -SaveName $selected.Name -State $State
-    if ($null -ne $taskId) { 
-        $UI.StopBtn.IsEnabled = $true 
-        $fullDest = Join-Path $savePath $selected.Name
-        Show-Async-MsgBox -Message "任务已开始后台下载：`n$($selected.Name)`n`n保存路径：`n$fullDest" -Title "任务下发"
+    $newTask = [PSCustomObject]@{
+        Name        = $selected.Name
+        Url         = $selected.Url
+        OutDir      = $savePath
+        AutoExtract = $UI.AutoExtract.IsChecked
+        Status      = "等待中"
+        Progress    = "0%"
     }
+
+    $State.TaskQueue += $newTask
+    & $script:UpdateQueueUI -UI $UI -State $State
+    Show-Async-MsgBox -Message "任务已加入队列：`n$($selected.Name)`n`n队列任务将按顺序自动执行。" -Title "任务已添加"
 }
 
 function Set-Proxy {
@@ -441,7 +437,7 @@ function Start-App {
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AI 整合包下载器" Height="700" Width="780"
+        Title="AI 整合包下载器" Height="700" Width="900"
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ResizeMode="CanResizeWithGrip">
     <Window.Resources>
@@ -793,78 +789,170 @@ function Start-App {
                     </StackPanel>
                 </Grid>
 
-                <!-- 数据表格：禁用选中效果 -->
-                <Border Grid.Row="1" Background="{DynamicResource PanelBGBrush}" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
-                    <DataGrid Name="MainGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                              HeadersVisibility="Column" GridLinesVisibility="None" Background="Transparent"
-                              BorderThickness="0" RowHeight="42" Visibility="Collapsed"
-                              SelectionMode="Single" SelectionUnit="FullRow">
-                        <DataGrid.Resources>
-                            <!-- 移除单元格选中样式并设置居中 -->
-                            <Style TargetType="DataGridCell">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                <Setter Property="VerticalContentAlignment" Value="Center"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="DataGridCell">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0" SnapsToDevicePixels="True">
-                                                <ContentPresenter VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/></Trigger>
-                                </Style.Triggers>
-                            </Style>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="{DynamicResource PanelBGBrush}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
-                                <Setter Property="Padding" Value="10,8"/>
-                                <Setter Property="FontSize" Value="12"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-                            </Style>
-                            <Style TargetType="DataGridRow">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Focusable" Value="False"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="$($colors.ItemHover)"/></Trigger>
-                                    <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/></Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.Resources>
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="资源类型" Binding="{Binding Type}" Width="160"/>
-                            <DataGridTemplateColumn Header="版本选择" Width="*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <ComboBox Name="VersionSelector" ItemsSource="{Binding Versions}"
-                                                  DisplayMemberPath="Name" SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
-                                                  Margin="5,4" VerticalContentAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="操作" Width="100">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button Name="RowDL" Content="下载" Style="{StaticResource PrimaryButton}" Height="28" Padding="15,2"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Border>
+                <!-- 数据与队列容器 -->
+                <Grid Name="DataQueueGrid" Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- 加载遮罩 -->
-                <StackPanel Name="LoadingOverlay" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <ProgressBar IsIndeterminate="True" Width="220" Height="4" Background="{DynamicResource BorderBrush}" Foreground="#0078D4" BorderThickness="0"/>
-                    <TextBlock Text="正在同步云端元数据..." Margin="0,15,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecBrush}" FontSize="13"/>
-                </StackPanel>
+                    <!-- 数据表格 -->
+                    <Border Grid.Row="0" Background="{DynamicResource PanelBGBrush}" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
+                        <Grid>
+                            <DataGrid Name="MainGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" Background="Transparent"
+                                      BorderThickness="0" RowHeight="42" Visibility="Collapsed"
+                                      SelectionMode="Single" SelectionUnit="FullRow">
+                                <DataGrid.Resources>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="DataGridCell">
+                                                    <Border Background="{TemplateBinding Background}" BorderThickness="0" SnapsToDevicePixels="True">
+                                                        <ContentPresenter VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/></Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                    <Style TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="{DynamicResource PanelBGBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
+                                        <Setter Property="Padding" Value="10,8"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    </Style>
+                                    <Style TargetType="DataGridRow">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Focusable" Value="False"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="$($colors.ItemHover)"/></Trigger>
+                                            <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/></Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="资源类型" Binding="{Binding Type}" Width="250"/>
+                                    <DataGridTemplateColumn Header="版本选择" Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox Name="VersionSelector" ItemsSource="{Binding Versions}"
+                                                          DisplayMemberPath="Name" SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
+                                                          Margin="5,4" VerticalContentAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="操作" Width="100">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Name="RowDL" Content="下载" Style="{StaticResource PrimaryButton}" Height="28" Padding="15,2"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <!-- 加载遮罩 (放在此处确保只覆盖主列表) -->
+                            <StackPanel Name="LoadingOverlay" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True" Width="220" Height="4" Background="{DynamicResource BorderBrush}" Foreground="#0078D4" BorderThickness="0"/>
+                                <TextBlock Text="正在同步云端元数据..." Margin="0,15,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecBrush}" FontSize="13"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 分割标题 -->
+                    <Grid Name="QueueHeader" Grid.Row="1" Margin="0,15,0,8" Opacity="1">
+                        <TextBlock Text="任务队列" Foreground="{DynamicResource TextSecBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Name="StatText" Text="队列统计: 总计 0 | 运行中 0 | 已完成 0" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecBrush}" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- 任务队列表格 -->
+                    <Border Name="QueueBorder" Grid.Row="2" Height="140" Background="{DynamicResource PanelBGBrush}" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" Opacity="1">
+                        <DataGrid Name="QueueGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                  HeadersVisibility="Column" GridLinesVisibility="None" Background="Transparent"
+                                  BorderThickness="0" RowHeight="36"
+                                  SelectionMode="Single" SelectionUnit="FullRow">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridCell">
+                                                <Border Background="{TemplateBinding Background}" BorderThickness="0" SnapsToDevicePixels="True">
+                                                    <ContentPresenter VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource PanelBGBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
+                                    <Setter Property="Padding" Value="10,6"/>
+                                    <Setter Property="FontSize" Value="11"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                </Style>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="$($colors.ItemHover)"/></Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="任务名称" Binding="{Binding Name}" Width="2*"/>
+                                <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="100">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="下载中"><Setter Property="Foreground" Value="#0078D4"/><Setter Property="FontWeight" Value="Bold"/></Trigger>
+                                                <Trigger Property="Text" Value="解压中"><Setter Property="Foreground" Value="#038387"/><Setter Property="FontWeight" Value="Bold"/></Trigger>
+                                                <Trigger Property="Text" Value="已完成"><Setter Property="Foreground" Value="#107C10"/></Trigger>
+                                                <Trigger Property="Text" Value="失败"><Setter Property="Foreground" Value="#E81123"/></Trigger>
+                                                <Trigger Property="Text" Value="已取消"><Setter Property="Foreground" Value="Gray"/></Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="进度" Binding="{Binding Progress}" Width="80"/>
+                                <DataGridTemplateColumn Header="操作" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Name="KillTask" Content="终止" Height="22" Padding="8,0" FontSize="11" 
+                                                    Background="#FFF1F0" Foreground="#E81123" BorderBrush="#FFCCC7">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="已完成"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="失败"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="已取消"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
 
                 <!-- 底部控制 -->
                 <StackPanel Grid.Row="2" Margin="0,20,0,0">
@@ -875,7 +963,7 @@ function Start-App {
                     </Grid>
 
                     <!-- 磁盘空间显示 -->
-                    <StackPanel Margin="0,0,0,15">
+                    <StackPanel Margin="0,0,0,8">
                         <Grid Margin="2,0">
                             <TextBlock Name="DiskLabel" Text="磁盘空间: 计算中..." FontSize="11" Foreground="{DynamicResource TextSecBrush}"/>
                             <TextBlock Name="DiskPercent" Text="0%" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecBrush}"/>
@@ -883,11 +971,14 @@ function Start-App {
                         <ProgressBar Name="DiskBar" Height="4" Margin="0,5,0,0" Background="{DynamicResource BorderBrush}" Foreground="#0078D4" BorderThickness="0"/>
                     </StackPanel>
 
+                    <!-- 底部队列统计 (隐藏队列时显示) -->
+                    <TextBlock Name="StatTextBottom" Text="队列统计: 总计 0 | 运行中 0 | 已完成 0" FontSize="11" Foreground="{DynamicResource TextSecBrush}" Margin="2,0,0,10" Visibility="Collapsed"/>
+
                     <DockPanel>
                         <CheckBox Name="AutoExtract" Content="下载完成后自动解压到当前目录" IsChecked="True" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Left"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Name="RefreshBtn" Content="刷新同步" Style="{StaticResource PrimaryButton}" Width="100" Height="34" Margin="0,0,10,0"/>
-                            <Button Name="StopBtn" Content="终止任务" Width="100" Height="34" IsEnabled="False" Background="#FFF1F0" Foreground="#E81123" BorderBrush="#FFCCC7"/>
+                            <Button Name="ToggleQueueBtn" Content="隐藏/展开队列" Width="120" Height="34" Style="{StaticResource PrimaryButton}"/>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>
@@ -900,15 +991,49 @@ function Start-App {
     $window = [Windows.Markup.XamlReader]::Load($reader)
 
     $UI = [PSCustomObject]@{
-        Window = $window; MainGrid = $window.FindName("MainGrid"); UpdateTimeText = $window.FindName("UpdateTime"); PathInput = $window.FindName("PathInput")
+        Window = $window; MainGrid = $window.FindName("MainGrid"); QueueGrid = $window.FindName("QueueGrid"); UpdateTimeText = $window.FindName("UpdateTime"); PathInput = $window.FindName("PathInput")
         StableRadio = $window.FindName("Stable"); NightlyRadio = $window.FindName("Nightly"); HFRadio = $window.FindName("HF"); MSRadio = $window.FindName("MS")
-        RefreshBtn = $window.FindName("RefreshBtn"); StopBtn = $window.FindName("StopBtn"); BrowseBtn = $window.FindName("BrowseBtn")
+        RefreshBtn = $window.FindName("RefreshBtn"); ToggleQueueBtn = $window.FindName("ToggleQueueBtn"); BrowseBtn = $window.FindName("BrowseBtn")
         AutoExtract = $window.FindName("AutoExtract")
         ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn")
         LoadingOverlay = $window.FindName("LoadingOverlay")
         TitleBar = $window.FindName("TitleBar"); CloseBtn = $window.FindName("CloseBtn")
         MinBtn = $window.FindName("MinBtn"); MaxBtn = $window.FindName("MaxBtn")
         DiskLabel = $window.FindName("DiskLabel"); DiskBar = $window.FindName("DiskBar"); DiskPercent = $window.FindName("DiskPercent")
+        QueueHeader = $window.FindName("QueueHeader"); QueueBorder = $window.FindName("QueueBorder"); StatText = $window.FindName("StatText"); StatTextBottom = $window.FindName("StatTextBottom")
+        DataQueueGrid = $window.FindName("DataQueueGrid")
+    }
+
+    # 统计更新逻辑
+    $script:UpdateStatistics = {
+        param($UI, $State)
+
+        $queue = $State.TaskQueue
+        if ($null -eq $queue) {
+            $total = 0
+            $running = 0
+            $completed = 0
+        } else {
+            $total = $queue.Count
+            $running = (@($queue | Where-Object { $_.Status -eq "下载中" -or $_.Status -eq "解压中" })).Count
+            $completed = (@($queue | Where-Object { $_.Status -eq "已完成" })).Count
+        }
+
+        $text = "队列统计: 总计 $total | 运行中 $running | 已完成 $completed"
+        $UI.Window.Dispatcher.Invoke([Action]{
+            $UI.StatText.Text = $text
+            $UI.StatTextBottom.Text = $text
+        })
+    }
+
+    # 队列刷新逻辑
+    $script:UpdateQueueUI = {
+        param($UI, $State)
+        $UI.Window.Dispatcher.Invoke([Action]{
+            $UI.QueueGrid.ItemsSource = $null
+            $UI.QueueGrid.ItemsSource = $State.TaskQueue
+        })
+        & $script:UpdateStatistics -UI $UI -State $State
     }
 
     # 磁盘空间更新逻辑
@@ -927,7 +1052,7 @@ function Start-App {
                     $usedPercent = ($drive.Used / $total) * 100
                     $freeGB = [Math]::Round($drive.Free / 1GB, 2)
                     $totalGB = [Math]::Round($total / 1GB, 2)
-                    
+
                     $UI.DiskLabel.Text = "可用空间: $freeGB GB / 总量: $totalGB GB"
                     $UI.DiskBar.Value = $usedPercent
                     $UI.DiskPercent.Text = "$([Math]::Round($usedPercent, 0))%"
@@ -967,7 +1092,7 @@ function Start-App {
     })
     $UI.CloseBtn.Add_Click({ $window.Close() })
 
-    $State = [PSCustomObject]@{ Metadata = $null; IsDownloading = $false; CurrentTask = $null; IsCancelled = $false }
+    $State = [PSCustomObject]@{ Metadata = $null; TaskQueue = @(); CurrentTask = $null; CurrentExtractionTask = $null; IsCancelled = $false }
 
     $UI.RefreshBtn.Add_Click({ Invoke-Refresh -UI $UI -State $State })
     $onStateChanged = { & $script:SyncDataGridLogic -UI $UI -State $State }
@@ -987,53 +1112,138 @@ function Start-App {
     $UI.ProjBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one" })
     $UI.DocBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/discussions/1" })
 
-    $UI.StopBtn.Add_Click({ 
-        if ($State.IsDownloading -and $null -ne $State.CurrentTask) { 
-            $State.IsCancelled = $true
-            Stop-Process -Id $State.CurrentTask.Process.Id -Force
-            $UI.StopBtn.IsEnabled = $false 
-            Show-Async-MsgBox -Message "任务已由用户手动终止。" -Title "任务终止" -Icon "Warning"
+    # 队列显隐切换 (增加过渡动画)
+    $UI.ToggleQueueBtn.Add_Click({
+        $duration = [TimeSpan]::FromMilliseconds(300)
+        $targetHeight = 140 # 设定的展开高度
+
+        if ($UI.QueueBorder.Visibility -eq "Visible" -and $UI.QueueBorder.Height -gt 0) {
+            # 收起动画
+            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation(0, $duration)
+            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation(0, $duration)
+
+            $animHeight.add_Completed({
+                $UI.QueueBorder.Visibility = "Collapsed"
+                $UI.QueueHeader.Visibility = "Collapsed"
+                $UI.StatTextBottom.Visibility = "Visible"
+            })
+
+            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
+            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
+            $UI.QueueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+        } else {
+            # 展开动画
+            $UI.QueueBorder.Visibility = "Visible"
+            $UI.QueueHeader.Visibility = "Visible"
+            $UI.StatTextBottom.Visibility = "Collapsed"
+
+            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation($targetHeight, $duration)
+            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation(1, $duration)
+
+            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
+            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
+            $UI.QueueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+        }
+    })
+
+    # 个体任务终止逻辑
+    $UI.QueueGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, [System.Windows.RoutedEventHandler]{ 
+        param($s, $e) 
+        if ($e.OriginalSource.Name -eq "KillTask") { 
+            $task = $e.OriginalSource.DataContext
+            Write-Host "[UI] 用户请求终止任务: $($task.Name)" -ForegroundColor Yellow
+
+            # 如果是当前运行的下载任务
+            if ($null -ne $State.CurrentTask -and $State.CurrentTask.QueueTask -eq $task) {
+                $task.Status = "已取消"
+                try { Stop-Process -Id $State.CurrentTask.Process.Id -Force -ErrorAction SilentlyContinue } catch {}
+            }
+            # 如果是当前运行的解压任务
+            elseif ($null -ne $State.CurrentExtractionTask -and $State.CurrentExtractionTask.QueueTask -eq $task) {
+                $task.Status = "已取消"
+                try { Stop-Process -Id $State.CurrentExtractionTask.Process.Id -Force -ErrorAction SilentlyContinue } catch {}
+            }
+            # 等待中任务
+            else {
+                $task.Status = "已取消"
+            }
+            & $script:UpdateQueueUI -UI $UI -State $State
         } 
     })
 
-    # 定时器增强：增加磁盘空间每秒刷新
-    $tickCounter = 0
+    # 定时器：主调度器与磁盘空间刷新
+    $script:tickCounter = 0
     $timer = New-Object System.Windows.Threading.DispatcherTimer
     $timer.Interval = [TimeSpan]::FromMilliseconds(100)
     $timer.Add_Tick({
-        # 磁盘空间每 1 秒 (10 * 100ms) 自动刷新一次
+        # 1. 磁盘空间刷新 (1s)
         $script:tickCounter++
         if ($script:tickCounter -ge 10) {
             $script:tickCounter = 0
             & $script:UpdateDiskInfo -UI $UI
         }
 
-        if ($State.IsDownloading -and $null -ne $State.CurrentTask) {
+        # 2. 任务调度逻辑
+        $isAnyBusy = ($null -ne $State.CurrentTask -or $null -ne $State.CurrentExtractionTask)
+        if (-not $isAnyBusy) {
+            # 查找队列中第一个等待中的任务
+            $nextTask = $State.TaskQueue | Where-Object { $_.Status -eq "等待中" } | Select-Object -First 1
+            if ($null -ne $nextTask) {
+                $nextTask.Status = "下载中"
+                & $script:UpdateQueueUI -UI $UI -State $State
+                Invoke-DownloadTask -Url $nextTask.Url -OutDir $nextTask.OutDir -SaveName $nextTask.Name -State $State -QueueTask $nextTask | Out-Null
+            }
+        }
+
+        # 3. 下载进程监控
+        if ($null -ne $State.CurrentTask) {
             $task = $State.CurrentTask
             if ($task.Process.HasExited) {
-                Write-Host "[任务] 引擎进程已退出 [ExitCode: $($task.Process.ExitCode)]" -ForegroundColor Blue
-                $State.IsDownloading = $false
-                $UI.StopBtn.IsEnabled = $false
-                if ($State.IsCancelled) {
-                    Write-Host "[状态] 任务由用户取消" -ForegroundColor Yellow
-                    $State.IsCancelled = $false
-                } else {
-                    $exitCode = $task.Process.ExitCode
+                $exitCode = $task.Process.ExitCode
+                Write-Host "[任务] 下载进程退出 [代码: $exitCode]" -ForegroundColor Blue
+
+                if ($task.QueueTask.Status -ne "已取消") {
                     if ($exitCode -eq 0) {
-                        Write-Host "[状态] 下载已成功完成: $($task.SaveName)" -ForegroundColor Green
-                        $fullPath = Join-Path $task.OutDir $task.SaveName
-                        if ($UI.AutoExtract.IsChecked) {
-                            Show-Async-MsgBox -Message "下载已完成，正在后台启动解压程序...`n`n保存文件：$($task.SaveName)`n保存目录：$($task.OutDir)" -Title "下载成功"
-                            Invoke-Extraction -FilePath $fullPath -ExtractDir $task.OutDir
+                        $task.QueueTask.Progress = "100%"
+                        if ($task.QueueTask.AutoExtract) {
+                            $task.QueueTask.Status = "解压中"
+                            $fullPath = Join-Path $task.OutDir $task.SaveName
+                            Write-Host "[后处理] 下载完成，开始解压: $fullPath" -ForegroundColor Cyan
+                            Show-Async-MsgBox -Message "下载已完成，正在后台启动解压...`n`n源文件：`n$fullPath`n`n解压目录：`n$($task.OutDir)" -Title "下载完成"
+                            Start-ExtractionTask -FilePath $fullPath -ExtractDir $task.OutDir -State $State -QueueTask $task.QueueTask | Out-Null
                         } else {
-                            Show-Async-MsgBox -Message "下载已完成。`n`n保存文件：$($task.SaveName)`n保存路径：$($task.OutDir)" -Title "下载成功"
+                            $task.QueueTask.Status = "已完成"
+                            Show-Async-MsgBox -Message "任务已全部完成！`n`n保存文件：`n$($task.SaveName)`n`n保存路径：`n$($task.OutDir)" -Title "任务完成"
                         }
                     } else {
-                        Write-Host "[状态] 下载过程中出现错误 [代码: $exitCode]" -ForegroundColor Red
-                        Show-Async-MsgBox -Message "下载失败。退出码: $exitCode" -Title "下载失败" -Icon "Error"
+                        $task.QueueTask.Status = "失败"
+                        Show-Async-MsgBox -Message "任务下载失败。`n退出码: $exitCode" -Title "下载失败" -Icon "Error"
                     }
                 }
                 $State.CurrentTask = $null
+                & $script:UpdateQueueUI -UI $UI -State $State
+            }
+        }
+
+        # 4. 解压进程监控
+        if ($null -ne $State.CurrentExtractionTask) {
+            $task = $State.CurrentExtractionTask
+            if ($task.Process.HasExited) {
+                $exitCode = $task.Process.ExitCode
+                Write-Host "[后处理] 解压进程退出 [代码: $exitCode]" -ForegroundColor Blue
+
+                if ($task.QueueTask.Status -ne "已取消") {
+                    if ($exitCode -eq 0) {
+                        $task.QueueTask.Status = "已完成"
+                        $task.QueueTask.Progress = "100%"
+                        Show-Async-MsgBox -Message "解压已成功完成！`n`n源文件：`n$($task.FilePath)`n`n解压至：`n$($task.ExtractDir)" -Title "解压成功"
+                    } else {
+                        $task.QueueTask.Status = "失败"
+                        Show-Async-MsgBox -Message "解压过程中出现错误。`n退出码: $exitCode" -Title "解压失败" -Icon "Error"
+                    }
+                }
+                $State.CurrentExtractionTask = $null
+                & $script:UpdateQueueUI -UI $UI -State $State
             }
         }
     })
