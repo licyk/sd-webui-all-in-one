@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     这是一个功能完整的WPF GUI应用，用于下载和管理各类AI模型应用的可发行包。
-    
+
     主要功能：
     - 支持多源下载：HuggingFace、ModelScope
     - 版本选择：稳定版(Stable)、夜间构建版(Nightly)

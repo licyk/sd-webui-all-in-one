@@ -660,7 +660,7 @@ function Invoke-SmartCommand {
         [string]$Command,
         [string[]]$Arguments
     )
-    
+
     if (((Get-CurrentPlatform) -eq "linux") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
         & sudo $Command @Arguments
     } else {
@@ -1964,7 +1964,7 @@ function Test-MSVCPPRedistributable {
     `$msg_text = `"检测到系统缺失 Microsoft Visual C++ Redistributable, 这可能导致程序无法正常运行。请下载并安装该组件, 并重新启动以解决问题。``n``n是否立即打开下载页面?`"
     `$msg_title = `"缺失系统组件`"
     `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
-    
+
     if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
         `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
         Write-Log `"正在打开下载链接: `$download_url`"

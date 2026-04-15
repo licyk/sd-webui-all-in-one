@@ -704,7 +704,7 @@ function Invoke-SmartCommand {
         [string]$Command,
         [string[]]$Arguments
     )
-    
+
     if (((Get-CurrentPlatform) -eq "linux") -and (Get-Command sudo -ErrorAction SilentlyContinue)) {
         & sudo $Command @Arguments
     } else {
@@ -1828,63 +1828,63 @@ param (
     [Parameter(HelpMessage=@`"
 获取 ComfyUI Installer 的帮助信息
 `"@)][switch]`$Help,
-    
+
     [Parameter(HelpMessage=@`"
 设置内核的路径前缀, 默认路径前缀为 core
 `"@)][string]`$CorePrefix,
-    
+
     [Parameter(HelpMessage=@`"
 启用 ComfyUI Installer 构建模式
 `"@)][switch]`$BuildMode,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
 `"@)][switch]`$DisablePyPIMirror,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 更新检查
 `"@)][switch]`$DisableUpdate,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 自动设置代理服务器
 `"@)][switch]`$DisableProxy,
-    
+
     [Parameter(HelpMessage=@`"
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy `"http://127.0.0.1:10809`" 设置代理服务器地址
 `"@)][string]`$UseCustomProxy,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
 `"@)][switch]`$DisableHuggingFaceMirror,
-    
+
     [Parameter(HelpMessage=@`"
 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror `"https://hf-mirror.com`" 设置 HuggingFace 镜像源地址
 `"@)][string]`$UseCustomHuggingFaceMirror,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 自动设置 Github 镜像源
 `"@)][switch]`$DisableGithubMirror,
-    
+
     [Parameter(HelpMessage=@`"
 使用自定义的 Github 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
 `"@)][switch]`$DisableUV,
-    
+
     [Parameter(HelpMessage=@`"
 设置 ComfyUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg `"--fast --auto-launch`" 进行启用
 `"@)][string]`$LaunchArg,
-    
+
     [Parameter(HelpMessage=@`"
 创建 ComfyUI 启动快捷方式
 `"@)][switch]`$EnableShortcut,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 `"@)][switch]`$DisableCUDAMalloc,
-    
+
     [Parameter(HelpMessage=@`"
 禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题, 禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复
 `"@)][switch]`$DisableEnvCheck
@@ -2008,7 +2008,7 @@ function Test-MSVCPPRedistributable {
     `$msg_text = `"检测到系统缺失 Microsoft Visual C++ Redistributable, 这可能导致程序无法正常运行。请下载并安装该组件, 并重新启动以解决问题。``n``n是否立即打开下载页面?`"
     `$msg_title = `"缺失系统组件`"
     `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
-    
+
     if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
         `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
         Write-Log `"正在打开下载链接: `$download_url`"

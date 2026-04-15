@@ -284,7 +284,7 @@ function Main {
         Write-Log "Python 未安装"
         Install-Python
     }
-    
+
     Write-Log "检查是否安装 Pip"
     python -c "import pip" 2> $null
     if ($?) {
