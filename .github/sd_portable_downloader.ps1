@@ -1,4 +1,85 @@
-﻿Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
+﻿<#
+.SYNOPSIS
+    AI整合包可视化下载管理工具
+
+.DESCRIPTION
+    这是一个功能完整的WPF GUI应用，用于下载和管理各类AI模型应用的可发行包。
+    
+    主要功能：
+    - 支持多源下载：HuggingFace、ModelScope
+    - 版本选择：稳定版(Stable)、夜间构建版(Nightly)
+    - 智能队列管理：支持任务排队、自动调度、中断控制
+    - 自动解压：下载完成后可自动提取压缩包
+    - 磁盘监控：实时显示目标路径的磁盘空间占用
+    - 系统主题适配：自动检测Windows深色/浅色模式
+    - 代理配置：自动读取系统代理设置
+    - 断点续传：使用Aria2核心支持多线程下载
+
+.PARAMETER ScriptRootPath
+    脚本执行的根路径。如果未指定，将使用当前工作目录。
+    类型: [string]
+    示例: "C:\Downloads"
+
+.NOTES
+    环境要求:
+    - Windows 7 (SP1) 或更高版本
+    - PowerShell 5.0 或更高版本
+    - 需要 .NET Framework 4.5+ (WPF支持)
+    - 可选：系统已安装Aria2和7-Zip工具
+
+    外部依赖:
+    - Aria2c.exe: 高性能下载引擎，支持多线程和断点续传
+      下载源: https://gitee.com/licyk/sd-webui-all-in-one/raw/master/aria2/windows/amd64/aria2c.exe
+    - 7za.exe: 轻量级解压工具，支持7z/zip等多种格式
+      下载源: https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/7za/windows/amd64/7za.exe
+    - portable_list.json: 云端资源配置文件
+      源地址: https://licyk.github.io/resources/portable_list.json
+
+    主要类和函数:
+    - Get-Aria2-Executable: 获取或下载Aria2可执行文件
+    - Get-7za-Executable: 获取或下载7-Zip可执行文件
+    - Invoke-DownloadTask: 执行单个下载任务
+    - Start-ExtractionTask: 执行解压任务
+    - Invoke-Refresh: 从云端刷新可用资源列表
+    - Set-Proxy: 配置系统代理
+    - Find-Visual-Element: WPF可视树搜索辅助函数
+
+.EXAMPLE
+    # 标准使用方式
+    .\sd_portable_downloader.ps1
+
+.EXAMPLE
+    # 指定下载保存路径
+    .\sd_portable_downloader.ps1 -ScriptRootPath "E:\AIModels"
+
+.EXAMPLE
+    # 在批处理中调用（cmd.exe）
+    powershell -ExecutionPolicy Bypass -File ".\sd_portable_downloader.ps1" -ScriptRootPath "C:\Download"
+
+.INPUTS
+    [string] ScriptRootPath - 可选的脚本根路径参数
+
+.OUTPUTS
+    无直接输出。返回GUI窗口交互式界面。
+    下载的文件保存到用户指定的目录。
+
+.LINK
+    项目仓库: https://github.com/licyk/sd-webui-all-in-one
+    讨论区: https://github.com/licyk/sd-webui-all-in-one/discussions/1
+
+.AUTHOR
+    licyk
+
+.VERSION
+    1.0.0
+
+.HISTORY
+
+#>
+param (
+    [string]$ScriptRootPath
+)
+Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
 Add-Type -TypeDefinition @"
@@ -1249,7 +1330,15 @@ function Start-App {
     })
     $timer.Start()
 
-    $UI.PathInput.Text = $PSScriptRoot
+    $UI.PathInput.Text = if ($PSScriptRoot) {
+        $PSScriptRoot
+    } elseif ($script:ScriptRootPath) {
+        $script:ScriptRootPath
+    } elseif ($env:SCRIPT_ROOT_PATH) {
+        $env:SCRIPT_ROOT_PATH
+    } else {
+        (Get-Location).Path
+    }
     $window.Add_Loaded({
         # 获取窗口句柄并开启毛玻璃
         $handle = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
