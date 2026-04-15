@@ -105,9 +105,12 @@ public class BlurHelper {
     [DllImport("user32.dll")]
     public static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
-    public static void EnableBlur(IntPtr hwnd) {
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    public static void SetBlurState(IntPtr hwnd, int state) {
         var accent = new AccentPolicy();
-        accent.AccentState = 3; // ACCENT_ENABLE_BLURBEHIND
+        accent.AccentState = state; // 0: Disabled, 3: Blur
 
         var accentStructSize = Marshal.SizeOf(accent);
         var accentPtr = Marshal.AllocHGlobal(accentStructSize);
@@ -120,6 +123,23 @@ public class BlurHelper {
 
         SetWindowCompositionAttribute(hwnd, ref data);
         Marshal.FreeHGlobal(accentPtr);
+    }
+
+    public static void EnableBlur(IntPtr hwnd) {
+        SetBlurState(hwnd, 3);
+    }
+
+    public static void SetRounding(IntPtr hwnd, bool enabled) {
+        // DWMWA_WINDOW_CORNER_PREFERENCE = 33
+        // DWMWCP_ROUND = 2, DWMWCP_DONOTROUND = 1
+        int preference = enabled ? 2 : 1;
+        DwmSetWindowAttribute(hwnd, 33, ref preference, sizeof(int));
+    }
+
+    public static void SetDarkMode(IntPtr hwnd, bool enabled) {
+        // DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        int preference = enabled ? 1 : 0;
+        DwmSetWindowAttribute(hwnd, 20, ref preference, sizeof(int));
     }
 }
 "@ -PassThru | Out-Null
@@ -186,7 +206,7 @@ function Get-Aria2-Executable {
         return $localBinPath.Source
     }
     if (Test-Path $binPath) {
-        try { 
+        try {
             & "$binPath" --version > $null
             if ($?) {
                 Write-Host "[环境] 使用缓存的 Aria2 核心: $binPath" -ForegroundColor Gray
@@ -248,10 +268,10 @@ function Invoke-DownloadTask {
         $process = Start-Process -FilePath $bin -ArgumentList $launch_args -PassThru -NoNewWindow
         $process.EnableRaisingEvents = $true
 
-        $taskInfo = [PSCustomObject]@{ 
+        $taskInfo = [PSCustomObject]@{
             Id        = "Task-" + [guid]::NewGuid().Guid.Substring(0, 8)
-            Process   = $process; 
-            SaveName  = $SaveName; 
+            Process   = $process;
+            SaveName  = $SaveName;
             OutDir    = $OutDir;
             QueueTask = $QueueTask
         }
@@ -281,9 +301,9 @@ function Start-ExtractionTask {
         $process = Start-Process -FilePath $bin -ArgumentList "x `"$FilePath`" -o`"$ExtractDir`" -y" -PassThru -NoNewWindow
         $process.EnableRaisingEvents = $true
 
-        $State.CurrentExtractionTask = [PSCustomObject]@{ 
-            Process    = $process; 
-            FilePath   = $FilePath; 
+        $State.CurrentExtractionTask = [PSCustomObject]@{
+            Process    = $process;
+            FilePath   = $FilePath;
             ExtractDir = $ExtractDir;
             QueueTask  = $QueueTask
         }
@@ -337,7 +357,7 @@ $script:SyncDataGridLogic = {
                     }
                 }
                 if ($versions.Count -gt 0) {
-                    $gridSource += [PSCustomObject]@{ 
+                    $gridSource += [PSCustomObject]@{
                         Type            = $comp.Name
                         Versions        = $versions
                         SelectedVersion = $versions[0]
@@ -516,9 +536,10 @@ function Start-App {
     }
 
     [xml]$xaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="AI 整合包下载器" Height="700" Width="900"
+        MinHeight="500" MinWidth="700"
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ResizeMode="CanResizeWithGrip">
     <Window.Resources>
@@ -671,8 +692,8 @@ function Start-App {
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ToggleButton">
-                                                    <Border Name="border" Background="{TemplateBinding Background}" 
-                                                            BorderBrush="{TemplateBinding BorderBrush}" 
+                                                    <Border Name="border" Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
                                                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
                                                         <Path Name="Arrow" Fill="{DynamicResource TextSecBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                               Margin="0,0,8,0" Data="M 0 0 L 4 4 L 8 0 Z"/>
@@ -809,7 +830,7 @@ function Start-App {
     </Window.Resources>
 
     <!-- 主容器 -->
-    <Border CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" ClipToBounds="True">
+    <Border x:Name="MainBorder" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" ClipToBounds="True">
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="$($colors.WinBG1)" Offset="0.0"/>
@@ -1015,7 +1036,7 @@ function Start-App {
                                 <DataGridTemplateColumn Header="操作" Width="80">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Name="KillTask" Content="终止" Height="22" Padding="8,0" FontSize="11" 
+                                            <Button Name="KillTask" Content="终止" Height="22" Padding="8,0" FontSize="11"
                                                     Background="#FFF1F0" Foreground="#E81123" BorderBrush="#FFCCC7">
                                                 <Button.Style>
                                                     <Style TargetType="Button">
@@ -1083,6 +1104,7 @@ function Start-App {
         DiskLabel = $window.FindName("DiskLabel"); DiskBar = $window.FindName("DiskBar"); DiskPercent = $window.FindName("DiskPercent")
         QueueHeader = $window.FindName("QueueHeader"); QueueBorder = $window.FindName("QueueBorder"); StatText = $window.FindName("StatText"); StatTextBottom = $window.FindName("StatTextBottom")
         DataQueueGrid = $window.FindName("DataQueueGrid")
+        MainBorder = $window.FindName("MainBorder")
     }
 
     # 统计更新逻辑
@@ -1147,7 +1169,7 @@ function Start-App {
             } else {
                 # 路径非法：变红提示
                 Write-Host "[状态] 当前路径无效: $path" -ForegroundColor Red
-                $UI.PathInput.BorderBrush = [System.Windows.Media.Brushes]::Red
+                $UI.PathInput.BorderBrush = [System.Windows.Media.Red]
                 $UI.PathInput.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(30, 255, 0, 0)) # 浅红背景
                 $UI.DiskLabel.Text = "磁盘空间: 路径无效"
                 $UI.DiskBar.Value = 0
@@ -1157,18 +1179,58 @@ function Start-App {
         } catch {}
     }
 
-    # 处理无边框窗口逻辑
-    $UI.TitleBar.Add_MouseLeftButtonDown({ $window.DragMove() })
+    # 处理无边框窗口逻辑 (手动模拟最大化以解决毛玻璃遮挡任务栏)
+    $script:RestoreBounds = $null
+
+    $UI.TitleBar.Add_MouseLeftButtonDown({
+        if ($null -ne $script:RestoreBounds) {
+            # 如果在最大化状态拖动，先还原
+            $UI.MaxBtn.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+        }
+        $window.DragMove()
+    })
     $UI.TitleBar.Add_MouseLeftButtonDown({ if ($_.ClickCount -eq 2) { $UI.MaxBtn.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent))) } })
 
     $UI.MinBtn.Add_Click({ $window.WindowState = "Minimized" })
+
     $UI.MaxBtn.Add_Click({
-        if ($window.WindowState -eq "Maximized") {
-            $window.WindowState = "Normal"
+        $handle = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+        if ($null -ne $script:RestoreBounds) {
+            # 还原逻辑
+            $window.Left = $script:RestoreBounds.Left
+            $window.Top = $script:RestoreBounds.Top
+            $window.Width = $script:RestoreBounds.Width
+            $window.Height = $script:RestoreBounds.Height
+            $script:RestoreBounds = $null
+
             $UI.MaxBtn.Content = "⬜"
+            if ($null -ne $UI.MainBorder) { $UI.MainBorder.CornerRadius = 12 }
+            # 开启系统圆角裁切以解决毛玻璃穿透
+            [BlurHelper]::SetRounding($handle, $true)
         } else {
-            $window.WindowState = "Maximized"
+            # 手动模拟最大化逻辑 (不使用 WindowState = Maximized)
+            $script:RestoreBounds = [PSCustomObject]@{
+                Left = $window.Left; Top = $window.Top; Width = $window.Width; Height = $window.Height
+            }
+
+            # 获取当前屏幕工作区 (Win32 Pixels)
+            $screen = [System.Windows.Forms.Screen]::FromHandle($handle)
+            $workingArea = $screen.WorkingArea
+
+            # 考虑 DPI 缩放转换
+            $source = [System.Windows.PresentationSource]::FromVisual($window)
+            if ($null -ne $source) {
+                $matrix = $source.CompositionTarget.TransformToDevice
+                $window.Left = $workingArea.X / $matrix.M11
+                $window.Top = $workingArea.Y / $matrix.M22
+                $window.Width = $workingArea.Width / $matrix.M11
+                $window.Height = $workingArea.Height / $matrix.M22
+            }
+
             $UI.MaxBtn.Content = "❐"
+            if ($null -ne $UI.MainBorder) { $UI.MainBorder.CornerRadius = 0 }
+            # 关闭系统圆角裁切
+            [BlurHelper]::SetRounding($handle, $false)
         }
     })
     $UI.CloseBtn.Add_Click({ $window.Close() })
@@ -1228,9 +1290,9 @@ function Start-App {
     })
 
     # 个体任务终止逻辑
-    $UI.QueueGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, [System.Windows.RoutedEventHandler]{ 
-        param($s, $e) 
-        if ($e.OriginalSource.Name -eq "KillTask") { 
+    $UI.QueueGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, [System.Windows.RoutedEventHandler]{
+        param($s, $e)
+        if ($e.OriginalSource.Name -eq "KillTask") {
             $task = $e.OriginalSource.DataContext
             Write-Host "[UI] 用户请求终止任务: $($task.Name)" -ForegroundColor Yellow
 
@@ -1249,7 +1311,7 @@ function Start-App {
                 $task.Status = "已取消"
             }
             & $script:UpdateQueueUI -UI $UI -State $State
-        } 
+        }
     })
 
     # 定时器：主调度器与磁盘空间刷新
@@ -1340,9 +1402,17 @@ function Start-App {
         (Get-Location).Path
     }
     $window.Add_Loaded({
-        # 获取窗口句柄并开启毛玻璃
+        # 获取窗口句柄
         $handle = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+
+        # 开启毛玻璃效果
         [BlurHelper]::EnableBlur($handle)
+
+        # 应用系统圆角偏好 (解决毛玻璃穿透圆角问题)
+        [BlurHelper]::SetRounding($handle, $true)
+
+        # 设置 DWM 沉浸式深色模式
+        [BlurHelper]::SetDarkMode($handle, $isDarkMode)
 
         & $script:UpdateDiskInfo -UI $UI
         Invoke-Refresh -UI $UI -State $State

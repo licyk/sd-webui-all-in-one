@@ -1514,10 +1514,10 @@ function Set-CorePrefix {
     `$prefix_list = @(`"core`", `"stable-diffusion*`", `"sd-webui*`", `"automatic*`", `"sd_webui*`")
     if (`$script:CorePrefix -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"))) {
         Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
-        `$origin_core_prefix = if (`$script:CorePrefix) { 
-            `$script:CorePrefix 
-        } else { 
-            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw -Encoding UTF8).Trim() 
+        `$origin_core_prefix = if (`$script:CorePrefix) {
+            `$script:CorePrefix
+        } else {
+            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw -Encoding UTF8).Trim()
         }
         `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
@@ -1528,7 +1528,7 @@ function Set-CorePrefix {
         } else {
             `$target_prefix = `$origin_core_prefix
         }
-    } 
+    }
     else {
         foreach (`$i in `$prefix_list) {
             `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -2601,7 +2601,7 @@ if (`$null -eq `$script:InstallPath) {
         } else {
             `$target_prefix = `$origin_core_prefix
         }
-    } 
+    }
     else {
         foreach (`$i in `$prefix_list) {
             `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -2789,9 +2789,9 @@ function Get-ExtraArgs {
         `$extra_args.Add(`$a) | Out-Null
     }
 
-    `$params = `$extra_args.ForEach{ 
-        if (`$_ -match '\s|`"') { `"'{0}'`" -f (`$_ -replace `"'`", `"''`") } 
-        else { `$_ } 
+    `$params = `$extra_args.ForEach{
+        if (`$_ -match '\s|`"') { `"'{0}'`" -f (`$_ -replace `"'`", `"''`") }
+        else { `$_ }
     } -join ' '
 
     return `$params
@@ -3172,19 +3172,19 @@ function Update-ProxySetting {
         Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`"), (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue; break }
-        elseif (`$choice -eq `"2`") { 
+        elseif (`$choice -eq `"2`") {
             Write-Log `"请输入代理地址 (如 http://127.0.0.1:10809):`"
             `$addr = Get-UserInput
             if (`$addr) {
                 Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`") -Force -ErrorAction SilentlyContinue
                 Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Value `$addr -Encoding UTF8
             }
-            break 
+            break
         }
-        elseif (`$choice -eq `"3`") { 
+        elseif (`$choice -eq `"3`") {
             New-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`") -Force > `$null
             Remove-Item (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue
-            break 
+            break
         }
         elseif (`$choice -eq `"4`") { return }
     }
@@ -3281,7 +3281,7 @@ function Main {
             `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
             `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
             `"6`"  { Set-ToggleSetting `"disable_model_mirror.txt`" `"模型下载源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`")) }
-            `"7`"  { 
+            `"7`"  {
                 Write-Log `"请输入启动参数 (直接回车删除):`"
                 `$args = Get-UserInput
                 if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
@@ -4252,7 +4252,7 @@ if '%errorlevel%' NEQ '0' (
 :gotAdmin
     echo :: Launch CMD with administrative privileges
     if exist `"%temp%\getadmin.vbs`" ( del `"%temp%\getadmin.vbs`" )
-    pushd `"%CD%`" 
+    pushd `"%CD%`"
     CD /D `"%~dp0`"
     goto configureEnv
 
@@ -4265,7 +4265,7 @@ if '%errorlevel%' NEQ '0' (
     echo :: Executing command: `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
     powershell -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
     echo :: Configure completed
-    echo :: Exit environment configuration script 
+    echo :: Exit environment configuration script
     pause
 ".Trim()
 

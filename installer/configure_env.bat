@@ -20,7 +20,7 @@ if '%errorlevel%' NEQ '0' (
 :gotAdmin
     echo :: Launch CMD with administrative privileges
     if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
-    pushd "%CD%" 
+    pushd "%CD%"
     CD /D "%~dp0"
     goto configureEnv
 
@@ -33,5 +33,5 @@ if '%errorlevel%' NEQ '0' (
     echo :: Executing command: "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
     powershell "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
     echo :: Configure completed
-    echo :: Exit environment configuration script 
+    echo :: Exit environment configuration script
     pause
