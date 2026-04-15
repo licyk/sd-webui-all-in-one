@@ -84,6 +84,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 安装结束后保留下载 Python 软件包缓存
 "@)][switch]$NoCleanCache,
 
+    [Parameter(HelpMessage=@"
+脚本执行完成后不暂停, 直接退出
+"@)][switch]$NoPause,
+
 
     # 仅在管理脚本中生效
     [Parameter(HelpMessage=@"
@@ -450,7 +454,7 @@ if __name__ == '__main__':
     if (!($?)) { & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" }
     if (!($?)) {
         Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
-        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
         exit 1
     }
     Write-Log "SD WebUI All In One 内核更新成功"
@@ -494,7 +498,7 @@ function Install-ArchiveResource {
 
     if (-not $success) {
         Write-Log "$ResourceName 安装失败, 终止安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
         exit 1
     }
 
@@ -638,7 +642,7 @@ function Install-Python {
         $urls = $py_info.Url
     } else {
         Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
-        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
         exit 1
     }
     $python_cmd = Get-Command python -ErrorAction SilentlyContinue
@@ -698,7 +702,7 @@ function Install-Git {
         }
         else {
             Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
         Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath (Join-NormalizedPath $script:InstallPath "git") -ZipName "PortableGit.zip"
@@ -717,12 +721,12 @@ function Install-Git {
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git"); return }
             Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
     }
@@ -737,12 +741,12 @@ function Install-Git {
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
             Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
     }
@@ -776,7 +780,7 @@ function Install-WindowsAria2 {
                 Write-Log "重试下载 Aria2 中" -Level WARNING
             } else {
                 Write-Log "Aria2 安装失败, 终止 Qwen TTS WebUI 安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-                if (!($script:BuildMode)) { Read-Host | Out-Null }
+                if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
                 exit 1
             }
         }
@@ -815,12 +819,12 @@ function Install-Aria2 {
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2"); return }
             Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
     }
@@ -834,12 +838,12 @@ function Install-Aria2 {
             if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
             Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { Read-Host | Out-Null }
+            if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
             exit 1
         }
     }
@@ -867,7 +871,7 @@ function Invoke-Installation {
     & python -m sd_webui_all_in_one qwen-tts-webui install $launch_params
     if (!($?)) {
         Write-Log "运行 SD WebUI All In One 安装 Qwen TTS WebUI 时发生了错误, 终止 Qwen TTS WebUI 安装进程, 可尝试重新运行 Qwen TTS WebUI Installer 重试失败的安装" -Level ERROR
-        if (!($script:BuildMode)) { Read-Host | Out-Null }
+        if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
         exit 1
     }
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath "launch_args.txt"))) {
@@ -905,7 +909,8 @@ param (
     [string]`$UseCustomGithubMirror,
     [switch]`$DisableUV,
     [switch]`$DisableCUDAMalloc,
-    [switch]`$DisableModelMirror
+    [switch]`$DisableModelMirror,
+    [switch]`$NoPause
 )
 # Qwen TTS WebUI Installer 版本和检查更新间隔
 `$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = $script:QWEN_TTS_WEBUI_INSTALLER_VERSION
@@ -1088,7 +1093,7 @@ if __name__ == '__main__':
     if (!(`$?)) { & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" }
     if (!(`$?)) {
         Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`" -Level ERROR
-        if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+        if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
         exit 1
     }
     Write-Log `"SD WebUI All In One 内核更新成功`"
@@ -1361,7 +1366,7 @@ function Get-HelpMessage {
     }
     `$usage = @`"
 使用:
-    `${script:OriginalScriptPath} `$(foreach (`$i in `$display_params.Name) { `"[`$i]`" })
+    `$((Get-Process -Id `$PID).Path) `${script:OriginalScriptPath} `$(foreach (`$i in `$display_params.Name) { `"[`$i]`" })
 `"@
     `$param_info = @`"
 参数:
@@ -1843,7 +1848,11 @@ param (
 
     [Parameter(HelpMessage=@`"
 禁用 Qwen TTS WebUI Installer 检查 Qwen TTS WebUI 运行环境中存在的问题, 禁用后可能会导致 Qwen TTS WebUI 环境中存在的问题无法被发现并修复
-`"@)][switch]`$DisableEnvCheck
+`"@)][switch]`$DisableEnvCheck,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
 )
 try {
     `$config = @{
@@ -1862,6 +1871,7 @@ try {
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
@@ -1880,6 +1890,7 @@ try {
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
@@ -1887,7 +1898,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_qwen_tts_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
     exit 1
 }
 
@@ -2010,7 +2021,7 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Qwen TTS WebUI 是否已正确安装, 或者尝试运行 Qwen TTS WebUI Installer 进行修复`" -Level ERROR
-        Read-Host | Out-Null
+        if (!(`$script:NoPause)) { Read-Host | Out-Null }
         return
     }
 
@@ -2043,7 +2054,7 @@ function Main {
 `"@
             Write-Log `"Qwen TTS WebUI 出现异常, 已退出, 请检查控制台日志`${help_msg}`" -Level ERROR
         }
-        Read-Host | Out-Null
+        if (!(`$script:NoPause)) { Read-Host | Out-Null }
     }
 }
 
@@ -2091,7 +2102,11 @@ param (
 
     [Parameter(HelpMessage=@`"
 使用自定义的 Github 镜像站地址
-`"@)][string]`$UseCustomGithubMirror
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
 )
 try {
     `$config = @{
@@ -2105,6 +2120,7 @@ try {
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
@@ -2118,6 +2134,7 @@ try {
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
@@ -2125,7 +2142,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_qwen_tts_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
     exit 1
 }
 
@@ -2149,7 +2166,7 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Qwen TTS WebUI 是否已正确安装, 或者尝试运行 Qwen TTS WebUI Installer 进行修复`" -Level ERROR
-        Read-Host | Out-Null
+        if (!(`$script:NoPause)) { Read-Host | Out-Null }
         return
     }
 
@@ -2157,7 +2174,7 @@ function Main {
     & python -m sd_webui_all_in_one qwen-tts-webui update `$launch_args
 
     Write-Log `"退出 Qwen TTS WebUI 更新脚本`"
-    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
 }
 
 ###################
@@ -2182,6 +2199,7 @@ param (
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
     [string]`$CorePrefix,
+    [switch]`$NoPause,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
 
@@ -2376,10 +2394,10 @@ function Main {
         }
         catch {
             Write-Log `"运行 Qwen TTS WebUI Installer 时出现了错误: `$_`"
-            Read-Host | Out-Null
+            if (!(`$script:NoPause)) { Read-Host | Out-Null }
         }
     } else {
-        Read-Host | Out-Null
+        if (!(`$script:NoPause)) { Read-Host | Out-Null }
     }
 }
 
@@ -2436,7 +2454,11 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     [Parameter(HelpMessage=@`"
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-`"@)][string]`$UseCustomProxy
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
 )
 try {
     `$config = @{
@@ -2450,6 +2472,7 @@ try {
         DisablePyPIMirror = `$script:DisablePyPIMirror
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
@@ -2463,6 +2486,7 @@ try {
         `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
         `$script:BuildMode = `$cfg.BuildMode
         `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
@@ -2470,7 +2494,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_qwen_tts_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
     exit 1
 }
 
@@ -2507,7 +2531,7 @@ function Main {
     & python -m sd_webui_all_in_one qwen-tts-webui reinstall-pytorch `$launch_args
 
     Write-Log `"退出 PyTorch 重装脚本`"
-    if (!(`$script:BuildMode)) { Read-Host | Out-Null }
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
 }
 
 ###################
@@ -2538,7 +2562,11 @@ param (
 
     [Parameter(HelpMessage=@`"
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-`"@)][string]`$UseCustomProxy
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
 )
 try {
     `$config = @{
@@ -2548,6 +2576,7 @@ try {
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
@@ -2557,6 +2586,7 @@ try {
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
@@ -2564,7 +2594,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_qwen_tts_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    Read-Host | Out-Null
+    if (!(`$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -2760,12 +2790,12 @@ function Main {
             `"14`" { Write-Log `"退出设置`"; return }
         }
     }
+    if (!(`$script:NoPause)) { Read-Host | Out-Null }
 }
 
 ###################
 
 Main
-Read-Host | Out-Null
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "settings.ps1")) { "更新" } else { "生成" }) settings.ps1 中"
@@ -2810,7 +2840,11 @@ param (
 
     [Parameter(HelpMessage=@`"
 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
-`"@)][string]`$UseCustomHuggingFaceMirror
+`"@)][string]`$UseCustomHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
 )
 try {
     `$config = @{
@@ -2825,6 +2859,7 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
@@ -2839,6 +2874,7 @@ try {
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
         `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
@@ -2846,7 +2882,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_qwen_tts_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    Read-Host | Out-Null
+    if (!(`$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -3066,7 +3102,7 @@ catch {
     exit 1
 }
 Write-Log `"执行 Qwen TTS WebUI Installer 激活环境脚本`"
-& (Get-Process -Id `$PID).Path -NoExit -File (Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")
+& & `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`"
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
@@ -3213,7 +3249,7 @@ function Use-InstallMode {
     Write-Log "Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
     Write-Log "退出 Qwen TTS WebUI Installer"
 
-    if (!($script:BuildMode)) { Read-Host | Out-Null }
+    if (!($script:BuildMode)) { if ($script:NoPause) { Read-Host | Out-Null } }
 }
 
 
@@ -3365,7 +3401,7 @@ function Get-HelpMessage {
     }
     $usage = @"
 使用:
-    ${script:PSCommandPath} $(foreach ($i in $display_params.Name) { "[$i]" })
+    $((Get-Process -Id $PID).Path) ${script:PSCommandPath} $(foreach ($i in $display_params.Name) { "[$i]" })
 "@
     $param_info = @"
 参数:
