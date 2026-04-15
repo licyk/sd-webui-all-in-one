@@ -79,7 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 100
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 101
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -145,6 +145,75 @@ public class BlurHelper {
 }
 "@ -PassThru | Out-Null
 
+function Show-Update-Popup {
+    param([string]$LatestVersion, [string]$CurrentVersion, [bool]$IsDarkMode)
+
+    $github = "https://github.com/licyk/sd-webui-all-in-one/releases/download/portable/sd_portable_downloader.bat"
+    $gitee = "https://gitee.com/licyk/sd-webui-all-in-one/releases/download/portable/sd_portable_downloader.bat"
+
+    # 根据主题定义颜色
+    $theme = if ($IsDarkMode) {
+        @{ BG = "#2D2D2D"; TextMain = "#FFFFFF"; TextSec = "#AAAAAA"; Border = "#444444"; BtnGray = "#4A4A4A"; BtnGrayText = "#FFFFFF" }
+    } else {
+        @{ BG = "#FFFFFF"; TextMain = "#333333"; TextSec = "Gray"; Border = "#0078D4"; BtnGray = "#E1E1E1"; BtnGrayText = "#333333" }
+    }
+
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.ApartmentState = "STA"
+    $rs.Open()
+    $ps = [powershell]::Create().AddScript({
+        param($v, $cv, $gh, $gt, $t, $dark)
+        Add-Type -AssemblyName PresentationFramework
+
+        [xml]$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        Title="更新提示" Height="200" Width="420" WindowStartupLocation="CenterScreen"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True">
+    <Border CornerRadius="12" Background="$($t.BG)" BorderBrush="$($t.Border)" BorderThickness="1.5">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.4"/>
+        </Border.Effect>
+        <StackPanel Margin="25">
+            <TextBlock Text="发现新版本！" FontSize="20" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,8"/>
+            <TextBlock Text="最新版本: $v  (当前版本: $cv)" FontSize="12" Foreground="$($t.TextSec)" Margin="0,0,0,15"/>
+            <TextBlock Text="建议下载最新的 .bat 启动器以获得更好的体验。" FontSize="13" Foreground="$($t.TextMain)" Margin="0,0,0,20" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Name="GithubBtn" Content="GitHub 下载" Margin="0,0,10,0" Cursor="Hand" Background="#0078D4" Foreground="White" Padding="12,6" BorderThickness="0">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+                <Button Name="GiteeBtn" Content="Gitee 下载" Margin="0,0,10,0" Cursor="Hand" Background="#0078D4" Foreground="White" Padding="12,6" BorderThickness="0">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+                <Button Name="CloseBtn" Content="稍后" Cursor="Hand" Background="$($t.BtnGray)" Foreground="$($t.BtnGrayText)" Padding="15,6" BorderThickness="0">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>
+"@
+        $reader = New-Object System.Xml.XmlNodeReader $xaml
+        $win = [Windows.Markup.XamlReader]::Load($reader)
+
+        # 处理 Win32 句柄以设置沉浸式深色模式标题栏（虽然是无边框，但有助于系统集成）
+        if ($dark) {
+            try {
+                (New-Object System.Windows.Interop.WindowInteropHelper($win)).EnsureHandle()
+                # 此处由于是子 Runspace，不方便调用主进程定义的 BlurHelper，仅通过 XAML 颜色适配
+            } catch {}
+        }
+
+        $win.FindName("GithubBtn").Add_Click({ Start-Process $gh; $win.Close() }.GetNewClosure())
+        $win.FindName("GiteeBtn").Add_Click({ Start-Process $gt; $win.Close() }.GetNewClosure())
+        $win.FindName("CloseBtn").Add_Click({ $win.Close() }.GetNewClosure())
+        $win.Add_MouseLeftButtonDown({ $win.DragMove() }.GetNewClosure())
+
+        $win.ShowDialog() | Out-Null
+    }).AddArgument($LatestVersion).AddArgument($CurrentVersion).AddArgument($github).AddArgument($gitee).AddArgument($theme).AddArgument($IsDarkMode)
+    $ps.Runspace = $rs
+    $ps.BeginInvoke()
+}
+
 function Show-Async-MsgBox {
     param([string]$Message, [string]$Title = "提示", [string]$Icon = "Information")
 
@@ -157,6 +226,77 @@ function Show-Async-MsgBox {
     }).AddArgument($Message).AddArgument($Title).AddArgument($Icon)
     $ps.Runspace = $rs
     $ps.BeginInvoke()
+}
+
+function Invoke-Update-Async {
+    param([bool]$IsDarkMode)
+    Write-Host "[更新] 正在后台检查新版本..." -ForegroundColor Cyan
+    $urls = @(
+        "https://github.com/licyk/sd-webui-all-in-one/raw/main/.github/sd_portable_downloader.ps1",
+        "https://gitee.com/licyk/sd-webui-all-in-one/raw/main/.github/sd_portable_downloader.ps1"
+    )
+
+    if ($null -eq $Global:DownloadRunspacePool) {
+        $Global:DownloadRunspacePool = [runspacefactory]::CreateRunspacePool(1, 2)
+        $Global:DownloadRunspacePool.Open()
+    }
+
+    $ps = [powershell]::Create().AddScript({
+        param($urls, $currentVersion)
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $errors = @()
+        foreach ($url in $urls) {
+            try {
+                $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 10 -ErrorAction Stop
+                if ($response.Content -match '\$script:SD_PORTABLE_DOWNLOADER_VERSION\s*=\s*(\d+)') {
+                    $latestVersion = [int]$matches[1]
+                    if ($latestVersion -gt $currentVersion) {
+                        return @{ Success = $true; LatestVersion = $latestVersion }
+                    } else {
+                        return @{ Success = $false; UpToDate = $true }
+                    }
+                } else {
+                    $errors += "无法在源中解析到版本号: $url"
+                }
+            } catch {
+                $errors += "访问源失败 ($url): $($_.Exception.Message)"
+            }
+        }
+        return @{ Success = $false; Error = ($errors -join "`n") }
+    }).AddArgument($urls).AddArgument($script:SD_PORTABLE_DOWNLOADER_VERSION)
+
+    $ps.RunspacePool = $Global:DownloadRunspacePool
+    $asyncResult = $ps.BeginInvoke()
+    $currentVer = $script:SD_PORTABLE_DOWNLOADER_VERSION
+    # 显式捕获函数引用，以便 PS5.1 的闭包能够识别
+    $ShowPopup = Get-Command Show-Update-Popup
+
+    $monitorTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $monitorTimer.Interval = [TimeSpan]::FromSeconds(1)
+    $monitorTimer.Add_Tick({
+        if ($asyncResult.IsCompleted) {
+            $monitorTimer.Stop()
+            try {
+                $result = $ps.EndInvoke($asyncResult)
+                if ($result.Success) {
+                    Write-Host "[更新] 发现新版本: $($result.LatestVersion) (当前: $currentVer)" -ForegroundColor Green
+                    # 使用 & 符号调用捕获的函数变量
+                    & $ShowPopup -LatestVersion $result.LatestVersion -CurrentVersion $currentVer -IsDarkMode $IsDarkMode
+                } elseif ($result.UpToDate) {
+                    Write-Host "[更新] 当前已是最新版本 ($currentVer)" -ForegroundColor Gray
+                } elseif ($result.Error) {
+                    Write-Host "[更新] 检查更新失败: $($result.Error)" -ForegroundColor Red
+                } else {
+                    Write-Host "[更新] 检查更新任务完成，但未发现有效版本信息。" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "[更新] 检查更新时发生异常: $($_.Exception.Message)" -ForegroundColor Red
+            } finally {
+                $ps.Dispose()
+            }
+        }
+    }.GetNewClosure())
+    $monitorTimer.Start()
 }
 
 function Open-Url {
@@ -387,7 +527,7 @@ function Invoke-Refresh {
 
     # 确保全局 RunspacePool 存在
     if ($null -eq $Global:DownloadRunspacePool) {
-        $Global:DownloadRunspacePool = [runspacefactory]::CreateRunspacePool(1, 1)
+        $Global:DownloadRunspacePool = [runspacefactory]::CreateRunspacePool(1, 2)
         $Global:DownloadRunspacePool.Open()
     }
 
@@ -1418,6 +1558,7 @@ function Start-App {
 
         & $script:UpdateDiskInfo -UI $UI
         Invoke-Refresh -UI $UI -State $State
+        Invoke-Update-Async -IsDarkMode $isDarkMode
     })
     $window.ShowDialog() | Out-Null
     $timer.Stop()
