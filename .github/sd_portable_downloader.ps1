@@ -1347,14 +1347,15 @@ function Start-App {
 
                 if ($task.QueueTask.Status -ne "已取消") {
                     if ($exitCode -eq 0) {
-                        $task.QueueTask.Progress = "100%"
                         if ($task.QueueTask.AutoExtract) {
+                            $task.QueueTask.Progress = "50%"
                             $task.QueueTask.Status = "解压中"
                             $fullPath = Join-Path $task.OutDir $task.SaveName
                             Write-Host "[后处理] 下载完成，开始解压: $fullPath" -ForegroundColor Cyan
                             Show-Async-MsgBox -Message "下载已完成，正在后台启动解压...`n`n源文件：`n$fullPath`n`n解压目录：`n$($task.OutDir)" -Title "下载完成"
                             Start-ExtractionTask -FilePath $fullPath -ExtractDir $task.OutDir -State $State -QueueTask $task.QueueTask | Out-Null
                         } else {
+                            $task.QueueTask.Progress = "100%"
                             $task.QueueTask.Status = "已完成"
                             Show-Async-MsgBox -Message "任务已全部完成！`n`n保存文件：`n$($task.SaveName)`n`n保存路径：`n$($task.OutDir)" -Title "任务完成"
                         }
