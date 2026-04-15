@@ -3449,7 +3449,7 @@ catch {
     exit 1
 }
 Write-Log `"执行 SD Trainer Script Installer 激活环境脚本`"
-& & `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`"
+& `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`"
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
