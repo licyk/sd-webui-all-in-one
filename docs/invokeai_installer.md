@@ -602,6 +602,8 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 |`-BuildWithLaunch`|(需添加 `-BuildMode`) 安装流程结束后调用 `launch.ps1` 脚本，执行启动前的环境检查，但跳过启动 InvokeAI。|
 |`-NoPreDownloadModel`|安装 InvokeAI 时跳过预下载模型。|
 |`-NoCleanCache`|安装结束后保留下载的 Python 软件包缓存。|
+|`-DisableModelMirror`|不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。|
+|`-NoPause`|脚本执行完成后不暂停, 直接退出。|
 |`-DisableUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用 InvokeAI Installer 更新检查。|
 |`-DisableHuggingFaceMirror`|(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`|

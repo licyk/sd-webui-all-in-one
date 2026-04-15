@@ -555,6 +555,8 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 |`-PyTorchPackage` <PyTorch 软件包>|(需搭配 `-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`|
 |`-xFormersPackage` <xFormers 软件包>|(需搭配 `-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`|
 |`-NoCleanCache`|安装结束后保留下载的 Python 软件包缓存。|
+|`-DisableModelMirror`|不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。|
+|`-NoPause`|脚本执行完成后不暂停, 直接退出。|
 |`-DisableUpdate`|(仅在构建模式生效且只作用于管理脚本) 禁用 SD Trainer Script Installer 更新检查。|
 |`-DisableHuggingFaceMirror`|(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。|
 |`-UseCustomHuggingFaceMirror` <HuggingFace 镜像源地址>|(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`|
