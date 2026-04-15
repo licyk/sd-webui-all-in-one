@@ -81,6 +81,7 @@ param (
 )
 $script:VERSION = 100
 $script:OriginalScriptPath = $MyInvocation.MyCommand.Definition
+$script:OriginalArgs = $PSBoundParameters
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
@@ -209,7 +210,7 @@ function Invoke-SelfUpdate {
 
     $currentVersion = $script:VERSION
     $originalPath = $script:OriginalScriptPath
-    $scriptRootPathArg = $ScriptRootPath
+    $originalArgs = $script:OriginalArgs
 
     Write-Host "[更新] 正在以后台方式检查脚本更新..." -ForegroundColor Gray
 
@@ -220,7 +221,7 @@ function Invoke-SelfUpdate {
     }
 
     $ps = [powershell]::Create().AddScript({
-        param($urls, $currentVersion, $originalPath, $scriptRootPathArg)
+        param($urls, $currentVersion, $originalPath, $originalArgs)
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         
         $tempFile = [IO.Path]::Combine([IO.Path]::GetTempPath(), "sd_portable_downloader_update.ps1")
@@ -233,7 +234,7 @@ function Invoke-SelfUpdate {
                 Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $tempFile -TimeoutSec 15 -ErrorAction Stop
                 if (Test-Path $tempFile) {
                     $content = Get-Content $tempFile -Raw -Encoding UTF8
-                    if ($content -match "\$script:VERSION\s*=\s*(\d+)") {
+                    if ($content -match "\`$script:VERSION\s*=\s*(\d+)") {
                         $latestVersion = [int]$matches[1]
                         if ($latestVersion -gt $currentVersion) {
                             $updateFound = $true
@@ -255,7 +256,9 @@ function Invoke-SelfUpdate {
             try {
                 Copy-Item -Path $tempFile -Destination $originalPath -Force
                 $argsString = "-ExecutionPolicy Bypass -File `"$originalPath`""
-                if ($scriptRootPathArg) { $argsString += " -ScriptRootPath `"$scriptRootPathArg`"" }
+                foreach ($key in $originalArgs.Keys) {
+                    $argsString += " -$key `"$($originalArgs[$key])`""
+                }
                 return @{ Success = $true; LatestVersion = $latestVersion; ArgsString = $argsString }
             } catch {
                 return @{ Success = $false; Error = "替换脚本文件失败: $($_.Exception.Message)" }
@@ -267,7 +270,7 @@ function Invoke-SelfUpdate {
         }
 
         return @{ Success = $false }
-    }).AddArgument($urls).AddArgument($currentVersion).AddArgument($originalPath).AddArgument($scriptRootPathArg)
+    }).AddArgument($urls).AddArgument($currentVersion).AddArgument($originalPath).AddArgument($originalArgs)
 
     $ps.RunspacePool = $Global:DownloadRunspacePool
     $asyncResult = $ps.BeginInvoke()
