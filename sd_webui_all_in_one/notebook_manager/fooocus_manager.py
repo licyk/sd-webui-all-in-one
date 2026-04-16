@@ -226,7 +226,7 @@ class FooocusManager(BaseManager):
         if args.preset is None:
             return None
 
-        return self.workspace / self.workfolder / "presets" / args.preset
+        return self.workspace / self.workfolder / "presets" / f"{args.preset}.json"
 
     def pre_download_model(
         self,
