@@ -62,6 +62,11 @@ class Aria2RpcServer:
             User-Agent 配置
         use_config_file (bool):
             是否使用配置文件启动 aria2
+        use_external_server (bool):
+            是否允许连接到外部已存在的 aria2 服务器。
+            当多个实例同时运行时, 若某个实例提前完成下载并关闭服务器,
+            可能导致其他连接到同一服务器的实例崩溃。
+            设为 False 可强制每个实例启动独立的 aria2 进程, 避免此问题。
         rpc_url (str):
             RPC 服务器 URL 地址
         process (subprocess.Popen | None):
@@ -86,6 +91,10 @@ class Aria2RpcServer:
         # 使用硬编码参数启动（向后兼容）
         with Aria2RpcServer(port=6800, use_config_file=False) as aria2:
             aria2.download("https://example.com/file.zip", save_path="/tmp")
+
+        # 多实例并发下载时, 禁用外部服务器复用以避免相互干扰
+        with Aria2RpcServer(port=6800, use_external_server=False) as aria2:
+            aria2.download("https://example.com/file.zip", save_path="/tmp")
         ```
     """
 
@@ -98,6 +107,7 @@ class Aria2RpcServer:
         log_level: Literal["debug", "info", "notice", "warn", "error"] | None = "notice",
         user_agent: str | None = DEFAULT_USER_AGENT,
         use_config_file: bool | None = True,
+        use_external_server: bool = True,
     ) -> None:
         """
         初始化 aria2 RPC 服务器管理器
@@ -117,6 +127,11 @@ class Aria2RpcServer:
                 User-Agent 配置
             use_config_file (bool | None):
                 是否使用配置文件启动 aria2, 默认 True
+            use_external_server (bool):
+                是否允许连接到外部已存在的 aria2 服务器, 默认 True。
+                当多个实例同时运行时, 若某个实例提前完成下载并关闭服务器,
+                可能导致其他连接到同一服务器的实例崩溃。
+                设为 False 可强制每个实例启动独立的 aria2 进程, 避免此问题。
         """
         self.port: int = port
         self.secret: str | None = secret
@@ -125,6 +140,7 @@ class Aria2RpcServer:
         self.log_level: str = log_level
         self.user_agent = user_agent
         self.use_config_file: bool = use_config_file
+        self.use_external_server: bool = use_external_server
         self.rpc_url: str = f"http://localhost:{port}/jsonrpc"
         self.process: subprocess.Popen | None = None
         self._session_file: NamedTemporaryFile | None = None
@@ -183,14 +199,18 @@ class Aria2RpcServer:
         # 检查端口是否已被占用
         if is_port_in_use(self.port):
             logger.debug("端口 %d 已被占用, 尝试连接现有服务", self.port)
-            if self._test_connection():
+            if self.use_external_server and self._test_connection():
                 logger.debug("成功连接到现有 aria2 RPC 服务")
                 self._is_external_server = True  # 标记为外部服务器
                 return
             else:
+                if not self.use_external_server:
+                    logger.debug("已禁用外部服务器复用, 跳过连接现有 aria2 RPC 服务, 尝试更换端口创建独立实例")
+                else:
+                    logger.debug("端口已被占用但无法连接到 aria2 RPC 服务, 尝试更换端口创建新的 aria2 RPC 服务")
                 self.port = find_port(self.port)
                 self.rpc_url = f"http://localhost:{self.port}/jsonrpc"  # 更新 RPC URL
-                logger.debug("端口已被占用但无法连接到 aria2 RPC 服务, 尝试更换到 %d 端口创建新的 aria2 RPC 服务", self.port)
+                logger.debug("已更换到 %d 端口", self.port)
 
         # 创建临时会话文件
         self._session_file = NamedTemporaryFile(mode="w", suffix=".aria2.session", delete=False)
