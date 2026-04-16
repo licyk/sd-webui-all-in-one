@@ -5,7 +5,6 @@ import sys
 import shlex
 import argparse
 import json
-import traceback
 from pathlib import Path
 from typing import Literal
 
@@ -288,7 +287,7 @@ class FooocusManager(BaseManager):
                         "url": url,
                         "path": target_path,
                         "save_name": filename,
-                        "tools": cfg["tool"],
+                        "tool": cfg["tool"],
                         "progress": False,
                     }
                 )
@@ -303,7 +302,6 @@ class FooocusManager(BaseManager):
         try:
             model_downloader.start(num_threads=thread_num)
         except Exception as e:
-            traceback.print_exc()
             logger.error("预下载 Fooocus 模型时发生错误: %s", e)
 
     def install(
