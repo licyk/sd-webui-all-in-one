@@ -2,6 +2,10 @@
 
 import os
 import sys
+import shlex
+import argparse
+import json
+import traceback
 from pathlib import Path
 from typing import Literal
 
@@ -26,6 +30,11 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     check_fooocus_env,
     update_fooocus,
     install_fooocus,
+)
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    MultiThreadDownloader,
+    download_file,
 )
 
 logger = get_logger(
@@ -190,6 +199,112 @@ class FooocusManager(BaseManager):
             cmd=self.get_launch_command(params),
             display_mode=display_mode,
         )
+
+    def get_config_path_from_args(self, cmd_args: str | list[str] | None) -> Path | None:
+        """从命令行参数解析配置文件路径
+
+        Args:
+            cmd_args (str | list[str] | None):
+                命令行参数
+
+        Returns:
+            (Path | None):
+                配置文件的路径
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("--preset", type=str, default=None)
+
+        if isinstance(cmd_args, str):
+            args_list = shlex.split(cmd_args)
+        elif isinstance(cmd_args, list):
+            args_list = cmd_args
+        else:
+            return None
+
+        args, _ = parser.parse_known_args(args_list)
+
+        if args.preset is None:
+            return None
+
+        return self.workspace / self.workfolder / "presets" / args.preset
+
+    def pre_download_model(
+        self,
+        cmd_args: str | list[str] | None,
+        thread_num: int | None = 8,
+        downloader: DownloadToolType | None = None,
+    ) -> None:
+        """从命令行获取配置文件路径并预下载模型
+
+        Args:
+            cmd_args (str | list[str] | None):
+                Fooocus 命令行参数
+            thread_num (int | None):
+                下载模型的线程数
+            downloader (DownloadToolType | None):
+                预下载模型时使用的下载器 (`aria2`, `requests`, `urllib`)
+        """
+        config = self.get_config_path_from_args(cmd_args)
+        if config is None or not config.exists():
+            return
+
+        try:
+            with open(config, "r", encoding="utf8") as file:
+                data = json.load(file)
+        except Exception as e:
+            logger.warning("打开 Fooocus 配置文件时出现错误: %s", e)
+            data = {}
+
+        downloader_map = {
+            "aria2": "aria2",
+            "requests": "request",
+            "urllib": "urllib",
+        }
+        base_dl = downloader_map.get(downloader)
+
+        sd_model_dl = base_dl or "aria2"
+        lora_dl = base_dl or "requests"
+        vae_dl = base_dl or "aria2"
+        embedding_dl = base_dl or "requests"
+
+        fooocus_path = self.workspace / self.workfolder
+        models_base = fooocus_path / "models"
+
+        download_configs = [
+            {"key": "checkpoint_downloads", "subdir": "checkpoints", "tool": sd_model_dl},
+            {"key": "lora_downloads", "subdir": "loras", "tool": lora_dl},
+            {"key": "vae_downloads", "subdir": "vae", "tool": vae_dl},
+            {"key": "embeddings_downloads", "subdir": "embeddings", "tool": embedding_dl},
+        ]
+
+        downloader_params: list[dict[str, str]] = []
+        for cfg in download_configs:
+            model_dict = data.get(cfg["key"], {})
+            target_path = models_base / cfg["subdir"]
+
+            for filename, url in model_dict.items():
+                downloader_params.append(
+                    {
+                        "url": url,
+                        "path": target_path,
+                        "save_name": filename,
+                        "tools": cfg["tool"],
+                        "progress": False,
+                    }
+                )
+
+        if not downloader_params:
+            return
+
+        model_downloader = MultiThreadDownloader(
+            download_func=download_file,
+            download_kwargs_list=downloader_params,
+        )
+        try:
+            model_downloader.start(num_threads=thread_num)
+        except Exception as e:
+            traceback.print_exc()
+            logger.error("预下载 Fooocus 模型时发生错误: %s", e)
 
     def install(
         self,
