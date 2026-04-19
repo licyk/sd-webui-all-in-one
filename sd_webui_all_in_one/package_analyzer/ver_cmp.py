@@ -1,6 +1,7 @@
 """版本大小比较器"""
 
 import re
+from typing import Any
 
 
 class CommonVersionComparison:
@@ -94,60 +95,83 @@ class CommonVersionComparison:
         Returns:
             int: 版本对比结果, 1 为第一个版本号大, -1 为第二个版本号大, 0 为两个版本号一样
         """
-        version1 = str(version1)
-        version2 = str(version2)
 
-        # 移除构建元数据（+之后的部分）
-        v1_main = version1.split("+", maxsplit=1)[0]
-        v2_main = version2.split("+", maxsplit=1)[0]
+        def _parse_chunks(v_str: Any) -> list[int | str | Any]:
+            # 将字符串拆分为数字和非数字的块
+            # 例如 "beta10.v2" -> [10, "beta", 10, "v", 2] 这种逻辑太复杂
+            # 简单做法：按 '.' 或 '-' 拆分，然后处理每一段
+            return [int(c) if c.isdigit() else c for c in re.split(r"[._-]", v_str) if c]
 
-        # 分离主版本号和预发布版本（支持多种分隔符）
-        def _split_version(v):
-            # 先尝试用 -, _, . 分割预发布版本
-            # 匹配主版本号部分和预发布部分
-            match = re.match(r"^([0-9]+(?:\.[0-9]+)*)([-_.].*)?$", v)
-            if match:
-                release = match.group(1)
-                pre = match.group(2)[1:] if match.group(2) else ""  # 去掉分隔符
-                return release, pre
-            return v, ""
+        def _compare_pre_release(pre1: Any, pre2: Any) -> int:
+            # 如果一方没有预发布号，正式版更大
+            if not pre1 and pre2:
+                return 1
+            if pre1 and not pre2:
+                return -1
+            if not pre1 and not pre2:
+                return 0
 
-        v1_release, v1_pre = _split_version(v1_main)
-        v2_release, v2_pre = _split_version(v2_main)
+            # 拆分预发布号段，例如 "beta.1" -> ["beta", 1]
+            parts1 = _parse_chunks(pre1)
+            parts2 = _parse_chunks(pre2)
 
-        # 将版本号拆分成数字列表
-        try:
-            nums1 = [int(x) for x in v1_release.split(".") if x]
-            nums2 = [int(x) for x in v2_release.split(".") if x]
-        except Exception as _:
+            for p1, p2 in zip(parts1, parts2):
+                if p1 == p2:
+                    continue
+                # 类型不同时（一数字一字母）：数字优先级低 (根据 SemVer 规范)
+                if isinstance(p1, int) and isinstance(p2, str):
+                    return -1
+                if isinstance(p1, str) and isinstance(p2, int):
+                    return 1
+                # 类型相同时：直接比大小
+                return 1 if p1 > p2 else -1
+
+            # 长度不一致处理
+            if len(parts1) > len(parts2):
+                return 1
+            if len(parts1) < len(parts2):
+                return -1
             return 0
 
-        # 补齐版本号长度
+        def _extract_digits(v_str: str) -> list[int]:
+            # 使用正则找出所有的数字序列
+            # \d+ 匹配一个或多个连续数字
+            digits = re.findall(r'\d+', str(v_str))
+            return [int(d) for d in digits]
+
+        v1_str, v2_str = str(version1), str(version2)
+
+        # 1. 移除元数据
+        v1_main = v1_str.split("+", maxsplit=1)[0]
+        v2_main = v2_str.split("+", maxsplit=1)[0]
+
+        # 2. 提取主版本和预发布版本
+        # 匹配规则: 第一个字母或连字符出现之前为 release
+        match1 = re.match(r"^([0-9.]+)(.*)$", v1_main)
+        match2 = re.match(r"^([0-9.]+)(.*)$", v2_main)
+
+        v1_release, v1_pre = match1.groups() if match1 else (v1_main, "")
+        v2_release, v2_pre = match2.groups() if match2 else (v2_main, "")
+
+        # 3. 比较主版本数字 (1.2.3)
+        nums1 = _extract_digits(v1_release)
+        nums2 = _extract_digits(v2_release)
+
         max_len = max(len(nums1), len(nums2))
-        nums1 += [0] * (max_len - len(nums1))
-        nums2 += [0] * (max_len - len(nums2))
-
-        # 比较版本号
         for i in range(max_len):
-            if nums1[i] > nums2[i]:
+            n1 = nums1[i] if i < len(nums1) else 0
+            n2 = nums2[i] if i < len(nums2) else 0
+            if n1 > n2:
                 return 1
-            elif nums1[i] < nums2[i]:
+            if n1 < n2:
                 return -1
 
-        # 如果主版本号相同, 比较预发布版本
-        if v1_pre and not v2_pre:
-            return -1  # 预发布版本 < 正式版本
-        elif not v1_pre and v2_pre:
-            return 1  # 正式版本 > 预发布版本
-        elif v1_pre and v2_pre:
-            if v1_pre > v2_pre:
-                return 1
-            elif v1_pre < v2_pre:
-                return -1
-            else:
-                return 0
-        else:
-            return 0  # 版本号相同
+        # 4. 主版本相同时，比较预发布版本 (alpha, beta, rc)
+        # 注意: 预发布版本通常带有前导符号，先去掉
+        v1_pre = re.sub(r"^[-._]", "", v1_pre)
+        v2_pre = re.sub(r"^[-._]", "", v2_pre)
+
+        return _compare_pre_release(v1_pre, v2_pre)
 
 
 def version_increment(

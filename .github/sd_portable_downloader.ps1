@@ -71,7 +71,7 @@
     licyk
 
 .VERSION
-    1.0.0
+    1.0.2
 
 .HISTORY
 
@@ -79,7 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 101
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 102
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -400,7 +400,7 @@ function Invoke-DownloadTask {
     )
 
     $bin = Get-Aria2-Executable
-    $launch_args = "-c -x 16 -s 64 -k 1M --file-allocation=none --summary-interval=0 --console-log-level=error -d `"$OutDir`" `"$Url`" -o `"$SaveName`""
+    $launch_args = "-c -x 16 -s 64 -k 1M --file-allocation=none --summary-interval=0 --console-log-level=error -d `"$($OutDir.TrimEnd('\', '/'))`" `"$Url`" -o `"$SaveName`""
 
     try {
         Write-Host "[任务] 正在启动 Aria2 下载引擎..." -ForegroundColor Blue
@@ -427,7 +427,7 @@ function Invoke-DownloadTask {
     catch {
         Write-Host "[任务] 启动下载任务失败: $($_.Exception.Message)" -ForegroundColor Red
         $QueueTask.Status = "失败"
-        Show-Async-MsgBox -Message "无法启动下载任务：`n$($_.Exception.Message)" -Title "启动失败" -Icon "Error"
+        Show-Async-MsgBox -Message "无法启动下载任务：`n$($_.Exception.Message)`n`n报告问题与寻求帮助请前往: `nhttps://github.com/licyk/sd-webui-all-in-one/issues" -Title "启动失败" -Icon "Error"
         return $null
     }
 }
@@ -439,7 +439,7 @@ function Start-ExtractionTask {
     Write-Host "[后处理] 正在启动解压任务: $FilePath ..." -ForegroundColor Cyan
 
     try {
-        $process = Start-Process -FilePath $bin -ArgumentList "x `"$FilePath`" -o`"$ExtractDir`" -y" -PassThru -NoNewWindow
+        $process = Start-Process -FilePath $bin -ArgumentList "x `"$FilePath`" -o`"$($ExtractDir.TrimEnd('\', '/'))`" -y" -PassThru -NoNewWindow
         $process.EnableRaisingEvents = $true
 
         $State.CurrentExtractionTask = [PSCustomObject]@{
@@ -454,7 +454,7 @@ function Start-ExtractionTask {
     catch {
         Write-Host "[后处理] 启动解压失败: $($_.Exception.Message)" -ForegroundColor Red
         $QueueTask.Status = "失败"
-        Show-Async-MsgBox -Message "无法启动解压任务：`n$($_.Exception.Message)" -Title "解压失败" -Icon "Error"
+        Show-Async-MsgBox -Message "无法启动解压任务：`n$($_.Exception.Message)`n`n报告问题与寻求帮助请前往: `nhttps://github.com/licyk/sd-webui-all-in-one/issues" -Title "解压失败" -Icon "Error"
         return $null
     }
 }
@@ -614,6 +614,7 @@ function Invoke-DownloadAction {
         Url         = $selected.Url
         OutDir      = $savePath
         AutoExtract = $UI.AutoExtract.IsChecked
+        AutoDelete  = $UI.AutoDelete.IsChecked
         Status      = "等待中"
         Progress    = "0%"
     }
@@ -1218,7 +1219,10 @@ function Start-App {
                     <TextBlock Name="StatTextBottom" Text="队列统计: 总计 0 | 运行中 0 | 已完成 0" FontSize="11" Foreground="{DynamicResource TextSecBrush}" Margin="2,0,0,10" Visibility="Collapsed"/>
 
                     <DockPanel>
-                        <CheckBox Name="AutoExtract" Content="下载完成后自动解压到当前目录" IsChecked="True" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Left"/>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <CheckBox Name="AutoExtract" Content="下载完成后自动解压到当前目录" IsChecked="True" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,20,0"/>
+                            <CheckBox Name="AutoDelete" Content="解压成功后删除压缩包" IsChecked="True" Style="{StaticResource ToggleSwitchStyle}" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Name="RefreshBtn" Content="刷新同步" Style="{StaticResource PrimaryButton}" Width="100" Height="34" Margin="0,0,10,0"/>
                             <Button Name="ToggleQueueBtn" Content="隐藏/展开队列" Width="120" Height="34" Style="{StaticResource PrimaryButton}"/>
@@ -1237,7 +1241,7 @@ function Start-App {
         Window = $window; MainGrid = $window.FindName("MainGrid"); QueueGrid = $window.FindName("QueueGrid"); UpdateTimeText = $window.FindName("UpdateTime"); PathInput = $window.FindName("PathInput")
         StableRadio = $window.FindName("Stable"); NightlyRadio = $window.FindName("Nightly"); HFRadio = $window.FindName("HF"); MSRadio = $window.FindName("MS")
         RefreshBtn = $window.FindName("RefreshBtn"); ToggleQueueBtn = $window.FindName("ToggleQueueBtn"); BrowseBtn = $window.FindName("BrowseBtn")
-        AutoExtract = $window.FindName("AutoExtract")
+        AutoExtract = $window.FindName("AutoExtract"); AutoDelete = $window.FindName("AutoDelete")
         ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn")
         LoadingOverlay = $window.FindName("LoadingOverlay")
         TitleBar = $window.FindName("TitleBar"); CloseBtn = $window.FindName("CloseBtn")
@@ -1502,7 +1506,7 @@ function Start-App {
                         }
                     } else {
                         $task.QueueTask.Status = "失败"
-                        Show-Async-MsgBox -Message "任务下载失败。`n退出码: $exitCode" -Title "下载失败" -Icon "Error"
+                        Show-Async-MsgBox -Message "任务下载失败，请检查控制台日志。`n退出码: ${exitCode}`n`n报告问题与寻求帮助请前往: `nhttps://github.com/licyk/sd-webui-all-in-one/issues" -Title "下载失败" -Icon "Error"
                     }
                 }
                 $State.CurrentTask = $null
@@ -1521,10 +1525,18 @@ function Start-App {
                     if ($exitCode -eq 0) {
                         $task.QueueTask.Status = "已完成"
                         $task.QueueTask.Progress = "100%"
+                        if ($task.QueueTask.AutoDelete) {
+                            try {
+                                Remove-Item $task.FilePath -Force
+                                Write-Host "[后处理] 已删除压缩包: $($task.FilePath)" -ForegroundColor Gray
+                            } catch {
+                                Write-Host "[后处理] 删除压缩包失败: $($_.Exception.Message)" -ForegroundColor Red
+                            }
+                        }
                         Show-Async-MsgBox -Message "解压已成功完成！`n`n源文件：`n$($task.FilePath)`n`n解压至：`n$($task.ExtractDir)" -Title "解压成功"
                     } else {
                         $task.QueueTask.Status = "失败"
-                        Show-Async-MsgBox -Message "解压过程中出现错误。`n退出码: $exitCode" -Title "解压失败" -Icon "Error"
+                        Show-Async-MsgBox -Message "解压过程中出现错误，请检查控制台日志。`n退出码: ${exitCode}`n`n报告问题与寻求帮助请前往: `nhttps://github.com/licyk/sd-webui-all-in-one/issues" -Title "解压失败" -Icon "Error"
                     }
                 }
                 $State.CurrentExtractionTask = $null

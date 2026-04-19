@@ -51,17 +51,18 @@ def get_cuda_comp_cap() -> float:
         return max(
             map(
                 float,
-                subprocess.check_output(
-                    [
-                        "nvidia-smi",
-                        "--query-gpu=compute_cap",
-                        "--format=noheader,csv",
-                    ],
+                subprocess.run(
+                    ["nvidia-smi", "--query-gpu=compute_cap", "--format=noheader,csv"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    encoding="utf-8",
                     text=True,
-                ).splitlines(),
+                    errors="ignore",
+                    check=True,
+                ).stdout.splitlines(),
             )
         )
-    except Exception as _:
+    except Exception:
         return 0.0
 
 
@@ -73,12 +74,20 @@ def get_cuda_version() -> float:
     """
     try:
         # 获取 nvidia-smi 输出
-        output = subprocess.check_output(["nvidia-smi", "-q"], text=True)
+        output = subprocess.run(
+            ["nvidia-smi", "-q"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        ).stdout
         match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
         if match:
             return float(match.group(1))
         return 0.0
-    except Exception as _:
+    except Exception:
         return 0.0
 
 
@@ -381,7 +390,15 @@ def get_lshw_gpus() -> list[GPUDeviceInfo]:
 
     try:
         cmd = ["lshw", "-C", "display", "-json"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        )
         data = json.loads(result.stdout)
         gpus = [data] if isinstance(data, dict) else data
 
@@ -412,9 +429,17 @@ def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
 
     try:
         cmd = ["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv,noheader,nounits"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        )
         gpu_info: list[GPUDeviceInfo] = []
-        for line in result.stdout.strip().split("\n"):
+        for line in result.stdout.strip().splitlines():
             if not line:
                 continue
             parts = [p.strip() for p in line.split(",")]
@@ -443,7 +468,15 @@ def get_lspci_gpus() -> list[GPUDeviceInfo]:
 
     try:
         cmd = ["lspci", "-vmm", "-d", "::0300"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        )
         gpu_info: list[GPUDeviceInfo] = []
         devices = result.stdout.strip().split("\n\n")
         for dev in devices:
@@ -601,19 +634,20 @@ def get_avaliable_pytorch_device_type() -> list[str]:
         device_list.append("directml")
 
     if nvidia_gpu_avaliable:
-        if CommonVersionComparison(cuda_comp_cap) < CommonVersionComparison("10.0"):
+        if CommonVersionComparison(cuda_comp_cap) >= CommonVersionComparison("10.0"):
+            # RTX 50xx
             for ver in PYTORCH_DEVICE_LIST:
                 if not ver.startswith("cu"):
                     continue
 
-                if CommonVersionComparison(ver) >= CommonVersionComparison(str(int(12.8 * 10))):
+                if CommonVersionComparison(ver.removeprefix("cu")) >= CommonVersionComparison(str(int(12.8 * 10))):
                     device_list.append(ver)
         else:
             for ver in PYTORCH_DEVICE_LIST:
                 if not ver.startswith("cu"):
                     continue
 
-                if CommonVersionComparison(ver) <= CommonVersionComparison(str(int(cuda_support_ver * 10))):
+                if CommonVersionComparison(ver.removeprefix("cu")) <= CommonVersionComparison(str(int(cuda_support_ver * 10))):
                     device_list.append(ver)
 
     if intel_xpu_avaliable:

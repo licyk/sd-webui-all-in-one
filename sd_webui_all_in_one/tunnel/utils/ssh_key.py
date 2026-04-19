@@ -32,7 +32,7 @@ def gen_ssh_key(
         bool: 生成成功时返回 True, 失败时返回 False
     """
     try:
-        arg_string = f'ssh-keygen -t rsa -b 4096 -N "" -q -f {path.as_posix()}'
+        arg_string = f'ssh-keygen -t rsa -b 4096 -N "" -q -f "{path.as_posix()}"'
         args = shlex.split(arg_string)
         subprocess.run(args, check=True)
         path.chmod(0o600)
