@@ -2692,7 +2692,7 @@ function Main {
             Invoke-Expression `"& ```"`$script_path```" `$extra_args @arg`"
         }
         catch {
-            Write-Log `"运行 SD Trainer Installer 时出现了错误: `$_`"
+            Write-Log `"运行 SD Trainer Installer 时出现了错误: `$_`" -Level ERROR
             if (!(`$script:NoPause)) { Read-Host | Out-Null }
         }
     } else {
