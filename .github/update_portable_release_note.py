@@ -147,6 +147,7 @@ def main() -> None:
         "- 所有历史版本下载：[AI 绘画 / 训练整合包下载列表](https://licyk.github.io/t/#/sd_portable)",
         "- 建议使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 解压整合包",
         "- Nightly 整合包相比 Stable 整合包，版本较新，推荐使用",
+        "- Windows 用户可使用下载器进行下载，内置高速下载器和解压工具，安装更方便。下载地址：[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/portable/sd_portable_downloader.bat) / [下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/portable/sd_portable_downloader.bat)",
         "---",
     ]
 
