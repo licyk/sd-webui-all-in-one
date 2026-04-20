@@ -110,7 +110,7 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
             text=True,
             errors="ignore",
             check=True,
-        ).stdout
+        )
         gpus = json.loads(result.stdout)
         if isinstance(gpus, dict):
             gpus = [gpus]
