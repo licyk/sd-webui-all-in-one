@@ -93,7 +93,7 @@ def install_extension_requirements(
         with open(settings_file, "r", encoding="utf-8") as file:
             settings = json.load(file)
     except Exception as e:
-        logger.warning("Stable Diffusion WebUI 配置文件无效: %s", e)
+        logger.debug("Stable Diffusion WebUI 配置文件无效: %s", e)
 
     disabled_extensions = set(settings.get("disabled_extensions", []))
     disable_all_extensions = settings.get("disable_all_extensions", "none")

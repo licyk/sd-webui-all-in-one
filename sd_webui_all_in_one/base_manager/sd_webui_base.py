@@ -24,6 +24,7 @@ from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
+from sd_webui_all_in_one.env_check.fix_forge_neo_alert import fix_forge_neo_alert
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import (
     get_cuda_malloc_var,
@@ -1144,6 +1145,7 @@ def check_sd_webui_env(
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
         (fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
+        (fix_forge_neo_alert, {"sd_webui_path": sd_webui_path}),
         (py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv, "custom_env": custom_env}),
         (install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
         (fix_torch_libomp, {}),

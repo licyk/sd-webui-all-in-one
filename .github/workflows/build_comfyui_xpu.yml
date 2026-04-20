@@ -1,11 +1,11 @@
-name: Build SD WebUI Forge Classic
+name: Build ComfyUI XPU
 
 on:
   workflow_dispatch:
 
 jobs:
-  Build-SD-WebUI-Forge-Classic:
-    name: Build SD WebUI Forge Classic
+  Build-ComfyUI-ROCm:
+    name: Build ComfyUI
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
@@ -16,79 +16,58 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Launch SD WebUI Installer
+      - name: Launch ComfyUI Installer
         env:
           SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/sd_webui_forge_classic" `
-            -PyTorchMirrorType cu130 `
+          & "${{ github.workspace }}/installer/comfyui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/comfyui" `
+            -PyTorchMirrorType xpu `
             -BuildMode `
             -BuildWithLaunch `
-            -InstallBranch "sd_webui_forge_neo" `
-            -NoPreDownloadModel `
             -DisablePyPIMirror `
             -DisableGithubMirror `
+            -DisableHuggingFaceMirror `
             -InstallHanamizuki `
-            -DisableHuggingFaceMirror
+            -NoPreDownloadModel
 
-      - name: Install Insightface
-        shell: pwsh
-        env:
-          UV_PYTHON: "${{ github.workspace }}/sd_webui_forge_classic/core/python/python.exe"
-          UV_LINK_MODE: copy
-        run: |
-          uv pip install insightface
-
-      - name: Launch SD WebUI Forge Classic to init component
+      - name: Launch ComfyUI to init custom nodes
         shell: pwsh
         env:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         continue-on-error: true
         run: |
-          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_classic/core"
-          & "${{ github.workspace }}/sd_webui_forge_classic/core/python/python.exe" `
-            "${{ github.workspace }}/sd_webui_forge_classic/core/launch.py" `
-            --exit `
-            --skip-torch-cuda-test `
-            --use-cpu all `
-            --skip-version-check `
-            --skip-python-version-check
+          Set-Location -Path "${{ github.workspace }}/comfyui/core"
+          & "${{ github.workspace }}/comfyui/core/python/python.exe" "${{ github.workspace }}/comfyui/core/main.py" --quick-test-for-ci --cpu
 
       - name: Launch to complete dependencies
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/sd_webui_forge_classic/launch.ps1" `
+          & "${{ github.workspace }}/comfyui/launch.ps1" `
             -BuildMode `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
-      - name: Download VAE approx model
-        shell: pwsh
-        run: |
-          & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
-            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_classic/core/models/VAE-approx"
-
       - name: Make docs
         shell: pwsh
         run: |
-          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui_forge_classic"
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/comfyui"
 
       - name: Clean cache dir
         shell: pwsh
         run: |
-          Remove-Item -Path "${{ github.workspace }}/sd_webui_forge_classic/cache" -Force -Recurse
+          Remove-Item -Path "${{ github.workspace }}/comfyui/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/archive_portable.ps1" `
-            -SoftwareName "sd_webui_forge_classic" `
+            -SoftwareName "comfyui_xpu" `
             -Workspace "${{ github.workspace }}" `
-            -Source "${{ github.workspace }}/sd_webui_forge_classic" `
+            -Source "${{ github.workspace }}/comfyui" `
             -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
             -Author "licyk"
 

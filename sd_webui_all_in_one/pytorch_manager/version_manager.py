@@ -82,8 +82,8 @@ def find_latest_pytorch_info(
             continue
         current_torch = _extract_torch(info["torch_ver"])
         history_torch = _extract_torch(latest_info["torch_ver"])
-        current_ver = get_package_version(current_torch) if is_package_has_version(current_torch) else "0.0"
-        history_ver = get_package_version(history_torch) if is_package_has_version(history_torch) else "0.0"
+        current_ver = get_package_version(current_torch) if current_torch is not None and is_package_has_version(current_torch) else "0.0"
+        history_ver = get_package_version(history_torch) if history_torch is not None and is_package_has_version(history_torch) else "0.0"
         if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
             latest_info = info
 

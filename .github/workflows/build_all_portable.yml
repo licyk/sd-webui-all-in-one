@@ -19,6 +19,8 @@ jobs:
           script: |
             const workflows = [
               'build_comfyui.yml',
+              'build_comfyui_rocm.yml',
+              'build_comfyui_xpu.yml',
               'build_fooocus.yml',
               'build_invokeai.yml',
               'build_kohya_gui.yml',

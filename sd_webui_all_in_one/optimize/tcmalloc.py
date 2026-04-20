@@ -48,8 +48,16 @@ class TCMalloc:
         """
         # 检查 glibc 版本
         try:
-            result = subprocess.run(["ldd", "--version"], capture_output=True, text=True)
-            libc_ver_line = result.stdout.split("\n")[0]
+            result = subprocess.run(
+                ["ldd", "--version"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+                text=True,
+                errors="ignore",
+                check=True,
+            ).stdout
+            libc_ver_line = result.splitlines()[0]
             libc_ver = re.search(r"(\d+\.\d+)", libc_ver_line)
             if libc_ver:
                 libc_ver = libc_ver.group(1)
@@ -73,11 +81,15 @@ class TCMalloc:
                 # 获取系统库缓存信息
                 result = subprocess.run(
                     ["ldconfig", "-p"],
-                    capture_output=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    encoding="utf-8",
                     text=True,
+                    errors="ignore",
+                    check=True,
                     env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")),
-                )
-                libraries = result.stdout.split("\n")
+                ).stdout
+                libraries = result.splitlines()
 
                 # 查找匹配的 TCMalloc 库
                 for lib in libraries:
@@ -94,8 +106,16 @@ class TCMalloc:
                             # 确定库是否链接到 libpthread 和解析未定义符号: pthread_key_create
                             if CommonVersionComparison(libc_ver) < CommonVersionComparison(libc_v234):
                                 # glibc < 2.34, pthread_key_create 在 libpthread.so 中。检查链接到 libpthread.so
-                                ldd_result = subprocess.run(["ldd", lib_path], capture_output=True, text=True)
-                                if "libpthread" in ldd_result.stdout:
+                                ldd_result = subprocess.run(
+                                    ["ldd", lib_path],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    encoding="utf-8",
+                                    text=True,
+                                    errors="ignore",
+                                    check=True,
+                                ).stdout
+                                if "libpthread" in ldd_result:
                                     logger.info(
                                         "%s 链接到 libpthread, 执行 LD_PRELOAD=%s",
                                         lib_name,
