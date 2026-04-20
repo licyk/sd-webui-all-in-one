@@ -70,14 +70,12 @@ from sd_webui_all_in_one.package_analyzer import (
     version_decrement,
     version_increment,
 )
-from sd_webui_all_in_one.pytorch_manager.base import (
+from sd_webui_all_in_one.pytorch_manager import (
+    auto_detect_pytorch_device_category,
+    get_pytorch_mirror_type,
+    get_env_pytorch_type,
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
-)
-from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
-    get_env_pytorch_type,
-    get_pytorch_mirror_type,
-    auto_detect_pytorch_device_category,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,

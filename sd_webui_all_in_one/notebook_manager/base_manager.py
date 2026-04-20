@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
+from sd_webui_all_in_one.pytorch_manager import (
     get_gpu_list,
     has_gpus,
 )

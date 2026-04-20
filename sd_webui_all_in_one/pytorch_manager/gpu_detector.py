@@ -1,32 +1,18 @@
-"""PyTorch 镜像管理工具"""
+"""硬件检测"""
 
-import json
 import re
+import json
 import shutil
-import subprocess
 import sys
+import subprocess
 from typing import TypedDict
 
-from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
-from sd_webui_all_in_one.package_analyzer import (
-    CommonVersionComparison,
-    PyWhlVersionComparison,
-    is_package_has_version,
-    get_package_version,
-)
-from sd_webui_all_in_one.pytorch_manager.base import (
-    PYTORCH_MIRROR_DICT,
-    PYTORCH_MIRROR_NJU_DICT,
-    PYTORCH_DOWNLOAD_DICT,
-    PyTorchMirrorInfo,
-    PyTorchVersionInfoList,
-    PyTorchVersionInfo,
+from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
+from sd_webui_all_in_one.pytorch_manager.types import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
-    PYTORCH_ROCM_MIRROR_DICT,
 )
-from sd_webui_all_in_one.ansi_color import ANSIColor
 
 
 def get_cuda_comp_cap() -> float:
@@ -91,248 +77,6 @@ def get_cuda_version() -> float:
         return 0.0
 
 
-def get_pytorch_mirror_type_cuda(
-    torch_ver: str,
-) -> str:
-    """获取 CUDA 类型的 PyTorch 镜像源类型
-
-    Args:
-        torch_ver (str): PyTorch 版本
-    Returns:
-        str: CUDA 类型的 PyTorch 镜像源类型
-    """
-    # cu118: 2.0.0 ~ 2.4.0
-    # cu121: 2.1.1 ~ 2.4.0
-    # cu124: 2.4.0 ~ 2.6.0
-    # cu126: 2.6.0 ~ 2.7.1
-    # cu128: 2.7.0 ~ 2.7.1
-    # cu129: 2.8.0
-    # cu130: 2.9.0 ~ 2.10.0
-    cuda_comp_cap = get_cuda_comp_cap()
-    cuda_support_ver = get_cuda_version()
-
-    torch_version = CommonVersionComparison(torch_ver)
-    cuda_support_version = CommonVersionComparison(str(int(cuda_support_ver * 10)))
-
-    if torch_version < CommonVersionComparison("2.0.0"):
-        # torch < 2.0.0: default cu11x
-        return "all"
-    if CommonVersionComparison("2.0.0") <= torch_version < CommonVersionComparison("2.3.1"):
-        # 2.0.0 <= torch < 2.3.1: default cu118
-        return "cu118"
-    if CommonVersionComparison("2.3.0") <= torch_version < CommonVersionComparison("2.4.1"):
-        # 2.3.0 <= torch < 2.4.1: default cu121
-        if cuda_support_version < CommonVersionComparison("121"):
-            if cuda_support_version >= CommonVersionComparison("118"):
-                return "cu118"
-        return "cu121"
-    if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.6.0"):
-        # 2.4.0 <= torch < 2.6.0: default cu124
-        if cuda_support_version < CommonVersionComparison("124"):
-            if cuda_support_version >= CommonVersionComparison("121"):
-                return "cu121"
-            if cuda_support_version >= CommonVersionComparison("118"):
-                return "cu118"
-        return "cu124"
-    if CommonVersionComparison("2.6.0") <= torch_version < CommonVersionComparison("2.7.0"):
-        # 2.6.0 <= torch < 2.7.0: default cu126
-        if cuda_support_version < CommonVersionComparison("126"):
-            if cuda_support_version >= CommonVersionComparison("124"):
-                return "cu124"
-        if CommonVersionComparison(cuda_comp_cap) > CommonVersionComparison("10.0"):
-            if cuda_support_version >= CommonVersionComparison("128"):
-                return "cu128"
-        return "cu126"
-    if CommonVersionComparison("2.7.0") <= torch_version < CommonVersionComparison("2.8.0"):
-        # 2.7.0 <= torch < 2.8.0: default cu128
-        if cuda_support_version < CommonVersionComparison("128"):
-            if cuda_support_version > CommonVersionComparison("126"):
-                return "cu126"
-        return "cu128"
-    if CommonVersionComparison("2.8.0") <= torch_version < CommonVersionComparison("2.9.0"):
-        # 2.8.0 <= torch < 2.9.0: default cu129
-        if cuda_support_version < CommonVersionComparison("129"):
-            if cuda_support_version >= CommonVersionComparison("128"):
-                return "cu128"
-            if cuda_support_version >= CommonVersionComparison("126"):
-                return "cu126"
-        return "cu129"
-    if CommonVersionComparison("2.9.0") <= torch_version < CommonVersionComparison("2.10.0"):
-        # 2.9.0 <= torch < 2.10.0: default cu130
-        if cuda_support_version < CommonVersionComparison("130"):
-            if cuda_support_version >= CommonVersionComparison("128"):
-                return "cu128"
-            if cuda_support_version >= CommonVersionComparison("126"):
-                return "cu126"
-        return "cu130"
-    if CommonVersionComparison("2.10.0") <= torch_version:
-        # torch >= 2.10.0: default cu130
-        if cuda_support_version < CommonVersionComparison("130"):
-            if cuda_support_version >= CommonVersionComparison("128"):
-                return "cu128"
-            if cuda_support_version >= CommonVersionComparison("126"):
-                return "cu126"
-        return "cu130"
-
-    return "cu130"
-
-
-def get_pytorch_mirror_type_rocm(
-    torch_ver: str,
-) -> str:
-    """获取 ROCm 类型的 PyTorch 镜像源类型
-
-    Args:
-        torch_ver (str): PyTorch 版本
-    Returns:
-        str: ROCm 类型的 PyTorch 镜像源类型
-    """
-    torch_version = CommonVersionComparison(torch_ver)
-    if torch_version < CommonVersionComparison("2.4.0"):
-        # torch < 2.4.0
-        return "all"
-    if sys.platform == "win32":
-        # 使用 Windows 版本的 PyTorch
-        return "rocm_win"
-    if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.5.0"):
-        # 2.4.0 <= torch < 2.5.0
-        return "rocm6.1"
-    if CommonVersionComparison("2.5.0") <= torch_version < CommonVersionComparison("2.6.0"):
-        # 2.5.0 <= torch < 2.6.0
-        return "rocm6.2"
-    if CommonVersionComparison("2.6.0") <= torch_version < CommonVersionComparison("2.7.0"):
-        # 2.6.0 <= torch < 2.7.0
-        return "rocm6.2.4"
-    if CommonVersionComparison("2.7.0") <= torch_version < CommonVersionComparison("2.8.0"):
-        # 2.7.0 <= torch < 2.8.0
-        return "rocm6.3"
-    if CommonVersionComparison("2.8.0") <= torch_version < CommonVersionComparison("2.10.0"):
-        # 2.8.0 <= torch < 2.10.0
-        return "rocm6.4"
-    if CommonVersionComparison("2.10.0") <= torch_version:
-        # 2.10.0 <= torch
-        return "rocm7.1"
-
-    return "rocm7.1"
-
-
-def get_pytorch_mirror_type_ipex(
-    torch_ver: str,
-) -> str:
-    """获取 IPEX 类型的 PyTorch 镜像源类型
-
-    Args:
-        torch_ver (str): PyTorch 版本
-    Returns:
-        str: IPEX 类型的 PyTorch 镜像源类型
-    """
-    torch_version = CommonVersionComparison(torch_ver)
-    if torch_version < CommonVersionComparison("2.0.0"):
-        # torch < 2.0.0
-        return "all"
-    if torch_version == CommonVersionComparison("2.0.0"):
-        # torch == 2.0.0
-        return "ipex_legacy_arc"
-    if CommonVersionComparison("2.0.0") < torch_version < CommonVersionComparison("2.1.0"):
-        # 2.0.0 < torch < 2.1.0
-        return "all"
-    if torch_version == CommonVersionComparison("2.1.0"):
-        # torch == 2.1.0
-        return "ipex_legacy_arc"
-    if torch_version >= CommonVersionComparison("2.6.0"):
-        # torch >= 2.6.0
-        return "xpu"
-
-    return "xpu"
-
-
-def get_pytorch_mirror_type_cpu(
-    torch_ver: str,
-) -> str:
-    """获取 CPU 类型的 PyTorch 镜像源类型
-
-    Args:
-        torch_ver (str): PyTorch 版本
-    Returns:
-        str: CPU 类型的 PyTorch 镜像源类型
-    """
-    _ = torch_ver
-    return "cpu"
-
-
-def get_pytorch_mirror_type(
-    torch_ver: str,
-    device_type: PyTorchDeviceTypeCategory,
-) -> str:
-    """获取 PyTorch 镜像源类型
-
-    Args:
-        torch_ver (str): PyTorch 版本号
-        device_type (PyTorchDeviceTypeCategory): 显卡类型
-    Returns:
-        str: PyTorch 镜像源类型
-    """
-    if device_type == "cuda":
-        return get_pytorch_mirror_type_cuda(torch_ver)
-
-    if device_type == "rocm":
-        return get_pytorch_mirror_type_rocm(torch_ver)
-
-    if device_type == "xpu":
-        return get_pytorch_mirror_type_ipex(torch_ver)
-
-    if device_type == "mps":
-        return "all"
-
-    if device_type == "cpu":
-        return get_pytorch_mirror_type_cpu(torch_ver)
-
-    return "all"
-
-
-def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
-    """获取当前环境中 PyTorch 版本号对应的类型
-
-    Returns:
-        PyTorchDeviceTypeCategory: PyTorch 类型 (cuda, rocm, xpu, mps, cpu)
-    """
-    torch_ipex_legacy_ver_list = [
-        "2.0.0a0+gite9ebda2",
-        "2.1.0a0+git7bcf7da",
-        "2.1.0a0+cxx11.abi",
-        "2.0.1a0",
-        "2.1.0.post0",
-    ]
-    try:
-        import torch
-
-        torch_ver = torch.__version__
-    except Exception as _:
-        return "cuda"
-
-    torch_type = torch_ver.split("+")[-1]
-
-    if torch_ver in torch_ipex_legacy_ver_list:
-        return "xpu"
-
-    if "cu" in torch_type:
-        return "cuda"
-
-    if "rocm" in torch_type:
-        return "rocm"
-
-    if "xpu" in torch_type:
-        return "xpu"
-
-    if "cpu" in torch_type:
-        return "cpu"
-
-    if sys.platform == "darwin":
-        return "mps"
-
-    return "cuda"
-
-
 class GPUDeviceInfo(TypedDict, total=False):
     """显卡信息"""
 
@@ -358,7 +102,15 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
     """
     try:
         cmd = ["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        ).stdout
         gpus = json.loads(result.stdout)
         if isinstance(gpus, dict):
             gpus = [gpus]
@@ -667,32 +419,6 @@ def get_avaliable_pytorch_device_type() -> list[str]:
     return device_list
 
 
-def export_pytorch_list() -> PyTorchVersionInfoList:
-    """导出 PyTorch 版本列表
-
-    Returns:
-        PyTorchVersionInfoList:
-            PyTorch 版本列表
-    """
-    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
-    device_list = set(get_avaliable_pytorch_device_type())
-    new_pytorch_list: PyTorchVersionInfoList = []
-    current_platform = sys.platform
-
-    for i in pytorch_list:
-        supported = False
-        if current_platform in i["platform"]:
-            if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY:
-                supported = True
-            elif i["dtype"] in device_list:
-                supported = True
-
-        i["supported"] = supported
-        new_pytorch_list.append(i)
-
-    return new_pytorch_list
-
-
 def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
     """检测当前的设备并获取适配当前设备的 PyTorch 类型
 
@@ -774,136 +500,3 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
         return "rocm"
 
     return "cpu"
-
-
-def find_latest_pytorch_info(
-    dtype: PyTorchDeviceType,
-) -> PyTorchVersionInfo:
-    """根据 PyTorch 类型在 PyTorch 版本下载信息列表中查找适合该类型的最新版本的 PyTorch 下载信息
-
-    Args:
-        dtype (PyTorchDeviceType):
-            PyTorch 支持的设备类型
-
-    Returns:
-        PyTorchVersionInfo:
-            PyTorch 版本下载信息
-
-    Raises:
-        ValueError:
-            PyTorch 支持的设备类型无效时
-    """
-    pytorch_list = export_pytorch_list()
-    pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
-    if not pytorch_info_list:
-        raise ValueError(f"PyTorch 类型不存在: '{dtype}'")
-
-    latest_info = pytorch_info_list[0]
-
-    for info in pytorch_info_list:
-        if not info["supported"]:
-            continue
-        current_torch = info["torch_ver"].split()[0]
-        history_torch = latest_info["torch_ver"].split()[0]
-        current_ver = get_package_version(current_torch) if is_package_has_version(current_torch) else "0.0"
-        history_ver = get_package_version(history_torch) if is_package_has_version(history_torch) else "0.0"
-        if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
-            latest_info = info
-
-    return latest_info
-
-
-def get_pytorch_mirror(
-    dtype: PyTorchDeviceType,
-    use_cn_mirror: bool | None = False,
-) -> PyTorchMirrorInfo:
-    """根据 PyTorch 类型获取对应的 PyTorch 镜像源
-
-    Args:
-        dtype (PyTorchDeviceType):
-            PyTorch 支持的设备类型
-        use_cn_mirror (bool | None):
-            是否使用国内镜像源
-
-    Returns:
-        PyTorchMirrorInfo:
-            PyTorch 镜像源信息
-
-    Raises:
-        ValueError:
-            未找到对应的 PyTorch 镜像源时
-    """
-    url = PYTORCH_MIRROR_NJU_DICT.get(dtype) if use_cn_mirror else PYTORCH_MIRROR_DICT.get(dtype)
-
-    if url is None:
-        url = PYTORCH_ROCM_MIRROR_DICT.get(dtype)
-
-    if url is None:
-        raise ValueError(f"未找到 '{dtype}' 对应的 PyTorch 镜像源")
-
-    return url
-
-
-def display_pytorch_config(
-    pytorch_list: PyTorchVersionInfoList,
-) -> None:
-    """显示 PyTorch 配置列表并标注当前平台是否支持
-
-    Args:
-        pytorch_list (PyTorchVersionInfoList):
-            包含 PyTorch 配置信息的列表
-    """
-    for index, item in enumerate(pytorch_list, start=1):
-        name = item["name"]
-
-        if item["supported"]:
-            status_text = f"{ANSIColor.GREEN}(支持✓){ANSIColor.RESET}"
-        else:
-            status_text = f"{ANSIColor.RED}(不支持×){ANSIColor.RESET}"
-
-        print(f"- {ANSIColor.GOLD}{index}{ANSIColor.RESET}、{ANSIColor.WHITE}{name}{ANSIColor.RESET} {status_text}")
-
-
-def query_pytorch_info_from_library(
-    pytorch_name: str | None = None,
-    pytorch_index: int | None = None,
-) -> PyTorchVersionInfo:
-    """从 PyTorch 版本库中查找指定的 PyTorch 版本下载信息
-
-    Args:
-        pytorch_name (str | None):
-            PyTorch 版本组合名称
-        pytorch_index (int | None):
-            PyTorch 版本组合的索引值
-
-    Returns:
-        PyTorchVersionInfo:
-            PyTorch 版本下载信息
-
-    Raises:
-        ValueError:
-            索引值超出范围时
-        FileNotFoundError:
-            未根据 PyTorch 组合名称找到 PyTorch 版本下载信息时
-    """
-
-    def _validate_index(index: int) -> None:
-        if not 0 < index <= len(pytorch_list):
-            raise ValueError(f"索引值 {index} 超出范围, 模型有效的范围为: 1 ~ {len(pytorch_list)}")
-
-    def _get_pytorch_with_name(name: str) -> PyTorchVersionInfo:
-        for m in pytorch_list:
-            if m["name"] == name:
-                return m
-
-        raise FileNotFoundError(f"未找到指定的 PyTorch 版本组合名称: {name}")
-
-    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
-    if pytorch_name is None and pytorch_index is None:
-        raise ValueError("`pytorch_name` 和 `pytorch_index` 缺失, 需要提供其中一项才能进行 PyTorch 下载信息查找")
-
-    if pytorch_index is not None:
-        _validate_index(pytorch_index)
-        return pytorch_list[pytorch_index - 1]
-    elif pytorch_name is not None:
-        return _get_pytorch_with_name(pytorch_name)

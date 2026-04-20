@@ -57,7 +57,7 @@ from sd_webui_all_in_one.optimize.cuda_malloc import (
     apply_pytorch_alloc_conf,
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
     comfyui_conflict_analyzer,
     check_comfyui_manager_dependence,

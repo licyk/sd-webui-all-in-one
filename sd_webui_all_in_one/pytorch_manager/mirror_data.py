@@ -1,0 +1,77 @@
+"""PyTorch 镜像源数据"""
+
+from sd_webui_all_in_one.pytorch_manager.types import (
+    PYPI_EXTRA_INDEX_MIRROR_LICYK,
+    PYPI_EXTRA_INDEX_MIRROR_LICYK_HF,
+    PYPI_INDEX_MIRROR_OFFICIAL,
+    PYPI_INDEX_MIRROR_TENCENT,
+    PyTorchMirrorMap,
+)
+
+
+PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
+    "all": ("https://download.pytorch.org/whl", "index_url"),
+    "cpu": ("https://download.pytorch.org/whl/cpu", "index_url"),
+    "directml": (PYPI_INDEX_MIRROR_OFFICIAL, "index_url"),
+    "xpu": ("https://download.pytorch.org/whl/xpu", "index_url"),
+    "ipex_legacy_arc": (PYPI_EXTRA_INDEX_MIRROR_LICYK_HF, "index_url"),
+    "rocm5.4.2": ("https://download.pytorch.org/whl/rocm5.4.2", "index_url"),
+    "rocm5.6": ("https://download.pytorch.org/whl/rocm5.6", "index_url"),
+    "rocm5.7": ("https://download.pytorch.org/whl/rocm5.7", "index_url"),
+    "rocm6.0": ("https://download.pytorch.org/whl/rocm6.0", "index_url"),
+    "rocm6.1": ("https://download.pytorch.org/whl/rocm6.1", "index_url"),
+    "rocm6.2": ("https://download.pytorch.org/whl/rocm6.2", "index_url"),
+    "rocm6.2.4": ("https://download.pytorch.org/whl/rocm6.2.4", "index_url"),
+    "rocm6.3": ("https://download.pytorch.org/whl/rocm6.3", "index_url"),
+    "rocm6.4": ("https://download.pytorch.org/whl/rocm6.4", "index_url"),
+    "rocm7.1": ("https://download.pytorch.org/whl/rocm7.1", "index_url"),
+    "cu113": ("https://download.pytorch.org/whl/cu113", "index_url"),
+    "cu117": ("https://download.pytorch.org/whl/cu117", "index_url"),
+    "cu118": ("https://download.pytorch.org/whl/cu118", "index_url"),
+    "cu121": ("https://download.pytorch.org/whl/cu121", "index_url"),
+    "cu124": ("https://download.pytorch.org/whl/cu124", "index_url"),
+    "cu126": ("https://download.pytorch.org/whl/cu126", "index_url"),
+    "cu128": ("https://download.pytorch.org/whl/cu128", "index_url"),
+    "cu129": ("https://download.pytorch.org/whl/cu129", "index_url"),
+    "cu130": ("https://download.pytorch.org/whl/cu130", "index_url"),
+}
+"""PyTorch 镜像源字典"""
+
+PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
+    "all": (PYPI_INDEX_MIRROR_TENCENT, "index_url"),  # https://mirror.nju.edu.cn/pytorch/whl 暂时没法用
+    "cpu": ("https://mirror.nju.edu.cn/pytorch/whl/cpu", "index_url"),
+    "directml": (PYPI_INDEX_MIRROR_TENCENT, "index_url"),
+    "xpu": ("https://mirror.nju.edu.cn/pytorch/whl/xpu", "index_url"),
+    "ipex_legacy_arc": (PYPI_EXTRA_INDEX_MIRROR_LICYK, "index_url"),
+    "rocm5.4.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.4.2", "index_url"),
+    "rocm5.6": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.6", "index_url"),
+    "rocm5.7": ("https://mirror.nju.edu.cn/pytorch/whl/rocm5.7", "index_url"),
+    "rocm6.0": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.0", "index_url"),
+    "rocm6.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.1", "index_url"),
+    "rocm6.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.2", "index_url"),
+    "rocm6.2.4": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.2.4", "index_url"),
+    "rocm6.3": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.3", "index_url"),
+    "rocm6.4": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.4", "index_url"),
+    "rocm7.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.1", "index_url"),
+    "cu113": ("https://mirror.nju.edu.cn/pytorch/whl/cu113", "index_url"),
+    "cu117": ("https://mirror.nju.edu.cn/pytorch/whl/cu117", "index_url"),
+    "cu118": ("https://mirror.nju.edu.cn/pytorch/whl/cu118", "index_url"),
+    "cu121": ("https://mirror.nju.edu.cn/pytorch/whl/cu121", "index_url"),
+    "cu124": ("https://mirror.nju.edu.cn/pytorch/whl/cu124", "index_url"),
+    "cu126": ("https://mirror.nju.edu.cn/pytorch/whl/cu126", "index_url"),
+    "cu128": ("https://mirror.nju.edu.cn/pytorch/whl/cu128", "index_url"),
+    "cu129": ("https://mirror.nju.edu.cn/pytorch/whl/cu129", "index_url"),
+    "cu130": ("https://mirror.nju.edu.cn/pytorch/whl/cu130", "index_url"),
+}
+"""PyTorch 国内镜像源 (NJU) 字典"""
+
+PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
+    "rocm_rdna3": ("https://repo.amd.com/rocm/whl/gfx110X-dgpu", "index_url"),
+    "rocm_rdna3.5": ("https://repo.amd.com/rocm/whl/gfx1151", "index_url"),
+    "rocm_rdna4": ("https://repo.amd.com/rocm/whl/gfx120X-all", "index_url"),
+    "rocm_win": ("https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1", "find_links"),  # 非 PEP 503
+}
+"""
+PyTorch ROCm 镜像源字典
+- 参考: https://github.com/Comfy-Org/ComfyUI-Launcher-Environments
+"""

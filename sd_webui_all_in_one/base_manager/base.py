@@ -15,16 +15,16 @@ from sd_webui_all_in_one.mirror_manager import (
     set_git_base_config,
     set_github_mirror,
 )
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
-from sd_webui_all_in_one.pytorch_manager.pytorch_mirror import (
+from sd_webui_all_in_one.pytorch_manager import (
+    query_pytorch_info_from_library,
     auto_detect_avaliable_pytorch_type,
-    find_latest_pytorch_info,
+    auto_detect_pytorch_device_category,
     get_pytorch_mirror,
     get_pytorch_mirror_type,
-    auto_detect_pytorch_device_category,
-    export_pytorch_list,
     display_pytorch_config,
-    query_pytorch_info_from_library,
+    export_pytorch_list,
+    find_latest_pytorch_info,
+    PyTorchDeviceType,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer import (

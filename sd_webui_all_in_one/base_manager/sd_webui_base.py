@@ -29,7 +29,7 @@ from sd_webui_all_in_one.optimize.cuda_malloc import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,
 )
-from sd_webui_all_in_one.pytorch_manager.base import PyTorchDeviceType
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (

@@ -15,12 +15,12 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
     SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
 )
-from sd_webui_all_in_one.pytorch_manager.base import (
+from sd_webui_all_in_one.pytorch_manager import (
+    PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
     PYPI_EXTRA_INDEX_MIRROR_CERNET,
+    PYPI_EXTRA_INDEX_MIRROR_LICYK,
     PYPI_INDEX_MIRROR_OFFICIAL,
     PYPI_INDEX_MIRROR_TENCENT,
-    PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
-    PYPI_EXTRA_INDEX_MIRROR_LICYK,
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
 )
 from sd_webui_all_in_one.utils import network_gfw_test

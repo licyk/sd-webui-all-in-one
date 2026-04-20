@@ -37,7 +37,7 @@ from sd_webui_all_in_one.model_downloader.base import (
     MODEL_DOWNLOAD_URL_TYPE_LIST,
     ModelDownloadUrlType,
 )
-from sd_webui_all_in_one.pytorch_manager.base import (
+from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
 )
