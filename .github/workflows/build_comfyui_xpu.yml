@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Build-ComfyUI-ROCm:
+  Build-ComfyUI-XPU:
     name: Build ComfyUI
     runs-on: windows-latest
     env:
