@@ -1,6 +1,7 @@
 """版本管理"""
 
 import sys
+import re
 
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
@@ -63,6 +64,12 @@ def find_latest_pytorch_info(
         ValueError:
             PyTorch 支持的设备类型无效时
     """
+
+    def _extract_torch(text: str) -> str | None:
+        pattern = r"\btorch(?:==[0-9.]+)?\b"
+        match = re.search(pattern, text)
+        return match.group(0) if match else None
+
     pytorch_list = export_pytorch_list()
     pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
     if not pytorch_info_list:
@@ -73,8 +80,8 @@ def find_latest_pytorch_info(
     for info in pytorch_info_list:
         if not info["supported"]:
             continue
-        current_torch = info["torch_ver"].split()[0]
-        history_torch = latest_info["torch_ver"].split()[0]
+        current_torch = _extract_torch(info["torch_ver"])
+        history_torch = _extract_torch(latest_info["torch_ver"])
         current_ver = get_package_version(current_torch) if is_package_has_version(current_torch) else "0.0"
         history_ver = get_package_version(history_torch) if is_package_has_version(history_torch) else "0.0"
         if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
