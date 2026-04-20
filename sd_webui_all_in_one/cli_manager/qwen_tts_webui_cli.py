@@ -20,7 +20,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
 )
-from sd_webui_all_in_one.model_downloader.base import (
+from sd_webui_all_in_one.model_downloader import (
     MODEL_DOWNLOAD_URL_TYPE_LIST,
     ModelDownloadUrlType,
 )

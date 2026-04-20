@@ -53,7 +53,7 @@ from sd_webui_all_in_one.mirror_manager import (
     HUGGINGFACE_MIRROR_LIST,
     get_pypi_mirror_config,
 )
-from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,

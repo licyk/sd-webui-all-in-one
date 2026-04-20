@@ -31,7 +31,7 @@ from sd_webui_all_in_one.downloader import (
     DOWNLOAD_TOOL_TYPE_LIST,
     DownloadToolType,
 )
-from sd_webui_all_in_one.model_downloader.base import (
+from sd_webui_all_in_one.model_downloader import (
     MODEL_DOWNLOAD_URL_TYPE_LIST,
     ModelDownloadUrlType,
 )

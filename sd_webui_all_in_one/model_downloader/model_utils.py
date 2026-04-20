@@ -2,13 +2,6 @@
 
 from pathlib import Path
 
-from sd_webui_all_in_one.model_downloader.base import (
-    MODEL_DOWNLOAD_DICT,
-    ModelCardList,
-    SupportedWebUiType,
-    SUPPORTED_WEBUI_LIST,
-    ModelDownloadUrlType,
-)
 from sd_webui_all_in_one.downloader import (
     download_file,
     DownloadToolType,
@@ -20,6 +13,13 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.ansi_color import ANSIColor
+from sd_webui_all_in_one.model_downloader.model_data import MODEL_DOWNLOAD_DICT
+from sd_webui_all_in_one.model_downloader.types import (
+    SUPPORTED_WEBUI_LIST,
+    ModelCardList,
+    ModelDownloadUrlType,
+    SupportedWebUiType,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,

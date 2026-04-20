@@ -40,7 +40,7 @@ from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
     get_pypi_mirror_config,
 )
-from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor

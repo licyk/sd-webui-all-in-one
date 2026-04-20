@@ -24,7 +24,7 @@ from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
 from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_diffusion_invaild_repo_url
-from sd_webui_all_in_one.model_downloader.base import ModelDownloadUrlType
+from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize.cuda_malloc import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,

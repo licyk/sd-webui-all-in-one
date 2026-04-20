@@ -46,13 +46,11 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import install_pytorch
-from sd_webui_all_in_one.model_downloader.model_utils import (
+from sd_webui_all_in_one.model_downloader import (
     download_model,
     export_model_list,
     display_model_table,
     search_models_from_library,
-)
-from sd_webui_all_in_one.model_downloader.base import (
     SupportedWebUiType,
     ModelDownloadUrlType,
 )
