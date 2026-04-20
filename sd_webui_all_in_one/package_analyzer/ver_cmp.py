@@ -136,7 +136,7 @@ class CommonVersionComparison:
         def _extract_digits(v_str: str) -> list[int]:
             # 使用正则找出所有的数字序列
             # \d+ 匹配一个或多个连续数字
-            digits = re.findall(r'\d+', str(v_str))
+            digits = re.findall(r"\d+", str(v_str))
             return [int(d) for d in digits]
 
         v1_str, v2_str = str(version1), str(version2)
