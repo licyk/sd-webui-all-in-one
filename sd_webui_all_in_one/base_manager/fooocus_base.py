@@ -30,6 +30,7 @@ from sd_webui_all_in_one.downloader import (
     download_file,
 )
 from sd_webui_all_in_one.env_check import (
+    check_torch_version,
     py_dependency_checker,
     check_numpy,
     fix_torch_libomp,
@@ -509,6 +510,7 @@ def check_fooocus_env(
     tasks: list[tuple[Callable, dict[str, Any]]] = [
         (py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
+        (check_torch_version, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
         (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]

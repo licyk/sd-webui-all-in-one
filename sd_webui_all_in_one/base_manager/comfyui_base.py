@@ -61,6 +61,7 @@ from sd_webui_all_in_one.env_check import (
     check_onnxruntime_gpu,
     comfyui_conflict_analyzer,
     check_comfyui_manager_dependence,
+    check_torch_version,
 )
 
 logger = get_logger(
@@ -439,6 +440,7 @@ def check_comfyui_env(
             },
         ),
         (fix_torch_libomp, {}),
+        (check_torch_version, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
     err: list[Exception] = []

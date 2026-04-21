@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.env_check import (
+    check_torch_version,
     py_dependency_checker,
     fix_torch_libomp,
 )
@@ -262,6 +263,7 @@ def check_qwen_tts_webui_env(
     tasks: list[tuple[Callable, dict[str, Any]]] = [
         (py_dependency_checker, {"requirement_path": req_path, "name": "Qwen TTS WebUI", "use_uv": use_uv, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
+        (check_torch_version, {}),
     ]
     err: list[Exception] = []
 

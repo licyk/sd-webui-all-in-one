@@ -31,6 +31,7 @@ from sd_webui_all_in_one.downloader import (
 from sd_webui_all_in_one.env_check import (
     check_accelerate_bin,
     check_onnxruntime_gpu,
+    check_torch_version,
     py_dependency_checker,
     check_numpy,
     fix_torch_libomp,
@@ -449,6 +450,7 @@ def check_sd_trainer_env(
     tasks: list[tuple[Callable, dict[str, Any]]] = [
         (py_dependency_checker, {"requirement_path": req_path, "name": "SD Trainer", "use_uv": use_uv, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
+        (check_torch_version, {}),
         (check_accelerate_bin, {"base_path": sd_trainer_path, "use_uv": use_uv, "custom_env": custom_env}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
         (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),

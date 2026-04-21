@@ -20,6 +20,7 @@ from typing import (
 from pathlib import Path
 
 from sd_webui_all_in_one.env_check import (
+    check_torch_version,
     py_dependency_checker,
     fix_torch_libomp,
     check_onnxruntime_gpu,
@@ -1151,6 +1152,7 @@ def check_sd_webui_env(
         (py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv, "custom_env": custom_env}),
         (install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
+        (check_torch_version, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
     err: list[Exception] = []
