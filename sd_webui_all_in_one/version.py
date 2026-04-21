@@ -1,3 +1,3 @@
 """SD WebUI All In One 版本"""
 
-VERSION = "2.1.10"
+VERSION = "2.1.11"
