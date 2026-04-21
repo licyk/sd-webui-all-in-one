@@ -15,7 +15,7 @@ from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
+from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,

@@ -29,7 +29,7 @@ from sd_webui_all_in_one.env_check import (
     fix_forge_neo_alert,
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
-from sd_webui_all_in_one.optimize.cuda_malloc import (
+from sd_webui_all_in_one.optimize import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,
 )

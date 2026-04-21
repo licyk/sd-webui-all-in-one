@@ -24,7 +24,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
 )
-from sd_webui_all_in_one.optimize.cuda_malloc import get_cuda_malloc_var
+from sd_webui_all_in_one.optimize import get_cuda_malloc_var
 from sd_webui_all_in_one.logger import set_all_loggers_level
 from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.logger import get_logger

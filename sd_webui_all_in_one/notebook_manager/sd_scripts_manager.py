@@ -25,7 +25,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
+from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import (
     config_wandb_token,
     configure_env_var,

@@ -26,7 +26,7 @@ from sd_webui_all_in_one.downloader import (
     download_file,
     download_archive_and_unpack,
 )
-from sd_webui_all_in_one.optimize.tcmalloc import TCMalloc
+from sd_webui_all_in_one.optimize import TCMalloc
 from sd_webui_all_in_one.utils import (
     in_jupyter,
     clear_jupyter_output,

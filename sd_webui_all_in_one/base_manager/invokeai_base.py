@@ -57,7 +57,7 @@ from sd_webui_all_in_one.mirror_manager import (
     get_pypi_mirror_config,
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
-from sd_webui_all_in_one.optimize.cuda_malloc import (
+from sd_webui_all_in_one.optimize import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,
 )
