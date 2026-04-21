@@ -6,7 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from sd_webui_all_in_one.base_manager.invokeai_base import (
+from sd_webui_all_in_one.base_manager import (
     install_invokeai,
     update_invokeai,
     check_invokeai_env,
@@ -20,6 +20,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     install_invokeai_model_from_url,
     list_invokeai_models,
     uninstall_invokeai_model,
+    reinstall_invokeai_pytorch,
 )
 from sd_webui_all_in_one.config import (
     INVOKEAI_ROOT_PATH,
@@ -42,7 +43,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.base_manager.invokeai_base import reinstall_invokeai_pytorch
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 from sd_webui_all_in_one.logger import get_logger
 

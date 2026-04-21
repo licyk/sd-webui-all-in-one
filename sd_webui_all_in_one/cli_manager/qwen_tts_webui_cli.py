@@ -6,11 +6,12 @@ import sys
 import traceback
 from pathlib import Path
 
-from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
+from sd_webui_all_in_one.base_manager import (
     install_qwen_tts_webui,
     update_qwen_tts_webui,
     check_qwen_tts_webui_env,
     launch_qwen_tts_webui,
+    reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
     QWEN_TTS_WEBUI_ROOT_PATH,
@@ -29,7 +30,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 from sd_webui_all_in_one.logger import get_logger
 

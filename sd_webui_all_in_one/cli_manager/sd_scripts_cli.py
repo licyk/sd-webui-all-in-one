@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from sd_webui_all_in_one.base_manager.sd_scripts_base import (
+from sd_webui_all_in_one.base_manager import (
     SD_SCRIPTS_BRANCH_LIST,
     SDScriptsBranchType,
     install_sd_scripts,
@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     install_sd_scripts_model_from_url,
     list_sd_scripts_models,
     uninstall_sd_scripts_model,
+    reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import SD_SCRIPTS_ROOT_PATH
 from sd_webui_all_in_one.downloader import (
@@ -29,7 +30,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 
 
 def install(

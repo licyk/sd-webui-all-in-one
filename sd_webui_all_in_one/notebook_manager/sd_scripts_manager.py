@@ -36,7 +36,7 @@ from sd_webui_all_in_one.pkg_manager import (
     install_requirements,
     pip_install,
 )
-from sd_webui_all_in_one.base_manager.base import clone_repo
+from sd_webui_all_in_one.base_manager import clone_repo
 
 
 logger = get_logger(

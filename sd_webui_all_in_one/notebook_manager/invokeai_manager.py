@@ -20,7 +20,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_pip,
 )
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.invokeai_base import (
+from sd_webui_all_in_one.base_manager import (
     import_model_to_invokeai,
     check_invokeai_env,
     install_invokeai,

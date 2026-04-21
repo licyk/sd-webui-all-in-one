@@ -21,7 +21,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_pip,
 )
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.comfyui_base import (
+from sd_webui_all_in_one.base_manager import (
     install_comfyui_custom_node,
     update_comfyui_custom_nodes,
     check_comfyui_env,

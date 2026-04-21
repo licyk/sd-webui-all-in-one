@@ -6,7 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from sd_webui_all_in_one.base_manager.sd_webui_base import (
+from sd_webui_all_in_one.base_manager import (
     SD_WEBUI_BRANCH_LIST,
     SDWebUiBranchType,
     install_sd_webui,
@@ -23,6 +23,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     install_sd_webui_model_from_url,
     list_sd_webui_models,
     uninstall_sd_webui_model,
+    reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
     SD_WEBUI_ROOT_PATH,
@@ -45,7 +46,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 from sd_webui_all_in_one.logger import get_logger
 

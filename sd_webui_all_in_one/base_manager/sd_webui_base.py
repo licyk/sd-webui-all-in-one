@@ -1471,7 +1471,7 @@ def list_sd_webui_extensions(
         return []
     ext_dirs = [ext for ext in extension_path.iterdir() if ext.is_dir() and ext.name != "__pycache__"]
 
-    def process_single_extension(ext: Path) -> SDWebUiLocalExtensionInfo:
+    def _process_single_extension(ext: Path) -> SDWebUiLocalExtensionInfo:
         """内部函数：处理单个插件的信息提取"""
         name = ext.name
         path = ext
@@ -1507,7 +1507,7 @@ def list_sd_webui_extensions(
 
     logger.info("获取 Stable Diffusion WebUI 扩展列表中")
     with ThreadPoolExecutor(max_workers=4) as executor:
-        future_to_ext = {executor.submit(process_single_extension, ext): ext for ext in ext_dirs}
+        future_to_ext = {executor.submit(_process_single_extension, ext): ext for ext in ext_dirs}
         for future in tqdm(as_completed(future_to_ext), total=len(ext_dirs), desc="获取 Stable Diffusion WebUI 扩展数据"):
             try:
                 result = future.result(timeout=15)

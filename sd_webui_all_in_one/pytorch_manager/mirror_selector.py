@@ -17,6 +17,7 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchDeviceTypeCategory,
     PyTorchDeviceType,
 )
+from sd_webui_all_in_one.utils import load_source_directly
 
 
 def get_pytorch_mirror_type_cuda(
@@ -231,11 +232,9 @@ def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
         "2.0.1a0",
         "2.1.0.post0",
     ]
-    try:
-        import torch
-
-        torch_ver = torch.__version__
-    except Exception as _:
+    torch_data = load_source_directly("torch.version")
+    torch_ver = torch_data.get("__version__")
+    if torch_ver is None:
         return "cuda"
 
     torch_type = torch_ver.split("+")[-1]

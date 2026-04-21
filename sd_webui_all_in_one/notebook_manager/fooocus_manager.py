@@ -24,7 +24,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_pip,
 )
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.fooocus_base import (
+from sd_webui_all_in_one.base_manager import (
     FooocusBranchType,
     check_fooocus_env,
     update_fooocus,

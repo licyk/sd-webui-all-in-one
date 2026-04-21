@@ -79,7 +79,7 @@ SD_SCRIPTS_BRANCH_LIST: list[str] = list(get_args(SDScriptsBranchType))
 """SD Scripts 分支类型列表"""
 
 
-class SDTrainerBranchInfo(TypedDict):
+class SDScriptsBranchInfo(TypedDict):
     """SD Scripts 分支信息"""
 
     name: str
@@ -98,7 +98,7 @@ class SDTrainerBranchInfo(TypedDict):
     """SD Scripts 分支中是否包含 Git 子模块"""
 
 
-SD_SCRIPTS_BRANCH_INFO_DICT: list[SDTrainerBranchInfo] = [
+SD_SCRIPTS_BRANCH_INFO_DICT: list[SDScriptsBranchInfo] = [
     {
         "name": "kohya-ss - sd-scripts 主分支",
         "dtype": "sd_scripts_main",
@@ -153,7 +153,7 @@ SD_SCRIPTS_BRANCH_INFO_DICT: list[SDTrainerBranchInfo] = [
 
 
 def display_sd_scripts_branch_list(
-    branch_list: list[SDTrainerBranchInfo],
+    branch_list: list[SDScriptsBranchInfo],
 ) -> None:
     """显示 SD Scripts 分支列表
 

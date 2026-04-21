@@ -25,7 +25,7 @@ from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
     pip_install,
 )
-from sd_webui_all_in_one.base_manager.sd_scripts_base import (
+from sd_webui_all_in_one.base_manager import (
     SDScriptsBranchType,
     check_sd_scripts_env,
     install_sd_scripts,

@@ -21,7 +21,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_pip,
 )
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager.sd_webui_base import (
+from sd_webui_all_in_one.base_manager import (
     SDWebUiBranchType,
     install_sd_webui_extension,
     update_sd_webui_extensions,

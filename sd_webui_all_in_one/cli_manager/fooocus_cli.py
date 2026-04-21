@@ -6,7 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from sd_webui_all_in_one.base_manager.fooocus_base import (
+from sd_webui_all_in_one.base_manager import (
     FOOOCUS_BRANCH_LIST,
     FooocusBranchType,
     install_fooocus,
@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     install_fooocus_model_from_url,
     list_fooocus_models,
     uninstall_fooocus_model,
+    reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
     FOOOCUS_ROOT_PATH,
@@ -40,7 +41,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.base_manager.base import reinstall_pytorch
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 from sd_webui_all_in_one.logger import get_logger
 
