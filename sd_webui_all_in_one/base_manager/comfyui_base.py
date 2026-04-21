@@ -29,9 +29,6 @@ from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
 )
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.file_operations.file_manager import (
     copy_files,
     generate_dir_tree,
@@ -58,7 +55,10 @@ from sd_webui_all_in_one.optimize.cuda_malloc import (
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
-from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
+from sd_webui_all_in_one.env_check import (
+    py_dependency_checker,
+    fix_torch_libomp,
+    check_onnxruntime_gpu,
     comfyui_conflict_analyzer,
     check_comfyui_manager_dependence,
 )

@@ -9,8 +9,12 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
+from sd_webui_all_in_one.env_check import (
+    fix_torch_libomp,
+    check_numpy,
+    py_dependency_checker,
+    check_onnxruntime_gpu,
+)
 from sd_webui_all_in_one.repo_manager import (
     ApiType,
     RepoType,
@@ -22,8 +26,6 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.optimize.cuda_malloc import set_cuda_malloc
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_manager import (
     config_wandb_token,
     configure_env_var,

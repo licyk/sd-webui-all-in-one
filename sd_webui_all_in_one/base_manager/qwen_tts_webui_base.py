@@ -18,8 +18,10 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
+from sd_webui_all_in_one.env_check import (
+    py_dependency_checker,
+    fix_torch_libomp,
+)
 from sd_webui_all_in_one.file_operations.file_manager import copy_files
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (

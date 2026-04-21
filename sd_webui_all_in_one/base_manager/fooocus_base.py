@@ -29,10 +29,12 @@ from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
 )
-from sd_webui_all_in_one.env_check.fix_dependencies import py_dependency_checker
-from sd_webui_all_in_one.env_check.fix_numpy import check_numpy
-from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
-from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
+from sd_webui_all_in_one.env_check import (
+    py_dependency_checker,
+    check_numpy,
+    fix_torch_libomp,
+    check_onnxruntime_gpu,
+)
 from sd_webui_all_in_one.file_operations.file_manager import (
     copy_files,
     generate_dir_tree,

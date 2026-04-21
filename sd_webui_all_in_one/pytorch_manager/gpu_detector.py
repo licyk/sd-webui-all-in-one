@@ -363,11 +363,11 @@ def has_amd_gpu(
     return any(x for x in gpu_list if "Advanced Micro Devices" in x.get("AdapterCompatibility", "") and x.get("Name", "").startswith("AMD Radeon"))
 
 
-def get_avaliable_pytorch_device_type() -> list[str]:
+def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
     """获取当前设备上可用的 PyTorch 设备类型
 
     Returns:
-        list[str]:
+        list[PyTorchDeviceType]:
             可用的 PyTorch 设备类型列表
     """
     gpu_list = get_gpu_list()
