@@ -29,7 +29,7 @@ from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
 )
-from sd_webui_all_in_one.file_operations.file_manager import (
+from sd_webui_all_in_one.file_operations import (
     copy_files,
     generate_dir_tree,
     get_file_list,

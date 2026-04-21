@@ -35,7 +35,7 @@ from sd_webui_all_in_one.env_check import (
     check_numpy,
     fix_torch_libomp,
 )
-from sd_webui_all_in_one.file_operations.file_manager import (
+from sd_webui_all_in_one.file_operations import (
     generate_dir_tree,
     get_file_list,
     remove_files,

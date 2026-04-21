@@ -41,7 +41,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.file_operations.file_manager import (
+from sd_webui_all_in_one.file_operations import (
     copy_files,
     display_directories,
     remove_files,

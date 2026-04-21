@@ -33,7 +33,7 @@ from sd_webui_all_in_one.package_analyzer import (
     get_package_version,
 )
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.file_operations.file_manager import (
+from sd_webui_all_in_one.file_operations import (
     is_folder_empty,
     copy_files,
     remove_files,

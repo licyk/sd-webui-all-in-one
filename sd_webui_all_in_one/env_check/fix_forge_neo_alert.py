@@ -11,7 +11,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.file_operations.file_manager import move_files
+from sd_webui_all_in_one.file_operations import move_files
 
 
 logger = get_logger(

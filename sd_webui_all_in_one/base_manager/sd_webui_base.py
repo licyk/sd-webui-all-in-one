@@ -61,7 +61,7 @@ from sd_webui_all_in_one.mirror_manager import (
     get_pypi_mirror_config,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_operations.file_manager import (
+from sd_webui_all_in_one.file_operations import (
     copy_files,
     move_files,
     remove_files,

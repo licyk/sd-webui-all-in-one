@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.file_operations.archive_manager import extract_archive
+from sd_webui_all_in_one.file_operations import extract_archive
 from sd_webui_all_in_one.downloader.downloader import download_file
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
