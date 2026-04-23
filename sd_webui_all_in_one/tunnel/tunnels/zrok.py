@@ -233,16 +233,12 @@ class ZrokTunnel(BaseTunnel):
         # 初始化 Zrok 配置
         logger.info("初始化 Zrok 配置")
         try:
-            run_cmd([self._zrok_bin.as_posix(), "disable"], live=False)
-        except RuntimeError:
-            pass
-
-        try:
             run_cmd([self._zrok_bin.as_posix(), "enable", self.zrok_token])
-            logger.info("Zrok 配置初始化完成")
         except RuntimeError as e:
             logger.error("初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: %s", e)
             raise RuntimeError(f"初始化 Zrok 配置失败, 无法使用 Zrok 内网穿透: {e}") from e
+
+        logger.info("Zrok 配置初始化完成")
 
         # 启动 Zrok 隧道
         # Zrok 输出格式：rp179091kyw1.shares.zrok.io 或 https://xxx.share.zrok.io
