@@ -451,6 +451,7 @@ class BaseManager:
         upload_path: Path | str,
         repo_type: RepoType = "model",
         visibility: bool | None = False,
+        num_threads: int | None = 1,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -465,6 +466,8 @@ class BaseManager:
                 要上传的文件夹
             visibility (bool | None):
                 当仓库不存在时自动创建的仓库的可见性
+            num_threads (int | None):
+                上传线程数, 为`None`时使用单线程
         """
         self.repo_manager.upload_files_to_repo(
             api_type=api_type,
@@ -472,6 +475,7 @@ class BaseManager:
             upload_path=Path(upload_path),
             repo_type=repo_type,
             visibility=visibility,
+            num_threads=num_threads,
         )
 
     def download_files_from_repo(

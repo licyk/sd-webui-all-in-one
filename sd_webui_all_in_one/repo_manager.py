@@ -1,7 +1,9 @@
 """HuggingFace / Modelscope 仓库管理工具"""
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Lock
 from typing import Any, Literal, TypeAlias
 
 from sd_webui_all_in_one.logger import get_logger
@@ -56,6 +58,10 @@ class RepoManager:
             ms_token (str | None):
                 ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
+        self.hf_api = NotImplemented
+        self.hf_token = None
+        self.ms_api = NotImplemented
+        self.ms_token = None
         try:
             from huggingface_hub import HfApi
 
@@ -331,6 +337,7 @@ class RepoManager:
         upload_path: Path,
         repo_type: RepoType = "model",
         visibility: bool | None = False,
+        num_threads: int | None = 1,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -345,6 +352,8 @@ class RepoManager:
                 要上传的文件夹
             visibility (bool | None):
                 当仓库不存在时自动创建的仓库的可见性
+            num_threads (int | None):
+                上传线程数, 为`None`时使用单线程
 
         Raises:
             ValueError:
@@ -365,12 +374,14 @@ class RepoManager:
                 repo_id=repo_id,
                 repo_type=repo_type,
                 upload_path=upload_path,
+                num_threads=num_threads,
             )
         elif api_type == "modelscope":
             self.upload_files_to_modelscope(
                 repo_id=repo_id,
                 repo_type=repo_type,
                 upload_path=upload_path,
+                num_threads=num_threads,
             )
 
     def upload_files_to_huggingface(
@@ -378,6 +389,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
+        num_threads: int | None = 1,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace 仓库中
 
@@ -388,6 +400,8 @@ class RepoManager:
                 HuggingFace 仓库类型
             upload_path (Path):
                 要上传到 HuggingFace 仓库的文件夹
+            num_threads (int | None):
+                上传线程数, 为`None`时使用单线程
 
         Raises:
             AggregateError:
@@ -403,38 +417,44 @@ class RepoManager:
         )
         logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s", upload_path, repo_id)
         files_count = len(upload_files)
-        count = 0
         err: list[Exception] = []
-        for upload_file in upload_files:
-            count += 1
+        upload_tasks = [(index, upload_file) for index, upload_file in enumerate(upload_files, start=1) if upload_file.relative_to(upload_path).as_posix() not in repo_files]
+
+        for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             if upload_file_rel_path in repo_files:
-                logger.info("[%s/%s] %s 已存在于 HuggingFace 仓库中, 跳过上传", count, files_count, upload_file)
-                continue
+                logger.info("[%s/%s] %s 已存在于 HuggingFace 仓库中, 跳过上传", index, files_count, upload_file)
 
-            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", count, files_count, upload_file, repo_id, repo_type)
-
-            @retryable(
-                times=RETRY_TIMES,
-                describe="上传文件到 HuggingFace",
-                catch_exceptions=(Exception),
-                raise_exception=(RuntimeError),
-                retry_on_none=False,
+        @retryable(
+            times=RETRY_TIMES,
+            describe="上传文件到 HuggingFace",
+            catch_exceptions=(Exception),
+            raise_exception=(RuntimeError),
+            retry_on_none=False,
+        )
+        def _upload_file(
+            repo_id: str,
+            repo_type: str,
+            path_in_repo: str,
+            path_or_fileobj: Path,
+        ) -> None:
+            self.hf_api.upload_file(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                path_in_repo=path_in_repo,
+                path_or_fileobj=path_or_fileobj,
+                commit_message=f"Upload {path_or_fileobj.name}",
             )
-            def _upload_file(
-                repo_id: str,
-                repo_type: str,
-                path_in_repo: str,
-                path_or_fileobj: Path,
-            ) -> None:
-                self.hf_api.upload_file(
-                    repo_id=repo_id,
-                    repo_type=repo_type,
-                    path_in_repo=path_in_repo,
-                    path_or_fileobj=path_or_fileobj,
-                    commit_message=f"Upload {path_or_fileobj.name}",
-                )
 
+        if upload_tasks:
+            logger.info("实际需要上传文件数量: %s", len(upload_tasks))
+
+        err_lock = Lock()
+
+        def _run_upload(task: tuple[int, Path]) -> None:
+            index, upload_file = task
+            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
@@ -443,19 +463,29 @@ class RepoManager:
                     path_or_fileobj=upload_file,
                 )
             except RuntimeError as e:
-                err.append(e)
-                logger.error("[%s/%s] 上传 %s 最终失败: %s", count, files_count, upload_file.name, e)
+                with err_lock:
+                    err.append(e)
+                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
+
+        max_workers = 1 if num_threads is None else max(1, num_threads)
+        if max_workers == 1:
+            for task in upload_tasks:
+                _run_upload(task)
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                list(executor.map(_run_upload, upload_tasks))
 
         if err:
             raise AggregateError(f"上传 {repo_id} (类型: {repo_type}) 时发生了错误", err)
 
-        logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 完成", count, files_count, upload_path, repo_id, repo_type)
+        logger.info("上传 %s 到 %s (类型: %s) 完成", upload_path, repo_id, repo_type)
 
     def upload_files_to_modelscope(
         self,
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
+        num_threads: int | None = 1,
     ) -> None:
         """上传文件夹中的内容到 ModelScope 仓库中
 
@@ -466,6 +496,8 @@ class RepoManager:
                 ModelScope 仓库类型
             upload_path (Path):
                 要上传到 ModelScope 仓库的文件夹
+            num_threads (int | None):
+                上传线程数, 为`None`时使用单线程
 
         Raises:
             AggregateError:
@@ -481,39 +513,45 @@ class RepoManager:
         )
         logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s", upload_path, repo_id)
         files_count = len(upload_files)
-        count = 0
         err: list[Exception] = []
-        for upload_file in upload_files:
-            count += 1
+        upload_tasks = [(index, upload_file) for index, upload_file in enumerate(upload_files, start=1) if upload_file.relative_to(upload_path).as_posix() not in repo_files]
+
+        for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             if upload_file_rel_path in repo_files:
-                logger.info("[%s/%s] %s 已存在于 ModelScope 仓库中, 跳过上传", count, files_count, upload_file)
-                continue
+                logger.info("[%s/%s] %s 已存在于 ModelScope 仓库中, 跳过上传", index, files_count, upload_file)
 
-            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", count, files_count, upload_file, repo_id, repo_type)
-
-            @retryable(
-                times=RETRY_TIMES,
-                describe="上传文件到 ModelScope",
-                catch_exceptions=(Exception),
-                raise_exception=(RuntimeError),
-                retry_on_none=False,
+        @retryable(
+            times=RETRY_TIMES,
+            describe="上传文件到 ModelScope",
+            catch_exceptions=(Exception),
+            raise_exception=(RuntimeError),
+            retry_on_none=False,
+        )
+        def _upload_file(
+            repo_id: str,
+            repo_type: str,
+            path_in_repo: str,
+            path_or_fileobj: Path,
+        ) -> None:
+            self.ms_api.upload_file(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                path_in_repo=path_in_repo,
+                path_or_fileobj=path_or_fileobj,
+                commit_message=f"Upload {path_or_fileobj.name}",
+                token=self.ms_token,
             )
-            def _upload_file(
-                repo_id: str,
-                repo_type: str,
-                path_in_repo: str,
-                path_or_fileobj: Path,
-            ) -> None:
-                self.ms_api.upload_file(
-                    repo_id=repo_id,
-                    repo_type=repo_type,
-                    path_in_repo=path_in_repo,
-                    path_or_fileobj=path_or_fileobj,
-                    commit_message=f"Upload {path_or_fileobj.name}",
-                    token=self.ms_token,
-                )
 
+        if upload_tasks:
+            logger.info("实际需要上传文件数量: %s", len(upload_tasks))
+
+        err_lock = Lock()
+
+        def _run_upload(task: tuple[int, Path]) -> None:
+            index, upload_file = task
+            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
@@ -522,13 +560,22 @@ class RepoManager:
                     path_or_fileobj=upload_file,
                 )
             except RuntimeError as e:
-                err.append(e)
-                logger.error("[%s/%s] 上传 %s 最终失败: %s", count, files_count, upload_file.name, e)
+                with err_lock:
+                    err.append(e)
+                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
+
+        max_workers = 1 if num_threads is None else max(1, num_threads)
+        if max_workers == 1:
+            for task in upload_tasks:
+                _run_upload(task)
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                list(executor.map(_run_upload, upload_tasks))
 
         if err:
             raise AggregateError(f"上传 {repo_id} (类型: {repo_type}) 时发生了错误", err)
 
-        logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 完成", count, files_count, upload_path, repo_id, repo_type)
+        logger.info("上传 %s 到 %s (类型: %s) 完成", upload_path, repo_id, repo_type)
 
     def download_files_from_repo(
         self,
