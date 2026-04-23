@@ -163,16 +163,44 @@ class RepoManager:
                 使用的 API 类型未知时或者不支持时
         """
 
-        def _get_file_path(repo_files: list) -> list[str]:
+        def _get_file_path(
+            repo_files: list[dict[str, Any]],
+        ) -> list[str]:
             """获取 ModelScope Api 返回的仓库列表中的模型路径"""
             return [file["Path"] for file in repo_files if file["Type"] != "tree"]
 
         if repo_type == "model":
-            repo_files = self.ms_api.get_model_files(model_id=repo_id, recursive=True)
+            repo_files = self.ms_api.get_model_files(
+                model_id=repo_id,
+                recursive=True,
+            )
             return _get_file_path(repo_files)
         if repo_type == "dataset":
-            repo_files = self.ms_api.get_dataset_files(repo_id=repo_id, recursive=True)
-            return _get_file_path(repo_files)
+            all_files = []
+            page_number = 1
+            page_size = 100
+            owner, dataset_name = repo_id.split("/")
+            dataset_hub_id, _ = self.ms_api.get_dataset_id_and_type(
+                dataset_name=dataset_name,
+                namespace=owner,
+            )
+            while True:
+                repo_files = self.ms_api.get_dataset_files(
+                    repo_id=repo_id,
+                    recursive=True,
+                    page_number=page_number,
+                    page_size=page_size,
+                    dataset_hub_id=dataset_hub_id,
+                )
+                if not repo_files:
+                    break
+
+                all_files.extend(repo_files)
+                if len(repo_files) < page_size:
+                    break
+
+                page_number += 1
+            return _get_file_path(all_files)
         if repo_type == "space":
             # TODO: 支持创空间
             logger.error("%s 仓库类型为创空间, 不支持获取文件列表", repo_id)
