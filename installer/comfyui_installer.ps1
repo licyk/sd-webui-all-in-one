@@ -191,7 +191,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 404
+$script:COMFYUI_INSTALLER_VERSION = 405
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.1.14"
@@ -1808,10 +1808,10 @@ function Test-PythonAndGit {
         `$python_path_prefix = Join-NormalizedPath `$PSScriptRoot `"python`"
         `$python_extra_path_prefix = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"python`"
         if (-not ((`$python_cmd) -and ((`$python_cmd.ToString().StartsWith(`$python_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$python_cmd.ToString().StartsWith(`$python_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase))))) {
-            Write-Log `"检测到当前使用的 Python 路径为 `${python_cmd}, 但未在 `${python_path_prefix} 或 `${python_extra_path_prefix} 这两个受 ComfyUI Installer 管理的 Python 路径, 即当前正在使用外部的 Python 环境, 这可能会导致一些运行环境问题, 可尝试运行 launch_comfyui_install.ps1 修复运行环境`" -Level WARNING
+            Write-Log `"检测到当前使用的 Python 路径为 `${python_cmd}, 但未在 `${python_path_prefix} 或 `${python_extra_path_prefix} 这两个受 ComfyUI Installer 管理的 Python 路径, 即当前正在使用外部的 Python 环境, 这可能会导致一些运行环境问题, 可尝试运行 launch_comfyui_install.ps1 修复运行环境`" -Level ERROR
         }
     } else {
-        Write-Log `"检测到当前环境中未安装任何 Python, 这将导致运行时发生异常, 请运行 launch_comfyui_install.ps1 修复运行环境`" -Level WARNING
+        Write-Log `"检测到当前环境中未安装任何 Python, 这将导致运行时发生异常, 请运行 launch_comfyui_install.ps1 修复运行环境`" -Level ERROR
     }
 
     # Git
@@ -1822,11 +1822,11 @@ function Test-PythonAndGit {
             `$git_path_prefix = Join-NormalizedPath `$PSScriptRoot `"git`"
             `$git_extra_path_prefix = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX `"git`"
             if (-not ((`$git_cmd) -and ((`$git_cmd.ToString().StartsWith(`$git_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$git_cmd.ToString().StartsWith(`$git_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase))))) {
-                Write-Log `"检测到当前使用的 Git 路径为 `${git_cmd}, 但未在 `${git_path_prefix} 或 `${git_extra_path_prefix} 这两个受 ComfyUI Installer 管理的 Git 路径, 即当前正在使用外部的 Git 环境, 这可能会导致一些运行环境问题, 可尝试运行 launch_comfyui_install.ps1 修复运行环境`" -Level WARNING
+                Write-Log `"检测到当前使用的 Git 路径为 `${git_cmd}, 但未在 `${git_path_prefix} 或 `${git_extra_path_prefix} 这两个受 ComfyUI Installer 管理的 Git 路径, 即当前正在使用外部的 Git 环境, 这可能会导致一些运行环境问题, 可尝试运行 launch_comfyui_install.ps1 修复运行环境`" -Level ERROR
             }
         }
     } else {
-        Write-Log `"检测到当前环境中未安装任何 Git, 这将导致运行时发生异常, 请运行 launch_comfyui_install.ps1 修复运行环境`" -Level WARNING
+        Write-Log `"检测到当前环境中未安装任何 Git, 这将导致运行时发生异常, 请运行 launch_comfyui_install.ps1 修复运行环境`" -Level ERROR
     }
 }
 
