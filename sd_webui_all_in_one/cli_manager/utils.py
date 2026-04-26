@@ -256,14 +256,14 @@ def register_manager(
     start_tunnel_p.add_argument("port", type=int, help="要进行端口映射的端口")
     start_tunnel_p.add_argument("--workspace", type=normalized_filepath, default=SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH, help="工作区路径（默认为当前目录）")
     start_tunnel_p.add_argument("--ngrok", action="store_true", help="启用 Ngrok 内网穿透")
-    start_tunnel_p.add_argument("--ngrok-token", type=str, default=None, help="Ngrok 账号 Token")
+    start_tunnel_p.add_argument("--ngrok-token", type=str, default=None, help="Ngrok 账号 Token, 可从 https://dashboard.ngrok.com/get-started/your-authtoken 获取")
     start_tunnel_p.add_argument("--cloudflare", action="store_true", help="启用 CloudFlare 内网穿透")
     start_tunnel_p.add_argument("--remote-moe", action="store_true", help="启用 remote.moe 内网穿透")
     start_tunnel_p.add_argument("--localhost-run", action="store_true", help="启用 localhost.run 内网穿透")
     start_tunnel_p.add_argument("--gradio", action="store_true", help="启用 Gradio 内网穿透")
     start_tunnel_p.add_argument("--pinggy-io", action="store_true", help="启用 pinggy.io 内网穿透")
     start_tunnel_p.add_argument("--zrok", action="store_true", help="启用 Zrok 内网穿透")
-    start_tunnel_p.add_argument("--zrok-token", type=str, default=None, help="Zrok 账号 Token")
+    start_tunnel_p.add_argument("--zrok-token", type=str, default=None, help="Zrok 账号 Token, 可从 https://netfoundry.io/docs/zrok/get-started/get-token 获取")
     start_tunnel_p.set_defaults(
         func=lambda args: start_tunnel(
             port=args.port,

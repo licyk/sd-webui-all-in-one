@@ -41,7 +41,7 @@ class ZrokTunnel(BaseTunnel):
 
     Attributes:
         zrok_token (str):
-            Zrok 账号 Token
+            Zrok 账号 Token, 可从 https://netfoundry.io/docs/zrok/get-started/get-token 获取
     """
 
     def __init__(

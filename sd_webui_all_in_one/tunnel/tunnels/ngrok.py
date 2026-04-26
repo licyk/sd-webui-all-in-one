@@ -27,7 +27,7 @@ class NgrokTunnel(BaseTunnel):
 
     Attributes:
         ngrok_token (str):
-            Ngrok 账号 Token
+            Ngrok 账号 Token, 可从 https://dashboard.ngrok.com/get-started/your-authtoken 获取
     """
 
     def __init__(
