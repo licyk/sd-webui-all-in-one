@@ -24,7 +24,7 @@ from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_operations import remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
+from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 
 
 DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
