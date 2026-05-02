@@ -33,6 +33,7 @@ _✨小巧，强大的命令工具_
   - [检查运行环境](#检查运行环境)
   - [切换分支](#切换分支)
   - [启动 Stable Diffusion WebUI](#启动-stable-diffusion-webui)
+  - [版本管理 GUI](#版本管理-gui)
   - [扩展管理](#扩展管理)
     - [安装扩展](#安装扩展)
     - [设置扩展状态](#设置扩展状态)
@@ -50,6 +51,7 @@ _✨小巧，强大的命令工具_
   - [更新 ComfyUI](#更新-comfyui)
   - [检查运行环境](#检查运行环境-1)
   - [启动 ComfyUI](#启动-comfyui)
+  - [版本管理 GUI](#版本管理-gui-1)
   - [扩展管理 (Custom Node)](#扩展管理-custom-node)
     - [安装扩展](#安装扩展-1)
     - [设置扩展状态](#设置扩展状态-1)
@@ -68,6 +70,7 @@ _✨小巧，强大的命令工具_
   - [检查运行环境](#检查运行环境-2)
   - [切换分支](#切换分支-1)
   - [启动 Fooocus](#启动-fooocus)
+  - [版本管理 GUI](#版本管理-gui-2)
   - [模型管理](#模型管理-2)
     - [从模型库安装模型](#从模型库安装模型-2)
     - [从链接安装模型](#从链接安装模型-2)
@@ -79,6 +82,7 @@ _✨小巧，强大的命令工具_
   - [更新 InvokeAI](#更新-invokeai)
   - [检查运行环境](#检查运行环境-3)
   - [启动 InvokeAI](#启动-invokeai)
+  - [版本管理 GUI](#版本管理-gui-3)
   - [扩展管理 (Custom Node)](#扩展管理-custom-node-1)
     - [安装扩展](#安装扩展-2)
     - [设置扩展状态](#设置扩展状态-2)
@@ -96,6 +100,7 @@ _✨小巧，强大的命令工具_
   - [更新 Qwen TTS WebUI](#更新-qwen-tts-webui)
   - [检查运行环境](#检查运行环境-4)
   - [启动 Qwen TTS WebUI](#启动-qwen-tts-webui)
+  - [版本管理 GUI](#版本管理-gui-4)
   - [重装 PyTorch](#重装-pytorch-4)
 - [SD Trainer](#sd-trainer)
   - [安装 SD Trainer](#安装-sd-trainer)
@@ -103,6 +108,7 @@ _✨小巧，强大的命令工具_
   - [检查运行环境](#检查运行环境-5)
   - [切换分支](#切换分支-2)
   - [启动 SD Trainer](#启动-sd-trainer)
+  - [版本管理 GUI](#版本管理-gui-5)
   - [模型管理](#模型管理-4)
     - [从模型库安装模型](#从模型库安装模型-4)
     - [从链接安装模型](#从链接安装模型-4)
@@ -114,6 +120,7 @@ _✨小巧，强大的命令工具_
   - [更新 SD Scripts](#更新-sd-scripts)
   - [检查运行环境](#检查运行环境-6)
   - [切换分支](#切换分支-3)
+  - [版本管理 GUI](#版本管理-gui-6)
   - [模型管理](#模型管理-5)
     - [从模型库安装模型](#从模型库安装模型-5)
     - [从链接安装模型](#从链接安装模型-5)
@@ -230,6 +237,16 @@ sd-webui-all-in-one sd-webui launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-uv`: 不使用 uv。
   - `--no-check-env`: 不检查运行环境完整性。
+
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one sd-webui gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
 ## 扩展管理
 
@@ -405,6 +422,16 @@ sd-webui-all-in-one comfyui launch [选项]
   - `--interactive`: 启用交互模式。
   - `--install-conflict`: 自动安装冲突组件依赖。
   - `--no-check-env`: 不检查运行环境完整性。
+
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one comfyui gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--comfyui-path <路径>`: ComfyUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
 ## 扩展管理 (Custom Node)
 
@@ -584,6 +611,16 @@ sd-webui-all-in-one fooocus launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-check-env`: 不检查运行环境完整性。
 
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one fooocus gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--fooocus-path <路径>`: Fooocus 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
 ## 模型管理
 
 ### 从模型库安装模型
@@ -693,6 +730,18 @@ sd-webui-all-in-one invokeai launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-uv`: 不使用 uv。
   - `--no-check-env`: 不检查运行环境完整性。
+
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one invokeai gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--invokeai-path <路径>`: InvokeAI 根目录。
+  - `--no-pypi-mirror`: 不使用 PyPI 镜像源。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
 ## 扩展管理 (Custom Node)
 
@@ -855,6 +904,16 @@ sd-webui-all-in-one qwen-tts-webui launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-check-env`: 不检查运行环境完整性。
 
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one qwen-tts-webui gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--qwen-tts-webui-path <路径>`: Qwen TTS WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
 ## 重装 PyTorch
 ```bash
 sd-webui-all-in-one qwen-tts-webui reinstall-pytorch [选项]
@@ -937,6 +996,16 @@ sd-webui-all-in-one sd-trainer launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-uv`: 不使用 uv。
   - `--no-check-env`: 不检查运行环境完整性。
+
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one sd-trainer gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--sd-trainer-path <路径>`: SD Trainer 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
 ## 模型管理
 
@@ -1049,6 +1118,16 @@ sd-webui-all-in-one sd-scripts switch --branch <分支名> [选项]
 - **高级选项**:
   - `--sd-scripts-path <路径>`: SD Scripts 根目录。
   - `--branch <分支名>`: (必填) 要切换的分支。
+
+## 版本管理 GUI
+```bash
+sd-webui-all-in-one sd-scripts gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--sd-scripts-path <路径>`: SD Scripts 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
 ## 模型管理
 
