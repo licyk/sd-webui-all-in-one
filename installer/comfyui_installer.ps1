@@ -2976,7 +2976,7 @@ function Main {
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one comfyui gui version-manager `$launch_args
 
-    Write-Log `"退出 ComfyUI 扩展更新脚本`"
+    Write-Log `"退出 ComfyUI 版本管理脚本`"
 
     if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
 }
