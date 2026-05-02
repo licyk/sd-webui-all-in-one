@@ -8,7 +8,11 @@ import os
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+)
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (

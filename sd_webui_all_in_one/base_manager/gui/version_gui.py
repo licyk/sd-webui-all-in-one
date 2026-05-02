@@ -15,8 +15,16 @@ import traceback
 import tkinter as tk
 from dataclasses import dataclass
 from tkinter import font as tkfont
-from tkinter import messagebox, ttk
-from typing import Any, Callable, Generic, TypeVar
+from tkinter import (
+    messagebox,
+    ttk,
+)
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    TypeVar,
+)
 
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
@@ -35,7 +43,7 @@ def detect_system_theme() -> str:
     Returns:
         str: 系统主题名称, 无法检测时返回 light
     """
-    if sys.platform.startswith("win"):
+    if sys.platform == "win32":
         try:
             import winreg  # pylint: disable=import-error,import-outside-toplevel
 

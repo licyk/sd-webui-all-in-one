@@ -8,7 +8,10 @@ from __future__ import annotations
 import importlib.metadata
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, ttk
+from tkinter import (
+    messagebox,
+    ttk,
+)
 
 from sd_webui_all_in_one.base_manager.invokeai_base import install_invokeai_component
 from sd_webui_all_in_one.base_manager.version_manager import (

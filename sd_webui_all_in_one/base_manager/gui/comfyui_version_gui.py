@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, ttk
+from tkinter import (
+    messagebox,
+    ttk,
+)
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
@@ -27,7 +30,10 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     switch_repository_commit,
     update_repository,
 )
-from sd_webui_all_in_one.downloader import download_archive_and_unpack, download_file
+from sd_webui_all_in_one.downloader import (
+    download_archive_and_unpack,
+    download_file,
+)
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     AdaptiveIndexList,
     BackgroundTaskMixin,

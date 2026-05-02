@@ -8,7 +8,10 @@ import json
 import os
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, ttk
+from tkinter import (
+    messagebox,
+    ttk,
+)
 
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
     SD_WEBUI_BRANCH_INFO_DICT,
