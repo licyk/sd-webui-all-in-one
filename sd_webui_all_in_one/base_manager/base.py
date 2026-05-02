@@ -91,7 +91,9 @@ def prepare_pytorch_install_info(
             PyTorch 软件包版本声明, xFormers 软件包版本声明, 带有 PyPI 镜像源配置的环境变量字典
     """
 
-    def _update_mirror(dtype: str) -> None:
+    def _update_mirror(
+        dtype: str,
+    ) -> None:
         url, kind = get_pytorch_mirror(
             dtype=dtype,
             use_cn_mirror=use_cn_mirror,

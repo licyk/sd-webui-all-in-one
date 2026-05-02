@@ -104,7 +104,9 @@ class Parser:
         self.pos += 1
         return char
 
-    def skip_whitespace(self) -> None:
+    def skip_whitespace(
+        self,
+    ) -> None:
         """跳过空白字符 (空格和制表符)"""
         while self.pos < self.len and self.text[self.pos] in " \t":
             self.pos += 1

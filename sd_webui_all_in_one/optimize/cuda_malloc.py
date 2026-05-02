@@ -226,7 +226,9 @@ def apply_pytorch_alloc_conf(
             追加 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 后的环境变量字典
     """
 
-    def _add_var(var: str) -> None:
+    def _add_var(
+        var: str,
+    ) -> None:
         if var in custom_env and custom_env[var]:
             custom_env[var] = config + "," + custom_env[var]
         else:

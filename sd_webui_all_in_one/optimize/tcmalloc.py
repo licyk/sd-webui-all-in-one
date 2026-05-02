@@ -31,7 +31,10 @@ class TCMalloc:
         tcmalloc_has_configure (bool): TCMalloc 配置状态
     """
 
-    def __init__(self, workspace: str | Path) -> None:
+    def __init__(
+        self,
+        workspace: str | Path,
+    ) -> None:
         """TCMalloc 配置工具初始化
 
         Args:

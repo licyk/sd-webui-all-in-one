@@ -451,7 +451,9 @@ class RepoManager:
 
         err_lock = Lock()
 
-        def _run_upload(task: tuple[int, Path]) -> None:
+        def _run_upload(
+            task: tuple[int, Path],
+        ) -> None:
             index, upload_file = task
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)
@@ -548,7 +550,9 @@ class RepoManager:
 
         err_lock = Lock()
 
-        def _run_upload(task: tuple[int, Path]) -> None:
+        def _run_upload(
+            task: tuple[int, Path],
+        ) -> None:
             index, upload_file = task
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)

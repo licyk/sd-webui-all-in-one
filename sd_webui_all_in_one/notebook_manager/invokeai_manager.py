@@ -37,7 +37,9 @@ logger = get_logger(
 class InvokeAIManager(BaseManager):
     """InvokeAI 管理模块"""
 
-    def mount_drive(self) -> None:
+    def mount_drive(
+        self,
+    ) -> None:
         """挂载 Google Drive 并创建 InvokeAI 输出文件夹, 并设置 INVOKEAI_ROOT 环境变量指定 InvokeAI 输出目录
 
         Raises:
@@ -50,7 +52,9 @@ class InvokeAIManager(BaseManager):
         drive_output.mkdir(parents=True, exist_ok=True)
         os.environ["INVOKEAI_ROOT"] = drive_output.as_posix()
 
-    def import_model(self) -> None:
+    def import_model(
+        self,
+    ) -> None:
         """导入模型到 InvokeAI 中"""
         model_path = self.workspace / self.workfolder / "sd-models"
         model_list = get_file_list(model_path)
@@ -118,7 +122,9 @@ class InvokeAIManager(BaseManager):
             custom_github_mirror=custom_github_mirror,
         )
 
-    def run(self) -> None:
+    def run(
+        self,
+    ) -> None:
         """启动 InvokeAI"""
         from invokeai.app.run_app import run_app
 

@@ -18,7 +18,10 @@ class CommonVersionComparison:
         version (str | int | float): 版本号字符串
     """
 
-    def __init__(self, version: str | int | float) -> None:
+    def __init__(
+        self,
+        version: str | int | float,
+    ) -> None:
         """常规版本号比较工具初始化
 
         Args:

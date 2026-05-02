@@ -55,7 +55,10 @@ def _load_sd_webui_config(sd_webui_path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _save_sd_webui_config(sd_webui_path: Path, data: dict) -> None:
+def _save_sd_webui_config(
+    sd_webui_path: Path,
+    data: dict,
+) -> None:
     config_path = sd_webui_path / "config.json"
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
@@ -72,7 +75,11 @@ def _sd_webui_extension_enabled(sd_webui_path: Path, name: str, _path: Path) -> 
     return name not in disabled_extensions
 
 
-def _set_sd_webui_extension_enabled(sd_webui_path: Path, name: str, enabled: bool) -> None:
+def _set_sd_webui_extension_enabled(
+    sd_webui_path: Path,
+    name: str,
+    enabled: bool,
+) -> None:
     settings = _load_sd_webui_config(sd_webui_path)
     disabled_extensions = settings.setdefault("disabled_extensions", [])
     if not isinstance(disabled_extensions, list):
@@ -139,7 +146,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self._install_task_poller(self)
         self.refresh_all()
 
-    def _create_styles(self) -> None:
+    def _create_styles(
+        self,
+    ) -> None:
         theme_applied = apply_gui_theme(self)
         style = ttk.Style(self)
         if not theme_applied and "clam" in style.theme_names():
@@ -147,7 +156,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         configure_gui_fonts(self, style)
         style.configure("Status.TLabel", padding=(8, 4))
 
-    def _create_widgets(self) -> None:
+    def _create_widgets(
+        self,
+    ) -> None:
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         path_label = ttk.Label(top, text=f"路径: {self.sd_webui_path}")
@@ -179,7 +190,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.progress = ttk.Progressbar(status_frame, mode="indeterminate", length=180)
         self.progress.pack(side=tk.RIGHT, padx=(0, 8), pady=4)
 
-    def _create_kernel_tab(self) -> None:
+    def _create_kernel_tab(
+        self,
+    ) -> None:
         info_frame = ttk.Frame(self.kernel_tab)
         info_frame.pack(fill=tk.X, padx=18, pady=16)
         self.kernel_url_var = tk.StringVar(value="-")
@@ -213,7 +226,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         )
         self.kernel_commit_tree.pack(fill=tk.BOTH, expand=True)
 
-    def _create_extensions_tab(self) -> None:
+    def _create_extensions_tab(
+        self,
+    ) -> None:
         toolbar = ttk.Frame(self.extensions_tab)
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新扩展", command=self.refresh_extensions).pack(side=tk.LEFT)
@@ -233,7 +248,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.extension_tree.pack(fill=tk.BOTH, expand=True)
         self.extension_tree.search_var.trace_add("write", lambda *_args: self.render_extensions())
 
-    def _create_install_tab(self) -> None:
+    def _create_install_tab(
+        self,
+    ) -> None:
         toolbar = ttk.Frame(self.install_tab)
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新扩展源", command=self.refresh_extension_index).pack(side=tk.LEFT)
@@ -265,10 +282,16 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         ttk.Button(bottom, text="安装 URL", command=self.install_from_url).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(bottom, text="安装选中", command=self.install_selected_index_extension).pack(side=tk.LEFT, padx=(8, 0))
 
-    def set_status(self, message: str) -> None:
+    def set_status(
+        self,
+        message: str,
+    ) -> None:
         self.status_var.set(message)
 
-    def set_busy_state(self, busy: bool) -> None:
+    def set_busy_state(
+        self,
+        busy: bool,
+    ) -> None:
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)
@@ -276,7 +299,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self.busy_var.set("")
             self.progress.stop()
 
-    def refresh_all(self) -> None:
+    def refresh_all(
+        self,
+    ) -> None:
         """
         刷新内核、扩展和扩展源列表
         """
@@ -285,7 +310,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not self.extension_index:
             self.refresh_extension_index()
 
-    def refresh_kernel(self) -> None:
+    def refresh_kernel(
+        self,
+    ) -> None:
         """
         刷新内核仓库信息和版本列表
         """
@@ -295,7 +322,10 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self._apply_kernel_info,
         )
 
-    def _apply_kernel_info(self, result: tuple[RepositoryState, list]) -> None:
+    def _apply_kernel_info(
+        self,
+        result: tuple[RepositoryState, list],
+    ) -> None:
         state, commits = result
         self.repository_state = state
         self.kernel_url_var.set(state.url or "-")
@@ -314,17 +344,24 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 values=(commit.commit, commit.message, commit.date, "✓" if commit.is_current else ""),
             )
 
-    def refresh_extensions(self) -> None:
+    def refresh_extensions(
+        self,
+    ) -> None:
         """
         刷新已安装扩展列表
         """
         self.run_background("刷新扩展列表中...", self.extension_manager.list_extensions, self._apply_extensions)
 
-    def _apply_extensions(self, extensions: list[ManagedExtension]) -> None:
+    def _apply_extensions(
+        self,
+        extensions: list[ManagedExtension],
+    ) -> None:
         self.extensions = extensions
         self.render_extensions()
 
-    def render_extensions(self) -> None:
+    def render_extensions(
+        self,
+    ) -> None:
         """
         渲染已安装扩展列表
         """
@@ -355,13 +392,18 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         os.environ["WEBUI_EXTENSIONS_INDEX"] = extension_index_url
         return extension_index_url
 
-    def refresh_extension_index(self) -> None:
+    def refresh_extension_index(
+        self,
+    ) -> None:
         """
         刷新扩展源列表
         """
         self.run_background("刷新扩展源中...", lambda: fetch_extension_index(self.extension_index_url), self._apply_extension_index)
 
-    def _apply_extension_index(self, items: list[ExtensionIndexItem]) -> None:
+    def _apply_extension_index(
+        self,
+        items: list[ExtensionIndexItem],
+    ) -> None:
         self.extension_index = items
         tags = sorted({tag for item in items for tag in item.tags})
         self.tag_combo.configure(values=("全部分类", *tags))
@@ -369,7 +411,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self.tag_var.set("全部分类")
         self.render_extension_index()
 
-    def render_extension_index(self) -> None:
+    def render_extension_index(
+        self,
+    ) -> None:
         """
         渲染扩展源列表
         """
@@ -392,7 +436,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return None
         return next((ext for ext in self.extensions if ext.name == selected_id), None)
 
-    def update_kernel(self) -> None:
+    def update_kernel(
+        self,
+    ) -> None:
         """
         更新内核仓库
         """
@@ -401,10 +447,13 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background("更新内核中...", lambda: update_repository(self.sd_webui_path), lambda _value: self.refresh_kernel())
 
-    def update_all(self) -> None:
+    def update_all(
+        self,
+    ) -> None:
         """
         更新内核和所有 Git 扩展
         """
+
         def _update_all() -> None:
             if self.repository_state and self.repository_state.is_git_repo:
                 update_repository(self.sd_webui_path)
@@ -412,7 +461,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background("一键更新中...", _update_all, lambda _value: self.refresh_all())
 
-    def open_kernel_commit_dialog(self) -> None:
+    def open_kernel_commit_dialog(
+        self,
+    ) -> None:
         """
         打开内核版本切换弹窗
         """
@@ -425,10 +476,15 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda commits: CommitSwitchDialog(self, "内核版本切换", commits, lambda commit: self._switch_kernel_commit(commit.commit)),
         )
 
-    def _switch_kernel_commit(self, commit: str) -> None:
+    def _switch_kernel_commit(
+        self,
+        commit: str,
+    ) -> None:
         self.run_background("切换内核版本中...", lambda: switch_repository_commit(self.sd_webui_path, commit), lambda _value: self.refresh_kernel())
 
-    def open_kernel_branch_dialog(self) -> None:
+    def open_kernel_branch_dialog(
+        self,
+    ) -> None:
         """
         打开内核分支切换弹窗
         """
@@ -441,7 +497,10 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda branches: BranchSwitchDialog(self, "内核分支切换", branches, lambda branch: self._switch_kernel_branch(branch.name)),
         )
 
-    def _switch_kernel_branch(self, branch: str) -> None:
+    def _switch_kernel_branch(
+        self,
+        branch: str,
+    ) -> None:
         branch_info = next((item for item in SD_WEBUI_BRANCH_INFO_DICT if item["branch"] == branch), None)
 
         def _switch() -> None:
@@ -454,7 +513,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background("切换内核分支中...", _switch, lambda _value: self.refresh_kernel())
 
-    def update_selected_extension(self) -> None:
+    def update_selected_extension(
+        self,
+    ) -> None:
         """
         更新当前选中的扩展
         """
@@ -470,7 +531,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background("更新扩展中...", _update, lambda _value: self.refresh_extensions())
 
-    def toggle_selected_extension(self) -> None:
+    def toggle_selected_extension(
+        self,
+    ) -> None:
         """
         切换当前选中扩展的启用状态
         """
@@ -483,7 +546,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda _value: self._apply_extension_enabled(ext.name, not ext.enabled),
         )
 
-    def uninstall_selected_extension(self) -> None:
+    def uninstall_selected_extension(
+        self,
+    ) -> None:
         """
         卸载当前选中的扩展
         """
@@ -494,7 +559,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background("卸载扩展中...", lambda: self.extension_manager.uninstall_extension(ext.name), lambda _value: self.refresh_extensions())
 
-    def open_extension_commit_dialog(self) -> None:
+    def open_extension_commit_dialog(
+        self,
+    ) -> None:
         """
         打开扩展版本切换弹窗
         """
@@ -510,10 +577,16 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda commits: CommitSwitchDialog(self, f"{ext.name} 版本切换", commits, lambda commit: self._switch_extension_commit(ext.name, commit.commit)),
         )
 
-    def _switch_extension_commit(self, name: str, commit: str) -> None:
+    def _switch_extension_commit(
+        self,
+        name: str,
+        commit: str,
+    ) -> None:
         self.run_background("切换扩展版本中...", lambda: self.extension_manager.switch_extension_commit(name, commit), lambda _value: self.refresh_extensions())
 
-    def open_extension_branch_dialog(self) -> None:
+    def open_extension_branch_dialog(
+        self,
+    ) -> None:
         """
         打开扩展分支切换弹窗
         """
@@ -529,7 +602,11 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda branches: BranchSwitchDialog(self, f"{ext.name} 分支切换", branches, lambda branch: self._switch_extension_branch(ext.name, branch.name)),
         )
 
-    def _switch_extension_branch(self, name: str, branch: str) -> None:
+    def _switch_extension_branch(
+        self,
+        name: str,
+        branch: str,
+    ) -> None:
         def _switch() -> None:
             self.extension_manager.switch_extension_branch(name, branch)
 
@@ -559,7 +636,11 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库"),
         )
 
-    def _apply_extension_enabled(self, name: str, enabled: bool) -> None:
+    def _apply_extension_enabled(
+        self,
+        name: str,
+        enabled: bool,
+    ) -> None:
         for ext in self.extensions:
             if ext.name == name:
                 ext.enabled = enabled
@@ -569,7 +650,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                     self.extension_tree.tree.focus(name)
                 return
 
-    def install_from_url(self) -> None:
+    def install_from_url(
+        self,
+    ) -> None:
         """
         从 Git URL 安装扩展
         """
@@ -581,15 +664,23 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self._install_extension_url(url)
 
-    def _clear_install_url_placeholder(self, _event) -> None:
+    def _clear_install_url_placeholder(
+        self,
+        _event,
+    ) -> None:
         if self.install_url_var.get() == self.install_url_placeholder:
             self.install_url_var.set("")
 
-    def _restore_install_url_placeholder(self, _event) -> None:
+    def _restore_install_url_placeholder(
+        self,
+        _event,
+    ) -> None:
         if not self.install_url_var.get().strip():
             self.install_url_var.set(self.install_url_placeholder)
 
-    def install_selected_index_extension(self) -> None:
+    def install_selected_index_extension(
+        self,
+    ) -> None:
         """
         安装当前选中的扩展源条目
         """
@@ -599,7 +690,10 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self._install_extension_url(selected_id)
 
-    def _install_extension_url(self, url: str) -> None:
+    def _install_extension_url(
+        self,
+        url: str,
+    ) -> None:
         """
         安装指定 Git URL 的扩展
 

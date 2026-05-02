@@ -427,7 +427,9 @@ def inspect_repository(path: Path) -> RepositoryState:
     return state
 
 
-def fetch_repository(path: Path) -> None:
+def fetch_repository(
+    path: Path,
+) -> None:
     """
     拉取远程引用
 
@@ -552,7 +554,10 @@ def switch_repository_branch(
     )
 
 
-def switch_repository_commit(path: Path, commit: str) -> None:
+def switch_repository_commit(
+    path: Path,
+    commit: str,
+) -> None:
     """
     切换仓库到指定提交
 
@@ -565,7 +570,9 @@ def switch_repository_commit(path: Path, commit: str) -> None:
     git_warpper.switch_commit(path=path, commit=commit)
 
 
-def update_repository(path: Path) -> None:
+def update_repository(
+    path: Path,
+) -> None:
     """
     更新仓库
 
@@ -649,7 +656,11 @@ class ExtensionManager:
             )
         return result
 
-    def set_extension_enabled(self, name: str, enabled: bool) -> None:
+    def set_extension_enabled(
+        self,
+        name: str,
+        enabled: bool,
+    ) -> None:
         """
         设置扩展启用状态
 
@@ -693,7 +704,10 @@ class ExtensionManager:
         clone_repo(repo=url, path=extension_path)
         return extension_path
 
-    def update_extension(self, name: str) -> None:
+    def update_extension(
+        self,
+        name: str,
+    ) -> None:
         """
         更新扩展
 
@@ -710,7 +724,9 @@ class ExtensionManager:
             raise ValueError(f"'{name}' 不是 Git 仓库，无法更新")
         update_repository(ext_path)
 
-    def update_all(self) -> None:
+    def update_all(
+        self,
+    ) -> None:
         """
         更新所有 Git 扩展
 
@@ -729,7 +745,10 @@ class ExtensionManager:
         if errors:
             raise AggregateError("更新扩展时发生错误", errors)
 
-    def uninstall_extension(self, name: str) -> None:
+    def uninstall_extension(
+        self,
+        name: str,
+    ) -> None:
         """
         卸载扩展
 
@@ -746,7 +765,11 @@ class ExtensionManager:
             raise FileNotFoundError(f"'{name}' 扩展未安装")
         remove_files(ext_path)
 
-    def switch_extension_commit(self, name: str, commit: str) -> None:
+    def switch_extension_commit(
+        self,
+        name: str,
+        commit: str,
+    ) -> None:
         """
         切换扩展到指定提交
 
@@ -758,7 +781,11 @@ class ExtensionManager:
         """
         switch_repository_commit(self.extension_path / name, commit)
 
-    def switch_extension_branch(self, name: str, branch: str) -> None:
+    def switch_extension_branch(
+        self,
+        name: str,
+        branch: str,
+    ) -> None:
         """
         切换扩展分支
 

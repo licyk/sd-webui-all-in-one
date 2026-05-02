@@ -24,7 +24,9 @@ class TomlParser:
             解析过程中当前所在的表 (或嵌套表)的指针
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         """初始化 TomlParser 实例"""
         self.root: TomlDict = {}
         self.current_table: TomlDict = self.root
@@ -114,7 +116,11 @@ class TomlParser:
                 buffer = ""
         return merged
 
-    def _navigate(self, key_str: str, is_array_table: bool = False) -> None:
+    def _navigate(
+        self,
+        key_str: str,
+        is_array_table: bool = False,
+    ) -> None:
         """导航到指定的嵌套表位置并更新 current_table 指针
 
         Args:

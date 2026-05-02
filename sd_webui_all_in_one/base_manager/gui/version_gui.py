@@ -120,7 +120,10 @@ def apply_window_icon(root: tk.Tk | tk.Toplevel) -> bool:
         return False
 
 
-def configure_gui_fonts(root: tk.Misc, style: ttk.Style | None = None) -> None:
+def configure_gui_fonts(
+    root: tk.Misc,
+    style: ttk.Style | None = None,
+) -> None:
     """
     统一 Tk 和 ttk 组件字体
 
@@ -217,11 +220,16 @@ class BackgroundTaskMixin:
     避免 Git、网络和文件操作阻塞界面。
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self._task_queue: queue.Queue[BackgroundResult[Any]] = queue.Queue()
         self._busy_count = 0
 
-    def _install_task_poller(self, root: tk.Misc) -> None:
+    def _install_task_poller(
+        self,
+        root: tk.Misc,
+    ) -> None:
         """
         安装后台任务轮询器
 
@@ -273,7 +281,9 @@ class BackgroundTaskMixin:
         thread = threading.Thread(target=_target, daemon=True)
         thread.start()
 
-    def _poll_tasks(self) -> None:
+    def _poll_tasks(
+        self,
+    ) -> None:
         while True:
             try:
                 result = self._task_queue.get_nowait()
@@ -292,7 +302,10 @@ class BackgroundTaskMixin:
                 self.set_busy_state(False)
         self.after(100, self._poll_tasks)  # type: ignore[attr-defined]
 
-    def set_status(self, message: str) -> None:
+    def set_status(
+        self,
+        message: str,
+    ) -> None:
         """
         设置状态栏文本
 
@@ -302,7 +315,10 @@ class BackgroundTaskMixin:
         """
         raise NotImplementedError
 
-    def set_busy_state(self, busy: bool) -> None:
+    def set_busy_state(
+        self,
+        busy: bool,
+    ) -> None:
         """
         更新忙碌状态
 
@@ -408,7 +424,9 @@ class AdaptiveIndexList(ttk.Frame):
 
         self._draw_header()
 
-    def _configure_theme_colors(self) -> None:
+    def _configure_theme_colors(
+        self,
+    ) -> None:
         is_dark = "dark" in ttk.Style(self).theme_use().lower()
         if is_dark:
             self._row_colors = ("#1f1f1f", "#262626")
@@ -426,11 +444,16 @@ class AdaptiveIndexList(ttk.Frame):
             self._text_color = "#1f1f1f"
         self._selected_text_color = "#ffffff"
 
-    def _clear_placeholder(self, placeholder: str) -> None:
+    def _clear_placeholder(
+        self,
+        placeholder: str,
+    ) -> None:
         if self.search_var.get() == placeholder:
             self.search_var.set("")
 
-    def _draw_header(self) -> None:
+    def _draw_header(
+        self,
+    ) -> None:
         self.header_canvas.delete("all")
         x = 0
         for column in self.columns:
@@ -455,7 +478,10 @@ class AdaptiveIndexList(ttk.Frame):
             x += width
         self.header_canvas.configure(scrollregion=(0, 0, self._content_width, self._HEADER_HEIGHT))
 
-    def _on_table_configure(self, event: tk.Event) -> None:
+    def _on_table_configure(
+        self,
+        event: tk.Event,
+    ) -> None:
         width = max(1, event.width - self.v_scroll.winfo_width())
         if width == self._content_width:
             return
@@ -465,7 +491,10 @@ class AdaptiveIndexList(ttk.Frame):
         self._redraw_rows()
         self.canvas.yview_moveto(yview[0])
 
-    def _fit_columns_to_width(self, available_width: int) -> None:
+    def _fit_columns_to_width(
+        self,
+        available_width: int,
+    ) -> None:
         """
         根据可视宽度计算实际列宽
 
@@ -531,14 +560,20 @@ class AdaptiveIndexList(ttk.Frame):
                 return column
         return None
 
-    def _on_header_motion(self, event: tk.Event) -> None:
+    def _on_header_motion(
+        self,
+        event: tk.Event,
+    ) -> None:
         if self._resizing_column is not None:
             return
         x = self.header_canvas.canvasx(event.x)
         cursor = "sb_h_double_arrow" if self._resize_column_at(x) is not None else ""
         self.header_canvas.configure(cursor=cursor)
 
-    def _on_header_press(self, event: tk.Event) -> None:
+    def _on_header_press(
+        self,
+        event: tk.Event,
+    ) -> None:
         x = self.header_canvas.canvasx(event.x)
         column = self._resize_column_at(x)
         if column is None:
@@ -548,7 +583,10 @@ class AdaptiveIndexList(ttk.Frame):
         self._resize_start_width = self._preferred_widths.get(column, self.widths.get(column, 120))
         self.header_canvas.configure(cursor="sb_h_double_arrow")
 
-    def _on_header_drag(self, event: tk.Event) -> None:
+    def _on_header_drag(
+        self,
+        event: tk.Event,
+    ) -> None:
         if self._resizing_column is None:
             return
         x = int(self.header_canvas.canvasx(event.x))
@@ -562,16 +600,25 @@ class AdaptiveIndexList(ttk.Frame):
         self._redraw_rows()
         self.canvas.yview_moveto(yview[0])
 
-    def _on_header_release(self, _event: tk.Event) -> None:
+    def _on_header_release(
+        self,
+        _event: tk.Event,
+    ) -> None:
         self._resizing_column = None
         self.header_canvas.configure(cursor="")
 
-    def _set_mouse_over(self, mouse_over: bool) -> None:
+    def _set_mouse_over(
+        self,
+        mouse_over: bool,
+    ) -> None:
         self._mouse_over = mouse_over
         if mouse_over and self.canvas.winfo_exists():
             self.canvas.focus_set()
 
-    def _on_mousewheel(self, event: tk.Event) -> None:
+    def _on_mousewheel(
+        self,
+        event: tk.Event,
+    ) -> None:
         try:
             if not self.winfo_ismapped() or not self._mouse_over:
                 return
@@ -586,7 +633,9 @@ class AdaptiveIndexList(ttk.Frame):
             if delta:
                 self.canvas.yview_scroll(int(-1 * (delta / 120)), "units")
 
-    def clear(self) -> None:
+    def clear(
+        self,
+    ) -> None:
         """
         清空列表内容
         """
@@ -601,7 +650,10 @@ class AdaptiveIndexList(ttk.Frame):
         self._content_height = 0
         self.canvas.configure(scrollregion=(0, 0, self._content_width, self._content_height))
 
-    def delete(self, *item_ids: str) -> None:
+    def delete(
+        self,
+        *item_ids: str,
+    ) -> None:
         """
         删除指定行
 
@@ -705,7 +757,10 @@ class AdaptiveIndexList(ttk.Frame):
         """
         return (self._selected_id,) if self._selected_id is not None else ()
 
-    def selection_set(self, item_id: str) -> None:
+    def selection_set(
+        self,
+        item_id: str,
+    ) -> None:
         """
         设置当前选中行
 
@@ -731,7 +786,9 @@ class AdaptiveIndexList(ttk.Frame):
             self._select(str(item_id))
         return self._selected_id or ""
 
-    def _redraw_rows(self) -> None:
+    def _redraw_rows(
+        self,
+    ) -> None:
         self.canvas.delete("all")
         self._row_items.clear()
         self._row_backgrounds.clear()
@@ -743,7 +800,11 @@ class AdaptiveIndexList(ttk.Frame):
         if self._selected_id and self.exists(self._selected_id):
             self._select(self._selected_id)
 
-    def _draw_row(self, item_id: str, values: tuple[str, ...]) -> None:
+    def _draw_row(
+        self,
+        item_id: str,
+        values: tuple[str, ...],
+    ) -> None:
         row_index = len(self._row_items)
         bg = self._row_colors[row_index % 2]
         y = self._content_height
@@ -799,7 +860,10 @@ class AdaptiveIndexList(ttk.Frame):
         self._content_height += row_height
         self.canvas.configure(scrollregion=(0, 0, self._content_width, self._content_height))
 
-    def _select(self, item_id: str) -> None:
+    def _select(
+        self,
+        item_id: str,
+    ) -> None:
         self._selected_id = item_id
         for index, current_id in enumerate(self._row_items):
             is_selected = current_id == item_id
@@ -818,7 +882,10 @@ class AdaptiveIndexList(ttk.Frame):
         """
         return self._selected_id
 
-    def bind_double_click(self, callback: Callable[[], None]) -> None:
+    def bind_double_click(
+        self,
+        callback: Callable[[], None],
+    ) -> None:
         """
         绑定双击回调
 
@@ -853,7 +920,9 @@ class AdaptiveIndexList(ttk.Frame):
             return None
         return super().bind(sequence, func, add)
 
-    def _handle_double_click(self) -> None:
+    def _handle_double_click(
+        self,
+    ) -> None:
         if self._double_click_callback is not None:
             self._double_click_callback()
 
@@ -926,7 +995,9 @@ class CommitSwitchDialog(tk.Toplevel):
 
         self._refresh()
 
-    def _refresh(self) -> None:
+    def _refresh(
+        self,
+    ) -> None:
         keyword = self.search_var.get().strip().lower()
         self.tree.delete(*self.tree.get_children())
         self.filtered_commits = []
@@ -942,7 +1013,9 @@ class CommitSwitchDialog(tk.Toplevel):
                 values=(commit.commit, commit.message, commit.date, "✓" if commit.is_current else ""),
             )
 
-    def _switch_selected(self) -> None:
+    def _switch_selected(
+        self,
+    ) -> None:
         selection = self.tree.selection()
         if not selection:
             messagebox.showwarning("请选择版本", "请先选择要切换的版本")
@@ -1012,7 +1085,9 @@ class BranchSwitchDialog(tk.Toplevel):
         ttk.Button(button_frame, text="切换", command=self._switch_selected).pack(side=tk.RIGHT)
         ttk.Button(button_frame, text="关闭", command=self.destroy).pack(side=tk.RIGHT, padx=(0, 8))
 
-    def _switch_selected(self) -> None:
+    def _switch_selected(
+        self,
+    ) -> None:
         selection = self.tree.selection()
         if not selection:
             messagebox.showwarning("请选择分支", "请先选择要切换的分支")

@@ -47,7 +47,11 @@ def _invokeai_node_enabled(_name: str, path: Path) -> bool:
     return (path / "__init__.py").is_file()
 
 
-def _set_invokeai_node_enabled(nodes_path: Path, name: str, enabled: bool) -> None:
+def _set_invokeai_node_enabled(
+    nodes_path: Path,
+    name: str,
+    enabled: bool,
+) -> None:
     init_py = nodes_path / name / "__init__.py"
     init_bak_py = nodes_path / name / "__init__.py.bak"
     if enabled:
@@ -118,7 +122,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self._install_task_poller(self)
         self.refresh_all()
 
-    def _create_styles(self) -> None:
+    def _create_styles(
+        self,
+    ) -> None:
         theme_applied = apply_gui_theme(self)
         style = ttk.Style(self)
         if not theme_applied and "clam" in style.theme_names():
@@ -126,7 +132,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         configure_gui_fonts(self, style)
         style.configure("Status.TLabel", padding=(8, 4))
 
-    def _create_widgets(self) -> None:
+    def _create_widgets(
+        self,
+    ) -> None:
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         ttk.Label(top, text=f"路径: {self.invokeai_path}").pack(side=tk.LEFT, padx=10, pady=8)
@@ -155,15 +163,15 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.progress = ttk.Progressbar(status_frame, mode="indeterminate", length=180)
         self.progress.pack(side=tk.RIGHT, padx=(0, 8), pady=4)
 
-    def _create_kernel_tab(self) -> None:
+    def _create_kernel_tab(
+        self,
+    ) -> None:
         info_frame = ttk.Frame(self.kernel_tab)
         info_frame.pack(fill=tk.X, padx=18, pady=16)
         self.package_name_var = tk.StringVar(value="invokeai")
         self.kernel_version_var = tk.StringVar(value="-")
         self.kernel_status_var = tk.StringVar(value="-")
-        for row, (label, var) in enumerate(
-            (("PyPI 包:", self.package_name_var), ("当前版本:", self.kernel_version_var), ("状态:", self.kernel_status_var))
-        ):
+        for row, (label, var) in enumerate((("PyPI 包:", self.package_name_var), ("当前版本:", self.kernel_version_var), ("状态:", self.kernel_status_var))):
             ttk.Label(info_frame, text=label).grid(row=row, column=0, sticky=tk.W, pady=4)
             ttk.Label(info_frame, textvariable=var).grid(row=row, column=1, sticky=tk.W, padx=(16, 0), pady=4)
         info_frame.columnconfigure(1, weight=1)
@@ -182,7 +190,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         )
         self.kernel_version_tree.pack(fill=tk.BOTH, expand=True)
 
-    def _create_extensions_tab(self) -> None:
+    def _create_extensions_tab(
+        self,
+    ) -> None:
         toolbar = ttk.Frame(self.extensions_tab)
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新扩展", command=self.refresh_extensions).pack(side=tk.LEFT)
@@ -202,7 +212,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.extension_tree.pack(fill=tk.BOTH, expand=True)
         self.extension_tree.search_var.trace_add("write", lambda *_args: self.render_extensions())
 
-    def _create_install_tab(self) -> None:
+    def _create_install_tab(
+        self,
+    ) -> None:
         panel = ttk.Frame(self.install_tab)
         panel.pack(fill=tk.X, padx=18, pady=18)
         ttk.Label(panel, text="扩展 Git URL:").pack(side=tk.LEFT)
@@ -215,10 +227,16 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 8))
         ttk.Button(panel, text="安装", command=self.install_from_url).pack(side=tk.LEFT)
 
-    def set_status(self, message: str) -> None:
+    def set_status(
+        self,
+        message: str,
+    ) -> None:
         self.status_var.set(message)
 
-    def set_busy_state(self, busy: bool) -> None:
+    def set_busy_state(
+        self,
+        busy: bool,
+    ) -> None:
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)
@@ -226,14 +244,18 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self.busy_var.set("")
             self.progress.stop()
 
-    def refresh_all(self) -> None:
+    def refresh_all(
+        self,
+    ) -> None:
         """
         刷新内核版本和扩展列表
         """
         self.refresh_kernel()
         self.refresh_extensions()
 
-    def refresh_kernel(self) -> None:
+    def refresh_kernel(
+        self,
+    ) -> None:
         """
         刷新 InvokeAI 内核版本列表
         """
@@ -243,7 +265,10 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.current_version = _get_invokeai_version()
         return fetch_pypi_versions("invokeai", current_version=self.current_version, index_url=self.pypi_index_url)
 
-    def _apply_kernel_versions(self, versions: list[PackageVersionInfo]) -> None:
+    def _apply_kernel_versions(
+        self,
+        versions: list[PackageVersionInfo],
+    ) -> None:
         self.package_versions = versions
         self.kernel_version_var.set(self.current_version or "未安装")
         self.kernel_status_var.set("已安装" if self.current_version else "未安装 invokeai 包")
@@ -256,7 +281,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 values=(version.version, version.summary, version.upload_time, "✓" if version.is_current else ""),
             )
 
-    def update_kernel(self) -> None:
+    def update_kernel(
+        self,
+    ) -> None:
         """
         更新 InvokeAI 内核包
         """
@@ -266,20 +293,22 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda _value: self.refresh_kernel(),
         )
 
-    def open_kernel_version_dialog(self) -> None:
+    def open_kernel_version_dialog(
+        self,
+    ) -> None:
         """
         打开 InvokeAI 版本切换弹窗
         """
         if not self.package_versions:
             messagebox.showwarning("无版本列表", "请先刷新版本列表")
             return
-        commits = [
-            CommitInfo(commit=item.version, message=item.summary, date=item.upload_time, is_current=item.is_current)
-            for item in self.package_versions
-        ]
+        commits = [CommitInfo(commit=item.version, message=item.summary, date=item.upload_time, is_current=item.is_current) for item in self.package_versions]
         CommitSwitchDialog(self, "InvokeAI 版本切换", commits, lambda item: self._switch_kernel_version(item.commit))
 
-    def _switch_kernel_version(self, version: str) -> None:
+    def _switch_kernel_version(
+        self,
+        version: str,
+    ) -> None:
         """
         切换 InvokeAI 内核版本
 
@@ -293,20 +322,27 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda _value: self.refresh_kernel(),
         )
 
-    def refresh_extensions(self) -> None:
+    def refresh_extensions(
+        self,
+    ) -> None:
         """
         刷新 InvokeAI 扩展列表
         """
         self.run_background("刷新扩展列表中...", self.extension_manager.list_extensions, self._apply_extensions)
 
-    def _apply_extensions(self, extensions: list[ManagedExtension]) -> None:
+    def _apply_extensions(
+        self,
+        extensions: list[ManagedExtension],
+    ) -> None:
         self.extensions = extensions
         self.render_extensions()
 
     def _extension_values(self, ext: ManagedExtension) -> tuple[str, str, str, str, str, str, str]:
         return ("✓" if ext.enabled else "", ext.name, ext.url or "-", ext.branch or "-", ext.commit or "-", ext.commit_date or "-", "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库"))
 
-    def render_extensions(self) -> None:
+    def render_extensions(
+        self,
+    ) -> None:
         """
         渲染 InvokeAI 扩展列表
         """
@@ -327,7 +363,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return None
         return next((ext for ext in self.extensions if ext.name == selected_id), None)
 
-    def update_selected_extension(self) -> None:
+    def update_selected_extension(
+        self,
+    ) -> None:
         """
         更新当前选中的扩展
         """
@@ -339,16 +377,24 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background("更新扩展中...", lambda: self.extension_manager.update_extension(ext.name), lambda _value: self.refresh_extensions())
 
-    def toggle_selected_extension(self) -> None:
+    def toggle_selected_extension(
+        self,
+    ) -> None:
         """
         切换当前选中扩展的启用状态
         """
         ext = self._selected_extension()
         if ext is None:
             return
-        self.run_background("修改扩展状态中...", lambda: self.extension_manager.set_extension_enabled(ext.name, not ext.enabled), lambda _value: self._apply_extension_enabled(ext.name, not ext.enabled))
+        self.run_background(
+            "修改扩展状态中...", lambda: self.extension_manager.set_extension_enabled(ext.name, not ext.enabled), lambda _value: self._apply_extension_enabled(ext.name, not ext.enabled)
+        )
 
-    def _apply_extension_enabled(self, name: str, enabled: bool) -> None:
+    def _apply_extension_enabled(
+        self,
+        name: str,
+        enabled: bool,
+    ) -> None:
         for ext in self.extensions:
             if ext.name == name:
                 ext.enabled = enabled
@@ -358,7 +404,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                     self.extension_tree.tree.focus(name)
                 return
 
-    def uninstall_selected_extension(self) -> None:
+    def uninstall_selected_extension(
+        self,
+    ) -> None:
         """
         卸载当前选中的扩展
         """
@@ -369,7 +417,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background("卸载扩展中...", lambda: self.extension_manager.uninstall_extension(ext.name), lambda _value: self.refresh_extensions())
 
-    def open_extension_commit_dialog(self) -> None:
+    def open_extension_commit_dialog(
+        self,
+    ) -> None:
         """
         打开扩展版本切换弹窗
         """
@@ -390,10 +440,16 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             ),
         )
 
-    def _switch_extension_commit(self, name: str, commit: str) -> None:
+    def _switch_extension_commit(
+        self,
+        name: str,
+        commit: str,
+    ) -> None:
         self.run_background("切换扩展版本中...", lambda: switch_repository_commit(self.nodes_path / name, commit), lambda _value: self.refresh_extensions())
 
-    def open_extension_branch_dialog(self) -> None:
+    def open_extension_branch_dialog(
+        self,
+    ) -> None:
         """
         打开扩展分支切换弹窗
         """
@@ -414,10 +470,16 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             ),
         )
 
-    def _switch_extension_branch(self, name: str, branch: str) -> None:
+    def _switch_extension_branch(
+        self,
+        name: str,
+        branch: str,
+    ) -> None:
         self.run_background("切换扩展分支中...", lambda: switch_repository_branch(self.nodes_path / name, branch), lambda _value: self.refresh_extensions())
 
-    def install_from_url(self) -> None:
+    def install_from_url(
+        self,
+    ) -> None:
         """
         从 Git URL 安装 InvokeAI 扩展
         """
@@ -433,11 +495,17 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda _value: (self.install_url_var.set(self.install_url_placeholder), self.refresh_extensions()),
         )
 
-    def _clear_install_url_placeholder(self, _event) -> None:
+    def _clear_install_url_placeholder(
+        self,
+        _event,
+    ) -> None:
         if self.install_url_var.get() == self.install_url_placeholder:
             self.install_url_var.set("")
 
-    def _restore_install_url_placeholder(self, _event) -> None:
+    def _restore_install_url_placeholder(
+        self,
+        _event,
+    ) -> None:
         if not self.install_url_var.get().strip():
             self.install_url_var.set(self.install_url_placeholder)
 

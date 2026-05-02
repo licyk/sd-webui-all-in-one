@@ -1383,7 +1383,9 @@ def set_sd_webui_extensions_status(
             Stable Diffusion WebUI 扩展未找到时
     """
 
-    def _save(data: dict[str, Any]) -> None:
+    def _save(
+        data: dict[str, Any],
+    ) -> None:
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
 

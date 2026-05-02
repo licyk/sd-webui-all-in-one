@@ -32,7 +32,9 @@ class _Aria2ServerPool:
     线程安全, 适用于多线程并发下载场景
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self._lock: threading.Lock = threading.Lock()
         self._server: Aria2RpcServer | None = None
         self._ref_count: int = 0
@@ -56,7 +58,9 @@ class _Aria2ServerPool:
             logger.debug("Aria2RpcServer 引用计数: %d", self._ref_count)
             return self._server
 
-    def release(self) -> None:
+    def release(
+        self,
+    ) -> None:
         """
         释放对共享 Aria2RpcServer 实例的引用
 

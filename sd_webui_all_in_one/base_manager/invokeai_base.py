@@ -1471,7 +1471,9 @@ def reinstall_invokeai_pytorch(
     def _uninstall() -> None:
         run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
-    def _install(d: PyTorchDeviceTypeCategory) -> None:
+    def _install(
+        d: PyTorchDeviceTypeCategory,
+    ) -> None:
         install_invokeai_component(
             device_type=d,
             use_pypi_mirror=use_pypi_mirror,

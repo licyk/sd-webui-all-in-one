@@ -83,7 +83,9 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self._install_task_poller(self)
         self.refresh_kernel()
 
-    def _create_styles(self) -> None:
+    def _create_styles(
+        self,
+    ) -> None:
         theme_applied = apply_gui_theme(self)
         style = ttk.Style(self)
         if not theme_applied and "clam" in style.theme_names():
@@ -91,7 +93,9 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         configure_gui_fonts(self, style)
         style.configure("Status.TLabel", padding=(8, 4))
 
-    def _create_widgets(self) -> None:
+    def _create_widgets(
+        self,
+    ) -> None:
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         ttk.Label(top, text=f"路径: {self.root_path}").pack(side=tk.LEFT, padx=10, pady=8)
@@ -143,10 +147,16 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.progress = ttk.Progressbar(status_frame, mode="indeterminate", length=180)
         self.progress.pack(side=tk.RIGHT, padx=(0, 8), pady=4)
 
-    def set_status(self, message: str) -> None:
+    def set_status(
+        self,
+        message: str,
+    ) -> None:
         self.status_var.set(message)
 
-    def set_busy_state(self, busy: bool) -> None:
+    def set_busy_state(
+        self,
+        busy: bool,
+    ) -> None:
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)
@@ -154,7 +164,9 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self.busy_var.set("")
             self.progress.stop()
 
-    def refresh_kernel(self) -> None:
+    def refresh_kernel(
+        self,
+    ) -> None:
         """
         刷新内核仓库信息和版本列表
         """
@@ -164,7 +176,10 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             self._apply_kernel_info,
         )
 
-    def _apply_kernel_info(self, result: tuple[RepositoryState, list]) -> None:
+    def _apply_kernel_info(
+        self,
+        result: tuple[RepositoryState, list],
+    ) -> None:
         state, commits = result
         self.repository_state = state
         self.kernel_url_var.set(state.url or "-")
@@ -183,7 +198,9 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 values=(commit.commit, commit.message, commit.date, "✓" if commit.is_current else ""),
             )
 
-    def update_kernel(self) -> None:
+    def update_kernel(
+        self,
+    ) -> None:
         """
         更新内核仓库
         """
@@ -192,7 +209,9 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background("更新内核中...", lambda: update_repository(self.root_path), lambda _value: self.refresh_kernel())
 
-    def open_commit_dialog(self) -> None:
+    def open_commit_dialog(
+        self,
+    ) -> None:
         """
         打开内核版本切换弹窗
         """
@@ -205,10 +224,15 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda commits: CommitSwitchDialog(self, f"{self.app_title} 版本切换", commits, lambda commit: self._switch_commit(commit.commit)),
         )
 
-    def _switch_commit(self, commit: str) -> None:
+    def _switch_commit(
+        self,
+        commit: str,
+    ) -> None:
         self.run_background("切换内核版本中...", lambda: switch_repository_commit(self.root_path, commit), lambda _value: self.refresh_kernel())
 
-    def open_branch_dialog(self) -> None:
+    def open_branch_dialog(
+        self,
+    ) -> None:
         """
         打开内核分支切换弹窗
         """
@@ -221,7 +245,10 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             lambda branches: BranchSwitchDialog(self, f"{self.app_title} 分支切换", branches, self._switch_branch),
         )
 
-    def _switch_branch(self, branch: BranchInfo) -> None:
+    def _switch_branch(
+        self,
+        branch: BranchInfo,
+    ) -> None:
         preset = self._find_branch_preset(branch.name)
 
         def _task() -> None:

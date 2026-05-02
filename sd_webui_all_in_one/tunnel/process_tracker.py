@@ -32,7 +32,10 @@ class ProcessTracker:
         """初始化进程追踪器"""
         self._tunnels: list["BaseTunnel"] = []
 
-    def register(self, tunnel: "BaseTunnel") -> None:
+    def register(
+        self,
+        tunnel: "BaseTunnel",
+    ) -> None:
         """注册一个隧道
 
         Args:
