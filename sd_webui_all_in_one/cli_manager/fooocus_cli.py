@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager import (
     install_fooocus_model_from_url,
     list_fooocus_models,
     uninstall_fooocus_model,
+    launch_fooocus_version_gui,
     reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
@@ -372,6 +373,19 @@ def uninstall_model(
     )
 
 
+def launch_version_gui(
+    fooocus_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Fooocus 版本管理 GUI"""
+    launch_fooocus_version_gui(
+        fooocus_path=fooocus_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_fooocus(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -505,6 +519,22 @@ def register_fooocus(
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
             check_launch_env=args.check_env,
+        )
+    )
+
+    # gui
+    gui_parser = fooocus_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 Fooocus 版本管理 GUI")
+    version_gui_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            fooocus_path=args.fooocus_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager import (
     install_sd_trainer_model_from_url,
     list_sd_trainer_models,
     uninstall_sd_trainer_model,
+    launch_sd_trainer_version_gui,
     reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
@@ -369,6 +370,19 @@ def uninstall_model(
     )
 
 
+def launch_version_gui(
+    sd_trainer_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 SD Trainer 版本管理 GUI"""
+    launch_sd_trainer_version_gui(
+        sd_trainer_path=sd_trainer_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_sd_trainer(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -504,6 +518,22 @@ def register_sd_trainer(
             use_cuda_malloc=args.use_cuda_malloc,
             use_uv=args.use_uv,
             check_launch_env=args.check_env,
+        )
+    )
+
+    # gui
+    gui_parser = trainer_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 SD Trainer 版本管理 GUI")
+    version_gui_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            sd_trainer_path=args.sd_trainer_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

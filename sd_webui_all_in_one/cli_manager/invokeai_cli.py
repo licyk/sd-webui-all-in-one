@@ -21,6 +21,7 @@ from sd_webui_all_in_one.base_manager import (
     list_invokeai_models,
     uninstall_invokeai_model,
     reinstall_invokeai_pytorch,
+    launch_invokeai_version_gui,
 )
 from sd_webui_all_in_one.config import (
     INVOKEAI_ROOT_PATH,
@@ -325,6 +326,23 @@ def uninstall_custom_node(
     )
 
 
+def launch_version_gui(
+    invokeai_path: Path,
+    use_pypi_mirror: bool | None = False,
+    use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 InvokeAI 版本管理 GUI"""
+    launch_invokeai_version_gui(
+        invokeai_path=invokeai_path,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def install_model_from_library(
     invokeai_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -517,6 +535,26 @@ def register_invokeai(
             custom_github_mirror=args.custom_github_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
             check_launch_env=args.check_env,
+        )
+    )
+
+    # gui
+    gui_parser = invoke_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 InvokeAI 版本管理 GUI")
+    version_gui_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    version_gui_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用 PyPI 镜像源")
+    version_gui_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            invokeai_path=args.invokeai_path,
+            use_pypi_mirror=args.use_pypi_mirror,
+            use_uv=args.use_uv,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

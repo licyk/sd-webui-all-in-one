@@ -14,6 +14,7 @@ from concurrent.futures import (
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
     clone_repo,
@@ -203,8 +204,31 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
 COMFYUI_REPO_URL = "https://github.com/Comfy-Org/ComfyUI"
 """ComfyUI 仓库地址"""
 
+COMFYUI_CUSTOM_NODE_LIST_PATH = "Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json"
+"""ComfyUI-Manager 自定义节点列表 GitHub raw 路径"""
+
 COMFYUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "comfy.settings.json"
 """ComfyUI 预设配置文件路径"""
+
+
+def set_comfyui_custom_node_list_mirror(
+    custom_github_mirror: str | list[str] | None = None,
+) -> str | None:
+    """
+    配置 ComfyUI 自定义节点列表镜像源
+
+    Args:
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源列表
+
+    Returns:
+        str | None:
+            自定义节点列表镜像 URL, 未启用或无可用镜像时返回 None
+    """
+    return apply_github_raw_file_mirror(
+        raw_file_path=COMFYUI_CUSTOM_NODE_LIST_PATH,
+        custom_github_mirror=custom_github_mirror,
+    )
 
 
 def install_comfyui_config(
@@ -940,3 +964,25 @@ def uninstall_comfyui_model(
         remove_files(i)
 
     logger.info("模型删除完成")
+
+
+def launch_comfyui_version_gui(
+    comfyui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 ComfyUI 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui import (
+            launch_comfyui_version_gui as _launch_comfyui_version_gui,
+        )
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    _launch_comfyui_version_gui(
+        comfyui_path=comfyui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )

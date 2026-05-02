@@ -350,3 +350,25 @@ def launch_qwen_tts_webui(
         launch_args=launch_args + hf_mirror_args,
         custom_env=custom_env,
     )
+
+
+def launch_qwen_tts_webui_version_gui(
+    qwen_tts_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Qwen TTS WebUI 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.git_kernel_version_gui import launch_git_kernel_version_gui
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    launch_git_kernel_version_gui(
+        title="Qwen TTS WebUI",
+        root_path=qwen_tts_webui_path,
+        branch_presets=[{"name": "licyk - Qwen TTS WebUI", "url": QWEN_TTS_WEBUI_REPO, "branch": "main", "use_submodule": False}],
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )

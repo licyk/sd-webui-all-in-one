@@ -41,6 +41,7 @@ _✨快速部署，简单易用_
 
 - [SD WebUI All In One](#sd-webui-all-in-one)
 - [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
+- [Third-party Notices](#third-party-notices)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
   - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
   - [SD Trainer Scripts Kaggle Jupyter NoteBook](#sd-trainer-scripts-kaggle-jupyter-notebook)
@@ -91,6 +92,12 @@ _✨快速部署，简单易用_
 - [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
 
 详细的说明[点击此处](docs/cli.md)阅读。
+
+
+# Third-party Notices
+本项目的 tkinter 版本管理 GUI 内置了 [Sun Valley ttk theme](https://github.com/rdbende/Sun-Valley-ttk-theme)（`sv_ttk`）作为可选界面主题资源。
+
+Sun Valley ttk theme 使用 MIT License，版权归 `rdbende <rdbende@proton.me>` 所有，许可证原文保留在 [sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE](sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE)。本项目主体仍按 GPL-3.0 发布，第三方组件按其各自许可证使用。
 
 
 # SD WebUI All In One Notebook
@@ -328,5 +335,3 @@ Windows / Linux / MacOS 平台一键部署 [Qwen TTS WebUI](https://github.com/l
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
-
-

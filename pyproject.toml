@@ -84,7 +84,7 @@ exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*
 namespaces = true
 
 [tool.setuptools.package-data]
-"*" = ["*.json", "*.conf"]
+"*" = ["*.json", "*.conf", "*.tcl", "*.png", "LICENSE", "README.md"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]
@@ -118,3 +118,8 @@ lint.ignore = [
 [tool.ruff.format]
 quote-style = "double"
 skip-magic-trailing-comma = false
+
+[tool.pytest.ini_options]
+norecursedirs = [
+    "sd_webui_all_in_one/base_manager/gui/sv_ttk",
+]

@@ -671,6 +671,58 @@ def apply_git_base_config_and_github_mirror(
     return custom_env
 
 
+def apply_github_raw_file_mirror(
+    raw_file_path: str,
+    custom_github_mirror: str | list[str] | None = None,
+) -> str | None:
+    """
+    根据 GitHub 镜像源生成 raw 文件 URL
+
+    Args:
+        raw_file_path (str):
+            GitHub raw 文件路径, 例如 `owner/repo/branch/path/file.json`
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源。字符串可直接传完整 JSON URL, 或传镜像前缀;
+            列表会按顺序测试并选择第一个可用镜像前缀
+
+    Returns:
+        str | None:
+            可用镜像 URL, 未启用或未找到可用镜像时返回 None
+
+    Raises:
+        ValueError:
+            传入的镜像源参数类型不支持时
+    """
+    github_mirror = GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+
+    if github_mirror is None:
+        return None
+    if isinstance(github_mirror, str):
+        if github_mirror.endswith(".json"):
+            return github_mirror
+        mirror_prefix = github_mirror.replace("github.com", "raw.githubusercontent.com", 1).rstrip("/")
+        return f"{mirror_prefix}/{raw_file_path}"
+    if isinstance(github_mirror, list):
+        for gh in github_mirror:
+            mirror_prefix = gh.replace("github.com", "raw.githubusercontent.com", 1).rstrip("/")
+            test_url = f"{mirror_prefix}/licyk/empty/main/README.md"
+            req = urllib.request.Request(test_url, headers=headers)
+            try:
+                logger.info("测试镜像源: %s", gh)
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.getcode() == 200:
+                        logger.info("该镜像源可用")
+                        return f"{mirror_prefix}/{raw_file_path}"
+            except Exception:
+                logger.warning("该镜像源不可用")
+
+        logger.warning("无可用的 Github 镜像源")
+        return None
+
+    raise ValueError(f"传入的 Github 镜像源列表类型不支持: {type(github_mirror)}")
+
+
 def apply_hf_mirror(
     use_hf_mirror: bool | None = False,
     custom_hf_mirror: str | list[str] | None = None,

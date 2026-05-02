@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager import (
     install_sd_scripts_model_from_url,
     list_sd_scripts_models,
     uninstall_sd_scripts_model,
+    launch_sd_scripts_version_gui,
     reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import SD_SCRIPTS_ROOT_PATH
@@ -276,6 +277,19 @@ def uninstall_model(
     )
 
 
+def launch_version_gui(
+    sd_scripts_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 SD Scripts 版本管理 GUI"""
+    launch_sd_scripts_version_gui(
+        sd_scripts_path=sd_scripts_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_sd_scripts(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -384,6 +398,22 @@ def register_sd_scripts(
             custom_github_mirror=args.custom_github_mirror,
             interactive_mode=args.interactive_mode,
             list_only=args.list_only,
+        )
+    )
+
+    # gui
+    gui_parser = scripts_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 SD Scripts 版本管理 GUI")
+    version_gui_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            sd_scripts_path=args.sd_scripts_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

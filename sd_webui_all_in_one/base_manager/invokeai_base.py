@@ -1532,3 +1532,29 @@ def reinstall_invokeai_pytorch(
         _uninstall()
         _install(device_type)
         logger.info("PyTorch 重装完成")
+
+
+def launch_invokeai_version_gui(
+    invokeai_path: Path,
+    use_pypi_mirror: bool | None = False,
+    use_uv: bool | None = True,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 InvokeAI 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui import (
+            launch_invokeai_version_gui as _launch_invokeai_version_gui,
+        )
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    _launch_invokeai_version_gui(
+        invokeai_path=invokeai_path,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )

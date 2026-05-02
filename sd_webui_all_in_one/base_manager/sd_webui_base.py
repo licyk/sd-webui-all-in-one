@@ -3,7 +3,6 @@
 import os
 import json
 import uuid
-import urllib.request
 import importlib.metadata
 from concurrent.futures import (
     ThreadPoolExecutor,
@@ -43,6 +42,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.base_manager.base import (
+    apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
     prepare_pytorch_install_info,
@@ -1174,7 +1174,8 @@ def set_sd_webui_extension_download_list_mirror(
     custom_github_mirror: str | list[str] | None = None,
     origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    """配置 Stable Diffusion WebUI 扩展下载列表镜像源
+    """
+    配置 Stable Diffusion WebUI 扩展下载列表镜像源
 
     Args:
         custom_github_mirror (str | list[str] | None):
@@ -1182,40 +1183,18 @@ def set_sd_webui_extension_download_list_mirror(
         origin_env (dict[str, str] | None):
             原始的环境变量字典
 
-    Raises:
-        ValueError:
-            传入的镜像源参数类型不支持时
+    Returns:
+        dict[str, str]:
+            包含 `WEBUI_EXTENSIONS_INDEX` 的环境变量字典
     """
-    if origin_env is None:
-        origin_env = os.environ.copy()
-
-    github_mirror = GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-
-    if github_mirror is None:
-        return origin_env
-    if isinstance(github_mirror, str):
-        origin_env["WEBUI_EXTENSIONS_INDEX"] = github_mirror
-        return origin_env
-    if isinstance(github_mirror, list):
-        for gh in github_mirror:
-            mirror_prefix = gh.replace("github.com", "raw.githubusercontent.com", 1)
-            test_url = f"{mirror_prefix}/licyk/empty/main/README.md"
-            req = urllib.request.Request(test_url, headers=headers)
-            try:
-                logger.info("测试镜像源: %s", gh)
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.getcode() == 200:
-                        logger.info("该镜像源可用")
-                        origin_env["WEBUI_EXTENSIONS_INDEX"] = f"{mirror_prefix}/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
-                        return origin_env
-            except Exception:
-                logger.warning("该镜像源不可用")
-
-        logger.warning("无可用的 Github 镜像源")
-        return origin_env
-
-    raise ValueError(f"传入的 Github 镜像源列表类型不支持: {type(github_mirror)}")
+    env = origin_env.copy() if origin_env is not None else os.environ.copy()
+    extension_index = apply_github_raw_file_mirror(
+        raw_file_path="AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json",
+        custom_github_mirror=custom_github_mirror,
+    )
+    if extension_index is not None:
+        env["WEBUI_EXTENSIONS_INDEX"] = extension_index
+    return env
 
 
 def launch_sd_webui(
@@ -1741,3 +1720,37 @@ def uninstall_sd_webui_model(
         remove_files(i)
 
     logger.info("模型删除完成")
+
+
+def fetch_sd_webui_extension_index(
+    index_url: str | None = None,
+):
+    """获取 Stable Diffusion WebUI 扩展源列表"""
+    from sd_webui_all_in_one.base_manager.version_manager import (
+        DEFAULT_EXTENSION_INDEX_URL,
+        fetch_extension_index,
+    )
+
+    return fetch_extension_index(index_url or DEFAULT_EXTENSION_INDEX_URL)
+
+
+def launch_sd_webui_version_gui(
+    sd_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Stable Diffusion WebUI 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui import (
+            launch_sd_webui_version_gui as _launch_sd_webui_version_gui,
+        )
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    _launch_sd_webui_version_gui(
+        sd_webui_path=sd_webui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )

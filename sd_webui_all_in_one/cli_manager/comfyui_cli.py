@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager import (
     list_comfyui_custom_nodes,
     update_comfyui_custom_nodes,
     uninstall_comfyui_custom_node,
+    launch_comfyui_version_gui,
     install_comfyui_model_from_library,
     install_comfyui_model_from_url,
     list_comfyui_models,
@@ -361,6 +362,19 @@ def uninstall_custom_node(
     )
 
 
+def launch_version_gui(
+    comfyui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 ComfyUI 版本管理 GUI"""
+    launch_comfyui_version_gui(
+        comfyui_path=comfyui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def install_model_from_library(
     comfyui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -587,6 +601,22 @@ def register_comfyui(
             interactive_mode=args.interactive_mode,
             install_conflict_component_requirement=args.install_conflict_component_requirement,
             check_launch_env=args.check_env,
+        )
+    )
+
+    # gui
+    gui_parser = comfy_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 ComfyUI 版本管理 GUI")
+    version_gui_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            comfyui_path=args.comfyui_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

@@ -9,6 +9,7 @@ from sd_webui_all_in_one.base_manager.base import (
     launch_webui,
     get_repo_name_from_url,
     install_webui_model_from_library,
+    apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
 )
@@ -25,12 +26,14 @@ from sd_webui_all_in_one.base_manager.comfyui_base import (
     install_comfyui_custom_node,
     list_comfyui_custom_nodes,
     set_comfyui_custom_node_status,
+    set_comfyui_custom_node_list_mirror,
     update_comfyui_custom_nodes,
     uninstall_comfyui_custom_node,
     install_comfyui_model_from_library,
     install_comfyui_model_from_url,
     list_comfyui_models,
     uninstall_comfyui_model,
+    launch_comfyui_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.fooocus_base import (
@@ -51,6 +54,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     install_fooocus_model_from_url,
     list_fooocus_models,
     uninstall_fooocus_model,
+    launch_fooocus_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.invokeai_base import (
@@ -81,6 +85,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     uninstall_model_from_invokeai,
     uninstall_invokeai_model,
     reinstall_invokeai_pytorch,
+    launch_invokeai_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
@@ -92,6 +97,7 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     update_qwen_tts_webui,
     check_qwen_tts_webui_env,
     launch_qwen_tts_webui,
+    launch_qwen_tts_webui_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.sd_scripts_base import (
@@ -108,6 +114,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     install_sd_scripts_model_from_url,
     list_sd_scripts_models,
     uninstall_sd_scripts_model,
+    launch_sd_scripts_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.sd_trainer_base import (
@@ -124,6 +131,7 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import (
     install_sd_trainer_model_from_url,
     list_sd_trainer_models,
     uninstall_sd_trainer_model,
+    launch_sd_trainer_version_gui,
 )
 
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
@@ -147,6 +155,8 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_extensions,
     update_sd_webui_extensions,
     uninstall_sd_webui_extension,
+    fetch_sd_webui_extension_index,
+    launch_sd_webui_version_gui,
     install_sd_webui_model_from_library,
     install_sd_webui_model_from_url,
     list_sd_webui_models,
@@ -164,6 +174,7 @@ __all__ = [
     "launch_webui",
     "get_repo_name_from_url",
     "install_webui_model_from_library",
+    "apply_github_raw_file_mirror",
     "apply_git_base_config_and_github_mirror",
     "apply_hf_mirror",
     # comfyui_base.py - ComfyUI 管理模块
@@ -181,12 +192,14 @@ __all__ = [
     "install_comfyui_custom_node",
     "list_comfyui_custom_nodes",
     "set_comfyui_custom_node_status",
+    "set_comfyui_custom_node_list_mirror",
     "update_comfyui_custom_nodes",
     "uninstall_comfyui_custom_node",
     "install_comfyui_model_from_library",
     "install_comfyui_model_from_url",
     "list_comfyui_models",
     "uninstall_comfyui_model",
+    "launch_comfyui_version_gui",
     # fooocus_base.py - Fooocus 管理模块
     # 类型定义
     "FooocusBranchType",
@@ -208,6 +221,7 @@ __all__ = [
     "install_fooocus_model_from_url",
     "list_fooocus_models",
     "uninstall_fooocus_model",
+    "launch_fooocus_version_gui",
     # invokeai_base.py - InvokeAI 管理模块
     # 类型定义
     "InvokeAILocalExtensionInfo",
@@ -238,6 +252,7 @@ __all__ = [
     "uninstall_model_from_invokeai",
     "uninstall_invokeai_model",
     "reinstall_invokeai_pytorch",
+    "launch_invokeai_version_gui",
     # qwen_tts_webui_base.py - Qwen TTS WebUI 管理模块
     # 常量
     "QWEN_TTS_WEBUI_PRESET_HF_PATH",
@@ -249,6 +264,7 @@ __all__ = [
     "update_qwen_tts_webui",
     "check_qwen_tts_webui_env",
     "launch_qwen_tts_webui",
+    "launch_qwen_tts_webui_version_gui",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
     "SDScriptsBranchType",
@@ -266,6 +282,7 @@ __all__ = [
     "install_sd_scripts_model_from_url",
     "list_sd_scripts_models",
     "uninstall_sd_scripts_model",
+    "launch_sd_scripts_version_gui",
     # sd_trainer_base.py - SD Trainer 管理模块
     # 类型定义
     "SDTrainerBranchType",
@@ -283,6 +300,7 @@ __all__ = [
     "install_sd_trainer_model_from_url",
     "list_sd_trainer_models",
     "uninstall_sd_trainer_model",
+    "launch_sd_trainer_version_gui",
     # sd_webui_base.py - SD WebUI 管理模块
     # 类型定义
     "SDWebUiBranchType",
@@ -307,6 +325,8 @@ __all__ = [
     "list_sd_webui_extensions",
     "update_sd_webui_extensions",
     "uninstall_sd_webui_extension",
+    "fetch_sd_webui_extension_index",
+    "launch_sd_webui_version_gui",
     "install_sd_webui_model_from_library",
     "install_sd_webui_model_from_url",
     "list_sd_webui_models",

@@ -672,6 +672,28 @@ def install_fooocus_model_from_url(
     )
 
 
+def launch_fooocus_version_gui(
+    fooocus_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Fooocus 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.git_kernel_version_gui import launch_git_kernel_version_gui
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    launch_git_kernel_version_gui(
+        title="Fooocus",
+        root_path=fooocus_path,
+        branch_presets=FOOOCUS_BRANCH_INFO_DICT,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def list_fooocus_models(
     fooocus_path: Path,
 ) -> None:

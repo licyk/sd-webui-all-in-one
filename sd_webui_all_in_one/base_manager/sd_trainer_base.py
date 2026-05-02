@@ -668,3 +668,25 @@ def uninstall_sd_trainer_model(
         remove_files(i)
 
     logger.info("模型删除完成")
+
+
+def launch_sd_trainer_version_gui(
+    sd_trainer_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 SD Trainer 版本管理 GUI"""
+    try:
+        from sd_webui_all_in_one.base_manager.gui.git_kernel_version_gui import launch_git_kernel_version_gui
+    except ModuleNotFoundError as e:
+        if e.name == "tkinter":
+            raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
+        raise
+
+    launch_git_kernel_version_gui(
+        title="SD Trainer",
+        root_path=sd_trainer_path,
+        branch_presets=SD_TRAINER_BRANCH_INFO_DICT,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )

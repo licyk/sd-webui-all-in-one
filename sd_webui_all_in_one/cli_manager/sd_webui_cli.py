@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager import (
     list_sd_webui_extensions,
     update_sd_webui_extensions,
     uninstall_sd_webui_extension,
+    launch_sd_webui_version_gui,
     install_sd_webui_model_from_library,
     install_sd_webui_model_from_url,
     list_sd_webui_models,
@@ -386,6 +387,19 @@ def uninstall_extension(
     )
 
 
+def launch_version_gui(
+    sd_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Stable Diffusion WebUI 版本管理 GUI"""
+    launch_sd_webui_version_gui(
+        sd_webui_path=sd_webui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def install_model_from_library(
     sd_webui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -598,6 +612,22 @@ def register_sd_webui(
             custom_github_mirror=args.custom_github_mirror,
             interactive_mode=args.interactive_mode,
             list_only=args.list_only,
+        )
+    )
+
+    # gui
+    gui_parser = sd_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 Stable Diffusion WebUI 版本管理 GUI")
+    version_gui_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            sd_webui_path=args.sd_webui_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
 

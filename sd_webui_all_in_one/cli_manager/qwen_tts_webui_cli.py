@@ -11,6 +11,7 @@ from sd_webui_all_in_one.base_manager import (
     update_qwen_tts_webui,
     check_qwen_tts_webui_env,
     launch_qwen_tts_webui,
+    launch_qwen_tts_webui_version_gui,
     reinstall_pytorch,
 )
 from sd_webui_all_in_one.config import (
@@ -215,6 +216,19 @@ def launch(
         sys.exit(1)
 
 
+def launch_version_gui(
+    qwen_tts_webui_path: Path,
+    use_github_mirror: bool | None = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Qwen TTS WebUI 版本管理 GUI"""
+    launch_qwen_tts_webui_version_gui(
+        qwen_tts_webui_path=qwen_tts_webui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_qwen_tts_webui(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -325,5 +339,21 @@ def register_qwen_tts_webui(
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
             check_launch_env=args.check_env,
+        )
+    )
+
+    # gui
+    gui_parser = qwen_tts_webui_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 Qwen TTS WebUI 版本管理 GUI")
+    version_gui_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    version_gui_p.set_defaults(
+        func=lambda args: launch_version_gui(
+            qwen_tts_webui_path=args.qwen_tts_webui_path,
+            use_github_mirror=args.use_github_mirror,
+            custom_github_mirror=args.custom_github_mirror,
         )
     )
