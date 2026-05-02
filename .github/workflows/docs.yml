@@ -1,0 +1,57 @@
+name: Documentation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v5
+
+      - name: Configure Timezone
+        run: |
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      
+      - name: Install Dependencies
+        run: |
+          pip install zensical==0.0.37
+
+      - name: Build Documentation
+        run: |
+          zensical build --clean
+
+      - name: Configure Git
+        env:
+          DEPLOY_PRI: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
+          GIT_USERNAME: ${{ github.repository_owner }}
+          GIT_EMAIL: ${{ github.repository_owner }}@user.github.com
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${DEPLOY_PRI}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global user.name "${GIT_USERNAME}"
+          git config --global user.email "${GIT_EMAIL}"
+
+      - name: Commit Documentation File
+        env:
+          GIT_URL: 'git@github.com:licyk/sd-webui-all-in-one.git'
+        run: |
+          git -C "${{ github.workspace }}/site" init
+          git -C "${{ github.workspace }}/site" remote add origin "${GIT_URL}"
+          git -C "${{ github.workspace }}/site" add -A
+          git -C "${{ github.workspace }}/site" commit -m "Documentation auto generated. Time: $(date +'%Y-%m-%d %H:%M:%S')"
+
+      - name: Push Documentation File
+        run: |
+          git -C "${{ github.workspace }}/site" push origin HEAD:gh-pages --force

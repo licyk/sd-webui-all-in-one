@@ -6,3 +6,4 @@ dist/
 build/
 *.egg-info/
 launch.py
+/site
