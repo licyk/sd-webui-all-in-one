@@ -10,6 +10,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 import traceback
 import tkinter as tk
 from dataclasses import dataclass
@@ -377,8 +378,12 @@ class AdaptiveIndexList(ttk.Frame):
         self._row_backgrounds: dict[str, int] = {}
         self._row_text_items: dict[str, list[int]] = {}
         self._row_tags: dict[str, str] = {}
+        self._row_indexes: dict[str, int] = {}
         self._row_values: dict[str, tuple[str, ...]] = {}
         self._row_order: list[str] = []
+        self._redraw_job: str | None = None
+        self._draw_batch_job: str | None = None
+        self._draw_cursor = 0
         self._double_click_callback: Callable[[], None] | None = None
         self._content_width = sum(self.widths.get(column, 120) for column in self.columns)
         self._content_height = 0
@@ -612,8 +617,11 @@ class AdaptiveIndexList(ttk.Frame):
         mouse_over: bool,
     ) -> None:
         self._mouse_over = mouse_over
-        if mouse_over and self.canvas.winfo_exists():
-            self.canvas.focus_set()
+        try:
+            if mouse_over and self.canvas.winfo_exists():
+                self.canvas.focus_set()
+        except tk.TclError:
+            pass
 
     def _on_mousewheel(
         self,
@@ -639,11 +647,13 @@ class AdaptiveIndexList(ttk.Frame):
         """
         清空列表内容
         """
+        self._cancel_pending_draws()
         self.canvas.delete("all")
         self._row_items.clear()
         self._row_backgrounds.clear()
         self._row_text_items.clear()
         self._row_tags.clear()
+        self._row_indexes.clear()
         self._row_values.clear()
         self._row_order.clear()
         self._selected_id = None
@@ -710,7 +720,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._row_values[item_id] = values
         if item_id not in self._row_order:
             self._row_order.append(item_id)
-        self._draw_row(item_id, values)
+        self._schedule_redraw()
         return item_id
 
     def item(self, item_id: str, **kwargs: Any) -> dict[str, tuple[str, ...]] | None:
@@ -731,7 +741,7 @@ class AdaptiveIndexList(ttk.Frame):
             self._row_values[item_id] = tuple(str(value) for value in kwargs["values"])
             if item_id not in self._row_order:
                 self._row_order.append(item_id)
-            self._redraw_rows()
+            self._schedule_redraw()
             return None
         return {"values": self._row_values.get(item_id, ())}
 
@@ -789,15 +799,84 @@ class AdaptiveIndexList(ttk.Frame):
     def _redraw_rows(
         self,
     ) -> None:
+        self._schedule_redraw()
+
+    def _cancel_pending_draws(
+        self,
+    ) -> None:
+        for job in (self._redraw_job, self._draw_batch_job):
+            if job is None:
+                continue
+            try:
+                self.after_cancel(job)
+            except tk.TclError:
+                pass
+        self._redraw_job = None
+        self._draw_batch_job = None
+
+    def _schedule_redraw(
+        self,
+    ) -> None:
+        try:
+            exists = self.winfo_exists()
+        except tk.TclError:
+            return
+        if not exists:
+            return
+        if self._redraw_job is not None:
+            return
+        self._redraw_job = self.after_idle(self._begin_incremental_redraw)
+
+    def _begin_incremental_redraw(
+        self,
+    ) -> None:
+        self._redraw_job = None
+        try:
+            exists = self.winfo_exists()
+        except tk.TclError:
+            return
+        if not exists:
+            return
+        if self._draw_batch_job is not None:
+            try:
+                self.after_cancel(self._draw_batch_job)
+            except tk.TclError:
+                pass
+            self._draw_batch_job = None
         self.canvas.delete("all")
         self._row_items.clear()
         self._row_backgrounds.clear()
         self._row_text_items.clear()
         self._row_tags.clear()
+        self._row_indexes.clear()
         self._content_height = 0
-        for item_id in self._row_order:
-            self._draw_row(item_id, self._row_values[item_id])
-        if self._selected_id and self.exists(self._selected_id):
+        self._draw_cursor = 0
+        self.canvas.configure(scrollregion=(0, 0, self._content_width, self._content_height))
+        self._draw_next_batch()
+
+    def _draw_next_batch(
+        self,
+    ) -> None:
+        self._draw_batch_job = None
+        try:
+            exists = self.winfo_exists()
+        except tk.TclError:
+            return
+        if not exists:
+            return
+        start_time = time.perf_counter()
+        while self._draw_cursor < len(self._row_order):
+            item_id = self._row_order[self._draw_cursor]
+            values = self._row_values.get(item_id)
+            self._draw_cursor += 1
+            if values is None:
+                continue
+            self._draw_row(item_id, values)
+            if time.perf_counter() - start_time >= 0.012:
+                break
+        if self._draw_cursor < len(self._row_order):
+            self._draw_batch_job = self.after(1, self._draw_next_batch)
+        elif self._selected_id and self.exists(self._selected_id):
             self._select(self._selected_id)
 
     def _draw_row(
@@ -855,8 +934,13 @@ class AdaptiveIndexList(ttk.Frame):
         self._row_backgrounds[item_id] = background
         self._row_text_items[item_id] = text_items
         self._row_tags[row_tag] = item_id
+        self._row_indexes[item_id] = row_index
         self.canvas.tag_bind(row_tag, "<Button-1>", lambda _event, iid=item_id: self._select(iid))
         self.canvas.tag_bind(row_tag, "<Double-1>", lambda _event: self._handle_double_click())
+        if item_id == self._selected_id:
+            self.canvas.itemconfigure(background, fill=self._selected_bg)
+            for text_item in text_items:
+                self.canvas.itemconfigure(text_item, fill=self._selected_text_color)
         self._content_height += row_height
         self.canvas.configure(scrollregion=(0, 0, self._content_width, self._content_height))
 
@@ -864,14 +948,29 @@ class AdaptiveIndexList(ttk.Frame):
         self,
         item_id: str,
     ) -> None:
+        previous_id = self._selected_id
+        if previous_id == item_id:
+            return
         self._selected_id = item_id
-        for index, current_id in enumerate(self._row_items):
-            is_selected = current_id == item_id
-            bg = self._selected_bg if current_id == item_id else self._row_colors[index % 2]
-            self.canvas.itemconfigure(self._row_backgrounds[current_id], fill=bg)
-            text_color = self._selected_text_color if is_selected else self._text_color
-            for text_item in self._row_text_items.get(current_id, []):
-                self.canvas.itemconfigure(text_item, fill=text_color)
+        if previous_id is not None:
+            self._set_row_selected(previous_id, False)
+        self._set_row_selected(item_id, True)
+
+    def _set_row_selected(
+        self,
+        item_id: str,
+        selected: bool,
+    ) -> None:
+        if item_id not in self._row_backgrounds:
+            return
+        row_index = self._row_indexes.get(item_id)
+        if row_index is None:
+            return
+        bg = self._selected_bg if selected else self._row_colors[row_index % 2]
+        text_color = self._selected_text_color if selected else self._text_color
+        self.canvas.itemconfigure(self._row_backgrounds[item_id], fill=bg)
+        for text_item in self._row_text_items.get(item_id, []):
+            self.canvas.itemconfigure(text_item, fill=text_color)
 
     def selected_item_id(self) -> str | None:
         """
@@ -894,6 +993,15 @@ class AdaptiveIndexList(ttk.Frame):
                 双击回调
         """
         self._double_click_callback = callback
+
+    def destroy(
+        self,
+    ) -> None:
+        """
+        销毁列表并取消待执行绘制任务
+        """
+        self._cancel_pending_draws()
+        super().destroy()
 
     def bind(
         self,
