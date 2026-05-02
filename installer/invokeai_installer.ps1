@@ -2818,6 +2818,123 @@ Main
 }
 
 
+# 版本管理脚本
+function Write-VersionManagerScript {
+    $content = "
+param (
+    [Parameter(HelpMessage=@`"
+获取 InvokeAI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 InvokeAI Installer 自动设置 Github 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 Github 镜像站地址
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
+)
+try {
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = `$script:MyInvocation.Line
+        Help = `$script:Help
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableGithubMirror = `$script:DisableGithubMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableUpdate = `$script:DisableUpdate
+        NoPause = `$script:NoPause
+    }
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Set-uv`", `"Set-PyPIMirror`" -PassThru -Force -ErrorAction Stop).Invoke({
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:NoPause = `$cfg.NoPause
+    }, `$config)
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_invokeai_installer.ps1`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    exit 1
+}
+
+
+# 获取启动 SD WebUI All In One 内核的启动参数
+function Get-LaunchCoreArgs {
+    `$launch_params = New-Object System.Collections.ArrayList
+    Set-GithubMirror `$launch_params
+    Set-uv `$launch_params
+    Set-PyPIMirror `$launch_params
+    return `$launch_params
+}
+
+
+function Main {
+    Get-HelpMessage
+    Get-Version
+    Set-CorePrefix
+    Initialize-EnvPath
+    Test-PythonAndGit
+    Set-Proxy
+    Update-Installer
+    Update-SDWebUiAllInOne
+
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 InvokeAI 是否已正确安装, 或者尝试运行 InvokeAI Installer 进行修复`" -Level ERROR
+        if (!(`$script:NoPause)) { Read-Host | Out-Null }
+        return
+    }
+
+    `$launch_args = Get-LaunchCoreArgs
+    & python -m sd_webui_all_in_one invokeai gui version-manager `$launch_args
+
+    Write-Log `"退出 InvokeAI 扩展更新脚本`"
+
+    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+}
+
+###################
+
+Main
+".Trim()
+
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "version_manager.ps1")) { "更新" } else { "生成" }) version_manager.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "version_manager.ps1") -Value $content
+}
+
+
 # InvokeAI Installer 设置脚本
 function Write-SettingsScript {
     $content = "
@@ -3408,6 +3525,7 @@ Github：https://github.com/licyk
 - update_node.ps1：更新 InvokeAI 自定义节点。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。
 - reinstall_pytorch.ps1：重装 PyTorch 脚本，解决 PyTorch 无法正常使用或者 xFormers 版本不匹配导致无法调用的问题。
+- version_manager.ps1：管理 InvokeAI / 扩展的版本；安装，启用 / 禁用，卸载扩展。
 - settings.ps1：管理 InvokeAI Installer 的设置。
 - terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
 - activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、InvokeAI 的命令。
@@ -3469,6 +3587,7 @@ function Write-ManagerScripts {
     Write-LaunchInstallerScript
     Write-PyTorchReInstallScript
     Write-DownloadModelScript
+    Write-VersionManagerScript
     Write-SettingsScript
     Write-EnvActivateScript
     Write-LaunchTerminalScript

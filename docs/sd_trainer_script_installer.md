@@ -22,7 +22,7 @@ _✨快速部署训练环境_
     - [切换 SD-Trainer-Script 分支](#切换-sd-trainer-script-分支)
   - [环境管理](#环境管理)
     - [进入 SD-Trainer-Script 所在的 Python 环境](#进入-sd-trainer-script-所在的-python-环境)
-    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
+    - [管理 SD-Trainer-Script 的版本](#管理-sd-trainer-script-的版本)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
   - [配置管理](#配置管理)
     - [设置 HuggingFace 镜像](#设置-huggingface-镜像)
@@ -93,7 +93,7 @@ _✨快速部署训练环境_
     - [运行某个 Python 脚本](#运行某个-python-脚本)
     - [下载文件](#下载文件)
     - [列出 SD Trainer Script Installer 内置命令](#列出-sd-trainer-script-installer-内置命令)
-    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本-1)
+    - [查看并切换 SD-Trainer-Script 的版本](#查看并切换-sd-trainer-script-的版本)
     - [将 LoRA 模型融进 Stable Diffusion 模型中](#将-lora-模型融进-stable-diffusion-模型中)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径-1)
 
@@ -254,48 +254,9 @@ SD Trainer Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
 这样就进入 SD-Trainer-Script 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
 
 
-### 查看并切换 SD-Trainer-Script 的版本
-```powershell
-# 列出当前的所有版本
-git -C sd-scripts tag
-# 运行该命令后将进入 Git 的交互式界面
-# 使用 u 键上翻，d 键下翻，或者使用方向键翻页，使用 q 键退出
-# 一般 git tag 命令将列出下面类似的输出
-# v0.1.0
-# v0.2.0
-# v1.1.0
-# v1.4.0
-# v1.6.0
-# v1.7.0
-# v1.7.3
-# ...
-# 这是使用 Git Tag 标记的版本，可以使用 Tag 作为版本号进行切换
+### 管理 SD-Trainer-Script 的版本
+运行 `version_manager.ps1` 脚本。
 
-# 使用 Tag 切换版本
-# 命令中的 <Git Tag> 替换成对应的 Tag
-git -C sd-scripts reset --hard --recurse-submodules <Git Tag>
-
-# 使用 git log 查看某个提交信息对应的 Hash 值
-git -C sd-scripts log
-# 这将得到类似的输出信息
-# commit 9aace3e94c2c41a44e3df403329abd0518467bf5 (HEAD -> main, tag: v1.9.0)
-# Author: Akegarasu <akiba@anzu.link>
-# Date:   Sat Aug 31 22:32:52 2024 +0800
-#
-#     add vae_batch_size
-#
-# commit 931392e3c90aab20473175c9196d70fcfe039491
-# Author: Akegarasu <akiba@anzu.link>
-# Date:   Sat Aug 31 22:31:04 2024 +0800
-#
-#     tagger
-#
-# commit 后面对应的字符串为该提交信息对应的 Hash 值
-
-# 可以使用该 Hash 切换版本
-# 命令中的 <Git Commit Hash> 替换成对应的 Hash 值
-git -C sd-scripts reset --hard --recurse-submodules <Git Commit Hash>
-```
 
 ### 查看 Git / Python 命令实际调用的路径
 ```powershell

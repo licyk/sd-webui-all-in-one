@@ -23,7 +23,7 @@ _✨一键安装 InvokeAI_
     - [设置 InvokeAI 启动参数](#设置-invokeai-启动参数)
   - [环境管理](#环境管理)
     - [进入 InvokeAI 所在的 Python 环境](#进入-invokeai-所在的-python-环境)
-    - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
+    - [管理 InvokeAI / 扩展的版本，安装、启用 / 禁用，卸载扩展](#管理-invokeai--扩展的版本安装启用--禁用卸载扩展)
     - [更新到 InvokeAI RC 版](#更新到-invokeai-rc-版)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径)
   - [配置管理](#配置管理)
@@ -94,7 +94,7 @@ _✨一键安装 InvokeAI_
     - [解决 ModuleNotFoundError: No module named 'controlnet\_aux'](#解决-modulenotfounderror-no-module-named-controlnet_aux)
     - [使用 uv 安装软件包](#使用-uv-安装软件包)
     - [列出 InvokeAI Installer 内置命令](#列出-invokeai-installer-内置命令)
-    - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换-1)
+    - [查看可用的 InvokeAI 版本并切换](#查看可用的-invokeai-版本并切换)
     - [更新到 InvokeAI RC 版](#更新到-invokeai-rc-版-1)
     - [查看 Git / Python 命令实际调用的路径](#查看-git--python-命令实际调用的路径-1)
     - [解决 AttributeError: module 'cv2.ximgproc' has no attribute 'thinning'](#解决-attributeerror-module-cv2ximgproc-has-no-attribute-thinning)
@@ -213,22 +213,8 @@ _✨一键安装 InvokeAI_
 这样就进入 InvokeAI 所在的 Python 环境，可以在这个环境中使用该环境的 Python 等命令。
 
 
-### 查看可用的 InvokeAI 版本并切换
-```powershell
-# 查询 PyPI 上 InvokeAI 可用的版本
-python -m pip index versions invokeai
-# 运行后将会输出所有可用的版本和已安装的版本
-# WARNING: pip index is currently an experimental command. It may be removed/changed in a future release without prior warning.
-# WARNING: Skipping page https://mirror.baidu.com/pypi/simple/invokeai/ because the GET request got Content-Type: application/octet-stream. The only supported Content-Types are application/vnd.pypi.simple.v1+json, application/vnd.pypi.simple.v1+html, and text/html
-# invokeai (5.0.0)
-# Available versions: 5.0.0, 4.2.9, 4.2.8, 4.2.7.post1, 4.2.7, 4.2.6.post1, 4.2.6, 4.2.5, 4.2.4, 4.2.3, 4.2.2.post1, 4.2.2, 4.2.1, 4.2.0, 4.1.0, 4.0.4, 4.0.3, 4.0.2, 4.0.1, 4.0.0, 3.7.0, 3.6.3, 3.6.2, 3.6.1, 3.6.0, 3.5.1, 3.5.0, 3.4.0.post2, 3.4.0.post1, 3.4.0, 3.3.0.post3, 3.3.0.post2, 3.3.0.post1, 3.3.0, 3.2.0, 3.1.1, 3.1.0, 3.0.2.post1, 3.0.2, 3.0.1.post3, 3.0.1.post2, 3.0.1.post1, 3.0.1, 3.0.0, 2.3.5.post2, 2.3.5.post1, 2.3.5, 2.3.4.post1, 2.3.4, 2.3.3, 2.3.2.post1, 2.3.2, 2.3.1.post2, 2.3.1.post1, 2.3.1, 2.3.0, 2.2.5, 2.2.4.7, 2.2.4.6, 2.2.4.5
-#   INSTALLED: 4.2.9
-#   LATEST:    5.0.0
-
-# 切换到指定的版本
-# 命令中的 <Version> 替换成要切换的版本
-python -m pip install invokeai==<Version>
-```
+### 管理 InvokeAI / 扩展的版本，安装、启用 / 禁用，卸载扩展
+运行 `version_manager.ps1` 脚本。
 
 
 ### 更新到 InvokeAI RC 版
