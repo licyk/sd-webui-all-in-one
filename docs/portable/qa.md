@@ -3,11 +3,11 @@
 
 !!! note
     文档写了还不一定有人看，看了还不一定会……  
-    ![B6FB74A8FEAA4562BD637972B3637037](https://github.com/user-attachments/assets/72a9d44a-a0e9-477d-b4e5-5dd8f3e0901d)
+    ![阅读文档提示图](../assets/images/portable/qa/read-docs-note.jpg)
 
 
 ## 打开绘世启动器时出现 You must install .NET Desktop Runtime to run this application
-![net_runtime_not_found](https://github.com/user-attachments/assets/1064ea92-f4e4-4b9f-9604-67e410f9dcbf)
+![缺少 .NET Desktop Runtime 提示](../assets/images/portable/qa/dotnet-runtime-missing.jpg)
 
 绘世启动器基于 .NET 进行开发，需要安装 .NET 运行时才能运行，跟着提示安装就行了。
 
