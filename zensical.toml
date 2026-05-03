@@ -11,6 +11,7 @@ nav = [
         {"Notebook 云端运行" = "notebook/quick-start.md"},
         {"Notebook Colab 使用" = "notebook/colab.md"},
         {"Notebook Kaggle 使用" = "notebook/kaggle.md"},
+        {"整合包下载与使用" = "portable/portable.md"},
         {"SD WebUI Installer 安装" = "installer/sd-webui/install.md"},
         {"ComfyUI Installer 安装" = "installer/comfyui/install.md"},
         {"Fooocus Installer 安装" = "installer/fooocus/install.md"},
@@ -28,6 +29,12 @@ nav = [
         {"参数配置" = "notebook/parameters.md"},
         {"管理器 API" = "notebook/manager-api.md"},
         {"故障排查" = "notebook/troubleshooting.md"},
+    ]},
+    {"整合包与实用指南" = [
+        {"概览" = "portable/index.md"},
+        {"整合包下载与使用" = "portable/portable.md"},
+        {"AMD ZLUDA 使用" = "portable/zluda.md"},
+        {"常见问题" = "portable/qa.md"},
     ]},
     {"安装器使用" = [
         {"概览" = "installer/index.md"},
