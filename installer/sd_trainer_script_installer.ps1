@@ -140,10 +140,6 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][string]$LaunchArg,
 
     [Parameter(HelpMessage=@"
-(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 创建 SD Trainer Script 启动快捷方式
-"@)][switch]$EnableShortcut,
-
-    [Parameter(HelpMessage=@"
 (仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 禁用 SD Trainer Script Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
 "@)][switch]$DisableCUDAMalloc,
 
@@ -3255,15 +3251,14 @@ function Main {
             @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=6;  n=`"模型下载源`"; v=`$(Get-ToggleStatus `"disable_model_mirror.txt`" `"ModelScope`" `"HuggingFace`" `$true) },
             @{ id=7;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=8;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=9;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
+            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=9;  n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"13. 检查更新 | 14. 文档 | 15. 退出`"
+        Write-Log `"12. 检查更新 | 13. 文档 | 14. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
@@ -3280,14 +3275,13 @@ function Main {
                 if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
                 else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
             }
-            `"8`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
-            `"9`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
-            `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
-            `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
-            `"12`" { Update-Core-Prefix }
-            `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
-            `"15`" { Write-Log `"退出设置`"; return }
+            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
+            `"9`"  { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
+            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
+            `"11`" { Update-Core-Prefix }
+            `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
+            `"14`" { Write-Log `"退出设置`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -3871,7 +3865,6 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
-        if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }

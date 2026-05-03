@@ -81,7 +81,7 @@ D:/qwen-tts-webui
 └── update_time.txt
 ```
 
-再检查 `D:/qwen-tts-webui/qwen-tts-webui` 文件夹中是否包含 `python` 和`git` 文件夹，如果未包含，需要运行 `launch_qwen_tts_webui_installer.ps1` 重建环境，重建完成后即可运行 `launch.ps1` 启动 Qwen TTS WebUI。
+再检查 `<安装目录>/<内核路径前缀>` 文件夹中是否包含 `python` 和 `git` 文件夹，如果未包含，需要运行 `launch_qwen_tts_webui_installer.ps1` 重建环境，重建完成后即可运行 `launch.ps1` 启动 Qwen TTS WebUI。
 
 ### 重装 Qwen TTS WebUI
 将 `qwen-tts-webui` 文件夹中的 `qwen-tts-webui` 文件夹删除，然后运行 `launch_qwen_tts_webui_installer.ps1` 重新部署 Qwen TTS WebUI。
@@ -90,21 +90,59 @@ D:/qwen-tts-webui
     如果 `qwen-tts-webui` 文件夹存放了模型文件，请将这些文件备份后再删除 `qwen-tts-webui` 文件夹。
 
 ### 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将 `qwen-tts-webui/python` 和`qwen-tts-webui/qwen-tts-webui/python` 文件夹删除，然后运行 `launch_qwen_tts_webui_installer.ps1` 重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以删除以下目录，然后运行 `launch_qwen_tts_webui_installer.ps1` 重新构建 Python 环境。
+
+```text
+<安装目录>/python
+<安装目录>/<内核路径前缀>/python
+```
+
+默认情况下 `<安装目录>` 为 `qwen-tts-webui`；`<内核路径前缀>` 可在 `core_prefix.txt`、`settings.ps1` 或脚本运行日志中查看。
 
 ### 重装 Git
-将 `qwen-tts-webui/git` 和`qwen-tts-webui/qwen-tts-webui/git` 文件夹删除，然后运行 `launch_qwen_tts_webui_installer.ps1` 重新下载 Git。
+如果 Git 环境出现严重损坏，可以删除以下目录，然后运行 `launch_qwen_tts_webui_installer.ps1` 重新下载 Git。
+
+```text
+<安装目录>/git
+<安装目录>/<内核路径前缀>/git
+```
 
 ### 重装 PyTorch
 运行 `reinstall_pytorch.ps1` 脚本，并根据脚本提示的内容进行操作。
 
 ### 卸载 Qwen TTS WebUI
-使用 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 后，所有的文件都存放在 `qwen-tts-webui` 文件夹中，只需要删除 `qwen-tts-webui` 文件夹即可卸载 Qwen TTS WebUI。
+使用 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 后，主要文件都存放在 `qwen-tts-webui` 文件夹中。确认模型、训练集、输出文件等重要数据已经备份后，删除该文件夹即可卸载 Qwen TTS WebUI。
 
-如果有 Qwen TTS WebUI 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
+如果创建过快捷启动方式，还需要按系统删除对应快捷方式。Qwen TTS WebUI 的快捷方式名称通常为 `Qwen-TTS-WebUI`。
+
+Windows 可在 PowerShell 中运行：
+
 ```powershell
-Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\qwen-tts-webui.lnk" -Force
-Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\qwen-tts-webui.lnk" -Force
+$shortcutNames = @("Qwen-TTS-WebUI")
+foreach ($name in $shortcutNames) {
+    Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\$name.lnk" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\$name.lnk" -Force -ErrorAction SilentlyContinue
+}
+```
+
+Linux 可在 PowerShell 中运行：
+
+```powershell
+$shortcutNames = @("Qwen-TTS-WebUI")
+foreach ($name in $shortcutNames) {
+    Remove-Item -Path "$HOME/Desktop/$name.desktop" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$HOME/.local/share/applications/$name.desktop" -Force -ErrorAction SilentlyContinue
+}
+```
+
+macOS 可在 PowerShell 中运行：
+
+```powershell
+$shortcutNames = @("Qwen-TTS-WebUI")
+foreach ($name in $shortcutNames) {
+    Remove-Item -Path "$HOME/Desktop/$name.app" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "/Applications/$name.app" -Recurse -Force -ErrorAction SilentlyContinue
+}
 ```
 
 ### 移动 Qwen TTS WebUI 的路径

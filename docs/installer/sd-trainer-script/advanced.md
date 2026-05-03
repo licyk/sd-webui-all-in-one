@@ -8,7 +8,7 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 **参数清单**
 
 - `-Help`：获取 SD Trainer Script Installer 的帮助信息。
-- `-CorePrefix` `<内核路径前缀>`：设置内核的路径前缀，默认路径前缀为 `core`。
+- `-CorePrefix` `<内核路径前缀>`：设置内核路径前缀。可填写内核目录名、相对路径或绝对路径；绝对路径会在运行时转换为相对于安装器脚本目录的内核路径前缀。未指定时会按预设目录自动识别，未找到时使用 `core`。
 - `-InstallPath` `<安装 SD Trainer Script 的绝对路径>`：指定 SD Trainer Script Installer 安装 SD Trainer Script 的路径，使用绝对路径表示。
     例如：`./sd_trainer_script_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
@@ -52,7 +52,6 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 - `-DisableHuggingFaceMirror`：(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。
 - `-UseCustomHuggingFaceMirror` `<HuggingFace 镜像源地址>`：(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`
 - `-LaunchArg` `<SD Trainer Script 启动参数>`：(仅在构建模式生效且只作用于管理脚本) 设置自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`
-- `-EnableShortcut`：(仅在构建模式生效且只作用于管理脚本) 创建 SD Trainer Script 启动快捷方式。
 - `-DisableCUDAMalloc`：(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。
 - `-DisableEnvCheck`：(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。
 

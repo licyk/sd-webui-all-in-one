@@ -36,22 +36,28 @@ D:/Downloads
     如果 `sd-scripts` 文件夹存放了训练集 / 模型文件，请将这些文件备份后再删除 `sd-scripts` 文件夹。
 
 ### 重装 Python 环境
-如果 Python 环境出现严重损坏，可以将 `SD-Trainer-Script/python` 文件夹删除，然后运行 `launch_sd_trainer_script_installer.ps1` 重新构建 Python 环境。
+如果 Python 环境出现严重损坏，可以删除以下目录，然后运行 `launch_sd_trainer_script_installer.ps1` 重新构建 Python 环境。
+
+```text
+<安装目录>/python
+<安装目录>/<内核路径前缀>/python
+```
+
+默认情况下 `<安装目录>` 为 `SD-Trainer-Script`；`<内核路径前缀>` 可在 `core_prefix.txt`、`settings.ps1` 或脚本运行日志中查看。
 
 ### 重装 Git
-将 `SD-Trainer-Script/git` 文件夹删除，然后运行 `launch_sd_trainer_script_installer.ps1` 重新下载 Git。
+如果 Git 环境出现严重损坏，可以删除以下目录，然后运行 `launch_sd_trainer_script_installer.ps1` 重新下载 Git。
+
+```text
+<安装目录>/git
+<安装目录>/<内核路径前缀>/git
+```
 
 ### 重装 PyTorch
 运行 `reinstall_pytorch.ps1` 脚本，并根据脚本提示的内容进行操作。
 
 ### 卸载 SD-Trainer-Script
-使用 SD Trainer Script Installer 安装 SD-Trainer-Script 后，所有的文件都存放在 `SD-Trainer-Script` 文件夹中，只需要删除 `SD-Trainer-Script` 文件夹即可卸载 SD-Trainer-Script。
-
-如果有 SD-Trainer-Script 快捷启动方式，可以通过命令进行删除，打开 PowerShell 后，输入以下命令进行删除。
-```powershell
-Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\SD-Trainer-Script.lnk" -Force
-Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\SD-Trainer-Script.lnk" -Force
-```
+使用 SD Trainer Script Installer 安装 SD-Trainer-Script 后，主要文件都存放在 `SD-Trainer-Script` 文件夹中。确认模型、训练集、输出文件等重要数据已经备份后，删除该文件夹即可卸载 SD-Trainer-Script。
 
 ### 移动 SD-Trainer-Script 的路径
 直接将 `SD-Trainer-Script` 文件夹移动到别的路径即可。

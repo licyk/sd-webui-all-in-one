@@ -4,9 +4,15 @@
 
 ### 创建快捷启动方式
 !!! info
-    该设置可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#管理-qwen-tts-webui-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#管理-qwen-tts-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
 
-在脚本同级目录创建 `enable_shortcut.txt` 文件，当运行 `launch.ps1` 时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 Qwen TTS WebUI。
+在脚本同级目录创建 `enable_shortcut.txt` 文件，当运行 `launch.ps1` 时将会自动创建快捷启动方式，下次启动时可以使用快捷方式启动 Qwen TTS WebUI。
+
+快捷方式会根据当前系统写入以下位置：
+
+- Windows：桌面 `.lnk` 文件，以及 `%APPDATA%\Microsoft\Windows\Start Menu\Programs` 中的开始菜单快捷方式。
+- Linux：桌面 `.desktop` 文件，以及 `~/.local/share/applications/` 中的应用入口。
+- macOS：桌面 `.app` 应用，以及 `/Applications/` 中的应用入口。
 
 !!! warning
     如果 Qwen TTS WebUI 的路径发生移动，需要重新运行 `launch.ps1` 更新快捷启动方式。
@@ -17,7 +23,7 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 **参数清单**
 
 - `-Help`：获取 Qwen TTS WebUI Installer 的帮助信息。
-- `-CorePrefix` `<内核路径前缀>`：设置内核的路径前缀，默认路径前缀为 `core`。
+- `-CorePrefix` `<内核路径前缀>`：设置内核路径前缀。可填写内核目录名、相对路径或绝对路径；绝对路径会在运行时转换为相对于安装器脚本目录的内核路径前缀。未指定时会按预设目录自动识别，未找到时使用 `core`。
 - `-InstallPath` `<安装 Qwen TTS WebUI 的绝对路径>`：指定 Qwen TTS WebUI Installer 安装 Qwen TTS WebUI 的路径，使用绝对路径表示。
     例如：`./qwen_tts_webui_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`

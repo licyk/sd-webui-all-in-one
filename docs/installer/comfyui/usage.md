@@ -15,7 +15,7 @@
 
 ### 设置 ComfyUI 启动参数
 !!! info
-    该设置可通过 [管理 ComfyUI Installer 设置](config.md#管理-comfyui-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 ComfyUI Installer 设置](config.md#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
 
 要设置 ComfyUI 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 ComfyUI 启动脚本时将自动读取该文件内的启动参数并应用。
 

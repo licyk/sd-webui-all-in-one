@@ -4,9 +4,15 @@
 
 ### 创建快捷启动方式
 !!! info
-    该设置可通过 [管理 InvokeAI Installer 设置](config.md#管理-invokeai-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 InvokeAI Installer 设置](config.md#管理-invokeai-installer-设置) 中提到的 `settings.ps1` 进行修改。
 
-在脚本同级目录创建 `enable_shortcut.txt` 文件，当运行 `launch.ps1` 时将会自动创建快捷启动方式，并添加到 Windows 桌面和 Windows 开始菜单中，下次启动时可以使用快捷方式启动 InvokeAI。
+在脚本同级目录创建 `enable_shortcut.txt` 文件，当运行 `launch.ps1` 时将会自动创建快捷启动方式，下次启动时可以使用快捷方式启动 InvokeAI。
+
+快捷方式会根据当前系统写入以下位置：
+
+- Windows：桌面 `.lnk` 文件，以及 `%APPDATA%\Microsoft\Windows\Start Menu\Programs` 中的开始菜单快捷方式。
+- Linux：桌面 `.desktop` 文件，以及 `~/.local/share/applications/` 中的应用入口。
+- macOS：桌面 `.app` 应用，以及 `/Applications/` 中的应用入口。
 
 !!! warning
     如果 InvokeAI 的路径发生移动，需要重新运行 `launch.ps1` 更新快捷启动方式。
@@ -17,7 +23,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 **参数清单**
 
 - `-Help`：获取 InvokeAI Installer 的帮助信息。
-- `-CorePrefix` `<内核路径前缀>`：设置内核的路径前缀，默认路径前缀为 `core`。
+- `-CorePrefix` `<内核路径前缀>`：设置内核路径前缀。可填写内核目录名、相对路径或绝对路径；绝对路径会在运行时转换为相对于安装器脚本目录的内核路径前缀。未指定时会按预设目录自动识别，未找到时使用 `core`。
 - `-InstallPath` `<安装 InvokeAI 的绝对路径>`：指定 InvokeAI Installer 安装 InvokeAI 的路径，使用绝对路径表示。
     例如：`./invokeai_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cuda`, `rocm`, `xpu`, `mps`, `cpu`

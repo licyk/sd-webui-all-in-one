@@ -12,7 +12,7 @@
 
 ### 设置 SD-Trainer 启动参数
 !!! info
-    该设置可通过 [管理 SD Trainer Installer 设置](config.md#管理-sd-trainer-installer-设置) 中提到的的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 SD Trainer Installer 设置](config.md#管理-sd-trainer-installer-设置) 中提到的 `settings.ps1` 进行修改。
 
 要设置 SD-Trainer 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 SD-Trainer 启动脚本时将自动读取该文件内的启动参数并应用。
 
@@ -44,7 +44,7 @@
 - [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 
 !!! note
-    切换分支后需要删去原有的启动参数，因为两个不同的分支的启动参数互不兼容，可将 `launch_args.txt` 删除或者通过 [管理 SD Trainer Installer 设置](config.md#管理-sd-trainer-installer-设置) 中提到的的 `settings.ps1` 进行删除。
+    切换分支后需要删去原有的启动参数，因为两个不同的分支的启动参数互不兼容，可将 `launch_args.txt` 删除或者通过 [管理 SD Trainer Installer 设置](config.md#管理-sd-trainer-installer-设置) 中提到的 `settings.ps1` 进行删除。
 
 ## 环境管理
 
