@@ -15,7 +15,8 @@
 1. 只想下载整合包：阅读 [AI 整合包下载器](./portable-downloader.md)，下载后再阅读 [整合包下载与使用](../portable/portable.md)。
 2. 下载并解压整合包后，Windows 用户可以用 [Windows GUI Launcher](./launcher-gui.md) 选择对应产品，并把安装路径指向整合包解压目录来启动和管理。
 3. 想从零安装并后续管理项目：Windows 用户阅读 [Windows GUI Launcher](./launcher-gui.md)，Linux / macOS 用户阅读 [Bash TUI / CLI Launcher](./launcher-tui.md)。
-4. 遇到刷新、下载、解压、启动或代理问题：阅读 [故障排查](./troubleshooting.md)。
+4. 成功启动 WebUI 后，需要学习界面使用、绘图流程、模型和工作流：阅读 [SD Note](https://licyk.github.io/SDNote/)。
+5. 遇到刷新、下载、解压、启动或代理问题：阅读 [故障排查](./troubleshooting.md)。
 
 ## 工具关系
 

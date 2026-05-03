@@ -95,8 +95,8 @@ comfyui:
 - 秋葉aaaki：https://space.bilibili.com/12566101
 
 ComfyUI 的使用教程：
-- https://sdnote.netlify.app/guide/comfyui
-- https://sdnote.netlify.app/help/comfyui
+- [ComfyUI 使用教程 - SD Note](https://sdnote.netlify.app/guide/comfyui)
+- [ComfyUI 常见问题 - SD Note](https://sdnote.netlify.app/help/comfyui)
 - https://docs.comfy.org/zh-CN/get_started/first_generation
 - https://www.aigodlike.com
 - https://space.bilibili.com/35723238/channel/collectiondetail?sid=1320931

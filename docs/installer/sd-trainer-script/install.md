@@ -6,13 +6,13 @@
 ### Windows
 下载环境自动配置脚本，双击运行`configure_env.bat`后将会弹出管理员权限申请提示，选择`是`授权管理员权限给环境配置脚本，这时将自动配置运行环境。
 
-|环境配置脚本下载|
-|---|
-|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
-|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat)|
-|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
-|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat)|
-|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/configure_env.bat)|
+**环境配置脚本下载**
+
+[GitHub Release 下载 :material-download:](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat){ .md-button .md-button--primary }
+[Gitee Release 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/archive/configure_env.bat){ .md-button }
+[GitHub Raw 下载 :material-download:](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat){ .md-button }
+[Gitee Raw 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/configure_env.bat){ .md-button }
+[GitLab Raw 下载 :material-download:](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/configure_env.bat){ .md-button }
 
 ### Linux
 参考该文档安装 PowerShell：[在 Linux 上安装 PowerShell - PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5)
@@ -69,13 +69,13 @@ SD Trainer Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
     
     通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
-|SD Trainer Script Installer 下载地址|
-|---|
-|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
-|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1)|
-|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1)|
-|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1)|
-|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_script_installer.ps1)|
+**SD Trainer Script Installer 下载地址**
+
+[GitHub Release 下载 :material-download:](https://github.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1){ .md-button .md-button--primary }
+[Gitee Release 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/sd_trainer_script_installer/sd_trainer_script_installer.ps1){ .md-button }
+[GitHub Raw 下载 :material-download:](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1){ .md-button }
+[Gitee Raw 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/sd_trainer_script_installer.ps1){ .md-button }
+[GitLab Raw 下载 :material-download:](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/sd_trainer_script_installer.ps1){ .md-button }
 
 在 SD Trainer Script Installer 成功安装 SD-Trainer-Script 后，在 `SD-Trainer-Script` 文件夹中可以看到 SD-Trainer-Script 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 SD Trainer Script Installer。
 

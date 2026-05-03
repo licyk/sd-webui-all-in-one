@@ -11,6 +11,8 @@ Notebook 是 SD WebUI All In One 的云端运行入口。只想尽快启动 WebU
 
 默认参数已经按可直接运行的方式配置。第一次使用不需要修改代码，也不需要先理解全部参数。
 
+打开 WebUI 后，如果需要学习 SD WebUI、ComfyUI、InvokeAI 的界面使用、模型使用、提示词或工作流，可以继续阅读 [SD Note](https://licyk.github.io/SDNote/)。
+
 ## 直接运行
 
 | 目标 | 进入 Colab | 适合场景 |
@@ -58,3 +60,4 @@ Colab 会把参数显示成图形化表单。常见控件包括：
 - 想看所有 Notebook：阅读 [选择 Notebook](./selection.md)。
 - 想理解表单参数：阅读 [参数配置](./parameters.md)。
 - 遇到运行问题：阅读 [故障排查](./troubleshooting.md)。
+- 想学习 WebUI 实际使用：阅读 [SD Note](https://licyk.github.io/SDNote/)。

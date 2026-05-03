@@ -16,5 +16,5 @@
 - 秋葉aaaki：https://space.bilibili.com/12566101
 
 Stable Diffusion WebUI 的使用教程：
-- https://sdnote.netlify.app/guide/sd_webui
-- https://sdnote.netlify.app/help/sd_webui
+- [SD WebUI 使用教程 - SD Note](https://sdnote.netlify.app/guide/sd_webui)
+- [SD WebUI 常见问题 - SD Note](https://sdnote.netlify.app/help/sd_webui)

@@ -50,7 +50,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## Stable Diffusion WebUI Forge
@@ -82,7 +82,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## Stable Diffusion WebUI reForge
@@ -114,7 +114,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## Stable Diffusion WebUI Forge Classic
@@ -146,7 +146,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## SD Next
@@ -178,7 +178,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## ComfyUI
@@ -219,7 +219,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## Fooocus
@@ -250,7 +250,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## InvokeAI
@@ -307,7 +307,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
-详细绘世启动器使用说明可阅读：https://sdnote.netlify.app/sd_launcher
+详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
 ## Kohya GUI
