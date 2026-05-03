@@ -32,7 +32,7 @@
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
-或者使用 [环境配置](environment.md#环境配置) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+或者使用 [环境配置](install.md#环境配置) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
 
 !!! note
     关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)

@@ -2,8 +2,7 @@
 
 ## 阅读导引
 
-- [环境准备](environment.md)
-- [安装](install.md)
+- [环境准备与安装](install.md)
 - [启动与使用](usage.md)
 - [模型与资源](resources.md)
 - [配置与镜像](config.md)
