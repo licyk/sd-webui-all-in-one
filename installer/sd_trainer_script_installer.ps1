@@ -1453,8 +1453,8 @@ function Get-HelpMessage {
     }
 )
 `"@
-    `$docs_url = `"更多的帮助信息请阅读 SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`"
-    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url) -ForegroundColor White
+    `$docs_url = `"更多的帮助信息请阅读 SD Trainer Script Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`"
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url)
     exit 0
 }
 
@@ -1905,7 +1905,7 @@ Set-Location `$PSScriptRoot
 # `${PYTHON_EXEC}             Python 解释器路径
 #
 # 下方可编写训练代码
-# 编写训练命令可参考: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+# 编写训练命令可参考: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/advanced/#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 # 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
 #################################################
 
@@ -3280,7 +3280,7 @@ function Main {
             `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
             `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`" }
+            `"13`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`" }
             `"14`" { Write-Log `"退出设置`"; return }
         }
     }
@@ -3474,7 +3474,7 @@ Github：https://github.com/licyk
 
     List-CMD
 
-更多帮助信息可在 SD Trainer Script Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
+更多帮助信息可在 SD Trainer Script Installer 文档中查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/
 `"
 }
 
@@ -3562,7 +3562,7 @@ function Main {
     }
 
     Write-Log `"激活 SD Trainer Script Env`"
-    Write-Log `"更多帮助信息可在 SD Trainer Script Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md`"
+    Write-Log `"更多帮助信息可在 SD Trainer Script Installer 项目地址查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`"
 }
 
 ###################
@@ -3621,7 +3621,7 @@ Github：https://github.com/licyk
 使用 SD Trainer Script Installer 进行安装并安装成功后，将在当前目录生成 SD Trainer Script 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
 
 - init.ps1：初始化 SD Trainer Script 运行环境。
-- train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+- train.ps1：初始训练脚本，用于编写训练命令，训练命令编写方法可查看：https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/advanced/#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
 - update.ps1：更新 SD-Trainer-Script。
 - download_models.ps1：下载模型的脚本，下载的模型将存放在 models 文件夹中。关于模型的介绍可阅读：https://github.com/licyk/README-collection/blob/main/model-info/README.md。
 - reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
@@ -3638,7 +3638,7 @@ Github：https://github.com/licyk
 - git：Git 的存放路径。
 - core：SD Trainer Script 内核。
 
-详细的 SD Trainer Script Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md
+详细的 SD Trainer Script Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/
 
 其他的一些训练模型的教程：
 https://sd-moadel-doc.maozi.io
@@ -3758,7 +3758,7 @@ function Copy-InstallerConfig {
 function Use-InstallMode {
     Write-Log "启动 SD Trainer Script 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD Trainer Script Installer, 更多的说明请阅读 SD Trainer Script Installer 使用文档"
-    Write-Log "SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
+    Write-Log "SD Trainer Script Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/"
     Write-Log "即将进行安装的路径: $script:InstallPath"
     Invoke-Installation
     Write-Log "添加管理脚本和文档中"
@@ -3774,7 +3774,7 @@ function Use-InstallMode {
 
     Write-Log "帮助文档可在 SD Trainer Script 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD Trainer Script Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
-    Write-Log "SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
+    Write-Log "SD Trainer Script Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/"
     Write-Log "退出 SD Trainer Script Installer"
 
     if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
@@ -3973,8 +3973,8 @@ $(
     }
 )
 "@
-    $docs_url = "更多的帮助信息请阅读 SD Trainer Script Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_script_installer.md"
-    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    $docs_url = "更多的帮助信息请阅读 SD Trainer Script Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/"
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url)
     exit 0
 }
 

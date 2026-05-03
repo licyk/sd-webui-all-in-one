@@ -1465,8 +1465,8 @@ function Get-HelpMessage {
     }
 )
 `"@
-    `$docs_url = `"更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md`"
-    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url) -ForegroundColor White
+    `$docs_url = `"更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/`"
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url)
     exit 0
 }
 
@@ -3333,7 +3333,7 @@ function Main {
             `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"12`" { Update-Core-Prefix }
             `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md`" }
+            `"14`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/`" }
             `"15`" { Write-Log `"退出设置`"; return }
         }
     }
@@ -3685,7 +3685,7 @@ Github：https://github.com/licyk
     Install-Hanamizuki
     List-CMD
 
-更多帮助信息可在 SD Trainer Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md
+更多帮助信息可在 SD Trainer Installer 文档中查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/
 `"
 }
 
@@ -3773,7 +3773,7 @@ function Main {
     }
 
     Write-Log `"激活 SD Trainer Env`"
-    Write-Log `"更多帮助信息可在 SD Trainer Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md`"
+    Write-Log `"更多帮助信息可在 SD Trainer Installer 项目地址查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/`"
 }
 
 ###################
@@ -3848,7 +3848,7 @@ Github：https://github.com/licyk
 - git：Git 的存放路径。
 - core：SD Trainer 内核。
 
-详细的 SD Trainer Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md
+详细的 SD Trainer Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/
 
 其他的一些训练模型的教程：
 https://sd-moadel-doc.maozi.io
@@ -4142,7 +4142,7 @@ function Initialize-HanamizukiEnv {
 function Use-InstallMode {
     Write-Log "启动 SD Trainer 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD Trainer Installer, 更多的说明请阅读 SD Trainer Installer 使用文档"
-    Write-Log "SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md"
+    Write-Log "SD Trainer Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/"
     Write-Log "即将进行安装的路径: $script:InstallPath"
     Invoke-Installation
     Write-Log "添加管理脚本和文档中"
@@ -4162,7 +4162,7 @@ function Use-InstallMode {
 
     Write-Log "帮助文档可在 SD Trainer 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD Trainer Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
-    Write-Log "SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md"
+    Write-Log "SD Trainer Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/"
     Write-Log "退出 SD Trainer Installer"
 
     if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
@@ -4362,8 +4362,8 @@ $(
     }
 )
 "@
-    $docs_url = "更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/sd_trainer_installer.md"
-    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    $docs_url = "更多的帮助信息请阅读 SD Trainer Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer/"
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url)
     exit 0
 }
 

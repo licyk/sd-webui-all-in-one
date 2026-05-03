@@ -1381,8 +1381,8 @@ function Get-HelpMessage {
     }
 )
 `"@
-    `$docs_url = `"更多的帮助信息请阅读 Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md`"
-    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url) -ForegroundColor White
+    `$docs_url = `"更多的帮助信息请阅读 Qwen TTS WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`"
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url)
     exit 0
 }
 
@@ -2938,7 +2938,7 @@ function Main {
             `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
             `"12`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"13`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md`" }
+            `"13`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`" }
             `"14`" { Write-Log `"退出设置`"; return }
         }
     }
@@ -3131,7 +3131,7 @@ Github：https://github.com/licyk
 
     List-CMD
 
-更多帮助信息可在 Qwen TTS WebUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md
+更多帮助信息可在 Qwen TTS WebUI Installer 文档中查看: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/
 `"
 }
 
@@ -3219,7 +3219,7 @@ function Main {
     }
 
     Write-Log `"激活 Qwen TTS WebUI Env`"
-    Write-Log `"更多帮助信息可在 Qwen TTS WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md`"
+    Write-Log `"更多帮助信息可在 Qwen TTS WebUI Installer 项目地址查看: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`"
 }
 
 ###################
@@ -3292,7 +3292,7 @@ Github：https://github.com/licyk
 - git：Git 的存放路径。
 - core：Qwen TTS WebUI 内核。
 
-详细的 Qwen TTS WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md
+详细的 Qwen TTS WebUI Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/
 
 
 
@@ -3385,7 +3385,7 @@ function Copy-InstallerConfig {
 function Use-InstallMode {
     Write-Log "启动 Qwen TTS WebUI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 Qwen TTS WebUI Installer, 更多的说明请阅读 Qwen TTS WebUI Installer 使用文档"
-    Write-Log "Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
+    Write-Log "Qwen TTS WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/"
     Write-Log "即将进行安装的路径: $script:InstallPath"
     Invoke-Installation
     Write-Log "添加管理脚本和文档中"
@@ -3401,7 +3401,7 @@ function Use-InstallMode {
 
     Write-Log "帮助文档可在 Qwen TTS WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Qwen TTS WebUI Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
-    Write-Log "Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
+    Write-Log "Qwen TTS WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/"
     Write-Log "退出 Qwen TTS WebUI Installer"
 
     if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
@@ -3571,8 +3571,8 @@ $(
     }
 )
 "@
-    $docs_url = "更多的帮助信息请阅读 Qwen TTS WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md"
-    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    $docs_url = "更多的帮助信息请阅读 Qwen TTS WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/"
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url)
     exit 0
 }
 

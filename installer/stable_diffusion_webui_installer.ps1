@@ -1507,8 +1507,8 @@ function Get-HelpMessage {
     }
 )
 `"@
-    `$docs_url = `"更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md`"
-    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url) -ForegroundColor White
+    `$docs_url = `"更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/`"
+    Write-Host `$(`$usage + `"```n```n`" + `$param_info + `"```n`" + `$docs_url)
     exit 0
 }
 
@@ -3496,7 +3496,7 @@ function Main {
             `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"12`" { Update-Core-Prefix }
             `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"14`" { Start-Process `"https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md`" }
+            `"14`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/`" }
             `"15`" { Write-Log `"退出设置`"; return }
         }
     }
@@ -3848,7 +3848,7 @@ Github：https://github.com/licyk
     Install-Hanamizuki
     List-CMD
 
-更多帮助信息可在 SD WebUI Installer 文档中查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md
+更多帮助信息可在 SD WebUI Installer 文档中查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/
 `"
 }
 
@@ -3936,7 +3936,7 @@ function Main {
     }
 
     Write-Log `"激活 SD WebUI Env`"
-    Write-Log `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md`"
+    Write-Log `"更多帮助信息可在 SD WebUI Installer 项目地址查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/`"
 }
 
 ###################
@@ -4012,7 +4012,7 @@ Github：https://github.com/licyk
 - git：Git 的存放路径。
 - core：Stable Diffusion WebUI 内核。
 
-详细的 SD WebUI Installer 使用帮助：https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md
+详细的 SD WebUI Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/
 
 Stable Diffusion WebUI 的使用教程：
 https://sdnote.netlify.app/guide/sd_webui
@@ -4297,7 +4297,7 @@ function Initialize-HanamizukiEnv {
 function Use-InstallMode {
     Write-Log "启动 Stable Diffusion WebUI 安装程序"
     Write-Log "提示: 若出现某个步骤执行失败, 可尝试再次运行 SD WebUI Installer, 更多的说明请阅读 SD WebUI Installer 使用文档"
-    Write-Log "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md"
+    Write-Log "SD WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/"
     Write-Log "即将进行安装的路径: $script:InstallPath"
     Invoke-Installation
     Write-Log "添加管理脚本和文档中"
@@ -4317,7 +4317,7 @@ function Use-InstallMode {
 
     Write-Log "帮助文档可在 Stable Diffusion WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 SD WebUI Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
-    Write-Log "SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md"
+    Write-Log "SD WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/"
     Write-Log "退出 SD WebUI Installer"
 
     if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
@@ -4531,8 +4531,8 @@ $(
     }
 )
 "@
-    $docs_url = "更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/stable_diffusion_webui_installer.md"
-    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url) -ForegroundColor White
+    $docs_url = "更多的帮助信息请阅读 SD WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/"
+    Write-Host $($usage + "`n`n" + $param_info + "`n" + $docs_url)
     exit 0
 }
 
