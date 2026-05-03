@@ -8,6 +8,9 @@ nav = [
     {"主页" = "index.md"},
     {"快速开始" = [
         {"环境准备" = "installer/environment.md"},
+        {"Notebook 云端运行" = "notebook/quick-start.md"},
+        {"Notebook Colab 使用" = "notebook/colab.md"},
+        {"Notebook Kaggle 使用" = "notebook/kaggle.md"},
         {"SD WebUI Installer 安装" = "installer/sd-webui/install.md"},
         {"ComfyUI Installer 安装" = "installer/comfyui/install.md"},
         {"Fooocus Installer 安装" = "installer/fooocus/install.md"},
@@ -15,6 +18,16 @@ nav = [
         {"Qwen TTS WebUI Installer 安装" = "installer/qwen-tts-webui/install.md"},
         {"SD Trainer Installer 安装" = "installer/sd-trainer/install.md"},
         {"SD Trainer Script Installer 安装" = "installer/sd-trainer-script/install.md"},
+    ]},
+    {"Jupyter Notebook" = [
+        {"概览" = "notebook/index.md"},
+        {"快速开始" = "notebook/quick-start.md"},
+        {"选择 Notebook" = "notebook/selection.md"},
+        {"Colab 使用" = "notebook/colab.md"},
+        {"Kaggle 使用" = "notebook/kaggle.md"},
+        {"参数配置" = "notebook/parameters.md"},
+        {"管理器 API" = "notebook/manager-api.md"},
+        {"故障排查" = "notebook/troubleshooting.md"},
     ]},
     {"安装器使用" = [
         {"概览" = "installer/index.md"},
@@ -179,7 +192,7 @@ toggle.icon = "lucide/moon"
 toggle.name = "深色主题"
 
 [project.extra]
-homepage = "https://sdnote.netlify.app"
+homepage = "https://licyk.github.io/sd-webui-all-in-one"
 generator = true
 
 [[project.extra.social]]
