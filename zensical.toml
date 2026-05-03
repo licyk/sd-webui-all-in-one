@@ -135,6 +135,16 @@ nav = [
         {"管理器命令" = "cli/manager.md"},
         {"环境变量配置" = "cli/env.md"},
     ]},
+    {"开发维护" = [
+        {"概览" = "development/index.md"},
+        {"整体架构" = "development/architecture.md"},
+        {"Python 内核" = "development/python-core.md"},
+        {"Installer" = "development/installer.md"},
+        {"Notebook" = "development/notebook.md"},
+        {"编码风格" = "development/coding-style.md"},
+        {"测试与检查" = "development/testing.md"},
+        {"新增产品支持" = "development/adding-product.md"},
+    ]},
 ]
 
 [project.plugins_config.git-revision-date-localized]

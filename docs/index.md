@@ -72,6 +72,14 @@ SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 
 
     [:octicons-arrow-right-24: 查看命令行文档](./cli/index.md)
 
+-   :material-source-branch:{ .lg .middle } __开发维护__
+
+    ---
+
+    面向贡献者和后续维护者，记录 Python 内核、Installer、Notebook 的架构、编码风格和验证方式。
+
+    [:octicons-arrow-right-24: 查看维护文档](./development/index.md)
+
 </div>
 
 ## 启动之后
