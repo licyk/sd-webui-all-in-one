@@ -84,7 +84,7 @@ exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*
 namespaces = true
 
 [tool.setuptools.package-data]
-"*" = ["*.json", "*.conf", "*.tcl", "*.png", "LICENSE", "README.md"]
+"*" = ["*.json", "*.conf", "*.tcl", "*.png", "LICENSE", "README.md", "libtcmalloc_minimal.so.4"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]

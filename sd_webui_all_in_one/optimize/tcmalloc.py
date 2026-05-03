@@ -6,12 +6,12 @@ import subprocess
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
+    ROOT_PATH,
 )
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 
@@ -163,13 +163,7 @@ class TCMalloc:
             bool: TCMalloc (Colab) 配置结果
         """
         logger.info("配置 TCMalloc 内存优化")
-        url = "https://github.com/licyk/sd-webui-all-in-one/raw/main/config/libtcmalloc_minimal.so.4"
-        libtcmalloc_path = self.workspace / "libtcmalloc_minimal.so.4"
-        status = download_file(url=url, path=self.workspace, save_name="libtcmalloc_minimal.so.4")
-        if status is None:
-            logger.error("下载 TCMalloc 库失败, 无法配置 TCMalloc")
-            return False
-
+        libtcmalloc_path = ROOT_PATH / "optimize" / "libtcmalloc_minimal.so.4"
         if "LD_PRELOAD" in os.environ and os.environ["LD_PRELOAD"]:
             os.environ["LD_PRELOAD"] = os.environ["LD_PRELOAD"] + ":" + libtcmalloc_path.as_posix()
         else:
