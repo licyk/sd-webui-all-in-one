@@ -40,8 +40,8 @@ _✨快速部署，简单易用_
 </div>
 
 - [SD WebUI All In One](#sd-webui-all-in-one)
+- [项目文档](#项目文档)
 - [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
-- [Third-party Notices](#third-party-notices)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
   - [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)
   - [SD Trainer Scripts Kaggle Jupyter NoteBook](#sd-trainer-scripts-kaggle-jupyter-notebook)
@@ -53,10 +53,7 @@ _✨快速部署，简单易用_
   - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
   - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
   - [Qwen TTS WebUI Colab Jupyter NoteBook](#qwen-tts-webui-colab-jupyter-notebook)
-  - [SD WebUI All In One Jupyter NoteBook](#sd-webui-all-in-one-jupyter-notebook)
-  - [SD WebUI All In One Colab Jupyter NoteBook](#sd-webui-all-in-one-colab-jupyter-notebook)
-  - [Fooocus kaggle Jupyter NoteBook](#fooocus-kaggle-jupyter-notebook)
-  - [SD Trainer Kaggle Jupyter NoteBook](#sd-trainer-kaggle-jupyter-notebook)
+  - [旧版 Notebook](#旧版-notebook)
 - [Installer](#installer)
   - [SD WebUI Installer](#sd-webui-installer)
   - [ComfyUI Installer](#comfyui-installer)
@@ -67,11 +64,30 @@ _✨快速部署，简单易用_
   - [Qwen TTS WebUI Installer](#qwen-tts-webui-installer)
   - [Python Installer](#python-installer)
   - [Installer 自动化构建状态](#installer-自动化构建状态)
+- [项目协议](#项目协议)
+- [Third-party Notices](#third-party-notices)
+
+***
+
+# 项目文档
+SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jupyter Notebook 云端运行和 CLI 管理等多种入口，用于快速安装、启动和维护常见 AI WebUI / 训练工具。
+
+完整文档站点：[SD WebUI All In One 文档](https://licyk.github.io/sd-webui-all-in-one/)
+
+| 想做什么 | 推荐入口 |
+| --- | --- |
+| 不确定该用哪种方式 | [快速开始](docs/quick-start/index.md) |
+| 在 Colab / Kaggle 云端运行 | [云端运行快速开始](docs/quick-start/cloud.md) / [Jupyter Notebook 文档](docs/notebook/index.md) |
+| 下载 Windows 免安装整合包 | [整合包快速开始](docs/quick-start/portable.md) / [AI 整合包下载器](docs/tools/portable-downloader.md) |
+| 在本地安装 WebUI / 训练工具 | [本地安装快速开始](docs/quick-start/local-install.md) / [安装器使用](docs/installer/index.md) |
+| 用图形界面或终端统一管理 | [Launcher 快速开始](docs/quick-start/launcher.md) / [下载器与启动器](docs/tools/index.md) |
+| 使用命令行管理 | [命令行工具](docs/cli/index.md) |
+| 维护项目源码和文档 | [开发维护](docs/development/index.md) |
 
 ***
 
 # SD WebUI All In One CLI
-支持多平台安装和管理 WebUI 的 CLI 工具，支持部署的 WebUI 如下：
+`sd-webui-all-in-one` 是用于多平台安装、启动和管理 WebUI / 训练工具的 CLI。它复用项目的 Python 管理核心，可用于管理仓库、模型、扩展、PyTorch、内网穿透和运行环境。支持部署的 WebUI / 训练工具如下：
 
 - [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 - [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
@@ -91,17 +107,11 @@ _✨快速部署，简单易用_
 - [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
 - [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
 
-详细的说明[点击此处](docs/cli.md)阅读。
-
-
-# Third-party Notices
-本项目的 tkinter 版本管理 GUI 内置了 [Sun Valley ttk theme](https://github.com/rdbende/Sun-Valley-ttk-theme)（`sv_ttk`）作为可选界面主题资源。
-
-Sun Valley ttk theme 使用 MIT License，版权归 `rdbende <rdbende@proton.me>` 所有，许可证原文保留在 [sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE](sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE)。本项目主体仍按 GPL-3.0 发布，第三方组件按其各自许可证使用。
+完整命令说明请阅读：[命令行工具文档](docs/cli/index.md)。
 
 
 # SD WebUI All In One Notebook
-支持部署不同 WebUI 的各种 Notebook，基于 [SD WebUI All In One](https://github.com/licyk/sd-webui-all-in-one/tree/main/sd_webui_all_in_one) 内核，支持部署的 WebUI 如下：
+支持部署不同 WebUI 的各种 Notebook，基于 [SD WebUI All In One](https://github.com/licyk/sd-webui-all-in-one/tree/main/sd_webui_all_in_one) Python 内核，提供 Colab / Kaggle 云端运行入口。Colab Notebook 支持图形化参数配置，默认参数通常可以直接运行。支持部署的 WebUI / 训练工具如下：
 
 - [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 - [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
@@ -125,6 +135,8 @@ Sun Valley ttk theme 使用 MIT License，版权归 `rdbende <rdbende@proton.me>
 
 >[!NOTE]  
 >点击蓝色名称可下载对应的 Jupyter NoteBook。
+
+完整使用说明请阅读：[Jupyter Notebook 文档](docs/notebook/index.md)。
 
 
 ## SD Scripts Kaggle Jupyter NoteBook
@@ -204,58 +216,20 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 ***
 
-## SD WebUI All In One Jupyter NoteBook
-[sd_webui_all_in_one.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook。
+## 旧版 Notebook
+以下 Notebook 已停止维护，不推荐新用户优先使用。保留这些入口仅用于历史回溯或兼容旧流程，新的使用方式请优先阅读 [Jupyter Notebook 文档](docs/notebook/index.md)。
 
-- 主要功能
-1. 功能初始化：导入 SD WebUI All In One 所使用的功能
-2. 参数配置：配置安装参数和远程访问方式
-3. 应用参数配置：应用已设置的参数
-4. 安装：根据配置安装对应的 WebUI
-5. 启动：根据配置启动对应的 WebUI
-
-- 其他功能
-1. 自定义模型 / 扩展下载配置：设置要下载的模型 / 扩展参数
-2. 自定义模型 / 扩展下载：根据配置进行下载模型 / 扩展
-3. 更新：将已安装的 WebUI 进行更新
-
-- 提示
-1. 在参数配置界面，请填写工作区路径，选择要使用的 WebUI，根据自己的需求选择内网穿透方式（用于访问 WebUI 界面），再根据自己的需求选择模型和扩展。
-2. 已知 CloudFlare、Gradio 内网穿透会导致 [Kaggle](https://www.kaggle.com) 平台强制关机，在使用 [Kaggle](https://www.kaggle.com) 平台时请勿勾选这两个选项。
-3. 若使用 [Colab](https://colab.research.google.com) 平台，请注意该 Jupyter Notebook 无法在免费版的 Colab 账号中使用，运行前将会收到 Colab 的警告提示，强行运行将会导致 Colab 强制关机（如果 Colab 账号已付费订阅可直接使用该 Jupyter Notebook），可选择仓库中其他的  Jupyter Notebook（将 Colab 中禁止的 WebUI 移除了）。
-4. [Ngrok](https://ngrok.com) 内网穿透的稳定性高，使用前需要填写 Ngrok Token，可在 [Ngrok](https://ngrok.com) 官网获取。
-5. 在启动时将启动内网穿透，可在控制台输出中看到内网穿透地址，用于访问 WebUI 界面。
-
->[!WARNING]  
->已停止维护，可能存在的 BUG 将不再修复。
-
-
-## SD WebUI All In One Colab Jupyter NoteBook
-[sd_webui_all_in_one_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_webui_all_in_one_colab.ipynb))：支持部署多种 WebUI 的 Jupyter Notebook，但移除了 Colab 免费版中会导致警告的 WebUI，适用于 Colab 免费用户。
-
-Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_webui_all_in_one_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
->[!WARNING]  
->已停止维护，可能存在的 BUG 将不再修复。
-
-
-## Fooocus kaggle Jupyter NoteBook
-[fooocus_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_kaggle.ipynb))：适用于 Kaggle 部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
-
->[!WARNING]  
->已停止维护，可能存在的 BUG 将不再修复。
-
-
-## SD Trainer Kaggle Jupyter NoteBook
-[sd_trainer_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_kaggle.ipynb))：适用于 Kaggle 部署 [SD Trainer](https://github.com/Akegarasu/lora-scripts)，解决 Kaggle 环境问题导致无法运行 SD Trainer 的问题。
-
->[!WARNING]  
->已停止维护，可能存在的 BUG 将不再修复。
+| Notebook | 下载 | 源码 | 状态 |
+| --- | --- | --- | --- |
+| SD WebUI All In One | [下载](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one.ipynb) | [源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_webui_all_in_one.ipynb) | 已停止维护 |
+| SD WebUI All In One Colab | [下载](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_webui_all_in_one_colab.ipynb) | [源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_webui_all_in_one_colab.ipynb) | 已停止维护 |
+| Fooocus Kaggle | [下载](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_kaggle.ipynb) | [源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_kaggle.ipynb) | 已停止维护 |
+| SD Trainer Kaggle | [下载](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_kaggle.ipynb) | [源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_kaggle.ipynb) | 已停止维护 |
 
 ***
 
 # Installer
-适用于 Windows / Linux / MacOS 平台部署 AI 的工具，无需提前安装任何环境（[Git](https://git-scm.com) / [Python](https://www.python.org/)），只需一键运行即可部署。不仅仅是部署工具，还是管理工具，实现环境的启动和维护。
+Installer 是适用于 Windows / Linux / macOS 的 WebUI / 训练工具安装与管理脚本。它不依赖系统中已有的 [Git](https://git-scm.com) / [Python](https://www.python.org/)，会在独立目录中准备运行环境，并生成启动、更新、终端、模型下载、PyTorch 重装和版本管理等脚本。
 
 >[!IMPORTANT]  
 >1. Installer 并不会使用系统中安装的 Git / Python，这是为了保证环境的独立性和可迁移性。并且因为环境的独立性和可迁移性，Installer 也可用做整合包制作器。
@@ -269,48 +243,48 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## SD WebUI Installer
-Windows / Linux / MacOS 平台一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic) 的脚本，包含启动，管理 Stable Diffusion WebUI 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
 
-详细的说明[点击此处](docs/stable_diffusion_webui_installer.md)阅读。
+使用说明：[SD WebUI Installer 文档](docs/installer/sd-webui/index.md)。
 
 
 ## ComfyUI Installer
-Windows / Linux / MacOS 平台一键部署 [ComfyUI](https://github.com/Comfy-Org/ComfyUI) 的脚本，包含启动，管理 ComfyUI 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [ComfyUI](https://github.com/Comfy-Org/ComfyUI)。
 
-详细的说明[点击此处](docs/comfyui_installer.md)阅读。
+使用说明：[ComfyUI Installer 文档](docs/installer/comfyui/index.md)。
 
 
 ## InvokeAI Installer
-Windows / Linux / MacOS 平台一键部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的脚本，包含启动，管理 InvokeAI 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [InvokeAI](https://github.com/invoke-ai/InvokeAI)。
 
-详细的说明[点击此处](docs/invokeai_installer.md)阅读。
+使用说明：[InvokeAI Installer 文档](docs/installer/invokeai/index.md)。
 
 
 ## Fooocus Installer
-Windows / Linux / MacOS 平台一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus) 的脚本，包含启动，管理 Fooocus 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)。
 
-详细的说明[点击此处](docs/fooocus_installer.md)阅读。
+使用说明：[Fooocus Installer 文档](docs/installer/fooocus/index.md)。
 
 
 ## SD-Trainer Installer
-Windows / Linux / MacOS 平台一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss) 的脚本，包含启动，管理 SD-Trainer 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
 
-详细的说明[点击此处](docs/sd_trainer_installer.md)阅读。
+使用说明：[SD Trainer Installer 文档](docs/installer/sd-trainer/index.md)。
 
 
 ## SD-Trainer-Script Installer
 >[!WARNING]  
->此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](docs/sd_trainer_installer.md) 部署训练工具并使用。
+>此部署工具部署的训练工具需要一定的编写训练命令基础，如果需要使用简单的模型训练工具，请使用 [SD-Trainer Installer](docs/installer/sd-trainer/index.md) 部署训练工具并使用。
 
-Windows / Linux / MacOS 平台一键部署 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner) 的脚本，包含启动，管理 SD-Trainer-Script 的工具。
+Windows / Linux / macOS 平台安装和管理 [sd-scripts](https://github.com/kohya-ss/sd-scripts) / [ai-toolkit](https://github.com/ostris/ai-toolkit) / [finetrainers](https://github.com/a-r-r-o-w/finetrainers) / [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe) / [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)。
 
-详细的说明[点击此处](docs/sd_trainer_script_installer.md)阅读。
+使用说明：[SD Trainer Script Installer 文档](docs/installer/sd-trainer-script/index.md)。
 
 
 ## Qwen TTS WebUI Installer
-Windows / Linux / MacOS 平台一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的脚本，包含启动，管理 Qwen TTS WebUI 的工具。
+Windows / Linux / macOS 平台安装、启动和管理 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)。
 
-详细的说明[点击此处](docs/qwen_tts_webui_installer.md)阅读。
+使用说明：[Qwen TTS WebUI Installer 文档](docs/installer/qwen-tts-webui/index.md)。
 
 
 ## Python Installer
@@ -335,3 +309,17 @@ Windows / Linux / MacOS 平台一键部署 [Qwen TTS WebUI](https://github.com/l
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
+
+***
+
+# 项目协议
+本项目主体使用 [GNU General Public License v3.0](LICENSE)（GPL-3.0）发布。你可以在 GPL-3.0 条款下使用、复制、修改和分发本项目；分发修改版本时，请遵守 GPL-3.0 的源代码开放和许可证保留要求。
+
+项目中引用或内置的第三方组件按其各自许可证使用。
+
+***
+
+# Third-party Notices
+本项目的 tkinter 版本管理 GUI 内置了 [Sun Valley ttk theme](https://github.com/rdbende/Sun-Valley-ttk-theme)（`sv_ttk`）作为可选界面主题资源。
+
+Sun Valley ttk theme 使用 MIT License，版权归 `rdbende <rdbende@proton.me>` 所有，许可证原文保留在 [sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE](sd_webui_all_in_one/base_manager/gui/sv_ttk/LICENSE)。
