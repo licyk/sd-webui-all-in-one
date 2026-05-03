@@ -12,4 +12,4 @@
 - [常用命令](commands.md)
 
 ## 简介
-一个在 Windows / Linux / MacOS 系统上部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的 PowerShell 脚本，并提供不同的管理工具。
+用于在 Windows / Linux / MacOS 系统上快速安装、启动和管理 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) 的 PowerShell 安装器。

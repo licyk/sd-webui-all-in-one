@@ -13,4 +13,4 @@
 - [常用命令](commands.md)
 
 ## 简介
-一个在 Windows / Linux / MacOS 系统上部署 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 脚本，并提供不同的管理工具。
+用于在 Windows / Linux / MacOS 系统上快速安装、启动和管理 [InvokeAI](https://github.com/invoke-ai/InvokeAI) 的 PowerShell 安装器。

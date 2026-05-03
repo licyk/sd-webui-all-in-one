@@ -13,7 +13,7 @@
 - [常用命令](commands.md)
 
 ## 简介
-一个在 Windows / Linux / MacOS 系统上部署 Fooocus 的 PowerShell 脚本，并提供不同的管理工具。
+用于在 Windows / Linux / MacOS 系统上快速安装、启动和管理 Fooocus 的 PowerShell 安装器。
 
 支持部署的 Fooocus 分支如下。
 
