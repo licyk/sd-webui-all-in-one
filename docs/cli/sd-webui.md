@@ -1,0 +1,191 @@
+# CLI - Stable Diffusion WebUI
+
+## Stable Diffusion WebUI
+Stable Diffusion WebUI 是目前最流行的 AI 绘画开源软件之一。
+
+### 安装 Stable Diffusion WebUI
+```bash
+sd-webui-all-in-one sd-webui install [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录，默认为配置文件中的路径。
+  - `--pytorch-mirror-type <类型>`: 设置使用的 PyTorch 镜像源类型。
+  - `--custom-pytorch-package <包名>`: 自定义 PyTorch 软件包版本声明，例如：`torch==2.3.0+cu118 torchvision==0.18.0+cu118`。
+  - `--custom-xformers-package <包名>`: 自定义 xFormers 软件包版本声明，例如：`xformers===0.0.26.post1+cu118`。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--install-branch <分支>`: 安装的 Stable Diffusion WebUI 分支（如 `master`, `v1.6.0` 等）。
+  - `--no-pre-download-extension`: 禁用预下载 Stable Diffusion WebUI 扩展。
+  - `--no-pre-download-model`: 禁用预下载模型。
+  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
+
+### 更新 Stable Diffusion WebUI
+```bash
+sd-webui-all-in-one sd-webui update [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+### 检查运行环境
+```bash
+sd-webui-all-in-one sd-webui check-env [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-uv`: 不使用 uv。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+
+### 切换分支
+```bash
+sd-webui-all-in-one sd-webui switch --branch <分支名> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--branch <分支名>`: (必填) 要切换的分支。
+
+### 启动 Stable Diffusion WebUI
+```bash
+sd-webui-all-in-one sd-webui launch [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--launch-args <参数>`: 启动参数 (请使用引号包裹，例如 `"--theme dark --xformers"`)。
+  - `--no-hf-mirror`: 禁用 HuggingFace 镜像源。
+  - `--custom-hf-mirror <URL>`: 自定义 HuggingFace 镜像源。
+  - `--no-github-mirror`: 禁用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-pypi-mirror`: 禁用 PyPI 镜像源。
+  - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
+  - `--no-uv`: 不使用 uv。
+  - `--no-check-env`: 不检查运行环境完整性。
+
+### 版本管理 GUI
+```bash
+sd-webui-all-in-one sd-webui gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+### 扩展管理
+
+#### 安装扩展
+```bash
+sd-webui-all-in-one sd-webui extension install --url <链接> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--url <链接>`: (必填) 扩展下载链接。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+#### 设置扩展状态
+```bash
+sd-webui-all-in-one sd-webui extension status --name <名称> [--enable|--disable] [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--name <名称>`: (必填) 扩展名称。
+  - `--enable`: 启用扩展。
+  - `--disable`: 禁用扩展。
+
+#### 列出扩展
+```bash
+sd-webui-all-in-one sd-webui extension list [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+
+#### 更新扩展
+```bash
+sd-webui-all-in-one sd-webui extension update [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+#### 卸载扩展
+```bash
+sd-webui-all-in-one sd-webui extension uninstall --name <名称> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--name <名称>`: (必填) 扩展名称。
+
+### 模型管理
+
+#### 从模型库安装模型
+```bash
+sd-webui-all-in-one sd-webui model install-library [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--source <源>`: 模型下载源类型 (默认: `modelscope`)。
+  - `--name <名称>`: 模型名称。
+  - `--index <索引>`: 模型索引。
+  - `--downloader <工具>`: 下载工具 (默认: `aria2`)。
+  - `--interactive`: 启用交互模式。
+  - `--list-only`: 列出模型列表并退出。
+
+#### 从链接安装模型
+```bash
+sd-webui-all-in-one sd-webui model install-url --url <链接> --type <类型> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--url <链接>`: (必填) 模型下载地址。
+  - `--type <类型>`: (必填) 模型类型。
+  - `--downloader <工具>`: 下载工具 (默认: `aria2`)。
+
+#### 列出模型
+```bash
+sd-webui-all-in-one sd-webui model list [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+
+#### 卸载模型
+```bash
+sd-webui-all-in-one sd-webui model uninstall --name <名称> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--name <名称>`: (必填) 模型名称。
+  - `--type <类型>`: 模型类型。
+  - `--interactive`: 启用交互模式。
+
+### 重装 PyTorch
+```bash
+sd-webui-all-in-one sd-webui reinstall-pytorch [选项]
+```
+
+- **高级选项**:
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
+  - `--interactive`: 启用交互模式。
+  - `--list-only`: 列出 PyTorch 列表并退出。

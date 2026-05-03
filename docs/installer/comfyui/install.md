@@ -1,0 +1,65 @@
+# ComfyUI Installer 安装
+
+## 安装
+将 ComfyUI Installer 下载至本地，右键`comfyui_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 ComfyUI Installer 将安装 ComfyUI 至本地。
+
+!!! info
+    右键菜单中点击`使用 PowerShell 运行`为 Windows 平台上的使用方法，如果需要在 Linux / MacOS 平台中运行，请打开终端并使用`pwsh`命令去运行，例如：
+    
+    ```bash
+    pwsh comfyui_installer.ps1
+    ```
+    对于其他 PowerShell 脚本也是类似的方法去运行。
+
+!!! note
+    ComfyUI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
+    - [设置 Github 镜像源](config.md#设置-github-镜像源)
+    - [设置 PyPI 镜像源](config.md#设置-pypi-镜像源)
+    - [设置 uv 包管理器](config.md#设置-uv-包管理器)
+    - [配置代理](config.md#配置代理)
+    - [设置内核路径前缀](config.md#设置内核路径前缀)
+    - [设置模型下载源](resources.md#设置模型下载源)
+    
+    通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
+
+|ComfyUI Installer 下载地址|
+|---|
+|[下载地址 1](https://github.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1)|
+|[下载地址 2](https://gitee.com/licyk/sd-webui-all-in-one/releases/download/comfyui_installer/comfyui_installer.ps1)|
+|[下载地址 3](https://github.com/licyk/sd-webui-all-in-one/raw/main/installer/comfyui_installer.ps1)|
+|[下载地址 4](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/comfyui_installer.ps1)|
+|[下载地址 5](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/comfyui_installer.ps1)|
+
+在 ComfyUI Installer 成功安装 ComfyUI 后，在`ComfyUI`文件夹中可以看到 ComfyUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 ComfyUI Installer。
+
+??? note "查看 ComfyUI Installer 为 ComfyUI 预装的扩展"
+    
+    |ComfyUI 扩展|
+    |---|
+    |[Comfy-Org/ComfyUI-Manager](https://github.com/Comfy-Org/ComfyUI-Manager)|
+    |[Fannovel16/comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux)|
+    |[Kosinkadink/ComfyUI-Advanced-ControlNet](https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet)|
+    |[cubiq/ComfyUI_IPAdapter_plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus)|
+    |[kijai/ComfyUI-Marigold](https://github.com/kijai/ComfyUI-Marigold)|
+    |[pythongosssss/ComfyUI-WD14-Tagger](https://github.com/pythongosssss/ComfyUI-WD14-Tagger)|
+    |[BlenderNeko/ComfyUI_TiledKSampler](https://github.com/BlenderNeko/ComfyUI_TiledKSampler)|
+    |[pythongosssss/ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts)|
+    |[LEv145/images-grid-comfy-plugin](https://github.com/LEv145/images-grid-comfy-plugin)|
+    |[ssitu/ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale)|
+    |[AlekPet/ComfyUI_Custom_Nodes_AlekPet](https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet)|
+    |[talesofai/comfyui-browser](https://github.com/talesofai/comfyui-browser)|
+    |[ltdrdata/ComfyUI-Inspire-Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack)|
+    |[Suzie1/ComfyUI_Comfyroll_CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes)|
+    |[crystian/ComfyUI-Crystools](https://github.com/crystian/ComfyUI-Crystools)|
+    |[shiimizu/ComfyUI-TiledDiffusion](https://github.com/shiimizu/ComfyUI-TiledDiffusion)|
+    |[huchenlei/ComfyUI-openpose-editor](https://github.com/huchenlei/ComfyUI-openpose-editor)|
+    |[licyk/ComfyUI-Restart-Sampler](https://github.com/licyk/ComfyUI-Restart-Sampler)|
+    |[weilin9999/WeiLin-Comfyui-Tools](https://github.com/weilin9999/WeiLin-Comfyui-Tools)|
+    |[licyk/ComfyUI-HakuImg](https://github.com/licyk/ComfyUI-HakuImg)|
+    |[yolain/ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use)|
+    |[rgthree/rgthree-comfy](https://github.com/rgthree/rgthree-comfy)|
+    
+
+!!! note
+    1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](environment.md#环境配置)中的方法进行解除。
+    2. ComfyUI Installer 支持使用在命令行中通过参数配置 ComfyUI 的安装参数，具体说明可阅读[使用命令运行 ComfyUI Installer](advanced.md#使用命令运行-comfyui-installer)。
