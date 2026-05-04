@@ -1167,6 +1167,31 @@ function Join-NormalizedPath {
 }
 
 
+# 获取原生命令退出码
+function Get-NativeCommandExitCode {
+    param ([bool]`$Success)
+    if (`$Success) {
+        return 0
+    }
+    if ((`$null -ne `$global:LASTEXITCODE) -and (`$global:LASTEXITCODE -ne 0)) {
+        return [int]`$global:LASTEXITCODE
+    }
+    return 1
+}
+
+
+# 按退出码退出管理脚本
+function Exit-ManagerScript {
+    param ([int]`$ExitCode)
+    if (!(`$script:BuildMode)) {
+        if (!(`$script:NoPause)) {
+            Read-Host | Out-Null
+        }
+    }
+    exit `$ExitCode
+}
+
+
 # 更新 SD WebUI All In One 内核
 function Update-SDWebUiAllInOne {
     `$content = `"
@@ -1934,7 +1959,9 @@ Export-ModuleMember -Function ``
     Get-CurrentPlatform, ``
     Get-CurrentArchitecture, ``
     New-AppShortcut, ``
-    Test-PythonAndGit
+    Test-PythonAndGit, ``
+    Get-NativeCommandExitCode, ``
+    Exit-ManagerScript
 ".Trim()
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
     Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
@@ -2032,7 +2059,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2202,8 +2229,7 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     Test-MSVCPPRedistributable
@@ -2213,10 +2239,11 @@ function Main {
     if (`$script:BuildMode) {
         Write-Log `"SD WebUI Installer 构建模式已启用, 仅检查 Stable Diffusion WebUI 运行环境`"
         & python -m sd_webui_all_in_one sd-webui check-env `$launch_args
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
     } else {
         & python -m sd_webui_all_in_one sd-webui launch `$launch_args
-        `$req = `$?
-        if (`$req) {
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -eq 0) {
             Write-Log `"Stable Diffusion WebUI 正常退出`"
         } else {
             `$help_msg = @`"
@@ -2235,8 +2262,8 @@ function Main {
 `"@
             Write-Log `"Stable Diffusion WebUI 出现异常, 已退出, 请检查控制台日志`${help_msg}`" -Level ERROR
         }
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
     }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -2303,7 +2330,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2348,15 +2375,15 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui update `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出 Stable Diffusion WebUI 更新脚本`"
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -2423,7 +2450,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2468,16 +2495,16 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui extension update `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出 Stable Diffusion WebUI 扩展更新脚本`"
 
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -2549,7 +2576,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2600,16 +2627,16 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui switch `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出 Stable Diffusion WebUI 分支切换脚本`"
 
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -2958,7 +2985,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3014,9 +3041,10 @@ function Main {
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui reinstall-pytorch `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出 PyTorch 重装脚本`"
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -3083,7 +3111,7 @@ try {
         DisableModelMirror = `$script:DisableModelMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3137,15 +3165,15 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui model install-library `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出模型下载脚本`"
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -3207,7 +3235,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3251,16 +3279,16 @@ function Main {
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 Stable Diffusion WebUI Installer 进行修复`" -Level ERROR
-        if (!(`$script:NoPause)) { Read-Host | Out-Null }
-        return
+        Exit-ManagerScript -ExitCode 1
     }
 
     `$launch_args = Get-LaunchCoreArgs
     & python -m sd_webui_all_in_one sd-webui gui version-manager `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
 
     Write-Log `"退出 Stable Diffusion WebUI 版本管理脚本`"
 
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    Exit-ManagerScript -ExitCode `$exit_code
 }
 
 ###################
@@ -3307,7 +3335,7 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3571,7 +3599,7 @@ try {
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
