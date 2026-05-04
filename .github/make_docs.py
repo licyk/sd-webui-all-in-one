@@ -87,7 +87,8 @@ def main() -> None:
 运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
 
 使用该整合包启动前请打开 help.txt 文件阅读说明
-更多说明请阅读: https://github.com/licyk/sd-webui-all-in-one/discussions/1
+更多说明请阅读: https://licyk.github.io/sd-webui-all-in-one/portable/portable
+整合包支持使用启动器运行，启动器的使用方法请阅读：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
 
 ！！！不会启动该整合包的请重新阅读 help.txt 文件中的说明！！！
 

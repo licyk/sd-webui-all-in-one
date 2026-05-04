@@ -164,7 +164,7 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 215
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 216
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.1.18"
@@ -3322,6 +3322,9 @@ Github：https://github.com/licyk
 
 详细的 Qwen TTS WebUI Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/
 
+也可以使用 sd-webui-all-in-one-launcher 启动器管理本项目。Windows GUI Launcher 适合在 Windows 图形界面中安装、启动和维护本项目；Bash TUI / CLI Launcher 适合在 Linux、macOS 或其他终端环境中管理本项目，也可以接管已有安装目录并运行管理脚本。
+Windows GUI Launcher 文档：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
+Bash TUI / CLI Launcher 文档：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-tui
 
 
 ====================================================================
