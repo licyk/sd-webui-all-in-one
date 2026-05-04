@@ -2,6 +2,8 @@
 
 Bash TUI / CLI Launcher 是 `sd-webui-all-in-one-launcher` 的终端版本，是 Linux、macOS 或其他终端环境中安装、启动和维护 WebUI / 训练工具的统一入口。它可以借助 `sd-webui-all-in-one` 安装器完成全新安装，也可以接管已有安装目录，继续运行启动、更新、终端、模型下载和版本管理等维护脚本。TUI 依赖 `dialog` 提供终端图形界面；没有 `dialog` 时会退回到文本交互。
 
+项目地址：[licyk/sd-webui-all-in-one-launcher](https://github.com/licyk/sd-webui-all-in-one-launcher)。
+
 ## 环境要求
 
 - Bash 5 或更高版本。

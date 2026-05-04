@@ -2,6 +2,8 @@
 
 本板块介绍项目中面向用户的辅助工具：AI 整合包下载器、Windows GUI Launcher、Bash TUI / CLI Launcher。下载器负责获取整合包；Launcher 则是安装、启动和维护 WebUI / 训练工具的统一入口。
 
+Launcher 的 GUI / TUI 工具在独立仓库维护，项目地址：[licyk/sd-webui-all-in-one-launcher](https://github.com/licyk/sd-webui-all-in-one-launcher)。
+
 ## 如何选择
 
 | 目标 | 推荐工具 | 适用平台 |

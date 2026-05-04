@@ -2,6 +2,8 @@
 
 Windows GUI Launcher 是 `sd-webui-all-in-one-launcher` 的图形界面版本，是 Windows 上安装、启动和维护多个 WebUI / 训练工具的统一入口。它可以借助 `sd-webui-all-in-one` 安装器完成全新安装，也可以接管已解压的整合包或已有安装目录，继续运行启动、更新、终端、模型下载和版本管理等维护脚本。
 
+项目地址：[licyk/sd-webui-all-in-one-launcher](https://github.com/licyk/sd-webui-all-in-one-launcher)。
+
 ## 下载与启动
 
 [GitHub 下载 install.bat :material-download:](https://github.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.bat){ .md-button .md-button--primary }
