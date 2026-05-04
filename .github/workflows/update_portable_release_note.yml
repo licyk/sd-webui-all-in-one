@@ -15,11 +15,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: '3.x'
 
       - name: Update Portable Release Note
         shell: bash
