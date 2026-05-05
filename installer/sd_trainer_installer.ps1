@@ -3817,6 +3817,12 @@ Main
 # 快捷启动终端脚本, 启动后将自动运行环境激活脚本
 function Write-LaunchTerminalScript {
     $content = "
+param(
+    [switch]`$Help,
+    [switch]`$NoPause,
+    [Parameter(ValueFromRemainingArguments=`$true)]
+    [string[]]`$Arguments
+)
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
@@ -3833,11 +3839,19 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    Read-Host | Out-Null
+    if (!(`$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
-Write-Log `"执行 SD Trainer Installer 激活环境脚本`"
-& `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`"
+`$pass_args = @()
+if (`$script:NoPause) { `$pass_args += `"-NoPause`" }
+if (`$script:Help) { `$pass_args += `"-Help`" }
+if (`$Arguments) { `$pass_args += `$Arguments }
+if (`$script:Help) {
+    & `"`$((Get-Process -Id `$PID).Path)`" -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`" @pass_args
+} else
+    Write-Log `"执行 SD Trainer Installer 激活环境脚本`"
+    & `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`" @pass_args
+}
 ".Trim()
 
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "terminal.ps1")) { "更新" } else { "生成" }) terminal.ps1 中"
