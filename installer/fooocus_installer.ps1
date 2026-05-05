@@ -531,7 +531,7 @@ if __name__ == '__main__':
     if (!($?)) { & python -m pip install -U "sd-webui-all-in-one>=$script:CORE_MINIMUM_VER" }
     if (!($?)) {
         Write-Log "SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用" -Level ERROR
-        if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+        if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
     Write-Log "SD WebUI All In One 内核更新成功"
@@ -575,7 +575,7 @@ function Install-ArchiveResource {
 
     if (-not $success) {
         Write-Log "$ResourceName 安装失败, 终止安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-        if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+        if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
 
@@ -719,7 +719,7 @@ function Install-Python {
         $urls = $py_info.Url
     } else {
         Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
-        if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+        if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
     $python_cmd = Get-Command python -ErrorAction SilentlyContinue
@@ -779,7 +779,7 @@ function Install-Git {
         }
         else {
             Write-Log "不支持当前的平台安装: ($platform, $arch)" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
         Install-ArchiveResource -Urls $urls -ResourceName "Git" -DestPath (Join-NormalizedPath $script:InstallPath "git") -ZipName "PortableGit.zip"
@@ -798,12 +798,12 @@ function Install-Git {
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git"); return }
             Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
     }
@@ -818,12 +818,12 @@ function Install-Git {
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
             Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
         catch {
             Write-Log "安装 Git 失败, 终止安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
     }
@@ -857,7 +857,7 @@ function Install-WindowsAria2 {
                 Write-Log "重试下载 Aria2 中" -Level WARNING
             } else {
                 Write-Log "Aria2 安装失败, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-                if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+                if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
                 exit 1
             }
         }
@@ -896,12 +896,12 @@ function Install-Aria2 {
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2"); return }
             Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
     }
@@ -915,12 +915,12 @@ function Install-Aria2 {
             if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
             Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
         catch {
             Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-            if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
     }
@@ -948,7 +948,7 @@ function Invoke-Installation {
     & python -m sd_webui_all_in_one fooocus install $launch_params
     if (!($?)) {
         Write-Log "运行 SD WebUI All In One 安装 Fooocus 时发生了错误, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
-        if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+        if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
 
@@ -1145,11 +1145,7 @@ function Get-NativeCommandExitCode {
 # 按退出码退出管理脚本
 function Exit-ManagerScript {
     param ([int]`$ExitCode)
-    if (!(`$script:BuildMode)) {
-        if (!(`$script:NoPause)) {
-            Read-Host | Out-Null
-        }
-    }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit `$ExitCode
 }
 
@@ -1206,7 +1202,7 @@ if __name__ == '__main__':
     if (!(`$?)) { & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" }
     if (!(`$?)) {
         Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`" -Level ERROR
-        if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+        if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
     Write-Log `"SD WebUI All In One 内核更新成功`"
@@ -2046,7 +2042,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -2306,7 +2302,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -2432,7 +2428,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -2830,7 +2826,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -2955,7 +2951,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -3079,7 +3075,7 @@ catch {
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_fooocus_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:BuildMode)) { if (!(`$script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 
@@ -4208,7 +4204,7 @@ function Use-InstallMode {
     Write-Log "Fooocus Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/fooocus/"
     Write-Log "退出 Fooocus Installer"
 
-    if (!($script:BuildMode)) { if (!($script:NoPause)) { Read-Host | Out-Null } }
+    if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
 }
 
 
