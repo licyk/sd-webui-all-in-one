@@ -79,7 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 102
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 103
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -1029,7 +1029,8 @@ function Start-App {
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button Name="ProjBtn" Content="项目主页" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
-                        <Button Name="DocBtn" Content="使用说明" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                        <Button Name="DocBtn" Content="使用说明" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                        <Button Name="LauncherBtn" Content="启动器下载" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                     </StackPanel>
                 </Grid>
 
@@ -1242,7 +1243,7 @@ function Start-App {
         StableRadio = $window.FindName("Stable"); NightlyRadio = $window.FindName("Nightly"); HFRadio = $window.FindName("HF"); MSRadio = $window.FindName("MS")
         RefreshBtn = $window.FindName("RefreshBtn"); ToggleQueueBtn = $window.FindName("ToggleQueueBtn"); BrowseBtn = $window.FindName("BrowseBtn")
         AutoExtract = $window.FindName("AutoExtract"); AutoDelete = $window.FindName("AutoDelete")
-        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn")
+        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn"); LauncherBtn = $window.FindName("LauncherBtn");
         LoadingOverlay = $window.FindName("LoadingOverlay")
         TitleBar = $window.FindName("TitleBar"); CloseBtn = $window.FindName("CloseBtn")
         MinBtn = $window.FindName("MinBtn"); MaxBtn = $window.FindName("MaxBtn")
@@ -1398,7 +1399,8 @@ function Start-App {
     $UI.MainGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, [System.Windows.RoutedEventHandler]{ param($s, $e) if ($e.OriginalSource.Name -eq "RowDL") { Invoke-DownloadAction -UI $UI -State $State -Button $e.OriginalSource } })
 
     $UI.ProjBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one" })
-    $UI.DocBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/discussions/1" })
+    $UI.DocBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/portable/portable" })
+    $UI.LauncherBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui" })
 
     # 队列显隐切换 (增加过渡动画)
     $UI.ToggleQueueBtn.Add_Click({
