@@ -3858,7 +3858,7 @@ if (`$script:Help) { `$pass_args += `"-Help`" }
 if (`$Arguments) { `$pass_args += `$Arguments }
 if (`$script:Help) {
     & `"`$((Get-Process -Id `$PID).Path)`" -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`" @pass_args
-} else
+} else {
     Write-Log `"执行 Fooocus Installer 激活环境脚本`"
     & `"`$((Get-Process -Id `$PID).Path)`" -NoExit -File `"`$(Join-NormalizedPath `$PSScriptRoot `"activate.ps1`")`" @pass_args
 }
