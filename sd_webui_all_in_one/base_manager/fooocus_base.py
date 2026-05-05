@@ -677,13 +677,26 @@ def launch_fooocus_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 Fooocus 版本管理 GUI"""
+    """启动 Fooocus 版本管理 GUI
+
+    Args:
+        fooocus_path (Path):
+            Fooocus 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+
+    Raises:
+        RuntimeError:
+            环境未安装 tkinter 或者导入 GUI 模块失败时
+    """
     try:
         from sd_webui_all_in_one.base_manager.gui.git_kernel_version_gui import launch_git_kernel_version_gui
     except ModuleNotFoundError as e:
         if e.name == "tkinter":
             raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动版本管理 GUI") from e
-        raise
+        raise RuntimeError(f"导入 GUI 管理模块发生错误: {e}") from e
 
     launch_git_kernel_version_gui(
         title="Fooocus",
