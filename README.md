@@ -76,13 +76,13 @@ SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jup
 
 | 想做什么 | 推荐入口 |
 | --- | --- |
-| 不确定该用哪种方式 | [快速开始](docs/quick-start/index.md) |
-| 在 Colab / Kaggle 云端运行 | [云端运行快速开始](docs/quick-start/cloud.md) / [Jupyter Notebook 文档](docs/notebook/index.md) |
-| 下载 Windows 免安装整合包 | [整合包快速开始](docs/quick-start/portable.md) / [AI 整合包下载器](docs/tools/portable-downloader.md) |
-| 在本地安装 WebUI / 训练工具 | [本地安装快速开始](docs/quick-start/local-install.md) / [安装器使用](docs/installer/index.md) |
-| 用图形界面或终端统一管理 | [Launcher 快速开始](docs/quick-start/launcher.md) / [下载器与启动器](docs/tools/index.md) |
-| 使用命令行管理 | [命令行工具](docs/cli/index.md) |
-| 维护项目源码和文档 | [开发维护](docs/development/index.md) |
+| 不确定该用哪种方式 | [快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/) |
+| 在 Colab / Kaggle 云端运行 | [云端运行快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/cloud/) / [Jupyter Notebook 文档](https://licyk.github.io/sd-webui-all-in-one/notebook/) |
+| 下载 Windows 免安装整合包 | [整合包快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/portable/) / [AI 整合包下载器](https://licyk.github.io/sd-webui-all-in-one/tools/portable-downloader/) |
+| 在本地安装 WebUI / 训练工具 | [本地安装快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/local-install/) / [安装器使用](https://licyk.github.io/sd-webui-all-in-one/installer/) |
+| 用图形界面或终端统一管理 | [Launcher 快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/launcher/) / [下载器与启动器](https://licyk.github.io/sd-webui-all-in-one/tools/) |
+| 使用命令行管理 | [命令行工具](https://licyk.github.io/sd-webui-all-in-one/cli/) |
+| 维护项目源码和文档 | [开发维护](https://licyk.github.io/sd-webui-all-in-one/development/) |
 
 ***
 
