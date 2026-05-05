@@ -52,7 +52,7 @@ installer-launcher tui
 
 ## TUI 主菜单
 
-![TUI 主菜单](../assets/images/tools/launcher-tui/main-menu.png)
+![TUI 主菜单](../assets/images/tools/launcher-tui/main-menu.jpg)
 
 主菜单会显示当前安装器、安装状态、安装路径和下一步提示。常用入口包括：
 
@@ -70,13 +70,13 @@ installer-launcher tui
 
 ## 选择项目
 
-![TUI 选择安装器](../assets/images/tools/launcher-tui/project-selection.png)
+![TUI 选择安装器](../assets/images/tools/launcher-tui/project-selection.jpg)
 
 支持项目包括 `sd_webui`、`comfyui`、`invokeai`、`fooocus`、`sd_trainer`、`sd_trainer_script` 和 `qwen_tts_webui`。选择后会写入主配置，并作为后续安装、运行脚本和查看配置的默认项目。
 
 ## 项目配置
 
-![TUI 项目配置](../assets/images/tools/launcher-tui/project-config.png)
+![TUI 项目配置](../assets/images/tools/launcher-tui/project-config.jpg)
 
 项目配置会保存到当前用户配置目录。常见配置包括安装路径、核心路径前缀、PyTorch 镜像类型、Python 版本、代理、GitHub 镜像、HuggingFace 镜像、开关参数和子脚本默认参数。
 
@@ -84,19 +84,19 @@ installer-launcher tui
 
 ## 管理脚本参数
 
-![TUI 管理脚本参数](../assets/images/tools/launcher-tui/script-param-config.png)
+![TUI 管理脚本参数](../assets/images/tools/launcher-tui/script-param-config.jpg)
 
 管理脚本参数页面只显示该脚本文档中支持的参数。`-NoPause` 会自动追加。可以为 `launch.ps1`、`download_models.ps1`、`reinstall_pytorch.ps1`、`switch_branch.ps1`、`version_manager.ps1` 等脚本保存默认参数。
 
 ## 运行管理脚本
 
-![TUI 管理脚本](../assets/images/tools/launcher-tui/manage-scripts.png)
+![TUI 管理脚本](../assets/images/tools/launcher-tui/manage-scripts.jpg)
 
 安装完成后，或把安装路径指向已有目录后，可以在 `manage` 中选择安装目录中的管理脚本，例如启动、更新、切换分支、打开终端、下载模型、重装 PyTorch、版本管理或重新运行安装器。
 
 ## 主配置
 
-![TUI 主配置](../assets/images/tools/launcher-tui/main-config.png)
+![TUI 主配置](../assets/images/tools/launcher-tui/main-config.jpg)
 
 主配置包含当前项目、自动更新、欢迎页、日志等级、代理模式和手动代理地址。
 
