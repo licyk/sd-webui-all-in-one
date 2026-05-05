@@ -18,7 +18,7 @@
     ### 切换 SD WebUI 分支到测试分支
     在安装目录中找到 switch_branch.ps1，右键运行，然后选择`AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支`并切换。
     
-    <img width="1716" height="1027" alt="切换 SD WebUI 分支" src="../assets/images/portable/zluda/switch-sd-webui-branch.jpg" />
+    ![切换 SD WebUI 分支](../assets/images/portable/zluda/switch-sd-webui-branch.jpg)
     
     ### 安装绘世启动器
     在安装目录中找到 terminal.ps1，右键运行，运行后会打开终端，输入下面的命令后回车运行。
@@ -27,14 +27,14 @@
     Install-Hanamizuki
     ```
     
-    <img width="1699" height="1007" alt="安装绘世启动器" src="../assets/images/portable/zluda/install-hanamizuki.jpg" />
+    ![安装绘世启动器](../assets/images/portable/zluda/install-hanamizuki.jpg)
     
     这样额外步骤就做完了。
 
 ## 2. 安装 HIP SDK
 打开 [AMD HIP SDK for Windows](https://www.amd.com/en/developer/resources/rocm-hub/hip-sdk.html) 这个下载页面，找到 OS 是 Windows 10 & 11 和 ROCm Version 是 5.7.1 的那行，点右边的下载。
 
-<img width="1484" height="993" alt="HIP SDK 下载页面" src="../assets/images/portable/zluda/hip-sdk-download-page.jpg" />
+![HIP SDK 下载页面](../assets/images/portable/zluda/hip-sdk-download-page.jpg)
 
 在下载页面翻到最底下有个 Accept 按钮，点击就可以下载 HIP SDK。
 
@@ -43,7 +43,7 @@
 ## 3. 重装 PyTorch
 默认带的 PyTorch 是没法正常跑 ZLUDA 的，要重新安装，在安装目录中找到 reinstall_pytorch.ps1，右键运行，选择`Torch 2.3.0 (CUDA 11.8) + xFormers 0.0.26.post1`这个 PyTorch 组合后重新安装。
 
-<img width="1722" height="1036" alt="重装 ZLUDA 所需 PyTorch" src="../assets/images/portable/zluda/reinstall-pytorch-zluda.jpg" />
+![重装 ZLUDA 所需 PyTorch](../assets/images/portable/zluda/reinstall-pytorch-zluda.jpg)
 
 ## 4. 额外配置 ZLUDA
 !!! info
@@ -51,31 +51,31 @@
 
 下载 [780m_20240321_163205.7z](https://modelscope.cn/models/licyks/sdnote/resolve/master/other/780m_20240321_163205.7z) 这个压缩包，然后把压缩包里的 2 个文件解压到 SD WebUI 内核目录。
 
-<img width="1200" height="333" alt="780M ZLUDA 压缩包文件" src="../assets/images/portable/zluda/zluda-780m-archive-files.jpg" />
+![780M ZLUDA 压缩包文件](../assets/images/portable/zluda/zluda-780m-archive-files.jpg)
 
-<img width="1186" height="886" alt="复制 780M ZLUDA 文件到内核目录" src="../assets/images/portable/zluda/zluda-780m-copy-to-kernel.jpg" />
+![复制 780M ZLUDA 文件到内核目录](../assets/images/portable/zluda/zluda-780m-copy-to-kernel.jpg)
 
-<img width="1227" height="877" alt="内核目录中的 780M ZLUDA 文件" src="../assets/images/portable/zluda/zluda-780m-kernel-files.jpg" />
+![内核目录中的 780M ZLUDA 文件](../assets/images/portable/zluda/zluda-780m-kernel-files.jpg)
 
 ## 5. 安装模型
 在安装目录中找到 download_models.ps1，右键运行，找个合适的模型下载就行。
 
 如果是 AMD 780M 显卡，那点显存只能跑 SD1.5 的模型，推荐 nai1-artist_all_in_one_merge.safetensors。
 
-<img width="1698" height="1015" alt="780M 推荐模型下载" src="../assets/images/portable/zluda/download-model-for-780m.jpg" />
+![780M 推荐模型下载](../assets/images/portable/zluda/download-model-for-780m.jpg)
 
 如果是 AMD RX 系列的显卡，可以下 SDXL 的模型，推荐这几个。
 
-<img width="1709" height="1024" alt="AMD RX 推荐模型下载" src="../assets/images/portable/zluda/download-model-for-rx.jpg" />
+![AMD RX 推荐模型下载](../assets/images/portable/zluda/download-model-for-rx.jpg)
 
 ## 6. 使用绘世启动器启动
 在安装目录中找到 hanamizuki.bat，双击打开后就会启动绘世启动器，在绘世启动器的高级选项中，可以选择 ZLUDA 引擎去启动。
 
-<img width="1898" height="1175" alt="绘世启动器选择 ZLUDA 引擎" src="../assets/images/portable/zluda/hanamizuki-zluda-engine.jpg" />
+![绘世启动器选择 ZLUDA 引擎](../assets/images/portable/zluda/hanamizuki-zluda-engine.jpg)
 
 选择 ZLUDA 引擎后就可以点一键启动去启动 SD WebUI。
 
-<img width="1910" height="1187" alt="绘世启动器启动 ZLUDA" src="../assets/images/portable/zluda/hanamizuki-start-zluda.jpg" />
+![绘世启动器启动 ZLUDA](../assets/images/portable/zluda/hanamizuki-start-zluda.jpg)
 
 第一次启动会经历非常长时间的 ZLUDA 转译，快的话 20 分钟左右，慢的话可能一两个小时，这个只能等。
 
@@ -99,9 +99,9 @@ low quality,worst quality,normal quality,text,signature,jpeg artifacts,bad anato
 
 跑图时也会有 ZLUDA 转译，只能等，完整跑完一次图后一般就不会有 ZLUDA 转译的过程了。
 
-<img width="1238" height="1281" alt="ZLUDA 跑图测试结果 1" src="../assets/images/portable/zluda/zluda-test-result-first.jpg" />
+![ZLUDA 跑图测试结果 1](../assets/images/portable/zluda/zluda-test-result-first.jpg)
 
-<img width="863" height="998" alt="ZLUDA 跑图测试结果 2" src="../assets/images/portable/zluda/zluda-test-result-second.jpg" />
+![ZLUDA 跑图测试结果 2](../assets/images/portable/zluda/zluda-test-result-second.jpg)
 
 出现`OutOfMemoryError: CUDA out of memory`就把分辨率调小点，再启用 Tiled VAE。
 
