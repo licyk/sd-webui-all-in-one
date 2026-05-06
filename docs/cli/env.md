@@ -19,9 +19,6 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_PROXY`
   
   是否自动读取系统代理配置并应用代理，`1` / `True` 表示启用。
-- `SD_WEBUI_ALL_IN_ONE_PATCHER`
-  
-  是否启用补丁功能，`1` / `True` 表示启用。
 - `SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR`
   
   是否启用自带的额外 PyPI 镜像源，`1` / `True` 表示启用。

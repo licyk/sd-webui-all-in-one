@@ -25,6 +25,7 @@ sd_webui_all_in_one_hotpatcher_ext/
 src/sd_webui_all_in_one_hotpatcher_ext/zluda/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/extension_index/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/hf_endpoint_mirror/__init__.py
+src/sd_webui_all_in_one_hotpatcher_ext/uv_pip/__init__.py
 ```
 
 ## 扩展模块推荐结构
@@ -66,7 +67,34 @@ apply_from_config(config)
 
 3. 可选的低层 patch 函数，供测试或高级用户直接调用。
 
-扩展入口内部应该调用 `install_import_hook()`，不要要求使用者额外记住。
+如果扩展使用 import-time patch，入口内部应该调用 `install_import_hook()`，不要要求使用者额外记住。纯运行时 wrapper 可以直接安装自己的 wrapper。
+
+如果扩展提供配置项，还应在 `sd_webui_all_in_one_hotpatcher.services.SETTING_SCHEMA` 中声明 catalog 元数据。管理器 GUI 会读取 `get_catalog()` 自动生成设置界面，所以新增字段需要包含：
+
+- feature 的 `title` 和 `description`。
+- 每个 setting 的 `type`、`title`、`description`。
+- 枚举字段的 `choices`。
+
+示例：
+
+```python
+"extensions.foo": {
+    "title": "Foo 镜像",
+    "description": "替换 Foo 服务的默认下载地址。",
+    "settings": {
+        "enabled": {
+            "type": "bool",
+            "title": "启用",
+            "description": "启用 Foo 镜像补丁。",
+        },
+        "endpoint": {
+            "type": "str",
+            "title": "Endpoint",
+            "description": "Foo 服务镜像地址。",
+        },
+    },
+}
+```
 
 ## 注册补丁的基本模式
 
@@ -321,6 +349,49 @@ load_file_from_url(url, *, model_dir, progress=True, file_name=None, hash_prefix
 
 低层工具函数，方便测试和高级调用。它在调用时读取 `HF_ENDPOINT`，所以运行期间修改环境变量会影响后续下载调用。
 
+## uv Pip 扩展示例
+
+uv Pip 扩展由原 `sdaio_patcher/sdaio_patches/uv_patch.py` 迁移而来。它不是 import-time patch，而是在当前进程里包装 `subprocess.run()`，把运行期安装依赖时出现的 Pip 命令改写为 uv。
+
+当前 API：
+
+```python
+from sd_webui_all_in_one_hotpatcher_ext.uv_pip import (
+    apply_from_config,
+    patch_uv_to_subprocess,
+    unpatch_uv_to_subprocess,
+)
+```
+
+### `patch_uv_to_subprocess(symlink=False)`
+
+包装当前的 `subprocess.run()`。当命令中包含 `pip` / `pip.exe` / `pip3` / `pip3.exe` 时，转换为：
+
+```text
+uv pip ...
+```
+
+转换时会移除 `--prefer-binary`、`--ignore-installed`、`-I`。如果 `symlink=True`，会额外添加：
+
+```text
+--link-mode symlink
+```
+
+这个补丁会把当前的 `subprocess.run` 当作下游继续调用，所以可以包住已经存在的第三方 wrapper。卸载时只在当前 `subprocess.run` 仍是自己的 wrapper 时恢复原函数，避免覆盖后续安装的 wrapper。
+
+### `apply_from_config(config)`
+
+支持配置：
+
+```python
+{
+    "enabled": True,
+    "symlink": False
+}
+```
+
+services catalog 中对应功能路径是 `extensions.uv_pip`。
+
 ## 扩展测试策略
 
 不要依赖真实大型库。ZLUDA 测试没有导入真实 torch，而是在 `tmp_path` 创建 fake torch 包：
@@ -367,9 +438,10 @@ HF Endpoint Mirror 测试创建 fake `torch.hub`、fake `torchvision.datasets.ut
 新增扩展时检查：
 
 - API 名称是否表达具体能力。
-- 是否在入口内部调用 `install_import_hook()`。
+- import-time patch 是否在入口内部调用 `install_import_hook()`。
 - 是否说明必须在目标模块 import 前调用。
 - 是否有 `apply_from_config()`。
+- 是否在 services catalog schema 中声明字段名、说明、类型和必要的 choices。
 - 是否能用 fake dependency 测试。
 - 是否没有把业务补丁塞进 `sd_webui_all_in_one_hotpatcher` core。
 - 是否更新 README 或 docs。

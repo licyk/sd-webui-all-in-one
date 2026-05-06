@@ -8,6 +8,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 from dataclasses import dataclass
 from locale import getpreferredencoding
 from typing import Any, Iterable, TextIO
@@ -18,6 +19,9 @@ DEFAULT_MAX_CHARS = 8192
 DEFAULT_QUEUE_SIZE = 1000
 DEFAULT_STREAMS = ("stdout", "stderr")
 DEFAULT_LOGGER_EXCLUDE = ("sd_webui_all_in_one_hotpatcher",)
+DEFAULT_HOOK_POLICY = "cooperative"
+DEFAULT_HOOK_CHECK_INTERVAL = 1
+DEFAULT_FD_CAPTURE = "0"
 
 _current_capture: LogCapture | None = None
 _guard = threading.local()
@@ -34,6 +38,9 @@ def install_log_capture(
     queue_size: int = DEFAULT_QUEUE_SIZE,
     logger_include: Iterable[str] | None = None,
     logger_exclude: Iterable[str] | None = DEFAULT_LOGGER_EXCLUDE,
+    hook_policy: str = DEFAULT_HOOK_POLICY,
+    hook_check_interval: int | float = DEFAULT_HOOK_CHECK_INTERVAL,
+    fd_capture: str | None = DEFAULT_FD_CAPTURE,
 ) -> "LogCapture":
     """
     安装进程级日志采集
@@ -60,6 +67,12 @@ def install_log_capture(
             允许采集的 logger 前缀
         logger_exclude (Iterable[str] | None):
             排除采集的 logger 前缀
+        hook_policy (str):
+            hook 冲突策略, 支持 ``cooperative``、``warn`` 和 ``reapply``
+        hook_check_interval (int | float):
+            warn/reapply 模式下检查 hook 状态的间隔秒数
+        fd_capture (str | None):
+            实验性 fd 级标准流采集模式, 支持 ``0``、``fallback`` 和 ``force``
 
     Returns:
         LogCapture:
@@ -81,6 +94,9 @@ def install_log_capture(
         queue_size=queue_size,
         logger_include=tuple(logger_include or ()),
         logger_exclude=tuple(logger_exclude or ()),
+        hook_policy=(hook_policy or DEFAULT_HOOK_POLICY).lower(),
+        hook_check_interval=hook_check_interval,
+        fd_capture=(fd_capture or DEFAULT_FD_CAPTURE).lower(),
     )
     capture.install()
     _current_capture = capture
@@ -156,6 +172,20 @@ def configure_log_capture_from_env(
             if isinstance(config_logs, dict)
             else DEFAULT_LOGGER_EXCLUDE,
         ),
+        hook_policy=_env_value(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_POLICY",
+            config_logs.get("hook_policy", DEFAULT_HOOK_POLICY) if isinstance(config_logs, dict) else DEFAULT_HOOK_POLICY,
+        ),
+        hook_check_interval=_env_int(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_CHECK_INTERVAL",
+            int(config_logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL))
+            if isinstance(config_logs, dict)
+            else DEFAULT_HOOK_CHECK_INTERVAL,
+        ),
+        fd_capture=_env_value(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_FD_CAPTURE",
+            config_logs.get("fd_capture", DEFAULT_FD_CAPTURE) if isinstance(config_logs, dict) else DEFAULT_FD_CAPTURE,
+        ),
     )
 
 
@@ -222,7 +252,8 @@ class StreamTee:
     """
     标准流 tee 包装器
 
-    写入时会先写回原始 stream, 再把文本作为 ``log.stream`` 事件送入采集器。
+    写入时会先尽量写回原始 stream, 再把文本作为 ``log.stream`` 事件送入采集器。
+    原始 stream 异常只上报状态, 不再抛回业务代码。
 
     Attributes:
         capture (LogCapture):
@@ -237,6 +268,7 @@ class StreamTee:
         self.capture = capture
         self.stream_name = stream_name
         self.original = original
+        self._sd_webui_all_in_one_hotpatcher_stream_tee = True
 
     def write(self, text: str) -> int:
         """
@@ -251,15 +283,22 @@ class StreamTee:
                 原始 stream 返回的写入结果
         """
 
-        result = self.original.write(text)
+        try:
+            result = self.original.write(text)
+        except Exception as exc:
+            self.capture.report_stream_error_once(self.stream_name, "write", exc)
+            result = len(text)
         if text and self.capture.should_capture():
             self.capture.submit_stream(self.stream_name, text, source="stream")
-        return result
+        return len(text) if result is None else result
 
     def flush(self) -> None:
         """刷新原始 stream"""
 
-        return self.original.flush()
+        try:
+            self.original.flush()
+        except Exception as exc:
+            self.capture.report_stream_error_once(self.stream_name, "flush", exc)
 
     def isatty(self) -> bool:
         """
@@ -335,6 +374,201 @@ class StreamTee:
         return getattr(self.original, name)
 
 
+class FdWritebackStream:
+    """
+    写回 fd 捕获安装前的原始文件描述符。
+
+    这个对象只用于 subprocess force 模式, 避免子进程输出写回时再次进入
+    fd 捕获管道造成重复事件。
+
+    Attributes:
+        fd_capture (FdStreamCapture):
+            fd 级标准流捕获器。
+        fallback (TextIO):
+            原始 fallback stream。
+    """
+
+    def __init__(self, fd_capture: "FdStreamCapture", fallback: TextIO):
+        self.fd_capture = fd_capture
+        self.fallback = fallback
+
+    def write(self, text: str) -> int:
+        """
+        写入文本到安装 fd 捕获前的原始文件描述符
+
+        Args:
+            text (str):
+                待写入文本。
+
+        Returns:
+            int:
+                写入的字节数或 fallback stream 返回的写入结果。
+        """
+
+        data = text.encode(getattr(self.fallback, "encoding", None) or getpreferredencoding(False), errors="replace")
+        try:
+            return os.write(self.fd_capture.original_fd, data)
+        except Exception:
+            return self.fallback.write(text)
+
+    def flush(self) -> None:
+        """刷新 fallback stream"""
+
+        try:
+            self.fallback.flush()
+        except Exception:
+            return
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        代理访问 fallback stream 属性
+
+        Args:
+            name (str):
+                属性名。
+
+        Returns:
+            Any:
+                fallback stream 上的属性值。
+        """
+
+        return getattr(self.fallback, name)
+
+
+class FdStreamCapture:
+    """
+    实验性 fd 级标准流捕获。
+
+    通过 ``dup2`` 把 stdout/stderr fd 指向 pipe, 后台线程读取 pipe、
+    写回安装前的原始 fd, 并发送 ``source=fd`` 的 ``log.stream``。
+
+    Attributes:
+        capture (LogCapture):
+            接收 fd stream 事件的采集器。
+        stream_name (str):
+            标准流名称, 通常为 stdout 或 stderr。
+        stream (TextIO):
+            被捕获的标准流对象。
+        installed (bool):
+            fd 捕获是否已安装。
+    """
+
+    def __init__(self, capture: "LogCapture", stream_name: str, stream: TextIO):
+        self.capture = capture
+        self.stream_name = stream_name
+        self.stream = stream
+        self.fd: int | None = None
+        self.original_fd: int = -1
+        self.pipe_r: int = -1
+        self.pipe_w: int = -1
+        self.installed = False
+        self._thread: threading.Thread | None = None
+
+    def install(self) -> bool:
+        """
+        安装 fd 级标准流捕获
+
+        Returns:
+            bool:
+                安装成功时返回 True。当前环境不支持或安装失败时返回 False。
+        """
+
+        try:
+            flush = getattr(self.stream, "flush", None)
+            if callable(flush):
+                flush()
+            self.fd = int(self.stream.fileno())
+            self.original_fd = os.dup(self.fd)
+            self.pipe_r, self.pipe_w = os.pipe()
+            os.dup2(self.pipe_w, self.fd)
+            self.installed = True
+            self._thread = threading.Thread(
+                target=self._reader,
+                name=f"sd_webui_all_in_one_hotpatcher-fd-{self.stream_name}",
+                daemon=True,
+            )
+            self._thread.start()
+            return True
+        except (AttributeError, OSError, ValueError) as exc:
+            self.close()
+            self.capture.submit_hook_status(
+                f"fd.{self.stream_name}",
+                "unsupported",
+                f"{type(exc).__name__}: {exc}",
+            )
+            return False
+        except Exception as exc:
+            self.close()
+            self.capture.submit_hook_status(
+                f"fd.{self.stream_name}",
+                "error",
+                f"{type(exc).__name__}: {exc}",
+            )
+            return False
+
+    def close(self) -> None:
+        """关闭 fd 捕获并尽量恢复原始文件描述符"""
+
+        if self.installed and self.fd is not None and self.original_fd >= 0:
+            try:
+                if self.pipe_w >= 0 and _same_fd_target(self.fd, self.pipe_w):
+                    os.dup2(self.original_fd, self.fd)
+            except Exception:
+                pass
+        self.installed = False
+        for fd_name in ("pipe_w", "pipe_r", "original_fd"):
+            fd = getattr(self, fd_name)
+            if fd >= 0:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                setattr(self, fd_name, -1)
+        if self._thread is not None:
+            self._thread.join(timeout=1)
+            self._thread = None
+
+    def is_current(self) -> bool:
+        """
+        判断当前标准流 fd 是否仍指向捕获 pipe
+
+        Returns:
+            bool:
+                当前 fd 仍由本捕获器接管时返回 True。
+        """
+
+        return self.installed and self.fd is not None and self.pipe_w >= 0 and _same_fd_target(self.fd, self.pipe_w)
+
+    def writeback_stream(self, fallback: TextIO) -> FdWritebackStream:
+        """
+        构建写回原始 fd 的 stream 代理
+
+        Args:
+            fallback (TextIO):
+                fd 写回失败时使用的 fallback stream。
+
+        Returns:
+            FdWritebackStream:
+                写回原始 fd 的 stream 代理。
+        """
+
+        return FdWritebackStream(self, fallback)
+
+    def _reader(self) -> None:
+        while True:
+            try:
+                chunk = os.read(self.pipe_r, 4096)
+            except OSError:
+                return
+            if not chunk:
+                return
+            try:
+                os.write(self.original_fd, chunk)
+            except OSError:
+                pass
+            self.capture.submit_stream(self.stream_name, chunk, source="fd")
+
+
 class SubprocessCapture:
     """
     子进程输出采集器
@@ -364,6 +598,7 @@ class SubprocessCapture:
         self.stdout_stream = stdout_stream
         self.stderr_stream = stderr_stream
         self.original_popen = subprocess.Popen
+        self.patched_popen: Any = None
         self.installed = False
         self._reader_threads: list[threading.Thread] = []
 
@@ -374,7 +609,8 @@ class SubprocessCapture:
             return
         if self.mode not in {"safe", "force"}:
             raise ValueError("subprocess_mode must be 0, safe, or force")
-        subprocess.Popen = self._popen  # type: ignore[assignment]
+        self.patched_popen = self._make_popen_class()
+        subprocess.Popen = self.patched_popen  # type: ignore[assignment]
         self.installed = True
 
     def uninstall(self) -> None:
@@ -382,10 +618,82 @@ class SubprocessCapture:
 
         if not self.installed:
             return
-        subprocess.Popen = self.original_popen  # type: ignore[assignment]
+        if subprocess.Popen is self.patched_popen:
+            subprocess.Popen = self.original_popen  # type: ignore[assignment]
+        self.patched_popen = None
         self.installed = False
 
-    def _popen(self, *popenargs: Any, **kwargs: Any) -> subprocess.Popen:
+    def is_current(self) -> bool:
+        """
+        判断当前 subprocess.Popen 是否仍是本采集器安装的包装类
+
+        Returns:
+            bool:
+                当前 subprocess.Popen 仍是本采集器安装的包装类时返回 True。
+        """
+
+        return self.installed and subprocess.Popen is self.patched_popen
+
+    def reapply(self) -> bool:
+        """
+        重新包住当前 subprocess.Popen
+
+        Returns:
+            bool:
+                重新包装成功时返回 True。
+        """
+
+        if not self.installed:
+            return False
+        self.original_popen = subprocess.Popen
+        self.patched_popen = self._make_popen_class()
+        subprocess.Popen = self.patched_popen  # type: ignore[assignment]
+        return True
+
+    def _make_popen_class(self) -> Any:
+        """
+        创建可继承的 Popen 包装类。
+
+        Windows 标准库的 ``asyncio.windows_utils`` 会定义
+        ``class Popen(subprocess.Popen)``。因此这里不能把
+        ``subprocess.Popen`` 替换成函数或 bound method。
+        """
+
+        owner = self
+        original_popen = self.original_popen
+
+        class CapturedPopen(original_popen):  # type: ignore[misc, valid-type]
+            def __init__(captured_self: Any, *popenargs: Any, **kwargs: Any) -> None:
+                (
+                    prepared_args,
+                    prepared_kwargs,
+                    args_value,
+                    stdout_value,
+                    stderr_value,
+                    forced_stdout,
+                    forced_stderr,
+                ) = owner._prepare_popen(popenargs, kwargs)
+                super().__init__(*prepared_args, **prepared_kwargs)
+                owner._attach_process_capture(
+                    captured_self,
+                    args_value,
+                    stdout_value,
+                    stderr_value,
+                    forced_stdout,
+                    forced_stderr,
+                )
+
+        CapturedPopen.__name__ = getattr(original_popen, "__name__", "Popen")
+        CapturedPopen.__qualname__ = getattr(original_popen, "__qualname__", "Popen")
+        CapturedPopen.__module__ = getattr(original_popen, "__module__", "subprocess")
+        CapturedPopen._sd_webui_all_in_one_hotpatcher_popen = True  # type: ignore[attr-defined]
+        return CapturedPopen
+
+    def _prepare_popen(
+        self,
+        popenargs: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> tuple[tuple[Any, ...], dict[str, Any], Any, Any, Any, bool, bool]:
         args_value = popenargs[0] if popenargs else kwargs.get("args")
         stdout_value = _get_popen_option(popenargs, kwargs, "stdout", 4)
         stderr_value = _get_popen_option(popenargs, kwargs, "stderr", 5)
@@ -402,17 +710,35 @@ class SubprocessCapture:
                 stderr_value = subprocess.PIPE
                 forced_stderr = True
 
-        process = self.original_popen(*popenargs, **kwargs)
+        return popenargs, kwargs, args_value, stdout_value, stderr_value, forced_stdout, forced_stderr
+
+    def _attach_process_capture(
+        self,
+        process: subprocess.Popen,
+        args_value: Any,
+        stdout_value: Any,
+        stderr_value: Any,
+        forced_stdout: bool,
+        forced_stderr: bool,
+    ) -> None:
         communicate_stdout = None if forced_stdout else stdout_value
         communicate_stderr = None if forced_stderr else stderr_value
-        self._patch_communicate(process, args_value, communicate_stdout, communicate_stderr)
+        reader_threads: list[threading.Thread] = []
 
         if forced_stdout and process.stdout is not None:
-            self._start_reader(process, "stdout", process.stdout, self.stdout_stream, args_value)
+            reader_threads.append(self._start_reader(process, "stdout", process.stdout, self.stdout_stream, args_value))
         if forced_stderr and process.stderr is not None:
-            self._start_reader(process, "stderr", process.stderr, self.stderr_stream, args_value)
+            reader_threads.append(self._start_reader(process, "stderr", process.stderr, self.stderr_stream, args_value))
 
-        return process
+        self._patch_communicate(
+            process,
+            args_value,
+            communicate_stdout,
+            communicate_stderr,
+            forced_stdout=forced_stdout,
+            forced_stderr=forced_stderr,
+            reader_threads=reader_threads,
+        )
 
     def _patch_communicate(
         self,
@@ -420,15 +746,27 @@ class SubprocessCapture:
         args_value: Any,
         stdout_value: Any,
         stderr_value: Any,
+        *,
+        forced_stdout: bool = False,
+        forced_stderr: bool = False,
+        reader_threads: list[threading.Thread] | None = None,
     ) -> None:
         original_communicate = process.communicate
         capture_stdout = stdout_value is subprocess.PIPE
         capture_stderr = stderr_value is subprocess.PIPE
+        reader_threads = reader_threads or []
 
-        if not capture_stdout and not capture_stderr:
+        if not capture_stdout and not capture_stderr and not (forced_stdout or forced_stderr):
             return
 
         def communicate(*args: Any, **kwargs: Any) -> tuple[Any, Any]:
+            if (forced_stdout or forced_stderr) and not _communicate_has_input(args, kwargs):
+                timeout = _communicate_timeout(args, kwargs)
+                process.wait(timeout=timeout)
+                for thread in reader_threads:
+                    thread.join(timeout=1)
+                return None, None
+
             stdout_data, stderr_data = original_communicate(*args, **kwargs)
             if capture_stdout and stdout_data:
                 self.capture.submit_subprocess_stream("stdout", stdout_data, process, args_value)
@@ -445,7 +783,7 @@ class SubprocessCapture:
         pipe: Any,
         target: TextIO,
         args_value: Any,
-    ) -> None:
+    ) -> threading.Thread:
         thread = threading.Thread(
             target=self._reader,
             args=(process, stream_name, pipe, target, args_value),
@@ -453,6 +791,7 @@ class SubprocessCapture:
         )
         self._reader_threads.append(thread)
         thread.start()
+        return thread
 
     def _reader(
         self,
@@ -517,9 +856,16 @@ class LogCapture:
         queue_size: int,
         logger_include: tuple[str, ...],
         logger_exclude: tuple[str, ...],
+        hook_policy: str,
+        hook_check_interval: int | float,
+        fd_capture: str,
     ):
         if policy not in {"bounded", "raw"}:
             raise ValueError("policy must be bounded or raw")
+        if hook_policy not in {"cooperative", "warn", "reapply"}:
+            raise ValueError("hook_policy must be cooperative, warn, or reapply")
+        if fd_capture not in {"0", "false", "none", "off", "fallback", "force"}:
+            raise ValueError("fd_capture must be 0, fallback, or force")
         self.client = client
         self.capture_logging = capture_logging
         self.streams = streams
@@ -528,21 +874,29 @@ class LogCapture:
         self.max_chars = max(0, max_chars)
         self.logger_include = logger_include
         self.logger_exclude = logger_exclude
+        self.hook_policy = hook_policy
+        self.hook_check_interval = max(0.05, float(hook_check_interval))
+        self.fd_capture = "0" if fd_capture in {"false", "none", "off"} else fd_capture
         self.queue: queue.Queue[LogMessage] = queue.Queue(maxsize=max(0, queue_size))
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="sd_webui_all_in_one_hotpatcher-log-capture", daemon=True)
         self._dropped = 0
         self._dropped_lock = threading.Lock()
         self._root_handler: RuntimeLogHandler | None = None
-        self._original_stdout: TextIO | None = None
-        self._original_stderr: TextIO | None = None
+        self._stream_originals: dict[str, TextIO] = {}
+        self._stream_wrappers: dict[str, StreamTee] = {}
+        self._fd_captures: dict[str, FdStreamCapture] = {}
         self._subprocess_capture: SubprocessCapture | None = None
+        self._last_hook_check = time.monotonic()
+        self._reported_lost: set[str] = set()
+        self._reported_stream_errors: set[str] = set()
         self.closed = False
 
     def install(self) -> None:
         """安装日志采集 hook 并启动后台发送线程"""
 
         self._thread.start()
+        self._install_fd_capture(force_only=True)
         self._install_streams()
         self._install_logging()
         self._install_subprocess()
@@ -556,6 +910,7 @@ class LogCapture:
         self._uninstall_subprocess()
         self._uninstall_logging()
         self._uninstall_streams()
+        self._uninstall_fd_capture()
         self._stop.set()
         self._thread.join(timeout=2)
 
@@ -634,6 +989,57 @@ class LogCapture:
         }
         self.submit("log.stream", payload)
 
+    def submit_hook_status(self, component: str, status: str, detail: str = "") -> None:
+        """
+        提交日志 hook 健康状态事件
+
+        Args:
+            component (str):
+                hook 组件名称
+            status (str):
+                状态, 例如 installed、lost、reapplied、unsupported、error
+            detail (str):
+                补充说明
+        """
+
+        self.submit(
+            "log.hook_status",
+            {
+                "component": component,
+                "status": status,
+                "policy": self.hook_policy,
+                "pid": os.getpid(),
+                "detail": detail,
+            },
+        )
+
+    def report_stream_error_once(self, stream_name: str, operation: str, exc: BaseException) -> None:
+        """
+        上报一次标准流下游异常
+
+        标准流经常被 colorama、wandb、WebUI 自己的 logger 等多层包装。
+        下游 write/flush 抛错时, 日志采集器保持 best-effort, 避免把异常抛回
+        import/print 调用点导致业务模块加载失败。
+
+        Args:
+            stream_name (str):
+                标准流名称。
+            operation (str):
+                发生异常的操作名称。
+            exc (BaseException):
+                下游 stream 抛出的异常。
+        """
+
+        key = f"{stream_name}.{operation}.{type(exc).__name__}.{exc}"
+        if key in self._reported_stream_errors:
+            return
+        self._reported_stream_errors.add(key)
+        self.submit_hook_status(
+            f"stream.{stream_name}",
+            "error",
+            f"{operation} failed: {type(exc).__name__}: {exc}",
+        )
+
     def should_capture(self) -> bool:
         """
         判断当前线程是否允许采集日志
@@ -673,46 +1079,162 @@ class LogCapture:
         handler = RuntimeLogHandler(self)
         logging.getLogger().addHandler(handler)
         self._root_handler = handler
+        self.submit_hook_status("logging", "installed", "root handler installed")
 
     def _uninstall_logging(self) -> None:
         if self._root_handler is None:
             return
         try:
-            logging.getLogger().removeHandler(self._root_handler)
+            if self._root_handler in logging.getLogger().handlers:
+                logging.getLogger().removeHandler(self._root_handler)
         finally:
             self._root_handler = None
 
     def _install_streams(self) -> None:
         stream_names = {name.strip().lower() for name in self.streams}
-        if "stdout" in stream_names:
-            self._original_stdout = sys.stdout
-            sys.stdout = StreamTee(self, "stdout", sys.stdout)  # type: ignore[assignment]
-        if "stderr" in stream_names:
-            self._original_stderr = sys.stderr
-            sys.stderr = StreamTee(self, "stderr", sys.stderr)  # type: ignore[assignment]
+        for stream_name in ("stdout", "stderr"):
+            if stream_name not in stream_names or stream_name in self._fd_captures:
+                continue
+            self._install_stream(stream_name, status="installed")
 
     def _uninstall_streams(self) -> None:
-        if self._original_stdout is not None:
-            sys.stdout = self._original_stdout
-            self._original_stdout = None
-        if self._original_stderr is not None:
-            sys.stderr = self._original_stderr
-            self._original_stderr = None
+        for stream_name in list(self._stream_wrappers):
+            self._uninstall_stream(stream_name)
+
+    def _install_stream(self, stream_name: str, *, status: str) -> None:
+        stream = _get_std_stream(stream_name)
+        wrapper = StreamTee(self, stream_name, stream)
+        self._stream_originals[stream_name] = stream
+        self._stream_wrappers[stream_name] = wrapper
+        _set_std_stream(stream_name, wrapper)
+        self._reported_lost.discard(f"stream.{stream_name}")
+        self.submit_hook_status(f"stream.{stream_name}", status, "stream wrapper installed")
+
+    def _uninstall_stream(self, stream_name: str) -> None:
+        wrapper = self._stream_wrappers.pop(stream_name, None)
+        original = self._stream_originals.pop(stream_name, None)
+        if wrapper is not None and original is not None and _get_std_stream(stream_name) is wrapper:
+            _set_std_stream(stream_name, original)
 
     def _install_subprocess(self) -> None:
         if self.subprocess_mode in {"0", "false", "none", "off"}:
             return
-        stdout_stream = self._original_stdout or sys.stdout
-        stderr_stream = self._original_stderr or sys.stderr
+        stdout_stream = self._subprocess_writeback_stream("stdout")
+        stderr_stream = self._subprocess_writeback_stream("stderr")
         capture = SubprocessCapture(self, self.subprocess_mode, stdout_stream, stderr_stream)
         capture.install()
         self._subprocess_capture = capture
+        if capture.installed:
+            self.submit_hook_status("subprocess", "installed", f"Popen wrapped in {self.subprocess_mode} mode")
 
     def _uninstall_subprocess(self) -> None:
         if self._subprocess_capture is None:
             return
         self._subprocess_capture.uninstall()
         self._subprocess_capture = None
+
+    def _subprocess_writeback_stream(self, stream_name: str) -> TextIO:
+        stream = self._stream_originals.get(stream_name) or _get_std_stream(stream_name)
+        fd_capture = self._fd_captures.get(stream_name)
+        if fd_capture is not None and fd_capture.installed:
+            return fd_capture.writeback_stream(stream)
+        return stream
+
+    def _install_fd_capture(self, *, force_only: bool = False, stream_name: str | None = None) -> bool:
+        if self.fd_capture in {"0", "false", "none", "off"}:
+            return False
+        if force_only and self.fd_capture != "force":
+            return False
+
+        stream_names = {name.strip().lower() for name in self.streams}
+        targets = (stream_name,) if stream_name is not None else ("stdout", "stderr")
+        installed_any = False
+        for target in targets:
+            if target not in stream_names or target in self._fd_captures:
+                continue
+            fd_capture = FdStreamCapture(self, target, _get_std_stream(target))
+            if fd_capture.install():
+                self._fd_captures[target] = fd_capture
+                self.submit_hook_status(f"fd.{target}", "installed", f"fd capture installed in {self.fd_capture} mode")
+                installed_any = True
+        return installed_any
+
+    def _uninstall_fd_capture(self) -> None:
+        for fd_capture in list(self._fd_captures.values()):
+            fd_capture.close()
+        self._fd_captures.clear()
+
+    def _check_hooks(self) -> None:
+        if self.hook_policy not in {"warn", "reapply"}:
+            return
+        now = time.monotonic()
+        if now - self._last_hook_check < self.hook_check_interval:
+            return
+        self._last_hook_check = now
+        self._check_stream_hooks()
+        self._check_fd_hooks()
+        self._check_logging_hook()
+        self._check_subprocess_hook()
+
+    def _check_stream_hooks(self) -> None:
+        for stream_name, wrapper in list(self._stream_wrappers.items()):
+            component = f"stream.{stream_name}"
+            if _get_std_stream(stream_name) is wrapper:
+                self._reported_lost.discard(component)
+                continue
+            self._report_lost_once(component, "stream wrapper was replaced")
+            if self.fd_capture == "fallback" and self._install_fd_capture(stream_name=stream_name):
+                self._stream_wrappers.pop(stream_name, None)
+                self._stream_originals.pop(stream_name, None)
+                continue
+            if self.hook_policy == "reapply":
+                self._install_stream(stream_name, status="reapplied")
+
+    def _check_logging_hook(self) -> None:
+        if self._root_handler is None:
+            return
+        component = "logging"
+        root = logging.getLogger()
+        if self._root_handler in root.handlers:
+            self._reported_lost.discard(component)
+            return
+        self._report_lost_once(component, "root logging handler was removed")
+        if self.hook_policy == "reapply":
+            root.addHandler(self._root_handler)
+            self._reported_lost.discard(component)
+            self.submit_hook_status(component, "reapplied", "root handler re-added")
+
+    def _check_fd_hooks(self) -> None:
+        for stream_name, fd_capture in list(self._fd_captures.items()):
+            component = f"fd.{stream_name}"
+            if fd_capture.is_current():
+                self._reported_lost.discard(component)
+                continue
+            self._report_lost_once(component, "fd capture was replaced")
+            if self.hook_policy == "reapply":
+                fd_capture.close()
+                self._fd_captures.pop(stream_name, None)
+                if self._install_fd_capture(stream_name=stream_name):
+                    self._reported_lost.discard(component)
+                    self.submit_hook_status(component, "reapplied", "fd capture reinstalled")
+
+    def _check_subprocess_hook(self) -> None:
+        if self._subprocess_capture is None or not self._subprocess_capture.installed:
+            return
+        component = "subprocess"
+        if self._subprocess_capture.is_current():
+            self._reported_lost.discard(component)
+            return
+        self._report_lost_once(component, "subprocess.Popen was replaced")
+        if self.hook_policy == "reapply" and self._subprocess_capture.reapply():
+            self._reported_lost.discard(component)
+            self.submit_hook_status(component, "reapplied", "subprocess.Popen wrapped current object")
+
+    def _report_lost_once(self, component: str, detail: str) -> None:
+        if component in self._reported_lost:
+            return
+        self._reported_lost.add(component)
+        self.submit_hook_status(component, "lost", detail)
 
     def _apply_policy(self, payload: dict[str, Any]) -> dict[str, Any]:
         if self.policy == "raw" or self.max_chars <= 0:
@@ -747,6 +1269,7 @@ class LogCapture:
 
     def _run(self) -> None:
         while not self._stop.is_set() or not self.queue.empty():
+            self._check_hooks()
             try:
                 message = self.queue.get(timeout=0.05)
             except queue.Empty:
@@ -826,6 +1349,26 @@ def _env_streams(config_logs: dict[str, Any] | bool) -> tuple[str, ...]:
     return streams
 
 
+def _get_std_stream(stream_name: str) -> TextIO:
+    return sys.stderr if stream_name == "stderr" else sys.stdout
+
+
+def _set_std_stream(stream_name: str, stream: TextIO) -> None:
+    if stream_name == "stderr":
+        sys.stderr = stream  # type: ignore[assignment]
+    else:
+        sys.stdout = stream  # type: ignore[assignment]
+
+
+def _same_fd_target(left: int, right: int) -> bool:
+    try:
+        left_stat = os.fstat(left)
+        right_stat = os.fstat(right)
+    except OSError:
+        return False
+    return (left_stat.st_dev, left_stat.st_ino) == (right_stat.st_dev, right_stat.st_ino)
+
+
 def _matches_prefix(name: str, prefixes: tuple[str, ...]) -> bool:
     for prefix in prefixes:
         if name == prefix or name.startswith(prefix + "."):
@@ -854,6 +1397,20 @@ def _set_popen_option(
         return tuple(args_list), kwargs
     kwargs[name] = value
     return popenargs, kwargs
+
+
+def _communicate_has_input(args: tuple[Any, ...], kwargs: dict[str, Any]) -> bool:
+    if "input" in kwargs and kwargs["input"] is not None:
+        return True
+    return bool(args and args[0] is not None)
+
+
+def _communicate_timeout(args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
+    if "timeout" in kwargs:
+        return kwargs["timeout"]
+    if len(args) > 1:
+        return args[1]
+    return None
 
 
 def _to_text(value: Any) -> str:

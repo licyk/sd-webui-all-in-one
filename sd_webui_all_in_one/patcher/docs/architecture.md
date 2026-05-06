@@ -10,7 +10,7 @@
 2. 在需要时隐藏补丁系统或补丁模块的真实加载路径。
 3. 通过通用宿主通信协议，把运行时控制和事件交给外部进程。
 
-它刻意不包含具体业务补丁。业务补丁放在 `sd_webui_all_in_one_hotpatcher_ext`，例如当前的 ZLUDA、Extension Index 和 HF Endpoint Mirror 扩展。这个边界很重要：核心框架负责“补丁能力”，扩展负责“补谁、怎么补”。
+它刻意不包含具体业务补丁。业务补丁放在 `sd_webui_all_in_one_hotpatcher_ext`，例如当前的 ZLUDA、Extension Index、HF Endpoint Mirror 和 uv Pip 扩展。这个边界很重要：核心框架负责“补丁能力”，扩展负责“补谁、怎么补”。
 
 ## 目录结构
 
@@ -44,6 +44,8 @@ src/
     extension_index/
       __init__.py
     hf_endpoint_mirror/
+      __init__.py
+    uv_pip/
       __init__.py
   examples/
   tests/
@@ -219,7 +221,7 @@ install_faulthandler(client)
 - runtime host protocol
 - extension API
 
-具体业务补丁移到 `sd_webui_all_in_one_hotpatcher_ext`。当前已有 ZLUDA、Extension Index 和 HF Endpoint Mirror 作为样例。
+具体业务补丁移到 `sd_webui_all_in_one_hotpatcher_ext`。当前已有 ZLUDA、Extension Index、HF Endpoint Mirror 和 uv Pip 作为样例。
 
 ## 后续扩展建议
 

@@ -12,6 +12,9 @@ from typing import Any
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
 from .runtime.logs import (
+    DEFAULT_FD_CAPTURE,
+    DEFAULT_HOOK_CHECK_INTERVAL,
+    DEFAULT_HOOK_POLICY,
     DEFAULT_LOGGER_EXCLUDE,
     DEFAULT_MAX_CHARS,
     DEFAULT_QUEUE_SIZE,
@@ -54,6 +57,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "queue_size": DEFAULT_QUEUE_SIZE,
             "logger_include": [],
             "logger_exclude": list(DEFAULT_LOGGER_EXCLUDE),
+            "hook_policy": DEFAULT_HOOK_POLICY,
+            "hook_check_interval": DEFAULT_HOOK_CHECK_INTERVAL,
+            "fd_capture": DEFAULT_FD_CAPTURE,
         },
     },
     "extensions": {
@@ -72,60 +78,209 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "hf_endpoint_mirror": {
             "enabled": False,
         },
+        "uv_pip": {
+            "enabled": False,
+            "symlink": False,
+        },
     },
 }
 
 SETTING_SCHEMA: dict[str, Any] = {
     "services": {
+        "title": "服务控制",
+        "description": "控制 hotpatcher services 在 bootstrap 和运行时控制通道中的行为。",
         "settings": {
-            "apply_on_bootstrap": "bool",
+            "apply_on_bootstrap": {
+                "type": "bool",
+                "title": "启动时应用配置",
+                "description": "bootstrap 读取配置后立即调用 services.apply_config()。",
+            },
         },
     },
     "core.import_hook": {
+        "title": "Import Hook",
+        "description": "安装 import hook，让已注册的模块补丁在目标模块首次导入时生效。",
         "settings": {
-            "enabled": "bool",
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用 import hook。补丁必须在目标模块首次导入前注册。",
+            },
         },
     },
     "core.stack_shadow": {
+        "title": "栈隐藏",
+        "description": "把补丁系统相关 traceback 文件名伪装成更友好的路径，降低用户日志噪音。",
         "settings": {
-            "enabled": "bool",
-            "prefixes": "list[str] | comma-separated str",
-            "filename_template": "str",
-            "include_source_loaders": "bool",
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "安装 traceback 栈隐藏器。",
+            },
+            "prefixes": {
+                "type": "list[str]",
+                "title": "隐藏模块前缀",
+                "description": "需要隐藏的模块名前缀。GUI 中可用逗号分隔多个值。",
+            },
+            "filename_template": {
+                "type": "str",
+                "title": "文件名模板",
+                "description": "伪装 traceback 文件名时使用的模板。",
+            },
+            "include_source_loaders": {
+                "type": "bool",
+                "title": "处理源码 loader",
+                "description": "同时处理从源码 loader 获取的文件名。",
+            },
         },
     },
     "runtime.logs": {
+        "title": "运行时日志",
+        "description": "把 logging、标准输出和子进程输出采集到 runtime host。",
         "settings": {
-            "enabled": "bool",
-            "logging": "bool",
-            "streams": "list[str] | comma-separated str",
-            "subprocess": "0 | safe | force",
-            "policy": "bounded | raw",
-            "max_chars": "int",
-            "queue_size": "int",
-            "logger_include": "list[str]",
-            "logger_exclude": "list[str]",
+            "enabled": {
+                "type": "bool",
+                "title": "启用日志采集",
+                "description": "启用 runtime 日志采集。需要 runtime client 可用。",
+            },
+            "logging": {
+                "type": "bool",
+                "title": "采集 logging",
+                "description": "采集 Python logging 记录并发送 log.record。",
+            },
+            "streams": {
+                "type": "list[str]",
+                "title": "标准流",
+                "description": "采集的标准流名称。GUI 中可用逗号分隔多个值。",
+            },
+            "subprocess": {
+                "type": "choice",
+                "title": "子进程采集",
+                "description": "控制是否包装子进程输出。safe 仅在安全场景启用，force 强制启用。",
+                "choices": ["0", "safe", "force"],
+            },
+            "policy": {
+                "type": "choice",
+                "title": "输出策略",
+                "description": "bounded 会限制单条消息长度，raw 保留原始输出。",
+                "choices": ["bounded", "raw"],
+            },
+            "max_chars": {
+                "type": "int",
+                "title": "最大字符数",
+                "description": "bounded 策略下单条日志最多保留的字符数。",
+            },
+            "queue_size": {
+                "type": "int",
+                "title": "队列大小",
+                "description": "日志发送队列的最大长度。",
+            },
+            "logger_include": {
+                "type": "list[str]",
+                "title": "包含 logger",
+                "description": "只采集这些 logger 前缀。为空表示不限制。",
+            },
+            "logger_exclude": {
+                "type": "list[str]",
+                "title": "排除 logger",
+                "description": "不采集这些 logger 前缀。GUI 中可用逗号分隔多个值。",
+            },
+            "hook_policy": {
+                "type": "choice",
+                "title": "Hook 冲突策略",
+                "description": "控制日志 hook 被其它软件替换后的处理方式。cooperative 只协作包装，warn 仅告警，reapply 自动重新接管。",
+                "choices": ["cooperative", "warn", "reapply"],
+            },
+            "hook_check_interval": {
+                "type": "int",
+                "title": "Hook 检查间隔",
+                "description": "warn/reapply 策略下检查日志 hook 状态的间隔秒数。",
+            },
+            "fd_capture": {
+                "type": "choice",
+                "title": "FD 级捕获",
+                "description": "实验性标准流捕获。0 关闭，fallback 在普通 stream hook 丢失时尝试启用，force 启动时直接启用。",
+                "choices": ["0", "fallback", "force"],
+            },
         },
     },
     "extensions.zluda": {
+        "title": "ZLUDA",
+        "description": "注册 ZLUDA 兼容性补丁和可选路径注入。",
         "settings": {
-            "enabled": "bool",
-            "compat": "bool",
-            "path": "str",
-            "torch_zluda_timer": "bool",
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用 ZLUDA 扩展补丁。",
+            },
+            "compat": {
+                "type": "bool",
+                "title": "兼容模式",
+                "description": "注册 torch / torch.backends.cuda 的 ZLUDA 兼容性补丁。",
+            },
+            "path": {
+                "type": "str",
+                "title": "ZLUDA 路径",
+                "description": "添加到动态库搜索路径的 ZLUDA 目录。为空则不注入路径。",
+            },
+            "torch_zluda_timer": {
+                "type": "bool",
+                "title": "Torch 编译热修复",
+                "description": "修复 torch.utils.cpp_extension 中不兼容 ZLUDA 的 HIP_HOME 判断。",
+            },
         },
     },
     "extensions.extension_index": {
+        "title": "扩展索引镜像",
+        "description": "替换 WebUI / ComfyUI 扩展索引和 ComfyUI-Manager 相关 URL。",
         "settings": {
-            "enabled": "bool",
-            "extension_index_url": "str",
-            "a1111_url": "str",
-            "comfyui_manager": "bool | object",
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用扩展索引镜像补丁。",
+            },
+            "extension_index_url": {
+                "type": "str",
+                "title": "扩展索引 URL",
+                "description": "用于替换 A1111/Forge/Vladmandic 扩展索引的镜像 JSON URL。",
+            },
+            "a1111_url": {
+                "type": "str",
+                "title": "A1111 镜像 URL",
+                "description": "兼容旧配置名的 A1111 扩展索引镜像 URL。",
+            },
+            "comfyui_manager": {
+                "type": "object",
+                "title": "ComfyUI-Manager",
+                "description": "可填 true 启用默认镜像，或填写 JSON object 自定义 source_prefix 和 destination_prefix。",
+            },
         },
     },
     "extensions.hf_endpoint_mirror": {
+        "title": "Hugging Face 镜像",
+        "description": "注册 Hugging Face endpoint 镜像相关补丁。",
         "settings": {
-            "enabled": "bool",
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用 Hugging Face endpoint 镜像补丁。",
+            },
+        },
+    },
+    "extensions.uv_pip": {
+        "title": "uv Pip 替换",
+        "description": "把 subprocess.run() 调用中的 pip 命令改写为 uv pip，用于加速运行期依赖安装。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用 uv pip 命令替换补丁。",
+            },
+            "symlink": {
+                "type": "bool",
+                "title": "符号链接模式",
+                "description": "为 uv pip 命令添加 --link-mode symlink。通常只在明确需要共享文件链接时启用。",
+            },
         },
     },
 }
@@ -550,6 +705,9 @@ def _apply_runtime_config(
             queue_size=int(logs.get("queue_size", DEFAULT_QUEUE_SIZE)),
             logger_include=_normalize_string_list(logs.get("logger_include", [])),
             logger_exclude=_normalize_string_list(logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)),
+            hook_policy=str(logs.get("hook_policy", DEFAULT_HOOK_POLICY)),
+            hook_check_interval=int(logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
+            fd_capture=str(logs.get("fd_capture", DEFAULT_FD_CAPTURE)),
         ),
         result,
     )
@@ -587,6 +745,18 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
             result,
         )
 
+    uv_pip = _section(extensions, "uv_pip")
+    if uv_pip.get("enabled"):
+        from sd_webui_all_in_one_hotpatcher_ext.uv_pip import (
+            apply_from_config as apply_uv_pip,
+        )
+
+        _apply_step(
+            "extensions.uv_pip",
+            lambda: apply_uv_pip(uv_pip),
+            result,
+        )
+
 
 def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
     try:
@@ -619,6 +789,15 @@ def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any]) ->
             }
         )
 
+    extensions = _section(config, "extensions")
+    if not _section(extensions, "uv_pip").get("enabled") and _is_uv_pip_patch_installed():
+        result["warnings"].append(
+            {
+                "feature": "extensions.uv_pip",
+                "message": "uv pip patch is already installed and v1 services does not uninstall it",
+            }
+        )
+
 
 def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any]) -> None:
     features["services"]["default"] = defaults["services"]
@@ -630,8 +809,39 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any]) ->
     features["runtime.logs"]["default"] = defaults["runtime"]["logs"]
     features["runtime.logs"]["active"] = False
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
+    features["extensions.zluda"]["active"] = False
     features["extensions.extension_index"]["default"] = defaults["extensions"]["extension_index"]
+    features["extensions.extension_index"]["active"] = False
     features["extensions.hf_endpoint_mirror"]["default"] = defaults["extensions"]["hf_endpoint_mirror"]
+    features["extensions.hf_endpoint_mirror"]["active"] = False
+    features["extensions.uv_pip"]["default"] = defaults["extensions"]["uv_pip"]
+    features["extensions.uv_pip"]["active"] = _is_uv_pip_patch_installed()
+    _attach_setting_defaults(features)
+
+
+def _is_uv_pip_patch_installed() -> bool:
+    try:
+        from sd_webui_all_in_one_hotpatcher_ext.uv_pip import is_uv_patch_installed
+
+        return is_uv_patch_installed()
+    except Exception:
+        return False
+
+
+def _attach_setting_defaults(features: dict[str, Any]) -> None:
+    for feature in features.values():
+        if not isinstance(feature, dict):
+            continue
+        feature_default = feature.get("default", {})
+        if not isinstance(feature_default, dict):
+            continue
+        settings = feature.get("settings", {})
+        if not isinstance(settings, dict):
+            continue
+        for setting_name, metadata in settings.items():
+            if not isinstance(metadata, dict) or setting_name not in feature_default:
+                continue
+            metadata["default"] = copy.deepcopy(feature_default[setting_name])
 
 
 def _registered_patches() -> dict[str, Any]:

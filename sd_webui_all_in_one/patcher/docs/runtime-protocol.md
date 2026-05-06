@@ -295,6 +295,9 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_SUBPROCESS=safe
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_POLICY=bounded
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_MAX_CHARS=8192
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_QUEUE_SIZE=1000
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_POLICY=cooperative
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_CHECK_INTERVAL=1
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_FD_CAPTURE=0
 ```
 
 Python `logging` 记录发送为 `log.record`：
@@ -321,6 +324,12 @@ Python `logging` 记录发送为 `log.record`：
 {"type":"log.dropped","payload":{"count":12,"reason":"queue_full"}}
 ```
 
+hook 状态变化会发送 `log.hook_status`：
+
+```json
+{"type":"log.hook_status","payload":{"component":"stream.stdout","status":"lost","policy":"warn","pid":456,"detail":"stream wrapper was replaced"}}
+```
+
 策略：
 
 - `bounded` 是默认值，会限制单条字符串长度和队列大小，超长 payload 带 `truncated=true`。
@@ -332,6 +341,19 @@ Python `logging` 记录发送为 `log.record`：
 - `safe` 只捕获显式 `PIPE` / `capture_output=True` 后经 `communicate()` 返回的输出，不改变继承父进程 stdout/stderr 的子进程。
 - `force` 会把未指定 stdout/stderr 的 `Popen` 改成 `PIPE`，后台读取、写回父进程原 stream，并发送 `log.stream`。
 - v1 不 patch `asyncio.create_subprocess_exec/shell`。
+
+hook 冲突策略：
+
+- `cooperative` 是默认值，只包装当前对象并继续转发，不主动抢回后续被替换的 hook。
+- `warn` 会按 `hook_check_interval` 检查 `stdout/stderr`、root logging handler 和 `subprocess.Popen`，发现被覆盖时发送 `log.hook_status(status="lost")`。
+- `reapply` 会在发现被覆盖时重新包住当前对象，并发送 `log.hook_status(status="reapplied")`。
+
+实验性 fd 捕获：
+
+- `0` 关闭 fd 捕获。
+- `fallback` 在普通 stream wrapper 丢失或无法安装时尝试 fd 级捕获。
+- `force` 启动时直接对配置中的标准流启用 fd 捕获，并使用 `source="fd"` 发送 `log.stream`。
+- fd 捕获依赖 `fileno()`、`os.dup()`、`os.pipe()`、`os.dup2()`，不支持时会发送 `log.hook_status(status="unsupported"|"error")` 并继续运行。
 
 如果同时启用 logging handler 和 stderr tee，同一条 logging 可能同时出现 `log.record` 和 `log.stream`。这属于预期行为，宿主可以按 `source` 或 logger 信息去重。
 

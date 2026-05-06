@@ -69,6 +69,9 @@ sd-webui-all-in-one sd-webui launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-uv`: 不使用 uv。
   - `--no-check-env`: 不检查运行环境完整性。
+  - `--hotpatcher`: 启用 Hotpatcher 补丁系统注入，默认禁用。
+  - `--hotpatcher-config <路径>`: Hotpatcher 配置文件路径。未指定时使用默认配置路径或内置默认配置。
+  - `--hotpatcher-port <端口>`: Hotpatcher runtime 通信端口。
 
 ### 版本管理 GUI
 ```bash

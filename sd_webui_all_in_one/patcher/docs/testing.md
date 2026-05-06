@@ -33,6 +33,9 @@ src/tests/test_extension_index_extension.py
 
 src/tests/test_hf_endpoint_mirror_extension.py
   HF Endpoint Mirror 扩展，fake torch/torchvision/ComfyUI WD14/modules.util，URL rewrite 和下载函数替换。
+
+src/tests/test_uv_pip_extension.py
+  uv Pip 扩展，fake subprocess.run，验证命令改写和 wrapper 卸载策略。
 ```
 
 ## 测试 import hook 的固定套路
@@ -250,6 +253,8 @@ def clean_runtime_state():
 - `stdout/stderr`：`StreamTee` 发送 `log.stream`，同时原 stream 仍能被 `capsys` 捕获。
 - `subprocess=safe`：只捕获 `capture_output=True` 或显式 `PIPE` 的输出，不强制接管继承输出。
 - `subprocess=force`：未指定 stdout/stderr 的子进程输出会被捕获、写回父进程原 stream，并发送 `log.stream`。
+- `hook_policy`：预先存在的第三方 hook 应被协作式包装；安装后被替换时，`warn` 发送 `log.hook_status(status="lost")`，`reapply` 重新包装并发送 `status="reapplied"`。
+- `fd_capture`：只测试显式 `force` 或可控 fallback 场景；不支持 fd 的环境应断言安全跳过或收到 `unsupported/error` 状态。
 
 策略测试：
 
@@ -277,6 +282,8 @@ tmp/
 然后调用扩展入口，import fake torch，断言补丁效果。
 
 这样测试不依赖 GPU、不依赖 Windows、不依赖真实 torch，速度也很体面。
+
+uv Pip 这种运行时 wrapper 不需要 fake import 目标。测试直接替换 `subprocess.run` 为 fake 函数，断言 Pip 命令被改写为 `uv pip`，非 Pip 命令保持原样，并验证第三方后续替换 `subprocess.run` 时卸载逻辑不会覆盖它。
 
 ## 新增测试 checklist
 

@@ -28,11 +28,62 @@ sd-webui-all-in-one self-manager check-uv [选项]
 
 - `--no-pypi-mirror`：不使用国内 PyPI 镜像源。
 
-### 获取补丁路径
-获取 `SD WebUI All In One` 补丁的存储路径。
+### Hotpatcher 配置管理
+管理新补丁系统的配置、功能目录和 GUI 管理器。
+
+#### 导出默认配置
 ```bash
-sd-webui-all-in-one self-manager get-patcher
+sd-webui-all-in-one self-manager patcher export-config --output <路径> [选项]
 ```
+
+高级选项：
+
+- `--output <路径>`：输出配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--force`：覆盖已有配置文件。
+
+#### 规范化配置
+读取配置文件并补齐缺失的默认字段。
+
+```bash
+sd-webui-all-in-one self-manager patcher normalize-config --config <路径> [选项]
+```
+
+高级选项：
+
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--write-back`：将规范化后的配置写回文件；不加时输出 JSON 到终端。
+
+#### 应用配置
+把配置应用到当前命令进程，主要用于验证配置和调试补丁系统。
+
+```bash
+sd-webui-all-in-one self-manager patcher apply-config --config <路径>
+```
+
+高级选项：
+
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+
+#### 显示功能目录
+输出 Hotpatcher catalog，包括配置字段元数据、默认值和当前注册补丁状态。
+
+```bash
+sd-webui-all-in-one self-manager patcher catalog
+```
+
+#### 启动配置管理 GUI
+启动 Hotpatcher 配置管理器，并可作为 runtime host 接收 WebUI 进程连接。
+
+```bash
+sd-webui-all-in-one self-manager patcher gui [选项]
+```
+
+高级选项：
+
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--host <地址>`：Runtime host 监听地址，默认 `127.0.0.1`。
+- `--port <端口>`：Runtime host 监听端口，默认 `8765`。
+- `--token <令牌>`：Runtime host 连接 token，默认空。
 
 ### 获取当前系统代理配置
 ```bash

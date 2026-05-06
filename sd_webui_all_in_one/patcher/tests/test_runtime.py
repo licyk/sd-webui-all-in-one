@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import socket
 import subprocess
 import sys
@@ -87,6 +88,30 @@ class JsonlHost:
                 return True
             time.sleep(0.01)
         return False
+
+
+class ForwardingStream:
+    def __init__(self, original):
+        self.original = original
+
+    def write(self, text):
+        return self.original.write(text)
+
+    def flush(self):
+        return self.original.flush()
+
+    def __getattr__(self, name):
+        return getattr(self.original, name)
+
+
+class BrokenFlushStream(ForwardingStream):
+    def flush(self):
+        raise OSError(1, "bad flush")
+
+
+class BrokenWriteStream(ForwardingStream):
+    def write(self, text):
+        raise OSError(1, "bad write")
 
 
 def test_tcp_jsonl_handshake_request_and_event():
@@ -285,6 +310,134 @@ def test_log_capture_tees_stdout_and_stderr(capsys):
     assert "stream bad" in captured.err
 
 
+def test_log_capture_wraps_existing_stdout_hook():
+    original_stdout = sys.stdout
+    preexisting_hook = ForwardingStream(original_stdout)
+    sys.stdout = preexisting_hook
+
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(client, capture_logging=False, streams=("stdout",), subprocess_mode="0")
+                print("cooperative stdout")
+
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.stream"
+                    and message["payload"]["source"] == "stream"
+                    and "cooperative stdout" in message["payload"]["text"]
+                )
+                uninstall_log_capture()
+                assert sys.stdout is preexisting_hook
+    finally:
+        uninstall_log_capture()
+        sys.stdout = original_stdout
+
+
+def test_log_capture_stream_write_error_is_best_effort():
+    original_stdout = sys.stdout
+    sys.stdout = BrokenWriteStream(original_stdout)
+
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(client, capture_logging=False, streams=("stdout",), subprocess_mode="0")
+                print("stream write survives")
+
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.stream"
+                    and message["payload"]["source"] == "stream"
+                    and "stream write survives" in message["payload"]["text"]
+                )
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.hook_status"
+                    and message["payload"]["component"] == "stream.stdout"
+                    and message["payload"]["status"] == "error"
+                    and "write failed" in message["payload"]["detail"]
+                )
+    finally:
+        uninstall_log_capture()
+        sys.stdout = original_stdout
+
+
+def test_log_capture_stream_flush_error_is_best_effort():
+    original_stdout = sys.stdout
+    sys.stdout = BrokenFlushStream(original_stdout)
+
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(client, capture_logging=False, streams=("stdout",), subprocess_mode="0")
+                sys.stdout.flush()
+
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.hook_status"
+                    and message["payload"]["component"] == "stream.stdout"
+                    and message["payload"]["status"] == "error"
+                    and "flush failed" in message["payload"]["detail"]
+                )
+    finally:
+        uninstall_log_capture()
+        sys.stdout = original_stdout
+
+
+def test_log_capture_warns_when_stdout_hook_is_replaced():
+    original_stdout = sys.stdout
+
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(
+                    client,
+                    capture_logging=False,
+                    streams=("stdout",),
+                    subprocess_mode="0",
+                    hook_policy="warn",
+                    hook_check_interval=0,
+                )
+                sys.stdout = ForwardingStream(original_stdout)
+
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.hook_status"
+                    and message["payload"]["component"] == "stream.stdout"
+                    and message["payload"]["status"] == "lost"
+                )
+    finally:
+        uninstall_log_capture()
+        sys.stdout = original_stdout
+
+
+def test_log_capture_reapplies_when_stdout_hook_is_replaced():
+    original_stdout = sys.stdout
+
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(
+                    client,
+                    capture_logging=False,
+                    streams=("stdout",),
+                    subprocess_mode="0",
+                    hook_policy="reapply",
+                    hook_check_interval=0,
+                )
+                sys.stdout = ForwardingStream(original_stdout)
+
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.hook_status"
+                    and message["payload"]["component"] == "stream.stdout"
+                    and message["payload"]["status"] == "reapplied"
+                )
+                print("after stdout reapply")
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.stream"
+                    and message["payload"]["source"] == "stream"
+                    and "after stdout reapply" in message["payload"]["text"]
+                )
+    finally:
+        uninstall_log_capture()
+        sys.stdout = original_stdout
+
+
 def test_log_capture_safe_subprocess_captures_explicit_pipe():
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
@@ -365,6 +518,122 @@ def test_log_capture_force_subprocess_captures_and_writes_back(capsys):
     captured = capsys.readouterr()
     assert "force out" in captured.out
     assert "force err" in captured.err
+
+
+def test_log_capture_subprocess_popen_remains_subclassable():
+    with JsonlHost() as host:
+        with RuntimeClient.connect(host.host, host.port) as client:
+            install_log_capture(client, capture_logging=False, streams=(), subprocess_mode="force")
+
+            class DerivedPopen(subprocess.Popen):
+                pass
+
+            assert issubclass(DerivedPopen, subprocess.Popen)
+            uninstall_log_capture()
+
+
+def test_log_capture_wraps_preexisting_subprocess_popen_hook():
+    original_popen = subprocess.Popen
+
+    class ThirdPartyPopen(original_popen):
+        pass
+
+    subprocess.Popen = ThirdPartyPopen
+    try:
+        with JsonlHost() as host:
+            with RuntimeClient.connect(host.host, host.port) as client:
+                install_log_capture(client, capture_logging=False, streams=(), subprocess_mode="safe")
+                assert issubclass(subprocess.Popen, ThirdPartyPopen)
+
+                result = subprocess.run(
+                    [sys.executable, "-c", "print('third party popen')"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+
+                assert result.stdout.strip() == "third party popen"
+                assert host.wait_for(
+                    lambda message: message.get("type") == "log.stream"
+                    and message["payload"]["source"] == "subprocess"
+                    and "third party popen" in message["payload"]["text"]
+                )
+                uninstall_log_capture()
+                assert subprocess.Popen is ThirdPartyPopen
+    finally:
+        uninstall_log_capture()
+        subprocess.Popen = original_popen
+
+
+def test_log_capture_warns_when_logging_handler_is_removed():
+    with JsonlHost() as host:
+        with RuntimeClient.connect(host.host, host.port) as client:
+            capture = install_log_capture(
+                client,
+                streams=(),
+                subprocess_mode="0",
+                hook_policy="warn",
+                hook_check_interval=0,
+            )
+            logging.getLogger().removeHandler(capture._root_handler)
+
+            assert host.wait_for(
+                lambda message: message.get("type") == "log.hook_status"
+                and message["payload"]["component"] == "logging"
+                and message["payload"]["status"] == "lost"
+            )
+            uninstall_log_capture()
+
+
+def test_log_capture_reapplies_removed_logging_handler():
+    with JsonlHost() as host:
+        with RuntimeClient.connect(host.host, host.port) as client:
+            capture = install_log_capture(
+                client,
+                streams=(),
+                subprocess_mode="0",
+                hook_policy="reapply",
+                hook_check_interval=0,
+            )
+            handler = capture._root_handler
+            logging.getLogger().removeHandler(handler)
+
+            assert host.wait_for(
+                lambda message: message.get("type") == "log.hook_status"
+                and message["payload"]["component"] == "logging"
+                and message["payload"]["status"] == "reapplied"
+            )
+            assert handler in logging.getLogger().handlers
+
+            logging.getLogger("app.logging.reapply").warning("logging after reapply")
+            assert host.wait_for(
+                lambda message: message.get("type") == "log.record"
+                and message["payload"]["message"] == "logging after reapply"
+            )
+            uninstall_log_capture()
+
+
+def test_log_capture_fd_force_captures_os_write():
+    with JsonlHost() as host:
+        with RuntimeClient.connect(host.host, host.port) as client:
+            capture = install_log_capture(
+                client,
+                capture_logging=False,
+                streams=("stdout",),
+                subprocess_mode="0",
+                fd_capture="force",
+            )
+            fd_capture = capture._fd_captures.get("stdout")
+            if fd_capture is None or fd_capture.fd is None:
+                pytest.skip("fd capture is not supported in this environment")
+
+            os.write(fd_capture.fd, b"fd force hello\n")
+            assert host.wait_for(
+                lambda message: message.get("type") == "log.stream"
+                and message["payload"]["source"] == "fd"
+                and "fd force hello" in message["payload"]["text"]
+            )
+            uninstall_log_capture()
 
 
 def test_log_capture_bounded_and_raw_policy(capsys):
@@ -465,9 +734,15 @@ def test_bootstrap_installs_log_capture_from_env(monkeypatch):
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOGS", "1")
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_STREAMS", "none")
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_SUBPROCESS", "0")
+        monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_POLICY", "warn")
+        monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_CHECK_INTERVAL", "2")
+        monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_FD_CAPTURE", "fallback")
 
         state = configure_from_env()
         assert state.log_capture is not None
+        assert state.log_capture.hook_policy == "warn"
+        assert state.log_capture.hook_check_interval == 2
+        assert state.log_capture.fd_capture == "fallback"
         logging.getLogger("bootstrap.logs").warning("from bootstrap")
 
         assert host.wait_for(

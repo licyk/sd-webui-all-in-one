@@ -60,6 +60,10 @@ from sd_webui_all_in_one.utils import (
     append_python_path,
 )
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
+    HOTPATCHER_ENV_PREFIX,
+    ensure_hotpatcher_pythonpath_first,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -462,6 +466,8 @@ def launch_webui(
         new_path=webui_path,
         origin_env=custom_env,
     )
+    if any(key.startswith(HOTPATCHER_ENV_PREFIX) for key in custom_env):
+        custom_env = ensure_hotpatcher_pythonpath_first(custom_env)
 
     cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
     try:

@@ -20,6 +20,7 @@ from sd_webui_all_in_one_hotpatcher.services import (
     normalize_config,
 )
 from sd_webui_all_in_one_hotpatcher.stack_shadow import uninstall_stack_shadower
+from sd_webui_all_in_one_hotpatcher_ext.uv_pip import unpatch_uv_to_subprocess
 
 
 @pytest.fixture(autouse=True)
@@ -27,11 +28,13 @@ def clean_service_state():
     uninstall_log_capture()
     uninstall_import_hook()
     uninstall_stack_shadower()
+    unpatch_uv_to_subprocess()
     monkey_zoo.clear()
     yield
     uninstall_log_capture()
     uninstall_import_hook()
     uninstall_stack_shadower()
+    unpatch_uv_to_subprocess()
     monkey_zoo.clear()
 
 
@@ -105,7 +108,11 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert "import_hook" in defaults["core"]
     assert "stack_shadow" in defaults["core"]
     assert "logs" in defaults["runtime"]
-    assert {"zluda", "extension_index", "hf_endpoint_mirror"} <= set(defaults["extensions"])
+    assert defaults["runtime"]["logs"]["hook_policy"] == "cooperative"
+    assert defaults["runtime"]["logs"]["hook_check_interval"] == 1
+    assert defaults["runtime"]["logs"]["fd_capture"] == "0"
+    assert {"zluda", "extension_index", "hf_endpoint_mirror", "uv_pip"} <= set(defaults["extensions"])
+    assert defaults["extensions"]["uv_pip"]["enabled"] is False
 
 
 def test_normalize_config_deep_merges_without_overwriting_user_values():
@@ -136,6 +143,7 @@ def test_load_config_file_writes_missing_defaults(tmp_path):
     assert loaded["extensions"]["hf_endpoint_mirror"]["enabled"] is True
     assert written["extensions"]["hf_endpoint_mirror"]["enabled"] is True
     assert "zluda" in written["extensions"]
+    assert "uv_pip" in written["extensions"]
     assert "core" in written
 
 
@@ -159,9 +167,13 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     def fake_hf_endpoint(config):
         calls.append(("hf_endpoint_mirror", config["enabled"]))
 
+    def fake_uv_pip(config):
+        calls.append(("uv_pip", config["symlink"]))
+
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.zluda.apply_from_config", fake_zluda)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.extension_index.apply_from_config", fake_extension_index)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror.apply_from_config", fake_hf_endpoint)
+    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.uv_pip.apply_from_config", fake_uv_pip)
 
     result = apply_config(
         {
@@ -173,6 +185,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
                 "zluda": {"enabled": True, "compat": True},
                 "extension_index": {"enabled": True, "comfyui_manager": True},
                 "hf_endpoint_mirror": {"enabled": True},
+                "uv_pip": {"enabled": True, "symlink": True},
             },
         }
     )
@@ -182,6 +195,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     assert ("zluda", True) in calls
     assert ("extension_index", True) in calls
     assert ("hf_endpoint_mirror", True) in calls
+    assert ("uv_pip", True) in calls
     assert result["errors"] == []
 
 
@@ -201,10 +215,34 @@ def test_catalog_reports_registered_patches():
         monkey.patch_module(lambda module: None)
 
     catalog = get_catalog()
+    features = catalog["features"]
 
-    assert "services" in catalog["features"]
-    assert "core.import_hook" in catalog["features"]
+    assert "services" in features
+    assert "core.import_hook" in features
     assert catalog["registered_patches"]["modules"]["svc_target"]["module"] == 1
+    for feature in features.values():
+        assert feature["title"]
+        assert feature["description"]
+        assert "default" in feature
+        assert "active" in feature
+        for setting in feature["settings"].values():
+            assert setting["type"]
+            assert setting["title"]
+            assert setting["description"]
+            assert "default" in setting
+
+    subprocess_setting = features["runtime.logs"]["settings"]["subprocess"]
+    assert subprocess_setting["type"] == "choice"
+    assert subprocess_setting["choices"] == ["0", "safe", "force"]
+    assert subprocess_setting["default"] == "safe"
+    hook_policy_setting = features["runtime.logs"]["settings"]["hook_policy"]
+    assert hook_policy_setting["type"] == "choice"
+    assert hook_policy_setting["choices"] == ["cooperative", "warn", "reapply"]
+    assert hook_policy_setting["default"] == "cooperative"
+    fd_capture_setting = features["runtime.logs"]["settings"]["fd_capture"]
+    assert fd_capture_setting["type"] == "choice"
+    assert fd_capture_setting["choices"] == ["0", "fallback", "force"]
+    assert fd_capture_setting["default"] == "0"
 
 
 def test_handle_request_json_supports_services_requests(tmp_path):

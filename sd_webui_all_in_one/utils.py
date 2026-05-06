@@ -13,7 +13,6 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
-    SD_WEBUI_ALL_IN_ONE_PATCHER_PATH,
     LOGGER_NAME,
 )
 
@@ -105,11 +104,6 @@ def remove_duplicate_object_from_list(
             去重后的`list`
     """
     return list(set(origin))
-
-
-def get_sdaio_patcher_path() -> Path:
-    """获取 SD WebUI All In One 补丁路径"""
-    return SD_WEBUI_ALL_IN_ONE_PATCHER_PATH
 
 
 def exec_from_path(

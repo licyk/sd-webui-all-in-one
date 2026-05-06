@@ -150,6 +150,9 @@ def launch(
     use_cuda_malloc: bool | None = True,
     use_uv: bool | None = True,
     check_launch_env: bool | None = True,
+    enable_hotpatcher: bool | None = False,
+    hotpatcher_config_path: str | Path | None = None,
+    hotpatcher_port: int | None = None,
 ) -> None:
     """启动 Qwen TTS WebUI
 
@@ -174,6 +177,12 @@ def launch(
             是否使用 uv 安装 Python 软件包
         check_launch_env (bool | None):
             是否在启动前检查运行环境
+        enable_hotpatcher (bool | None):
+            是否启用补丁系统注入
+        hotpatcher_config_path (str | Path | None):
+            补丁系统配置文件路径
+        hotpatcher_port (int | None):
+            补丁系统 runtime 通信端口
     """
     if check_launch_env:
         try:
@@ -207,6 +216,9 @@ def launch(
             custom_github_mirror=custom_github_mirror,
             use_pypi_mirror=use_pypi_mirror,
             use_cuda_malloc=use_cuda_malloc,
+            enable_hotpatcher=enable_hotpatcher,
+            hotpatcher_config_path=hotpatcher_config_path,
+            hotpatcher_port=hotpatcher_port,
         )
     except WebUiRuntimeError as e:
         if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
@@ -328,6 +340,9 @@ def register_qwen_tts_webui(
     launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
+    launch_p.add_argument("--hotpatcher", action="store_true", dest="enable_hotpatcher", default=False, help="启用补丁系统注入")
+    launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")
+    launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
     launch_p.set_defaults(
         func=lambda args: launch(
             qwen_tts_webui_path=args.qwen_tts_webui_path,
@@ -339,6 +354,9 @@ def register_qwen_tts_webui(
             use_pypi_mirror=args.use_pypi_mirror,
             use_cuda_malloc=args.use_cuda_malloc,
             check_launch_env=args.check_env,
+            enable_hotpatcher=args.enable_hotpatcher,
+            hotpatcher_config_path=args.hotpatcher_config_path,
+            hotpatcher_port=args.hotpatcher_port,
         )
     )
 

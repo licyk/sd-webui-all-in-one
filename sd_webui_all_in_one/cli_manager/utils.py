@@ -1,6 +1,7 @@
 """CLI 其他模块"""
 
 import argparse
+import json
 import sys
 import logging
 import os
@@ -18,7 +19,6 @@ from sd_webui_all_in_one.updater import (
 )
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import (
-    SD_WEBUI_ALL_IN_ONE_PATCHER_PATH,
     LOGGER_NAME,
     LOGGER_COLOR,
     LOGGER_LEVEL,
@@ -66,11 +66,6 @@ def check_aria2() -> None:
         sys.exit(0)
 
 
-def get_patcher_path() -> None:
-    """获取 SD WebUI All In One 补丁路径"""
-    print(SD_WEBUI_ALL_IN_ONE_PATCHER_PATH)
-
-
 def get_proxy() -> None:
     """获取当前系统中的代理地址"""
     addr = get_system_proxy_address()
@@ -99,7 +94,6 @@ def get_env_config() -> None:
         "SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL",
         "SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR",
         "SD_WEBUI_ALL_IN_ONE_RETRY_TIMES",
-        "SD_WEBUI_ALL_IN_ONE_PATCHER",
         "SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH",
         "SD_WEBUI_ROOT",
         "COMFYUI_ROOT",
@@ -199,6 +193,61 @@ def start_tunnel(
         sys.exit(1)
 
 
+def _print_json(data: dict | list) -> None:
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def export_hotpatcher_config_cli(output: Path | None = None, force: bool = False) -> None:
+    """导出 hotpatcher 默认配置"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import export_hotpatcher_default_config
+
+    path = export_hotpatcher_default_config(output, overwrite=force)
+    logger.info("Hotpatcher 默认配置已导出: %s", path)
+
+
+def normalize_hotpatcher_config_cli(config: Path | None = None, write_back: bool = False) -> None:
+    """规范化 hotpatcher 配置"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import load_hotpatcher_config, save_hotpatcher_config
+
+    normalized = load_hotpatcher_config(config, normalize=True)
+    if write_back:
+        save_hotpatcher_config(config, normalized)
+        logger.info("Hotpatcher 配置已规范化并写回: %s", config)
+        return
+    _print_json(normalized)
+
+
+def apply_hotpatcher_config_cli(config: Path | None = None) -> None:
+    """应用 hotpatcher 配置到当前进程"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_config
+
+    _print_json(apply_hotpatcher_config(config))
+
+
+def show_hotpatcher_catalog_cli() -> None:
+    """显示 hotpatcher 功能目录"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import get_hotpatcher_catalog
+
+    _print_json(get_hotpatcher_catalog())
+
+
+def launch_hotpatcher_gui_cli(
+    config: Path | None = None,
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    token: str = "",
+) -> None:
+    """启动 hotpatcher 配置管理 GUI"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import launch_hotpatcher_manager_gui
+
+    launch_hotpatcher_manager_gui(config_path=config, host=host, port=port, token=token)
+
+
 def register_manager(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -233,10 +282,55 @@ def register_manager(
         )
     )
 
-    # get-patcher
-    get_patcher_p = sd_webui_all_in_one_sub.add_parser("get-patcher", help="获取 SD WebUI All In One 补丁路径")
-    get_patcher_p.set_defaults(
-        func=lambda args: get_patcher_path(),
+    # patcher
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_HOTPATCHER_CONFIG_PATH
+
+    patcher_p = sd_webui_all_in_one_sub.add_parser("patcher", help="Hotpatcher 配置管理")
+    patcher_sub = patcher_p.add_subparsers(dest="patcher_action", required=True)
+
+    patcher_export_p = patcher_sub.add_parser("export-config", help="导出 Hotpatcher 默认配置")
+    patcher_export_p.add_argument("--output", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="输出配置文件路径")
+    patcher_export_p.add_argument("--force", action="store_true", help="覆盖已有配置文件")
+    patcher_export_p.set_defaults(
+        func=lambda args: export_hotpatcher_config_cli(
+            output=args.output,
+            force=args.force,
+        )
+    )
+
+    patcher_normalize_p = patcher_sub.add_parser("normalize-config", help="规范化 Hotpatcher 配置")
+    patcher_normalize_p.add_argument("--config", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="配置文件路径")
+    patcher_normalize_p.add_argument("--write-back", action="store_true", help="将规范化后的配置写回文件")
+    patcher_normalize_p.set_defaults(
+        func=lambda args: normalize_hotpatcher_config_cli(
+            config=args.config,
+            write_back=args.write_back,
+        )
+    )
+
+    patcher_apply_p = patcher_sub.add_parser("apply-config", help="应用 Hotpatcher 配置到当前进程")
+    patcher_apply_p.add_argument("--config", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="配置文件路径")
+    patcher_apply_p.set_defaults(
+        func=lambda args: apply_hotpatcher_config_cli(
+            config=args.config,
+        )
+    )
+
+    patcher_catalog_p = patcher_sub.add_parser("catalog", help="显示 Hotpatcher 功能目录")
+    patcher_catalog_p.set_defaults(func=lambda args: show_hotpatcher_catalog_cli())
+
+    patcher_gui_p = patcher_sub.add_parser("gui", help="启动 Hotpatcher 配置管理 GUI")
+    patcher_gui_p.add_argument("--config", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="配置文件路径")
+    patcher_gui_p.add_argument("--host", type=str, default="127.0.0.1", help="Runtime host 监听地址")
+    patcher_gui_p.add_argument("--port", type=int, default=8765, help="Runtime host 监听端口")
+    patcher_gui_p.add_argument("--token", type=str, default="", help="Runtime host 连接 token")
+    patcher_gui_p.set_defaults(
+        func=lambda args: launch_hotpatcher_gui_cli(
+            config=args.config,
+            host=args.host,
+            port=args.port,
+            token=args.token,
+        )
     )
 
     # get-proxy

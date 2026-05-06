@@ -31,6 +31,11 @@ from sd_webui_all_in_one.base_manager.base import (
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
 )
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
+    HOTPATCHER_ENV_PREFIX,
+    apply_hotpatcher_launch_env,
+    configure_hotpatcher_for_current_process,
+)
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import (
     AggregateError,
@@ -828,6 +833,9 @@ def launch_invokeai(
     custom_hf_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
+    enable_hotpatcher: bool | None = False,
+    hotpatcher_config_path: str | Path | None = None,
+    hotpatcher_port: int | None = None,
 ) -> None:
     """启动 InvokeAI
 
@@ -844,6 +852,12 @@ def launch_invokeai(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
+        enable_hotpatcher (bool | None):
+            是否启用补丁系统注入
+        hotpatcher_config_path (str | Path | None):
+            补丁系统配置文件路径
+        hotpatcher_port (int | None):
+            补丁系统 runtime 通信端口
 
     Raises:
         WebUiRuntimeError:
@@ -873,7 +887,17 @@ def launch_invokeai(
                 origin_env=custom_env,
             )
 
+    custom_env = apply_hotpatcher_launch_env(
+        origin_env=custom_env,
+        enabled=enable_hotpatcher,
+        config_path=hotpatcher_config_path,
+        port=hotpatcher_port,
+    )
+    for key in list(os.environ):
+        if key.startswith(HOTPATCHER_ENV_PREFIX):
+            os.environ.pop(key, None)
     os.environ.update(custom_env)
+    configure_hotpatcher_for_current_process(enable_hotpatcher)
     logger.info("启动 InvokeAI 中")
 
     if launch_args is not None:

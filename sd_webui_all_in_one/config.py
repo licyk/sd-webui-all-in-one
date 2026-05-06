@@ -51,12 +51,6 @@ DEFAULT_ENV_VARS = [
 ROOT_PATH = Path(__file__).parent
 """SD WebUI All In One 根目录"""
 
-SD_WEBUI_ALL_IN_ONE_PATCHER_PATH = ROOT_PATH / "sdaio_patcher"
-"""SD WebUI All In One 补丁目录"""
-
-SD_WEBUI_ALL_IN_ONE_PATCHER = os.getenv("SD_WEBUI_ALL_IN_ONE_PATCHER") in ["1", "True", "true"]
-"""是否 SD WebUI All In One 启用补丁"""
-
 UV_MINIMUM_VER = "0.9.28"
 """uv 最低版本要求版本号"""
 

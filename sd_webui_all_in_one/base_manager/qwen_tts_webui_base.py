@@ -17,6 +17,7 @@ from sd_webui_all_in_one.base_manager.base import (
     launch_webui,
     prepare_pytorch_install_info,
 )
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
@@ -289,6 +290,9 @@ def launch_qwen_tts_webui(
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool | None = False,
     use_cuda_malloc: bool | None = True,
+    enable_hotpatcher: bool | None = False,
+    hotpatcher_config_path: str | Path | None = None,
+    hotpatcher_port: int | None = None,
 ) -> None:
     """启动 Qwen TTS WebUI
 
@@ -309,6 +313,12 @@ def launch_qwen_tts_webui(
             是否启用 PyPI 镜像源
         use_cuda_malloc (bool | None):
             是否启用 CUDA Malloc 显存优化
+        enable_hotpatcher (bool | None):
+            是否启用补丁系统注入
+        hotpatcher_config_path (str | Path | None):
+            补丁系统配置文件路径
+        hotpatcher_port (int | None):
+            补丁系统 runtime 通信端口
     """
     logger.info("准备 Qwen TTS WebUI 启动环境")
 
@@ -341,6 +351,12 @@ def launch_qwen_tts_webui(
                 config=cuda_malloc_config,
                 origin_env=custom_env,
             )
+    custom_env = apply_hotpatcher_launch_env(
+        origin_env=custom_env,
+        enabled=enable_hotpatcher,
+        config_path=hotpatcher_config_path,
+        port=hotpatcher_port,
+    )
 
     logger.info("启动 Qwen TTS WebUI 中")
     launch_webui(

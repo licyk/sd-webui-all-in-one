@@ -14,8 +14,6 @@
 禁用彩色日志可设置环境变量`SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR=0`
 
 设置日志器的名称可通过环境变量`SD_WEBUI_ALL_IN_ONE_LOGGER_NAME=<日志器名称>`进行设置
-
-如果需要禁用补丁可设置环境变量`SD_WEBUI_ALL_IN_ONE_PATCHER=0`
 """
 
 import os
@@ -25,8 +23,6 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
     LOGGER_LEVEL,
     LOGGER_COLOR,
-    SD_WEBUI_ALL_IN_ONE_PATCHER,
-    SD_WEBUI_ALL_IN_ONE_PATCHER_PATH,
     SD_WEBUI_ALL_IN_ONE_PROXY,
     SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH,
     SD_WEBUI_ALL_IN_ONE_SET_CONFIG,
@@ -44,14 +40,6 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
-
-if SD_WEBUI_ALL_IN_ONE_PATCHER:
-    logger.debug("配置 SD WebUI All In One 补丁模块")
-    if "PYTHONPATH" in os.environ and os.environ["PYTHONPATH"]:
-        os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix() + os.pathsep + os.environ["PYTHONPATH"]
-    else:
-        os.environ["PYTHONPATH"] = SD_WEBUI_ALL_IN_ONE_PATCHER_PATH.as_posix()
-    logger.debug("PYTHONPATH: %s", os.getenv("PYTHONPATH"))
 
 
 os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
