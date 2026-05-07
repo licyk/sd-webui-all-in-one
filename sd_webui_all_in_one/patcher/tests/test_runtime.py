@@ -130,10 +130,10 @@ class BrokenLocalRepr:
 
 
 def _raise_with_locals(message="locals"):
-    visible_local = "visible value"
-    password_token = "secret value"
-    long_local = "x" * 600
-    broken_repr = BrokenLocalRepr()
+    visible_local = "visible value"  # noqa: F841
+    password_token = "secret value"  # noqa: F841
+    long_local = "x" * 600  # noqa: F841
+    broken_repr = BrokenLocalRepr()  # noqa: F841
     raise RuntimeError(message)
 
 
