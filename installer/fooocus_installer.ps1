@@ -140,6 +140,18 @@ Fooocus 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][string]$LaunchArg,
 
     [Parameter(HelpMessage=@"
+(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 启用 Hotpatcher 补丁系统注入
+"@)][switch]$Hotpatcher,
+
+    [Parameter(HelpMessage=@"
+(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 指定 Hotpatcher 配置文件路径, 未指定时使用 launch.ps1 同级目录的 patcher_config.json
+"@)][string]$HotpatcherConfig,
+
+    [Parameter(HelpMessage=@"
+(仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 指定 Hotpatcher runtime 通信端口, 端口范围为 1 到 65535
+"@)][int]$HotpatcherPort,
+
+    [Parameter(HelpMessage=@"
 (仅在 Fooocus Installer 构建模式下生效, 并且只作用于 Fooocus Installer 管理脚本) 创建 Fooocus 启动快捷方式
 "@)][switch]$EnableShortcut,
 
@@ -157,6 +169,8 @@ function Join-NormalizedPath {
     for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
 }
+
+$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
 
 if (-not $script:InstallPath) {
     $script:InstallPath = Join-NormalizedPath $PSScriptRoot "Fooocus"
@@ -1981,6 +1995,18 @@ param (
 `"@)][string]`$LaunchArg,
 
     [Parameter(HelpMessage=@`"
+启用 Hotpatcher 补丁系统注入
+`"@)][switch]`$Hotpatcher,
+
+    [Parameter(HelpMessage=@`"
+指定 Hotpatcher 配置文件路径, 未指定时使用 launch.ps1 同级目录的 patcher_config.json
+`"@)][string]`$HotpatcherConfig,
+
+    [Parameter(HelpMessage=@`"
+指定 Hotpatcher runtime 通信端口, 端口范围为 1 到 65535
+`"@)][int]`$HotpatcherPort,
+
+    [Parameter(HelpMessage=@`"
 创建 Fooocus 启动快捷方式
 `"@)][switch]`$EnableShortcut,
 
@@ -2013,6 +2039,10 @@ try {
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        Hotpatcher = `$script:Hotpatcher
+        HotpatcherConfig = `$script:HotpatcherConfig
+        HotpatcherPort = `$script:HotpatcherPort
+        HotpatcherPortSpecified = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -2032,6 +2062,10 @@ try {
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:Hotpatcher = `$cfg.Hotpatcher
+        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
+        `$script:HotpatcherPort = `$cfg.HotpatcherPort
+        `$script:HotpatcherPortSpecified = `$cfg.HotpatcherPortSpecified
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -2061,6 +2095,76 @@ function Get-WebUILaunchArgs {
         `$ArrayList.Add(`$launch_args + `" `") | Out-Null
         Write-Log `"检测到本地存在 launch_args.txt 启动参数配置文件 / -LaunchArg 命令行参数, 已读取该启动参数配置文件并应用启动参数`"
         Write-Log `"使用的启动参数: `$launch_args`"
+    }
+}
+
+
+# 获取 Hotpatcher 端口
+function Get-HotpatcherPort {
+    if (`$script:HotpatcherPortSpecified) {
+        if ((`$script:HotpatcherPort -ge 1) -and (`$script:HotpatcherPort -le 65535)) {
+            return `$script:HotpatcherPort
+        }
+        Write-Log `"Hotpatcher 端口无效, 端口范围应为 1 到 65535, 已忽略: `$(`$script:HotpatcherPort)`" -Level WARNING
+        return `$null
+    }
+
+    `$port_file = Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"
+    if (!(Test-Path `$port_file)) {
+        return `$null
+    }
+
+    `$port_text = (Get-Content `$port_file -Raw).Trim()
+    if ([string]::IsNullOrWhiteSpace(`$port_text)) {
+        return `$null
+    }
+
+    [int]`$port = 0
+    if ([int]::TryParse(`$port_text, [ref]`$port) -and (`$port -ge 1) -and (`$port -le 65535)) {
+        return `$port
+    }
+
+    Write-Log `"检测到 hotpatcher_port.txt 中的端口无效, 端口范围应为 1 到 65535, 已忽略该端口配置`" -Level WARNING
+    return `$null
+}
+
+
+# 设置 Hotpatcher 启动参数
+function Set-HotpatcherLaunchArgs {
+    param ([System.Collections.ArrayList]`$ArrayList)
+    if ((!(`$script:Hotpatcher)) -and (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`")))) {
+        return
+    }
+
+    if (`$script:HotpatcherConfig) {
+        `$hotpatcher_config_path = `$script:HotpatcherConfig
+    } else {
+        `$hotpatcher_config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+        if (!(Test-Path `$hotpatcher_config_path)) {
+            Write-Log `"检测到 Hotpatcher 默认配置不存在, 正在导出默认配置: `$hotpatcher_config_path`"
+            & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$hotpatcher_config_path`"
+            `$exit_code = Get-NativeCommandExitCode -Success `$?
+            if (`$exit_code -ne 0) {
+                Write-Log `"导出 Hotpatcher 默认配置失败, 终止 Fooocus 启动`" -Level ERROR
+                Exit-ManagerScript -ExitCode `$exit_code
+            }
+        }
+    }
+
+    `$ArrayList.Add(`"--hotpatcher`") | Out-Null
+    `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
+    `$ArrayList.Add(`$hotpatcher_config_path) | Out-Null
+
+    `$hotpatcher_port = Get-HotpatcherPort
+    if (`$null -ne `$hotpatcher_port) {
+        `$ArrayList.Add(`"--hotpatcher-port`") | Out-Null
+        `$ArrayList.Add(`$hotpatcher_port) | Out-Null
+    }
+
+    Write-Log `"检测到 enable_hotpatcher.txt 配置文件 / -Hotpatcher 命令行参数, 已启用 Hotpatcher 补丁系统`"
+    Write-Log `"使用的 Hotpatcher 配置: `$hotpatcher_config_path`"
+    if (`$null -ne `$hotpatcher_port) {
+        Write-Log `"使用的 Hotpatcher 端口: `$hotpatcher_port`"
     }
 }
 
@@ -2160,6 +2264,7 @@ function Get-LaunchCoreArgs {
         Set-HuggingFaceMirror `$launch_params
         Set-GithubMirror `$launch_params
         Get-WebUILaunchArgs `$launch_params
+        Set-HotpatcherLaunchArgs `$launch_params
         Set-PyTorchCUDAMemoryAlloc `$launch_params
         Test-WebUIEnv `$launch_params
     }
@@ -3288,6 +3393,49 @@ function Update-Core-Prefix {
 }
 
 
+# 更新 Hotpatcher 端口设置
+function Update-Hotpatcher-Port {
+    Write-Log `"当前 Hotpatcher 端口: `$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`")`"
+    Write-Log `"请输入 Hotpatcher runtime 通信端口 (1-65535, 直接回车使用默认):`"
+    `$port_text = Get-UserInput
+    if ([string]::IsNullOrWhiteSpace(`$port_text)) {
+        Remove-Item (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Force -ErrorAction SilentlyContinue
+        Write-Log `"Hotpatcher 端口已恢复默认`"
+        return
+    }
+
+    [int]`$port = 0
+    if ([int]::TryParse(`$port_text, [ref]`$port) -and (`$port -ge 1) -and (`$port -le 65535)) {
+        Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Value ([string]`$port) -Encoding UTF8
+        Write-Log `"Hotpatcher 端口设置成功`"
+    } else {
+        Write-Log `"端口无效, 请输入 1 到 65535 之间的整数`" -Level ERROR
+    }
+}
+
+
+# 打开 Hotpatcher 配置管理 GUI
+function Open-Hotpatcher-Gui {
+    `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    if (!(Test-Path `$config_path)) {
+        Write-Log `"未找到 Hotpatcher 默认配置文件, 正在导出默认配置到 `$config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`"
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) {
+            Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
+            return
+        }
+    }
+
+    Write-Log `"正在打开 Hotpatcher 补丁系统 GUI: `$config_path`"
+    & python -m sd_webui_all_in_one self-manager patcher gui --config `"`$config_path`"
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) {
+        Write-Log `"Hotpatcher 补丁系统 GUI 退出异常: `$exit_code`" -Level WARNING
+    }
+}
+
+
 # 检测环境完整性
 function Test-EnvIntegrity {
     `$items = @(
@@ -3334,15 +3482,18 @@ function Main {
             @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=6;  n=`"模型下载源`"; v=`$(Get-ToggleStatus `"disable_model_mirror.txt`" `"ModelScope`" `"HuggingFace`" `$true) },
             @{ id=7;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=8;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
-            @{ id=9;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
+            @{ id=8;  n=`"补丁系统`"; v=`$(Get-ToggleStatus `"enable_hotpatcher.txt`" `"启用`" `"禁用`") },
+            @{ id=9;  n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
+            @{ id=10; n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
+            @{ id=11; n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=12; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=13; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=14; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
+            @{ id=15; n=`"补丁系统 GUI`"; v=`"打开`" }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"13. 检查更新 | 14. 文档 | 15. 退出`"
+        Write-Log `"16. 检查更新 | 17. 文档 | 18. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
@@ -3359,14 +3510,17 @@ function Main {
                 if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
                 else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
             }
-            `"8`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
-            `"9`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
-            `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
-            `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
-            `"12`" { Update-Core-Prefix }
-            `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"14`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/fooocus/`" }
-            `"15`" { Write-Log `"退出设置`"; return }
+            `"8`"  { Set-ToggleSetting `"enable_hotpatcher.txt`" `"补丁系统`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))) }
+            `"9`"  { Update-Hotpatcher-Port }
+            `"10`" { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
+            `"11`" { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
+            `"12`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
+            `"13`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
+            `"14`" { Update-Core-Prefix }
+            `"15`" { Open-Hotpatcher-Gui }
+            `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"17`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/fooocus/`" }
+            `"18`" { Write-Log `"退出设置`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -3992,6 +4146,24 @@ function Copy-InstallerConfig {
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")"
     }
 
+    if ((!($script:Hotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher.txt")"
+    }
+
+    if ((!($script:HotpatcherPortSpecified)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -> $(Join-NormalizedPath $script:InstallPath "hotpatcher_port.txt")"
+    }
+
+    $hotpatcher_config_source = if ($script:HotpatcherConfig) { $script:HotpatcherConfig.Trim() } else { Join-NormalizedPath $PSScriptRoot "patcher_config.json" }
+    if (Test-Path $hotpatcher_config_source) {
+        Copy-Item -Path $hotpatcher_config_source -Destination (Join-NormalizedPath $script:InstallPath "patcher_config.json") -Force
+        Write-Log "$hotpatcher_config_source -> $(Join-NormalizedPath $script:InstallPath "patcher_config.json")"
+    } elseif ($script:HotpatcherConfig) {
+        Write-Log "指定的 Hotpatcher 配置文件不存在, 已跳过复制: $hotpatcher_config_source" -Level WARNING
+    }
+
     if ((!($script:DisableModelMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_model_mirror.txt")"
@@ -4290,6 +4462,9 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
+        if ($script:Hotpatcher) { $launch_args.Add("-Hotpatcher", $true) }
+        if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
+        if ($script:HotpatcherPortSpecified) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }

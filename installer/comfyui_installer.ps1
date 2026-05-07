@@ -143,7 +143,19 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     [Parameter(HelpMessage=@"
 (仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 禁用 ComfyUI Installer 检查 ComfyUI 运行环境中存在的问题, 禁用后可能会导致 ComfyUI 环境中存在的问题无法被发现并修复
-"@)][switch]$DisableEnvCheck
+"@)][switch]$DisableEnvCheck,
+
+    [Parameter(HelpMessage=@"
+(仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 启用 Hotpatcher 补丁系统
+"@)][switch]$Hotpatcher,
+
+    [Parameter(HelpMessage=@"
+(仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 指定 Hotpatcher 配置文件路径
+"@)][string]$HotpatcherConfig,
+
+    [Parameter(HelpMessage=@"
+(仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 指定 Hotpatcher runtime 通信端口, 端口范围为 1..65535
+"@)][int]$HotpatcherPort
 )
 
 function Join-NormalizedPath {
@@ -151,6 +163,8 @@ function Join-NormalizedPath {
     for ($i = 1; $i -lt $args.Count; $i++) { $joined = Join-Path $joined $args[$i] }
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
 }
+
+$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
 
 if (-not $script:InstallPath) {
     $script:InstallPath = Join-NormalizedPath $PSScriptRoot "ComfyUI"
@@ -1950,6 +1964,18 @@ param (
 `"@)][switch]`$DisableEnvCheck,
 
     [Parameter(HelpMessage=@`"
+启用 Hotpatcher 补丁系统
+`"@)][switch]`$Hotpatcher,
+
+    [Parameter(HelpMessage=@`"
+指定 Hotpatcher 配置文件路径
+`"@)][string]`$HotpatcherConfig,
+
+    [Parameter(HelpMessage=@`"
+指定 Hotpatcher runtime 通信端口, 端口范围为 1..65535
+`"@)][int]`$HotpatcherPort,
+
+    [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
 )
@@ -1970,6 +1996,10 @@ try {
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        Hotpatcher = `$script:Hotpatcher
+        HotpatcherConfig = `$script:HotpatcherConfig
+        HotpatcherPort = `$script:HotpatcherPort
+        HotpatcherPortSpecified = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -1989,6 +2019,10 @@ try {
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:Hotpatcher = `$cfg.Hotpatcher
+        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
+        `$script:HotpatcherPort = `$cfg.HotpatcherPort
+        `$script:HotpatcherPortSpecified = `$cfg.HotpatcherPortSpecified
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -2093,6 +2127,67 @@ function Test-WebUIEnv {
 }
 
 
+# 设置 Hotpatcher 补丁系统
+function Set-Hotpatcher {
+    param ([System.Collections.ArrayList]`$ArrayList)
+    `$enabled = (`$script:Hotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))
+    if (!(`$enabled)) {
+        return
+    }
+
+    `$default_config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    if (`$script:HotpatcherConfig) {
+        `$config_path = `$script:HotpatcherConfig
+        if (!(Test-Path `$config_path)) {
+            Write-Log `"指定的 Hotpatcher 配置文件不存在, 将按指定路径继续启动: `$config_path`" -Level WARNING
+        }
+        Write-Log `"检测到 -HotpatcherConfig 命令行参数, 使用指定的 Hotpatcher 配置文件: `$config_path`"
+    } else {
+        `$config_path = `$default_config_path
+        if (!(Test-Path `$default_config_path)) {
+            Write-Log `"未检测到默认 Hotpatcher 配置文件, 正在导出默认配置: `$default_config_path`"
+            & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$default_config_path`"
+            `$exit_code = Get-NativeCommandExitCode -Success `$?
+            if (`$exit_code -ne 0) {
+                Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
+                Exit-ManagerScript -ExitCode `$exit_code
+            }
+        }
+        Write-Log `"使用默认 Hotpatcher 配置文件: `$config_path`"
+    }
+
+    `$ArrayList.Add(`"--hotpatcher`") | Out-Null
+    `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
+    `$ArrayList.Add(`$config_path) | Out-Null
+
+    `$hotpatcher_port = `$null
+    if (`$script:HotpatcherPortSpecified) {
+        if ((`$script:HotpatcherPort -ge 1) -and (`$script:HotpatcherPort -le 65535)) {
+            `$hotpatcher_port = `$script:HotpatcherPort
+            Write-Log `"检测到 -HotpatcherPort 命令行参数, 使用 Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+        } else {
+            Write-Log `"HotpatcherPort 端口范围应为 1..65535, 已忽略无效端口: `$(`$script:HotpatcherPort)`" -Level WARNING
+        }
+    } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`")) {
+        `$port_text = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Raw).Trim()
+        `$port_value = 0
+        if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (`$port_value -ge 1) -and (`$port_value -le 65535)) {
+            `$hotpatcher_port = `$port_value
+            Write-Log `"检测到 hotpatcher_port.txt 配置文件, 使用 Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+        } else {
+            Write-Log `"hotpatcher_port.txt 中的端口范围应为 1..65535, 已忽略无效端口: `$port_text`" -Level WARNING
+        }
+    }
+
+    if (`$null -ne `$hotpatcher_port) {
+        `$ArrayList.Add(`"--hotpatcher-port`") | Out-Null
+        `$ArrayList.Add(`$hotpatcher_port) | Out-Null
+    }
+
+    Write-Log `"Hotpatcher 补丁系统已启用`"
+}
+
+
 # 获取启动 SD WebUI All In One 内核的启动参数
 function Get-LaunchCoreArgs {
     `$launch_params = New-Object System.Collections.ArrayList
@@ -2104,6 +2199,7 @@ function Get-LaunchCoreArgs {
         Get-WebUILaunchArgs `$launch_params
         Set-PyTorchCUDAMemoryAlloc `$launch_params
         Test-WebUIEnv `$launch_params
+        Set-Hotpatcher `$launch_params
         `$launch_params.Add(`"--interactive`") | Out-Null
     }
     return `$launch_params
@@ -3181,6 +3277,48 @@ function Update-Core-Prefix {
 }
 
 
+# 更新 Hotpatcher 端口
+function Update-Hotpatcher-Port {
+    Write-Log `"当前 Hotpatcher 端口: `$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`")`"
+    Write-Log `"1. 配置自定义 | 2. 使用默认 | 3. 返回`"
+    `$choice = Get-UserInput
+    if (`$choice -eq `"1`") {
+        Write-Log `"请输入 Hotpatcher runtime 通信端口 (1..65535):`"
+        `$port = Get-UserInput
+        `$port_value = 0
+        if (([int]::TryParse(`$port, [ref]`$port_value)) -and (`$port_value -ge 1) -and (`$port_value -le 65535)) {
+            Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Value `$port_value -Encoding UTF8
+            Write-Log `"Hotpatcher 端口设置成功`"
+        } else {
+            Write-Log `"端口范围应为 1..65535, 未保存无效端口: `$port`" -Level WARNING
+        }
+    }
+    elseif (`$choice -eq `"2`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Force -ErrorAction SilentlyContinue }
+}
+
+
+# 打开 Hotpatcher 配置管理 GUI
+function Open-Hotpatcher-Gui {
+    `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    if (!(Test-Path `$config_path)) {
+        Write-Log `"未找到 Hotpatcher 默认配置文件, 正在导出默认配置到 `$config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`"
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) {
+            Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
+            return
+        }
+    }
+
+    Write-Log `"正在打开 Hotpatcher 补丁系统 GUI: `$config_path`"
+    & python -m sd_webui_all_in_one self-manager patcher gui --config `"`$config_path`"
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) {
+        Write-Log `"Hotpatcher 补丁系统 GUI 退出异常: `$exit_code`" -Level WARNING
+    }
+}
+
+
 # 获取用户输入
 function Get-UserInput {
     return (Read-Host `"==================================>`").Trim()
@@ -3209,11 +3347,14 @@ function Main {
             @{ id=9;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") }
+            @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
+            @{ id=13; n=`"补丁系统`"; v=`$(Get-ToggleStatus `"enable_hotpatcher.txt`" `"启用`" `"禁用`") },
+            @{ id=14; n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
+            @{ id=15; n=`"补丁系统 GUI`"; v=`"打开`" }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"13. 检查更新 | 14. 文档 | 15. 退出`"
+        Write-Log `"16. 检查更新 | 17. 文档 | 18. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
@@ -3235,9 +3376,12 @@ function Main {
             `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
             `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"12`" { Update-Core-Prefix }
-            `"13`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"14`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/comfyui/`" }
-            `"15`" { Write-Log `"退出设置`"; return }
+            `"13`" { Set-ToggleSetting `"enable_hotpatcher.txt`" `"补丁系统`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))) }
+            `"14`" { Update-Hotpatcher-Port }
+            `"15`" { Open-Hotpatcher-Gui }
+            `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"17`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/comfyui/`" }
+            `"18`" { Write-Log `"退出设置`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -3871,6 +4015,24 @@ function Copy-InstallerConfig {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_model_mirror.txt")"
     }
+
+    if ((!($script:Hotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher.txt")"
+    }
+
+    if ((!($script:HotpatcherPortSpecified)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -> $(Join-NormalizedPath $script:InstallPath "hotpatcher_port.txt")"
+    }
+
+    $hotpatcher_config_source = if ($script:HotpatcherConfig) { $script:HotpatcherConfig.Trim() } else { Join-NormalizedPath $PSScriptRoot "patcher_config.json" }
+    if (Test-Path $hotpatcher_config_source) {
+        Copy-Item -Path $hotpatcher_config_source -Destination (Join-NormalizedPath $script:InstallPath "patcher_config.json") -Force
+        Write-Log "$hotpatcher_config_source -> $(Join-NormalizedPath $script:InstallPath "patcher_config.json")"
+    } elseif ($script:HotpatcherConfig) {
+        Write-Log "指定的 Hotpatcher 配置文件不存在, 已跳过复制: $hotpatcher_config_source" -Level WARNING
+    }
 }
 
 
@@ -4170,6 +4332,9 @@ function Use-BuildMode {
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
+        if ($script:Hotpatcher) { $launch_args.Add("-Hotpatcher", $true) }
+        if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
+        if ($script:HotpatcherPortSpecified) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 ComfyUI 启动脚本中"
         . (Join-NormalizedPath $script:InstallPath "launch.ps1") @launch_args

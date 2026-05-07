@@ -67,6 +67,16 @@ ComfyUI Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包，
 在和脚本同级的路径中创建一个 `disable_proxy.txt` 文件，再次启动脚本时将禁用设置代理。
 
 ## 其他配置
+### 设置 Hotpatcher 补丁系统
+!!! info
+    该设置可通过 [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+
+如需启用 Hotpatcher 补丁系统，可以在 `launch.ps1` 同级目录创建 `enable_hotpatcher.txt`，或运行 `launch.ps1 -Hotpatcher`。启用后会使用 `patcher_config.json` 作为默认配置文件；如果该文件不存在，`launch.ps1` 会自动导出默认配置到该路径。
+
+如果需要使用其他配置文件路径，可以运行 `launch.ps1 -Hotpatcher -HotpatcherConfig "<配置文件路径>"`。指定 `-HotpatcherConfig` 时，脚本不会自动创建默认配置文件。
+
+如需指定 Hotpatcher runtime 通信端口，可以在 `hotpatcher_port.txt` 中填写端口号，或运行 `launch.ps1 -Hotpatcher -HotpatcherPort <端口>`。端口范围为 `1..65535`，命令行参数优先于 `hotpatcher_port.txt`。
+
 ### 设置 uv 包管理器
 !!! info
     该设置可通过 [管理 ComfyUI Installer 设置](#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
@@ -92,6 +102,8 @@ ComfyUI Installer 通过“内核路径前缀”找到要启动和管理的 Comf
 
 ### 管理 ComfyUI Installer 设置
 运行 `settings.ps1`，根据提示进行设置管理和调整。
+
+其中“补丁系统”菜单项会切换 `enable_hotpatcher.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
 
 ### ComfyUI Installer 对 Python / Git 环境的识别
 ComfyUI Installer 通常不会主动调用系统环境中的 Python / Git。运行安装器和管理脚本时，会先把安装器管理的 Python / Git 路径加入 `PATH`，避免被系统环境干扰。

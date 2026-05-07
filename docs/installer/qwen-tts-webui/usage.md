@@ -27,6 +27,22 @@
     --api
     ```
 
+### 启用 Hotpatcher 补丁系统
+!!! info
+    该设置中的补丁系统开关和端口可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#管理-qwen-tts-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+
+运行 `launch.ps1` 时添加 `-Hotpatcher` 可启用 Hotpatcher 补丁系统：
+
+```powershell
+./launch.ps1 -Hotpatcher
+```
+
+也可以在 `launch.ps1` 同级目录创建 `enable_hotpatcher.txt` 文件启用。启用后，脚本会将 `--hotpatcher` 和 `--hotpatcher-config <路径>` 传给 Qwen TTS WebUI 启动命令。
+
+默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。如果启用 Hotpatcher 且该文件不存在，`launch.ps1` 会自动导出默认配置。使用 `-HotpatcherConfig <路径>` 指定配置文件时，脚本只使用指定路径，不会自动创建配置文件。
+
+如果需要指定 Hotpatcher runtime 通信端口，可使用 `-HotpatcherPort <端口>`，或在 `launch.ps1` 同级目录创建 `hotpatcher_port.txt` 并写入端口号。端口范围为 `1` 到 `65535`，命令行参数优先于 `hotpatcher_port.txt`。
+
 ## 环境管理
 
 ### 进入 Qwen TTS WebUI 所在的 Python 环境

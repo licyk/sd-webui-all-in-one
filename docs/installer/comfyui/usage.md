@@ -28,6 +28,16 @@
     --auto-launch --preview-method auto --disable-cuda-malloc
     ```
 
+### 启用 Hotpatcher 补丁系统
+!!! info
+    该设置可通过 [管理 ComfyUI Installer 设置](config.md#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+
+运行 `launch.ps1` 时可通过 `-Hotpatcher` 启用 Hotpatcher，也可以在脚本同级目录创建 `enable_hotpatcher.txt` 后启用。启用后，`launch.ps1` 会向 ComfyUI 启动命令追加 `--hotpatcher` 和 `--hotpatcher-config <路径>`。
+
+默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。未指定 `-HotpatcherConfig` 且该文件不存在时，`launch.ps1` 会自动导出默认配置；如果指定了 `-HotpatcherConfig`，脚本会直接使用指定路径，不会自动创建配置文件。
+
+Hotpatcher runtime 通信端口可通过 `-HotpatcherPort <端口>` 或 `hotpatcher_port.txt` 设置，端口范围为 `1..65535`，且命令行参数优先于配置文件。
+
 ## 环境管理
 
 ### 进入 ComfyUI 所在的 Python 环境

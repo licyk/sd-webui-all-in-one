@@ -61,6 +61,17 @@
 
 新增参数或脚本时，要同步安装器帮助文本、`settings.ps1` 菜单、构建模式参数、用户文档和开发维护文档。
 
+## Hotpatcher 启动封装
+
+已有 `launch` 子命令的产品安装器需要在 `launch.ps1` 中封装 Hotpatcher 启动参数，并把补丁配置路径固定到管理脚本同级目录：
+
+- PowerShell 参数：`-Hotpatcher`、`-HotpatcherConfig`、`-HotpatcherPort`。
+- 配置文件：`enable_hotpatcher.txt`、`hotpatcher_port.txt`、`patcher_config.json`。
+- 默认配置路径：`Join-NormalizedPath $PSScriptRoot "patcher_config.json"`，不要依赖当前工作目录推断。
+- 参数优先级：命令行参数高于同级配置文件。
+
+维护这类参数时，需要同步 `launch.ps1` 的 Python CLI 参数拼接、`settings.ps1` 的本地配置菜单和 Hotpatcher GUI 入口、`Copy-InstallerConfig` 的配置复制、`BuildWithLaunch` 的构建模式转发和产品文档。没有 `launch` 子命令或不生成 `launch.ps1` 的安装器不应只在 PowerShell 层硬加 Hotpatcher 参数，应先补齐 Python CLI 的启动能力。
+
 ## 版本与更新
 
 每个安装器脚本内部维护自己的版本号和更新检查间隔，并记录所需的 `sd_webui_all_in_one` 内核最低版本。更新模式会下载或复制新版安装器，再刷新管理脚本。修改安装器行为时，应确认：
@@ -69,4 +80,3 @@
 - 更新模式是否能写出新管理脚本。
 - 构建模式是否能在 CI / 整合包构建中无交互运行。
 - 帮助信息中的文档链接是否仍指向 `https://licyk.github.io/sd-webui-all-in-one/installer/.../`。
-
