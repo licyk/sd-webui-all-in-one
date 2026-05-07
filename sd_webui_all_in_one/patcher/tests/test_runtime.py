@@ -163,6 +163,13 @@ def test_load_config_from_remote_and_auto(monkeypatch):
     assert load_config(source="auto") == {"mode": "auto-env"}
 
 
+def test_load_config_auto_does_not_use_host_without_runtime_flag(monkeypatch):
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST", "127.0.0.1")
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT", "8765")
+
+    assert load_config(source="auto") == {}
+
+
 def test_runtime_progress_browser_and_file_operation_events():
     responses = {
         "file.operation.begin": {"ok": True, "payload": {}},
@@ -727,6 +734,7 @@ def test_bootstrap_installs_log_capture_from_env(monkeypatch):
     from sd_webui_all_in_one_hotpatcher.bootstrap import configure_from_env
 
     with JsonlHost() as host:
+        monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME", "1")
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST", host.host)
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT", str(host.port))
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE", "env")

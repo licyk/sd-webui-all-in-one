@@ -74,11 +74,11 @@ SD WebUI Installer 默认启用了 PyPI镜像源加速下载 Python 软件包，
 !!! info
     该设置可通过 [管理 SD WebUI Installer 设置](#sd-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-如需在启动 Stable Diffusion WebUI 时启用 Hotpatcher 补丁系统，可以在 `launch.ps1` 同级目录创建 `enable_hotpatcher.txt`，或启动时添加 `-Hotpatcher` 参数。
+Hotpatcher 补丁系统默认启用。如需在启动 Stable Diffusion WebUI 时禁用 Hotpatcher，可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt`，或启动时添加 `-DisableHotpatcher` 参数。
 
-Hotpatcher 默认配置路径固定为 `launch.ps1` 同级目录的 `patcher_config.json`。启用 Hotpatcher 且未使用 `-HotpatcherConfig` 指定配置路径时，如果默认配置文件不存在，`launch.ps1` 会自动导出默认配置到该路径。使用 `-HotpatcherConfig` 指定配置文件时，脚本不会自动创建配置文件。
+Hotpatcher 默认配置路径固定为 `launch.ps1` 同级目录的 `patcher_config.json`。默认启用且未使用 `-HotpatcherConfig` 指定配置路径时，如果默认配置文件不存在，`launch.ps1` 会自动导出默认配置到该路径。使用 `-HotpatcherConfig` 指定配置文件时，脚本不会自动创建配置文件。
 
-如需指定 Hotpatcher runtime 通信端口，可以在 `hotpatcher_port.txt` 中写入端口号，或启动时使用 `-HotpatcherPort <端口>`。端口范围为 `1` 到 `65535`，命令行参数优先于 `hotpatcher_port.txt`。
+如需启用 Hotpatcher runtime host 连接，可以创建 `enable_hotpatcher_runtime.txt`，或启动时使用 `-EnableHotpatcherRuntime`。`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下生效，端口范围为 `1` 到 `65535`，命令行参数优先于 `hotpatcher_port.txt`。
 
 ### 设置 uv 包管理器
 !!! info
@@ -105,7 +105,7 @@ SD WebUI Installer 通过“内核路径前缀”找到要启动和管理的 Sta
 ### 管理 SD WebUI Installer 设置
 运行 `settings.ps1`，根据提示进行设置管理和调整。
 
-其中“补丁系统”菜单项会切换 `enable_hotpatcher.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
+其中“补丁系统”菜单项会切换 `disable_hotpatcher.txt`，“补丁系统 Runtime”菜单项会切换 `enable_hotpatcher_runtime.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
 
 ### SD WebUI Installer 对 Python / Git 环境的识别
 SD WebUI Installer 通常不会主动调用系统环境中的 Python / Git。运行安装器和管理脚本时，会先把安装器管理的 Python / Git 路径加入 `PATH`，避免被系统环境干扰。

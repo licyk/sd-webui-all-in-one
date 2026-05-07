@@ -97,18 +97,18 @@ InvokeAI Installer 通过“内核路径前缀”找到要启动和管理的 Inv
 
 ### 设置 Hotpatcher 补丁系统
 !!! info
-    该设置可通过 [管理 InvokeAI Installer 设置](#invokeai-installer_1) 中提到的 `settings.ps1` 进行修改，也可以通过 `enable_hotpatcher.txt`、`hotpatcher_port.txt` 或 `launch.ps1` 参数指定。
+    该设置可通过 [管理 InvokeAI Installer 设置](#invokeai-installer_1) 中提到的 `settings.ps1` 进行修改，也可以通过 `disable_hotpatcher.txt`、`enable_hotpatcher_runtime.txt`、`hotpatcher_port.txt` 或 `launch.ps1` 参数指定。
 
-在和 `launch.ps1` 同级的目录创建 `enable_hotpatcher.txt` 后，再次运行 `launch.ps1` 时将启用 Hotpatcher 补丁系统。也可以使用 `launch.ps1 -Hotpatcher` 临时启用。
+Hotpatcher 补丁系统默认启用。在和 `launch.ps1` 同级的目录创建 `disable_hotpatcher.txt` 后，再次运行 `launch.ps1` 时将禁用 Hotpatcher 补丁系统。也可以使用 `launch.ps1 -DisableHotpatcher` 临时禁用。
 
-默认配置文件固定为 `patcher_config.json`，路径位于 `launch.ps1` 同级目录。启用 Hotpatcher 且该文件不存在时，脚本会自动导出默认配置；如果使用 `-HotpatcherConfig <配置文件路径>` 指定自定义配置，脚本不会自动创建该配置文件。
+默认配置文件固定为 `patcher_config.json`，路径位于 `launch.ps1` 同级目录。Hotpatcher 默认启用且该文件不存在时，脚本会自动导出默认配置；如果使用 `-HotpatcherConfig <配置文件路径>` 指定自定义配置，脚本不会自动创建该配置文件。
 
-如需固定 Hotpatcher runtime 通信端口，可以在 `hotpatcher_port.txt` 中写入端口号。也可以使用 `-HotpatcherPort <端口>` 临时指定端口，命令行参数优先于 `hotpatcher_port.txt`。端口必须在 `1..65535` 范围内。
+Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `-EnableHotpatcherRuntime` 或创建 `enable_hotpatcher_runtime.txt`；`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下设置端口，端口必须在 `1..65535` 范围内。
 
 ### 管理 InvokeAI Installer 设置
 运行 `settings.ps1`，根据提示进行设置管理和调整。
 
-其中“补丁系统”菜单项会切换 `enable_hotpatcher.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
+其中“补丁系统”菜单项会切换 `disable_hotpatcher.txt`，“补丁系统 Runtime”菜单项会切换 `enable_hotpatcher_runtime.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
 
 ### InvokeAI Installer 对 Python / Git 环境的识别
 InvokeAI Installer 通常不会主动调用系统环境中的 Python / Git。运行安装器和管理脚本时，会先把安装器管理的 Python / Git 路径加入 `PATH`，避免被系统环境干扰。

@@ -57,8 +57,11 @@ def load_config(
     if config_file:
         return _load_file_config()
 
-    if client is None and not (os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST") and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT")):
-        return {}
+    if client is None:
+        if os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME") != "1":
+            return {}
+        if not (os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST") and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT")):
+            return {}
 
     try:
         return _load_remote_config(client)

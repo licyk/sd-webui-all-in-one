@@ -63,9 +63,10 @@ sd-webui-all-in-one comfyui launch [选项]
   - `--interactive`: 启用交互模式。
   - `--install-conflict`: 自动安装冲突组件依赖。
   - `--no-check-env`: 不检查运行环境完整性。
-  - `--hotpatcher`: 启用 Hotpatcher 补丁系统注入，默认禁用。
+  - `--no-hotpatcher`: 禁用 Hotpatcher 补丁系统注入，默认启用。
+  - `--hotpatcher-runtime`: 启用 Hotpatcher runtime host 连接，默认只做本地补丁注入。
   - `--hotpatcher-config <路径>`: Hotpatcher 配置文件路径。未指定时使用默认配置路径或内置默认配置。
-  - `--hotpatcher-port <端口>`: Hotpatcher runtime 通信端口。
+  - `--hotpatcher-port <端口>`: Hotpatcher runtime 通信端口，仅在 `--hotpatcher-runtime` 启用时生效。
 
 ### 版本管理 GUI
 ```bash

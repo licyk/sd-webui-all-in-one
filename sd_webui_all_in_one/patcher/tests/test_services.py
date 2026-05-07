@@ -111,6 +111,10 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert defaults["runtime"]["logs"]["hook_check_interval"] == 1
     assert defaults["runtime"]["logs"]["fd_capture"] == "0"
     assert {"zluda", "extension_index", "hf_endpoint_mirror", "uv_pip"} <= set(defaults["extensions"])
+    assert defaults["extensions"]["extension_index"]["webui"]["enabled"] is False
+    assert defaults["extensions"]["extension_index"]["webui"]["url"] == "auto"
+    assert defaults["extensions"]["extension_index"]["comfyui_manager"]["enabled"] is False
+    assert defaults["extensions"]["extension_index"]["comfyui_manager"]["url"] == "auto"
     assert defaults["extensions"]["uv_pip"]["enabled"] is False
 
 
@@ -161,7 +165,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
         calls.append(("zluda", config["compat"]))
 
     def fake_extension_index(config):
-        calls.append(("extension_index", config["comfyui_manager"]))
+        calls.append(("extension_index", config["comfyui_manager"]["enabled"]))
 
     def fake_hf_endpoint(config):
         calls.append(("hf_endpoint_mirror", config["enabled"]))
@@ -182,7 +186,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
             },
             "extensions": {
                 "zluda": {"enabled": True, "compat": True},
-                "extension_index": {"enabled": True, "comfyui_manager": True},
+                "extension_index": {"comfyui_manager": {"enabled": True}},
                 "hf_endpoint_mirror": {"enabled": True},
                 "uv_pip": {"enabled": True, "symlink": True},
             },
@@ -242,6 +246,15 @@ def test_catalog_reports_registered_patches():
     assert fd_capture_setting["type"] == "choice"
     assert fd_capture_setting["choices"] == ["0", "fallback", "force"]
     assert fd_capture_setting["default"] == "0"
+    extension_index_settings = features["extensions.extension_index"]["settings"]
+    assert extension_index_settings["webui.enabled"]["type"] == "bool"
+    assert extension_index_settings["webui.enabled"]["default"] is False
+    assert extension_index_settings["webui.url"]["type"] == "str"
+    assert extension_index_settings["webui.url"]["default"] == "auto"
+    assert extension_index_settings["comfyui_manager.enabled"]["type"] == "bool"
+    assert extension_index_settings["comfyui_manager.enabled"]["default"] is False
+    assert extension_index_settings["comfyui_manager.url"]["type"] == "str"
+    assert extension_index_settings["comfyui_manager.url"]["default"] == "auto"
 
 
 def test_handle_request_json_supports_services_requests(tmp_path):
@@ -286,6 +299,7 @@ def test_service_control_channel_handles_host_request():
 
 def test_bootstrap_applies_services_config_and_opens_control_channel(monkeypatch):
     with ServicesHost() as host:
+        monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME", "1")
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST", host.host)
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT", str(host.port))
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE", "env")

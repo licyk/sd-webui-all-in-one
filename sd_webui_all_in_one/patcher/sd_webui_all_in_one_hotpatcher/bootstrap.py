@@ -13,6 +13,7 @@ _runtime_config: dict[str, Any] = {}
 _log_capture: Any = None
 _service_control_channel: Any = None
 _service_apply_result: dict[str, Any] | None = None
+_BOOTSTRAPPED_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_BOOTSTRAPPED"
 
 
 @dataclass
@@ -59,6 +60,8 @@ def configure_from_env() -> BootstrapState:
     """
 
     global _runtime_client, _runtime_config, _log_capture, _service_control_channel, _service_apply_result
+
+    os.environ[_BOOTSTRAPPED_ENV] = "1"
 
     from .stack_shadow import configure_stack_shadower_from_env, is_stack_shadower_installed
 
@@ -189,9 +192,7 @@ def get_service_apply_result() -> dict[str, Any] | None:
 
 
 def _runtime_enabled_from_env() -> bool:
-    if os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME") == "1":
-        return True
-    return bool(os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST") and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"))
+    return os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME") == "1"
 
 
 def _services_apply_on_bootstrap(config: dict[str, Any]) -> bool:

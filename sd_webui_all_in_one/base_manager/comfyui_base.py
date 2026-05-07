@@ -495,6 +495,7 @@ def launch_comfyui(
     enable_hotpatcher: bool | None = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int | None = None,
+    enable_hotpatcher_runtime: bool | None = False,
 ) -> None:
     """启动 ComfyUI
 
@@ -521,6 +522,8 @@ def launch_comfyui(
             补丁系统配置文件路径
         hotpatcher_port (int | None):
             补丁系统 runtime 通信端口
+        enable_hotpatcher_runtime (bool | None):
+            是否启用补丁系统 runtime host 连接
     """
     logger.info("准备 ComfyUI 启动环境")
     # 准备 Git 配置
@@ -554,6 +557,7 @@ def launch_comfyui(
         enabled=enable_hotpatcher,
         config_path=hotpatcher_config_path,
         port=hotpatcher_port,
+        enable_runtime=enable_hotpatcher_runtime,
     )
 
     logger.info("启动 ComfyUI 中")

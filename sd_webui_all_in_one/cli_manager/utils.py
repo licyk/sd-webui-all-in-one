@@ -248,6 +248,14 @@ def launch_hotpatcher_gui_cli(
     launch_hotpatcher_manager_gui(config_path=config, host=host, port=port, token=token)
 
 
+def get_hotpatcher_pythonpath_cli() -> None:
+    """输出注入 Hotpatcher 路径后的 PYTHONPATH"""
+
+    from sd_webui_all_in_one.base_manager.hotpatcher_manager import ensure_hotpatcher_pythonpath_first
+
+    print(ensure_hotpatcher_pythonpath_first(os.environ.copy()).get("PYTHONPATH", ""))
+
+
 def register_manager(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -318,6 +326,9 @@ def register_manager(
 
     patcher_catalog_p = patcher_sub.add_parser("catalog", help="显示 Hotpatcher 功能目录")
     patcher_catalog_p.set_defaults(func=lambda args: show_hotpatcher_catalog_cli())
+
+    patcher_pythonpath_p = patcher_sub.add_parser("get-pythonpath", help="输出注入 Hotpatcher 路径后的 PYTHONPATH")
+    patcher_pythonpath_p.set_defaults(func=lambda args: get_hotpatcher_pythonpath_cli())
 
     patcher_gui_p = patcher_sub.add_parser("gui", help="启动 Hotpatcher 配置管理 GUI")
     patcher_gui_p.add_argument("--config", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="配置文件路径")

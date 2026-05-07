@@ -107,8 +107,8 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 "@)][string]$LaunchArg,
 
     [Parameter(HelpMessage=@"
-(仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 启用 Qwen TTS WebUI Hotpatcher 补丁系统
-"@)][switch]$Hotpatcher,
+(仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 禁用 Qwen TTS WebUI Hotpatcher 补丁系统
+"@)][switch]$DisableHotpatcher,
 
     [Parameter(HelpMessage=@"
 (仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 指定 Qwen TTS WebUI Hotpatcher 补丁系统配置文件路径
@@ -117,6 +117,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
     [Parameter(HelpMessage=@"
 (仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 设置 Qwen TTS WebUI Hotpatcher runtime 通信端口, 有效范围为 1 ~ 65535
 "@)][int]$HotpatcherPort,
+
+    [Parameter(HelpMessage=@"
+启用 Hotpatcher runtime host 连接
+"@)][switch]$EnableHotpatcherRuntime,
 
     [Parameter(HelpMessage=@"
 (仅在 Qwen TTS WebUI Installer 构建模式下生效, 并且只作用于 Qwen TTS WebUI Installer 管理脚本) 创建 Qwen TTS WebUI 启动快捷方式
@@ -177,10 +181,10 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = $target_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 219
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 220
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.0"
+$script:CORE_MINIMUM_VER = "2.2.1"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1906,8 +1910,8 @@ param (
 `"@)][string]`$LaunchArg,
 
     [Parameter(HelpMessage=@`"
-启用 Qwen TTS WebUI Hotpatcher 补丁系统
-`"@)][switch]`$Hotpatcher,
+禁用 Qwen TTS WebUI Hotpatcher 补丁系统
+`"@)][switch]`$DisableHotpatcher,
 
     [Parameter(HelpMessage=@`"
 指定 Qwen TTS WebUI Hotpatcher 补丁系统配置文件路径
@@ -1916,6 +1920,10 @@ param (
     [Parameter(HelpMessage=@`"
 设置 Qwen TTS WebUI Hotpatcher runtime 通信端口, 有效范围为 1 ~ 65535
 `"@)][int]`$HotpatcherPort,
+
+    [Parameter(HelpMessage=@`"
+启用 Hotpatcher runtime host 连接
+`"@)][switch]`$EnableHotpatcherRuntime,
 
     [Parameter(HelpMessage=@`"
 创建 Qwen TTS WebUI 启动快捷方式
@@ -1947,10 +1955,11 @@ try {
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         DisableGithubMirror = `$script:DisableGithubMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
-        Hotpatcher = `$script:Hotpatcher
+        DisableHotpatcher = `$script:DisableHotpatcher
         HotpatcherConfig = `$script:HotpatcherConfig
         HotpatcherPort = `$script:HotpatcherPort
         HotpatcherPortSet = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
+        EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
@@ -1970,10 +1979,11 @@ try {
         `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
         `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
-        `$script:Hotpatcher = `$cfg.Hotpatcher
+        `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
         `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
         `$script:HotpatcherPort = `$cfg.HotpatcherPort
         `$script:HotpatcherPortSet = `$cfg.HotpatcherPortSet
+        `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
@@ -2014,8 +2024,9 @@ function Get-WebUILaunchArgs {
 function Get-HotpatcherLaunchArgs {
     param ([System.Collections.ArrayList]`$ArrayList)
 
-    `$hotpatcher_enabled = (`$script:Hotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))
-    if (!(`$hotpatcher_enabled)) {
+    if ((`$script:DisableHotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`"))) {
+        `$ArrayList.Add(`"--no-hotpatcher`") | Out-Null
+        Write-Log `"检测到 disable_hotpatcher.txt 配置文件 / -DisableHotpatcher 命令行参数, 已禁用 Hotpatcher 补丁系统`"
         return
     }
 
@@ -2035,9 +2046,16 @@ function Get-HotpatcherLaunchArgs {
         `$hotpatcher_config_path = `$script:HotpatcherConfig
     }
 
-    `$ArrayList.Add(`"--hotpatcher`") | Out-Null
     `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
     `$ArrayList.Add(`$hotpatcher_config_path) | Out-Null
+
+    `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
+    if (`$hotpatcher_runtime_enabled) {
+        `$ArrayList.Add(`"--hotpatcher-runtime`") | Out-Null
+        Write-Log `"检测到 enable_hotpatcher_runtime.txt 配置文件 / -EnableHotpatcherRuntime 命令行参数, 已启用 Hotpatcher runtime host 连接`"
+    } elseif (`$script:HotpatcherPortSet -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"))) {
+        Write-Log `"检测到 Hotpatcher 端口配置, 但未启用 Hotpatcher runtime, 已忽略该端口配置`" -Level WARNING
+    }
 
     `$hotpatcher_port = `$null
     if (`$script:HotpatcherPortSet) {
@@ -2052,7 +2070,7 @@ function Get-HotpatcherLaunchArgs {
         }
     }
 
-    if (`$null -ne `$hotpatcher_port) {
+    if (`$hotpatcher_runtime_enabled -and (`$null -ne `$hotpatcher_port)) {
         if ((`$hotpatcher_port -ge 1) -and (`$hotpatcher_port -le 65535)) {
             `$ArrayList.Add(`"--hotpatcher-port`") | Out-Null
             `$ArrayList.Add(`$hotpatcher_port) | Out-Null
@@ -2061,7 +2079,7 @@ function Get-HotpatcherLaunchArgs {
         }
     }
 
-    Write-Log `"Hotpatcher 补丁系统已启用, 配置文件: `$hotpatcher_config_path`"
+    Write-Log `"Hotpatcher 补丁系统默认启用, 配置文件: `$hotpatcher_config_path`"
 }
 
 
@@ -3061,7 +3079,8 @@ function Main {
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=6;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=7;  n=`"补丁系统`"; v=`$(Get-ToggleStatus `"enable_hotpatcher.txt`" `"启用`" `"禁用`") },
+            @{ id=7;  n=`"补丁系统`"; v=`$(Get-ToggleStatus `"disable_hotpatcher.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=90; n=`"补丁系统 Runtime`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
             @{ id=8;  n=`"补丁端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"自动`") },
             @{ id=9;  n=`"快捷方式`"; v=`$(Get-ToggleStatus `"enable_shortcut.txt`" `"启用`" `"禁用`") },
             @{ id=10; n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
@@ -3088,7 +3107,8 @@ function Main {
                 if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
                 else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
             }
-            `"7`"  { Set-ToggleSetting `"enable_hotpatcher.txt`" `"补丁系统`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))) }
+            `"7`"  { Set-ToggleSetting `"disable_hotpatcher.txt`" `"补丁系统`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`")) }
+            `"90`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"补丁系统 Runtime`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
             `"8`"  { Update-Hotpatcher-Port }
             `"9`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
             `"10`" { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
@@ -3554,10 +3574,17 @@ function Copy-InstallerConfig {
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -> $(Join-NormalizedPath $script:InstallPath "core_prefix.txt")"
     }
 
-    if ((!($script:Hotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt"))) {
-        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher.txt")"
+    if ((!($script:DisableHotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_hotpatcher.txt")"
     }
+
+    if ((!($script:EnableHotpatcherRuntime)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher_runtime.txt")"
+    }
+
+
 
     if ((!($script:HotpatcherPortSet)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
@@ -3656,7 +3683,8 @@ function Use-BuildMode {
         if ($script:UseCustomGithubMirror) { $launch_args.Add("-UseCustomGithubMirror", $script:UseCustomGithubMirror) }
         if ($script:DisableUV) { $launch_args.Add("-DisableUV", $true) }
         if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
-        if ($script:Hotpatcher) { $launch_args.Add("-Hotpatcher", $true) }
+        if ($script:DisableHotpatcher) { $launch_args.Add("-DisableHotpatcher", $true) }
+        if ($script:EnableHotpatcherRuntime) { $launch_args.Add("-EnableHotpatcherRuntime", $true) }
         if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
         if ($script:HotpatcherPortSet) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }

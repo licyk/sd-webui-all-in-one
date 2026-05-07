@@ -204,6 +204,7 @@ def launch(
     enable_hotpatcher: bool | None = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int | None = None,
+    enable_hotpatcher_runtime: bool | None = False,
 ) -> None:
     """启动 SD Trainer
 
@@ -234,6 +235,8 @@ def launch(
             补丁系统配置文件路径
         hotpatcher_port (int | None):
             补丁系统 runtime 通信端口
+        enable_hotpatcher_runtime (bool | None):
+            是否启用补丁系统 runtime host 连接
     """
     if check_launch_env:
         try:
@@ -269,6 +272,7 @@ def launch(
             enable_hotpatcher=enable_hotpatcher,
             hotpatcher_config_path=hotpatcher_config_path,
             hotpatcher_port=hotpatcher_port,
+            enable_hotpatcher_runtime=enable_hotpatcher_runtime,
         )
     except WebUiRuntimeError as e:
         if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
@@ -518,7 +522,8 @@ def register_sd_trainer(
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
-    launch_p.add_argument("--hotpatcher", action="store_true", dest="enable_hotpatcher", default=False, help="启用补丁系统注入")
+    launch_p.add_argument("--no-hotpatcher", action="store_false", dest="enable_hotpatcher", default=True, help="禁用补丁系统注入")
+    launch_p.add_argument("--hotpatcher-runtime", action="store_true", dest="enable_hotpatcher_runtime", default=False, help="启用补丁系统 runtime host 连接")
     launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")
     launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
     launch_p.set_defaults(
@@ -534,6 +539,7 @@ def register_sd_trainer(
             use_uv=args.use_uv,
             check_launch_env=args.check_env,
             enable_hotpatcher=args.enable_hotpatcher,
+            enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
             hotpatcher_config_path=args.hotpatcher_config_path,
             hotpatcher_port=args.hotpatcher_port,
         )

@@ -52,9 +52,10 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 - `-DisableHuggingFaceMirror`：(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。
 - `-UseCustomHuggingFaceMirror` `<HuggingFace 镜像源地址>`：(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`
 - `-LaunchArg` `<Qwen TTS WebUI 启动参数>`：(仅在构建模式生效且只作用于管理脚本) 设置 Qwen TTS WebUI 自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`
-- `-Hotpatcher`：(仅在构建模式生效且只作用于管理脚本) 启用 Qwen TTS WebUI Hotpatcher 补丁系统。
+- `-DisableHotpatcher`：(仅在构建模式生效且只作用于管理脚本) 禁用 Qwen TTS WebUI Hotpatcher 补丁系统。
 - `-HotpatcherConfig` `<配置文件路径>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher 配置文件路径。未指定时，`launch.ps1` 使用同级目录下的 `patcher_config.json`，且该文件缺失时会自动导出默认配置。
-- `-HotpatcherPort` `<端口>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher runtime 通信端口。有效范围为 `1` 到 `65535`，优先级高于 `hotpatcher_port.txt`。
+- `-EnableHotpatcherRuntime`：启用 Hotpatcher runtime host 连接。
+- `-HotpatcherPort` `<端口>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher runtime 模式通信端口。有效范围为 `1` 到 `65535`，优先级高于 `hotpatcher_port.txt`。
 - `-EnableShortcut`：(仅在构建模式生效且只作用于管理脚本) 创建 Qwen TTS WebUI 启动快捷方式。
 - `-DisableCUDAMalloc`：(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。
 - `-DisableEnvCheck`：(仅在构建模式生效且只作用于管理脚本) 禁用检查 Qwen TTS WebUI 运行环境问题。

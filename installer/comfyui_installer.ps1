@@ -146,8 +146,8 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 "@)][switch]$DisableEnvCheck,
 
     [Parameter(HelpMessage=@"
-(仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 启用 Hotpatcher 补丁系统
-"@)][switch]$Hotpatcher,
+(仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 禁用 Hotpatcher 补丁系统
+"@)][switch]$DisableHotpatcher,
 
     [Parameter(HelpMessage=@"
 (仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 指定 Hotpatcher 配置文件路径
@@ -155,7 +155,11 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 
     [Parameter(HelpMessage=@"
 (仅在 ComfyUI Installer 构建模式下生效, 且只作用于 ComfyUI Installer 管理脚本) 指定 Hotpatcher runtime 通信端口, 端口范围为 1..65535
-"@)][int]$HotpatcherPort
+"@)][int]$HotpatcherPort,
+
+    [Parameter(HelpMessage=@"
+启用 Hotpatcher runtime host 连接
+"@)][switch]$EnableHotpatcherRuntime
 )
 
 function Join-NormalizedPath {
@@ -164,13 +168,13 @@ function Join-NormalizedPath {
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($joined).TrimEnd('\', '/')
 }
 
-$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
 
 if (-not $script:InstallPath) {
     $script:InstallPath = Join-NormalizedPath $PSScriptRoot "ComfyUI"
 }
 
 $script:InstallPath = Join-NormalizedPath $script:InstallPath
+$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
 
 & {
     $target_prefix = $null
@@ -205,10 +209,10 @@ $script:InstallPath = Join-NormalizedPath $script:InstallPath
     $env:CORE_PREFIX = $target_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 414
+$script:COMFYUI_INSTALLER_VERSION = 415
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.0"
+$script:CORE_MINIMUM_VER = "2.2.1"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1964,8 +1968,8 @@ param (
 `"@)][switch]`$DisableEnvCheck,
 
     [Parameter(HelpMessage=@`"
-启用 Hotpatcher 补丁系统
-`"@)][switch]`$Hotpatcher,
+禁用 Hotpatcher 补丁系统
+`"@)][switch]`$DisableHotpatcher,
 
     [Parameter(HelpMessage=@`"
 指定 Hotpatcher 配置文件路径
@@ -1974,6 +1978,10 @@ param (
     [Parameter(HelpMessage=@`"
 指定 Hotpatcher runtime 通信端口, 端口范围为 1..65535
 `"@)][int]`$HotpatcherPort,
+
+    [Parameter(HelpMessage=@`"
+启用 Hotpatcher runtime host 连接
+`"@)][switch]`$EnableHotpatcherRuntime,
 
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
@@ -1996,10 +2004,11 @@ try {
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
-        Hotpatcher = `$script:Hotpatcher
+        DisableHotpatcher = `$script:DisableHotpatcher
         HotpatcherConfig = `$script:HotpatcherConfig
         HotpatcherPort = `$script:HotpatcherPort
         HotpatcherPortSpecified = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
+        EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -2019,10 +2028,11 @@ try {
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
-        `$script:Hotpatcher = `$cfg.Hotpatcher
+        `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
         `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
         `$script:HotpatcherPort = `$cfg.HotpatcherPort
         `$script:HotpatcherPortSpecified = `$cfg.HotpatcherPortSpecified
+        `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -2130,8 +2140,9 @@ function Test-WebUIEnv {
 # 设置 Hotpatcher 补丁系统
 function Set-Hotpatcher {
     param ([System.Collections.ArrayList]`$ArrayList)
-    `$enabled = (`$script:Hotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))
-    if (!(`$enabled)) {
+    if ((`$script:DisableHotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`"))) {
+        `$ArrayList.Add(`"--no-hotpatcher`") | Out-Null
+        Write-Log `"检测到 disable_hotpatcher.txt 配置文件 / -DisableHotpatcher 命令行参数, 已禁用 Hotpatcher 补丁系统`"
         return
     }
 
@@ -2156,9 +2167,16 @@ function Set-Hotpatcher {
         Write-Log `"使用默认 Hotpatcher 配置文件: `$config_path`"
     }
 
-    `$ArrayList.Add(`"--hotpatcher`") | Out-Null
     `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
     `$ArrayList.Add(`$config_path) | Out-Null
+
+    `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
+    if (`$hotpatcher_runtime_enabled) {
+        `$ArrayList.Add(`"--hotpatcher-runtime`") | Out-Null
+        Write-Log `"检测到 enable_hotpatcher_runtime.txt 配置文件 / -EnableHotpatcherRuntime 命令行参数, 已启用 Hotpatcher runtime host 连接`"
+    } elseif (`$script:HotpatcherPortSpecified -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"))) {
+        Write-Log `"检测到 Hotpatcher 端口配置, 但未启用 Hotpatcher runtime, 已忽略该端口配置`" -Level WARNING
+    }
 
     `$hotpatcher_port = `$null
     if (`$script:HotpatcherPortSpecified) {
@@ -2179,12 +2197,12 @@ function Set-Hotpatcher {
         }
     }
 
-    if (`$null -ne `$hotpatcher_port) {
+    if (`$hotpatcher_runtime_enabled -and (`$null -ne `$hotpatcher_port)) {
         `$ArrayList.Add(`"--hotpatcher-port`") | Out-Null
         `$ArrayList.Add(`$hotpatcher_port) | Out-Null
     }
 
-    Write-Log `"Hotpatcher 补丁系统已启用`"
+    Write-Log `"Hotpatcher 补丁系统默认启用`"
 }
 
 
@@ -3348,7 +3366,8 @@ function Main {
             @{ id=10; n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=11; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=12; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
-            @{ id=13; n=`"补丁系统`"; v=`$(Get-ToggleStatus `"enable_hotpatcher.txt`" `"启用`" `"禁用`") },
+            @{ id=13; n=`"补丁系统`"; v=`$(Get-ToggleStatus `"disable_hotpatcher.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=90; n=`"补丁系统 Runtime`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
             @{ id=14; n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
             @{ id=15; n=`"补丁系统 GUI`"; v=`"打开`" }
         )
@@ -3376,7 +3395,8 @@ function Main {
             `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
             `"11`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"12`" { Update-Core-Prefix }
-            `"13`" { Set-ToggleSetting `"enable_hotpatcher.txt`" `"补丁系统`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher.txt`"))) }
+            `"13`" { Set-ToggleSetting `"disable_hotpatcher.txt`" `"补丁系统`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`")) }
+            `"90`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"补丁系统 Runtime`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
             `"14`" { Update-Hotpatcher-Port }
             `"15`" { Open-Hotpatcher-Gui }
             `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
@@ -4016,10 +4036,17 @@ function Copy-InstallerConfig {
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_model_mirror.txt")"
     }
 
-    if ((!($script:Hotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt"))) {
-        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -Destination $script:InstallPath -Force
-        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher.txt")"
+    if ((!($script:DisableHotpatcher)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_hotpatcher.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_hotpatcher.txt")"
     }
+
+    if ((!($script:EnableHotpatcherRuntime)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "enable_hotpatcher_runtime.txt") -> $(Join-NormalizedPath $script:InstallPath "enable_hotpatcher_runtime.txt")"
+    }
+
+
 
     if ((!($script:HotpatcherPortSpecified)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
@@ -4332,7 +4359,8 @@ function Use-BuildMode {
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
-        if ($script:Hotpatcher) { $launch_args.Add("-Hotpatcher", $true) }
+        if ($script:DisableHotpatcher) { $launch_args.Add("-DisableHotpatcher", $true) }
+        if ($script:EnableHotpatcherRuntime) { $launch_args.Add("-EnableHotpatcherRuntime", $true) }
         if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
         if ($script:HotpatcherPortSpecified) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }

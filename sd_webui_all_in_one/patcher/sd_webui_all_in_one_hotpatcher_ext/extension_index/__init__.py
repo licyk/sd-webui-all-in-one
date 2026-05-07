@@ -9,23 +9,76 @@ from typing import Any
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
 
 __all__ = [
+    "A1111_EXTENSION_INDEX_AUTO",
+    "A1111_EXTENSION_INDEX_RAW_FILE_PATH",
     "A1111_EXTENSION_INDEX_URLS",
-    "COMFYUI_MANAGER_MIRROR_PREFIX",
+    "COMFYUI_MANAGER_RAW_FILE_PATH",
     "COMFYUI_MANAGER_RAW_PREFIX",
     "apply_from_config",
     "patch_extension_index_a1111",
     "patch_extension_index_comfyui_manager",
+    "resolve_a1111_extension_index_url",
+    "resolve_comfyui_manager_channel_prefix",
 ]
 
+A1111_EXTENSION_INDEX_AUTO = "auto"
+A1111_EXTENSION_INDEX_RAW_FILE_PATH = (
+    "AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
+)
 A1111_EXTENSION_INDEX_URLS = (
     "https://raw.githubusercontent.com/wiki/AUTOMATIC1111/stable-diffusion-webui/Extensions-index.md",
     "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json",
     # "https://vladmandic.github.io/sd-data/pages/extensions.json",
 )
 
-COMFYUI_MANAGER_RAW_PREFIX = "https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main/"
-COMFYUI_MANAGER_MIRROR_PREFIX = "https://ghfast.top/https://raw.githubusercontent.com//ltdrdata/ComfyUI-Manager/main/"
-COMFYUI_MANAGER_MODULES = ("ComfyUI-Manager", "ComfyUI-Manager-main")
+COMFYUI_MANAGER_RAW_FILE_PATH = "ltdrdata/ComfyUI-Manager/main"
+COMFYUI_MANAGER_RAW_PREFIX = f"https://raw.githubusercontent.com/{COMFYUI_MANAGER_RAW_FILE_PATH}"
+COMFYUI_MANAGER_CORE_MODULE = "manager_core"
+
+
+def resolve_a1111_extension_index_url(value: str) -> str | None:
+    """
+    解析 A1111 / Forge / Vladmandic 扩展索引目标 URL
+
+    Args:
+        value (str):
+            普通目标 URL, 或 ``auto``。
+
+    Returns:
+        str | None:
+            需要写入的目标 URL。为 None 时表示保持原始 URL。
+    """
+
+    value = value.strip()
+    if not value:
+        return None
+    if value.lower() != A1111_EXTENSION_INDEX_AUTO:
+        return value
+
+    return _resolve_github_raw_auto_mirror(A1111_EXTENSION_INDEX_RAW_FILE_PATH)
+
+
+def resolve_comfyui_manager_channel_prefix(value: str | None = None) -> str | None:
+    """
+    解析 ComfyUI-Manager channel 目标前缀
+
+    Args:
+        value (str | None):
+            普通目标 URL, ``auto`` 或 None。None 等价于 ``auto``。
+
+    Returns:
+        str | None:
+            需要写入的目标 channel 前缀。为 None 时表示保持原始 URL。
+    """
+
+    value = A1111_EXTENSION_INDEX_AUTO if value is None else value.strip()
+    if not value:
+        return None
+    if value.lower() != A1111_EXTENSION_INDEX_AUTO:
+        return _normalize_comfyui_manager_channel_prefix(value)
+
+    resolved = _resolve_github_raw_auto_mirror(COMFYUI_MANAGER_RAW_FILE_PATH)
+    return _normalize_comfyui_manager_channel_prefix(resolved) if resolved is not None else None
 
 
 def patch_extension_index_a1111(destination: str) -> None:
@@ -49,7 +102,7 @@ def patch_extension_index_a1111(destination: str) -> None:
 
 
 def patch_extension_index_comfyui_manager(
-    destination_prefix: str = COMFYUI_MANAGER_MIRROR_PREFIX,
+    destination_prefix: str | None = None,
     *,
     source_prefix: str = COMFYUI_MANAGER_RAW_PREFIX,
 ) -> None:
@@ -58,37 +111,43 @@ def patch_extension_index_comfyui_manager(
 
     Args:
         destination_prefix (str):
-            目标镜像前缀
+            目标镜像前缀。为 None 或 ``auto`` 时自动判断是否需要 GitHub raw 镜像。
         source_prefix (str):
             需要替换的原始前缀
     """
 
+    source_prefix = _normalize_comfyui_manager_channel_prefix(source_prefix)
+    destination_prefix = resolve_comfyui_manager_channel_prefix(destination_prefix)
+    if destination_prefix is None:
+        return
+
     install_import_hook()
 
-    def patch_default_urls(code_object) -> None:
-        for cache_update in code_object.co_consts.operate(
-            lambda const: isinstance(const, CodeType) and const.co_name == "default_cache_update",
-            only_first=True,
-        ):
-            for get_cache in cache_update.co_consts.operate(
-                lambda const: isinstance(const, CodeType) and const.co_name == "get_cache",
-                only_first=True,
-            ):
-                _replace_prefixed_string_constants_in_code(get_cache, source_prefix, destination_prefix)
+    def patch_manager_core_module(module: ModuleType) -> None:
+        module.DEFAULT_CHANNEL = destination_prefix
+        _add_valid_channel(module, destination_prefix)
 
-    def patch_get_data(func: Any, module: ModuleType):
+    def patch_get_channel_dict(func: Any, module: ModuleType):
         @functools.wraps(func)
-        def wrapper(uri, *args, **kwargs):
-            if isinstance(uri, str) and uri.startswith(source_prefix):
-                uri = uri.replace(source_prefix, destination_prefix, 1)
-            return func(uri, *args, **kwargs)
+        def wrapper(*args, **kwargs):
+            channel_dict = func(*args, **kwargs)
+            if isinstance(channel_dict, dict):
+                for name, url in list(channel_dict.items()):
+                    mirrored_url = _replace_comfyui_manager_channel_url(
+                        url,
+                        source_prefix=source_prefix,
+                        destination_prefix=destination_prefix,
+                    )
+                    if mirrored_url != url:
+                        channel_dict[name] = mirrored_url
+                        _add_valid_channel(module, mirrored_url)
+            return channel_dict
 
         return wrapper
 
-    for module_name in COMFYUI_MANAGER_MODULES:
-        with monkey_zoo(module_name) as monkey:
-            monkey.patch_function("get_data", patch_get_data)
-            monkey.patch_bytecode(patch_default_urls)
+    with monkey_zoo(COMFYUI_MANAGER_CORE_MODULE) as monkey:
+        monkey.patch_function("get_channel_dict", patch_get_channel_dict)
+        monkey.patch_module(patch_manager_core_module)
 
 
 def apply_from_config(config: dict[str, Any] | None) -> None:
@@ -97,17 +156,20 @@ def apply_from_config(config: dict[str, Any] | None) -> None:
 
     支持以下配置形式:
 
-    ``{"extension_index_url": "https://mirror/index.json"}``
+    ``{"webui": {"enabled": true, "url": "https://mirror/index.json"}}``
         启用 A1111 扩展索引替换。
 
-    ``{"a1111_url": "https://mirror/index.json"}``
-        ``extension_index_url`` 的别名。
+    ``{"webui": {"enabled": true, "url": "auto"}}``
+        自动检测网络, 需要时使用可用 GitHub raw 镜像。
 
-    ``{"comfyui_manager": true}``
-        启用 ComfyUI-Manager 默认镜像。
+    ``{"comfyui_manager": {"enabled": true, "url": "auto"}}``
+        自动检测网络, 需要时使用可用 GitHub raw 镜像。
 
-    ``{"comfyui_manager": {"destination_prefix": "...", "source_prefix": "..."}}``
-        使用自定义前缀启用 ComfyUI-Manager 替换。
+    ``{"comfyui_manager": {"enabled": true, "url": "https://mirror/channel"}}``
+        使用自定义 ComfyUI-Manager channel 前缀。
+
+    ``{"comfyui_manager": {"enabled": true, "url": "...", "source_prefix": "..."}}``
+        使用自定义前缀启用 ComfyUI-Manager 替换。未设置 ``url`` 时按 ``auto`` 处理。
 
     Args:
         config (dict[str, Any] | None):
@@ -117,23 +179,67 @@ def apply_from_config(config: dict[str, Any] | None) -> None:
     if not config:
         return
 
-    a1111_url = config.get("extension_index_url") or config.get("a1111_url")
-    if a1111_url:
-        patch_extension_index_a1111(str(a1111_url))
+    webui_config = config.get("webui")
+    if isinstance(webui_config, dict) and webui_config.get("enabled"):
+        resolved_extension_index_url = resolve_a1111_extension_index_url(
+            str(webui_config.get("url") or A1111_EXTENSION_INDEX_AUTO)
+        )
+        if resolved_extension_index_url:
+            patch_extension_index_a1111(resolved_extension_index_url)
 
     comfyui_config = config.get("comfyui_manager")
-    if comfyui_config:
-        if isinstance(comfyui_config, dict):
-            patch_extension_index_comfyui_manager(
-                str(comfyui_config.get("destination_prefix", COMFYUI_MANAGER_MIRROR_PREFIX)),
-                source_prefix=str(comfyui_config.get("source_prefix", COMFYUI_MANAGER_RAW_PREFIX)),
-            )
-        else:
-            patch_extension_index_comfyui_manager()
+    if isinstance(comfyui_config, dict) and comfyui_config.get("enabled"):
+        patch_extension_index_comfyui_manager(
+            str(comfyui_config.get("url") or A1111_EXTENSION_INDEX_AUTO),
+            source_prefix=str(comfyui_config.get("source_prefix", COMFYUI_MANAGER_RAW_PREFIX)),
+        )
 
 
 def _replace_string_constants_in_code(code_object: Any, replacements: dict[str, str]) -> None:
     _replace_string_constants_in_tuple(code_object.co_consts, replacements)
+
+
+def _github_direct_accessible() -> bool:
+    from sd_webui_all_in_one.utils import network_gfw_test
+
+    return network_gfw_test()
+
+
+def _apply_github_raw_file_mirror(raw_file_path: str) -> str | None:
+    from sd_webui_all_in_one.base_manager.base import apply_github_raw_file_mirror
+
+    return apply_github_raw_file_mirror(raw_file_path=raw_file_path)
+
+
+def _resolve_github_raw_auto_mirror(raw_file_path: str) -> str | None:
+    if _github_direct_accessible():
+        return None
+    return _apply_github_raw_file_mirror(raw_file_path)
+
+
+def _normalize_comfyui_manager_channel_prefix(prefix: str) -> str:
+    return prefix.rstrip("/")
+
+
+def _replace_comfyui_manager_channel_url(
+    url: Any,
+    *,
+    source_prefix: str,
+    destination_prefix: str,
+) -> Any:
+    if not isinstance(url, str):
+        return url
+    if url == source_prefix:
+        return destination_prefix
+    if url.startswith(source_prefix + "/"):
+        return destination_prefix + url[len(source_prefix) :]
+    return url
+
+
+def _add_valid_channel(module: ModuleType, url: str) -> None:
+    valid_channels = getattr(module, "valid_channels", None)
+    if hasattr(valid_channels, "add"):
+        valid_channels.add(url)
 
 
 def _replace_string_constants_in_tuple(constants: Any, replacements: dict[str, str]) -> None:
@@ -145,26 +251,3 @@ def _replace_string_constants_in_tuple(constants: Any, replacements: dict[str, s
         _replace_string_constants_in_code(nested_code, replacements)
     for nested_tuple in constants.operate(lambda const: isinstance(const, tuple)):
         _replace_string_constants_in_tuple(nested_tuple, replacements)
-
-
-def _replace_prefixed_string_constants_in_code(
-    code_object: Any,
-    source_prefix: str,
-    destination_prefix: str,
-) -> None:
-    _replace_prefixed_string_constants_in_tuple(code_object.co_consts, source_prefix, destination_prefix)
-
-
-def _replace_prefixed_string_constants_in_tuple(
-    constants: Any,
-    source_prefix: str,
-    destination_prefix: str,
-) -> None:
-    constants.replace(
-        lambda const: isinstance(const, str) and const.startswith(source_prefix),
-        lambda const: const.replace(source_prefix, destination_prefix, 1),
-    )
-    for nested_code in constants.operate(lambda const: isinstance(const, CodeType)):
-        _replace_prefixed_string_constants_in_code(nested_code, source_prefix, destination_prefix)
-    for nested_tuple in constants.operate(lambda const: isinstance(const, tuple)):
-        _replace_prefixed_string_constants_in_tuple(nested_tuple, source_prefix, destination_prefix)

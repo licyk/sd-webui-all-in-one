@@ -54,6 +54,13 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 - `-LaunchArg` `<SD Trainer Script 启动参数>`：(仅在构建模式生效且只作用于管理脚本) 设置自定义启动参数。如：`-LaunchArg "--fast --auto-launch"`
 - `-DisableCUDAMalloc`：(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。
 - `-DisableEnvCheck`：(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。
+- `-DisableHotpatcher`：(仅在构建模式生效且只作用于管理脚本) 禁用 Hotpatcher 补丁系统。
+- `-HotpatcherConfig` `<配置文件路径>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher 配置文件路径。指定后不会自动创建默认配置。
+- `-EnableHotpatcherRuntime`：启用 Hotpatcher runtime host 连接。
+- `-HotpatcherPort` `<端口>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher runtime 模式通信端口，端口范围为 `1..65535`。
+
+!!! note
+    SD Trainer Script 不通过 Python `launch` 子命令启动训练器。`-BuildWithLaunch` 会把 Hotpatcher 参数转发给 `init.ps1`，由 `init.ps1` 在环境检查结束后设置 `PYTHONPATH` 和 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_*` 环境变量，后续训练命令会继承这些环境变量。
 
 例如在 `D:/Download` 这个路径安装 [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)，则在 SD Trainer Script Installer 所在路径打开 PowerShell，使用参数运行 SD Trainer Script Installer。
 

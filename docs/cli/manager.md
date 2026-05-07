@@ -71,6 +71,13 @@ sd-webui-all-in-one self-manager patcher apply-config --config <路径>
 sd-webui-all-in-one self-manager patcher catalog
 ```
 
+#### 输出 Hotpatcher PYTHONPATH
+输出注入 Hotpatcher 补丁路径后的单行 `PYTHONPATH`，用于需要在外部脚本中设置当前进程环境的启动方式。
+
+```bash
+sd-webui-all-in-one self-manager patcher get-pythonpath
+```
+
 #### 启动配置管理 GUI
 启动 Hotpatcher 配置管理器，并可作为 runtime host 接收 WebUI 进程连接。
 

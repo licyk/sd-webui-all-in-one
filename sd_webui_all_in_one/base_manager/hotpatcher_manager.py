@@ -177,6 +177,7 @@ def apply_hotpatcher_launch_env(
     enabled: bool | None = False,
     config_path: str | Path | None = None,
     port: int | None = None,
+    enable_runtime: bool | None = False,
 ) -> dict[str, str]:
     """
     为 WebUI 启动环境注入 hotpatcher bootstrap 变量。
@@ -190,6 +191,8 @@ def apply_hotpatcher_launch_env(
             配置文件路径。为 None 时优先使用默认配置文件，不存在则注入默认配置 JSON。
         port (int | None):
             runtime host 端口。为 None 时使用默认端口。
+        enable_runtime (bool | None):
+            是否注入 runtime host 连接变量。默认只做本地补丁配置注入。
 
     Returns:
         dict[str, str]:
@@ -197,11 +200,14 @@ def apply_hotpatcher_launch_env(
     """
 
     env = origin_env.copy() if origin_env is not None else os.environ.copy()
-    preserved_keys = {
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN",
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT",
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG",
-    }
+    preserved_keys = {"SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG"}
+    if enable_runtime:
+        preserved_keys.update(
+            {
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN",
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT",
+            }
+        )
     preserved = {key: value for key, value in env.items() if key in preserved_keys}
     env = remove_hotpatcher_launch_env(env)
 
@@ -210,14 +216,15 @@ def apply_hotpatcher_launch_env(
 
     env.update(preserved)
     env = ensure_hotpatcher_pythonpath_first(env)
-    env.update(
-        {
-            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
-            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": DEFAULT_RUNTIME_HOST,
-            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port if port is not None else DEFAULT_RUNTIME_PORT),
-            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
-        }
-    )
+    if enable_runtime:
+        env.update(
+            {
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": DEFAULT_RUNTIME_HOST,
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port if port is not None else DEFAULT_RUNTIME_PORT),
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
+            }
+        )
 
     if config_path is not None:
         env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] = "file"

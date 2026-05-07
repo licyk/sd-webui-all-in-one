@@ -19,15 +19,15 @@
 
 要设置 FooInvokeAIocus 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 InvokeAI 启动脚本时将自动读取该文件内的启动参数并应用。
 
-### 启用 Hotpatcher 补丁系统
+### 配置 Hotpatcher 补丁系统
 !!! info
     该设置可通过 [管理 InvokeAI Installer 设置](config.md#invokeai-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-运行 `launch.ps1 -Hotpatcher`，或在和 `launch.ps1` 同级的目录创建 `enable_hotpatcher.txt`，即可启用 Hotpatcher 补丁系统。
+Hotpatcher 补丁系统默认启用。运行 `launch.ps1 -DisableHotpatcher`，或在和 `launch.ps1` 同级的目录创建 `disable_hotpatcher.txt`，即可禁用 Hotpatcher 补丁系统。
 
-启用后，`launch.ps1` 会使用同级目录中的 `patcher_config.json` 作为默认配置路径。如果该文件不存在，并且未指定 `-HotpatcherConfig`，脚本会自动导出一份默认配置到该路径。使用 `-HotpatcherConfig <配置文件路径>` 时，脚本只会传入指定路径，不会自动创建配置文件。
+默认启用时，`launch.ps1` 会使用同级目录中的 `patcher_config.json` 作为默认配置路径。如果该文件不存在，并且未指定 `-HotpatcherConfig`，脚本会自动导出一份默认配置到该路径。使用 `-HotpatcherConfig <配置文件路径>` 时，脚本只会传入指定路径，不会自动创建配置文件。
 
-如需指定 Hotpatcher runtime 通信端口，可使用 `launch.ps1 -Hotpatcher -HotpatcherPort 8765`，或在同级目录创建 `hotpatcher_port.txt` 并写入端口号。`-HotpatcherPort` 的优先级高于 `hotpatcher_port.txt`，有效端口范围为 `1..65535`。
+Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `launch.ps1 -EnableHotpatcherRuntime` 或创建 `enable_hotpatcher_runtime.txt`；`-HotpatcherPort 8765` / `hotpatcher_port.txt` 只在 runtime 模式下设置端口，有效端口范围为 `1..65535`。
 
 ## 环境管理
 

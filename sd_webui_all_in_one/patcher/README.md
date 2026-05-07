@@ -278,18 +278,20 @@ patch_extension_index_comfyui_manager()
 from sd_webui_all_in_one_hotpatcher_ext.extension_index import apply_from_config
 
 apply_from_config({
-    "extension_index_url": "https://mirror.example/extensions.json",
-    "comfyui_manager": True,
+    "webui": {"enabled": True, "url": "auto"},
+    "comfyui_manager": {"enabled": True, "url": "auto"},
 })
 ```
 
 能力：
 
 - `patch_extension_index_a1111(url)`：把 A1111/Forge/Vladmandic 扩展索引常量替换为指定 URL。
-- `patch_extension_index_comfyui_manager()`：把 ComfyUI-Manager 默认 GitHub raw 地址改到镜像地址，并 patch `get_data()` 运行时入参。
+- `webui.url` 和 `comfyui_manager.url` 可填 `auto`：先检测当前网络是否可直连 GitHub；不可直连时自动选择可用的 GitHub raw 镜像。
+- `webui.enabled` 和 `comfyui_manager.enabled` 互相独立，可以只启用其中一个；管理器 GUI 中会显示为独立启用开关和 URL 输入框。
+- `patch_extension_index_comfyui_manager()`：把新版 ComfyUI-Manager 的 `manager_core.DEFAULT_CHANNEL` 和 `get_channel_dict()` 中匹配的 GitHub raw channel URL 改到自动选择或指定的镜像地址。
 - `apply_from_config(config)`：按配置启用上述补丁。
 
-这些补丁仍然是 import-time patch，必须在 `modules.ui_extensions` 或 `ComfyUI-Manager` 目标模块加载前调用。
+这些补丁仍然是 import-time patch，必须在 `modules.ui_extensions` 或 `manager_core` 目标模块加载前调用。
 
 ### HF Endpoint 镜像扩展
 
@@ -398,6 +400,7 @@ PYTHONPATH=src python your_app.py
 连接环境变量：
 
 ```bash
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST=127.0.0.1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT=8765
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN=optional-secret
@@ -452,13 +455,14 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE=/path/to/hotpatcher-config.json
 
 ```bash
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE=remote
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST=127.0.0.1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT=8765
 ```
 
 配置文件必须是 UTF-8 JSON 对象。
 
-`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE=auto` 是默认值：优先读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON`，没有 env JSON 时读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE`，再没有时尝试远程配置。如果没有宿主连接参数，则返回空配置。
+`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE=auto` 是默认值：优先读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON`，没有 env JSON 时读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE`，再没有时尝试远程配置。远程配置需要显式设置 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 并提供宿主连接参数，否则返回空配置。
 
 代码中读取：
 

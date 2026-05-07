@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import socket
+import subprocess
 import sys
 import threading
 
@@ -64,7 +65,7 @@ def test_hotpatcher_config_export_load_save_and_overwrite_guard(tmp_path):
     exported = export_hotpatcher_default_config(output)
 
     assert exported == output
-    assert load_hotpatcher_config(output)["core"]["import_hook"]["enabled"] is False
+    assert load_hotpatcher_config(output)["core"]["import_hook"]["enabled"] is True
     with pytest.raises(FileExistsError):
         export_hotpatcher_default_config(output)
 
@@ -101,14 +102,21 @@ def test_apply_hotpatcher_launch_env_uses_default_json_when_config_missing(monke
     env = apply_hotpatcher_launch_env(origin, enabled=True, port=9876)
 
     assert env["PYTHONPATH"].split(os.pathsep)[0] == HOTPATCHER_PATH.as_posix()
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST"] == "127.0.0.1"
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9876"
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES"] == "1"
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] == "secret"
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME" not in env
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST" not in env
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in env
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES" not in env
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN" not in env
     assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] == "env"
     config = json.loads(env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON"])
-    assert config["services"]["apply_on_bootstrap"] is False
+    assert config["services"]["apply_on_bootstrap"] is True
+
+    runtime_env = apply_hotpatcher_launch_env(origin, enabled=True, port=9876, enable_runtime=True)
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST"] == "127.0.0.1"
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9876"
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES"] == "1"
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] == "secret"
 
 
 def test_apply_hotpatcher_launch_env_prefers_config_file(monkeypatch, tmp_path):
@@ -120,7 +128,12 @@ def test_apply_hotpatcher_launch_env_prefers_config_file(monkeypatch, tmp_path):
 
     assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] == "file"
     assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_file.as_posix()
-    assert env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == str(DEFAULT_RUNTIME_PORT)
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in env
+
+    runtime_env = apply_hotpatcher_launch_env({}, enabled=True, enable_runtime=True)
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] == "file"
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_file.as_posix()
+    assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == str(DEFAULT_RUNTIME_PORT)
 
 
 def test_apply_hotpatcher_launch_env_can_disable_and_clear_existing_values():
@@ -135,6 +148,57 @@ def test_apply_hotpatcher_launch_env_can_disable_and_clear_existing_values():
 
     assert env["PYTHONPATH"] == "existing"
     assert all(not key.startswith(HOTPATCHER_ENV_PREFIX) for key in env)
+
+
+def test_sitecustomize_bootstrap_does_not_reapply_in_python_children(monkeypatch, tmp_path):
+    monkeypatch.setattr(hotpatcher_manager, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
+    env = apply_hotpatcher_launch_env(os.environ, enabled=True)
+    env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON"] = json.dumps(
+        {
+            "services": {"apply_on_bootstrap": True},
+            "core": {
+                "import_hook": {"enabled": False},
+                "stack_shadow": {"enabled": False},
+            },
+        },
+        separators=(",", ":"),
+    )
+
+    child_code = """
+import json
+import os
+from sd_webui_all_in_one_hotpatcher.bootstrap import get_service_apply_result
+
+print(json.dumps({
+    "marker": os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_BOOTSTRAPPED"),
+    "result": get_service_apply_result(),
+}, sort_keys=True))
+"""
+    parent_code = f"""
+import json
+import os
+import subprocess
+import sys
+from sd_webui_all_in_one_hotpatcher.bootstrap import get_service_apply_result
+
+child_output = subprocess.check_output(
+    [sys.executable, "-c", {child_code!r}],
+    text=True,
+    timeout=10,
+)
+print(json.dumps({{
+    "parent_marker": os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_BOOTSTRAPPED"),
+    "parent_result": get_service_apply_result(),
+    "child": json.loads(child_output),
+}}, sort_keys=True))
+"""
+
+    output = subprocess.check_output([sys.executable, "-c", parent_code], env=env, text=True, timeout=10)
+    result = json.loads(output)
+
+    assert result["parent_marker"] == "1"
+    assert result["parent_result"] == {"applied": [], "warnings": [], "errors": []}
+    assert result["child"] == {"marker": "1", "result": None}
 
 
 def test_launch_webui_keeps_hotpatcher_pythonpath_first(monkeypatch, tmp_path):
@@ -187,6 +251,25 @@ def test_runtime_host_serves_config_and_records_logs():
             assert entry.format_line() == "[WARNING] demo: hello"
 
 
+def test_runtime_client_optional_connection_failure_is_quiet(monkeypatch, capsys):
+    from sd_webui_all_in_one_hotpatcher.runtime import RuntimeClient
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST", "127.0.0.1")
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT", str(port))
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT", "0.1")
+
+    assert RuntimeClient.connect_from_env(required=False) is None
+    assert "ConnectionRefusedError" not in capsys.readouterr().err
+
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG", "1")
+    assert RuntimeClient.connect_from_env(required=False) is None
+    assert "ConnectionRefusedError" in capsys.readouterr().err
+
+
 def test_runtime_host_services_channel_roundtrip():
     with HotpatcherRuntimeHost(port=0) as host:
         with socket.create_connection(host.server_address, timeout=2) as sock:
@@ -225,12 +308,27 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert export_args.force is True
     assert callable(export_args.func)
 
+    pythonpath_args = parser.parse_args(["self-manager", "patcher", "get-pythonpath"])
+    assert pythonpath_args.patcher_action == "get-pythonpath"
+    assert callable(pythonpath_args.func)
+
     gui_args = parser.parse_args(["self-manager", "patcher", "gui"])
     assert gui_args.patcher_action == "gui"
     assert gui_args.config == DEFAULT_HOTPATCHER_CONFIG_PATH
     assert gui_args.host == "127.0.0.1"
     assert gui_args.port == 8765
     assert callable(gui_args.func)
+
+
+def test_self_manager_patcher_get_pythonpath_cli(monkeypatch, capsys):
+    from sd_webui_all_in_one.cli_manager import utils as cli_utils
+
+    monkeypatch.setenv("PYTHONPATH", "existing")
+
+    cli_utils.get_hotpatcher_pythonpath_cli()
+
+    pythonpath = capsys.readouterr().out.strip().split(os.pathsep)
+    assert pythonpath[:2] == [HOTPATCHER_PATH.as_posix(), "existing"]
 
 
 def _capture_webui_launch_env(monkeypatch, module, launch_func, path_arg: str, tmp_path, **kwargs):
@@ -288,8 +386,9 @@ def test_base_launch_functions_inject_hotpatcher_env(monkeypatch, tmp_path):
             tmp_path,
             enable_hotpatcher=True,
         )
-        assert enabled_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
-        assert enabled_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == str(DEFAULT_RUNTIME_PORT)
+        assert enabled_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"]
+        assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME" not in enabled_env
+        assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in enabled_env
 
         disabled_env = _capture_webui_launch_env(
             monkeypatch,
@@ -313,7 +412,22 @@ def test_base_launch_functions_inject_hotpatcher_env(monkeypatch, tmp_path):
         )
         assert custom_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] == "file"
         assert custom_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_path.as_posix()
-        assert custom_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9901"
+        assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in custom_env
+
+        runtime_env = _capture_webui_launch_env(
+            monkeypatch,
+            module,
+            launch_func,
+            path_arg,
+            tmp_path,
+            enable_hotpatcher=True,
+            enable_hotpatcher_runtime=True,
+            hotpatcher_config_path=config_path,
+            hotpatcher_port=9901,
+        )
+        assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
+        assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_path.as_posix()
+        assert runtime_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9901"
 
 
 def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_path):
@@ -363,8 +477,23 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
 
     assert configure_calls == [True]
     assert fake_env["PYTHONPATH"].split(os.pathsep)[0] == HOTPATCHER_PATH.as_posix()
-    assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
     assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_path.as_posix()
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME" not in fake_env
+    assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in fake_env
+
+    configure_calls.clear()
+    with pytest.raises(SystemExit):
+        invokeai_base.launch_invokeai(
+            tmp_path,
+            use_cuda_malloc=False,
+            enable_hotpatcher=True,
+            enable_hotpatcher_runtime=True,
+            hotpatcher_config_path=config_path,
+            hotpatcher_port=9902,
+        )
+
+    assert configure_calls == [True]
+    assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
     assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9902"
 
 
@@ -395,7 +524,8 @@ def test_webui_launch_cli_hotpatcher_parser(register_name, command, tmp_path):
     register_func(subparsers)
 
     default_args = parser.parse_args([command, "launch"])
-    assert default_args.enable_hotpatcher is False
+    assert default_args.enable_hotpatcher is True
+    assert default_args.enable_hotpatcher_runtime is False
     assert default_args.hotpatcher_config_path is None
     assert default_args.hotpatcher_port is None
 
@@ -404,14 +534,16 @@ def test_webui_launch_cli_hotpatcher_parser(register_name, command, tmp_path):
         [
             command,
             "launch",
-            "--hotpatcher",
+            "--no-hotpatcher",
+            "--hotpatcher-runtime",
             "--hotpatcher-config",
             config_path.as_posix(),
             "--hotpatcher-port",
             "9901",
         ]
     )
-    assert custom_args.enable_hotpatcher is True
+    assert custom_args.enable_hotpatcher is False
+    assert custom_args.enable_hotpatcher_runtime is True
     assert custom_args.hotpatcher_config_path == config_path
     assert custom_args.hotpatcher_port == 9901
 

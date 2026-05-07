@@ -133,7 +133,8 @@ class RuntimeClient:
         except Exception:
             if required:
                 raise
-            capture_exception()
+            if os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG") == "1":
+                capture_exception()
             return None
 
     def request(

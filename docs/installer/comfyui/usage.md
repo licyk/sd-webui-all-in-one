@@ -28,15 +28,15 @@
     --auto-launch --preview-method auto --disable-cuda-malloc
     ```
 
-### 启用 Hotpatcher 补丁系统
+### 配置 Hotpatcher 补丁系统
 !!! info
     该设置可通过 [管理 ComfyUI Installer 设置](config.md#comfyui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-运行 `launch.ps1` 时可通过 `-Hotpatcher` 启用 Hotpatcher，也可以在脚本同级目录创建 `enable_hotpatcher.txt` 后启用。启用后，`launch.ps1` 会向 ComfyUI 启动命令追加 `--hotpatcher` 和 `--hotpatcher-config <路径>`。
+Hotpatcher 补丁系统默认启用。运行 `launch.ps1 -DisableHotpatcher`，或在脚本同级目录创建 `disable_hotpatcher.txt`，即可禁用 Hotpatcher。
 
-默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。未指定 `-HotpatcherConfig` 且该文件不存在时，`launch.ps1` 会自动导出默认配置；如果指定了 `-HotpatcherConfig`，脚本会直接使用指定路径，不会自动创建配置文件。
+默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。Hotpatcher 默认启用、未指定 `-HotpatcherConfig` 且该文件不存在时，`launch.ps1` 会自动导出默认配置；如果指定了 `-HotpatcherConfig`，脚本会直接使用指定路径，不会自动创建配置文件。
 
-Hotpatcher runtime 通信端口可通过 `-HotpatcherPort <端口>` 或 `hotpatcher_port.txt` 设置，端口范围为 `1..65535`，且命令行参数优先于配置文件。
+Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `-EnableHotpatcherRuntime` 或创建 `enable_hotpatcher_runtime.txt`；`-HotpatcherPort <端口>` / `hotpatcher_port.txt` 只在 runtime 模式下设置端口，范围为 `1..65535`。
 
 ## 环境管理
 

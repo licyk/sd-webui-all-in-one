@@ -211,16 +211,12 @@ from sd_webui_all_in_one_hotpatcher_ext.extension_index import (
 
 ### `patch_extension_index_comfyui_manager()`
 
-注册 `ComfyUI-Manager` 和 `ComfyUI-Manager-main` 的补丁：
+注册新版 ComfyUI-Manager 实际导入名 `manager_core` 的补丁：
 
-- bytecode patch：替换 `default_cache_update()` / `get_cache()` 中的 GitHub raw 前缀。
-- function patch：包装 `get_data(uri)`，运行时把入参中的 GitHub raw 前缀改成镜像前缀。
+- module patch：把 `manager_core.DEFAULT_CHANNEL` 改成镜像 channel 根地址。
+- function patch：包装 `get_channel_dict()`，只把匹配 GitHub raw channel 前缀的 URL 改成镜像地址，并同步加入 `valid_channels`。
 
-默认目标前缀是：
-
-```text
-https://gitcode.net/ranting8323/ComfyUI-Manager/-/raw/main/
-```
+默认目标前缀由 `auto` 逻辑决定：先检测当前网络是否可直连 GitHub，不可直连时再使用核心模块的 GitHub raw 镜像选择逻辑。
 
 也可以传自定义前缀：
 
@@ -237,18 +233,21 @@ patch_extension_index_comfyui_manager(
 
 ```python
 {
-    "extension_index_url": "https://mirror.example/extensions.json",
-    "comfyui_manager": True,
+    "webui": {"enabled": True, "url": "auto"},
+    "comfyui_manager": {"enabled": True, "url": "auto"},
 }
 ```
 
-或自定义 ComfyUI-Manager 前缀：
+`webui` 和 `comfyui_manager` 是互相独立的配置对象，可以只启用其中一个。管理器 GUI 会把它们显示为独立启用开关和 URL 输入框，不需要手写 JSON object。`url` 可填普通镜像 URL，也可填 `auto`。`auto` 会先检测当前网络是否可直连 GitHub；如果不可直连，则使用核心模块的 GitHub raw 镜像选择逻辑生成镜像 URL。可直连或没有可用镜像时会保持原始 URL。
+
+`comfyui_manager` 也可以用 object 自定义 source / destination 前缀：
 
 ```python
 {
     "comfyui_manager": {
+        "enabled": True,
         "source_prefix": "https://source.example/main/",
-        "destination_prefix": "https://mirror.example/main/",
+        "url": "https://mirror.example/main/",
     }
 }
 ```
@@ -422,8 +421,7 @@ tmp/
 Extension Index 测试同理：
 
 - 创建 fake `modules.ui_extensions` 验证 A1111 URL 常量替换。
-- 创建 fake `ComfyUI-Manager.py` / `ComfyUI-Manager-main.py` 验证 bytecode 和 `get_data()` patch。
-- 对带连字符的模块名，测试使用 `importlib.util.spec_from_file_location()`，覆盖 sd_webui_all_in_one_hotpatcher 对动态文件加载的包装路径。
+- 创建 fake `manager_core.py` 验证 `DEFAULT_CHANNEL` 和 `get_channel_dict()` patch。
 
 HF Endpoint Mirror 测试创建 fake `torch.hub`、fake `torchvision.datasets.utils`、fake `ComfyUI-WD14-Tagger.pysssss` 和 fake `modules.util`，断言：
 

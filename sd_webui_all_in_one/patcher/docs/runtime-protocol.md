@@ -16,6 +16,7 @@
 连接参数：
 
 ```bash
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST=127.0.0.1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT=8765
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN=optional-secret
@@ -152,7 +153,7 @@ client = RuntimeClient.connect_from_env()
 
 `file` 来源读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE` 指向的 UTF-8 JSON 文件，文件内容必须是对象。
 
-`auto` 默认优先 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON`，没有 env JSON 时读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE`，再没有时尝试远程。如果没有 host/port，返回空配置。
+`auto` 默认优先 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON`，没有 env JSON 时读取 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE`，再没有时尝试远程。远程配置需要显式设置 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 并提供 host/port，否则返回空配置。
 
 ## Progress 事件
 

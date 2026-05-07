@@ -18,6 +18,10 @@ D:/Downloads
 │   ├── git                                     # Git 目录
 │   ├── help.txt                                # 帮助文档
 │   ├── init.ps1                                # 初始化训练环境的脚本
+│   ├── patcher_config.json                     # Hotpatcher 默认配置文件
+│   ├── disable_hotpatcher.txt                  # 可选, 禁用 Hotpatcher 补丁系统
+│   ├── enable_hotpatcher_runtime.txt           # 可选, 启用 Hotpatcher runtime host 连接
+│   ├── hotpatcher_port.txt                     # 可选, runtime 模式通信端口
 │   ├── core                                    # SD-Trainer-Script 内核目录
 │   ├── python                                  # Python 目录
 │   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本

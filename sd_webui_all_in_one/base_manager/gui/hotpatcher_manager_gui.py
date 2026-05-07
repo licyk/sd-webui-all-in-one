@@ -663,7 +663,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         try:
             for (feature_name, setting_name), (variable, kind, default_value, _metadata) in self._schema_field_vars.items():
                 feature_config = _section_by_path(config, feature_name)
-                value = feature_config.get(setting_name, default_value)
+                value = _value_by_path(feature_config, setting_name, default_value)
                 if kind == "bool":
                     variable.set(bool(value))
                 else:
@@ -675,7 +675,11 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         config = dict(config)
         for (feature_name, setting_name), (variable, kind, default_value, _metadata) in self._schema_field_vars.items():
             feature_config = _ensure_section_by_path(config, feature_name)
-            feature_config[setting_name] = _variable_to_value(variable, kind, default_value)
+            _set_value_by_path(
+                feature_config,
+                setting_name,
+                _variable_to_value(variable, kind, default_value),
+            )
         return config
 
     def _on_json_modified(self, _event: tk.Event) -> None:
@@ -756,6 +760,23 @@ def _ensure_section_by_path(config: dict[str, Any], path: str) -> dict[str, Any]
     for part in path.split("."):
         current = _ensure_section(current, part)
     return current
+
+
+def _value_by_path(config: dict[str, Any], path: str, default: Any = None) -> Any:
+    current: Any = config
+    for part in path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return default
+        current = current[part]
+    return current
+
+
+def _set_value_by_path(config: dict[str, Any], path: str, value: Any) -> None:
+    parts = path.split(".")
+    current = config
+    for part in parts[:-1]:
+        current = _ensure_section(current, part)
+    current[parts[-1]] = value
 
 
 def _split_list(value: str) -> list[str]:

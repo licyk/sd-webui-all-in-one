@@ -28,16 +28,18 @@ from .stack_shadow import (
     is_stack_shadower_installed,
 )
 
+_MISSING = object()
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "services": {
-        "apply_on_bootstrap": False,
+        "apply_on_bootstrap": True,
     },
     "core": {
         "import_hook": {
-            "enabled": False,
+            "enabled": True,
         },
         "stack_shadow": {
-            "enabled": False,
+            "enabled": True,
             "prefixes": [
                 "sd_webui_all_in_one_hotpatcher",
                 "sd_webui_all_in_one_hotpatcher_ext",
@@ -70,10 +72,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "torch_zluda_timer": False,
         },
         "extension_index": {
-            "enabled": False,
-            "extension_index_url": "",
-            "a1111_url": "",
-            "comfyui_manager": False,
+            "webui": {
+                "enabled": False,
+                "url": "auto",
+            },
+            "comfyui_manager": {
+                "enabled": False,
+                "url": "auto",
+            },
         },
         "hf_endpoint_mirror": {
             "enabled": False,
@@ -234,25 +240,25 @@ SETTING_SCHEMA: dict[str, Any] = {
         "title": "扩展索引镜像",
         "description": "替换 WebUI / ComfyUI 扩展索引和 ComfyUI-Manager 相关 URL。",
         "settings": {
-            "enabled": {
+            "webui.enabled": {
                 "type": "bool",
-                "title": "启用",
-                "description": "启用扩展索引镜像补丁。",
+                "title": "启用 SD WebUI 镜像",
+                "description": "启用 A1111 / Forge / Vladmandic 扩展索引镜像补丁。",
             },
-            "extension_index_url": {
+            "webui.url": {
                 "type": "str",
-                "title": "扩展索引 URL",
-                "description": "用于替换 A1111/Forge/Vladmandic 扩展索引的镜像 JSON URL。",
+                "title": "SD WebUI 镜像 URL",
+                "description": "用于替换 A1111 / Forge / Vladmandic 扩展索引的镜像 JSON URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
             },
-            "a1111_url": {
+            "comfyui_manager.enabled": {
+                "type": "bool",
+                "title": "启用 ComfyUI-Manager 镜像",
+                "description": "启用 ComfyUI-Manager channel 镜像补丁。",
+            },
+            "comfyui_manager.url": {
                 "type": "str",
-                "title": "A1111 镜像 URL",
-                "description": "兼容旧配置名的 A1111 扩展索引镜像 URL。",
-            },
-            "comfyui_manager": {
-                "type": "object",
-                "title": "ComfyUI-Manager",
-                "description": "可填 true 启用默认镜像，或填写 JSON object 自定义 source_prefix 和 destination_prefix。",
+                "title": "ComfyUI-Manager 镜像 URL",
+                "description": "用于替换 ComfyUI-Manager channel 前缀的镜像 URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
             },
         },
     },
@@ -722,7 +728,7 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
         _apply_step("extensions.zluda", lambda: apply_zluda(zluda), result)
 
     extension_index = _section(extensions, "extension_index")
-    if extension_index.get("enabled"):
+    if _is_extension_index_enabled(extension_index):
         from sd_webui_all_in_one_hotpatcher_ext.extension_index import (
             apply_from_config as apply_extension_index,
         )
@@ -756,6 +762,13 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
             lambda: apply_uv_pip(uv_pip),
             result,
         )
+
+
+def _is_extension_index_enabled(config: dict[str, Any]) -> bool:
+    return any(
+        isinstance(section, dict) and bool(section.get("enabled"))
+        for section in (config.get("webui"), config.get("comfyui_manager"))
+    )
 
 
 def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
@@ -839,9 +852,12 @@ def _attach_setting_defaults(features: dict[str, Any]) -> None:
         if not isinstance(settings, dict):
             continue
         for setting_name, metadata in settings.items():
-            if not isinstance(metadata, dict) or setting_name not in feature_default:
+            if not isinstance(metadata, dict):
                 continue
-            metadata["default"] = copy.deepcopy(feature_default[setting_name])
+            setting_default = _get_value_by_path(feature_default, setting_name, _MISSING)
+            if setting_default is _MISSING:
+                continue
+            metadata["default"] = copy.deepcopy(setting_default)
 
 
 def _registered_patches() -> dict[str, Any]:
@@ -896,6 +912,15 @@ def _payload_path(payload: dict[str, Any]) -> str:
     if not isinstance(path, str) or not path:
         raise ValueError("payload.path must be a non-empty string")
     return path
+
+
+def _get_value_by_path(config: dict[str, Any], path: str, default: Any = None) -> Any:
+    current: Any = config
+    for part in path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return default
+        current = current[part]
+    return current
 
 
 def _section(config: dict[str, Any], key: str) -> dict[str, Any]:
