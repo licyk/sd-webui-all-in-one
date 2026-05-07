@@ -1,3 +1,4 @@
+import asyncio
 import importlib
 import sys
 import textwrap
@@ -30,7 +31,13 @@ def clean_import_state():
         if (
             name == "modules"
             or name.startswith("modules.")
-            or name in {"ComfyUI-Manager", "ComfyUI-Manager-main", "manager_core"}
+            or name in {
+                "ComfyUI-Manager",
+                "ComfyUI-Manager-main",
+                "manager_core",
+                "manager_server",
+                "manager_util",
+            }
         ):
             sys.modules.pop(name, None)
 
@@ -60,6 +67,42 @@ def write_manager_core_module(path, source_prefix=COMFYUI_MANAGER_RAW_PREFIX):
                 for url in channel_dict.values():
                     valid_channels.add(url)
             return channel_dict
+
+        async def get_data_by_mode(mode, filename, channel_url=None):
+            return {{
+                "mode": mode,
+                "filename": filename,
+                "channel_url": channel_url,
+            }}
+        """,
+    )
+
+
+def write_manager_server_module(path, source_prefix=COMFYUI_MANAGER_RAW_PREFIX):
+    write_file(
+        path,
+        f"""
+        import manager_core as core
+
+        async def get_risky_level(files, pip_packages):
+            return await core.get_data_by_mode(
+                "cache",
+                "custom-node-list.json",
+                channel_url={source_prefix!r},
+            )
+        """,
+    )
+
+
+def write_manager_util_module(path):
+    write_file(
+        path,
+        """
+        async def get_data(uri, silent=False):
+            return {
+                "uri": uri,
+                "silent": silent,
+            }
         """,
     )
 
@@ -173,10 +216,81 @@ def test_patch_extension_index_comfyui_manager_rewrites_manager_core_channel_url
     assert destination_prefix + "/node_db/new" in module.valid_channels
 
 
+def test_patch_extension_index_comfyui_manager_rewrites_manager_server_risky_level_url(
+    monkeypatch,
+    tmp_path,
+):
+    source_prefix = COMFYUI_MANAGER_RAW_PREFIX
+    destination_prefix = "https://mirror.example/comfyui-manager/main"
+    write_manager_core_module(tmp_path / "manager_core.py", source_prefix)
+    write_manager_server_module(tmp_path / "manager_server.py", source_prefix)
+    sys.path.insert(0, str(tmp_path))
+    calls = []
+    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(
+        extension_index_module,
+        "_apply_github_raw_file_mirror",
+        lambda raw_file_path: calls.append(raw_file_path) or destination_prefix,
+    )
+
+    patch_extension_index_comfyui_manager()
+    manager_server = importlib.import_module("manager_server")
+    result = asyncio.run(manager_server.get_risky_level([], []))
+
+    assert calls == [COMFYUI_MANAGER_RAW_FILE_PATH]
+    assert result["channel_url"] == destination_prefix
+
+
+def test_patch_extension_index_comfyui_manager_rewrites_manager_util_get_data_github_urls(
+    monkeypatch,
+    tmp_path,
+):
+    source_prefix = COMFYUI_MANAGER_RAW_PREFIX
+    destination_prefix = "https://mirror.example/raw/ltdrdata/ComfyUI-Manager/main"
+    write_manager_core_module(tmp_path / "manager_core.py", source_prefix)
+    write_manager_util_module(tmp_path / "manager_util.py")
+    sys.path.insert(0, str(tmp_path))
+    calls = []
+    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(
+        extension_index_module,
+        "_apply_github_raw_file_mirror",
+        lambda raw_file_path: calls.append(raw_file_path) or destination_prefix,
+    )
+
+    patch_extension_index_comfyui_manager()
+    manager_util = importlib.import_module("manager_util")
+
+    raw_result = asyncio.run(
+        manager_util.get_data(
+            "https://raw.githubusercontent.com/example/repo/main/data.json?download=1#section",
+            silent=True,
+        )
+    )
+    github_raw_result = asyncio.run(
+        manager_util.get_data("https://github.com/example/repo/raw/refs/heads/main/node.py")
+    )
+    github_blob_result = asyncio.run(
+        manager_util.get_data("https://github.com/example/repo/blob/main/readme.json")
+    )
+    other_result = asyncio.run(manager_util.get_data("https://example.com/data.json"))
+
+    assert calls == [COMFYUI_MANAGER_RAW_FILE_PATH]
+    assert raw_result == {
+        "uri": "https://mirror.example/raw/example/repo/main/data.json?download=1#section",
+        "silent": True,
+    }
+    assert github_raw_result["uri"] == "https://mirror.example/raw/example/repo/refs/heads/main/node.py"
+    assert github_blob_result["uri"] == "https://mirror.example/raw/example/repo/main/readme.json"
+    assert other_result["uri"] == "https://example.com/data.json"
+
+
 def test_patch_extension_index_comfyui_manager_supports_custom_prefixes(tmp_path):
     source_prefix = "https://source.example/main"
     destination_prefix = "https://mirror.example/main"
     write_manager_core_module(tmp_path / "manager_core.py", source_prefix)
+    write_manager_server_module(tmp_path / "manager_server.py", source_prefix)
+    write_manager_util_module(tmp_path / "manager_util.py")
     sys.path.insert(0, str(tmp_path))
 
     patch_extension_index_comfyui_manager(
@@ -184,13 +298,19 @@ def test_patch_extension_index_comfyui_manager_supports_custom_prefixes(tmp_path
         source_prefix=source_prefix + "/",
     )
     module = importlib.import_module("manager_core")
+    manager_server = importlib.import_module("manager_server")
+    manager_util = importlib.import_module("manager_util")
     channels = module.get_channel_dict()
+    risky_level_data = asyncio.run(manager_server.get_risky_level([], []))
+    get_data_result = asyncio.run(manager_util.get_data(source_prefix + "/custom-node-list.json"))
 
     assert module.DEFAULT_CHANNEL == destination_prefix
     assert channels["default"] == destination_prefix
     assert channels["recent"] == destination_prefix + "/node_db/new"
     assert channels["similar"] == source_prefix + "-fork"
     assert destination_prefix in module.valid_channels
+    assert risky_level_data["channel_url"] == destination_prefix
+    assert get_data_result["uri"] == destination_prefix + "/custom-node-list.json"
 
 
 def test_apply_from_config_enables_selected_extension_index_patches(monkeypatch, tmp_path):
@@ -202,6 +322,7 @@ def test_apply_from_config_enables_selected_extension_index_patches(monkeypatch,
         """,
     )
     write_manager_core_module(tmp_path / "manager_core.py")
+    write_manager_server_module(tmp_path / "manager_server.py")
     sys.path.insert(0, str(tmp_path))
     calls = []
     mirrors = {
@@ -224,12 +345,15 @@ def test_apply_from_config_enables_selected_extension_index_patches(monkeypatch,
 
     ui_extensions = importlib.import_module("modules.ui_extensions")
     manager_core = importlib.import_module("manager_core")
+    manager_server = importlib.import_module("manager_server")
     channels = manager_core.get_channel_dict()
+    risky_level_data = asyncio.run(manager_server.get_risky_level([], []))
 
     assert calls == [A1111_EXTENSION_INDEX_RAW_FILE_PATH, COMFYUI_MANAGER_RAW_FILE_PATH]
     assert ui_extensions.URL == "https://mirror.example/a1111-auto.json"
     assert manager_core.DEFAULT_CHANNEL == "https://mirror.example/comfyui-manager/main"
     assert channels["default"] == "https://mirror.example/comfyui-manager/main"
+    assert risky_level_data["channel_url"] == "https://mirror.example/comfyui-manager/main"
 
 
 def test_apply_from_config_can_enable_webui_without_comfyui_manager(monkeypatch, tmp_path):

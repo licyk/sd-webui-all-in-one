@@ -10,6 +10,7 @@ from .exceptions import capture_exception
 
 _runtime_client: Any = None
 _runtime_config: dict[str, Any] = {}
+_error_capture: Any = None
 _log_capture: Any = None
 _service_control_channel: Any = None
 _service_apply_result: dict[str, Any] | None = None
@@ -30,6 +31,8 @@ class BootstrapState:
             已连接的运行时客户端, 未连接时为 None
         config (dict[str, Any]):
             从环境变量或宿主拉取到的配置
+        error_capture (Any):
+            已安装的错误捕获器, 未启用时为 None
         log_capture (Any):
             已安装的日志采集器, 未启用时为 None
         service_control_channel (Any):
@@ -42,6 +45,7 @@ class BootstrapState:
     import_hook_installed: bool
     runtime_client: Any
     config: dict[str, Any]
+    error_capture: Any
     log_capture: Any
     service_control_channel: Any
     service_apply_result: dict[str, Any] | None
@@ -59,7 +63,7 @@ def configure_from_env() -> BootstrapState:
             启动配置结果
     """
 
-    global _runtime_client, _runtime_config, _log_capture, _service_control_channel, _service_apply_result
+    global _runtime_client, _runtime_config, _error_capture, _log_capture, _service_control_channel, _service_apply_result
 
     os.environ[_BOOTSTRAPPED_ENV] = "1"
 
@@ -82,6 +86,9 @@ def configure_from_env() -> BootstrapState:
         from .runtime.config import load_config
 
         _runtime_config = load_config(client=_runtime_client)
+        from .services import set_current_config
+
+        _runtime_config = set_current_config(_runtime_config)
     except Exception:
         capture_exception()
         _runtime_config = {}
@@ -100,8 +107,16 @@ def configure_from_env() -> BootstrapState:
                 "errors": [{"feature": "services", "code": "bootstrap_failed"}],
             }
 
+    _error_capture = None
     _log_capture = None
     if _runtime_client is not None:
+        try:
+            from .runtime.errors import configure_error_capture_from_env
+
+            _error_capture = configure_error_capture_from_env(_runtime_client, _runtime_config)
+        except Exception:
+            capture_exception()
+
         try:
             from .runtime.logs import configure_log_capture_from_env
 
@@ -125,6 +140,7 @@ def configure_from_env() -> BootstrapState:
         import_hook_installed=is_import_hook_installed(),
         runtime_client=_runtime_client,
         config=_runtime_config,
+        error_capture=_error_capture,
         log_capture=_log_capture,
         service_control_channel=_service_control_channel,
         service_apply_result=_service_apply_result,
@@ -165,6 +181,18 @@ def get_log_capture() -> Any:
     """
 
     return _log_capture
+
+
+def get_error_capture() -> Any:
+    """
+    获取最近一次 bootstrap 安装的错误捕获器
+
+    Returns:
+        Any:
+            错误捕获器, 未启用时为 None
+    """
+
+    return _error_capture
 
 
 def get_service_control_channel() -> Any:

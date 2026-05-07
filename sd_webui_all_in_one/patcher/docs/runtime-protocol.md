@@ -243,7 +243,7 @@ client = RuntimeClient.connect_from_env()
 {"type":"channel.open","channel":"services","token":"optional-secret"}
 ```
 
-这条连接后续仍然保持 JSONL。宿主可以发送 `services.catalog.get`、`services.defaults.get`、`services.config.normalize`、`services.config.load`、`services.config.save`、`services.config.apply` 请求。客户端返回固定 ok/error 响应, 如果请求带 `id`, 响应也会带同一个 `id`。
+这条连接后续仍然保持 JSONL。宿主可以发送 `services.catalog.get`、`services.defaults.get`、`services.config.current`、`services.config.normalize`、`services.config.load`、`services.config.save`、`services.config.apply` 请求。客户端返回固定 ok/error 响应, 如果请求带 `id`, 响应也会带同一个 `id`。
 
 ## Audit 事件
 
@@ -278,6 +278,27 @@ payload 包含：
 - `traceback`
 - `frames`
 - `process`
+
+当 `runtime.errors.include_locals=true` 或 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_INCLUDE_LOCALS=1` 时, `frames[]` 中会额外包含 `locals` 字段。局部变量只发送 `repr()` 摘要, 不发送原始对象：
+
+```json
+{
+  "frames": [
+    {
+      "filename": "app.py",
+      "function": "run",
+      "lineno": 10,
+      "module": "app",
+      "locals": {
+        "value": {"type": "builtins.str", "repr": "'hello'", "truncated": false},
+        "api_token": {"type": "builtins.str", "redacted": true, "reason": "sensitive_name"}
+      }
+    }
+  ]
+}
+```
+
+局部变量采集默认关闭。启用后会自动按变量名脱敏 password/token/secret/cookie 等敏感值, 并限制单个 repr、单帧变量数量和整次事件的 locals 总大小；被截断的 frame 会包含 `__truncated__` 标记。
 
 它和 fault channel 的区别：
 

@@ -12,6 +12,7 @@ from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror import (
     apply_from_config,
     apply_mirror,
+    patch_comfyui_manager_model_downloads,
     patch_comfyui_wd14_tagger,
     patch_sd_webui_load_file_from_url,
     patch_torchhub,
@@ -44,6 +45,7 @@ def clean_import_state(monkeypatch):
             or name.startswith("modules.")
             or name == "ComfyUI-WD14-Tagger"
             or name.startswith("ComfyUI-WD14-Tagger.")
+            or name in {"manager_downloader", "manager_server"}
         ):
             sys.modules.pop(name, None)
 
@@ -147,6 +149,137 @@ def test_patch_comfyui_wd14_tagger_rewrites_async_download(tmp_path, monkeypatch
 
     assert result == MIRROR_URL
     assert module.calls[-1][0] == MIRROR_URL
+
+
+def test_patch_comfyui_manager_model_downloads_rewrites_manager_server_bound_functions(
+    tmp_path,
+    monkeypatch,
+):
+    write_file(
+        tmp_path / "manager_downloader.py",
+        """
+        calls = []
+
+        def download_url(model_url, model_dir, filename):
+            calls.append(("download_url", model_url, model_dir, filename))
+            return model_url
+
+        def download_url_with_agent(url, save_path):
+            calls.append(("download_url_with_agent", url, save_path))
+            return url
+
+        def download_repo_in_bytes(repo_id, local_dir):
+            calls.append(("download_repo_in_bytes", repo_id, local_dir))
+        """,
+    )
+    write_file(
+        tmp_path / "manager_server.py",
+        """
+        import manager_downloader
+        from manager_downloader import download_url, download_url_with_agent
+        """,
+    )
+    sys.path.insert(0, str(tmp_path))
+    monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
+
+    patch_comfyui_manager_model_downloads()
+    manager_server = importlib.import_module("manager_server")
+    manager_downloader = importlib.import_module("manager_downloader")
+
+    assert manager_server.download_url(HF_URL, "/models", "model.bin") == MIRROR_URL
+    assert manager_server.download_url_with_agent(HF_URL, "/models/model.bin") == MIRROR_URL
+    assert manager_downloader.download_url(HF_URL, "/models", "model.bin") == MIRROR_URL
+    assert manager_downloader.calls == [
+        ("download_url", MIRROR_URL, "/models", "model.bin"),
+        ("download_url_with_agent", MIRROR_URL, "/models/model.bin"),
+        ("download_url", MIRROR_URL, "/models", "model.bin"),
+    ]
+
+
+def test_patch_comfyui_manager_model_downloads_rewrites_repo_file_downloads(
+    tmp_path,
+    monkeypatch,
+):
+    write_file(
+        tmp_path / "manager_downloader.py",
+        """
+        import os
+
+        api_endpoints = []
+        requested_urls = []
+
+        class FileInfo:
+            def __init__(self, rfilename, size):
+                self.rfilename = rfilename
+                self.size = size
+
+        class RepoInfo:
+            siblings = [
+                FileInfo("folder/model.bin", 3),
+                FileInfo("skip.bin", None),
+            ]
+
+        class HfApi:
+            def __init__(self, endpoint=None):
+                api_endpoints.append(endpoint)
+
+            def repo_info(self, repo_id, files_metadata=True):
+                return RepoInfo()
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return None
+
+            def raise_for_status(self):
+                return None
+
+            def iter_content(self, chunk_size):
+                yield b"ab"
+                yield b"c"
+
+        class FakeRequests:
+            def get(self, url, stream=True):
+                requested_urls.append((url, stream))
+                return FakeResponse()
+
+        class FakeTqdm:
+            def __init__(self, *args, **kwargs):
+                self.value = 0
+
+            def update(self, value):
+                self.value += value
+
+            def close(self):
+                return None
+
+        requests = FakeRequests()
+        tqdm = FakeTqdm
+
+        def download_url(model_url, model_dir, filename):
+            return model_url
+
+        def download_url_with_agent(url, save_path):
+            return url
+
+        def download_repo_in_bytes(repo_id, local_dir):
+            raise AssertionError("original download_repo_in_bytes should be replaced")
+        """,
+    )
+    sys.path.insert(0, str(tmp_path))
+    monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
+
+    patch_comfyui_manager_model_downloads()
+    manager_downloader = importlib.import_module("manager_downloader")
+    manager_downloader.download_repo_in_bytes("user/repo", str(tmp_path / "models"))
+
+    assert manager_downloader.api_endpoints == ["https://hf.example"]
+    assert manager_downloader.requested_urls == [
+        ("https://hf.example/user/repo/resolve/main/folder/model.bin", True)
+    ]
+    assert (tmp_path / "models" / "folder" / "model.bin").read_bytes() == b"abc"
 
 
 def test_apply_mirror_keeps_original_url_without_endpoint(tmp_path):

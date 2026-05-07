@@ -11,6 +11,7 @@ from typing import Any
 
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
+from .runtime.errors import install_error_capture, is_error_capture_installed, uninstall_error_capture
 from .runtime.logs import (
     DEFAULT_FD_CAPTURE,
     DEFAULT_HOOK_CHECK_INTERVAL,
@@ -29,6 +30,8 @@ from .stack_shadow import (
 )
 
 _MISSING = object()
+_current_config: dict[str, Any] | None = None
+_current_config_lock = threading.RLock()
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "services": {
@@ -49,6 +52,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
     },
     "runtime": {
+        "errors": {
+            "enabled": False,
+            "sys_excepthook": True,
+            "threading_excepthook": True,
+            "unraisablehook": True,
+            "asyncio": True,
+            "include_locals": False,
+        },
         "logs": {
             "enabled": False,
             "logging": True,
@@ -207,6 +218,42 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "title": "FD 级捕获",
                 "description": "实验性标准流捕获。0 关闭，fallback 在普通 stream hook 丢失时尝试启用，force 启动时直接启用。",
                 "choices": ["0", "fallback", "force"],
+            },
+        },
+    },
+    "runtime.errors": {
+        "title": "运行时错误",
+        "description": "捕获未处理 Python 异常并发送结构化 error.exception 事件到 runtime host。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用错误捕获",
+                "description": "启用未处理 Python 异常捕获。需要 runtime client 可用。",
+            },
+            "sys_excepthook": {
+                "type": "bool",
+                "title": "主线程异常",
+                "description": "捕获 sys.excepthook 处理的主线程未处理异常。",
+            },
+            "threading_excepthook": {
+                "type": "bool",
+                "title": "线程异常",
+                "description": "捕获 threading.excepthook 处理的线程未处理异常。",
+            },
+            "unraisablehook": {
+                "type": "bool",
+                "title": "Unraisable 异常",
+                "description": "捕获 sys.unraisablehook 处理的析构、回调等不可抛出异常。",
+            },
+            "asyncio": {
+                "type": "bool",
+                "title": "Asyncio 异常",
+                "description": "捕获 asyncio event loop exception handler 中的异常上下文。",
+            },
+            "include_locals": {
+                "type": "bool",
+                "title": "包含局部变量",
+                "description": "在 error.exception 的 traceback frame 中附带脱敏后的局部变量 repr 摘要。",
             },
         },
     },
@@ -417,6 +464,17 @@ class PatchService:
 
         return get_default_config()
 
+    def get_current_config(self) -> dict[str, Any]:
+        """
+        查询当前进程配置
+
+        Returns:
+            dict[str, Any]:
+                当前进程最后加载或应用的完整配置副本
+        """
+
+        return get_current_config()
+
     def normalize_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """
         补齐配置默认值
@@ -483,6 +541,51 @@ def get_default_config() -> dict[str, Any]:
     """
 
     return copy.deepcopy(DEFAULT_CONFIG)
+
+
+def get_current_config() -> dict[str, Any]:
+    """
+    获取当前进程最后加载或应用的完整配置
+
+    Returns:
+        dict[str, Any]:
+            当前进程配置副本。尚未记录时返回默认配置。
+    """
+
+    with _current_config_lock:
+        if _current_config is None:
+            return get_default_config()
+        return copy.deepcopy(_current_config)
+
+
+def set_current_config(config: dict[str, Any]) -> dict[str, Any]:
+    """
+    更新当前进程配置快照
+
+    Args:
+        config (dict[str, Any]):
+            用户配置或完整配置
+
+    Returns:
+        dict[str, Any]:
+            规范化后的当前配置副本
+    """
+
+    global _current_config
+
+    normalized = normalize_config(config)
+    with _current_config_lock:
+        _current_config = copy.deepcopy(normalized)
+    return copy.deepcopy(normalized)
+
+
+def clear_current_config() -> None:
+    """清除当前进程配置快照, 下一次查询将返回默认配置"""
+
+    global _current_config
+
+    with _current_config_lock:
+        _current_config = None
 
 
 def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -580,6 +683,7 @@ def apply_config(
 
     normalized = normalize_config(config)
     result: dict[str, Any] = {"applied": [], "warnings": [], "errors": []}
+    set_current_config(normalized)
 
     _apply_core_config(normalized, result)
     _apply_runtime_config(normalized, result, runtime_client)
@@ -618,6 +722,8 @@ def handle_request_json(
             return _success_response({"catalog": get_catalog()})
         if message_type == "services.defaults.get":
             return _success_response({"config": get_default_config()})
+        if message_type == "services.config.current":
+            return _success_response({"config": get_current_config()})
         if message_type == "services.config.normalize":
             return _success_response({"config": normalize_config(_payload_config(payload))})
         if message_type == "services.config.load":
@@ -687,36 +793,62 @@ def _apply_runtime_config(
     result: dict[str, Any],
     runtime_client: RuntimeClient | None,
 ) -> None:
-    logs = _section(_section(config, "runtime"), "logs")
-    if not logs.get("enabled"):
-        return
-    if runtime_client is None:
-        result["warnings"].append(
-            {
-                "feature": "runtime.logs",
-                "message": "runtime_client is required to enable logs",
-            }
-        )
-        return
+    runtime = _section(config, "runtime")
+    errors = _section(runtime, "errors")
+    if errors.get("enabled"):
+        if runtime_client is None:
+            uninstall_error_capture()
+            result["warnings"].append(
+                {
+                    "feature": "runtime.errors",
+                    "message": "runtime_client is required to enable errors",
+                }
+            )
+        else:
+            _apply_step(
+                "runtime.errors",
+                lambda: install_error_capture(
+                    runtime_client,
+                    sys_excepthook=bool(errors.get("sys_excepthook", True)),
+                    threading_excepthook=bool(errors.get("threading_excepthook", True)),
+                    unraisablehook=bool(errors.get("unraisablehook", True)),
+                    asyncio=bool(errors.get("asyncio", True)),
+                    include_locals=bool(errors.get("include_locals", False)),
+                ),
+                result,
+            )
+    else:
+        uninstall_error_capture()
 
-    _apply_step(
-        "runtime.logs",
-        lambda: install_log_capture(
-            runtime_client,
-            capture_logging=bool(logs.get("logging", True)),
-            streams=_normalize_string_list(logs.get("streams", DEFAULT_STREAMS)),
-            subprocess_mode=str(logs.get("subprocess", "safe")),
-            policy=str(logs.get("policy", "bounded")),
-            max_chars=int(logs.get("max_chars", DEFAULT_MAX_CHARS)),
-            queue_size=int(logs.get("queue_size", DEFAULT_QUEUE_SIZE)),
-            logger_include=_normalize_string_list(logs.get("logger_include", [])),
-            logger_exclude=_normalize_string_list(logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)),
-            hook_policy=str(logs.get("hook_policy", DEFAULT_HOOK_POLICY)),
-            hook_check_interval=int(logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
-            fd_capture=str(logs.get("fd_capture", DEFAULT_FD_CAPTURE)),
-        ),
-        result,
-    )
+    logs = _section(runtime, "logs")
+    if logs.get("enabled"):
+        if runtime_client is None:
+            result["warnings"].append(
+                {
+                    "feature": "runtime.logs",
+                    "message": "runtime_client is required to enable logs",
+                }
+            )
+            return
+
+        _apply_step(
+            "runtime.logs",
+            lambda: install_log_capture(
+                runtime_client,
+                capture_logging=bool(logs.get("logging", True)),
+                streams=_normalize_string_list(logs.get("streams", DEFAULT_STREAMS)),
+                subprocess_mode=str(logs.get("subprocess", "safe")),
+                policy=str(logs.get("policy", "bounded")),
+                max_chars=int(logs.get("max_chars", DEFAULT_MAX_CHARS)),
+                queue_size=int(logs.get("queue_size", DEFAULT_QUEUE_SIZE)),
+                logger_include=_normalize_string_list(logs.get("logger_include", [])),
+                logger_exclude=_normalize_string_list(logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)),
+                hook_policy=str(logs.get("hook_policy", DEFAULT_HOOK_POLICY)),
+                hook_check_interval=int(logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
+                fd_capture=str(logs.get("fd_capture", DEFAULT_FD_CAPTURE)),
+            ),
+            result,
+        )
 
 
 def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> None:
@@ -819,6 +951,8 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any]) ->
     features["core.import_hook"]["active"] = is_import_hook_installed()
     features["core.stack_shadow"]["default"] = defaults["core"]["stack_shadow"]
     features["core.stack_shadow"]["active"] = is_stack_shadower_installed()
+    features["runtime.errors"]["default"] = defaults["runtime"]["errors"]
+    features["runtime.errors"]["active"] = is_error_capture_installed()
     features["runtime.logs"]["default"] = defaults["runtime"]["logs"]
     features["runtime.logs"]["active"] = False
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]

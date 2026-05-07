@@ -6,7 +6,7 @@
 
 services 管理两类能力：
 
-- 核心框架能力：`core.import_hook`、`core.stack_shadow`、`runtime.logs`
+- 核心框架能力：`core.import_hook`、`core.stack_shadow`、`runtime.errors`、`runtime.logs`
 - 现有扩展补丁：`extensions.zluda`、`extensions.extension_index`、`extensions.hf_endpoint_mirror`、`extensions.uv_pip`
 
 v1 只负责启用和注册补丁，不负责撤销已经注册或已经生效的 import-time 补丁。`enabled=false` 的含义是“不主动注册这个功能”。
@@ -90,6 +90,8 @@ result = apply_config(config)
 
 配置文件格式不受 catalog 元数据影响，仍然只保存真实配置值。未被 catalog 描述的未来字段应由管理器保留在原 JSON 中。
 
+`runtime.errors.include_locals=true` 会在 `error.exception` 的 traceback frame 中附带脱敏后的局部变量 `repr()` 摘要。该项默认关闭, 并会自动脱敏敏感变量名和截断过大的值。
+
 ## 配置补齐
 
 配置文件可以只保存用户改过的部分：
@@ -120,10 +122,13 @@ result = apply_config(config)
 
 - `services.catalog.get`
 - `services.defaults.get`
+- `services.config.current`
 - `services.config.normalize`
 - `services.config.load`
 - `services.config.save`
 - `services.config.apply`
+
+`services.config.current` 返回当前进程最后加载或应用的完整配置。若当前进程尚未记录配置, 返回默认完整配置。
 
 响应格式：
 

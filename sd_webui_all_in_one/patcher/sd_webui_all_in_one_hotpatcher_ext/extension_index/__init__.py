@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 from types import CodeType, ModuleType
 from typing import Any
+from urllib.parse import urlsplit
 
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
 
@@ -34,6 +35,10 @@ A1111_EXTENSION_INDEX_URLS = (
 COMFYUI_MANAGER_RAW_FILE_PATH = "ltdrdata/ComfyUI-Manager/main"
 COMFYUI_MANAGER_RAW_PREFIX = f"https://raw.githubusercontent.com/{COMFYUI_MANAGER_RAW_FILE_PATH}"
 COMFYUI_MANAGER_CORE_MODULE = "manager_core"
+COMFYUI_MANAGER_SERVER_MODULE = "manager_server"
+COMFYUI_MANAGER_UTIL_MODULE = "manager_util"
+GITHUB_RAW_HOST = "raw.githubusercontent.com"
+GITHUB_HOST = "github.com"
 
 
 def resolve_a1111_extension_index_url(value: str) -> str | None:
@@ -149,6 +154,32 @@ def patch_extension_index_comfyui_manager(
         monkey.patch_function("get_channel_dict", patch_get_channel_dict)
         monkey.patch_module(patch_manager_core_module)
 
+    with monkey_zoo(COMFYUI_MANAGER_SERVER_MODULE) as monkey:
+
+        def patch_manager_server_urls(code_object) -> None:
+            replacements = {source_prefix: destination_prefix}
+            _replace_string_constants_in_code(code_object, replacements)
+
+        monkey.patch_bytecode(patch_manager_server_urls)
+
+    def patch_manager_util_get_data(func: Any, module: ModuleType):
+        @functools.wraps(func)
+        async def wrapper(uri, *args, **kwargs):
+            return await func(
+                _replace_comfyui_manager_get_data_url(
+                    uri,
+                    source_prefix=source_prefix,
+                    destination_prefix=destination_prefix,
+                ),
+                *args,
+                **kwargs,
+            )
+
+        return wrapper
+
+    with monkey_zoo(COMFYUI_MANAGER_UTIL_MODULE) as monkey:
+        monkey.patch_function("get_data", patch_manager_util_get_data)
+
 
 def apply_from_config(config: dict[str, Any] | None) -> None:
     """
@@ -234,6 +265,93 @@ def _replace_comfyui_manager_channel_url(
     if url.startswith(source_prefix + "/"):
         return destination_prefix + url[len(source_prefix) :]
     return url
+
+
+def _replace_comfyui_manager_get_data_url(
+    url: Any,
+    *,
+    source_prefix: str,
+    destination_prefix: str,
+) -> Any:
+    mirrored_url = _replace_comfyui_manager_channel_url(
+        url,
+        source_prefix=source_prefix,
+        destination_prefix=destination_prefix,
+    )
+    if mirrored_url != url:
+        return mirrored_url
+
+    raw_file = _split_github_raw_file_url(url)
+    if raw_file is None:
+        return url
+
+    raw_file_path, suffix = raw_file
+    mirrored_url = _mirror_github_raw_file_url(
+        raw_file_path,
+        source_prefix=source_prefix,
+        destination_prefix=destination_prefix,
+    )
+    return (mirrored_url + suffix) if mirrored_url is not None else url
+
+
+def _mirror_github_raw_file_url(
+    raw_file_path: str,
+    *,
+    source_prefix: str,
+    destination_prefix: str,
+) -> str | None:
+    mirror_prefix = _derive_github_raw_mirror_prefix(
+        source_prefix=source_prefix,
+        destination_prefix=destination_prefix,
+    )
+    if mirror_prefix is not None:
+        return f"{mirror_prefix}/{raw_file_path}"
+    return _apply_github_raw_file_mirror(raw_file_path)
+
+
+def _derive_github_raw_mirror_prefix(
+    *,
+    source_prefix: str,
+    destination_prefix: str,
+) -> str | None:
+    source_raw_file = _split_github_raw_file_url(source_prefix)
+    if source_raw_file is None:
+        return None
+
+    source_raw_file_path, _ = source_raw_file
+    expected_suffix = "/" + source_raw_file_path
+    if not destination_prefix.endswith(expected_suffix):
+        return None
+
+    mirror_prefix = destination_prefix[: -len(expected_suffix)].rstrip("/")
+    return mirror_prefix or None
+
+
+def _split_github_raw_file_url(url: Any) -> tuple[str, str] | None:
+    if not isinstance(url, str):
+        return None
+
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+
+    host = parsed.netloc.lower()
+    path_parts = [part for part in parsed.path.split("/") if part]
+    raw_file_path: str | None = None
+    if host == GITHUB_RAW_HOST and len(path_parts) >= 3:
+        raw_file_path = "/".join(path_parts)
+    elif host == GITHUB_HOST and len(path_parts) >= 4 and path_parts[2] in {"raw", "blob"}:
+        raw_file_path = "/".join([path_parts[0], path_parts[1], *path_parts[3:]])
+
+    if raw_file_path is None:
+        return None
+
+    suffix = ""
+    if parsed.query:
+        suffix += "?" + parsed.query
+    if parsed.fragment:
+        suffix += "#" + parsed.fragment
+    return raw_file_path, suffix
 
 
 def _add_valid_channel(module: ModuleType, url: str) -> None:
