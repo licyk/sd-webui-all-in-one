@@ -58,7 +58,7 @@ D:/SD-Trainer
 接下来需要将 SD-Trainer 移动到 `D:/SD-Trainer` 目录中，如果 SD-Trainer 的文件夹名称不是 `lora-scripts`，比如`lora-scripts-v1.10.0`，需要将名称修改成`lora-scripts`。
 
 !!! note
-    如果不修改名称，需要根据 [设置内核路径前缀](config.md#设置内核路径前缀) 中的说明配置内核路径前缀。在这个例子中内核路径前缀就需要设置为 `lora-scripts-v1.10.0`。
+    如果不修改名称，需要根据 [设置内核路径前缀](config.md#_5) 中的说明配置内核路径前缀。在这个例子中内核路径前缀就需要设置为 `lora-scripts-v1.10.0`。
 
 移动进去后此时的目录结构如下。
 

@@ -61,6 +61,9 @@ tunnel = [
     "pycloudflared",
     "gradio-tunneling",
 ]
+docs = [
+    "zensical",
+]
 full = [
     "zstandard",
     "py7zr",

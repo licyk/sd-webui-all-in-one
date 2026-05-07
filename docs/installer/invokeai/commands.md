@@ -99,13 +99,13 @@ List-CMD
 ```
 
 ### 查看可用的 InvokeAI 版本并切换
-（已在 [环境管理](usage.md#环境管理) 章节中说明）
+（已在 [环境管理](usage.md#_2) 章节中说明）
 
 ### 更新到 InvokeAI RC 版
-（已在 [环境管理](usage.md#环境管理) 章节中说明）
+（已在 [环境管理](usage.md#_2) 章节中说明）
 
 ### 查看 Git / Python 命令实际调用的路径
-（已在 [环境管理](usage.md#环境管理) 章节中说明）
+（已在 [环境管理](usage.md#_2) 章节中说明）
 
 ### 解决 AttributeError: module 'cv2.ximgproc' has no attribute 'thinning'
 ```powershell

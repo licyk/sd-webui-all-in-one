@@ -15,7 +15,7 @@
 
 ### 设置 ComfyUI 启动参数
 !!! info
-    该设置可通过 [管理 ComfyUI Installer 设置](config.md#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 ComfyUI Installer 设置](config.md#comfyui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 要设置 ComfyUI 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 ComfyUI 启动脚本时将自动读取该文件内的启动参数并应用。
 
@@ -30,7 +30,7 @@
 
 ### 启用 Hotpatcher 补丁系统
 !!! info
-    该设置可通过 [管理 ComfyUI Installer 设置](config.md#管理-comfyui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 ComfyUI Installer 设置](config.md#comfyui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 运行 `launch.ps1` 时可通过 `-Hotpatcher` 启用 Hotpatcher，也可以在脚本同级目录创建 `enable_hotpatcher.txt` 后启用。启用后，`launch.ps1` 会向 ComfyUI 启动命令追加 `--hotpatcher` 和 `--hotpatcher-config <路径>`。
 

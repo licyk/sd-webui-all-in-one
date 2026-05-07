@@ -15,7 +15,7 @@
 
 ### 设置 Stable Diffusion WebUI 启动参数
 !!! info
-    该设置可通过 [管理 SD WebUI Installer 设置](config.md#管理-sd-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 SD WebUI Installer 设置](config.md#sd-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 要设置 Stable Diffusion WebUI 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个 `launch_args.txt` 文件，在文件内写上启动参数，运行 Stable Diffusion WebUI 启动脚本时将自动读取该文件内的启动参数并应用。
 
@@ -66,7 +66,7 @@
 
 ### 启用 Hotpatcher 补丁系统
 !!! info
-    该设置可通过 [管理 SD WebUI Installer 设置](config.md#管理-sd-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 SD WebUI Installer 设置](config.md#sd-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 运行 `launch.ps1 -Hotpatcher`，或在 `launch.ps1` 同级目录创建 `enable_hotpatcher.txt`，即可在启动 Stable Diffusion WebUI 时启用 Hotpatcher 补丁系统。
 

@@ -32,7 +32,7 @@
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
-或者使用 [环境配置](install.md#环境配置) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+或者使用 [环境配置](install.md#_1) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
 
 !!! note
     关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
@@ -87,7 +87,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 这是因为该端口被其他软件占用，ComfyUI 无法使用。可尝试将占用该端口的软件关闭，或者在`launch.ps1` 所在目录创建`launch_args.txt` 文件，在该文件中写上启动参数把 ComfyUI 端口修改，如`--port 8888`，保存 `launch_args.txt` 文件后使用 `launch.ps1` 重新启动 ComfyUI。
 
 !!! note
-    设置 ComfyUI 启动参数的方法可参考 [设置 ComfyUI 启动参数](usage.md#设置-comfyui-启动参数)。
+    设置 ComfyUI 启动参数的方法可参考 [设置 ComfyUI 启动参数](usage.md#comfyui_3)。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
 下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。

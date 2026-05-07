@@ -7,7 +7,7 @@
 ### 启动训练脚本
 编写并运行 `train.ps1` 脚本。
 
-训练脚本中的内容需要自行编写，编写方法请参考 [编写训练脚本](advanced.md#编写训练脚本) 部分的内容。
+训练脚本中的内容需要自行编写，编写方法请参考 [编写训练脚本](advanced.md#_2) 部分的内容。
 
 ### 更新 SD-Trainer-Script
 运行 `update.ps1` 脚本，如果遇到更新 SD-Trainer-Script 失败的情况可尝试重新运行 `update.ps1` 脚本。

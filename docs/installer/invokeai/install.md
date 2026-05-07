@@ -35,11 +35,11 @@
 
 !!! note
     InvokeAI Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
-    - [设置 PyPI 镜像源](config.md#设置-pypi-镜像源)
-    - [设置 uv 包管理器](config.md#设置-uv-包管理器)
-    - [配置代理](config.md#配置代理)
-    - [设置内核路径前缀](config.md#设置内核路径前缀)
-    - [设置模型下载源](resources.md#设置模型下载源)
+    - [设置 PyPI 镜像源](config.md#pypi)
+    - [设置 uv 包管理器](config.md#uv)
+    - [配置代理](config.md#_2)
+    - [设置内核路径前缀](config.md#_5)
+    - [设置模型下载源](resources.md#_3)
     
     通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
@@ -54,5 +54,5 @@
 在 InvokeAI Installer 成功安装 InvokeAI 后，在`InvokeAI`文件夹中可以看到 InvokeAI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 InvokeAI Installer。
 
 !!! note
-    1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](install.md#环境配置)中的方法进行解除。
-    2. InvokeAI Installer 支持使用在命令行中通过参数配置 InvokeAI 的安装参数，具体说明可阅读[使用命令运行 InvokeAI Installer](advanced.md#使用命令运行-invokeai-installer)。
+    1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](install.md#_1)中的方法进行解除。
+    2. InvokeAI Installer 支持使用在命令行中通过参数配置 InvokeAI 的安装参数，具体说明可阅读[使用命令运行 InvokeAI Installer](advanced.md#invokeai-installer_1)。

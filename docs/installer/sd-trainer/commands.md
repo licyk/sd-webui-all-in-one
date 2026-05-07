@@ -91,7 +91,7 @@ List-CMD
 ```
 
 ### 查看并切换 SD-Trainer 的版本
-（已在 [环境管理](usage.md#环境管理) 章节中说明）
+（已在 [环境管理](usage.md#_2) 章节中说明）
 
 ### 将 LoRA 模型融进 Stable Diffusion 模型中
 ```powershell
@@ -115,4 +115,4 @@ python LyCORIS/tools/merge.py animagine-xl-3.1.safetensors artist_all_in_one_2-0
 ```
 
 ### 查看 Git / Python 命令实际调用的路径
-（已在 [环境管理](usage.md#环境管理) 章节中说明）
+（已在 [环境管理](usage.md#_2) 章节中说明）

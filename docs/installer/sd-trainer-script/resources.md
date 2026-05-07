@@ -7,7 +7,7 @@
 
 ### 设置模型下载源
 !!! info
-    该设置可通过 [管理 SD Trainer Script Installer 设置](config.md#管理-sd-trainer-script-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 SD Trainer Script Installer 设置](config.md#sd-trainer-script-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 使用 `download_models.ps1` 脚本下载模型时，默认使用的下载源为 [ModelScope](https://modelscope.cn)，如果需要切换到 [HuggingFace](https://huggingface.co) 下载源，可以在和脚本同级的路径中创建一个 `disable_model_mirror.txt` 文件，再次启动 `download_models.ps1` 脚本时下载模型将使用 [HuggingFace](https://huggingface.co) 下载源。
 

@@ -12,7 +12,7 @@
 
 ### 设置 Qwen TTS WebUI 启动参数
 !!! info
-    该设置可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#管理-qwen-tts-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#qwen-tts-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 要设置 Qwen TTS WebUI 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 Qwen TTS WebUI 启动脚本时将自动读取该文件内的启动参数并应用。
 
@@ -29,7 +29,7 @@
 
 ### 启用 Hotpatcher 补丁系统
 !!! info
-    该设置中的补丁系统开关和端口可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#管理-qwen-tts-webui-installer-设置) 中提到的 `settings.ps1` 进行修改。
+    该设置中的补丁系统开关和端口可通过 [管理 Qwen TTS WebUI Installer 设置](config.md#qwen-tts-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
 运行 `launch.ps1` 时添加 `-Hotpatcher` 可启用 Hotpatcher 补丁系统：
 

@@ -32,7 +32,7 @@
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
-或者使用 [环境配置](install.md#环境配置) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+或者使用 [环境配置](install.md#_1) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
 
 !!! note
     关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
@@ -144,13 +144,13 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
 这是因为该端口被其他软件占用，SD-Trainer 无法使用。可尝试将占用该端口的软件关闭，或者在`launch.ps1` 所在目录创建`launch_args.txt` 文件，在该文件中写上启动参数把 SD-Trainer 端口修改，如`--port 8888`，保存 `launch_args.txt` 文件后使用 `launch.ps1` 重新启动 SD-Trainer。
 
 !!! note
-    设置 SD-Trainer 启动参数的方法可参考 [设置 SD-Trainer 启动参数](usage.md#设置-sd-trainer-启动参数)。
+    设置 SD-Trainer 启动参数的方法可参考 [设置 SD-Trainer 启动参数](usage.md#sd-trainer_2)。
 
 ### AssertError: caption file is empty: xxx\xxxxxx\xx\2_xxx\xxxxxxx.txt
 这是因为图片的打标文件的内容为空，请检查报错指出的文件里的内容是否为空，如果为空，需要重新打标。
 
 ### Torch 版本低于 2.3.0，将无法正常训练 FLUX 模型。请考虑升级到更新的版本。
-运行 `reinstall_pytorch.ps1` 脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD Trainer Installer 的管理脚本进行更新，方法参看：[SD Trainer Installer ### 更新 SD-Trainer 管理脚本](#更新 sd-trainer-管理脚本)
+运行 `reinstall_pytorch.ps1` 脚本重装 PyTorch，选择大于或等于 2.3.0 版本的 PyTorch 进行重装，如果可选的 PyTorch 版本列表缺少大于或等于 2.3.0 版本的 PyTorch，需要对 SD Trainer Installer 的管理脚本进行更新，方法参看：[SD Trainer Installer ### 更新 SD-Trainer 管理脚本](update.md#sd-trainer)
 
 #### 修复使用 WD 标签器出现 Onnxruntime 无法正常调用 GPU 的问题
 运行 `settings.ps1`，进入 SD-Trainer 启动参数设置，填入以下启动参数，或者在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，填入以下启动参数，禁用 SD-Trainer 的 Onnxruntime 检查。
