@@ -116,6 +116,7 @@ client = RuntimeClient.connect_from_env()
 - browser.open
 - audit.event
 - error.exception
+- error.caught_exception
 - log.record / log.stream / log.dropped
 
 文件操作和配置拉取不应该用事件，因为它们需要知道宿主是否接受。
@@ -302,8 +303,14 @@ payload 包含：
 
 它和 fault channel 的区别：
 
-- `error.exception`：普通 Python exception。
+- `error.exception`：未处理异常、unraisable 异常、asyncio loop 异常, 或补丁内部显式上报的异常。
+- `error.caught_exception`：实验性 `sys.settrace` 捕获到的 Python exception 事件, 包括被业务代码 `except` 处理的异常。
 - `fault` channel：segfault、abort、fatal error 等 faulthandler 场景。
+
+`error.caught_exception` 的 payload 与 `error.exception` 相同, 但 `source` 固定为 `sys.settrace`,
+`context` 会包含 `caught=true`、module、function、lineno 和线程信息。
+该事件只在 `runtime.errors.caught_exceptions.enabled=true` 时启用, 会带来明显性能成本,
+并且不会覆盖已有 debugger/coverage/profiler 的 trace function。
 
 ## Log 事件
 

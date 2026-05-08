@@ -4,6 +4,7 @@ from .browser import ManagedBrowser, patch_webbrowser
 from .client import RuntimeClient
 from .config import load_config
 from .errors import (
+    CaughtExceptionTracer,
     ErrorCapture,
     configure_error_capture_from_env,
     install_error_capture,
@@ -25,6 +26,7 @@ from .protocol import RuntimeProtocolError, RuntimeRequestError, RuntimeTranspor
 
 __all__ = [
     "FileOperation",
+    "CaughtExceptionTracer",
     "ErrorCapture",
     "LogCapture",
     "ManagedBrowser",

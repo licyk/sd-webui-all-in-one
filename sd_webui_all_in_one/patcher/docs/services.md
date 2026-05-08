@@ -92,6 +92,10 @@ result = apply_config(config)
 
 `runtime.errors.include_locals=true` 会在 `error.exception` 的 traceback frame 中附带脱敏后的局部变量 `repr()` 摘要。该项默认关闭, 并会自动脱敏敏感变量名和截断过大的值。
 
+`runtime.errors.caught_exceptions.enabled=true` 是实验性功能, 会通过 `sys.settrace` 发送
+`error.caught_exception` 事件来观察被业务代码 `except` 捕获的异常。该功能默认关闭,
+可能明显影响性能, 且不会与已有 debugger、coverage 或 profiler trace function 强行共存。
+
 ## 配置补齐
 
 配置文件可以只保存用户改过的部分：

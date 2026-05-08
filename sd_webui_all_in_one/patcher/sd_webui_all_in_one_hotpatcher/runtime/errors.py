@@ -7,7 +7,9 @@ import os
 import platform
 import sys
 import threading
+import time
 import traceback
+from collections.abc import Iterable
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Any
@@ -18,6 +20,13 @@ from .client import RuntimeClient
 _LOCAL_REPR_MAX_CHARS = 512
 _LOCAL_FRAME_LIMIT = 40
 _LOCAL_TOTAL_REPR_BUDGET = 32768
+_CAUGHT_DEDUP_TTL_SECONDS = 2.0
+_CAUGHT_DEDUP_MAX = 2048
+_CAUGHT_TRACE_MARKER = "_sd_webui_all_in_one_hotpatcher_caught_exception_tracer"
+DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES = (
+    "sd_webui_all_in_one_hotpatcher",
+    "sd_webui_all_in_one_hotpatcher_ext",
+)
 _SENSITIVE_LOCAL_NAME_PARTS = (
     "password",
     "passwd",
@@ -89,6 +98,11 @@ class ErrorCapture:
     threading_excepthook: bool = True
     unraisablehook: bool = True
     asyncio: bool = True
+    caught_exceptions_enabled: bool = False
+    caught_exceptions_threading: bool = True
+    caught_exception_module_prefixes: tuple[str, ...] = ()
+    caught_exception_exclude_module_prefixes: tuple[str, ...] = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES
+    caught_exception_max_events_per_second: int = 20
     closed: bool = False
 
     def __post_init__(self) -> None:
@@ -100,31 +114,46 @@ class ErrorCapture:
         self._threading_wrapper: Any = None
         self._unraisable_wrapper: Any = None
         self._asyncio_wrapper: Any = None
+        self.caught_exception_tracer: CaughtExceptionTracer | None = None
 
     def install(self) -> "ErrorCapture":
         """安装已配置的全局异常 hook"""
 
-        install_exception_reporter(self.client, include_locals=self.include_locals)
+        try:
+            install_exception_reporter(self.client, include_locals=self.include_locals)
 
-        if self.sys_excepthook:
-            self._original_sys_excepthook = sys.excepthook
-            self._sys_wrapper = self._handle_sys_excepthook
-            sys.excepthook = self._sys_wrapper
+            if self.sys_excepthook:
+                self._original_sys_excepthook = sys.excepthook
+                self._sys_wrapper = self._handle_sys_excepthook
+                sys.excepthook = self._sys_wrapper
 
-        if self.threading_excepthook and hasattr(threading, "excepthook"):
-            self._original_threading_excepthook = threading.excepthook
-            self._threading_wrapper = self._handle_threading_excepthook
-            threading.excepthook = self._threading_wrapper
+            if self.threading_excepthook and hasattr(threading, "excepthook"):
+                self._original_threading_excepthook = threading.excepthook
+                self._threading_wrapper = self._handle_threading_excepthook
+                threading.excepthook = self._threading_wrapper
 
-        if self.unraisablehook and hasattr(sys, "unraisablehook"):
-            self._original_unraisablehook = sys.unraisablehook
-            self._unraisable_wrapper = self._handle_unraisablehook
-            sys.unraisablehook = self._unraisable_wrapper
+            if self.unraisablehook and hasattr(sys, "unraisablehook"):
+                self._original_unraisablehook = sys.unraisablehook
+                self._unraisable_wrapper = self._handle_unraisablehook
+                sys.unraisablehook = self._unraisable_wrapper
 
-        if self.asyncio:
-            self._original_asyncio_call_exception_handler = asyncio_module.BaseEventLoop.call_exception_handler
-            self._asyncio_wrapper = self._make_asyncio_wrapper(self._original_asyncio_call_exception_handler)
-            asyncio_module.BaseEventLoop.call_exception_handler = self._asyncio_wrapper
+            if self.asyncio:
+                self._original_asyncio_call_exception_handler = asyncio_module.BaseEventLoop.call_exception_handler
+                self._asyncio_wrapper = self._make_asyncio_wrapper(self._original_asyncio_call_exception_handler)
+                asyncio_module.BaseEventLoop.call_exception_handler = self._asyncio_wrapper
+
+            if self.caught_exceptions_enabled:
+                self.caught_exception_tracer = CaughtExceptionTracer(
+                    client=self.client,
+                    include_locals=self.include_locals,
+                    trace_threading=self.caught_exceptions_threading,
+                    module_prefixes=self.caught_exception_module_prefixes,
+                    exclude_module_prefixes=self.caught_exception_exclude_module_prefixes,
+                    max_events_per_second=self.caught_exception_max_events_per_second,
+                ).install()
+        except Exception:
+            self.close()
+            raise
 
         return self
 
@@ -153,6 +182,10 @@ class ErrorCapture:
             and asyncio_module.BaseEventLoop.call_exception_handler is self._asyncio_wrapper
         ):
             asyncio_module.BaseEventLoop.call_exception_handler = self._original_asyncio_call_exception_handler
+
+        if self.caught_exception_tracer is not None:
+            self.caught_exception_tracer.close()
+            self.caught_exception_tracer = None
 
         uninstall_exception_reporter()
 
@@ -298,6 +331,11 @@ def install_error_capture(
     unraisablehook: bool = True,
     asyncio: bool = True,
     include_locals: bool = False,
+    caught_exceptions_enabled: bool = False,
+    caught_exceptions_threading: bool = True,
+    caught_exception_module_prefixes: Iterable[str] | None = None,
+    caught_exception_exclude_module_prefixes: Iterable[str] | None = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
+    caught_exception_max_events_per_second: int = 20,
 ) -> ErrorCapture:
     """
     安装全局 Python 运行时错误捕获
@@ -315,6 +353,16 @@ def install_error_capture(
             是否捕获 asyncio event loop 异常
         include_locals (bool):
             是否包含脱敏后的局部变量摘要。
+        caught_exceptions_enabled (bool):
+            是否启用实验性 caught exception trace 捕获。
+        caught_exceptions_threading (bool):
+            是否对后续新建线程安装 trace 捕获。
+        caught_exception_module_prefixes (Iterable[str] | None):
+            允许捕获的模块名前缀。为空表示不限制。
+        caught_exception_exclude_module_prefixes (Iterable[str] | None):
+            排除捕获的模块名前缀。
+        caught_exception_max_events_per_second (int):
+            caught exception 事件每秒发送上限。
 
     Returns:
         ErrorCapture:
@@ -331,6 +379,11 @@ def install_error_capture(
         threading_excepthook=threading_excepthook,
         unraisablehook=unraisablehook,
         asyncio=asyncio,
+        caught_exceptions_enabled=caught_exceptions_enabled,
+        caught_exceptions_threading=caught_exceptions_threading,
+        caught_exception_module_prefixes=_normalize_prefixes(caught_exception_module_prefixes),
+        caught_exception_exclude_module_prefixes=_normalize_prefixes(caught_exception_exclude_module_prefixes),
+        caught_exception_max_events_per_second=max(0, int(caught_exception_max_events_per_second)),
     ).install()
     _current_capture = capture
     return capture
@@ -375,6 +428,7 @@ def configure_error_capture_from_env(
     if not enabled:
         uninstall_error_capture()
         return None
+    caught_exceptions = _config_caught_exceptions(config_errors)
 
     return install_error_capture(
         client,
@@ -397,6 +451,28 @@ def configure_error_capture_from_env(
         include_locals=_env_bool(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_INCLUDE_LOCALS",
             default=_config_bool(config_errors, "include_locals", False),
+        ),
+        caught_exceptions_enabled=_env_bool(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_EXCEPTIONS",
+            default=_config_bool(caught_exceptions, "enabled", False),
+        ),
+        caught_exceptions_threading=_env_bool(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_THREADING",
+            default=_config_bool(caught_exceptions, "threading", True),
+        ),
+        caught_exception_module_prefixes=_env_list(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_MODULE_PREFIXES",
+            caught_exceptions.get("module_prefixes", ()) if isinstance(caught_exceptions, dict) else (),
+        ),
+        caught_exception_exclude_module_prefixes=_env_list(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_EXCLUDE_PREFIXES",
+            caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)
+            if isinstance(caught_exceptions, dict)
+            else DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
+        ),
+        caught_exception_max_events_per_second=_env_int(
+            "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_MAX_EVENTS_PER_SECOND",
+            int(caught_exceptions.get("max_events_per_second", 20)) if isinstance(caught_exceptions, dict) else 20,
         ),
     )
 
@@ -470,6 +546,7 @@ def _send_exception_event(
     exc_value: BaseException,
     exc_tb: TracebackType | None,
     *,
+    message_type: str = "error.exception",
     source: str | None = None,
     context: dict[str, Any] | None = None,
     include_locals: bool = False,
@@ -488,9 +565,9 @@ def _send_exception_event(
         )
         transport = getattr(client, "transport", None)
         if transport is not None:
-            transport.event("error.exception", payload)
+            transport.event(message_type, payload)
         else:
-            client.event("error.exception", payload)
+            client.event(message_type, payload)
     except Exception:
         return
     finally:
@@ -520,11 +597,32 @@ def _config_bool(config_errors: dict[str, Any] | bool, key: str, default: bool) 
     return bool(config_errors.get(key, default))
 
 
+def _config_caught_exceptions(config_errors: dict[str, Any] | bool) -> dict[str, Any] | bool:
+    if not isinstance(config_errors, dict):
+        return {}
+    caught_exceptions = config_errors.get("caught_exceptions", {})
+    return caught_exceptions if isinstance(caught_exceptions, dict) else bool(caught_exceptions)
+
+
 def _env_bool(name: str, *, default: bool) -> bool:
     value = os.getenv(name)
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return int(value)
+
+
+def _env_list(name: str, default: Iterable[str]) -> tuple[str, ...]:
+    value = os.getenv(name)
+    if value is None:
+        return _normalize_prefixes(default)
+    return _normalize_prefixes(value)
 
 
 def _json_safe_context(context: dict[str, Any]) -> dict[str, Any]:
@@ -535,6 +633,176 @@ def _json_safe_value(value: Any) -> Any:
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
     return _safe_repr(value)
+
+
+@dataclass
+class CaughtExceptionTracer:
+    """
+    实验性 caught exception trace 捕获器
+
+    使用 ``sys.settrace`` 捕获 Python ``exception`` 事件, 因此会有明显性能成本。
+    """
+
+    client: RuntimeClient
+    include_locals: bool = False
+    trace_threading: bool = True
+    module_prefixes: tuple[str, ...] = ()
+    exclude_module_prefixes: tuple[str, ...] = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES
+    max_events_per_second: int = 20
+    closed: bool = False
+
+    def __post_init__(self) -> None:
+        self.module_prefixes = _normalize_prefixes(self.module_prefixes)
+        self.exclude_module_prefixes = _normalize_prefixes(self.exclude_module_prefixes)
+        self.max_events_per_second = max(0, int(self.max_events_per_second))
+        self._original_trace: Any = None
+        self._original_threading_trace: Any = None
+        self._dedup: dict[int, float] = {}
+        self._rate_second = 0
+        self._rate_count = 0
+        self._lock = threading.Lock()
+
+        def trace_function(frame: Any, event: str, arg: Any) -> Any:
+            return self._trace(frame, event, arg)
+
+        setattr(trace_function, _CAUGHT_TRACE_MARKER, True)
+        self._trace_function = trace_function
+
+    def install(self) -> "CaughtExceptionTracer":
+        """安装 caught exception trace 捕获"""
+
+        current_trace = sys.gettrace()
+        if current_trace is not None and not _is_hotpatcher_trace(current_trace):
+            raise RuntimeError("cannot install caught exception tracer while another sys trace function is active")
+
+        current_threading_trace = _get_threading_trace()
+        if self.trace_threading and current_threading_trace is not None and not _is_hotpatcher_trace(current_threading_trace):
+            raise RuntimeError("cannot install caught exception tracer while another threading trace function is active")
+
+        self._original_trace = None if _is_hotpatcher_trace(current_trace) else current_trace
+        self._original_threading_trace = None if _is_hotpatcher_trace(current_threading_trace) else current_threading_trace
+        sys.settrace(self._trace_function)
+        if self.trace_threading:
+            threading.settrace(self._trace_function)
+        return self
+
+    def close(self) -> None:
+        """卸载 caught exception trace 捕获"""
+
+        if self.closed:
+            return
+        self.closed = True
+        if sys.gettrace() is self._trace_function:
+            sys.settrace(self._original_trace)
+        if self.trace_threading and _get_threading_trace() is self._trace_function:
+            threading.settrace(self._original_threading_trace)
+
+    def _trace(self, frame: Any, event: str, arg: Any) -> Any:
+        if self.closed:
+            return self._original_trace
+        if event == "exception":
+            self._handle_exception(frame, arg)
+        return self._trace_function
+
+    def _handle_exception(self, frame: Any, arg: Any) -> None:
+        if getattr(_guard, "active", False):
+            return
+        if not isinstance(arg, tuple) or len(arg) != 3:
+            return
+        exc_type, exc_value, exc_tb = arg
+        if not isinstance(exc_value, BaseException):
+            return
+
+        module = str(frame.f_globals.get("__name__", ""))
+        if not _module_allowed(module, self.module_prefixes, self.exclude_module_prefixes):
+            return
+        if not self._should_emit(exc_value):
+            return
+
+        thread = threading.current_thread()
+        context = {
+            "caught": True,
+            "module": module,
+            "function": frame.f_code.co_name,
+            "lineno": frame.f_lineno,
+            "thread_name": thread.name,
+            "thread_ident": thread.ident,
+        }
+        _send_exception_event(
+            self.client,
+            exc_type,
+            exc_value,
+            exc_tb,
+            message_type="error.caught_exception",
+            source="sys.settrace",
+            context=context,
+            include_locals=self.include_locals,
+        )
+
+    def _should_emit(self, exc_value: BaseException) -> bool:
+        now = time.monotonic()
+        key = id(exc_value)
+        with self._lock:
+            self._cleanup_dedup(now)
+            if key in self._dedup:
+                return False
+            if not self._take_rate_slot(now):
+                return False
+            self._dedup[key] = now + _CAUGHT_DEDUP_TTL_SECONDS
+            return True
+
+    def _cleanup_dedup(self, now: float) -> None:
+        if len(self._dedup) > _CAUGHT_DEDUP_MAX:
+            self._dedup.clear()
+            return
+        expired = [key for key, deadline in self._dedup.items() if deadline <= now]
+        for key in expired:
+            self._dedup.pop(key, None)
+
+    def _take_rate_slot(self, now: float) -> bool:
+        if self.max_events_per_second <= 0:
+            return False
+        second = int(now)
+        if second != self._rate_second:
+            self._rate_second = second
+            self._rate_count = 0
+        if self._rate_count >= self.max_events_per_second:
+            return False
+        self._rate_count += 1
+        return True
+
+
+def _get_threading_trace() -> Any:
+    gettrace = getattr(threading, "gettrace", None)
+    if gettrace is None:
+        return None
+    return gettrace()
+
+
+def _is_hotpatcher_trace(trace_function: Any) -> bool:
+    return bool(getattr(trace_function, _CAUGHT_TRACE_MARKER, False))
+
+
+def _module_allowed(module: str, module_prefixes: tuple[str, ...], exclude_module_prefixes: tuple[str, ...]) -> bool:
+    if _module_matches(module, exclude_module_prefixes):
+        return False
+    if not module_prefixes:
+        return True
+    return _module_matches(module, module_prefixes)
+
+
+def _module_matches(module: str, prefixes: tuple[str, ...]) -> bool:
+    return any(module == prefix or module.startswith(prefix + ".") for prefix in prefixes)
+
+
+def _normalize_prefixes(prefixes: Iterable[str] | str | None) -> tuple[str, ...]:
+    if prefixes is None:
+        return ()
+    if isinstance(prefixes, str):
+        values = prefixes.split(",")
+    else:
+        values = prefixes
+    return tuple(str(prefix).strip() for prefix in values if str(prefix).strip())
 
 
 @dataclass

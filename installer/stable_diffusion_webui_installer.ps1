@@ -230,10 +230,10 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = $target_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 404
+$script:SD_WEBUI_INSTALLER_VERSION = 405
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.2"
+$script:CORE_MINIMUM_VER = "2.2.3"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -294,6 +294,68 @@ function Write-Log {
         "CRITICAL" { Write-Host "CRITICAL" -ForegroundColor White -BackgroundColor Red -NoNewline }
     }
     Write-Host ": $Message"
+}
+
+
+# 获取原生命令退出码
+function Get-NativeCommandExitCode {
+    param ([bool]$Success)
+    if ($Success) {
+        return 0
+    }
+    if (($null -ne $global:LASTEXITCODE) -and ($global:LASTEXITCODE -ne 0)) {
+        return [int]$global:LASTEXITCODE
+    }
+    return 1
+}
+
+
+# 格式化命令行参数日志
+function Format-CommandLineArgumentForLog {
+    param ([AllowNull()][object]$Argument)
+    if ($null -eq $Argument) {
+        return "''"
+    }
+    $value = [string]$Argument
+    if ($value.Length -eq 0) {
+        return "''"
+    }
+    if ($value -match '[\s''"]') {
+        return ([string][char]39) + ($value -replace ([string][char]39), ([string][char]39 + [string][char]39)) + ([string][char]39)
+    }
+    return $value
+}
+
+
+# 格式化 SD WebUI All In One CLI 命令日志
+function Format-CoreCliCommandForLog {
+    param (
+        [Parameter(Mandatory = $true)][object]$CommandPrefix,
+        [object]$Arguments
+    )
+    $parts = New-Object System.Collections.ArrayList
+    foreach ($item in $CommandPrefix) {
+        $parts.Add((Format-CommandLineArgumentForLog $item)) | Out-Null
+    }
+    if ($null -ne $Arguments) {
+        foreach ($item in $Arguments) {
+            $parts.Add((Format-CommandLineArgumentForLog $item)) | Out-Null
+        }
+    }
+    return ($parts -join ' ')
+}
+
+
+# 输出 SD WebUI All In One CLI 失败命令
+function Write-CoreCliFailureCommand {
+    param (
+        [Parameter(Mandatory = $true)][object]$CommandPrefix,
+        [object]$Arguments,
+        [Parameter(Mandatory = $true)][int]$ExitCode
+    )
+    Write-Log "SD WebUI All In One CLI 执行失败, 退出码: $ExitCode" -Level ERROR
+    $command_line = Format-CoreCliCommandForLog -CommandPrefix $CommandPrefix -Arguments $Arguments
+    Write-Log "失败命令: $command_line" -Level ERROR
 }
 
 
@@ -992,8 +1054,11 @@ function Invoke-Installation {
     $launch_params = Get-LaunchCoreArgs
 
 
+    $core_cli_command = @("python", "-m", "sd_webui_all_in_one", "sd-webui", "install")
     & python -m sd_webui_all_in_one sd-webui install $launch_params
-    if (!($?)) {
+    $exit_code = Get-NativeCommandExitCode -Success $?
+    if ($exit_code -ne 0) {
+        Write-CoreCliFailureCommand -CommandPrefix $core_cli_command -Arguments $launch_params -ExitCode $exit_code
         Write-Log "运行 SD WebUI All In One 安装 Stable Diffusion WebUI 时发生了错误, 终止 Stable Diffusion WebUI 安装进程, 可尝试重新运行 SD WebUI Installer 重试失败的安装" -Level ERROR
         if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
@@ -1179,6 +1244,55 @@ function Join-NormalizedPath {
     `$joined = `$args[0]
     for (`$i = 1; `$i -lt `$args.Count; `$i++) { `$joined = Join-Path `$joined `$args[`$i] }
     return `$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
+}
+
+
+# 格式化命令行参数日志
+function Format-CommandLineArgumentForLog {
+    param ([AllowNull()][object]`$Argument)
+    if (`$null -eq `$Argument) {
+        return `"''`"
+    }
+    `$value = [string]`$Argument
+    if (`$value.Length -eq 0) {
+        return `"''`"
+    }
+    if (`$value -match '[\s''`"]') {
+        return ([string][char]39) + (`$value -replace ([string][char]39), ([string][char]39 + [string][char]39)) + ([string][char]39)
+    }
+    return `$value
+}
+
+
+# 格式化 SD WebUI All In One CLI 命令日志
+function Format-CoreCliCommandForLog {
+    param (
+        [Parameter(Mandatory = `$true)][object]`$CommandPrefix,
+        [object]`$Arguments
+    )
+    `$parts = New-Object System.Collections.ArrayList
+    foreach (`$item in `$CommandPrefix) {
+        `$parts.Add((Format-CommandLineArgumentForLog `$item)) | Out-Null
+    }
+    if (`$null -ne `$Arguments) {
+        foreach (`$item in `$Arguments) {
+            `$parts.Add((Format-CommandLineArgumentForLog `$item)) | Out-Null
+        }
+    }
+    return (`$parts -join ' ')
+}
+
+
+# 输出 SD WebUI All In One CLI 失败命令
+function Write-CoreCliFailureCommand {
+    param (
+        [Parameter(Mandatory = `$true)][object]`$CommandPrefix,
+        [object]`$Arguments,
+        [Parameter(Mandatory = `$true)][int]`$ExitCode
+    )
+    Write-Log `"SD WebUI All In One CLI 执行失败, 退出码: `$ExitCode`" -Level ERROR
+    `$command_line = Format-CoreCliCommandForLog -CommandPrefix `$CommandPrefix -Arguments `$Arguments
+    Write-Log `"失败命令: `$command_line`" -Level ERROR
 }
 
 
@@ -1951,6 +2065,9 @@ function Test-PythonAndGit {
 Export-ModuleMember -Function ``
     Initialize-EnvPath, ``
     Write-Log, ``
+    Format-CommandLineArgumentForLog, ``
+    Format-CoreCliCommandForLog, ``
+    Write-CoreCliFailureCommand, ``
     Write-FileWithStreamWriter, ``
     Update-SDWebUiAllInOne, ``
     Update-Installer, ``
@@ -2091,7 +2208,7 @@ try {
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2161,7 +2278,7 @@ function Get-HotpatcherLaunchArgs {
 
     if ((!(`$script:HotpatcherConfig)) -and (!(Test-Path `$default_config_path))) {
         Write-Log `"未找到 Hotpatcher 默认配置文件, 正在导出默认配置到 `$default_config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$default_config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$default_config_path`" *> `$null
         `$exit_code = Get-NativeCommandExitCode -Success `$?
         if (`$exit_code -ne 0) {
             Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
@@ -2337,11 +2454,15 @@ function Main {
 
     if (`$script:BuildMode) {
         Write-Log `"SD WebUI Installer 构建模式已启用, 仅检查 Stable Diffusion WebUI 运行环境`"
+        `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"check-env`")
         & python -m sd_webui_all_in_one sd-webui check-env `$launch_args
         `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
     } else {
+        `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"launch`")
         & python -m sd_webui_all_in_one sd-webui launch `$launch_args
         `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
         if (`$exit_code -eq 0) {
             Write-Log `"Stable Diffusion WebUI 正常退出`"
         } else {
@@ -2429,7 +2550,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2478,8 +2599,10 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"update`")
     & python -m sd_webui_all_in_one sd-webui update `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出 Stable Diffusion WebUI 更新脚本`"
     Exit-ManagerScript -ExitCode `$exit_code
@@ -2549,7 +2672,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2598,8 +2721,10 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"extension`", `"update`")
     & python -m sd_webui_all_in_one sd-webui extension update `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出 Stable Diffusion WebUI 扩展更新脚本`"
 
@@ -2675,7 +2800,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2730,8 +2855,10 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"switch`")
     & python -m sd_webui_all_in_one sd-webui switch `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出 Stable Diffusion WebUI 分支切换脚本`"
 
@@ -3084,7 +3211,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3139,8 +3266,10 @@ function Main {
     Update-SDWebUiAllInOne
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"reinstall-pytorch`")
     & python -m sd_webui_all_in_one sd-webui reinstall-pytorch `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出 PyTorch 重装脚本`"
     Exit-ManagerScript -ExitCode `$exit_code
@@ -3210,7 +3339,7 @@ try {
         DisableModelMirror = `$script:DisableModelMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3268,8 +3397,10 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"model`", `"install-library`")
     & python -m sd_webui_all_in_one sd-webui model install-library `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出模型下载脚本`"
     Exit-ManagerScript -ExitCode `$exit_code
@@ -3334,7 +3465,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3382,8 +3513,10 @@ function Main {
     }
 
     `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"gui`", `"version-manager`")
     & python -m sd_webui_all_in_one sd-webui gui version-manager `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
 
     Write-Log `"退出 Stable Diffusion WebUI 版本管理脚本`"
 
@@ -3434,7 +3567,7 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3749,7 +3882,7 @@ try {
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine

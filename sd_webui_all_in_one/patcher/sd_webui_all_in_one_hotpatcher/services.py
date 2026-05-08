@@ -11,7 +11,12 @@ from typing import Any
 
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
-from .runtime.errors import install_error_capture, is_error_capture_installed, uninstall_error_capture
+from .runtime.errors import (
+    DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
+    install_error_capture,
+    is_error_capture_installed,
+    uninstall_error_capture,
+)
 from .runtime.logs import (
     DEFAULT_FD_CAPTURE,
     DEFAULT_HOOK_CHECK_INTERVAL,
@@ -59,6 +64,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "unraisablehook": True,
             "asyncio": True,
             "include_locals": False,
+            "caught_exceptions": {
+                "enabled": False,
+                "threading": True,
+                "module_prefixes": [],
+                "exclude_module_prefixes": list(DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES),
+                "max_events_per_second": 20,
+            },
         },
         "logs": {
             "enabled": False,
@@ -254,6 +266,31 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "type": "bool",
                 "title": "包含局部变量",
                 "description": "在 error.exception 的 traceback frame 中附带脱敏后的局部变量 repr 摘要。",
+            },
+            "caught_exceptions.enabled": {
+                "type": "bool",
+                "title": "捕获已处理异常",
+                "description": "实验性功能。使用 sys.settrace 捕获被业务代码 except 处理过的异常, 可能影响性能。",
+            },
+            "caught_exceptions.threading": {
+                "type": "bool",
+                "title": "跟踪新线程",
+                "description": "为后续新建线程安装 caught exception trace 捕获。",
+            },
+            "caught_exceptions.module_prefixes": {
+                "type": "list[str]",
+                "title": "包含模块前缀",
+                "description": "只捕获这些模块名前缀中的异常。为空表示不限制。",
+            },
+            "caught_exceptions.exclude_module_prefixes": {
+                "type": "list[str]",
+                "title": "排除模块前缀",
+                "description": "不捕获这些模块名前缀中的异常。GUI 中可用逗号分隔多个值。",
+            },
+            "caught_exceptions.max_events_per_second": {
+                "type": "int",
+                "title": "每秒事件上限",
+                "description": "caught exception 事件限流值。用于降低 sys.settrace 带来的事件噪音。",
             },
         },
     },
@@ -805,6 +842,7 @@ def _apply_runtime_config(
                 }
             )
         else:
+            caught_exceptions = _section(errors, "caught_exceptions")
             _apply_step(
                 "runtime.errors",
                 lambda: install_error_capture(
@@ -814,6 +852,13 @@ def _apply_runtime_config(
                     unraisablehook=bool(errors.get("unraisablehook", True)),
                     asyncio=bool(errors.get("asyncio", True)),
                     include_locals=bool(errors.get("include_locals", False)),
+                    caught_exceptions_enabled=bool(caught_exceptions.get("enabled", False)),
+                    caught_exceptions_threading=bool(caught_exceptions.get("threading", True)),
+                    caught_exception_module_prefixes=_normalize_string_list(caught_exceptions.get("module_prefixes", [])),
+                    caught_exception_exclude_module_prefixes=_normalize_string_list(
+                        caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)
+                    ),
+                    caught_exception_max_events_per_second=int(caught_exceptions.get("max_events_per_second", 20)),
                 ),
                 result,
             )

@@ -1,5 +1,6 @@
 import json
 import socket
+import sys
 import threading
 
 import pytest
@@ -121,6 +122,14 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert defaults["runtime"]["errors"]["unraisablehook"] is True
     assert defaults["runtime"]["errors"]["asyncio"] is True
     assert defaults["runtime"]["errors"]["include_locals"] is False
+    assert defaults["runtime"]["errors"]["caught_exceptions"]["enabled"] is False
+    assert defaults["runtime"]["errors"]["caught_exceptions"]["threading"] is True
+    assert defaults["runtime"]["errors"]["caught_exceptions"]["module_prefixes"] == []
+    assert defaults["runtime"]["errors"]["caught_exceptions"]["exclude_module_prefixes"] == [
+        "sd_webui_all_in_one_hotpatcher",
+        "sd_webui_all_in_one_hotpatcher_ext",
+    ]
+    assert defaults["runtime"]["errors"]["caught_exceptions"]["max_events_per_second"] == 20
     assert defaults["runtime"]["logs"]["hook_policy"] == "cooperative"
     assert defaults["runtime"]["logs"]["hook_check_interval"] == 1
     assert defaults["runtime"]["logs"]["fd_capture"] == "0"
@@ -148,6 +157,7 @@ def test_normalize_config_deep_merges_without_overwriting_user_values():
     assert normalized["runtime"]["logs"]["streams"] == "stdout"
     assert normalized["runtime"]["logs"]["policy"] == "bounded"
     assert normalized["runtime"]["errors"]["enabled"] is False
+    assert normalized["runtime"]["errors"]["caught_exceptions"]["enabled"] is False
     assert normalized["extensions"]["zluda"]["enabled"] is False
 
 
@@ -269,6 +279,34 @@ def test_apply_config_warns_when_errors_enabled_without_runtime_client():
     ]
 
 
+def test_apply_config_reports_error_when_caught_tracer_conflicts():
+    def existing_trace(frame, event, arg):
+        return existing_trace
+
+    sys.settrace(existing_trace)
+    try:
+        result = apply_config(
+            {
+                "runtime": {
+                    "errors": {
+                        "enabled": True,
+                        "caught_exceptions": {
+                            "enabled": True,
+                        },
+                    }
+                }
+            },
+            runtime_client=object(),
+        )
+        assert result["errors"]
+        assert result["errors"][0]["feature"] == "runtime.errors"
+        assert result["errors"][0]["code"] == "RuntimeError"
+        assert "another sys trace function" in result["errors"][0]["message"]
+        assert sys.gettrace() is existing_trace
+    finally:
+        sys.settrace(None)
+
+
 def test_catalog_reports_registered_patches():
     with monkey_zoo("svc_target") as monkey:
         monkey.patch_module(lambda module: None)
@@ -298,6 +336,14 @@ def test_catalog_reports_registered_patches():
     assert error_settings["unraisablehook"]["default"] is True
     assert error_settings["asyncio"]["default"] is True
     assert error_settings["include_locals"]["default"] is False
+    assert error_settings["caught_exceptions.enabled"]["default"] is False
+    assert error_settings["caught_exceptions.threading"]["default"] is True
+    assert error_settings["caught_exceptions.module_prefixes"]["default"] == []
+    assert error_settings["caught_exceptions.exclude_module_prefixes"]["default"] == [
+        "sd_webui_all_in_one_hotpatcher",
+        "sd_webui_all_in_one_hotpatcher_ext",
+    ]
+    assert error_settings["caught_exceptions.max_events_per_second"]["default"] == 20
     subprocess_setting = features["runtime.logs"]["settings"]["subprocess"]
     assert subprocess_setting["type"] == "choice"
     assert subprocess_setting["choices"] == ["0", "safe", "force"]
