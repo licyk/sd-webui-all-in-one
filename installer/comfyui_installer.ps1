@@ -169,34 +169,46 @@ function Join-NormalizedPath {
 }
 
 
-if (-not $script:InstallPath) {
-    $script:InstallPath = Join-NormalizedPath $PSScriptRoot "ComfyUI"
+function Get-TrimmedTextFile {
+    param (
+        [Parameter(Mandatory = $true)][string]$Path,
+        [string]$Encoding
+    )
+    if (!(Test-Path $Path)) {
+        return $null
+    }
+    if ([string]::IsNullOrWhiteSpace($Encoding)) {
+        $content = Get-Content -Path $Path -Raw
+    } else {
+        $content = Get-Content -Path $Path -Raw -Encoding $Encoding
+    }
+    if ([string]::IsNullOrWhiteSpace($content)) {
+        return $null
+    }
+    return $content.Trim()
 }
 
-$script:InstallPath = Join-NormalizedPath $script:InstallPath
-$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
 
-& {
+function Resolve-CorePrefix {
+    param (
+        [Parameter(Mandatory = $true)][string]$BasePath,
+        [Parameter(Mandatory = $true)][string[]]$PrefixList,
+        [AllowNull()][string]$ConfiguredPrefix
+    )
     $target_prefix = $null
-    $prefix_list = @("core", "ComfyUI*")
-    if ($script:CorePrefix -or (Test-Path (Join-NormalizedPath $script:InstallPath "core_prefix.txt"))) {
-        $origin_core_prefix = if ($script:CorePrefix) {
-            $script:CorePrefix
-        } else {
-            (Get-Content (Join-NormalizedPath $script:InstallPath "core_prefix.txt") -Raw).Trim()
-        }
-        $origin_core_prefix = $origin_core_prefix.TrimEnd('\', '/')
+    if (-not [string]::IsNullOrWhiteSpace($ConfiguredPrefix)) {
+        $origin_core_prefix = $ConfiguredPrefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix)) {
-            $from_uri = New-Object System.Uri($script:InstallPath.Replace('\', '/') + '/')
+            $from_uri = New-Object System.Uri($BasePath.Replace('\', '/') + '/')
             $to_uri = New-Object System.Uri($origin_core_prefix.Replace('\', '/'))
             $target_prefix = $from_uri.MakeRelativeUri($to_uri).ToString().Trim('/')
         } else {
             $target_prefix = $origin_core_prefix
         }
     }
-    else {
-        foreach ($i in $prefix_list) {
-            $found_dir = Get-ChildItem -Path $script:InstallPath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace($target_prefix)) {
+        foreach ($i in $PrefixList) {
+            $found_dir = Get-ChildItem -Path $BasePath -Directory -Filter $i -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found_dir) {
                 $target_prefix = $found_dir.Name
                 break
@@ -206,10 +218,29 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     if ([string]::IsNullOrWhiteSpace($target_prefix)) {
         $target_prefix = "core"
     }
-    $env:CORE_PREFIX = $target_prefix
+    return $target_prefix
+}
+
+
+if (-not $script:InstallPath) {
+    $script:InstallPath = Join-NormalizedPath $PSScriptRoot "ComfyUI"
+}
+
+$script:InstallPath = Join-NormalizedPath $script:InstallPath
+$script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort")
+
+& {
+    $prefix_list = @("core", "ComfyUI*")
+    $core_prefix_file = Join-NormalizedPath $script:InstallPath "core_prefix.txt"
+    $origin_core_prefix = if ($script:CorePrefix) {
+        $script:CorePrefix
+    } else {
+        Get-TrimmedTextFile $core_prefix_file
+    }
+    $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 418
+$script:COMFYUI_INSTALLER_VERSION = 419
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.4"
@@ -384,13 +415,14 @@ function Write-FileWithStreamWriter {
 
 # 获取内核路径前缀状态
 function Get-CorePrefixStatus {
-    if ((Test-Path (Join-NormalizedPath $PSScriptRoot "core_prefix.txt")) -or ($script:CorePrefix)) {
+    $core_prefix_file = Join-NormalizedPath $PSScriptRoot "core_prefix.txt"
+    $origin_core_prefix = if ($script:CorePrefix) {
+        $script:CorePrefix
+    } else {
+        Get-TrimmedTextFile $core_prefix_file
+    }
+    if (-not [string]::IsNullOrWhiteSpace($origin_core_prefix)) {
         Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
-        if ($script:CorePrefix) {
-            $origin_core_prefix = $script:CorePrefix
-        } else {
-            $origin_core_prefix = (Get-Content (Join-NormalizedPath $PSScriptRoot "core_prefix.txt") -Raw).Trim()
-        }
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
             Write-Log "转换绝对路径为内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
         }
@@ -450,11 +482,13 @@ function Set-Proxy {
         if ($script:UseCustomProxy) {
             $proxy_value = $script:UseCustomProxy
         } else {
-            $proxy_value = (Get-Content (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Raw).Trim()
+            $proxy_value = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "proxy.txt")
         }
-        $env:HTTP_PROXY = $proxy_value
-        $env:HTTPS_PROXY = $proxy_value
-        Write-Log "检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理"
+        if (-not [string]::IsNullOrWhiteSpace($proxy_value)) {
+            $env:HTTP_PROXY = $proxy_value
+            $env:HTTPS_PROXY = $proxy_value
+            Write-Log "检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理"
+        }
     }
     $env:SD_WEBUI_ALL_IN_ONE_PROXY = 1
     Write-Log "使用自动检测代理模式进行代理配置"
@@ -490,12 +524,14 @@ function Set-GithubMirror {
         if ($script:UseCustomGithubMirror) {
             $github_mirror = $script:UseCustomGithubMirror
         } else {
-            $github_mirror = (Get-Content (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Raw).Trim()
+            $github_mirror = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt")
         }
-        Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
-        $ArrayList.Add("--custom-github-mirror") | Out-Null
-        $ArrayList.Add($github_mirror) | Out-Null
-        return
+        if (-not [string]::IsNullOrWhiteSpace($github_mirror)) {
+            Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+            $ArrayList.Add("--custom-github-mirror") | Out-Null
+            $ArrayList.Add($github_mirror) | Out-Null
+            return
+        }
     }
 }
 
@@ -1167,6 +1203,59 @@ function Join-NormalizedPath {
 }
 
 
+function Get-TrimmedTextFile {
+    param (
+        [Parameter(Mandatory = `$true)][string]`$Path,
+        [string]`$Encoding
+    )
+    if (!(Test-Path `$Path)) {
+        return `$null
+    }
+    if ([string]::IsNullOrWhiteSpace(`$Encoding)) {
+        `$content = Get-Content -Path `$Path -Raw
+    } else {
+        `$content = Get-Content -Path `$Path -Raw -Encoding `$Encoding
+    }
+    if ([string]::IsNullOrWhiteSpace(`$content)) {
+        return `$null
+    }
+    return `$content.Trim()
+}
+
+
+function Resolve-CorePrefix {
+    param (
+        [Parameter(Mandatory = `$true)][string]`$BasePath,
+        [Parameter(Mandatory = `$true)][string[]]`$PrefixList,
+        [AllowNull()][string]`$ConfiguredPrefix
+    )
+    `$target_prefix = `$null
+    if (-not [string]::IsNullOrWhiteSpace(`$ConfiguredPrefix)) {
+        `$origin_core_prefix = `$ConfiguredPrefix.TrimEnd('\', '/')
+        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+            `$from_uri = New-Object System.Uri(`$BasePath.Replace('\', '/') + '/')
+            `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
+            `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
+        } else {
+            `$target_prefix = `$origin_core_prefix
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
+        foreach (`$i in `$PrefixList) {
+            `$found_dir = Get-ChildItem -Path `$BasePath -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (`$found_dir) {
+                `$target_prefix = `$found_dir.Name
+                break
+            }
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
+        `$target_prefix = 'core'
+    }
+    return `$target_prefix
+}
+
+
 # 格式化命令行参数日志
 function Format-CommandLineArgumentForLog {
     param ([AllowNull()][object]`$Argument)
@@ -1323,8 +1412,9 @@ function Update-Installer {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Raw).Trim() 2> `$null
-        `$last_update_time = Get-Date `$last_update_time -Format `"yyyy-MM-dd HH:mm:ss`"
+        `$last_update_time_text = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") 2> `$null
+        if ([string]::IsNullOrWhiteSpace(`$last_update_time_text)) { throw `"Missing update time`" }
+        `$last_update_time = Get-Date `$last_update_time_text -Format `"yyyy-MM-dd HH:mm:ss`"
     }
     catch {
         `$last_update_time = Get-Date 0 -Format `"yyyy-MM-dd HH:mm:ss`"
@@ -1585,37 +1675,24 @@ function Get-HelpMessage {
 
 # 设置内核路径前缀
 function Set-CorePrefix {
-    `$target_prefix = `$null
     `$prefix_list = @(`"core`", `"ComfyUI*`")
-    if (`$script:CorePrefix -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"))) {
+    `$core_prefix_file = Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"
+    `$origin_core_prefix = if (`$script:CorePrefix) {
+        `$script:CorePrefix
+    } else {
+        Get-TrimmedTextFile `$core_prefix_file -Encoding 'UTF8'
+    }
+    if (-not [string]::IsNullOrWhiteSpace(`$origin_core_prefix)) {
         Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
-        `$origin_core_prefix = if (`$script:CorePrefix) {
-            `$script:CorePrefix
-        } else {
-            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw -Encoding UTF8).Trim()
-        }
-        `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
-        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
+        `$normalized_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
+        if ([System.IO.Path]::IsPathRooted(`$normalized_core_prefix)) {
             `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
-            `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
+            `$to_uri = New-Object System.Uri(`$normalized_core_prefix.Replace('\', '/'))
             `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
             Write-Log `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$target_prefix`"
-        } else {
-            `$target_prefix = `$origin_core_prefix
         }
     }
-    else {
-        foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
-            if (`$found_dir) {
-                `$target_prefix = `$found_dir.Name
-                break
-            }
-        }
-    }
-    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
-        `$target_prefix = `"core`"
-    }
+    `$target_prefix = Resolve-CorePrefix -BasePath `$PSScriptRoot -PrefixList `$prefix_list -ConfiguredPrefix `$origin_core_prefix
     `$env:CORE_PREFIX = `$target_prefix
     `$full_core_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
     Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
@@ -1636,12 +1713,14 @@ function Set-Proxy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw -Encoding UTF8).Trim()
+            `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Encoding 'UTF8'
         }
-        `$env:HTTP_PROXY = `$proxy_value
-        `$env:HTTPS_PROXY = `$proxy_value
-        Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
-        return
+        if (-not [string]::IsNullOrWhiteSpace(`$proxy_value)) {
+            `$env:HTTP_PROXY = `$proxy_value
+            `$env:HTTPS_PROXY = `$proxy_value
+            Write-Log `"检测到本地存在 proxy.txt 代理配置文件 / -UseCustomProxy 命令行参数, 已读取代理配置文件并设置代理`"
+            return
+        }
     }
     if (`$Legacy) {
         `$proxy_value = & python -m sd_webui_all_in_one self-manager get-proxy
@@ -1698,12 +1777,14 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Raw -Encoding UTF8).Trim()
+            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Encoding 'UTF8'
         }
-        `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
-        `$ArrayList.Add(`$hf_mirror_value) | Out-Null
-        Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
-        return
+        if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
+            `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
+            `$ArrayList.Add(`$hf_mirror_value) | Out-Null
+            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
+            return
+        }
     }
     Write-Log `"使用默认 HuggingFace 镜像源`"
 }
@@ -1725,11 +1806,13 @@ function Set-GithubMirror {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw -Encoding UTF8).Trim()
+            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding 'UTF8'
         }
-        Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
-        `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
-        `$ArrayList.Add(`$github_mirror) | Out-Null
+        if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
+            Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+            `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
+            `$ArrayList.Add(`$github_mirror) | Out-Null
+        }
     }
 }
 
@@ -2128,7 +2211,7 @@ try {
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2304,7 +2387,7 @@ function Set-Hotpatcher {
             Write-Log `"HotpatcherPort 端口范围应为 1..65535, 已忽略无效端口: `$(`$script:HotpatcherPort)`" -Level WARNING
         }
     } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`")) {
-        `$port_text = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Raw).Trim()
+        `$port_text = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`")
         `$port_value = 0
         if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (`$port_value -ge 1) -and (`$port_value -le 65535)) {
             `$hotpatcher_port = `$port_value
@@ -2458,7 +2541,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2580,7 +2663,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2671,33 +2754,47 @@ function Join-NormalizedPath {
     return `$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
 }
 
-if (`$null -eq `$script:InstallPath) {
-    `$script:InstallPath = `$PSScriptRoot
-} else {
-    `$script:InstallPath = Join-NormalizedPath `$script:InstallPath
+
+function Get-TrimmedTextFile {
+    param (
+        [Parameter(Mandatory = `$true)][string]`$Path,
+        [string]`$Encoding
+    )
+    if (!(Test-Path `$Path)) {
+        return `$null
+    }
+    if ([string]::IsNullOrWhiteSpace(`$Encoding)) {
+        `$content = Get-Content -Path `$Path -Raw
+    } else {
+        `$content = Get-Content -Path `$Path -Raw -Encoding `$Encoding
+    }
+    if ([string]::IsNullOrWhiteSpace(`$content)) {
+        return `$null
+    }
+    return `$content.Trim()
 }
 
-& {
+
+function Resolve-CorePrefix {
+    param (
+        [Parameter(Mandatory = `$true)][string]`$BasePath,
+        [Parameter(Mandatory = `$true)][string[]]`$PrefixList,
+        [AllowNull()][string]`$ConfiguredPrefix
+    )
     `$target_prefix = `$null
-    `$prefix_list = @(`"core`", `"ComfyUI*`")
-    if (`$script:CorePrefix -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"))) {
-        `$origin_core_prefix = if (`$script:CorePrefix) {
-            `$script:CorePrefix
-        } else {
-            (Get-Content (Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`") -Raw).Trim()
-        }
-        `$origin_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
+    if (-not [string]::IsNullOrWhiteSpace(`$ConfiguredPrefix)) {
+        `$origin_core_prefix = `$ConfiguredPrefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
-            `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
+            `$from_uri = New-Object System.Uri(`$BasePath.Replace('\', '/') + '/')
             `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
             `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
         } else {
             `$target_prefix = `$origin_core_prefix
         }
     }
-    else {
-        foreach (`$i in `$prefix_list) {
-            `$found_dir = Get-ChildItem -Path `$PSScriptRoot -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
+        foreach (`$i in `$PrefixList) {
+            `$found_dir = Get-ChildItem -Path `$BasePath -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
             if (`$found_dir) {
                 `$target_prefix = `$found_dir.Name
                 break
@@ -2705,9 +2802,26 @@ if (`$null -eq `$script:InstallPath) {
         }
     }
     if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
-        `$target_prefix = `"core`"
+        `$target_prefix = 'core'
     }
-    `$env:CORE_PREFIX = `$target_prefix
+    return `$target_prefix
+}
+
+if (`$null -eq `$script:InstallPath) {
+    `$script:InstallPath = `$PSScriptRoot
+} else {
+    `$script:InstallPath = Join-NormalizedPath `$script:InstallPath
+}
+
+& {
+    `$prefix_list = @(`"core`", `"ComfyUI*`")
+    `$core_prefix_file = Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"
+    `$origin_core_prefix = if (`$script:CorePrefix) {
+        `$script:CorePrefix
+    } else {
+        Get-TrimmedTextFile `$core_prefix_file
+    }
+    `$env:CORE_PREFIX = Resolve-CorePrefix -BasePath `$PSScriptRoot -PrefixList `$prefix_list -ConfiguredPrefix `$origin_core_prefix
 }
 if (-not `$script:InstallPath) {
     `$script:InstallPath = `$PSScriptRoot
@@ -2796,9 +2910,11 @@ function Get-LocalSetting {
             if (`$script:UseCustomProxy) {
                 `$proxy_value = `$script:UseCustomProxy
             } else {
-                `$proxy_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()
+                `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")
             }
-            `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
+            if (-not [string]::IsNullOrWhiteSpace(`$proxy_value)) {
+                `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
+            }
         }
     }
 
@@ -2813,9 +2929,11 @@ function Get-LocalSetting {
             if (`$script:UseCustomGithubMirror) {
                 `$github_mirror = `$script:UseCustomGithubMirror
             } else {
-                `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw).Trim()
+                `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")
             }
-            `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
+            if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
+                `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
+            }
         }
     }
 
@@ -2936,7 +3054,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3064,7 +3182,7 @@ try {
         DisableModelMirror = `$script:DisableModelMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3190,7 +3308,7 @@ try {
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3292,7 +3410,7 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3325,7 +3443,8 @@ function Get-ToggleStatus ([string]`$file, [string]`$trueLabel = `"启用`", [st
 
 # 通用文本配置获取
 function Get-TextStatus ([string]`$file, [string]`$defaultLabel = `"无`") {
-    if (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { return (Get-Content (Join-NormalizedPath `$PSScriptRoot `$file) -Raw).Trim() }
+    `$value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `$file)
+    if (-not [string]::IsNullOrWhiteSpace(`$value)) { return `$value }
     return `$defaultLabel
 }
 
@@ -3354,7 +3473,8 @@ function Set-ToggleSetting ([string]`$file, [string]`$name, [bool]`$enable) {
 # 更新代理设置
 function Update-ProxySetting {
     while (`$true) {
-        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim())`" } else { `"系统代理`" }
+        `$proxy_status = Get-TextStatus `"proxy.txt`" `$null
+        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"自定义: `$proxy_status`" } else { `"系统代理`" }
         Write-Log `"当前代理设置: `$current`"
         Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
@@ -3381,7 +3501,8 @@ function Update-ProxySetting {
 # 更新镜像设置
 function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$examples) {
     while (`$true) {
-        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `$file)) { `"自定义: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `$file) -Raw).Trim())`" } else { `"默认`" }
+        `$mirror_status = Get-TextStatus `$file `$null
+        `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`")) { `"禁用`" } elseif (-not [string]::IsNullOrWhiteSpace(`$mirror_status)) { `"自定义: `$mirror_status`" } else { `"默认`" }
         Write-Log `"当前 `$name 设置: `$current`"
         Write-Log `"1. 默认/自动 | 2. 自定义地址 | 3. 禁用 | 4. 返回`"
         `$choice = Get-UserInput
@@ -3485,7 +3606,7 @@ function Main {
     while (`$true) {
         Write-Log `"=== ComfyUI 管理设置 ===`"
         `$menu = @(
-            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")) { `"自定义 (地址: `$((Get-Content (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Raw).Trim()))`" } else { `"系统`" }) },
+            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } else { `$proxy_status = Get-TextStatus `"proxy.txt`" `$null; if (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"自定义 (地址: `$proxy_status)`" } else { `"系统`" } }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
@@ -3606,7 +3727,7 @@ try {
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3783,7 +3904,7 @@ for %%i in (%*) do (
 )
 
 if exist ```"%CorePrefixFile%```" (
-    for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"(Get-Content -Path '%CorePrefixFile%' -Raw).Trim()```"') do (
+    for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"`$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(`$corePrefixText)) { `$corePrefixText.Trim() }```"') do (
         set CorePrefix=%%i
         goto :convert
     )
@@ -3909,10 +4030,15 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Raw).Trim()
+            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`")
         }
-        `$env:HF_ENDPOINT = `$hf_mirror_value
-        Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
+        if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
+            `$env:HF_ENDPOINT = `$hf_mirror_value
+            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
+        } else {
+            `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
+            Write-Log `"使用默认 HuggingFace 镜像源`"
+        }
     } else { # 使用默认设置
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
         Write-Log `"使用默认 HuggingFace 镜像源`"
@@ -3941,10 +4067,12 @@ function Set-GithubMirrorLegecy {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Raw).Trim()
+            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")
         }
-        git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-        Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
+            git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
+            Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+        }
     }
 }
 
@@ -4226,7 +4354,7 @@ for %%i in (%*) do (
 )
 
 if exist `"%CorePrefixFile%`" (
-    for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"(Get-Content -Path '%CorePrefixFile%' -Raw).Trim()`"') do (
+    for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"`$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(`$corePrefixText)) { `$corePrefixText.Trim() }`"') do (
         set CorePrefix=%%i
         goto :convert
     )

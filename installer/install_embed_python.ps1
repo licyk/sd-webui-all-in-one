@@ -193,13 +193,22 @@ function global:Write-Log (`$msg) {
 }
 
 
+function Get-TrimmedTextFile {
+    param ([Parameter(Mandatory = `$true)][string]`$Path)
+    if (!(Test-Path `$Path)) { return `$null }
+    `$content = Get-Content -Path `$Path -Raw
+    if ([string]::IsNullOrWhiteSpace(`$content)) { return `$null }
+    return `$content.Trim()
+}
+
+
 # 代理配置
 function Set-Proxy {
     `$Env:NO_PROXY = `"localhost,127.0.0.1,::1`"
     if (!(Test-Path `"`$PSScriptRoot/disable_proxy.txt`")) { # 检测是否禁用自动设置镜像源
         `$INTERNET_SETTING = Get-ItemProperty -Path `"HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings`"
-        if (Test-Path `"`$PSScriptRoot/proxy.txt`") { # 本地存在代理配置
-            `$proxy_value = Get-Content `"`$PSScriptRoot/proxy.txt`"
+        `$proxy_value = Get-TrimmedTextFile `"`$PSScriptRoot/proxy.txt`"
+        if (-not [string]::IsNullOrWhiteSpace(`$proxy_value)) { # 本地存在代理配置
             `$Env:HTTP_PROXY = `$proxy_value
             `$Env:HTTPS_PROXY = `$proxy_value
             Write-Log `"检测到本地存在 proxy.txt 代理配置文件, 已读取代理配置文件并设置代理`"
@@ -217,8 +226,8 @@ function Set-Proxy {
 # HuggingFace 镜像源
 function Set-HuggingFace-Mirror {
     if (!(Test-Path `"`$PSScriptRoot/disable_mirror.txt`")) { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        if (Test-Path `"`$PSScriptRoot/mirror.txt`") { # 本地存在 HuggingFace 镜像源配置
-            `$hf_mirror_value = Get-Content `"`$PSScriptRoot/mirror.txt`"
+        `$hf_mirror_value = Get-TrimmedTextFile `"`$PSScriptRoot/mirror.txt`"
+        if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) { # 本地存在 HuggingFace 镜像源配置
             `$Env:HF_ENDPOINT = `$hf_mirror_value
             Write-Log `"检测到本地存在 mirror.txt 配置文件, 已读取该配置并设置 HuggingFace 镜像源`"
         } else { # 使用默认设置
