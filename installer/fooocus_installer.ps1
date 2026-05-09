@@ -219,7 +219,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
 $script:FOOOCUS_INSTALLER_VERSION = 335
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.3"
+$script:CORE_MINIMUM_VER = "2.2.4"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)

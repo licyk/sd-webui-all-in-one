@@ -212,7 +212,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
 $script:COMFYUI_INSTALLER_VERSION = 418
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.3"
+$script:CORE_MINIMUM_VER = "2.2.4"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
