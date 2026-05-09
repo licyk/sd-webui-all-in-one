@@ -239,12 +239,12 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $origin_core_prefix = if ($script:CorePrefix) {
         $script:CorePrefix
     } else {
-        Get-TrimmedTextFile $core_prefix_file
+        Get-TrimmedTextFile $core_prefix_file -Encoding UTF8
     }
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 443
+$script:SD_TRAINER_INSTALLER_VERSION = 444
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.4"
@@ -423,7 +423,7 @@ function Get-CorePrefixStatus {
     $origin_core_prefix = if ($script:CorePrefix) {
         $script:CorePrefix
     } else {
-        Get-TrimmedTextFile $core_prefix_file
+        Get-TrimmedTextFile $core_prefix_file -Encoding UTF8
     }
     if (-not [string]::IsNullOrWhiteSpace($origin_core_prefix)) {
         Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
@@ -486,7 +486,7 @@ function Set-Proxy {
         if ($script:UseCustomProxy) {
             $proxy_value = $script:UseCustomProxy
         } else {
-            $proxy_value = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "proxy.txt")
+            $proxy_value = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "proxy.txt") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace($proxy_value)) {
             $env:HTTP_PROXY = $proxy_value
@@ -528,7 +528,7 @@ function Set-GithubMirror {
         if ($script:UseCustomGithubMirror) {
             $github_mirror = $script:UseCustomGithubMirror
         } else {
-            $github_mirror = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt")
+            $github_mirror = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace($github_mirror)) {
             Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
@@ -1450,7 +1450,7 @@ function Update-Installer {
 
     # 获取更新时间间隔
     try {
-        `$last_update_time_text = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") 2> `$null
+        `$last_update_time_text = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Encoding UTF8 2> `$null
         if ([string]::IsNullOrWhiteSpace(`$last_update_time_text)) { throw `"Missing update time`" }
         `$last_update_time = Get-Date `$last_update_time_text -Format `"yyyy-MM-dd HH:mm:ss`"
     }
@@ -1718,7 +1718,7 @@ function Set-CorePrefix {
     `$origin_core_prefix = if (`$script:CorePrefix) {
         `$script:CorePrefix
     } else {
-        Get-TrimmedTextFile `$core_prefix_file -Encoding 'UTF8'
+        Get-TrimmedTextFile `$core_prefix_file -Encoding UTF8
     }
     if (-not [string]::IsNullOrWhiteSpace(`$origin_core_prefix)) {
         Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
@@ -1751,7 +1751,7 @@ function Set-Proxy {
         if (`$script:UseCustomProxy) {
             `$proxy_value = `$script:UseCustomProxy
         } else {
-            `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Encoding 'UTF8'
+            `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$proxy_value)) {
             `$env:HTTP_PROXY = `$proxy_value
@@ -1815,7 +1815,7 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Encoding 'UTF8'
+            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
             `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
@@ -1844,7 +1844,7 @@ function Set-GithubMirror {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding 'UTF8'
+            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
             Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
@@ -2130,7 +2130,8 @@ Export-ModuleMember -Function ``
     New-AppShortcut, ``
     Test-PythonAndGit, ``
     Get-NativeCommandExitCode, ``
-    Exit-ManagerScript
+    Exit-ManagerScript, ``
+    Get-TrimmedTextFile
 ".Trim()
     Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
     Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
@@ -2291,7 +2292,7 @@ function Get-WebUILaunchArgs {
         if (`$script:LaunchArg) {
             `$launch_args = `$script:LaunchArg.Trim()
         } else {
-            `$launch_args = (Get-Content (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Raw)
+            `$launch_args = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Encoding UTF8
         }
         if ([string]::IsNullOrEmpty(`$launch_args)) {
             return
@@ -2388,52 +2389,6 @@ function Test-WebUIEnv {
 }
 
 
-# 检测 Hotpatcher 端口
-function Test-HotpatcherPort {
-    param ([int]`$Port)
-    return ((`$Port -ge 1) -and (`$Port -le 65535))
-}
-
-
-# 获取 Hotpatcher 配置文件路径
-function Resolve-HotpatcherConfigPath {
-    param ([string]`$ConfigPath)
-    if ([string]::IsNullOrWhiteSpace(`$ConfigPath)) {
-        return Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
-    }
-    if ([System.IO.Path]::IsPathRooted(`$ConfigPath)) {
-        return Join-NormalizedPath `$ConfigPath
-    }
-    return Join-NormalizedPath `$PSScriptRoot `$ConfigPath
-}
-
-
-# 获取 Hotpatcher 端口
-function Get-HotpatcherPort {
-    if (`$script:HotpatcherPortSpecified) {
-        if (Test-HotpatcherPort `$script:HotpatcherPort) {
-            return `$script:HotpatcherPort
-        }
-        Write-Log `"Hotpatcher 端口无效, 已忽略: `$(`$script:HotpatcherPort). 可用范围为 1 ~ 65535`" -Level WARNING
-        return `$null
-    }
-
-    `$port_file = Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"
-    if (!(Test-Path `$port_file)) {
-        return `$null
-    }
-
-    `$port_text = Get-TrimmedTextFile `$port_file
-    `$port_value = 0
-    if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (Test-HotpatcherPort `$port_value)) {
-        return `$port_value
-    }
-
-    Write-Log `"hotpatcher_port.txt 中的 Hotpatcher 端口无效, 已忽略: `$port_text. 可用范围为 1 ~ 65535`" -Level WARNING
-    return `$null
-}
-
-
 # 设置 Hotpatcher 补丁系统
 function Set-Hotpatcher {
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -2443,15 +2398,25 @@ function Set-Hotpatcher {
         return
     }
 
-    `$config_path = Resolve-HotpatcherConfigPath `$script:HotpatcherConfig
-    if (([string]::IsNullOrWhiteSpace(`$script:HotpatcherConfig)) -and (!(Test-Path `$config_path))) {
-        Write-Log `"Hotpatcher 默认配置不存在, 正在导出默认配置: `$config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`" *> `$null
-        `$exit_code = Get-NativeCommandExitCode -Success `$?
-        if (`$exit_code -ne 0) {
-            Write-Log `"导出 Hotpatcher 默认配置失败, 终止 SD Trainer 启动`" -Level ERROR
-            Exit-ManagerScript -ExitCode `$exit_code
+    `$default_config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    if (`$script:HotpatcherConfig) {
+        `$config_path = `$script:HotpatcherConfig
+        if (!(Test-Path `$config_path)) {
+            Write-Log `"指定的 Hotpatcher 配置文件不存在, 将按指定路径继续启动: `$config_path`" -Level WARNING
         }
+        Write-Log `"检测到 -HotpatcherConfig 命令行参数, 使用指定的 Hotpatcher 配置文件: `$config_path`"
+    } else {
+        `$config_path = `$default_config_path
+        if (!(Test-Path `$default_config_path)) {
+            Write-Log `"未检测到默认 Hotpatcher 配置文件, 正在导出默认配置: `$default_config_path`"
+            & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$default_config_path`" *> `$null
+            `$exit_code = Get-NativeCommandExitCode -Success `$?
+            if (`$exit_code -ne 0) {
+                Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
+                Exit-ManagerScript -ExitCode `$exit_code
+            }
+        }
+        Write-Log `"使用默认 Hotpatcher 配置文件: `$config_path`"
     }
 
     `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
@@ -2465,14 +2430,31 @@ function Set-Hotpatcher {
         Write-Log `"检测到 Hotpatcher 端口配置, 但未启用 Hotpatcher runtime, 已忽略该端口配置`" -Level WARNING
     }
 
-    `$hotpatcher_port = Get-HotpatcherPort
+    `$hotpatcher_port = `$null
+    if (`$script:HotpatcherPortSpecified) {
+        if ((`$script:HotpatcherPort -ge 1) -and (`$script:HotpatcherPort -le 65535)) {
+            `$hotpatcher_port = `$script:HotpatcherPort
+            Write-Log `"检测到 -HotpatcherPort 命令行参数, 使用 Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+        } else {
+            Write-Log `"HotpatcherPort 端口范围应为 1..65535, 已忽略无效端口: `$(`$script:HotpatcherPort)`" -Level WARNING
+        }
+    } elseif (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`")) {
+        `$port_text = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Encoding UTF8
+        `$port_value = 0
+        if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (`$port_value -ge 1) -and (`$port_value -le 65535)) {
+            `$hotpatcher_port = `$port_value
+            Write-Log `"检测到 hotpatcher_port.txt 配置文件, 使用 Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+        } else {
+            Write-Log `"hotpatcher_port.txt 中的端口范围应为 1..65535, 已忽略无效端口: `$port_text`" -Level WARNING
+        }
+    }
+
     if (`$hotpatcher_runtime_enabled -and (`$null -ne `$hotpatcher_port)) {
         `$ArrayList.Add(`"--hotpatcher-port`") | Out-Null
-        `$ArrayList.Add([string]`$hotpatcher_port) | Out-Null
-        Write-Log `"Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+        `$ArrayList.Add(`$hotpatcher_port) | Out-Null
     }
+
     Write-Log `"Hotpatcher 补丁系统默认启用`"
-    Write-Log `"Hotpatcher 配置文件: `$config_path`"
 }
 
 
@@ -2900,7 +2882,7 @@ if (`$null -eq `$script:InstallPath) {
     `$origin_core_prefix = if (`$script:CorePrefix) {
         `$script:CorePrefix
     } else {
-        Get-TrimmedTextFile `$core_prefix_file
+        Get-TrimmedTextFile `$core_prefix_file -Encoding UTF8
     }
     `$env:CORE_PREFIX = Resolve-CorePrefix -BasePath `$PSScriptRoot -PrefixList `$prefix_list -ConfiguredPrefix `$origin_core_prefix
 }
@@ -2991,7 +2973,7 @@ function Get-LocalSetting {
             if (`$script:UseCustomProxy) {
                 `$proxy_value = `$script:UseCustomProxy
             } else {
-                `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`")
+                `$proxy_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Encoding UTF8
             }
             if (-not [string]::IsNullOrWhiteSpace(`$proxy_value)) {
                 `$arg.Add(`"-UseCustomProxy`", `$proxy_value)
@@ -3010,7 +2992,7 @@ function Get-LocalSetting {
             if (`$script:UseCustomGithubMirror) {
                 `$github_mirror = `$script:UseCustomGithubMirror
             } else {
-                `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")
+                `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding UTF8
             }
             if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
                 `$arg.Add(`"-UseCustomGithubMirror`", `$github_mirror)
@@ -3558,7 +3540,7 @@ function Get-ToggleStatus ([string]`$file, [string]`$trueLabel = `"启用`", [st
 
 # 通用文本配置获取
 function Get-TextStatus ([string]`$file, [string]`$defaultLabel = `"无`") {
-    `$value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `$file)
+    `$value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `$file) -Encoding UTF8
     if (-not [string]::IsNullOrWhiteSpace(`$value)) { return `$value }
     return `$defaultLabel
 }
@@ -4169,7 +4151,7 @@ function Set-HuggingFaceMirror {
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
-            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`")
+            `$hf_mirror_value = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
             `$env:HF_ENDPOINT = `$hf_mirror_value
@@ -4206,7 +4188,7 @@ function Set-GithubMirrorLegecy {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
         } else {
-            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")
+            `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
             git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
