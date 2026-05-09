@@ -72,7 +72,7 @@ def install(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
         model_download_resource_type (ModelDownloadUrlType | None):
-            下载模型使用的下载源
+            默认配置资源来源
     """
     install_qwen_tts_webui(
         qwen_tts_webui_path=qwen_tts_webui_path,
@@ -288,7 +288,7 @@ def register_qwen_tts_webui(
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
+    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="默认配置资源来源")
     install_p.set_defaults(
         func=lambda args: install(
             qwen_tts_webui_path=args.qwen_tts_webui_path,

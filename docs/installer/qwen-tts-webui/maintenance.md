@@ -41,7 +41,6 @@ D:/Downloads
 ```
 D:/qwen-tts-webui
 ├── activate.ps1
-├── download_models.ps1
 ├── help.txt
 ├── launch.ps1
 ├── launch_qwen_tts_webui_installer.ps1
@@ -69,7 +68,6 @@ D:/qwen-tts-webui
 │   ├── models
 │   ...
 │   └── entry_with_update.py
-├── download_models.ps1
 ├── help.txt
 ├── launch.ps1
 ├── launch_qwen_tts_webui_installer.ps1

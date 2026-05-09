@@ -71,7 +71,7 @@ def install_qwen_tts_webui_config(
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
         download_resource_type (ModelDownloadUrlType | None):
-            下载模型使用的下载源
+            默认配置资源来源
 
     """
     preset_path = qwen_tts_webui_path / "config.json"
@@ -117,7 +117,7 @@ def install_qwen_tts_webui(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
         model_download_resource_type (ModelDownloadUrlType | None):
-            下载模型使用的下载源
+            默认配置资源来源
 
     Raises:
         ValueError:

@@ -17,7 +17,7 @@ sd-webui-all-in-one qwen-tts-webui install [选项]
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
-  - `--model-resource`: 模型下载源类型 (默认: `modelscope`)。
+  - `--model-resource`: 默认配置资源来源，用于选择生成的 `config.json` 预设 (默认: `modelscope`)。
 
 ### 更新 Qwen TTS WebUI
 ```bash

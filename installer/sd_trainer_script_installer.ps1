@@ -211,7 +211,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = $target_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 326
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 327
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.3"
@@ -3623,13 +3623,13 @@ function Main {
             @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
             @{ id=12; n=`"补丁系统`"; v=`$(Get-ToggleStatus `"disable_hotpatcher.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=90; n=`"补丁系统 Runtime`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
-            @{ id=13; n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
-            @{ id=14; n=`"补丁系统 GUI`"; v=`"打开`" }
+            @{ id=13; n=`"补丁系统 Runtime`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
+            @{ id=14; n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
+            @{ id=15; n=`"补丁系统 GUI`"; v=`"打开`" }
         )
 
         `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"15. 检查更新 | 16. 文档 | 17. 退出`"
+        Write-Log `"16. 检查更新 | 17. 文档 | 18. 退出`"
         Write-Log `"提示: 输入数字后回车`"
 
         `$choice = Get-UserInput
@@ -3651,12 +3651,12 @@ function Main {
             `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
             `"12`" { Set-ToggleSetting `"disable_hotpatcher.txt`" `"补丁系统`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`")) }
-            `"90`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"补丁系统 Runtime`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
-            `"13`" { Update-Hotpatcher-Port }
-            `"14`" { Open-Hotpatcher-Gui }
-            `"15`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"16`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`" }
-            `"17`" { Write-Log `"退出设置`"; return }
+            `"13`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"补丁系统 Runtime`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
+            `"14`" { Update-Hotpatcher-Port }
+            `"15`" { Open-Hotpatcher-Gui }
+            `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"17`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`" }
+            `"18`" { Write-Log `"退出设置`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
