@@ -27,8 +27,10 @@ SD Trainer Installer 默认情况下安装的是 [Akegarasu/SD-Trainer](https://
 
 |配置文件名|对应安装的分支|
 |---|---|
-|`install_sd_trainer.txt`|[Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)|
-|`install_kohya_gui.txt`|[bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)|
+|`install_sd_trainer_main.txt`|[Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)|
+|`install_kohya_gui_main.txt`|[bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)|
+
+上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。旧版短名称配置文件仍由安装器兼容识别，新建配置时建议使用上表文件名。
 
 创建配置文件后，将 SD Trainer Installer 下载至本地，和配置文件放在一起，如下所示。
 
@@ -38,7 +40,7 @@ SD Trainer Installer 默认情况下安装的是 [Akegarasu/SD-Trainer](https://
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_sd_trainer.txt    # 这是配置文件
+├── install_sd_trainer_main.txt    # 这是配置文件
 ├── QQDownloads
 ├── sd_trainer_installer.ps1  # 这是 SD Trainer Installer
 ├── z-noob_artist.csv

@@ -27,9 +27,11 @@ Fooocus Installer 默认情况下安装的是 [lllyasviel/Fooocus](https://githu
 
 |配置文件名|对应安装的分支|
 |---|---|
-|`install_fooocus.txt`|[lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)|
-|`install_fooocus_mre.txt`|[MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)|
-|`install_ruined_fooocus.txt`|[runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
+|`install_fooocus_main.txt`|[lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)|
+|`install_fooocus_mre_main.txt`|[MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)|
+|`install_ruined_fooocus_main.txt`|[runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
+
+上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。旧版短名称配置文件仍由安装器兼容识别，新建配置时建议使用上表文件名。
 
 创建配置文件后，将 Fooocus Installer 下载至本地，和配置文件放在一起，如下所示。
 
@@ -39,7 +41,7 @@ Fooocus Installer 默认情况下安装的是 [lllyasviel/Fooocus](https://githu
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_fooocus_mre.txt   # 这是配置文件
+├── install_fooocus_mre_main.txt   # 这是配置文件
 ├── QQDownloads
 ├── fooocus_installer.ps1     # 这是 Fooocus Installer
 ├── z-noob_artist.csv

@@ -27,12 +27,18 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
 
 |配置文件名 | 对应安装的分支|
 |---|---|
-|`install_sd_webui.txt`|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)|
+|`install_sd_webui_main.txt`|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) 主分支|
+|`install_sd_webui_dev.txt`|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) 测试分支|
 |`install_sd_webui_forge.txt`|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
-|`install_sd_webui_reforge.txt`|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|
+|`install_sd_webui_reforge_main.txt`|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) 主分支|
+|`install_sd_webui_reforge_dev.txt`|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) 测试分支|
 |`install_sd_webui_forge_classic.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)|
+|`install_sd_webui_forge_neo.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)|
 |`install_sd_webui_amdgpu.txt`|[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
-|`install_sd_next.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/sdnext)|
+|`install_sd_next_main.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/sdnext) 主分支|
+|`install_sd_next_dev.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/sdnext) 测试分支|
+
+上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。旧版短名称配置文件仍由安装器兼容识别，新建配置时建议使用上表文件名。
 
 创建配置文件后，将 SD WebUI Installer 下载至本地，和配置文件放在一起，如下所示。
 
@@ -42,7 +48,7 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_sd_webui.txt                  # 这是配置文件
+├── install_sd_webui_main.txt             # 这是配置文件
 ├── QQDownloads
 ├── stable_diffusion_webui_installer.ps1  # 这是 SD WebUI Installer
 ├── z-noob_artist.csv

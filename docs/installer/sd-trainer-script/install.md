@@ -27,11 +27,15 @@ SD Trainer Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
 
 |配置文件名 | 对应安装的分支|
 |---|---|
-|`install_sd_scripts.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts)|
-|`install_ai_toolkit.txt`|[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)|
-|`install_finetrainers.txt`|[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)|
-|`install_diffusion_pipe.txt`|[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)|
-|`install_musubi_tuner.txt`|[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
+|`install_sd_scripts_main.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 主分支|
+|`install_sd_scripts_dev.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) 测试分支|
+|`install_sd_scripts_sd3.txt`|[kohya-ss/sd-scripts](https://github.com/kohya-ss/sd-scripts) SD3 分支|
+|`install_ai_toolkit_main.txt`|[ostris/ai-toolkit](https://github.com/ostris/ai-toolkit)|
+|`install_finetrainers_main.txt`|[a-r-r-o-w/finetrainers](https://github.com/a-r-r-o-w/finetrainers)|
+|`install_diffusion_pipe_main.txt`|[tdrussell/diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)|
+|`install_musubi_tuner_main.txt`|[kohya-ss/musubi-tuner](https://github.com/kohya-ss/musubi-tuner)|
+
+上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。旧版短名称配置文件仍由安装器兼容识别，新建配置时建议使用上表文件名。
 
 创建配置文件后，将 SD Trainer Script Installer 下载至本地，和配置文件放在一起，如下所示。
 
@@ -41,7 +45,7 @@ SD Trainer Script Installer 默认情况下安装的是 [kohya-ss/sd-scripts](ht
 ├── 437A9AE81C043B83110F55316EC7789E.png
 ├── BaiduNetdiskDownload
 ├── BaiduNetdiskWorkspace
-├── install_simple_tuner.txt            # 这是配置文件
+├── install_sd_scripts_main.txt         # 这是配置文件
 ├── QQDownloads
 ├── sd_trainer_script_installer.ps1     # 这是 SD Trainer Script Installer
 ├── z-noob_artist.csv
