@@ -13,12 +13,15 @@
 
 ### 模型训练的方法
 推荐的哔哩哔哩 UP 主：
+
 - 青龙圣者：https://space.bilibili.com/219296
 - 秋葉aaaki：https://space.bilibili.com/12566101
 - 琥珀青葉：https://space.bilibili.com/507303431
+
 观看这些 UP 主的视频可获得一些训练模型的教程。
 
 其他的一些训练模型的教程：
+
 - https://sd-moadel-doc.maozi.io
 - https://rentry.org/59xed3
 - https://civitai.com/articles/2056
