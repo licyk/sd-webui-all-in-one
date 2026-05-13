@@ -21,6 +21,10 @@ def test_simple_tqdm_disabled_iter_context_and_formatting(capsys):
         assert disabled_bar.n == 2
         assert disabled_bar._format_time(65) == "01:05"
 
+    with SimpleTqdm(total=2048, unit="B", unit_scale=True, disable=True) as bytes_bar:
+        bytes_bar.update(1024)
+        assert bytes_bar._format_amount(bytes_bar.n) == "1KB"
+
     assert capsys.readouterr().out == ""
 
 

@@ -56,6 +56,8 @@ class SimpleTqdm(Generic[T]):
         position: int = 0,
         disable: bool = False,
         bar_length: int | None = None,
+        unit: str = "it",
+        unit_scale: bool = False,
     ) -> None:
         """初始化 SimpleTqdm 进度条
 
@@ -74,6 +76,10 @@ class SimpleTqdm(Generic[T]):
                 是否禁用显示
             bar_length (int | None):
                 进度条中“槽”的固定宽度
+            unit (str):
+                进度单位, 兼容 tqdm 的 unit 参数
+            unit_scale (bool):
+                是否缩放进度单位, 兼容 tqdm 的 unit_scale 参数
         """
         self.iterable = iterable
         self.desc = desc
@@ -82,6 +88,8 @@ class SimpleTqdm(Generic[T]):
         self.position = position
         self.disable = disable
         self.fixed_bar_length = bar_length
+        self.unit = unit
+        self.unit_scale = unit_scale
         self.n = 0
         self.start_time = time.time()
         self._last_refresh_t: float = 0
@@ -167,6 +175,27 @@ class SimpleTqdm(Generic[T]):
         m, s = divmod(int(seconds), 60)
         return f"{m:02d}:{s:02d}"
 
+    def _format_amount(
+        self,
+        value: int | float,
+    ) -> str:
+        """格式化进度数量"""
+        amount = float(value)
+        if not self.unit_scale:
+            return f"{amount:g}{self.unit}"
+
+        prefixes = ["", "K", "M", "G", "T", "P"]
+        prefix_index = 0
+        while abs(amount) >= 1000 and prefix_index < len(prefixes) - 1:
+            amount /= 1000
+            prefix_index += 1
+
+        if prefix_index == 0:
+            amount_text = f"{amount:g}"
+        else:
+            amount_text = f"{amount:.1f}".rstrip("0").rstrip(".")
+        return f"{amount_text}{prefixes[prefix_index]}{self.unit}"
+
     def _render(
         self,
     ) -> None:
@@ -178,8 +207,8 @@ class SimpleTqdm(Generic[T]):
 
         if self.total and self.total > 0:
             percent_str = f"{int(min(self.n / self.total, 1.0) * 100)}%"
-            counts_str = f"{self.n}/{self.total}"
-            stats_str = f"[{time_str}, {speed:.2f}it/s]"
+            counts_str = f"{self._format_amount(self.n)}/{self._format_amount(self.total)}"
+            stats_str = f"[{time_str}, {self._format_amount(speed)}/s]"
 
             # 基础文本用于计算剩余可用空间
             base_text = f"{self.desc}: {percent_str}|" + "|" + f" {counts_str} {stats_str}"
@@ -192,7 +221,7 @@ class SimpleTqdm(Generic[T]):
 
             msg = f"{self.desc}: {percent_str}|{bar_str}| {counts_str} {stats_str}"
         else:
-            msg = f"{self.desc}: {self.n}it [{time_str}, {speed:.2f}it/s]"
+            msg = f"{self.desc}: {self._format_amount(self.n)} [{time_str}, {self._format_amount(speed)}/s]"
 
         # 截断过长的消息
         if len(msg) > term_width:

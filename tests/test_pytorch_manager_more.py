@@ -7,7 +7,7 @@ from sd_webui_all_in_one.pytorch_manager import version_manager
 @pytest.mark.parametrize(
     ("torch_ver", "cuda_version", "cuda_cap", "expected"),
     [
-        ("2.3.0", 11.8, 8.9, "cu118"),
+        ("2.3.0", 12.1, 8.9, "cu121"),
         ("2.3.1", 12.2, 8.9, "cu121"),
         ("2.4.0", 12.1, 8.9, "cu121"),
         ("2.4.1", 12.4, 8.9, "cu124"),

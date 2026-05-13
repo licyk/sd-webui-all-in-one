@@ -46,8 +46,8 @@ def get_pytorch_mirror_type_cuda(
     if torch_version < CommonVersionComparison("2.0.0"):
         # torch < 2.0.0: default cu11x
         return "all"
-    if CommonVersionComparison("2.0.0") <= torch_version < CommonVersionComparison("2.3.1"):
-        # 2.0.0 <= torch < 2.3.1: default cu118
+    if CommonVersionComparison("2.0.0") <= torch_version < CommonVersionComparison("2.3.0"):
+        # 2.0.0 <= torch < 2.3.0: default cu118
         return "cu118"
     if CommonVersionComparison("2.3.0") <= torch_version < CommonVersionComparison("2.4.1"):
         # 2.3.0 <= torch < 2.4.1: default cu121
