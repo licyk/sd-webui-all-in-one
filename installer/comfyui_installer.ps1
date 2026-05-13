@@ -240,7 +240,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 421
+$script:COMFYUI_INSTALLER_VERSION = 422
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.4"
@@ -1472,7 +1472,7 @@ function Update-Installer {
         return
     }
 
-    `$raw_params = `$script:LaunchCommandLine -replace `"^.*\.ps1[\s]*`", `"`"
+    `$raw_params = `$script:LaunchCommandLine -replace '^.*\.dll[\s]*', '' -replace '^.*\.ps1[\s]*', ''
     Write-Log `"更新结束, 重新启动 ComfyUI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     try { Invoke-Expression `"& ```"`$script:OriginalScriptPath```" `$raw_params`" -ErrorAction Stop }
     catch { exit 1 }
@@ -2192,7 +2192,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableUV = `$script:DisableUV
@@ -2532,7 +2532,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
@@ -2654,7 +2654,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
@@ -3047,7 +3047,7 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableUV = `$script:DisableUV
@@ -3176,7 +3176,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
@@ -3302,7 +3302,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
@@ -3407,7 +3407,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
@@ -3719,7 +3719,7 @@ param (
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisablePyPIMirror = `$script:DisablePyPIMirror
@@ -4128,7 +4128,7 @@ param(
 try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = `$script:MyInvocation.Line
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
