@@ -82,6 +82,67 @@ def test_mirror_env_helpers_set_and_clear(monkeypatch):
     assert "HF_ENDPOINT" not in os.environ
 
 
+def test_configure_env_helpers_and_wandb_token(monkeypatch):
+    for key in [
+        "UV_HTTP_TIMEOUT",
+        "UV_CONCURRENT_DOWNLOADS",
+        "UV_INDEX_STRATEGY",
+        "UV_PYTHON",
+        "UV_NO_PROGRESS",
+        "PIP_DISABLE_PIP_VERSION_CHECK",
+        "PIP_NO_WARN_SCRIPT_LOCATION",
+        "PIP_TIMEOUT",
+        "PIP_RETRIES",
+        "PIP_PREFER_BINARY",
+        "PIP_YES",
+        "WANDB_API_KEY",
+        "EXTRA_ENV",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+
+    env_manager.configure_pip()
+    assert os.environ["UV_PYTHON"]
+    assert os.environ["PIP_PREFER_BINARY"] == "1"
+    assert os.environ["PIP_YES"] == "1"
+
+    monkeypatch.setattr(env_manager, "DEFAULT_ENV_VARS", [("EXTRA_ENV", "enabled")])
+    env_manager.configure_env_var()
+    assert os.environ["EXTRA_ENV"] == "enabled"
+
+    env_manager.config_wandb_token()
+    assert "WANDB_API_KEY" not in os.environ
+    env_manager.config_wandb_token("token")
+    assert os.environ["WANDB_API_KEY"] == "token"
+
+
+def test_set_mirror_delegates_and_sets_git_config_env(monkeypatch, tmp_path):
+    calls = []
+
+    monkeypatch.setattr(mirror_manager, "set_pypi_index_mirror", lambda mirror=None: calls.append(("index", mirror)))
+    monkeypatch.setattr(mirror_manager, "set_pypi_extra_index_mirror", lambda mirror=None: calls.append(("extra", mirror)))
+    monkeypatch.setattr(mirror_manager, "set_pypi_find_links_mirror", lambda mirror=None: calls.append(("links", mirror)))
+    monkeypatch.setattr(mirror_manager, "set_github_mirror", lambda mirror=None: calls.append(("github", mirror)) or (tmp_path / ".gitconfig"))
+    monkeypatch.setattr(mirror_manager, "set_huggingface_mirror", lambda mirror=None: calls.append(("hf", mirror)))
+    monkeypatch.delenv("GIT_CONFIG_GLOBAL", raising=False)
+
+    mirror_manager.set_mirror(
+        pypi_index_mirror="index-url",
+        pypi_extra_index_mirror="extra-url",
+        pypi_find_links_mirror="links-url",
+        github_mirror=["gh"],
+        huggingface_mirror="hf-url",
+    )
+
+    assert calls == [
+        ("index", "index-url"),
+        ("extra", "extra-url"),
+        ("links", "links-url"),
+        ("github", ["gh"]),
+        ("hf", "hf-url"),
+    ]
+    assert os.environ["GIT_CONFIG_GLOBAL"] == (tmp_path / ".gitconfig").as_posix()
+
+
 def test_set_github_mirror_writes_or_clears_config(monkeypatch, tmp_path):
     calls = []
 
@@ -194,4 +255,3 @@ def test_retryable_retries_none_and_unretryable(monkeypatch):
 
     with pytest.raises(TypeError):
         fatal()
-

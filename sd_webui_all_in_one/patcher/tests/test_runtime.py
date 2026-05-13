@@ -30,6 +30,19 @@ from sd_webui_all_in_one_hotpatcher.runtime.fileops import UserCanceledException
 from sd_webui_all_in_one_hotpatcher.exceptions import capture_exception
 
 
+def _coverage_tracing_active():
+    tracer = sys.gettrace()
+    return tracer is not None and tracer.__class__.__module__.startswith("coverage")
+
+
+def coverage_trace_conflict(test_func):
+    test_func = pytest.mark.coverage_trace_conflict(test_func)
+    return pytest.mark.skipif(
+        _coverage_tracing_active(),
+        reason="coverage installs sys.settrace and conflicts with caught-exception tracing tests",
+    )(test_func)
+
+
 @pytest.fixture(autouse=True)
 def clean_exception_reporter():
     uninstall_error_capture()
@@ -508,6 +521,7 @@ def test_error_capture_asyncio_exception_handler_reports_and_chains(monkeypatch)
     assert calls and calls[0][1]["exception"] is exc
 
 
+@coverage_trace_conflict
 def test_caught_exception_tracer_reports_handled_exception():
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
@@ -537,6 +551,7 @@ def test_caught_exception_tracer_reports_handled_exception():
         assert _locals_for_function(payload, "_caught_exception_function")["visible_local"]["repr"] == "'visible value'"
 
 
+@coverage_trace_conflict
 def test_caught_exception_tracer_filters_modules():
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
@@ -573,6 +588,7 @@ def test_caught_exception_tracer_filters_modules():
         assert not host.wait_for(lambda message: message.get("type") == "error.caught_exception", timeout=0.2)
 
 
+@coverage_trace_conflict
 def test_caught_exception_tracer_rate_limits_events():
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
@@ -597,6 +613,7 @@ def test_caught_exception_tracer_rate_limits_events():
         assert events[0]["payload"]["message"] == "first"
 
 
+@coverage_trace_conflict
 def test_caught_exception_tracer_rejects_existing_trace(monkeypatch):
     def existing_trace(frame, event, arg):
         return existing_trace
@@ -621,6 +638,7 @@ def test_caught_exception_tracer_rejects_existing_trace(monkeypatch):
         sys.settrace(None)
 
 
+@coverage_trace_conflict
 def test_caught_exception_tracer_restores_trace_functions():
     assert sys.gettrace() is None
     original_threading_trace = threading.gettrace() if hasattr(threading, "gettrace") else None
@@ -648,6 +666,7 @@ def test_caught_exception_tracer_restores_trace_functions():
         assert threading.gettrace() is original_threading_trace
 
 
+@coverage_trace_conflict
 def test_configure_error_capture_from_env_enables_caught_tracer(monkeypatch):
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
@@ -668,6 +687,7 @@ def test_configure_error_capture_from_env_enables_caught_tracer(monkeypatch):
     uninstall_error_capture()
 
 
+@coverage_trace_conflict
 def test_configure_error_capture_from_env_ignores_caught_when_errors_disabled(monkeypatch):
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:

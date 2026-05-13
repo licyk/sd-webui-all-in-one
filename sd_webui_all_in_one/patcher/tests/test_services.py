@@ -26,6 +26,19 @@ from sd_webui_all_in_one_hotpatcher.stack_shadow import uninstall_stack_shadower
 from sd_webui_all_in_one_hotpatcher_ext.uv_pip import unpatch_uv_to_subprocess
 
 
+def _coverage_tracing_active():
+    tracer = sys.gettrace()
+    return tracer is not None and tracer.__class__.__module__.startswith("coverage")
+
+
+def coverage_trace_conflict(test_func):
+    test_func = pytest.mark.coverage_trace_conflict(test_func)
+    return pytest.mark.skipif(
+        _coverage_tracing_active(),
+        reason="coverage installs sys.settrace and conflicts with explicit trace-conflict tests",
+    )(test_func)
+
+
 @pytest.fixture(autouse=True)
 def clean_service_state():
     clear_current_config()
@@ -279,6 +292,7 @@ def test_apply_config_warns_when_errors_enabled_without_runtime_client():
     ]
 
 
+@coverage_trace_conflict
 def test_apply_config_reports_error_when_caught_tracer_conflicts():
     def existing_trace(frame, event, arg):
         return existing_trace

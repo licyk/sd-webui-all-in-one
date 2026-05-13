@@ -66,6 +66,7 @@ docs = [
 ]
 test = [
     "pytest",
+    "pytest-cov",
 ]
 full = [
     "zstandard",
@@ -129,3 +130,19 @@ skip-magic-trailing-comma = false
 norecursedirs = [
     "sd_webui_all_in_one/base_manager/gui/sv_ttk",
 ]
+markers = [
+    "coverage_trace_conflict: tests that install process-wide tracing hooks and must run outside pytest-cov tracing",
+]
+
+[tool.coverage.run]
+source = ["sd_webui_all_in_one"]
+omit = [
+    "sd_webui_all_in_one/base_manager/gui/*",
+    "sd_webui_all_in_one/base_manager/gui/sv_ttk/*",
+    "sd_webui_all_in_one/base_manager/gui/sv_ttk/theme/*",
+    "sd_webui_all_in_one/patcher/examples/*",
+    "sd_webui_all_in_one/patcher/tests/*",
+]
+
+[tool.coverage.report]
+skip_covered = true

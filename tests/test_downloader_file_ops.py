@@ -189,3 +189,56 @@ def test_archive_manager_zip_tar_and_unsupported(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError):
         archive_manager.extract_archive(tmp_path / "bad.exe", tmp_path / "bad-out")
+
+
+def test_archive_create_tar_variants_and_write_errors(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "py7zr", types.SimpleNamespace(SevenZipFile=object))
+    monkeypatch.setitem(sys.modules, "zstandard", types.SimpleNamespace(ZstdCompressor=object))
+
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "a.txt").write_text("a", encoding="utf-8")
+    (source_dir / "b.txt").write_text("b", encoding="utf-8")
+
+    tar_gz = tmp_path / "created.tar.gz"
+    archive_manager.create_archive([source_dir], tar_gz)
+    with tarfile.open(tar_gz, "r:gz") as tf:
+        assert sorted(tf.getnames()) == ["source", "source/a.txt", "source/b.txt"]
+
+    tar_lzma = tmp_path / "created.tar.lzma"
+    archive_manager.create_archive([source_dir / "a.txt"], tar_lzma)
+    assert tar_lzma.exists()
+
+    with pytest.raises(ValueError, match="rar"):
+        archive_manager.create_archive([source_dir], tmp_path / "bad.rar")
+
+    with pytest.raises(ValueError, match="unsupported|不支持"):
+        archive_manager.create_archive([source_dir], tmp_path / "bad.bin")
+
+
+def test_file_operations_error_paths_tree_and_empty_status(tmp_path, capsys):
+    with pytest.raises(FileNotFoundError):
+        file_manager.copy_files(tmp_path / "missing", tmp_path / "out")
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "visible.txt").write_text("visible", encoding="utf-8")
+    (src / ".hidden").write_text("hidden", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        file_manager.copy_files(src, src / "child")
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert file_manager.is_folder_empty(empty) is True
+    assert file_manager.is_folder_empty(src) is False
+    with pytest.raises(ValueError):
+        file_manager.is_folder_empty(src / "visible.txt")
+
+    file_manager.generate_dir_tree(src, max_depth=1, show_hidden=False)
+    output = capsys.readouterr().out
+    assert "visible.txt" in output
+    assert ".hidden" not in output
+
+    file_manager.display_directories(src, tmp_path / "missing", recursive=False, show_hidden=False)
+    assert "visible.txt" in capsys.readouterr().out

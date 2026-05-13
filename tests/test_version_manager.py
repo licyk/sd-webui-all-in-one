@@ -1,5 +1,8 @@
 import json
 
+import pytest
+
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 import sd_webui_all_in_one.base_manager.version_manager as version_manager
 from sd_webui_all_in_one.base_manager.base import apply_github_raw_file_mirror
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
@@ -189,3 +192,113 @@ def test_apply_github_raw_file_mirror_with_prefix_url():
     )
 
     assert url == "https://mirror.example.com/raw.githubusercontent.com/owner/repo/main/index.json"
+
+
+def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
+    fetch_calls = []
+
+    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(version_manager.git_warpper, "get_current_commit", lambda _path: "abc123")
+    monkeypatch.setattr(version_manager.git_warpper, "get_current_branch", lambda _path: "main")
+    monkeypatch.setattr(version_manager, "fetch_repository", lambda path: fetch_calls.append(path))
+
+    def fake_git_output(_path, *args):
+        if args[:1] == ("log",):
+            return "\n".join(
+                [
+                    "abc123\x1f2026-05-01\x1fcurrent",
+                    "def456\x1f2026-04-30\x1folder",
+                    "malformed",
+                ]
+            )
+        if args == ("branch", "--all", "--format=%(refname:short)"):
+            return "\n".join(["origin/HEAD -> origin/main", "origin/dev", "main", "origin/main"])
+        raise AssertionError(args)
+
+    monkeypatch.setattr(version_manager, "_git_output", fake_git_output)
+
+    commits = version_manager.list_commits(repo_path, limit=2)
+    assert [(item.commit, item.is_current) for item in commits] == [("abc123", True), ("def456", False)]
+
+    branches = version_manager.list_branches(repo_path, fetch=True)
+    assert fetch_calls == [repo_path]
+    assert [(item.name, item.is_current, item.is_remote) for item in branches] == [
+        ("main", True, False),
+        ("dev", False, True),
+    ]
+
+    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda _path: False)
+    assert version_manager.list_commits(repo_path) == []
+    assert version_manager.list_branches(repo_path) == []
+
+
+def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_path):
+    root = tmp_path / "webui"
+    ext_root = root / "extensions"
+    git_ext = ext_root / "git-ext"
+    plain_ext = ext_root / "plain-ext"
+    ignored_ext = ext_root / "__pycache__"
+    git_ext.mkdir(parents=True)
+    plain_ext.mkdir()
+    ignored_ext.mkdir()
+
+    enabled_changes = []
+
+    manager = version_manager.ExtensionManager(
+        root_path=root,
+        extension_dir_name="extensions",
+        is_enabled=lambda name, _path: name != "plain-ext",
+        set_enabled=lambda name, enabled: enabled_changes.append((name, enabled)),
+    )
+
+    def fake_inspect(path):
+        return version_manager.RepositoryState(
+            path=path,
+            is_git_repo=path.name == "git-ext",
+            name=path.name,
+            url=f"https://example.test/{path.name}",
+            branch="main",
+            commit="abc",
+        )
+
+    monkeypatch.setattr(version_manager, "inspect_repository", fake_inspect)
+
+    extensions = manager.list_extensions()
+    assert [item.name for item in extensions] == ["git-ext", "plain-ext"]
+    assert extensions[0].is_git_repo is True
+    assert extensions[1].enabled is False
+
+    manager.set_extension_enabled("plain-ext", True)
+    assert enabled_changes == [("plain-ext", True)]
+
+    clones = []
+    monkeypatch.setattr(version_manager, "clone_repo", lambda repo, path: clones.append((repo, path)))
+    assert manager.install_extension("https://github.com/example/new-ext.git") == ext_root / "new-ext"
+    assert clones == [("https://github.com/example/new-ext.git", ext_root / "new-ext")]
+    with pytest.raises(FileExistsError):
+        manager.install_extension("https://github.com/example/git-ext.git")
+
+    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda path: path.name == "git-ext")
+    updates = []
+    monkeypatch.setattr(version_manager, "update_repository", lambda path: updates.append(path))
+    manager.update_extension("git-ext")
+    with pytest.raises(ValueError):
+        manager.update_extension("plain-ext")
+    assert updates == [git_ext]
+
+    def update_or_fail(path):
+        raise RuntimeError("bad update")
+
+    monkeypatch.setattr(version_manager, "update_repository", update_or_fail)
+    with pytest.raises(AggregateError) as exc:
+        manager.update_all()
+    assert len(exc.value.exceptions) == 1
+
+    removed = []
+    monkeypatch.setattr(version_manager, "remove_files", lambda path: removed.append(path))
+    manager.uninstall_extension("plain-ext")
+    assert removed == [plain_ext]
+    with pytest.raises(FileNotFoundError):
+        manager.uninstall_extension("missing")
