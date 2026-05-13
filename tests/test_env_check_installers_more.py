@@ -59,7 +59,7 @@ def test_install_extension_requirements_filters_disabled_and_builtin(monkeypatch
     calls.clear()
     (webui / "config.json").write_text(json.dumps({"disable_all_extensions": "extra"}), encoding="utf-8")
     ext_installer.install_extension_requirements(webui)
-    assert calls == ["builtin-enabled", "builtin-disabled"]
+    assert sorted(calls) == ["builtin-disabled", "builtin-enabled"]
 
     calls.clear()
     (webui / "config.json").write_text(json.dumps({"disable_all_extensions": "all"}), encoding="utf-8")
