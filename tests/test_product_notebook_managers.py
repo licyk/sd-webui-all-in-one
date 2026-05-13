@@ -15,6 +15,7 @@ from sd_webui_all_in_one.notebook_manager import qwen_tts_webui_manager
 from sd_webui_all_in_one.notebook_manager import sd_scripts_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_scripts_manager
+from sd_webui_all_in_one.notebook_manager import sd_webui_manager
 
 
 class FakeRepoManager:
@@ -53,6 +54,7 @@ def test_product_notebook_launch_commands_and_run_delegate(monkeypatch, tmp_path
         (fooocus_manager.FooocusManager, "Fooocus", "launch.py"),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "Qwen TTS WebUI", "launch.py"),
         (sd_trainer_manager.SDTrainerManager, "SD Trainer", "gui.py"),
+        (sd_webui_manager.SDWebUIManager, "Stable Diffusion WebUI", "launch.py"),
     ]
 
     for cls, name, script in cases:
@@ -149,6 +151,11 @@ def test_mount_drive_links_expected_product_paths(monkeypatch, tmp_path):
         (fooocus_manager.FooocusManager, "fooocus_output", ["outputs", "presets", "language", "wildcards", "config.txt"]),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "qwen_tts_webui_output", ["outputs", "config.json"]),
         (sd_trainer_manager.SDTrainerManager, "sd_trainer_output", ["outputs", "output", "config", "train", "logs"]),
+        (
+            sd_webui_manager.SDWebUIManager,
+            "sd_webui_output",
+            ["outputs", "config_states", "params.txt", "config.json", "ui-config.json", "styles.csv"],
+        ),
     ]
 
     for cls, drive_dir, expected_links in cases:
@@ -188,6 +195,7 @@ def test_notebook_check_env_methods_delegate(monkeypatch, tmp_path):
         (invokeai_manager, invokeai_manager.InvokeAIManager, "check_invokeai_env", None),
         (sd_trainer_manager, sd_trainer_manager.SDTrainerManager, "check_sd_trainer_env", "sd_trainer_path"),
         (sd_trainer_scripts_manager, sd_trainer_scripts_manager.SDTrainerScriptsManager, "check_sd_scripts_env", "sd_scripts_path"),
+        (sd_webui_manager, sd_webui_manager.SDWebUIManager, "check_sd_webui_env", "sd_webui_path"),
     ]
 
     for module, cls, attr, path_kw in mappings:
@@ -207,6 +215,101 @@ def test_notebook_check_env_methods_delegate(monkeypatch, tmp_path):
     assert calls[3][0] == "check_invokeai_env"
     assert "invokeai_path" not in calls[3][1]
     assert ("protobuf", {"use_uv": False}) in calls
+
+
+def test_sd_webui_model_and_extension_helpers_delegate(monkeypatch, tmp_path):
+    manager = sd_webui_manager.SDWebUIManager(tmp_path, "webui")
+    model_calls = []
+    helper_calls = []
+    manager.get_model = lambda **kwargs: model_calls.append(kwargs) or kwargs["path"] / (kwargs["filename"] or "file.bin")
+
+    monkeypatch.setattr(sd_webui_manager, "install_sd_webui_extension", lambda **kwargs: helper_calls.append(("install", kwargs)))
+    monkeypatch.setattr(sd_webui_manager, "update_sd_webui_extensions", lambda **kwargs: helper_calls.append(("update", kwargs)))
+
+    result = manager.get_sd_model("https://example.test/emb.bin", filename="emb.pt", model_type="embeddings")
+    manager.get_sd_model_from_list(
+        [
+            {"url": "https://example.test/a.safetensors", "type": "loras", "filename": "a.safetensors"},
+            {"url": "https://example.test/b.safetensors"},
+        ]
+    )
+    manager.install_extension(["https://github.com/example/ext"], use_github_mirror=True, custom_github_mirror="mirror")
+    manager.update_extensions(use_github_mirror=True, custom_github_mirror=["mirror"])
+
+    assert result == tmp_path / "webui" / "embeddings" / "emb.pt"
+    assert model_calls[0]["path"] == tmp_path / "webui" / "embeddings"
+    assert model_calls[1]["path"] == tmp_path / "webui" / "models" / "loras"
+    assert model_calls[2]["path"] == tmp_path / "webui" / "models" / "Stable-diffusion"
+    assert helper_calls == [
+        (
+            "install",
+            {
+                "sd_webui_path": tmp_path / "webui",
+                "extension_url": ["https://github.com/example/ext"],
+                "use_github_mirror": True,
+                "custom_github_mirror": "mirror",
+            },
+        ),
+        (
+            "update",
+            {
+                "sd_webui_path": tmp_path / "webui",
+                "use_github_mirror": True,
+                "custom_github_mirror": ["mirror"],
+            },
+        ),
+    ]
+
+
+def test_sd_webui_install_orchestrates_notebook_steps(monkeypatch, tmp_path):
+    manager = sd_webui_manager.SDWebUIManager(tmp_path, "webui")
+    calls = []
+
+    monkeypatch.delenv("STABLE_DIFFUSION_REPO", raising=False)
+    monkeypatch.setattr(sd_webui_manager.os, "chdir", lambda path: calls.append(("chdir", path)))
+    monkeypatch.setattr(sd_webui_manager, "set_mirror", lambda **kwargs: calls.append(("mirror", kwargs)))
+    monkeypatch.setattr(sd_webui_manager, "configure_pip", lambda: calls.append(("pip", None)))
+    monkeypatch.setattr(sd_webui_manager, "configure_env_var", lambda: calls.append(("env", None)))
+    monkeypatch.setattr(sd_webui_manager, "install_manager_depend", lambda **kwargs: calls.append(("depend", kwargs)))
+    monkeypatch.setattr(sd_webui_manager, "install_sd_webui", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(sd_webui_manager, "update_sd_webui", lambda **kwargs: calls.append(("update-core", kwargs)))
+    monkeypatch.setattr(sd_webui_manager, "set_cuda_malloc", lambda: calls.append(("cuda-malloc", None)))
+    manager.install_extension = lambda **kwargs: calls.append(("extension", kwargs))
+    manager.update_extensions = lambda **kwargs: calls.append(("update-extension", kwargs))
+    manager.get_sd_model_from_list = lambda models: calls.append(("models", models))
+    manager.restart_repo_manager = lambda **kwargs: calls.append(("repo", kwargs))
+    manager.check_avaliable_gpu = lambda: calls.append(("gpu", None))
+    manager.tcmalloc_manager.configure_tcmalloc = lambda: calls.append(("tcmalloc", None))
+
+    manager.install(
+        use_github_mirror=True,
+        use_hf_mirror=True,
+        github_mirror="https://mirror.example",
+        huggingface_mirror="https://hf.example",
+        extension_list=["ext"],
+        model_list=[{"url": "model"}],
+        use_cn_model_mirror=True,
+        custom_sys_pkg_cmd=True,
+        check_avaliable_gpu=True,
+        huggingface_token="hf",
+        modelscope_token="ms",
+        update_core=True,
+    )
+
+    assert ("chdir", tmp_path) in calls
+    assert calls[1] == ("gpu", None)
+    assert calls[2][0] == "mirror"
+    assert calls[2][1]["github_mirror"] == "https://mirror.example"
+    assert calls[2][1]["huggingface_mirror"] == "https://hf.example"
+    assert ("depend", {"use_uv": True, "custom_sys_pkg_cmd": None}) in calls
+    install_call = next(kwargs for name, kwargs in calls if name == "install")
+    assert install_call["sd_webui_path"] == tmp_path / "webui"
+    assert install_call["model_download_resource_type"] == "modelscope"
+    assert ("extension", {"extension": ["ext"], "use_github_mirror": True, "custom_github_mirror": None}) in calls
+    assert ("models", [{"url": "model"}]) in calls
+    assert ("repo", {"hf_token": "hf", "ms_token": "ms"}) in calls
+    assert ("tcmalloc", None) in calls
+    assert ("cuda-malloc", None) in calls
 
 
 def test_fooocus_config_path_and_pre_download_model(monkeypatch, tmp_path):
