@@ -76,6 +76,7 @@ Fooocus Installer 默认情况下安装的是 [lllyasviel/Fooocus](https://githu
 
 !!! note
     Fooocus Installer 在安装时还可以通过其他配置文件指定其他参数, 可阅读以下的说明：
+
     - [设置 Github 镜像源](config.md#github)
     - [设置 PyPI 镜像源](config.md#pypi)
     - [设置 uv 包管理器](config.md#uv)
