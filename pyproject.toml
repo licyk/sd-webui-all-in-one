@@ -64,6 +64,9 @@ tunnel = [
 docs = [
     "zensical",
 ]
+test = [
+    "pytest",
+]
 full = [
     "zstandard",
     "py7zr",
