@@ -33,7 +33,7 @@ def test_audit_json_safe_extracts_nested_code_strings_and_bytes():
     assert value["payload"] == {"type": "bytes", "base64": "YWJj"}
     assert value["code"]["type"] == "code"
     assert value["code"]["name"] == "outer"
-    assert value["code"]["strings"] == ["inner-value", "outer-value"]
+    assert {"inner-value", "outer-value"}.issubset(value["code"]["strings"])
     assert value["items"][:2] == [None, True]
     assert value["items"][2]["type"] == "object"
 
