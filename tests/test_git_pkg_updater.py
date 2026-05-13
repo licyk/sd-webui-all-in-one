@@ -243,3 +243,66 @@ def test_updater_version_checks_and_install_commands(monkeypatch):
     monkeypatch.setattr(updater, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("missing")))
     assert updater.get_aria2_ver() is None
     assert updater.check_aria2_version() is True
+
+
+def test_git_main_branch_local_fallbacks(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(git_warpper, "get_git_repo_remote_name", lambda _path: None)
+
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: "dev\nmaster\n")
+    assert git_warpper.get_git_repo_main_branch(repo) == ("master", None)
+
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: "dev\nrelease\n")
+    assert git_warpper.get_git_repo_main_branch(repo) == ("dev", None)
+
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("bad ref")))
+    assert git_warpper.get_git_repo_main_branch(repo) == (None, None)
+
+
+def test_fix_point_offset_uses_local_branch_and_reports_missing(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(git_warpper, "get_git_repo_main_branch", lambda _path: ("master", None))
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append((command, kwargs)))
+
+    git_warpper.fix_point_offset(repo)
+
+    assert ["/bin/git", "-C", repo.as_posix(), "submodule", "init"] in [call[0] for call in calls]
+    assert ["/bin/git", "-C", repo.as_posix(), "checkout", "master"] in [call[0] for call in calls]
+    assert ["/bin/git", "-C", repo.as_posix(), "reset", "--recurse-submodules", "--hard", "master"] in [call[0] for call in calls]
+
+    monkeypatch.setattr(git_warpper, "get_git_repo_main_branch", lambda _path: (None, None))
+    with pytest.raises(FileNotFoundError):
+        git_warpper.fix_point_offset(repo)
+
+
+def test_update_submodule_switch_commit_and_git_config(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append((command, kwargs)))
+
+    git_warpper.update_submodule(repo)
+    git_warpper.switch_commit(repo, "abc123")
+    git_warpper.set_git_config(username="tester", email="tester@example.test")
+
+    assert calls == [
+        (["/bin/git", "-C", repo.as_posix(), "submodule", "init"], {}),
+        (["/bin/git", "-C", repo.as_posix(), "submodule", "update"], {}),
+        (["/bin/git", "-C", repo.as_posix(), "reset", "--hard", "abc123"], {}),
+        (["/bin/git", "config", "--global", "user.name", "tester"], {}),
+        (["/bin/git", "config", "--global", "user.email", "tester@example.test"], {}),
+    ]
+
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))
+    with pytest.raises(RuntimeError, match="Git 子模块"):
+        git_warpper.update_submodule(repo)
+    with pytest.raises(RuntimeError, match="abc123"):
+        git_warpper.switch_commit(repo, "abc123")
+    with pytest.raises(RuntimeError, match="配置 Git"):
+        git_warpper.set_git_config(username="tester")

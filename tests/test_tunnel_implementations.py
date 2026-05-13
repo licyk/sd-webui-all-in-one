@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import sys
+import tarfile
 import types
 from pathlib import Path
 
@@ -234,3 +235,87 @@ def test_zrok_package_selection_and_release_error(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "requests", fake_requests)
     with pytest.raises(FileNotFoundError):
         tunnel._get_latest_zrok_release()
+
+
+def test_zrok_install_uses_existing_or_downloaded_binary(monkeypatch, tmp_path):
+    tunnel = zrok.ZrokTunnel(7860, tmp_path, zrok_token="token")
+    monkeypatch.setattr(zrok.shutil, "which", lambda name: "/usr/bin/zrok2" if name == "zrok2" else None)
+    assert tunnel._install_zrok() == Path("/usr/bin/zrok2")
+
+    monkeypatch.setattr(zrok.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(tunnel, "_get_latest_zrok_release", lambda: [["zrok_1.0.0_linux_amd64.tar.gz", "https://example.test/zrok.tar.gz"]])
+    monkeypatch.setattr(tunnel, "_get_appropriate_zrok_package", lambda packages: packages[0])
+
+    def fake_download_file(url, path, save_name):
+        archive = path / save_name
+        bin_name = "zrok2.exe" if zrok.sys.platform == "win32" else "zrok2"
+        binary = path / bin_name
+        binary.write_text("zrok", encoding="utf-8")
+        with tarfile.open(archive, "w:gz") as tar:
+            tar.add(binary, arcname=bin_name)
+        return archive
+
+    monkeypatch.setattr(zrok, "download_file", fake_download_file)
+
+    installed = tunnel._install_zrok()
+    assert installed == tmp_path / ("zrok.exe" if zrok.sys.platform == "win32" else "zrok")
+    assert installed.read_text(encoding="utf-8") == "zrok"
+
+
+def test_zrok_start_parses_url_and_stop_disables(monkeypatch, tmp_path):
+    zrok_bin = tmp_path / "zrok"
+    zrok_bin.write_text("", encoding="utf-8")
+    run_calls = []
+
+    class FakeStdout:
+        def __init__(self):
+            self.lines = iter(["starting\n", "share ready rp123.shares.zrok.io\n", ""])
+
+        def readline(self):
+            return next(self.lines)
+
+        def close(self):
+            pass
+
+    class FakeProcess:
+        pid = 123
+
+        def __init__(self, command, **kwargs):
+            self.command = command
+            self.kwargs = kwargs
+            self.stdout = FakeStdout()
+            self.terminated = False
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            self.terminated = True
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(zrok, "run_cmd", lambda command, live=True: run_calls.append((command, live)))
+    monkeypatch.setattr(zrok, "preprocess_command", lambda command, shell=True: command)
+    monkeypatch.setattr(zrok.subprocess, "Popen", FakeProcess)
+
+    tunnel = zrok.ZrokTunnel(7860, tmp_path, zrok_token="token")
+    monkeypatch.setattr(tunnel, "_install_zrok", lambda: zrok_bin)
+
+    assert tunnel.start() == "https://rp123.shares.zrok.io"
+    assert run_calls == [([zrok_bin.as_posix(), "enable", "token"], True)]
+    assert tunnel._process.command == [zrok_bin.as_posix(), "share", "public", "7860", "--headless"]
+
+    tunnel.stop()
+    assert run_calls[-1] == ([zrok_bin.as_posix(), "disable"], False)
+    assert tunnel._process.terminated is True
+
+
+def test_zrok_start_wraps_enable_failure(monkeypatch, tmp_path):
+    tunnel = zrok.ZrokTunnel(7860, tmp_path, zrok_token="token")
+    zrok_bin = tmp_path / "zrok"
+    monkeypatch.setattr(tunnel, "_install_zrok", lambda: zrok_bin)
+    monkeypatch.setattr(zrok, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("enable bad")))
+
+    with pytest.raises(RuntimeError, match="初始化 Zrok 配置失败"):
+        tunnel.start()
