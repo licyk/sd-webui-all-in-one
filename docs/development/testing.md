@@ -23,6 +23,40 @@ pytest tests/test_package_analyzer.py
 pytest tests/test_version_manager.py
 ```
 
+## 测试贡献准则
+
+新增或修改 Python 功能时，优先补充可离线运行的 pytest 用例。测试应验证行为边界、异常包装、命令参数、环境变量合并、路径处理和平台分支，而不是依赖真实外部服务。
+
+- 测试文件放在 `tests/`，命名为 `test_*.py`；patcher 自身测试仍放在 `sd_webui_all_in_one/patcher/tests/`。
+- 优先使用 `tmp_path`、`monkeypatch`、fake subprocess result、fake downloader、fake API client，避免污染用户环境。
+- 不在测试中访问真实网络，不执行真实 `git clone`、`pip/uv install`、`aria2` 下载、WebUI 启动、GPU 检测或隧道启动。
+- 涉及 Windows / Linux / macOS 差异时，断言行为结果，不依赖目录遍历顺序、POSIX 权限、命令字符串转义细节或某个平台专有路径。
+- 需要模拟可选依赖缺失时，优先 monkeypatch 对应模块导入或入口函数，不通过卸载本机依赖实现。
+- 修复 bug 时先补能复现问题的回归测试，再修实现；若现有行为本身不明确，应在测试名或断言中表达新的预期。
+
+常用的测试粒度：
+
+- 纯函数、解析器、版本比较：直接参数化输入输出。
+- 下载、Git、包管理、隧道、Notebook / CLI 编排：mock 外部命令和网络边界，只断言传参、路径和异常。
+- 产品级 manager：参数化覆盖相同行为，避免为每个产品复制大量重复断言。
+- 文档或配置改动：至少跑相关静态搜索或文档构建，确认链接、标题和工作流说明没有失效。
+
+本地补测建议先跑变更相关文件，再跑完整回归：
+
+```bash
+pytest tests/test_pytorch_manager_more.py
+pytest tests/test_low_level_downloaders.py tests/test_downloader_file_ops.py
+pytest
+```
+
+需要查看覆盖率时可运行：
+
+```bash
+pytest --cov=sd_webui_all_in_one --cov-report=term:skip-covered
+```
+
+覆盖率只作为发现缺口的辅助信号。优先补高风险路径：外部命令生成、安装/下载/更新编排、平台分支、异常处理和用户可见配置。
+
 ## PowerShell 检查
 
 CI 会先用每个安装器的更新模式生成管理脚本，再对所有 `.ps1` 执行 PSScriptAnalyzer 的 Error / ParseError 检查。维护安装器时建议至少确认：
