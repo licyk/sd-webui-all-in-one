@@ -242,7 +242,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 329
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 330
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.4"
@@ -1501,7 +1501,8 @@ function Update-Installer {
 
     `$raw_params = `$script:LaunchCommandLine -replace `"^.*\.ps1[\s]*`", `"`"
     Write-Log `"更新结束, 重新启动 SD Trainer Script Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
-    Invoke-Expression `"& ```"`$script:OriginalScriptPath```" `$raw_params`"
+    try { Invoke-Expression `"& ```"`$script:OriginalScriptPath```" `$raw_params`" -ErrorAction Stop }
+    catch { exit 1 }
     exit 0
 }
 
@@ -3095,14 +3096,16 @@ function Main {
         `$extra_args = Get-ExtraArgs
         `$script_path = Join-NormalizedPath `$PSScriptRoot `"cache`" `"sd_trainer_script_installer.ps1`"
         try {
-            Invoke-Expression `"& ```"`$script_path```" `$extra_args @arg`"
+            Invoke-Expression `"& ```"`$script_path```" `$extra_args @arg`" -ErrorAction Stop
         }
         catch {
             Write-Log `"运行 SD Trainer Script Installer 时出现了错误: `$_`" -Level ERROR
             if (!(`$script:NoPause)) { Read-Host | Out-Null }
+            exit 1
         }
     } else {
         if (!(`$script:NoPause)) { Read-Host | Out-Null }
+        exit 1
     }
 }
 
