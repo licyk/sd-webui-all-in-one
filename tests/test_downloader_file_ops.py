@@ -23,6 +23,7 @@ def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
         calls.append((url, path, save_name, tool, progress))
         return path / (save_name or "download.bin")
 
+    monkeypatch.setitem(sys.modules, "requests", types.ModuleType("requests"))
     monkeypatch.setattr(downloader_module.shutil, "which", lambda name: None if name == "aria2c" else "/bin/tool")
     monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
 
@@ -188,4 +189,3 @@ def test_archive_manager_zip_tar_and_unsupported(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError):
         archive_manager.extract_archive(tmp_path / "bad.exe", tmp_path / "bad-out")
-

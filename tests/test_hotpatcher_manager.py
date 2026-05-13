@@ -267,7 +267,9 @@ def test_runtime_client_optional_connection_failure_is_quiet(monkeypatch, capsys
 
     monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG", "1")
     assert RuntimeClient.connect_from_env(required=False) is None
-    assert "ConnectionRefusedError" in capsys.readouterr().err
+    debug_err = capsys.readouterr().err
+    assert "Traceback" in debug_err
+    assert "ConnectionRefusedError" in debug_err or "TimeoutError" in debug_err
 
 
 def test_runtime_host_services_channel_roundtrip():

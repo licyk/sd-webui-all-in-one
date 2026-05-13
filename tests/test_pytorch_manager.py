@@ -138,12 +138,15 @@ def test_auto_detect_blackwell_falls_back_to_modern_cuda(monkeypatch):
 def test_pytorch_mirror_type_boundaries(monkeypatch):
     monkeypatch.setattr(mirror_selector, "get_cuda_comp_cap", lambda: 8.9)
     monkeypatch.setattr(mirror_selector, "get_cuda_version", lambda: 12.4)
+    monkeypatch.setattr(mirror_selector.sys, "platform", "linux")
 
     assert mirror_selector.get_pytorch_mirror_type_cuda("1.13.1") == "all"
     assert mirror_selector.get_pytorch_mirror_type_cuda("2.4.1") == "cu124"
     assert mirror_selector.get_pytorch_mirror_type("2.7.0", "cuda") == "cu128"
     assert mirror_selector.get_pytorch_mirror_type_rocm("2.4.0") == "rocm6.1"
     assert mirror_selector.get_pytorch_mirror_type_rocm("2.10.0") == "rocm7.1"
+    monkeypatch.setattr(mirror_selector.sys, "platform", "win32")
+    assert mirror_selector.get_pytorch_mirror_type_rocm("2.4.0") == "rocm_win"
     assert mirror_selector.get_pytorch_mirror_type_ipex("2.0.0") == "ipex_legacy_arc"
     assert mirror_selector.get_pytorch_mirror_type_cpu("2.9.0") == "cpu"
 

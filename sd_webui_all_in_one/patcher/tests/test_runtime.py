@@ -157,6 +157,7 @@ def test_tcp_jsonl_handshake_request_and_event():
         with RuntimeClient.connect(host.host, host.port, token="secret") as client:
             assert client.request("echo") == {"value": 7}
             client.event("progress.update", {"id": 1})
+            assert host.wait_for(lambda message: message.get("type") == "progress.update")
 
         assert host.messages[0]["type"] == "hello"
         assert host.messages[0]["token"] == "secret"
