@@ -1,6 +1,6 @@
 # 整合包快速开始
 
-整合包适合 Windows 用户下载后直接解压使用。它已经包含安装器生成的管理脚本，可以直接运行，也可以交给 Launcher 统一启动和维护。
+整合包适合 Windows 用户下载后直接解压使用。它基于 Installer 构建，并包含 Installer 生成的管理脚本；解压后默认通过这些脚本启动和维护，也可以交给 Launcher 接管管理。
 
 ## 最快流程
 
@@ -14,11 +14,11 @@
 
 ## 启动和管理方式
 
-整合包解压后有三种常见方式：
+整合包解压后主要由 Installer 生成的脚本管理，也可以选择其他入口：
 
-- 直接运行包内脚本：首次使用先运行 `configure_env.bat`，之后运行 `launch.ps1` 启动。
+- 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后运行 `launch.ps1` 启动。
 - 使用绘世启动器：部分整合包包含 `hanamizuki.bat`，可通过绘世启动器启动对应 WebUI。
-- 使用 Windows GUI Launcher：把安装路径指向整合包解压目录，由 Launcher 接管启动、更新、终端、模型下载和版本管理。
+- 使用 Windows GUI Launcher：把安装路径指向整合包解压目录，由 Launcher 接管 Installer 生成的启动、更新、终端、模型下载和版本管理脚本。
 
 想用 Launcher 接管整合包，继续阅读 [Launcher 快速开始](./launcher.md)。
 

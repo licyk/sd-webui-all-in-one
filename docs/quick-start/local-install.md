@@ -8,7 +8,8 @@
 | --- | --- | --- |
 | Windows GUI Launcher | 想用图形界面安装、启动和管理 | [Launcher 快速开始](./launcher.md) |
 | Bash TUI / CLI Launcher | Linux / macOS 或终端用户 | [Bash TUI / CLI Launcher](../tools/launcher-tui.md) |
-| 直接运行 Installer | 想手动下载并运行 PowerShell 安装器 | 选择下方产品安装页 |
+| 直接运行 Installer | 想手动下载并运行 PowerShell 安装器 | [安装器使用](../installer/index.md) 或选择下方产品安装页 |
+| Windows 整合包下载器 | 想下载由 Installer 构建并管理的免安装整合包 | [AI 整合包下载器](../tools/portable-downloader.md) |
 
 ## 选择产品安装页
 
@@ -25,7 +26,7 @@
 - Windows 用户需要确认 PowerShell 脚本运行限制已解除。
 - Linux / macOS 用户需要按安装页准备 Homebrew、PowerShell 或其他依赖。
 - 安装路径建议避免中文、空格和权限受限目录。
-- 如果只想少配置快速使用，优先考虑 [整合包快速开始](./portable.md)。
+- 如果只想少配置快速使用，优先考虑 [整合包快速开始](./portable.md)。整合包同样基于 Installer 构建，解压后主要通过 Installer 生成的管理脚本维护。
 
 ## 下一步
 
