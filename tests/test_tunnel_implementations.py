@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 import sys
@@ -30,7 +31,10 @@ def test_gen_ssh_key_runs_keygen_and_chmods(monkeypatch, tmp_path):
 
     assert ssh_key.gen_ssh_key(key_path) is True
     assert calls[0][0][:7] == ["ssh-keygen", "-t", "rsa", "-b", "4096", "-N", ""]
-    assert oct(key_path.stat().st_mode & 0o777) == "0o600"
+    if os.name != "nt":
+        assert oct(key_path.stat().st_mode & 0o777) == "0o600"
+    else:
+        assert key_path.exists()
 
     monkeypatch.setattr(ssh_key.subprocess, "run", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("no ssh")))
     assert ssh_key.gen_ssh_key(tmp_path / "bad") is False

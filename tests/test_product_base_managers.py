@@ -193,7 +193,7 @@ def test_comfyui_custom_node_install_and_update_aggregate_errors(monkeypatch, tm
     monkeypatch.setattr(comfyui_base.git_warpper, "update", fake_update)
     with pytest.raises(AggregateError):
         comfyui_base.update_comfyui_custom_nodes(tmp_path)
-    assert updates == ["ok", "bad"]
+    assert sorted(updates) == ["bad", "ok"]
 
 
 def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):

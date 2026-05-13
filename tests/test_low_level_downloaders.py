@@ -14,6 +14,25 @@ from sd_webui_all_in_one.downloader import urllib_downloader
 from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
 
 
+class FakeTqdm:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        self.n = kwargs.get("initial", 0)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def update(self, value):
+        self.n += value
+
+    def close(self):
+        pass
+
+
 class FakeRequestsResponse:
     def __init__(self, chunks, status_code=200):
         self._chunks = chunks
@@ -37,6 +56,7 @@ def test_requests_downloader_cache_redownload_and_hash(monkeypatch, tmp_path):
         get=lambda url, stream=True, timeout=60: calls.append((url, stream, timeout)) or FakeRequestsResponse([payload[:5], payload[5:]])
     )
     monkeypatch.setitem(sys.modules, "requests", fake_requests)
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
 
     expected_hash = hashlib.sha256(payload).hexdigest()
     result = requests_downloader.download_file_from_url(
@@ -97,6 +117,7 @@ def test_urllib_downloader_uses_user_agent_cache_and_hash(monkeypatch, tmp_path)
         calls.append((request.full_url, request.headers.get("User-agent"), timeout))
         return FakeUrllibResponse(payload)
 
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
     monkeypatch.setattr(urllib_downloader.urllib.request, "urlopen", fake_urlopen)
 
     result = urllib_downloader.download_file_from_url_urllib(

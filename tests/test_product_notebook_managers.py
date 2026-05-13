@@ -168,11 +168,12 @@ def test_invokeai_mount_drive_sets_root_and_import_model_is_quiet(monkeypatch, t
     imported = []
 
     manager.mount_google_drive_for_notebook = lambda: True
+    monkeypatch.setattr(invokeai_manager, "Path", lambda value: tmp_path / "content" / "drive" if value == "/content/drive" else Path(value))
     monkeypatch.setattr(invokeai_manager, "get_file_list", lambda _path: [tmp_path / "model.safetensors"])
     monkeypatch.setattr(invokeai_manager, "import_model_to_invokeai", lambda models: imported.extend(models))
 
     manager.mount_drive()
-    assert os.environ["INVOKEAI_ROOT"] == "/content/drive/MyDrive/invokeai_output"
+    assert os.environ["INVOKEAI_ROOT"] == (tmp_path / "content" / "drive" / "MyDrive" / "invokeai_output").as_posix()
 
     manager.import_model()
     assert imported == [tmp_path / "model.safetensors"]

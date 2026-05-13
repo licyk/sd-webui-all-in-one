@@ -101,7 +101,7 @@ def test_proxy_platform_parsers_and_env(monkeypatch, tmp_path):
     kde_config = tmp_path / ".config" / "kioslaverc"
     kde_config.parent.mkdir()
     kde_config.write_text("[Proxy Settings]\nProxyType=1\nsocksProxy=socks://127.0.0.1 1080\n", encoding="utf-8")
-    monkeypatch.setenv("HOME", tmp_path.as_posix())
+    monkeypatch.setattr(proxy, "Path", lambda value: kde_config if value == "~/.config/kioslaverc" else Path(value))
     assert proxy.get_linux_proxy_address() == "socks://127.0.0.1:1080"
 
     mac_output = "HTTPSEnable : 1\nHTTPSProxy : proxy.local\nHTTPSPort : 4443\n"
