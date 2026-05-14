@@ -67,6 +67,7 @@ PyTorchDeviceType: TypeAlias = Literal[
     "cu128",
     "cu129",
     "cu130",
+    "cu132",
     "rocm3.7",
     "rocm3.8",
     "rocm3.10",
