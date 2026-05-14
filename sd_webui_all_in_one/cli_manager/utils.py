@@ -109,6 +109,7 @@ def get_env_config() -> None:
         "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY",
         "SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR",
         "SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH",
+        "SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE",
     ]
     for e in env:
         print(f"{e}: '{os.getenv(e)}'")

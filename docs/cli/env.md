@@ -41,6 +41,10 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
   
   是否在运行 WebUI 前检查运行环境并发生错误时向上抛出堆栈错误。
 
+- `SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE`
+
+  在安装自身依赖时忽略安装的依赖组合类型, 使用逗号分隔。默认为`test,docs,tunnel,full`。
+
 ### 软件根目录配置
 可以通过以下环境变量自定义各软件的默认根目录：
 - `SD_WEBUI_ROOT`

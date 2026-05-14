@@ -11,6 +11,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE,
 )
 from sd_webui_all_in_one.updater import (
     check_and_update_uv,
@@ -130,7 +131,7 @@ def install_manager_depend(
         deps = get_categorized_dependencies("sd-webui-all-in-one")
         requires = deps["mandatory"]
         for name, data in deps["optional"].items():
-            if name in ("full", "tunnel"):
+            if name in SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE:
                 continue
             requires += data
 
