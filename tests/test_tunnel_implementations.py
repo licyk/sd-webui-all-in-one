@@ -150,7 +150,7 @@ def test_cloudflare_tunnel_start_stop_and_install_failure(monkeypatch, tmp_path)
     tunnel.stop()
     assert fake.terminated is True
 
-    monkeypatch.delitem(sys.modules, "pycloudflared", raising=False)
+    monkeypatch.setitem(sys.modules, "pycloudflared", None)
     monkeypatch.setattr(cloudflare, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("install failed")))
     with pytest.raises(RuntimeError, match="安装 CloudFlare"):
         cloudflare.CloudflareTunnel(7860, tmp_path).start()
