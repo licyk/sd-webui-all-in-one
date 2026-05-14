@@ -592,7 +592,7 @@ def launch_fooocus(
         )
         try:
             url = git_warpper.get_current_branch_remote_url(fooocus_path)
-            if "lllyasviel/Fooocus" in url and custom_env.get("HF_ENDPOINT") is not None:
+            if ("lllyasviel/Fooocus" in url or "licyk/Fooocus" in url) and custom_env.get("HF_ENDPOINT") is not None:
                 hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
         except Exception as e:
             logger.debug("获取 Fooocus 远程源失败: %s", e)
