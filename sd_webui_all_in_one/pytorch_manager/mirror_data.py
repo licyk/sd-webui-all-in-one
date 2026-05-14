@@ -37,6 +37,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "rocm6.3": ("https://download.pytorch.org/whl/rocm6.3", "index_url"),
     "rocm6.4": ("https://download.pytorch.org/whl/rocm6.4", "index_url"),
     "rocm7.1": ("https://download.pytorch.org/whl/rocm7.1", "index_url"),
+    "rocm7.2": ("https://download.pytorch.org/whl/rocm7.2", "index_url"),
     "cu75": ("https://download.pytorch.org/whl/cu75", "index_url"),
     "cu80": ("https://download.pytorch.org/whl/cu80", "index_url"),
     "cu90": ("https://download.pytorch.org/whl/cu90", "index_url"),
@@ -58,6 +59,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "cu128": ("https://download.pytorch.org/whl/cu128", "index_url"),
     "cu129": ("https://download.pytorch.org/whl/cu129", "index_url"),
     "cu130": ("https://download.pytorch.org/whl/cu130", "index_url"),
+    "cu132": ("https://download.pytorch.org/whl/cu132", "index_url"),
 }
 """PyTorch 镜像源字典"""
 
@@ -89,6 +91,7 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
     "rocm6.3": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.3", "index_url"),
     "rocm6.4": ("https://mirror.nju.edu.cn/pytorch/whl/rocm6.4", "index_url"),
     "rocm7.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.1", "index_url"),
+    "rocm7.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.2", "index_url"),
     "cu75": ("https://mirror.nju.edu.cn/pytorch/whl/cu75", "index_url"),
     "cu80": ("https://mirror.nju.edu.cn/pytorch/whl/cu80", "index_url"),
     "cu90": ("https://mirror.nju.edu.cn/pytorch/whl/cu90", "index_url"),
@@ -110,6 +113,7 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
     "cu128": ("https://mirror.nju.edu.cn/pytorch/whl/cu128", "index_url"),
     "cu129": ("https://mirror.nju.edu.cn/pytorch/whl/cu129", "index_url"),
     "cu130": ("https://mirror.nju.edu.cn/pytorch/whl/cu130", "index_url"),
+    "cu132": ("https://mirror.nju.edu.cn/pytorch/whl/cu132", "index_url"),
 }
 """PyTorch 国内镜像源 (NJU) 字典"""
 
@@ -121,5 +125,5 @@ PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
 }
 """
 PyTorch ROCm 镜像源字典
-- 参考: https://github.com/Comfy-Org/ComfyUI-Launcher-Environments
+- 参考: https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
 """

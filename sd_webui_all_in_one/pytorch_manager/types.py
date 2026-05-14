@@ -89,6 +89,7 @@ PyTorchDeviceType: TypeAlias = Literal[
     "rocm6.3",
     "rocm6.4",
     "rocm7.1",
+    "rocm7.2",
     "rocm_rdna3",
     "rocm_rdna3.5",
     "rocm_rdna4",
