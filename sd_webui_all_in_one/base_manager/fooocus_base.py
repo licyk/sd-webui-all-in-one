@@ -105,8 +105,8 @@ FOOOCUS_BRANCH_INFO_DICT: list[FooocusBranchInfo] = [
     {
         "name": "lllyasviel - Fooocus 分支",
         "dtype": "fooocus_main",
-        "url": "https://github.com/lllyasviel/Fooocus",
-        "branch": "main",
+        "url": "https://github.com/licyk/Fooocus",
+        "branch": "licyk_dev",
         "use_submodule": False,
     },
     {

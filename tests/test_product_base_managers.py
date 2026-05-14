@@ -218,7 +218,7 @@ def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
         monkeypatch.setattr(module, "apply_hotpatcher_launch_env", lambda **kwargs: {"HOTPATCH": str(kwargs["enabled"]), **kwargs["origin_env"]})
         monkeypatch.setattr(module, "launch_webui", lambda **kwargs: calls.append((module.__name__, kwargs)))
 
-    monkeypatch.setattr(fooocus_base.git_warpper, "get_current_branch_remote_url", lambda _path: "https://github.com/lllyasviel/Fooocus")
+    monkeypatch.setattr(fooocus_base.git_warpper, "get_current_branch_remote_url", lambda _path: "https://github.com/licyk/Fooocus")
 
     comfyui_base.launch_comfyui(tmp_path / "comfy", launch_args=["--listen"], use_hf_mirror=True, use_cuda_malloc=True, enable_hotpatcher=True)
     fooocus_base.launch_fooocus(tmp_path / "fooocus", launch_args=["--preset", "x"], use_hf_mirror=True, use_cuda_malloc=True)
