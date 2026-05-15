@@ -92,7 +92,7 @@ class SDWebUIManager(BaseManager):
     def get_sd_model(
         self,
         url: str,
-        filename: str = None,
+        filename: str | None = None,
         model_type: str | None = "Stable-diffusion",
     ) -> Path | None:
         """下载模型
@@ -327,6 +327,10 @@ class SDWebUIManager(BaseManager):
                 配置 HuggingFace Token
             modelscope_token (str | None):
                 配置 ModelScope Token
+            *args:
+                兼容旧接口的额外位置参数
+            **kwargs:
+                兼容旧接口的额外关键字参数
             update_core (bool | None):
                 安装时更新内核和扩展
         """

@@ -1,3 +1,5 @@
+"""内置模型下载信息。"""
+
 from sd_webui_all_in_one.model_downloader.types import ModelCardList
 
 

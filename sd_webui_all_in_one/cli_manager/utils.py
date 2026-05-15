@@ -43,7 +43,12 @@ logger = get_logger(
 def check_pip(
     use_pypi_mirror: bool | None = False,
 ) -> None:
-    """检查 Pip 版本并尝试更新"""
+    """检查 Pip 版本并尝试更新
+
+    Args:
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+    """
     check_and_update_pip(
         custom_env=get_pypi_mirror_config(use_cn_mirror=use_pypi_mirror),
     )
@@ -52,7 +57,12 @@ def check_pip(
 def check_uv(
     use_pypi_mirror: bool | None = False,
 ) -> None:
-    """检查 uv 版本并尝试更新"""
+    """检查 uv 版本并尝试更新
+
+    Args:
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+    """
     check_and_update_uv(
         custom_env=get_pypi_mirror_config(use_cn_mirror=use_pypi_mirror),
     )
@@ -135,7 +145,7 @@ def start_tunnel(
             要进行端口映射的端口
         workspace (Path | None):
             工作区路径，默认为当前目录
-        use_ngrok (bool | None):
+        use_ngrok (bool):
             启用 Ngrok 内网穿透
         ngrok_token (str | None):
             Ngrok 账号 Token
@@ -199,7 +209,14 @@ def _print_json(data: dict | list) -> None:
 
 
 def export_hotpatcher_config_cli(output: Path | None = None, force: bool = False) -> None:
-    """导出 hotpatcher 默认配置"""
+    """导出 hotpatcher 默认配置
+
+    Args:
+        output (Path | None):
+            配置导出路径
+        force (bool):
+            是否覆盖已有文件
+    """
 
     from sd_webui_all_in_one.base_manager.hotpatcher_manager import export_hotpatcher_default_config
 
@@ -208,7 +225,14 @@ def export_hotpatcher_config_cli(output: Path | None = None, force: bool = False
 
 
 def normalize_hotpatcher_config_cli(config: Path | None = None, write_back: bool = False) -> None:
-    """规范化 hotpatcher 配置"""
+    """规范化 hotpatcher 配置
+
+    Args:
+        config (Path | None):
+            配置文件路径
+        write_back (bool):
+            是否写回配置文件
+    """
 
     from sd_webui_all_in_one.base_manager.hotpatcher_manager import load_hotpatcher_config, save_hotpatcher_config
 
@@ -221,7 +245,12 @@ def normalize_hotpatcher_config_cli(config: Path | None = None, write_back: bool
 
 
 def apply_hotpatcher_config_cli(config: Path | None = None) -> None:
-    """应用 hotpatcher 配置到当前进程"""
+    """应用 hotpatcher 配置到当前进程
+
+    Args:
+        config (Path | None):
+            配置文件路径
+    """
 
     from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_config
 
@@ -242,7 +271,18 @@ def launch_hotpatcher_gui_cli(
     port: int = 8765,
     token: str = "",
 ) -> None:
-    """启动 hotpatcher 配置管理 GUI"""
+    """启动 hotpatcher 配置管理 GUI
+
+    Args:
+        config (Path | None):
+            配置文件路径
+        host (str):
+            runtime host 监听地址
+        port (int):
+            runtime host 监听端口
+        token (str):
+            runtime host 访问令牌
+    """
 
     from sd_webui_all_in_one.base_manager.hotpatcher_manager import launch_hotpatcher_manager_gui
 

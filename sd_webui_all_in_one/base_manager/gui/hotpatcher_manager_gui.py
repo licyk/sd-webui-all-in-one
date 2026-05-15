@@ -427,9 +427,21 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self._write_json_editor(config)
 
     def set_status(self, message: str) -> None:
+        """设置状态栏消息。
+
+        Args:
+            message (str):
+                状态栏消息
+        """
         self.status_var.set(message)
 
     def set_busy_state(self, busy: bool) -> None:
+        """设置忙碌状态显示。
+
+        Args:
+            busy (bool):
+                是否处于忙碌状态
+        """
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)
@@ -438,6 +450,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
             self.progress.stop()
 
     def browse_config_path(self) -> None:
+        """选择配置文件保存路径。"""
         path = filedialog.asksaveasfilename(
             title="选择 Hotpatcher 配置文件",
             defaultextension=".json",
@@ -448,6 +461,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
             self.config_path = Path(path).expanduser()
 
     def export_default_config(self) -> None:
+        """导出默认配置文件。"""
         path = self._current_config_path_or_ask(save=True)
         if path is None:
             return
@@ -461,6 +475,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def open_config(self) -> None:
+        """打开并加载配置文件。"""
         path = self._current_config_path_or_ask(save=False)
         if path is None:
             return
@@ -471,6 +486,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def save_config(self) -> None:
+        """保存当前配置文件。"""
         path = self._current_config_path_or_ask(save=True)
         if path is None:
             return
@@ -487,6 +503,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def normalize_config(self) -> None:
+        """规范化当前配置。"""
         try:
             config = normalize_hotpatcher_config(self._read_editor_config())
         except Exception as exc:
@@ -496,6 +513,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self.set_status("配置已规范化")
 
     def apply_config_local(self) -> None:
+        """将当前配置应用到本地进程。"""
         try:
             config = normalize_hotpatcher_config(self._read_editor_config())
         except Exception as exc:
@@ -508,6 +526,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def apply_config_remote(self) -> None:
+        """将当前配置应用到远程 runtime。"""
         if self.runtime_host is None or not self.runtime_host.service_channel_available:
             messagebox.showwarning("未连接", "远程 services 控制通道未连接")
             return
@@ -524,6 +543,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def start_runtime_host(self) -> None:
+        """启动 runtime host。"""
         if self.runtime_host is not None:
             return
         try:
@@ -552,6 +572,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self.update_env_preview()
 
     def stop_runtime_host(self) -> None:
+        """停止 runtime host。"""
         host = self.runtime_host
         self.runtime_host = None
         if host is not None:
@@ -559,6 +580,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self.connection_status_var.set("未监听")
 
     def update_env_preview(self) -> None:
+        """更新 runtime 环境变量预览。"""
         try:
             port = int(self.port_var.get())
         except ValueError:
@@ -576,11 +598,13 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self.env_text.configure(state=tk.NORMAL)
 
     def clear_logs(self) -> None:
+        """清空日志窗口。"""
         self.log_text.configure(state=tk.NORMAL)
         self.log_text.delete("1.0", tk.END)
         self.log_text.configure(state=tk.DISABLED)
 
     def form_to_json(self) -> None:
+        """将表单内容同步到 JSON 配置。"""
         try:
             config = self._read_editor_config()
         except Exception:
@@ -866,7 +890,18 @@ def launch_hotpatcher_manager_gui(
     port: int = DEFAULT_RUNTIME_PORT,
     token: str = "",
 ) -> None:
-    """启动 Hotpatcher 配置管理 GUI"""
+    """启动 Hotpatcher 配置管理 GUI
+
+    Args:
+        config_path (str | Path | None):
+            配置文件路径
+        host (str):
+            runtime host 监听地址
+        port (int):
+            runtime host 监听端口
+        token (str):
+            runtime host 访问令牌
+    """
 
     app = HotpatcherManagerApp(config_path=config_path, host=host, port=port, token=token)
     app.mainloop()

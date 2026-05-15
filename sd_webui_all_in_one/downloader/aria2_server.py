@@ -119,7 +119,7 @@ class Aria2RpcServer:
                 RPC 密钥, 用于安全认证, 为 None 时不设置密钥
             download_dir (Path | None):
                 默认下载目录, 为 None 时使用当前工作目录
-            log_file (Path | None):
+            log_file (Path | str | None):
                 日志文件路径, 为 None 时不记录日志到文件
             log_level (Literal["debug", "info", "notice", "warn", "error"] | None):
                 日志级别, 可选: debug, info, notice, warn, error, 默认 "notice"

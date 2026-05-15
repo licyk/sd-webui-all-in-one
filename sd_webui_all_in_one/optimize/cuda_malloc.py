@@ -218,7 +218,7 @@ def apply_pytorch_alloc_conf(
     Args:
         config (str):
             追加的新配置
-        origin_env (dict[str, str]):
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Returns:

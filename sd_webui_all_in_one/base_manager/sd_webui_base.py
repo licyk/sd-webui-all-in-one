@@ -1747,7 +1747,16 @@ def uninstall_sd_webui_model(
 def fetch_sd_webui_extension_index(
     index_url: str | None = None,
 ):
-    """获取 Stable Diffusion WebUI 扩展源列表"""
+    """获取 Stable Diffusion WebUI 扩展源列表
+
+    Args:
+        index_url (str | None):
+            扩展源索引 URL
+
+    Returns:
+        Any:
+            扩展源索引数据
+    """
     from sd_webui_all_in_one.base_manager.version_manager import (
         DEFAULT_EXTENSION_INDEX_URL,
         fetch_extension_index,

@@ -129,7 +129,7 @@ class SDTrainerScriptsManager(BaseManager):
                 是否使用国内镜像下载模型
             use_hf_mirror (bool | None):
                 是否启用 HuggingFace 镜像源
-            model_path (str | Path | None):
+            model_path (str | Path):
                 指定模型下载的路径
             model_list (list[str, int] | None):
                 模型下载列表
@@ -161,6 +161,10 @@ class SDTrainerScriptsManager(BaseManager):
                 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
                 自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
+            *args:
+                兼容旧接口的额外位置参数
+            **kwargs:
+                兼容旧接口的额外关键字参数
             update_core (bool | None):
                 安装时更新内核和扩展
         """

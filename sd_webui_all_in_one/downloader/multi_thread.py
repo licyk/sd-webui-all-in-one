@@ -92,8 +92,8 @@ class MultiThreadDownloader:
         ```
         Args:
             download_func (Callable): 执行下载任务的函数
-            download_args_list (list[Any]): 传入下载函数的参数列表
-            download_kwargs_list (list[dict[str, Any]]): 传入下载函数的参数字典列表
+            download_args_list (list[Any] | None): 传入下载函数的参数列表
+            download_kwargs_list (list[dict[str, Any]] | None): 传入下载函数的参数字典列表
         """
         self.download_func = download_func
         self.download_args_list = download_args_list or []
@@ -175,8 +175,8 @@ class MultiThreadDownloader:
         """启动多线程下载器
 
         Args:
-            num_threads (int): 下载线程数, 默认为 16
-            retry (int): 重试次数, 默认为 3
+            num_threads (int | None): 下载线程数, 默认为 16
+            retry_count (int | None): 重试次数, 默认为 3
 
         Raises:
             AggregateError:

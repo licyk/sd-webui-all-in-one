@@ -267,12 +267,24 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self,
         message: str,
     ) -> None:
+        """设置状态栏消息。
+
+        Args:
+            message (str):
+                状态栏消息
+        """
         self.status_var.set(message)
 
     def set_busy_state(
         self,
         busy: bool,
     ) -> None:
+        """设置忙碌状态显示。
+
+        Args:
+            busy (bool):
+                是否处于忙碌状态
+        """
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)

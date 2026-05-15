@@ -117,7 +117,12 @@ class ErrorCapture:
         self.caught_exception_tracer: CaughtExceptionTracer | None = None
 
     def install(self) -> "ErrorCapture":
-        """安装已配置的全局异常 hook"""
+        """安装已配置的全局异常 hook
+
+        Returns:
+            ErrorCapture:
+                已安装的错误捕获器实例
+        """
 
         try:
             install_exception_reporter(self.client, include_locals=self.include_locals)
@@ -421,6 +426,16 @@ def configure_error_capture_from_env(
 
     ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERRORS=1`` 或配置
     ``runtime.errors.enabled=true`` 时启用。
+
+    Args:
+        client (RuntimeClient):
+            runtime 客户端
+        config (dict[str, Any] | None):
+            runtime 配置字典
+
+    Returns:
+        ErrorCapture | None:
+            已安装的错误捕获器, 未启用时返回 None
     """
 
     config_errors = _config_errors(config)
@@ -496,6 +511,12 @@ def format_exception_payload(
             异常值
         exc_tb (TracebackType | None):
             异常 traceback
+        source (str | None):
+            异常来源标识
+        context (dict[str, Any] | None):
+            附加上下文
+        include_locals (bool):
+            是否包含局部变量
 
     Returns:
         dict[str, Any]:
@@ -669,7 +690,12 @@ class CaughtExceptionTracer:
         self._trace_function = trace_function
 
     def install(self) -> "CaughtExceptionTracer":
-        """安装 caught exception trace 捕获"""
+        """安装 caught exception trace 捕获
+
+        Returns:
+            CaughtExceptionTracer:
+                已安装的 caught exception tracer 实例
+        """
 
         current_trace = sys.gettrace()
         if current_trace is not None and not _is_hotpatcher_trace(current_trace):

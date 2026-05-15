@@ -48,12 +48,7 @@ def in_jupyter() -> bool:
 
 
 def clear_jupyter_output() -> None:
-    """清理 Jupyter Notebook 输出内容
-
-    Returns:
-        bool:
-            清理输出结果
-    """
+    """清理 Jupyter Notebook 输出内容"""
     try:
         from IPython.display import clear_output
 
@@ -160,7 +155,7 @@ def print_divider(
     """在终端中输出一整行分隔符
 
     Args:
-        char (str):
+        char (str | None):
             输出的字符
     """
     columns = shutil.get_terminal_size(fallback=(80, 20)).columns
@@ -193,7 +188,7 @@ def append_python_path(
     Args:
         new_path (Path):
             追加的新路径
-        origin_env (dict[str, str]):
+        origin_env (dict[str, str] | None):
             原始的环境变量字典
 
     Returns:

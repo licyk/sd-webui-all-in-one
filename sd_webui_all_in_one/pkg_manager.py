@@ -201,7 +201,7 @@ def install_requirements(
     use_uv: bool | None = True,
     custom_env: dict[str, str] | None = None,
     cwd: Path | None = None,
-) -> bool:
+) -> None:
     """从 requirements.txt 文件指定安装的依赖
 
     Args:

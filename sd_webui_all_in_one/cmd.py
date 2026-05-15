@@ -108,7 +108,7 @@ def run_cmd(
             是否实时输出命令执行日志
         shell (bool | None):
             是否使用内置 Shell 执行命令
-        cwd (Path | str | None):
+        cwd (Path | None):
             执行进程时的起始路径
         check (bool | None):
             检查进程退出状态, 当异常退出时引发 RuntimeError

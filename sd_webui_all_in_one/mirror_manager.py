@@ -174,7 +174,7 @@ def set_git_base_config(
 
 def set_github_mirror(
     mirror: str | list[str] | None = None,
-    config_path: Path = None,
+    config_path: Path | None = None,
 ) -> Path:
     """设置 Github 镜像源并返回带有镜像源配置的 Git 配置文件路径
 

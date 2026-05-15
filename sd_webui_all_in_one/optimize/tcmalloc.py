@@ -46,8 +46,9 @@ class TCMalloc:
     def configure_tcmalloc_common(self) -> bool:
         """使用 TCMalloc 优化内存的占用, 通过 LD_PRELOAD 环境变量指定 TCMalloc
 
-        Args:
-            bool: 配置成功时返回`True`
+        Returns:
+            bool:
+                配置成功时返回 True
         """
         # 检查 glibc 版本
         try:

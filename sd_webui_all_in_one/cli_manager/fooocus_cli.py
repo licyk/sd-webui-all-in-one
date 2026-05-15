@@ -68,7 +68,7 @@ def install(
     """安装 Fooocus
 
     Args:
-        sd_webui_path (Path):
+        fooocus_path (Path):
             Fooocus 根目录
         pytorch_mirror_type (PyTorchDeviceType | None):
             设置使用的 PyTorch 镜像源类型
@@ -394,7 +394,16 @@ def launch_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 Fooocus 版本管理 GUI"""
+    """启动 Fooocus 版本管理 GUI
+
+    Args:
+        fooocus_path (Path):
+            Fooocus 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
     launch_fooocus_version_gui(
         fooocus_path=fooocus_path,
         use_github_mirror=use_github_mirror,

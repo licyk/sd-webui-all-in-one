@@ -21,6 +21,8 @@ _installed_finder: "StackShadowFinder | None" = None
 
 
 class LoadingSkipper:
+    """记录当前正在加载的模块以避免重复查找。"""
+
     def __init__(self) -> None:
         self.currently_loading: list[str] = []
 
@@ -153,6 +155,8 @@ class StackShadowFinder(MetaPathFinder):
 
 
 class StackShadowSourceLoader(Loader):
+    """使用隐藏文件名执行替换源码的加载器。"""
+
     def __init__(
         self,
         fullname: str,

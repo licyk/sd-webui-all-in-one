@@ -1,3 +1,5 @@
+"""SD WebUI All In One 命令行入口。"""
+
 import argparse
 
 from sd_webui_all_in_one.version import VERSION

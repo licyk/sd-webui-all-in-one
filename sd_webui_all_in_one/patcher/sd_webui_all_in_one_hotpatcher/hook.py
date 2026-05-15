@@ -468,6 +468,8 @@ monkey_zoo = MonkeyZoo()
 
 
 class LoadingSkipper:
+    """记录当前正在导入的模块以避免递归 hook。"""
+
     def __init__(self) -> None:
         self.currently_loading: list[str] = []
 
@@ -486,6 +488,8 @@ class LoadingSkipper:
 
 
 class AliasLoader(Loader):
+    """将缺失模块名代理到真实模块的加载器。"""
+
     def __init__(self, alias: str):
         self.alias = alias
 
@@ -517,6 +521,8 @@ class AliasLoader(Loader):
 
 
 class HookedMetaPathFinder(MetaPathFinder):
+    """按补丁计划查找并包装模块 spec 的 finder。"""
+
     def __init__(self, zoo: MonkeyZoo):
         self.cache: dict[str, ModuleSpec] = {}
         self.currently_loading = LoadingSkipper()
@@ -611,6 +617,8 @@ class HookedMetaPathFinder(MetaPathFinder):
 
 
 class MonkeySourceFileLoader(Loader):
+    """加载源码模块并在执行前应用补丁计划。"""
+
     def __init__(
         self,
         filename: str,

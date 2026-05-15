@@ -88,7 +88,7 @@ class ComfyUIManager(BaseManager):
     def get_sd_model(
         self,
         url: str,
-        filename: str = None,
+        filename: str | None = None,
         model_type: str | None = "checkpoints",
     ) -> Path | None:
         """下载模型
@@ -141,9 +141,7 @@ class ComfyUIManager(BaseManager):
         """安装 ComfyUI 自定义节点
 
         Args:
-            custom_node (str):
-                自定义节点下载地址
-            custom_node_url (str | list[str]):
+            custom_node (str | list[str]):
                 ComfyUI 扩展下载链接
             use_github_mirror (bool | None):
                 是否使用 Github 镜像源
@@ -165,8 +163,6 @@ class ComfyUIManager(BaseManager):
         """更新 ComfyUI 自定义节点
 
         Args:
-            custom_node_url (str | list[str]):
-                ComfyUI 扩展下载链接
             use_github_mirror (bool | None):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
@@ -333,6 +329,10 @@ class ComfyUIManager(BaseManager):
                 配置 HuggingFace Token
             modelscope_token (str | None):
                 配置 ModelScope Token
+            *args:
+                兼容旧接口的额外位置参数
+            **kwargs:
+                兼容旧接口的额外关键字参数
             update_core (bool | None):
                 安装时更新内核和扩展
         """

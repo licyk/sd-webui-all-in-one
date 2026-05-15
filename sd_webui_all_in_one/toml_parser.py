@@ -251,7 +251,7 @@ def loads(
     """解析 TOML 格式的字符串并返回字典
 
     Args:
-        content (str):
+        data (str):
             待解析的 TOML 文本内容
 
     Returns:

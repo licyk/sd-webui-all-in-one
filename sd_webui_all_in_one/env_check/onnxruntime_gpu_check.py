@@ -166,8 +166,8 @@ def need_install_ort_ver(
             - `False`: 即使 ONNXRuntime GPU 未安装也给出推荐安装的 ONNXRuntime GPU 版本
 
     Returns:
-        OrtType:
-            需要安装的 ONNXRuntime GPU 类型
+        OrtType | None:
+            需要安装的 ONNXRuntime GPU 类型, 不需要安装时返回 None
     """
     # 检测是否安装了 Torch
     torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver_subprocess()

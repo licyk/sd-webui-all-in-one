@@ -174,7 +174,7 @@ class BaseManager:
     def get_model_from_list(
         self,
         path: str | Path,
-        model_list: list[str, int],
+        model_list: list[list[str | int]],
     ) -> None:
         """从模型列表下载模型
 
@@ -196,7 +196,7 @@ class BaseManager:
 
         Args:
             path (str | Path): 将模型下载到的本地路径
-            model_list (list[str | int]): 模型列表
+            model_list (list[list[str | int]]): 模型列表
         """
         for model in model_list:
             try:
@@ -329,7 +329,7 @@ class BaseManager:
                 启动的名称
             base_path (Path | str):
                 启动时得的根目录
-            cmd (list[str] | str | None):
+            cmd (list[str] | str):
                 启动 WebUI 的参数
             display_mode (Literal["terminal", "jupyter"] | None):
                 执行子进程时使用的输出模式
@@ -616,8 +616,6 @@ class BaseManager:
                 使用 Zrok 内网穿透
             zrok_token (str | None):
                 Zrok 账号 Token
-            check (bool | None):
-                检查内网穿透是否启动成功
             webui_name (str | None):
                 WebUI 的名称
 
@@ -661,12 +659,16 @@ class BaseManager:
         Args:
             url (str):
                 文件下载链接
-            path (Path | None):
+            path (Path | str | None):
                 文件下载路径
             save_name (str | None):
                 文件保存名称
             tool (DownloadToolType | None):
                 下载工具
+
+        Returns:
+            Path:
+                文件保存路径
         """
         return download_file(
             url=url,
@@ -684,7 +686,7 @@ class BaseManager:
         """列出多个指定文件夹的文件列表
 
         Args:
-            *paths (Path | None):
+            *paths (Path | str | None):
                 要展示的一个或多个路径
             recursive (bool | None):
                 递归显示子目录的内容
@@ -705,7 +707,7 @@ class BaseManager:
         """从 Kaggle Input 文件夹中导入文件
 
         Args:
-            output_path (Path):
+            output_path (str | Path):
                 导出文件的路径
         """
         import_kaggle_input(Path(output_path))

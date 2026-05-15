@@ -488,7 +488,9 @@ def launch_sd_trainer(
     """启动 SD Trainer
 
     Args:
-        sd_trainer_path (list[str] | None):
+        sd_trainer_path (Path):
+            SD Trainer 根目录
+        launch_args (list[str] | None):
             启动 SD Trainer 的参数
         use_hf_mirror (bool | None):
             是否启用 HuggingFace 镜像源

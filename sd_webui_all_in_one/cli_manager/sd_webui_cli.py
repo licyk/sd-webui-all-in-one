@@ -408,7 +408,16 @@ def launch_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 Stable Diffusion WebUI 版本管理 GUI"""
+    """启动 Stable Diffusion WebUI 版本管理 GUI
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
     launch_sd_webui_version_gui(
         sd_webui_path=sd_webui_path,
         use_github_mirror=use_github_mirror,

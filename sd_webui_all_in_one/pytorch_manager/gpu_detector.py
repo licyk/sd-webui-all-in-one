@@ -96,7 +96,7 @@ class GPUDeviceInfo(TypedDict, total=False):
 def get_windows_gpu_list() -> list[GPUDeviceInfo]:
     """获取 Windows 上的显卡列表
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
@@ -133,7 +133,7 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
 def get_lshw_gpus() -> list[GPUDeviceInfo]:
     """通过 lshw 获取 GPU 信息
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
@@ -172,7 +172,7 @@ def get_lshw_gpus() -> list[GPUDeviceInfo]:
 def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
     """通过 nvidia-smi 获取 NVIDIA 显卡精确信息
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
@@ -211,7 +211,7 @@ def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
 def get_lspci_gpus() -> list[GPUDeviceInfo]:
     """通过 lspci 获取显卡信息
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
@@ -249,7 +249,7 @@ def get_lspci_gpus() -> list[GPUDeviceInfo]:
 def get_linux_gpu_list() -> list[GPUDeviceInfo]:
     """获取 Linux 上的显卡列表
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
@@ -282,7 +282,7 @@ def get_linux_gpu_list() -> list[GPUDeviceInfo]:
 def get_gpu_list() -> list[GPUDeviceInfo]:
     """获取当前平台上的 GPU 列表
 
-    Args:
+    Returns:
         list[GPUDeviceInfo]:
             显卡信息列表
     """

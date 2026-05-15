@@ -91,7 +91,7 @@ def prepare_pytorch_install_info(
             是否使用国内镜像
 
     Returns:
-        (tuple[str, | None, str | None, dict[str, str]]):
+        tuple[str | None, str | None, dict[str, str]]:
             PyTorch 软件包版本声明, xFormers 软件包版本声明, 带有 PyPI 镜像源配置的环境变量字典
     """
 
@@ -549,8 +549,8 @@ def install_webui_model_from_library(
             是否仅列出模型列表并退出
 
     Returns:
-        list[Path]:
-            模型的保存地址
+        list[Path] | None:
+            模型的保存地址, 仅列出或退出时返回 None
     """
 
     def _input_to_int_list(_input: str) -> list[str] | None:
@@ -736,7 +736,20 @@ def apply_hf_mirror(
     custom_hf_mirror: str | list[str] | None = None,
     origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    """配置 HuggingFace 镜像源"""
+    """配置 HuggingFace 镜像源
+
+    Args:
+        use_hf_mirror (bool | None):
+            是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
+        origin_env (dict[str, str] | None):
+            原始环境变量字典
+
+    Returns:
+        dict[str, str]:
+            应用 HuggingFace 镜像源后的环境变量字典
+    """
 
     if origin_env is not None:
         custom_env = origin_env.copy()

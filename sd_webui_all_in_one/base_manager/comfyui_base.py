@@ -737,7 +737,7 @@ def set_comfyui_custom_node_status(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        extension_name (str):
+        custom_node_name (str):
             ComfyUI 扩展名称
         status (bool):
             设置扩展的启用状态
@@ -830,7 +830,7 @@ def uninstall_comfyui_custom_node(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        extension_name (str):
+        custom_node_name (str):
             ComfyUI 扩展名称
 
     Raises:
@@ -924,7 +924,7 @@ def list_comfyui_models(
     """列出 ComfyUI 的模型目录
 
     Args:
-        sd_webui_path (Path):
+        comfyui_path (Path):
             ComfyUI 根目录
     """
     models_path = comfyui_path / "models"

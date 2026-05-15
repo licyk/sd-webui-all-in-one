@@ -349,7 +349,20 @@ def launch_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 InvokeAI 版本管理 GUI"""
+    """启动 InvokeAI 版本管理 GUI
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
     launch_invokeai_version_gui(
         invokeai_path=invokeai_path,
         use_pypi_mirror=use_pypi_mirror,
@@ -435,8 +448,6 @@ def uninstall_model(
     """卸载 InvokeAI 中的模型
 
     Args:
-        sd_webui_path (Path):
-            InvokeAI 根目录
         model_name (str):
             模型名称
         interactive_mode (bool | None):

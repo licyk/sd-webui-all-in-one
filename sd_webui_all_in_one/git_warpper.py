@@ -211,7 +211,7 @@ def get_git_repo_remote_name(
 
 def get_git_repo_current_remote_branch(
     path: Path,
-) -> None:
+) -> str | None:
     """获取 Git 仓库的当前本地分支对应的远程分支
 
     Args:
@@ -617,7 +617,7 @@ def is_git_repo(
 def set_git_config(
     username: str | None = None,
     email: str | None = None,
-) -> bool:
+) -> None:
     """配置 Git 信息
 
     Args:

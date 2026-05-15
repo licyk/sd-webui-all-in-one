@@ -35,6 +35,8 @@ def capture_exception(exc: BaseException | None = None, /, **_: Any) -> None:
     Args:
         exc (BaseException | None):
             要上报的异常对象。为 None 时读取当前异常上下文。
+        **_:
+            兼容调用方传入的额外上下文
     """
 
     if exc is None:

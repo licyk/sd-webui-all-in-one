@@ -67,14 +67,13 @@ class InvokeAIManager(BaseManager):
     def get_sd_model(
         self,
         url: str,
-        filename: str = None,
+        filename: str | None = None,
     ) -> Path | None:
         """下载模型
 
         Args:
             url (str): 模型的下载链接
             filename (str | None): 模型下载后保存的名称
-            model_type (str | None): 模型的类型
         Returns:
             (Path | None): 模型保存路径
         """
@@ -90,8 +89,6 @@ class InvokeAIManager(BaseManager):
         Args:
             model_list (list[str]):
                 模型列表
-            retry (int | None):
-                重试下载的次数, 默认为 3
         """
         for url in model_list:
             self.get_sd_model(url=url)
@@ -207,6 +204,10 @@ class InvokeAIManager(BaseManager):
                 配置 HuggingFace Token
             modelscope_token (str | None):
                 配置 ModelScope Token
+            *args:
+                兼容旧接口的额外位置参数
+            **kwargs:
+                兼容旧接口的额外关键字参数
             update_core (bool | None):
                 安装时更新内核和扩展
         """

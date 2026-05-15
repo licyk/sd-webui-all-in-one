@@ -119,6 +119,18 @@ class SDScriptsManager(BaseManager):
         name: str | None = None,
         retry: int | None = None,  # pylint: disable=unused-argument
     ) -> None:
+        """下载并解压归档文件的兼容入口。
+
+        Args:
+            url (str):
+                归档文件下载链接
+            local_dir (Path | str):
+                解压目标目录
+            name (str | None):
+                保存文件名
+            retry (int | None):
+                兼容旧接口的重试次数参数
+        """
         warnings.warn(
             "SDScriptsManager.download_archive_and_unpack() 已弃用, 请使用 SDScriptsManager.download_and_extract() 代替",
             category=DeprecationWarning,
@@ -135,12 +147,26 @@ class SDScriptsManager(BaseManager):
         *args,
         **kwargs,
     ) -> None:
+        """显示模型和数据集目录。
+
+        Args:
+            *args:
+                传递给目录显示函数的位置参数
+            **kwargs:
+                传递给目录显示函数的关键字参数
+        """
         self.display_directories_tree(*args, **kwargs)
 
     def import_kaggle_input(  # pylint: disable=missing-function-docstring
         self,
         output_path,
     ) -> None:
+        """从 Kaggle Input 导入文件。
+
+        Args:
+            output_path:
+                导入目标路径
+        """
         self.import_file_from_kaggle_input(output_path)
 
     def check_env(
@@ -217,7 +243,7 @@ class SDScriptsManager(BaseManager):
             xformers_ver (str | list[str] | None): 指定的 xFormers 软件包包名, 并包括版本号
             git_branch (str | None): 指定要切换 sd-scripts 的分支
             git_commit (str | None): 指定要切换到 sd-scripts 的提交记录
-            model_path (str | Path | None): 指定模型下载的路径
+            model_path (str | Path): 指定模型下载的路径
             model_list (list[str, int] | None): 模型下载列表
             use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
@@ -228,7 +254,6 @@ class SDScriptsManager(BaseManager):
             pytorch_mirror (str | None): PyTorch 镜像源链接
             sd_scripts_repo (str | None): sd-scripts 仓库地址, 未指定时默认为`https://github.com/kohya-ss/sd-scripts`
             sd_scripts_requirements (str | None): sd-scripts 的依赖文件名, 未指定时默认为 requirements.txt
-            retry (int | None): 设置下载模型失败时重试次数
             huggingface_token (str | None): 配置 HuggingFace Token
             modelscope_token (str | None): 配置 ModelScope Token
             wandb_token (str | None): 配置 WandB Token
@@ -238,6 +263,8 @@ class SDScriptsManager(BaseManager):
             enable_tcmalloc (bool | None): 启用 TCMalloc 内存优化
             enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
+            *args: 兼容旧接口的额外位置参数
+            **kwargs: 兼容旧接口的额外关键字参数
             update_core (bool | None): 安装时更新内核和扩展
         Raises:
             Exception: GPU 不可用

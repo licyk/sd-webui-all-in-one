@@ -540,7 +540,7 @@ def install_pypatchmatch(
     Args:
         use_cn_mirror (bool | None):
             是否使用国内下载镜像
-        downloader (DownloadToolType):
+        downloader (DownloadToolType | None):
             使用的下载器
 
     Raises:
@@ -1354,6 +1354,10 @@ def uninstall_model_from_invokeai(
             模型 ID (Key) 列表或模型物理路径列表
         delete_files (bool):
             是否同时删除磁盘上的模型文件. 注意: 仅当文件位于 InvokeAI 管理的 models 目录下时才会执行物理删除
+
+    Returns:
+        bool:
+            所有模型卸载成功时返回 True
     """
     try:
         logger.info("导入 InvokeAI 模块中")
@@ -1434,8 +1438,6 @@ def uninstall_invokeai_model(
     """卸载 InvokeAI 中的模型
 
     Args:
-        sd_webui_path (Path):
-            InvokeAI 根目录
         model_name (str):
             模型名称
         interactive_mode (bool | None):
@@ -1482,10 +1484,8 @@ def reinstall_invokeai_pytorch(
     """PyTorch 重装工具
 
     Args:
-        pytorch_name (str | None):
-            PyTorch 版本组合名称
-        pytorch_index (device_type | None):
-            PyTorch 版本组合索引值
+        device_type (PyTorchDeviceTypeCategory | None):
+            PyTorch 设备类型
         use_pypi_mirror (bool | None):
             是否使用 PyPI 国内镜像
         use_uv (bool | None):
@@ -1576,6 +1576,10 @@ def launch_invokeai_version_gui(
     Args:
         invokeai_path (Path):
             InvokeAI 根目录
+        use_pypi_mirror (bool | None):
+            是否使用 PyPI 国内镜像
+        use_uv (bool | None):
+            是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):

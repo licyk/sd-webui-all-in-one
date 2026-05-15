@@ -305,7 +305,7 @@ def set_custom_node_status(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        extension_name (str):
+        custom_node_name (str):
             ComfyUI 扩展名称
         status (bool):
             设置扩展的启用状态
@@ -369,7 +369,7 @@ def uninstall_custom_node(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        extension_name (str):
+        custom_node_name (str):
             ComfyUI 扩展名称
     """
     uninstall_comfyui_custom_node(
@@ -383,7 +383,16 @@ def launch_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 ComfyUI 版本管理 GUI"""
+    """启动 ComfyUI 版本管理 GUI
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
     launch_comfyui_version_gui(
         comfyui_path=comfyui_path,
         use_github_mirror=use_github_mirror,
@@ -461,7 +470,7 @@ def list_models(
     """列出 ComfyUI 的模型目录
 
     Args:
-        sd_webui_path (Path):
+        comfyui_path (Path):
             ComfyUI 根目录
     """
     list_comfyui_models(comfyui_path=comfyui_path)

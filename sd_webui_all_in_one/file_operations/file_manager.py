@@ -26,7 +26,7 @@ def remove_files(
     """文件删除工具, 支持删除只读文件和非空文件夹
 
     Args:
-        path (str):
+        path (Path):
             要删除的文件或目录路径
 
     Raises:
@@ -481,7 +481,7 @@ def sync_files_and_create_symlink(
 
 def is_folder_empty(
     path: Path,
-) -> None:
+) -> bool:
     """
     判断给定路径的文件夹是否为空
 

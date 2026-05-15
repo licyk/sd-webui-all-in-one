@@ -42,7 +42,7 @@ def download_file_from_url_urllib(
             是否启用下载进度条
         hash_prefix (str | None):
             sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
-        re_download (bool):
+        re_download (bool | None):
             强制重新下载文件
 
     Returns:

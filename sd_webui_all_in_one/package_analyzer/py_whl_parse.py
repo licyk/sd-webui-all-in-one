@@ -142,7 +142,7 @@ class Parser:
         """读取满足条件的字符序列
 
         Args:
-            condition (Callable[[str], bool]):
+            condition (Any):
                 判断字符是否满足条件的函数
 
         Returns:

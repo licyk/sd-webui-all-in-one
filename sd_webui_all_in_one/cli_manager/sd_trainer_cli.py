@@ -144,8 +144,10 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool | None):
             是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
         use_pypi_mirror (bool | None):
-            是否启用 PyPI 镜像源=
+            是否启用 PyPI 镜像源
     """
     check_sd_trainer_env(
         sd_trainer_path=sd_trainer_path,
@@ -209,8 +211,8 @@ def launch(
     """启动 SD Trainer
 
     Args:
-        sd_trainer_path (list[str] | None):
-            启动 SD Trainer 的参数
+        sd_trainer_path (Path):
+            SD Trainer 根目录
         launch_args (str | list[str] | None):
             启动 SD Trainer 的参数
         use_hf_mirror (bool | None):
@@ -391,7 +393,16 @@ def launch_version_gui(
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 SD Trainer 版本管理 GUI"""
+    """启动 SD Trainer 版本管理 GUI
+
+    Args:
+        sd_trainer_path (Path):
+            SD Trainer 根目录
+        use_github_mirror (bool | None):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
     launch_sd_trainer_version_gui(
         sd_trainer_path=sd_trainer_path,
         use_github_mirror=use_github_mirror,

@@ -335,6 +335,8 @@ def statistical_has_conflict_component(
     Args:
         env_data (ComfyUIEnvironmentComponent):
             ComfyUI 环境组件表字典
+        conflict_package_list (list[str]):
+            冲突的软件包名称列表
 
     Returns:
         str:
@@ -653,7 +655,7 @@ def comfyui_conflict_analyzer(
         custom_env (dict[str, str] | None):
             环境变量字典
 
-    Returns:
+    Raises:
         AggregateError:
             安装依赖出现错误时
     """

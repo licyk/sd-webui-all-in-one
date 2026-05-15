@@ -30,7 +30,7 @@ def is_colab_environment() -> bool:
 
 def mount_google_drive(
     path: Path,
-) -> bool:
+) -> None:
     """挂载 Google Drive
 
     Args:

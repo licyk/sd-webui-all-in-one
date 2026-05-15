@@ -161,7 +161,7 @@ def display_sd_scripts_branch_list(
     """显示 SD Scripts 分支列表
 
     Args:
-        branch_list (list[SDTrainerBranchInfo]):
+        branch_list (list[SDScriptsBranchInfo]):
             SD Scripts 分支信息列表
     """
     for index, info in enumerate(branch_list, start=1):

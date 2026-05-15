@@ -126,6 +126,16 @@ lint.ignore = [
 quote-style = "double"
 skip-magic-trailing-comma = false
 
+[tool.docstring-checker]
+strictness = "balanced"
+format = "text"
+show-source = false
+source-context = 1
+exclude = [
+    "sd_webui_all_in_one/base_manager/gui/sv_ttk/*",
+    "sd_webui_all_in_one/patcher/examples/*",
+]
+
 [tool.pytest.ini_options]
 norecursedirs = [
     "sd_webui_all_in_one/base_manager/gui/sv_ttk",

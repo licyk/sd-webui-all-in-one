@@ -115,7 +115,7 @@ def patch_extension_index_comfyui_manager(
     重写 ComfyUI-Manager 资源 URL 前缀
 
     Args:
-        destination_prefix (str):
+        destination_prefix (str | None):
             目标镜像前缀。为 None 或 ``auto`` 时自动判断是否需要 GitHub raw 镜像。
         source_prefix (str):
             需要替换的原始前缀
