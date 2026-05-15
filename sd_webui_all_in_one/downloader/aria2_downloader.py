@@ -126,7 +126,7 @@ def aria2(
         return server.download(
             url=url,
             save_path=path,
-            show_progress=progress,
+            show_progress=bool(progress),
         )
     except RuntimeError as e:
         logger.error("下载 %s 时发生错误: %s", url, e)

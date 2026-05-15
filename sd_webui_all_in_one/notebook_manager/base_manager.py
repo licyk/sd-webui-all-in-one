@@ -109,7 +109,7 @@ class BaseManager:
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.workfolder = workfolder
         self.repo_manager = RepoManager(hf_token, ms_token)
-        self.tun_manager = TunnelManager(self.workspace, port)
+        self.tun_manager = TunnelManager(self.workspace, port if port is not None else 7860)
         self.tcmalloc_manager = TCMalloc(self.workspace)
         self.copy_files = copy_files
         self.remove_files = remove_files
@@ -174,7 +174,7 @@ class BaseManager:
     def get_model_from_list(
         self,
         path: str | Path,
-        model_list: list[list[str | int]],
+        model_list: list[list[str | int]] | list[dict[str, str]],
     ) -> None:
         """从模型列表下载模型
 
@@ -196,15 +196,23 @@ class BaseManager:
 
         Args:
             path (str | Path): 将模型下载到的本地路径
-            model_list (list[list[str | int]]): 模型列表
+            model_list (list[list[str | int]] | list[dict[str, str]]): 模型列表
         """
         for model in model_list:
             try:
-                url = model[0]
-                status = model[1]
-                filename = model[2] if len(model) > 2 else None
+                if isinstance(model, dict):
+                    url = model.get("url")
+                    status = int(model.get("status", "1"))
+                    filename = model.get("filename")
+                else:
+                    url = str(model[0])
+                    status = int(model[1])
+                    filename = str(model[2]) if len(model) > 2 else None
             except Exception as e:
                 logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
+                continue
+            if url is None:
+                logger.error("模型下载列表缺少 url: %s", model)
                 continue
             if status >= 1:
                 if filename is None:
@@ -265,8 +273,8 @@ class BaseManager:
         """
         for link in links:
             link_dir = link.get("link_dir")
-            is_file = link.get("is_file", False)
-            if link_dir is None:
+            is_file = bool(link.get("is_file", False))
+            if not isinstance(link_dir, str):
                 continue
             full_link_path = Path(base_dir) / link_dir
             full_drive_path = Path(drive_path) / link_dir
@@ -354,6 +362,8 @@ class BaseManager:
                     encoding="utf-8",
                     errors="replace",
                 ) as p:
+                    if p.stdout is None:
+                        return
                     for line in p.stdout:
                         print(line, end="", flush=True)
             elif display_mode == "terminal":
@@ -693,9 +703,9 @@ class BaseManager:
             show_hidden (bool | None):
                 显示隐藏文件
         """
-        paths = [Path(p) for p in paths]
+        display_paths = [Path(p) for p in paths if p is not None]
         display_directories(
-            *paths,
+            *display_paths,
             recursive=recursive,
             show_hidden=show_hidden,
         )

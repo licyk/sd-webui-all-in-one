@@ -212,7 +212,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def _add_schema_setting_row(
         self,
-        parent: ttk.Frame,
+        parent: tk.Misc,
         row: int,
         feature_name: str,
         setting_name: str,
@@ -306,14 +306,14 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         log_frame.rowconfigure(0, weight=1)
         log_frame.columnconfigure(0, weight=1)
 
-    def _entry_row(self, parent: ttk.Frame, row: int, label: str, variable: tk.Variable) -> ttk.Entry:
+    def _entry_row(self, parent: tk.Misc, row: int, label: str, variable: tk.Variable) -> ttk.Entry:
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, pady=4, padx=(0, 8))
         entry = ttk.Entry(parent, textvariable=variable)
         entry.grid(row=row, column=1, sticky=tk.EW, pady=4)
         parent.columnconfigure(1, weight=1)
         return entry
 
-    def _combo_row(self, parent: ttk.Frame, row: int, label: str, variable: tk.Variable, values: tuple[str, ...]) -> ttk.Combobox:
+    def _combo_row(self, parent: tk.Misc, row: int, label: str, variable: tk.Variable, values: tuple[str, ...]) -> ttk.Combobox:
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, pady=4, padx=(0, 8))
         combo = ttk.Combobox(parent, textvariable=variable, state="readonly", values=values)
         combo.grid(row=row, column=1, sticky=tk.EW, pady=4)

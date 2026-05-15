@@ -249,7 +249,7 @@ class Monkey:
                     if len(result) == 1:
                         source = result[0]
                     elif len(result) == 2:
-                        source, filename = result
+                        source, filename = result  # ty: ignore[invalid-assignment]
                     else:
                         raise ValueError("Invalid source patch return value")
                 else:
@@ -370,9 +370,9 @@ class Monkey:
 
             original = module.__dict__[method]
 
-            def wrapper(*args: Any, __original: Callable[..., Any] = original, **kwargs: Any) -> Any:
+            def wrapper(*args: Any, _original: Callable[..., Any] = original, **kwargs: Any) -> Any:
                 with redirect_stdout(StringIO()):
-                    return __original(*args, **kwargs)
+                    return _original(*args, **kwargs)
 
             module.__dict__[method] = wrapper
 
@@ -528,7 +528,7 @@ class HookedMetaPathFinder(MetaPathFinder):
         self.currently_loading = LoadingSkipper()
         self.zoo = zoo
 
-    def find_spec(
+    def find_spec(  # ty: ignore[invalid-method-override]
         self,
         fullname: str,
         path: list[str] | None,
@@ -659,6 +659,9 @@ class MonkeySourceFileLoader(Loader):
                 补丁后的 code object
         """
 
+        if fullname is None:
+            raise ImportError("Missing module name for patched loader")
+
         if not self.monkey.has_cache_side_effect:
             code_object = self.loader.get_code(fullname)
             if code_object is None:
@@ -673,7 +676,7 @@ class MonkeySourceFileLoader(Loader):
         tree = ast.parse(source, filename, "exec")
         tree = self.monkey.eval_ast(tree)
         ast.fix_missing_locations(tree)
-        code_object = compile(tree, filename, "exec")
+        code_object = compile(tree, filename, "exec")  # ty: ignore[invalid-argument-type]
         return self.monkey.eval_bytecode(code_object)
 
     def exec_module(self, module: ModuleType) -> None:
@@ -724,11 +727,11 @@ def install_import_hook() -> HookedMetaPathFinder:
         _installed_finder = HookedMetaPathFinder(monkey_zoo)
 
     if _installed_finder not in sys.meta_path:
-        sys.meta_path.insert(0, _installed_finder)
+        sys.meta_path.insert(0, _installed_finder)  # ty: ignore[invalid-argument-type]
 
     if importlib.util.spec_from_file_location is not _spec_from_file_location_wrapper:
         _wrapped_spec_from_file_location = importlib.util.spec_from_file_location
-        importlib.util.spec_from_file_location = _spec_from_file_location_wrapper
+        importlib.util.spec_from_file_location = _spec_from_file_location_wrapper  # ty: ignore[invalid-assignment]
 
     return _installed_finder
 
@@ -745,7 +748,7 @@ def uninstall_import_hook() -> None:
 
     if _installed_finder is not None:
         while _installed_finder in sys.meta_path:
-            sys.meta_path.remove(_installed_finder)
+            sys.meta_path.remove(_installed_finder)  # ty: ignore[invalid-argument-type]
         _installed_finder.invalidate_caches()
 
     if importlib.util.spec_from_file_location is _spec_from_file_location_wrapper:
@@ -809,7 +812,7 @@ def _spec_from_file_location_wrapper(*args: Any, **kwargs: Any) -> ModuleSpec | 
         filename=spec.loader.path,
         meta_path_finder=None,
         loader=spec.loader,
-        monkey=monkey_zoo[spec.name],
+        monkey=monkey_zoo[spec.name],  # ty: ignore[invalid-argument-type]
     )
     return spec
 

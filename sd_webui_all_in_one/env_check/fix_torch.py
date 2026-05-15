@@ -25,6 +25,8 @@ def fix_torch_libomp() -> None:
     logger.info("检测 PyTorch 的 libomp 问题")
     try:
         torch_spec = importlib.util.find_spec("torch")
+        if torch_spec is None or torch_spec.submodule_search_locations is None:
+            return
         for folder in torch_spec.submodule_search_locations:
             folder = Path(folder)
             lib_folder = folder / "lib"
@@ -38,7 +40,7 @@ def fix_torch_libomp() -> None:
                 if b"libomp140.x86_64.dll" not in contents:
                     break
             try:
-                _ = ctypes.cdll.LoadLibrary(test_file)
+                _ = ctypes.cdll.LoadLibrary(test_file.as_posix())
             except FileNotFoundError:
                 logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
                 shutil.copyfile(lib_folder / "libiomp5md.dll", dest)

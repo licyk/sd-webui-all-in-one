@@ -310,7 +310,7 @@ def test_apply_config_reports_error_when_caught_tracer_conflicts():
                     }
                 }
             },
-            runtime_client=object(),
+            runtime_client=object(),  # ty: ignore[invalid-argument-type]
         )
         assert result["errors"]
         assert result["errors"][0]["feature"] == "runtime.errors"

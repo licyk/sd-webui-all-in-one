@@ -47,7 +47,7 @@ class SDTrainerManager(BaseManager):
 
     def mount_drive(
         self,
-        extras: list[dict[str, str | bool]] = None,
+        extras: list[dict[str, str | bool]] | None = None,
     ) -> None:
         """挂载 Google Drive 并创建 SD Trainer 输出文件夹
 
@@ -69,7 +69,7 @@ class SDTrainerManager(BaseManager):
         默认挂载的目录和文件: `outputs`, `output`, `config`, `train`, `logs`
 
         Args:
-            extras (list[dict[str, str | bool]]): 挂载额外目录
+            extras (list[dict[str, str | bool]] | None): 挂载额外目录
         Raises:
             RuntimeError: 挂载 Google Drive 失败
         """
@@ -129,6 +129,8 @@ class SDTrainerManager(BaseManager):
         """
         for model in model_list:
             url = model.get("url")
+            if url is None:
+                continue
             filename = model.get("filename")
             self.get_sd_model(url=url, filename=filename)
 

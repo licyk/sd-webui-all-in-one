@@ -3,6 +3,7 @@
 import time
 from functools import wraps
 from typing import (
+    Any,
     Callable,
     TypeVar,
     ParamSpec,
@@ -68,16 +69,16 @@ def retryable(
     def decorator(func: Callable[P, T | None]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(
-            *args: P.args,
+            *args: Any,
             retry_times: int | None = None,
             retry_delay: float | None = None,
-            **kwargs: P.kwargs,
+            **kwargs: Any,
         ) -> T:
-            actual_times = retry_times if retry_times is not None else times
-            actual_delay = retry_delay if retry_delay is not None else delay
+            actual_times = retry_times if retry_times is not None else (times if times is not None else 0)
+            actual_delay = retry_delay if retry_delay is not None else (delay if delay is not None else 0)
             count = 0
             err = None
-            target_info = describe if describe is not None else func.__name__
+            target_info = describe if describe is not None else getattr(func, "__name__", repr(func))
             if isinstance(catch_exceptions, tuple):
                 catch_exc = catch_exceptions + (RetrySignalError,)
             else:

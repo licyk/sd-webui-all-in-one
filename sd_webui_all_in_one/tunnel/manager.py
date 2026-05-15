@@ -1,7 +1,7 @@
 """内网穿透管理器"""
 
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
@@ -153,11 +153,11 @@ class TunnelManager:
             AggregateError:
                 当 check=True 且启动内网穿透发生错误时
         """
-        tunnel_url: TunnelUrl = {"local_url": f"http://127.0.0.1:{self.port}"}
+        tunnel_url: dict[str, str] = {"local_url": f"http://127.0.0.1:{self.port}"}
         errors: list[Exception] = []
 
         # 定义任务列表: (是否启用, 键名, 隧道类, 参数)
-        tasks: list[tuple[bool, str, Callable, list[Any]]] = [
+        tasks: list[tuple[bool | None, str, Callable[..., Any], list[Any] | None]] = [
             (use_cloudflare, "cloudflare", CloudflareTunnel, [self.port, self.workspace]),
             (use_ngrok, "ngrok", NgrokTunnel, [self.port, self.workspace, ngrok_token] if ngrok_token else None),
             (use_remote_moe, "remote_moe", RemoteMoeTunnel, [self.port, self.workspace]),
@@ -186,13 +186,13 @@ class TunnelManager:
                     errors.append(e)
 
         # 保存结果
-        self._tunnel_url = tunnel_url
+        self._tunnel_url = cast(TunnelUrl, tunnel_url)
 
         # 如果有错误且需要检查, 抛出聚合异常
         if errors:
             raise AggregateError(f"内网穿透启动部分失败, 共 {len(errors)} 个错误. ", errors)
 
-        return tunnel_url
+        return cast(TunnelUrl, tunnel_url)
 
     def stop_all(
         self,

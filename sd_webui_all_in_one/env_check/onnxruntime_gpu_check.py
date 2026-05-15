@@ -77,6 +77,7 @@ def get_torch_version_worker(
     """
     try:
         import torch
+        import torch.version
 
         torch_ver = str(torch.__version__) if hasattr(torch, "__version__") else None
         cuda_ver = str(torch.version.cuda) if hasattr(torch.version, "cuda") else None
@@ -141,6 +142,7 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
     """
     try:
         import torch
+        import torch.version
 
         torch_ver = torch.__version__
         cuda_ver = torch.version.cuda
@@ -291,6 +293,8 @@ def check_onnxruntime_gpu(
     """
 
     def _clean_env() -> None:
+        if custom_env is None:
+            return
         custom_env.pop("PIP_EXTRA_INDEX_URL", None)
         custom_env.pop("UV_INDEX", None)
         custom_env.pop("PIP_FIND_LINKS", None)

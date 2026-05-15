@@ -181,14 +181,18 @@ def get_cuda_malloc_var() -> str | None:
     try:
         version = ""
         torch_spec = importlib.util.find_spec("torch")
+        if torch_spec is None or torch_spec.submodule_search_locations is None:
+            return None
         for folder in torch_spec.submodule_search_locations:
             ver_file = os.path.join(folder, "version.py")
             if os.path.isfile(ver_file):
                 spec = importlib.util.spec_from_file_location("torch_version_import", ver_file)
+                if spec is None or spec.loader is None:
+                    continue
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 version = module.__version__
-        if int(version[0]) >= 2:  # enable by default for torch version 2.0 and up
+        if version and int(version[0]) >= 2:  # enable by default for torch version 2.0 and up
             if "+cu" in version:  # only on cuda torch
                 malloc_type = get_pytorch_cuda_alloc_conf()
             else:

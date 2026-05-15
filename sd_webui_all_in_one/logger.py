@@ -71,8 +71,9 @@ def get_logger(
         log_format = "[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s"
         logger_name = name
     else:
-        frame = inspect.currentframe().f_back
-        module = inspect.getmodule(frame)
+        frame = inspect.currentframe()
+        caller_frame = frame.f_back if frame is not None else None
+        module = inspect.getmodule(caller_frame)
         logger_name = module.__name__ if module else "root"
         log_format = "[%(name)s:%(funcName)s:%(lineno)d]-|%(asctime)s|-%(levelname)s: %(message)s"
 
@@ -90,7 +91,7 @@ def get_logger(
         )
         logger.addHandler(handler)
 
-    logger.setLevel(level)
+    logger.setLevel(level if level is not None else logging.INFO)
     fn, lno, func, _ = logger.findCaller(stack_info=False, stacklevel=2)
     logger.debug("Logger 初始化完成, 位置: %s:%s in %s", fn, lno, func)
     return logger
@@ -113,4 +114,4 @@ def set_all_loggers_level(
 
     for logger in loggers:
         if logger.name.startswith(prefix) or logger.name == "root":
-            logger.setLevel(level)
+            logger.setLevel(level if level is not None else logging.INFO)

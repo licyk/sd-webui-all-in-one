@@ -58,7 +58,7 @@ class GradioTunnel(BaseTunnel):
 
         # 导入或安装 gradio-tunneling
         try:
-            from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
+            from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER  # ty: ignore[unresolved-import]
             import requests
         except ImportError:
             try:
@@ -67,7 +67,7 @@ class GradioTunnel(BaseTunnel):
                     "gradio-tunneling",
                     custom_env=custom_env,
                 )
-                from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
+                from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER  # ty: ignore[unresolved-import]
                 import requests
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 Gradio Tunneling 内网穿透时出现了错误: %s", e)

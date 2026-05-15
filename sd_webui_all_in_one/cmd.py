@@ -43,6 +43,7 @@ import sys
 import shlex
 import subprocess
 from pathlib import Path
+from typing import Any, Literal, overload
 
 from sd_webui_all_in_one.utils import in_jupyter
 from sd_webui_all_in_one.logger import get_logger
@@ -89,6 +90,102 @@ def preprocess_command(
         return command
 
 
+@overload
+def run_cmd(
+    command: str | list[str],
+    custom_env: dict[str, str] | None = None,
+    live: Literal[False] = False,
+    shell: bool | None = None,
+    cwd: Path | None = None,
+    check: bool | None = True,
+) -> str:
+    """执行 Shell 命令并返回标准输出。
+
+    Args:
+        command (str | list[str]):
+            要执行的命令
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (Literal[False]):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool | None):
+            检查进程退出状态
+
+    Returns:
+        str:
+            命令执行时输出的内容
+    """
+    ...
+
+
+@overload
+def run_cmd(
+    command: str | list[str],
+    custom_env: dict[str, str] | None = None,
+    live: Literal[True] | None = True,
+    shell: bool | None = None,
+    cwd: Path | None = None,
+    check: bool | None = True,
+) -> str | None:
+    """执行 Shell 命令并实时输出日志。
+
+    Args:
+        command (str | list[str]):
+            要执行的命令
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (Literal[True] | None):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool | None):
+            检查进程退出状态
+
+    Returns:
+        str | None:
+            命令执行时输出的内容
+    """
+    ...
+
+
+@overload
+def run_cmd(
+    command: str | list[str],
+    custom_env: dict[str, str] | None = None,
+    live: bool | None = True,
+    shell: bool | None = None,
+    cwd: Path | None = None,
+    check: bool | None = True,
+) -> str | None:
+    """执行 Shell 命令。
+
+    Args:
+        command (str | list[str]):
+            要执行的命令
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (bool | None):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool | None):
+            检查进程退出状态
+
+    Returns:
+        str | None:
+            命令执行时输出的内容
+    """
+    ...
+
+
 def run_cmd(
     command: str | list[str],
     custom_env: dict[str, str] | None = None,
@@ -126,7 +223,7 @@ def run_cmd(
         shell: bool | None = None,
         cwd: Path | None = None,
     ) -> subprocess.Popen:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # ty: ignore[no-matching-overload]
             command,
             shell=shell,
             stdout=subprocess.PIPE,
@@ -137,6 +234,9 @@ def run_cmd(
             env=custom_env,
             cwd=cwd,
         )
+
+        if process.stdout is None:
+            return process
 
         for line in process.stdout:
             print(line, end="", flush=True)
@@ -154,7 +254,7 @@ def run_cmd(
 
     command_to_exec = preprocess_command(command=command, shell=shell)
 
-    kwargs = {
+    kwargs: dict[str, Any] = {
         "args": command_to_exec,
         "shell": shell,
         "env": custom_env,
@@ -193,4 +293,4 @@ def run_cmd(
 
         raise RuntimeError("\n".join(errors))
 
-    return result.stdout
+    return result.stdout if isinstance(result.stdout, str) else None

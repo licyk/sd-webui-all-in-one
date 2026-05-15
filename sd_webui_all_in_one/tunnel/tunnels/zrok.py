@@ -257,13 +257,19 @@ class ZrokTunnel(BaseTunnel):
             encoding="utf-8",
         )
 
+        process = self._process
+        if process is None or process.stdout is None:
+            raise RuntimeError("启动 Zrok 隧道失败: 无法读取进程输出")
+
         output_queue = queue.Queue()
         lines_collected = []
 
         def _read_output():
             """读取进程输出"""
             try:
-                for line in iter(self._process.stdout.readline, ""):
+                stdout = process.stdout
+                assert stdout is not None
+                for line in iter(stdout.readline, ""):
                     if line:
                         output_queue.put(("LINE", line))
                         # 检查是否包含 URL
@@ -273,8 +279,9 @@ class ZrokTunnel(BaseTunnel):
             except Exception as e:
                 logger.error("读取 Zrok 输出时发生错误: %s", e)
             finally:
-                if self._process.stdout:
-                    self._process.stdout.close()
+                stdout = process.stdout
+                if stdout is not None:
+                    stdout.close()
 
         thread = threading.Thread(target=_read_output)
         thread.daemon = True

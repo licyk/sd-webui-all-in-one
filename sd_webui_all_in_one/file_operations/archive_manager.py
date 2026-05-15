@@ -67,9 +67,9 @@ def extract_archive(
     Raises:
         ValueError: 不支持解压时
     """
-    import rarfile
-    import py7zr
-    import zstandard as zstd
+    import rarfile  # ty: ignore[unresolved-import]
+    import py7zr  # ty: ignore[unresolved-import]
+    import zstandard as zstd  # ty: ignore[unresolved-import]
 
     if not is_supported_archive_format(archive_path):
         raise ValueError(f"不支持的压缩格式: {archive_path}")
@@ -140,8 +140,8 @@ def create_archive(
     Raises:
         ValueError: 不支持的压缩或不能写入的格式
     """
-    import py7zr
-    import zstandard as zstd
+    import py7zr  # ty: ignore[unresolved-import]
+    import zstandard as zstd  # ty: ignore[unresolved-import]
 
     def _add_to_tar(
         tar_ref: tarfile.TarFile,

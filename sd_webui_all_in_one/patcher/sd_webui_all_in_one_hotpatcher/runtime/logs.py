@@ -238,11 +238,12 @@ class RuntimeLogHandler(logging.Handler):
             }
             if record.exc_info:
                 exc_type, exc_value, exc_tb = record.exc_info
-                payload["exception"] = {
-                    "type": f"{exc_type.__module__}.{exc_type.__qualname__}",
-                    "message": str(exc_value),
-                    "traceback": self._formatter.formatException(record.exc_info),
-                }
+                if exc_type is not None:
+                    payload["exception"] = {
+                        "type": f"{exc_type.__module__}.{exc_type.__qualname__}",
+                        "message": str(exc_value),
+                        "traceback": self._formatter.formatException(record.exc_info),
+                    }
             self.capture.submit("log.record", payload)
         except Exception:
             return
@@ -686,7 +687,7 @@ class SubprocessCapture:
         CapturedPopen.__name__ = getattr(original_popen, "__name__", "Popen")
         CapturedPopen.__qualname__ = getattr(original_popen, "__qualname__", "Popen")
         CapturedPopen.__module__ = getattr(original_popen, "__module__", "subprocess")
-        CapturedPopen._sd_webui_all_in_one_hotpatcher_popen = True  # type: ignore[attr-defined]
+        CapturedPopen._sd_webui_all_in_one_hotpatcher_popen = True  # ty: ignore[unresolved-attribute]
         return CapturedPopen
 
     def _prepare_popen(
@@ -774,7 +775,7 @@ class SubprocessCapture:
                 self.capture.submit_subprocess_stream("stderr", stderr_data, process, args_value)
             return stdout_data, stderr_data
 
-        process.communicate = communicate  # type: ignore[method-assign]
+        process.communicate = communicate  # ty: ignore[invalid-assignment]
 
     def _start_reader(
         self,
@@ -1106,7 +1107,7 @@ class LogCapture:
         wrapper = StreamTee(self, stream_name, stream)
         self._stream_originals[stream_name] = stream
         self._stream_wrappers[stream_name] = wrapper
-        _set_std_stream(stream_name, wrapper)
+        _set_std_stream(stream_name, wrapper)  # ty: ignore[invalid-argument-type]
         self._reported_lost.discard(f"stream.{stream_name}")
         self.submit_hook_status(f"stream.{stream_name}", status, "stream wrapper installed")
 
@@ -1137,7 +1138,7 @@ class LogCapture:
         stream = self._stream_originals.get(stream_name) or _get_std_stream(stream_name)
         fd_capture = self._fd_captures.get(stream_name)
         if fd_capture is not None and fd_capture.installed:
-            return fd_capture.writeback_stream(stream)
+            return fd_capture.writeback_stream(stream)  # ty: ignore[invalid-return-type]
         return stream
 
     def _install_fd_capture(self, *, force_only: bool = False, stream_name: str | None = None) -> bool:

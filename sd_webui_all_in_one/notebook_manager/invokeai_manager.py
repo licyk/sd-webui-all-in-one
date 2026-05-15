@@ -123,7 +123,7 @@ class InvokeAIManager(BaseManager):
         self,
     ) -> None:
         """启动 InvokeAI"""
-        from invokeai.app.run_app import run_app
+        from invokeai.app.run_app import run_app  # ty: ignore[unresolved-import]
 
         logger.info("启动 InvokeAI 中")
         try:

@@ -256,7 +256,7 @@ class ErrorCapture:
             self._handle_asyncio_exception(context)
             return original(loop, context)
 
-        call_exception_handler._sd_webui_all_in_one_hotpatcher_error_capture = True  # type: ignore[attr-defined]
+        call_exception_handler._sd_webui_all_in_one_hotpatcher_error_capture = True  # ty: ignore[unresolved-attribute]
         return call_exception_handler
 
     def _handle_asyncio_exception(self, context: dict[str, Any]) -> None:

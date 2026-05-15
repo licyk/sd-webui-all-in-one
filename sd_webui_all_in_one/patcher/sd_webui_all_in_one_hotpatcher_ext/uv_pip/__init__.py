@@ -101,7 +101,7 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
     setattr(patched_run, _ORIGINAL_RUN_ATTR, original_run)
     setattr(subprocess, _ORIGINAL_RUN_ATTR, original_run)
     setattr(subprocess, _WRAPPER_ATTR, patched_run)
-    subprocess.run = patched_run
+    subprocess.run = patched_run  # ty: ignore[invalid-assignment]
 
 
 def unpatch_uv_to_subprocess() -> None:

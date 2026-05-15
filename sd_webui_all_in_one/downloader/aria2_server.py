@@ -71,7 +71,7 @@ class Aria2RpcServer:
             RPC 服务器 URL 地址
         process (subprocess.Popen | None):
             aria2c 进程对象
-        _session_file (NamedTemporaryFile | None):
+        _session_file (Any | None):
             临时会话文件
         _is_external_server (bool):
             是否连接到外部 aria2 服务器
@@ -133,17 +133,17 @@ class Aria2RpcServer:
                 可能导致其他连接到同一服务器的实例崩溃。
                 设为 False 可强制每个实例启动独立的 aria2 进程, 避免此问题。
         """
-        self.port: int = port
+        self.port: int = port if port is not None else 6800
         self.secret: str | None = secret
         self.download_dir: Path = Path(download_dir) if download_dir else Path.cwd()
         self.log_file: Path | None = Path(log_file) if log_file else None
-        self.log_level: str = log_level
-        self.user_agent = user_agent
-        self.use_config_file: bool = use_config_file
+        self.log_level: str = log_level or "notice"
+        self.user_agent = user_agent or DEFAULT_USER_AGENT
+        self.use_config_file: bool = True if use_config_file is None else use_config_file
         self.use_external_server: bool = use_external_server
-        self.rpc_url: str = f"http://localhost:{port}/jsonrpc"
+        self.rpc_url: str = f"http://localhost:{self.port}/jsonrpc"
         self.process: subprocess.Popen | None = None
-        self._session_file: NamedTemporaryFile | None = None
+        self._session_file: Any | None = None
         self._is_external_server: bool = False  # 标记是否连接到外部服务器
 
     def __enter__(
@@ -671,7 +671,7 @@ class Aria2RpcServer:
 
                     # 初始化进度条
                     if show_progress and pbar is None and total > 0:
-                        pbar: tqdm = tqdm(total=total, unit="B", unit_scale=True, unit_divisor=1024, desc=file_name, initial=completed)
+                        pbar: tqdm = tqdm(total=total, unit="B", unit_scale=True, unit_divisor=1024, desc=file_name, initial=completed)  # ty: ignore[unknown-argument]
 
                     # 更新进度条
                     if pbar is not None:
@@ -826,7 +826,7 @@ class Aria2RpcServer:
         Returns:
             dict[str, Any]: 任务状态信息
         """
-        params: list[str] = [gid]
+        params: list[Any] = [gid]
         if keys:
             params.append(keys)
         return self._rpc_call("aria2.tellStatus", params)

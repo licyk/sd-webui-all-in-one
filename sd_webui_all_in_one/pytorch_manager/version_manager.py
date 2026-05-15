@@ -80,8 +80,8 @@ def find_latest_pytorch_info(
     for info in pytorch_info_list:
         if not info["supported"]:
             continue
-        current_torch = _extract_torch(info["torch_ver"])
-        history_torch = _extract_torch(latest_info["torch_ver"])
+        current_torch = _extract_torch(info.get("torch_ver") or "")
+        history_torch = _extract_torch(latest_info.get("torch_ver") or "")
         current_ver = get_package_version(current_torch) if current_torch is not None and is_package_has_version(current_torch) else "0.0"
         history_ver = get_package_version(history_torch) if history_torch is not None and is_package_has_version(history_torch) else "0.0"
         if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
@@ -155,3 +155,5 @@ def query_pytorch_info_from_library(
         return pytorch_list[pytorch_index - 1]
     elif pytorch_name is not None:
         return _get_pytorch_with_name(pytorch_name)
+
+    raise ValueError("`pytorch_name` 和 `pytorch_index` 缺失, 需要提供其中一项才能进行 PyTorch 下载信息查找")

@@ -281,6 +281,7 @@ def get_git_repo_main_branch(
             return (branches[0], None)
     except RuntimeError:
         return (None, None)
+    return (None, None)
 
 
 def fix_point_offset(

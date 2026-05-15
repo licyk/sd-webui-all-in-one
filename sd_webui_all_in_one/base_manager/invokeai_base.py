@@ -16,6 +16,7 @@ from typing import (
     Any,
     Callable,
     TypedDict,
+    cast,
 )
 from pathlib import Path
 
@@ -83,6 +84,7 @@ from sd_webui_all_in_one.pytorch_manager import (
     get_pytorch_mirror_type,
     get_env_pytorch_type,
     PYTORCH_DEVICE_CATEGORY_LIST,
+    PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.config import (
@@ -109,7 +111,7 @@ def get_invokeai_require_torch_version() -> str:
             PyTorch 版本
     """
     try:
-        invokeai_requires = importlib.metadata.requires("invokeai")
+        invokeai_requires = importlib.metadata.requires("invokeai") or []
     except Exception:
         return "2.2.2"
 
@@ -151,7 +153,7 @@ def get_invokeai_require_torch_version() -> str:
 
 def get_pytorch_mirror_type_for_ivnokeai(
     device_type: PyTorchDeviceTypeCategory,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 InvokeAI 安装 PyTorch 所需的 PyTorch 镜像源类型
 
     Args:
@@ -159,7 +161,7 @@ def get_pytorch_mirror_type_for_ivnokeai(
             显卡设备类型
 
     Returns:
-        str:
+        PyTorchDeviceType:
             PyTorch 镜像源类型
     """
     torch_ver = get_invokeai_require_torch_version()
@@ -175,7 +177,7 @@ def get_pytorch_for_invokeai() -> str:
     """
     pytorch_ver = []
     try:
-        invokeai_requires = importlib.metadata.requires("invokeai")
+        invokeai_requires = importlib.metadata.requires("invokeai") or []
     except Exception:
         invokeai_requires = []
 
@@ -210,7 +212,7 @@ def get_xformers_for_invokeai() -> str:
     """
     pytorch_ver = []
     try:
-        invokeai_requires = importlib.metadata.requires("invokeai")
+        invokeai_requires = importlib.metadata.requires("invokeai") or []
     except Exception as _:
         invokeai_requires = []
 
@@ -384,15 +386,15 @@ def import_model_to_invokeai(
     """
     try:
         logger.info("导入 InvokeAI 模块中")
-        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService
-        from invokeai.app.services.model_install.model_install_common import InstallStatus
-        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL
-        from invokeai.app.services.download.download_default import DownloadQueueService
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService
-        from invokeai.app.services.config.config_default import get_config
-        from invokeai.app.services.shared.sqlite.sqlite_util import init_db
-        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage
-        from invokeai.app.services.invoker import Invoker
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败, 无法自动导入模型: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
@@ -470,7 +472,7 @@ def import_model_to_invokeai(
 
     if task_sum == 0:
         logger.info("无需要导入的模型")
-        return
+        return False
 
     logger.info("InvokeAI 根目录: %s", os.environ.get("INVOKEAI_ROOT"))
 
@@ -601,9 +603,9 @@ def install_pypatchmatch(
 def run_invokeai() -> None:
     """启动 InvokeAI"""
     import uvicorn
-    import invokeai.frontend.cli.arg_parser
-    from invokeai.frontend.cli.arg_parser import _parser, InvokeAIArgs
-    from invokeai.app.run_app import run_app
+    import invokeai.frontend.cli.arg_parser  # ty: ignore[unresolved-import]
+    from invokeai.frontend.cli.arg_parser import _parser, InvokeAIArgs  # ty: ignore[unresolved-import]
+    from invokeai.app.run_app import run_app  # ty: ignore[unresolved-import]
 
     # 备份原始对象
     original_parser = copy.deepcopy(_parser)
@@ -643,7 +645,7 @@ def run_invokeai() -> None:
             return await original_uvicorn_serve(self, sockets)
 
         # 应用 Monkey patch
-        uvicorn.Server.serve = _patched_serve
+        uvicorn.Server.serve = _patched_serve  # ty: ignore[invalid-assignment]
 
         # 运行 InvokeAI
         run_app()
@@ -713,7 +715,9 @@ def install_invokeai(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
     logger.info("开始安装 InvokeAI, 安装路径: %s", invokeai_path)
 
     with TemporaryDirectory() as tmp_dir:
@@ -796,7 +800,9 @@ def check_invokeai_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -818,7 +824,7 @@ def check_invokeai_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 InvokeAI 环境时发生错误", err)
@@ -952,7 +958,9 @@ def install_invokeai_custom_nodes(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     for url in urls:
         custom_node_name = get_repo_name_from_url(url)
@@ -1125,7 +1133,9 @@ def update_invokeai_custom_nodes(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     for ext in custom_nodes_path.iterdir():
         if ext.is_file():
@@ -1254,7 +1264,7 @@ class InvokeAILocalModelInfo(TypedDict, total=False):
     name: str
     """模型的名称"""
 
-    dtype: Any
+    type: Any
     """模型的类型"""
 
     base: Any
@@ -1280,14 +1290,14 @@ def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
     """
     try:
         logger.info("导入 InvokeAI 模块中")
-        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService
-        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL
-        from invokeai.app.services.download.download_default import DownloadQueueService
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService
-        from invokeai.app.services.config.config_default import get_config
-        from invokeai.app.services.shared.sqlite.sqlite_util import init_db
-        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage
-        from invokeai.app.services.invoker import Invoker
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
@@ -1361,14 +1371,14 @@ def uninstall_model_from_invokeai(
     """
     try:
         logger.info("导入 InvokeAI 模块中")
-        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService
-        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL
-        from invokeai.app.services.download.download_default import DownloadQueueService
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService
-        from invokeai.app.services.config.config_default import get_config
-        from invokeai.app.services.shared.sqlite.sqlite_util import init_db
-        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage
-        from invokeai.app.services.invoker import Invoker
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
@@ -1465,9 +1475,10 @@ def uninstall_invokeai_model(
             logger.info("取消模型删除操作")
             return
 
-    logger.info("删除模型: %s", ", ".join(delete_list))
+    delete_names = {x["name"].lower() for x in delete_list}
+    logger.info("删除模型: %s", ", ".join(x["name"] for x in delete_list))
     uninstall_model_from_invokeai(
-        model_identifiers=[x["id"] for x in model_list if x["name"].lower() in delete_list],
+        model_identifiers=[x["id"] for x in model_list if x["name"].lower() in delete_names],
         delete_files=True,
     )
 
@@ -1500,7 +1511,7 @@ def reinstall_invokeai_pytorch(
         run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
     def _install(
-        d: PyTorchDeviceTypeCategory,
+        d: PyTorchDeviceTypeCategory | None,
     ) -> None:
         install_invokeai_component(
             device_type=d,
@@ -1551,7 +1562,7 @@ def reinstall_invokeai_pytorch(
                     user_input = None
                 logger.info("重装 PyTorch 中")
                 _uninstall()
-                _install(user_input)
+                _install(cast(PyTorchDeviceTypeCategory | None, user_input))
                 logger.info("PyTorch 重装完成")
                 return
             else:

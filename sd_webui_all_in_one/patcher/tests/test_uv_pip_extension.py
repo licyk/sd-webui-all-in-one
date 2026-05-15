@@ -107,7 +107,7 @@ def test_unpatch_uv_to_subprocess_only_restores_own_wrapper(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     patch_uv_to_subprocess()
-    subprocess.run = third_party_run
+    subprocess.run = third_party_run  # ty: ignore[invalid-assignment]
     unpatch_uv_to_subprocess()
 
     assert subprocess.run is third_party_run

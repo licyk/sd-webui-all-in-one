@@ -10,6 +10,7 @@ from tkinter import (
     messagebox,
     ttk,
 )
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from sd_webui_all_in_one.base_manager.version_manager import (
@@ -45,7 +46,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self,
         title: str,
         root_path: Path,
-        branch_presets: list[dict[str, Any]] | None = None,
+        branch_presets: Sequence[Mapping[str, Any]] | None = None,
         use_github_mirror: bool | None = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> None:
@@ -57,7 +58,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 应用名称
             root_path (Path):
                 Git 仓库根目录
-            branch_presets (list[dict[str, Any]] | None):
+            branch_presets (Sequence[Mapping[str, Any]] | None):
                 预设分支信息
             use_github_mirror (bool | None):
                 是否启用 GitHub 镜像源
@@ -68,7 +69,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         BackgroundTaskMixin.__init__(self)
         self.app_title = title
         self.root_path = Path(root_path)
-        self.branch_presets = branch_presets or []
+        self.branch_presets = list(branch_presets or [])
         self.use_github_mirror = use_github_mirror
         self.custom_github_mirror = custom_github_mirror
         self.git_env = configure_git_env(
@@ -276,7 +277,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background("切换内核分支中...", _task, lambda _value: self.refresh_kernel())
 
-    def _find_branch_preset(self, branch_name: str) -> dict[str, Any] | None:
+    def _find_branch_preset(self, branch_name: str) -> Mapping[str, Any] | None:
         current_url = self.repository_state.url if self.repository_state else None
         for preset in self.branch_presets:
             if preset.get("branch") != branch_name:
@@ -292,7 +293,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 def launch_git_kernel_version_gui(
     title: str,
     root_path: Path,
-    branch_presets: list[dict[str, Any]] | None = None,
+    branch_presets: Sequence[Mapping[str, Any]] | None = None,
     use_github_mirror: bool | None = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
@@ -304,7 +305,7 @@ def launch_git_kernel_version_gui(
             应用名称
         root_path (Path):
             Git 仓库根目录
-        branch_presets (list[dict[str, Any]] | None):
+        branch_presets (Sequence[Mapping[str, Any]] | None):
             预设分支信息
         use_github_mirror (bool | None):
             是否启用 GitHub 镜像源

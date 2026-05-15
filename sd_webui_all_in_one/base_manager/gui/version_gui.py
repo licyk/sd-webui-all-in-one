@@ -199,9 +199,9 @@ class BackgroundResult(Generic[T]):
     后台任务结果
 
     Attributes:
-        callback (Callable[[T], None] | None):
+        callback (Callable[[T], object] | None):
             任务成功回调
-        error_callback (Callable[[BaseException], None] | None):
+        error_callback (Callable[[BaseException], object] | None):
             任务失败回调
         value (T | None):
             任务返回值
@@ -213,8 +213,8 @@ class BackgroundResult(Generic[T]):
             任务状态文本
     """
 
-    callback: Callable[[T], None] | None
-    error_callback: Callable[[BaseException], None] | None
+    callback: Callable[[T], object] | None
+    error_callback: Callable[[BaseException], object] | None
     value: T | None = None
     error: BaseException | None = None
     traceback_text: str | None = None
@@ -252,8 +252,8 @@ class BackgroundTaskMixin:
         self,
         message: str,
         func: Callable[[], T],
-        callback: Callable[[T], None] | None = None,
-        error_callback: Callable[[BaseException], None] | None = None,
+        callback: Callable[[T], object] | None = None,
+        error_callback: Callable[[BaseException], object] | None = None,
     ) -> None:
         """
         在线程中执行任务并把结果投递回主线程
@@ -263,9 +263,9 @@ class BackgroundTaskMixin:
                 任务状态文本
             func (Callable[[], T]):
                 后台执行函数
-            callback (Callable[[T], None] | None):
+            callback (Callable[[T], object] | None):
                 成功回调
-            error_callback (Callable[[BaseException], None] | None):
+            error_callback (Callable[[BaseException], object] | None):
                 失败回调
         """
         self._busy_count += 1
@@ -309,7 +309,7 @@ class BackgroundTaskMixin:
             if self._busy_count == 0:
                 self.set_status("就绪")
                 self.set_busy_state(False)
-        self.after(100, self._poll_tasks)  # type: ignore[attr-defined]
+        self.after(100, self._poll_tasks)  # ty: ignore[unresolved-attribute]
 
     def set_status(
         self,
@@ -392,7 +392,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._redraw_job: str | None = None
         self._draw_batch_job: str | None = None
         self._draw_cursor = 0
-        self._double_click_callback: Callable[[], None] | None = None
+        self._double_click_callback: Callable[[], object] | None = None
         self._content_width = sum(self.widths.get(column, 120) for column in self.columns)
         self._content_height = 0
         self._mouse_over = False
@@ -633,12 +633,14 @@ class AdaptiveIndexList(ttk.Frame):
 
     def _on_mousewheel(
         self,
-        event: tk.Event,
+        event: tk.Event | None,
     ) -> None:
         try:
             if not self.winfo_ismapped() or not self._mouse_over:
                 return
         except tk.TclError:
+            return
+        if event is None:
             return
         if getattr(event, "num", None) == 4:
             self.canvas.yview_scroll(-3, "units")
@@ -789,7 +791,7 @@ class AdaptiveIndexList(ttk.Frame):
         if self.exists(item_id):
             self._select(str(item_id))
 
-    def focus(self, item_id: str | None = None) -> str:
+    def focus(self, item_id: str | None = None) -> str:  # ty: ignore[invalid-method-override]
         """
         读取或设置焦点行
 
@@ -991,13 +993,13 @@ class AdaptiveIndexList(ttk.Frame):
 
     def bind_double_click(
         self,
-        callback: Callable[[], None],
+        callback: Callable[[], object],
     ) -> None:
         """
         绑定双击回调
 
         Args:
-            callback (Callable[[], None]):
+            callback (Callable[[], object]):
                 双击回调
         """
         self._double_click_callback = callback
@@ -1011,10 +1013,10 @@ class AdaptiveIndexList(ttk.Frame):
         self._cancel_pending_draws()
         super().destroy()
 
-    def bind(
+    def bind(  # ty: ignore[invalid-method-override]
         self,
         sequence: str | None = None,
-        func: Callable[[tk.Event | None], object] | None = None,
+        func: Callable[[tk.Event | None], Any] | None = None,
         add: str | None = None,
     ) -> str | None:
         """
@@ -1023,7 +1025,7 @@ class AdaptiveIndexList(ttk.Frame):
         Args:
             sequence (str | None):
                 事件序列
-            func (Callable[[tk.Event | None], object] | None):
+            func (Callable[[tk.Event | None], Any] | None):
                 事件回调
             add (str | None):
                 是否追加绑定
@@ -1034,7 +1036,7 @@ class AdaptiveIndexList(ttk.Frame):
         if sequence == "<Double-1>" and func is not None:
             self._double_click_callback = lambda: func(None)
             return None
-        return super().bind(sequence, func, add)
+        return super().bind(sequence, func, add)  # ty: ignore[no-matching-overload]
 
     def _handle_double_click(
         self,
@@ -1088,7 +1090,7 @@ class CommitSwitchDialog(tk.Toplevel):
         self.filtered_commits = commits
         self.search_var = tk.StringVar()
 
-        self.transient(master)
+        self.transient(master)  # ty: ignore[no-matching-overload]
         self.grab_set()
 
         entry = ttk.Entry(self, textvariable=self.search_var)
@@ -1181,7 +1183,7 @@ class BranchSwitchDialog(tk.Toplevel):
         self.minsize(360, 300)
         self.branches = branches
         self.on_switch = on_switch
-        self.transient(master)
+        self.transient(master)  # ty: ignore[no-matching-overload]
         self.grab_set()
 
         self.tree = AdaptiveIndexList(

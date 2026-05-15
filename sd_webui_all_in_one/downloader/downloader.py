@@ -89,6 +89,8 @@ def download_file(
     Returns:
         Path: 保存的文件路径
     """
+    if path is None:
+        path = Path.cwd()
     path.mkdir(parents=True, exist_ok=True)
 
     selected_tool = str(tool)
@@ -105,4 +107,4 @@ def download_file(
         logger.warning("未安装 requests, 将切换到 urllib 进行下载")
         selected_tool = "urllib"
 
-    return download_executer(url=url, path=path, save_name=save_name, tool=selected_tool, progress=progress)
+    return download_executer(url=url, path=path, save_name=save_name, tool=selected_tool, progress=bool(progress))

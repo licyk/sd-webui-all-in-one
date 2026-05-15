@@ -33,7 +33,7 @@ def main() -> None:
     register_manager(subparsers)
 
     # 执行解析
-    args = parser.parse_args()  # type: ignore
+    args = parser.parse_args()
 
     # 执行绑定的函数
     if hasattr(args, "func") and args.func:

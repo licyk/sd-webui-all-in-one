@@ -127,14 +127,20 @@ class SSHTunnel(BaseTunnel):
             encoding="utf-8",
         )
 
+        process = self._process
+        if process is None or process.stdout is None:
+            raise RuntimeError("启动 SSH 隧道失败: 无法读取进程输出")
+
         # 读取输出并提取 URL
         output_queue = queue.Queue()
         lines = []
 
         def _read_output():
-            for line in iter(self._process.stdout.readline, ""):
+            stdout = process.stdout
+            assert stdout is not None
+            for line in iter(stdout.readline, ""):
                 output_queue.put(line)
-            self._process.stdout.close()
+            stdout.close()
 
         thread = threading.Thread(target=_read_output)
         thread.daemon = True

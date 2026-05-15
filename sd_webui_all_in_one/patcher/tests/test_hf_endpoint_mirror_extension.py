@@ -57,6 +57,8 @@ def write_file(path, content):
 
 def load_module_from_path(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
@@ -102,7 +104,7 @@ def test_patch_torchhub_rewrites_download_url_to_file(tmp_path, monkeypatch):
     module = importlib.import_module("torch.hub")
 
     assert module.download_url_to_file(HF_URL, "/tmp/model") == MIRROR_URL
-    assert module.calls[-1][0] == MIRROR_URL
+    assert module.calls[-1][0] == MIRROR_URL  # ty: ignore[unresolved-attribute]
 
 
 def test_patch_torchvision_rewrites_urlretrieve(tmp_path, monkeypatch):
@@ -125,7 +127,7 @@ def test_patch_torchvision_rewrites_urlretrieve(tmp_path, monkeypatch):
     module = importlib.import_module("torchvision.datasets.utils")
 
     assert module._urlretrieve(HF_URL, "/tmp/model") == MIRROR_URL
-    assert module.calls[-1][0] == MIRROR_URL
+    assert module.calls[-1][0] == MIRROR_URL  # ty: ignore[unresolved-attribute]
 
 
 def test_patch_comfyui_wd14_tagger_rewrites_async_download(tmp_path, monkeypatch):

@@ -9,6 +9,7 @@ from concurrent.futures import (
     as_completed,
 )
 from typing import (
+    cast,
     Any,
     TypedDict,
     Literal,
@@ -96,7 +97,7 @@ SDWebUiBranchType: TypeAlias = Literal[
 ]
 """Stable Diffusion WebUI 分支类型"""
 
-SD_WEBUI_BRANCH_LIST: list[str] = list(get_args(SDWebUiBranchType))
+SD_WEBUI_BRANCH_LIST: list[SDWebUiBranchType] = cast(list[SDWebUiBranchType], list(get_args(SDWebUiBranchType)))
 """Stable Diffusion WebUI 分支类型列表"""
 
 
@@ -711,12 +712,12 @@ SD_WEBUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "sd_webui_config.
 
 
 def display_sd_webui_branch_list(
-    branch_list: SDWebUiExtensionInfoList,
+    branch_list: list[SDWebUiBranchInfo],
 ) -> None:
     """显示 Stable Diffusion WebUI 分支列表
 
     Args:
-        branch_list (SDWebUiExtensionInfoList):
+        branch_list (list[SDWebUiBranchInfo]):
             Stable Diffusion WebUI 分支信息列表
     """
     for index, info in enumerate(branch_list, start=1):
@@ -870,7 +871,9 @@ def install_sd_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -1012,7 +1015,9 @@ def switch_sd_webui_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+        if git_config_global is not None:
+            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
         logger.info("切换 Stable Diffusion WebUI 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -1089,7 +1094,9 @@ def update_sd_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(sd_webui_path)
 
@@ -1138,7 +1145,9 @@ def check_sd_webui_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -1163,7 +1172,7 @@ def check_sd_webui_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 Stable Diffusion WebUI 环境时发生错误", err)
@@ -1248,7 +1257,9 @@ def launch_sd_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     custom_env = apply_hf_mirror(
         use_hf_mirror=use_hf_mirror,
@@ -1327,7 +1338,9 @@ def install_sd_webui_extension(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     for url in urls:
         extension_name = get_repo_name_from_url(url)
@@ -1412,7 +1425,7 @@ def set_sd_webui_extensions_status(
     config_path = sd_webui_path / "config.json"
     extension_path = sd_webui_path / "extensions"
     extension_list = [ext.name for ext in extension_path.iterdir() if ext.is_dir()]
-    settings: dict[str, str | list[str] | Any] = {}
+    settings: dict[str, Any] = {}
 
     if extension_name not in extension_list:
         raise FileNotFoundError(f"'{extension_name}' 扩展未找到, 请检查该扩展是否已安装")
@@ -1423,19 +1436,21 @@ def set_sd_webui_extensions_status(
     except Exception as e:
         logger.error("加载 '%s' 配置文件发生错误: %s", config_path, e)
         logger.warning("尝试重置 Stable Diffusion WebUI 配置文件")
-        move_files(config_path, f"config_{uuid.uuid4()}.json")
+        move_files(config_path, config_path.with_name(f"config_{uuid.uuid4()}.json"))
 
-    if "disabled_extensions" not in settings:
-        settings["disabled_extensions"] = []
+    disabled_extensions = settings.get("disabled_extensions")
+    if not isinstance(disabled_extensions, list):
+        disabled_extensions = []
+        settings["disabled_extensions"] = disabled_extensions
 
     if status:
-        if extension_name in settings["disabled_extensions"]:
-            settings["disabled_extensions"].remove(extension_name)
+        if extension_name in disabled_extensions:
+            disabled_extensions.remove(extension_name)
             _save(settings)
         logger.info("启用 '%s' 扩展成功", extension_name)
     else:
-        if extension_name not in settings["disabled_extensions"]:
-            settings["disabled_extensions"].append(extension_name)
+        if extension_name not in disabled_extensions:
+            disabled_extensions.append(extension_name)
             _save(settings)
         logger.info("禁用 '%s' 扩展成功", extension_name)
 
@@ -1555,7 +1570,9 @@ def update_sd_webui_extensions(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     if not extension_path.is_dir():
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 扩展目录")

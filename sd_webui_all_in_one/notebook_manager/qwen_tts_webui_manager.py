@@ -39,7 +39,7 @@ class QwenTTSWebUIManager(BaseManager):
 
     def mount_drive(
         self,
-        extras: list[dict[str, str | bool]] = None,
+        extras: list[dict[str, str | bool]] | None = None,
     ) -> None:
         """挂载 Google Drive 并创建 Qwen TTS WebUI 输出文件夹
 
@@ -60,7 +60,7 @@ class QwenTTSWebUIManager(BaseManager):
         默认挂载的目录和文件: `outputs`, `config.json`
 
         Args:
-            extras (list[dict[str, str | bool]]): 挂载额外目录
+            extras (list[dict[str, str | bool]] | None): 挂载额外目录
         """
         if not self.mount_google_drive_for_notebook():
             return

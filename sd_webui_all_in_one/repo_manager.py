@@ -35,9 +35,9 @@ class RepoManager:
     """HuggingFace / ModelScope 仓库管理器
 
     Attributes:
-        hf_api (HfApi | None):
+        hf_api (Any):
             HuggingFace API 客户端实例, 用于与 HuggingFace 仓库进行交互
-        ms_api (HubApi | None):
+        ms_api (Any):
             ModelScope API 客户端实例, 用于与 ModelScope 仓库进行交互
         hf_token (str | None):
             HuggingFace认 证令牌, 用于访问私有仓库
@@ -58,10 +58,10 @@ class RepoManager:
             ms_token (str | None):
                 ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
-        self.hf_api = NotImplemented
-        self.hf_token = None
-        self.ms_api = NotImplemented
-        self.ms_token = None
+        self.hf_api: Any = NotImplemented
+        self.hf_token: str | None = None
+        self.ms_api: Any = NotImplemented
+        self.ms_token: str | None = None
         try:
             from huggingface_hub import HfApi
 

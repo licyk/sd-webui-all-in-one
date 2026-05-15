@@ -5,7 +5,9 @@ import json
 import shutil
 import sys
 import subprocess
-from typing import TypedDict
+from typing import (
+    TypedDict,
+)
 
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 from sd_webui_all_in_one.pytorch_manager.types import (
@@ -115,11 +117,14 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
         if isinstance(gpus, dict):
             gpus = [gpus]
 
-        gpu_info = []
+        gpu_info: list[GPUDeviceInfo] = []
         for gpu in gpus:
+            name = gpu.get("Name")
+            if not isinstance(name, str) or not name:
+                continue
             gpu_info.append(
                 {
-                    "Name": gpu.get("Name", None),
+                    "Name": name,
                     "AdapterCompatibility": gpu.get("AdapterCompatibility", None),
                     "AdapterRAM": gpu.get("AdapterRAM", None),
                     "DriverVersion": gpu.get("DriverVersion", None),
@@ -233,9 +238,12 @@ def get_lspci_gpus() -> list[GPUDeviceInfo]:
         devices = result.stdout.strip().split("\n\n")
         for dev in devices:
             info = {line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip() for line in dev.split("\n") if ":" in line}
+            name = info.get("Device")
+            if not name:
+                continue
             gpu_info.append(
                 {
-                    "Name": info.get("Device"),
+                    "Name": name,
                     "AdapterCompatibility": info.get("Vendor"),
                     "AdapterRAM": None,
                     "DriverVersion": info.get("Driver"),
@@ -259,7 +267,7 @@ def get_linux_gpu_list() -> list[GPUDeviceInfo]:
     all_gpus.extend(get_lshw_gpus())
     all_gpus.extend(get_lspci_gpus())
 
-    unique_gpus: GPUDeviceInfo = {}
+    unique_gpus: dict[str, GPUDeviceInfo] = {}
 
     for gpu in all_gpus:
         name = gpu.get("Name")
@@ -272,7 +280,7 @@ def get_linux_gpu_list() -> list[GPUDeviceInfo]:
             unique_gpus[norm_name] = gpu
         else:
             existing = unique_gpus[norm_name]
-            for key in ["AdapterCompatibility", "AdapterRAM", "DriverVersion"]:
+            for key in ("AdapterCompatibility", "AdapterRAM", "DriverVersion"):
                 if not existing.get(key) and gpu.get(key):
                     existing[key] = gpu[key]
 
@@ -307,7 +315,13 @@ def has_gpus(
         bool:
             当列表中存在可用显卡时则返回 True
     """
-    return any(x for x in gpu_list if "Intel" in x.get("AdapterCompatibility", "") or "NVIDIA" in x.get("AdapterCompatibility", "") or "Advanced Micro Devices" in x.get("AdapterCompatibility", ""))
+    return any(
+        x
+        for x in gpu_list
+        if "Intel" in (x.get("AdapterCompatibility") or "")
+        or "NVIDIA" in (x.get("AdapterCompatibility") or "")
+        or "Advanced Micro Devices" in (x.get("AdapterCompatibility") or "")
+    )
 
 
 def has_nvidia_gpu(
@@ -326,8 +340,8 @@ def has_nvidia_gpu(
     return any(
         x
         for x in gpu_list
-        if "NVIDIA" in x.get("AdapterCompatibility", "")
-        and (x.get("Name", "").startswith("NVIDIA") or x.get("Name", "").startswith("GeForce") or x.get("Name", "").startswith("Tesla") or x.get("Name", "").startswith("Quadro"))
+        if "NVIDIA" in (x.get("AdapterCompatibility") or "")
+        and ((x.get("Name") or "").startswith("NVIDIA") or (x.get("Name") or "").startswith("GeForce") or (x.get("Name") or "").startswith("Tesla") or (x.get("Name") or "").startswith("Quadro"))
     )
 
 
@@ -344,7 +358,11 @@ def has_intel_xpu(
         bool:
             当列表中存在可用的 Intel 显卡时则返回 True
     """
-    return any(x for x in gpu_list if "Intel" in x.get("AdapterCompatibility", "") and (x.get("Name", "").startswith("Intel(R) Arc") or x.get("Name", "").startswith("Intel(R) Core Ultra")))
+    return any(
+        x
+        for x in gpu_list
+        if "Intel" in (x.get("AdapterCompatibility") or "") and ((x.get("Name") or "").startswith("Intel(R) Arc") or (x.get("Name") or "").startswith("Intel(R) Core Ultra"))
+    )
 
 
 def has_amd_gpu(
@@ -360,7 +378,7 @@ def has_amd_gpu(
         bool:
             当列表中存在可用的 AMD 显卡时则返回 True
     """
-    return any(x for x in gpu_list if "Advanced Micro Devices" in x.get("AdapterCompatibility", "") and x.get("Name", "").startswith("AMD Radeon"))
+    return any(x for x in gpu_list if "Advanced Micro Devices" in (x.get("AdapterCompatibility") or "") and (x.get("Name") or "").startswith("AMD Radeon"))
 
 
 def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
@@ -373,7 +391,7 @@ def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
     gpu_list = get_gpu_list()
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
-    device_list = ["all"]
+    device_list: list[PyTorchDeviceType] = ["all"]
     if sys.platform != "darwin":
         device_list.append("cpu")
 

@@ -44,7 +44,7 @@ class ComponentEnvironmentDetails(TypedDict):
     """ComfyUI 组件的环境信息结构
 
     Attributes:
-        requirement_path (Path):
+        requirement_path (Path | None):
             依赖文件路径
         is_disabled (bool):
             组件是否禁用
@@ -60,7 +60,7 @@ class ComponentEnvironmentDetails(TypedDict):
             具体冲突的依赖项
     """
 
-    requirement_path: Path
+    requirement_path: Path | None
     """依赖文件路径"""
 
     is_disabled: bool
@@ -181,14 +181,26 @@ def update_comfyui_environment_dict(
         conflict_requires (list[str] | None):
             ComfyUI 组件冲突依赖列表
     """
+    current = env_data.get(
+        component_name,
+        {
+            "requirement_path": None,
+            "is_disabled": False,
+            "requires": [],
+            "has_missing_requires": False,
+            "missing_requires": [],
+            "has_conflict_requires": False,
+            "conflict_requires": [],
+        },
+    )
     env_data[component_name] = {
-        "requirement_path": (requirement_path if requirement_path else env_data.get(component_name).get("requirement_path")),
-        "is_disabled": (is_disabled if is_disabled else env_data.get(component_name).get("is_disabled")),
-        "requires": (requires if requires else env_data.get(component_name).get("requires")),
-        "has_missing_requires": (has_missing_requires if has_missing_requires else env_data.get(component_name).get("has_missing_requires")),
-        "missing_requires": (missing_requires if missing_requires else env_data.get(component_name).get("missing_requires")),
-        "has_conflict_requires": (has_conflict_requires if has_conflict_requires else env_data.get(component_name).get("has_conflict_requires")),
-        "conflict_requires": (conflict_requires if conflict_requires else env_data.get(component_name).get("conflict_requires")),
+        "requirement_path": requirement_path if requirement_path is not None else current.get("requirement_path"),
+        "is_disabled": is_disabled if is_disabled is not None else current.get("is_disabled", False),
+        "requires": requires if requires is not None else current.get("requires", []),
+        "has_missing_requires": has_missing_requires if has_missing_requires is not None else current.get("has_missing_requires", False),
+        "missing_requires": missing_requires if missing_requires is not None else current.get("missing_requires", []),
+        "has_conflict_requires": has_conflict_requires if has_conflict_requires is not None else current.get("has_conflict_requires", False),
+        "conflict_requires": conflict_requires if conflict_requires is not None else current.get("conflict_requires", []),
     }
 
 
@@ -320,8 +332,9 @@ def statistical_need_install_require_component(
     """
     requirement_list = []
     for _, details in env_data.items():
-        if details.get("has_missing_requires") or details.get("has_conflict_requires"):
-            requirement_list.append(details.get("requirement_path").as_posix())
+        requirement_path = details.get("requirement_path")
+        if requirement_path is not None and (details.get("has_missing_requires") or details.get("has_conflict_requires")):
+            requirement_list.append(requirement_path.as_posix())
 
     return requirement_list
 

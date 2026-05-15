@@ -43,7 +43,7 @@ def check_accelerate_bin(
     """
     try:
         repo = git_warpper.get_current_branch_remote_url(base_path)
-        if "bmaltais/kohya_ss" not in repo:
+        if "bmaltais/kohya_ss" not in (repo or ""):
             logger.debug("当前分支非 bmaltais/kohya_ss")
             return
     except Exception as e:

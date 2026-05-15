@@ -93,7 +93,7 @@ class StackShadowFinder(MetaPathFinder):
         self.include_source_loaders = include_source_loaders
         self.invalidate_caches()
 
-    def find_spec(
+    def find_spec(  # ty: ignore[invalid-method-override]
         self,
         fullname: str,
         path: list[str] | None,
@@ -131,7 +131,7 @@ class StackShadowFinder(MetaPathFinder):
             return None
 
         try:
-            source = spec.loader.get_source(fullname)  # type: ignore[attr-defined]
+            source = spec.loader.get_source(fullname)  # ty: ignore[unresolved-attribute]
         except Exception:
             capture_exception()
             return None
@@ -254,7 +254,7 @@ def install_stack_shadower(
         )
 
     if _installed_finder not in sys.meta_path:
-        sys.meta_path.insert(0, _installed_finder)
+        sys.meta_path.insert(0, _installed_finder)  # ty: ignore[invalid-argument-type]
 
     return _installed_finder
 
@@ -270,7 +270,7 @@ def uninstall_stack_shadower() -> None:
         return
 
     while _installed_finder in sys.meta_path:
-        sys.meta_path.remove(_installed_finder)
+        sys.meta_path.remove(_installed_finder)  # ty: ignore[invalid-argument-type]
     _installed_finder.invalidate_caches()
 
 

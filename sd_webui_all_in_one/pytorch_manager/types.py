@@ -4,6 +4,7 @@ from typing import (
     Literal,
     TypeAlias,
     TypedDict,
+    cast,
     get_args,
 )
 
@@ -97,13 +98,14 @@ PyTorchDeviceType: TypeAlias = Literal[
     "rocm_win",
     "xpu",
     "ipex_legacy_arc",
+    "ipex_legacy_core_ultra",
     "cpu",
     "directml",
     "all",
 ]
 """PyTorch 支持的设备类型"""
 
-PYTORCH_DEVICE_LIST: list[str] = list(get_args(PyTorchDeviceType))
+PYTORCH_DEVICE_LIST: list[PyTorchDeviceType] = cast(list[PyTorchDeviceType], list(get_args(PyTorchDeviceType)))
 """PyTorch 支持的设备类型列表"""
 
 PyTorchMirrorMap = dict[PyTorchDeviceType, PyTorchMirrorInfo]
@@ -120,7 +122,7 @@ PyTorch 镜像配置映射表类型
 PyTorchDeviceTypeCategory: TypeAlias = Literal["cuda", "rocm", "xpu", "mps", "cpu"]
 """PyTorch 支持的设备类型 (不带版本号)"""
 
-PYTORCH_DEVICE_CATEGORY_LIST: list[str] = list(get_args(PyTorchDeviceTypeCategory))
+PYTORCH_DEVICE_CATEGORY_LIST: list[PyTorchDeviceTypeCategory] = cast(list[PyTorchDeviceTypeCategory], list(get_args(PyTorchDeviceTypeCategory)))
 """PyTorch 支持的设备类型列表 (不带版本号)"""
 
 

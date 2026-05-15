@@ -22,13 +22,13 @@ from sd_webui_all_in_one.utils import load_source_directly
 
 def get_pytorch_mirror_type_cuda(
     torch_ver: str,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 CUDA 类型的 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本
     Returns:
-        str: CUDA 类型的 PyTorch 镜像源类型
+        PyTorchDeviceType: CUDA 类型的 PyTorch 镜像源类型
     """
     # cu118: 2.0.0 ~ 2.4.0
     # cu121: 2.1.1 ~ 2.4.0
@@ -109,13 +109,13 @@ def get_pytorch_mirror_type_cuda(
 
 def get_pytorch_mirror_type_rocm(
     torch_ver: str,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 ROCm 类型的 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本
     Returns:
-        str: ROCm 类型的 PyTorch 镜像源类型
+        PyTorchDeviceType: ROCm 类型的 PyTorch 镜像源类型
     """
     torch_version = CommonVersionComparison(torch_ver)
     if torch_version < CommonVersionComparison("2.4.0"):
@@ -151,13 +151,13 @@ def get_pytorch_mirror_type_rocm(
 
 def get_pytorch_mirror_type_ipex(
     torch_ver: str,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 IPEX 类型的 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本
     Returns:
-        str: IPEX 类型的 PyTorch 镜像源类型
+        PyTorchDeviceType: IPEX 类型的 PyTorch 镜像源类型
     """
     torch_version = CommonVersionComparison(torch_ver)
     if torch_version < CommonVersionComparison("2.0.0"):
@@ -181,13 +181,13 @@ def get_pytorch_mirror_type_ipex(
 
 def get_pytorch_mirror_type_cpu(
     torch_ver: str,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 CPU 类型的 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本
     Returns:
-        str: CPU 类型的 PyTorch 镜像源类型
+        PyTorchDeviceType: CPU 类型的 PyTorch 镜像源类型
     """
     _ = torch_ver
     return "cpu"
@@ -196,14 +196,14 @@ def get_pytorch_mirror_type_cpu(
 def get_pytorch_mirror_type(
     torch_ver: str,
     device_type: PyTorchDeviceTypeCategory,
-) -> str:
+) -> PyTorchDeviceType:
     """获取 PyTorch 镜像源类型
 
     Args:
         torch_ver (str): PyTorch 版本号
         device_type (PyTorchDeviceTypeCategory): 显卡类型
     Returns:
-        str: PyTorch 镜像源类型
+        PyTorchDeviceType: PyTorch 镜像源类型
     """
     if device_type == "cuda":
         return get_pytorch_mirror_type_cuda(torch_ver)
@@ -236,7 +236,7 @@ def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
         "2.0.1a0",
         "2.1.0.post0",
     ]
-    torch_data = load_source_directly("torch.version")
+    torch_data = load_source_directly("torch.version") or {}
     torch_ver = torch_data.get("__version__")
     if torch_ver is None:
         return "cuda"

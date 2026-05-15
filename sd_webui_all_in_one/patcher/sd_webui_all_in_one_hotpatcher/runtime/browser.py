@@ -62,4 +62,4 @@ def patch_webbrowser(client: RuntimeClient | ManagedBrowser) -> None:
 
     module = sys.modules.get("webbrowser")
     if module is not None and hasattr(module, "open"):
-        module.open = hook_open(module.open, module)
+        module.open = hook_open(module.open, module)  # ty: ignore[unresolved-attribute]

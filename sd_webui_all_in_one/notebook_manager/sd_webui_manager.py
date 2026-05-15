@@ -43,7 +43,7 @@ class SDWebUIManager(BaseManager):
 
     def mount_drive(
         self,
-        extras: list[dict[str, str | bool]] = None,
+        extras: list[dict[str, str | bool]] | None = None,
     ) -> None:
         """挂载 Google Drive 并创建 Stable Diffusion WebUI 输出文件夹
 
@@ -64,7 +64,7 @@ class SDWebUIManager(BaseManager):
         默认挂载的目录和文件: `outputs`, `config_states`, `params.txt`, `config.json`, `ui-config.json`, `styles.csv`
 
         Args:
-            extras (list[dict[str, str | bool]]): 挂载额外目录
+            extras (list[dict[str, str | bool]] | None): 挂载额外目录
         Raises:
             RuntimeError: 挂载 Google Drive 失败
         """
@@ -104,6 +104,7 @@ class SDWebUIManager(BaseManager):
         Returns:
             (Path | None): 模型保存路径
         """
+        model_type = model_type or "Stable-diffusion"
         if model_type == "embeddings":
             path = self.workspace / self.workfolder / model_type
         else:
@@ -131,6 +132,8 @@ class SDWebUIManager(BaseManager):
         """
         for model in model_list:
             url = model.get("url")
+            if url is None:
+                continue
             filename = model.get("filename")
             model_type = model.get("type", "Stable-diffusion")
             self.get_sd_model(url=url, filename=filename, model_type=model_type)

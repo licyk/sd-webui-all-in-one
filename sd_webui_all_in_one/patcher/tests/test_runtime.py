@@ -440,7 +440,7 @@ def test_error_capture_threading_excepthook_reports_and_chains(monkeypatch):
                 exc_traceback=exc.__traceback__,
                 thread=threading.current_thread(),
             )
-            threading.excepthook(args)
+            threading.excepthook(args)  # ty: ignore[invalid-argument-type]
 
         assert host.wait_for(lambda message: message.get("type") == "error.exception")
         event = next(message for message in host.messages if message.get("type") == "error.exception")
@@ -1005,7 +1005,7 @@ def test_log_capture_wraps_preexisting_subprocess_popen_hook():
     class ThirdPartyPopen(original_popen):
         pass
 
-    subprocess.Popen = ThirdPartyPopen
+    subprocess.Popen = ThirdPartyPopen  # ty: ignore[invalid-assignment]
     try:
         with JsonlHost() as host:
             with RuntimeClient.connect(host.host, host.port) as client:
@@ -1042,6 +1042,7 @@ def test_log_capture_warns_when_logging_handler_is_removed():
                 hook_policy="warn",
                 hook_check_interval=0,
             )
+            assert capture._root_handler is not None
             logging.getLogger().removeHandler(capture._root_handler)
 
             assert host.wait_for(
@@ -1063,6 +1064,7 @@ def test_log_capture_reapplies_removed_logging_handler():
                 hook_check_interval=0,
             )
             handler = capture._root_handler
+            assert handler is not None
             logging.getLogger().removeHandler(handler)
 
             assert host.wait_for(
@@ -1166,7 +1168,7 @@ def test_log_capture_reports_dropped_messages_when_queue_full():
 
     client = BlockingClient()
     capture = install_log_capture(
-        client,
+        client,  # ty: ignore[invalid-argument-type]
         capture_logging=False,
         streams=(),
         subprocess_mode="0",

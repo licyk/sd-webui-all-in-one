@@ -84,8 +84,8 @@ class SDTrainerScriptsManager(BaseManager):
         use_cn_model_mirror: bool | None = True,
         # legecy
         use_hf_mirror: bool | None = False,
-        model_path: str | Path = None,
-        model_list: list[str, int] | None = None,
+        model_path: str | Path | None = None,
+        model_list: list[list[str | int]] | None = None,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
@@ -129,9 +129,9 @@ class SDTrainerScriptsManager(BaseManager):
                 是否使用国内镜像下载模型
             use_hf_mirror (bool | None):
                 是否启用 HuggingFace 镜像源
-            model_path (str | Path):
+            model_path (str | Path | None):
                 指定模型下载的路径
-            model_list (list[str, int] | None):
+            model_list (list[list[str | int]] | None):
                 模型下载列表
             pypi_index_mirror (str | None):
                 PyPI Index 镜像源链接

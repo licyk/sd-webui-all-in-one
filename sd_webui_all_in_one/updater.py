@@ -129,3 +129,4 @@ def check_aria2_version() -> bool:
             return False
     except Exception:
         return True
+    return True

@@ -127,7 +127,10 @@ class CommonVersionComparison:
                 if isinstance(p1, str) and isinstance(p2, int):
                     return 1
                 # 类型相同时：直接比大小
-                return 1 if p1 > p2 else -1
+                if isinstance(p1, int) and isinstance(p2, int):
+                    return 1 if p1 > p2 else -1
+                if isinstance(p1, str) and isinstance(p2, str):
+                    return 1 if p1 > p2 else -1
 
             # 长度不一致处理
             if len(parts1) > len(parts2):

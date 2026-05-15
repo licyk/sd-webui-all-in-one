@@ -65,8 +65,8 @@ class NgrokTunnel(BaseTunnel):
 
         # 导入或安装 pyngrok
         try:
-            from pyngrok import conf, ngrok
-            from pyngrok.exception import PyngrokError
+            from pyngrok import conf, ngrok  # ty: ignore[unresolved-import]
+            from pyngrok.exception import PyngrokError  # ty: ignore[unresolved-import]
         except ImportError:
             try:
                 custom_env = get_auto_pypi_mirror_config()
@@ -74,8 +74,8 @@ class NgrokTunnel(BaseTunnel):
                     "pyngrok",
                     custom_env=custom_env,
                 )
-                from pyngrok import conf, ngrok
-                from pyngrok.exception import PyngrokError
+                from pyngrok import conf, ngrok  # ty: ignore[unresolved-import]
+                from pyngrok.exception import PyngrokError  # ty: ignore[unresolved-import]
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 Ngrok 内网穿透模块失败: %s", e)
                 raise RuntimeError(f"安装 Ngrok 内网穿透模块失败: {e}") from e

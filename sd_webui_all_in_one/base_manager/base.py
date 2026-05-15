@@ -7,6 +7,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import cast
 
 from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.mirror_manager import (
@@ -25,6 +26,7 @@ from sd_webui_all_in_one.pytorch_manager import (
     export_pytorch_list,
     find_latest_pytorch_info,
     PyTorchDeviceType,
+    PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer import (
@@ -96,7 +98,7 @@ def prepare_pytorch_install_info(
     """
 
     def _update_mirror(
-        dtype: str,
+        dtype: PyTorchDeviceType,
     ) -> None:
         url, kind = get_pytorch_mirror(
             dtype=dtype,
@@ -137,19 +139,26 @@ def prepare_pytorch_install_info(
         # 声明了 PyTorch 版本
         if "+" in torch_part[0]:
             # 存在类型声明
-            _update_mirror(torch_part[0].split("+")[-1])
+            _update_mirror(cast(PyTorchDeviceType, torch_part[0].split("+")[-1]))
         else:
             # 不存在类型声明时
+            mirror_device_type: PyTorchDeviceTypeCategory = (
+                auto_detect_pytorch_device_category() if device_type is None else cast(PyTorchDeviceTypeCategory, device_type)
+            )
             _update_mirror(
                 get_pytorch_mirror_type(
                     torch_ver=get_package_version(torch_part[0]),
-                    device_type=auto_detect_pytorch_device_category() if device_type is None else device_type,
+                    device_type=mirror_device_type,
                 )
             )
     else:
         _update_mirror(auto_detect_avaliable_pytorch_type())
 
-    custom_env = generate_uv_and_pip_env_mirror_config(**mirrors)
+    custom_env = generate_uv_and_pip_env_mirror_config(
+        index_url=mirrors["index_url"],
+        extra_index_url=mirrors["extra_index_url"],
+        find_links=mirrors["find_links"],
+    )
 
     return (torch_ver, xformers_ver, custom_env)
 
@@ -389,7 +398,7 @@ def pre_download_model_for_webui(
     model_path: Path,
     webui_base_path: Path,
     model_name: str | list[str],
-    download_resource_type: ModelDownloadUrlType,
+    download_resource_type: ModelDownloadUrlType | None,
     check_exists: bool | None = True,
 ) -> Path | None:
     """为 WebUI 预下载模型
@@ -403,7 +412,7 @@ def pre_download_model_for_webui(
             WebUI 的根路径
         model_name (str | list[str]):
             预下载的模型名称
-        download_resource_type (ModelDownloadUrlType):
+        download_resource_type (ModelDownloadUrlType | None):
             模型下载源类型
         check_exists (bool | None):
             检查模型目录中是否已经存在模型而跳过预下载模型
@@ -553,7 +562,7 @@ def install_webui_model_from_library(
             模型的保存地址, 仅列出或退出时返回 None
     """
 
-    def _input_to_int_list(_input: str) -> list[str] | None:
+    def _input_to_int_list(_input: str) -> list[int] | None:
         try:
             return list({int(_i) for _i in _input.split()})
         except Exception:

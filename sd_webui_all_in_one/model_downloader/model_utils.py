@@ -16,6 +16,7 @@ from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.model_downloader.model_data import MODEL_DOWNLOAD_DICT
 from sd_webui_all_in_one.model_downloader.types import (
     SUPPORTED_WEBUI_LIST,
+    ModelCard,
     ModelCardList,
     ModelDownloadUrlType,
     SupportedWebUiType,
@@ -80,6 +81,9 @@ def download_model(
         RuntimeError:
             下载模型时发生错误时
     """
+    if download_resource_type is None:
+        download_resource_type = "modelscope"
+
     queue_model = query_model_info(
         dtype=dtype,
         model_name=model_name,
@@ -93,8 +97,11 @@ def download_model(
         count += 1
         name = model["name"]
         filename = model["filename"]
-        save_dir = base_path / model["save_dir"][dtype]
-        url = model["url"][download_resource_type]
+        save_dir_name = model["save_dir"].get(dtype)
+        url = model["url"].get(download_resource_type)
+        if save_dir_name is None or url is None:
+            raise RuntimeError(f"模型 {name} 缺少 {dtype} 的保存路径或 {download_resource_type} 下载地址")
+        save_dir = base_path / save_dir_name
         logger.info("[%s/%s] 下载 %s 到 %s 中", count, sums, name, save_dir)
         try:
             p = download_file(
@@ -189,7 +196,7 @@ def display_model_table(
             模型列表
     """
 
-    grouped_models: dict[str, list[tuple[int, str]]] = {}
+    grouped_models: dict[str, list[tuple[int, ModelCard]]] = {}
     for index, model in enumerate(models, start=1):
         dtype = model["dtype"]
         if dtype not in grouped_models:

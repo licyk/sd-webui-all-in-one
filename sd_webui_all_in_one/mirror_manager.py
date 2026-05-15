@@ -232,6 +232,8 @@ def set_github_mirror(
         ValueError:
             传入的镜像源类型不支持时
     """
+    if config_path is None:
+        config_path = SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / ".gitconfig"
 
     def _set_github_mirror(
         mirror: str,
@@ -254,7 +256,7 @@ def set_github_mirror(
                 if config_path.exists():
                     remove_files(config_path)
             elif len(mirror) == 1:
-                _set_github_mirror(mirror)
+                _set_github_mirror(mirror[0])
             else:
                 gh = test_github_mirror(mirror)
                 if gh is not None:
@@ -266,9 +268,6 @@ def set_github_mirror(
         else:
             logger.error("未知镜像源参数类型: %s", type(mirror))
             raise ValueError(f"未知镜像源参数类型: {type(mirror)}")
-
-    if config_path is None:
-        config_path = SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / ".gitconfig"
 
     if mirror is not None:
         _configure_github_mirror(mirror)

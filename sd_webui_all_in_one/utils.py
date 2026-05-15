@@ -159,7 +159,7 @@ def print_divider(
             输出的字符
     """
     columns = shutil.get_terminal_size(fallback=(80, 20)).columns
-    print(char * columns)
+    print((char or "=") * columns)
 
 
 def normalized_filepath(

@@ -1,4 +1,5 @@
 import importlib
+import importlib.util
 import sys
 import textwrap
 
@@ -145,6 +146,8 @@ def test_spec_from_file_location_applies_registered_patch(tmp_path):
         monkey.patch_sources(patch_source)
 
     spec = importlib.util.spec_from_file_location("hp_target_dynamic", module_path)
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -157,7 +160,7 @@ def test_install_and_uninstall_are_idempotent():
 
     finder = install_import_hook()
     assert install_import_hook() is finder
-    assert sys.meta_path.count(finder) == 1
+    assert sys.meta_path.count(finder) == 1  # ty: ignore[invalid-argument-type]
     assert importlib.util.spec_from_file_location is not original_spec_from_file_location
 
     uninstall_import_hook()

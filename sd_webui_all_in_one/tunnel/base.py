@@ -126,7 +126,7 @@ class BaseTunnel(ABC):
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: Any | None,
-    ) -> None:
+    ) -> bool:
         """退出上下文管理器, 自动清理资源
 
         Args:

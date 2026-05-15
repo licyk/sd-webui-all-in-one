@@ -239,7 +239,7 @@ def get_file_list(
                 current_depth = len(root_path.resolve().parts) - base_depth
 
                 # 超过最大深度则阻止继续向下遍历
-                if max_depth != -1 and current_depth >= max_depth:
+                if max_depth is not None and max_depth != -1 and current_depth >= max_depth:
                     # 如果需要包含目录, 虽然停止深挖, 但当前层的目录仍可加入
                     if include_dirs:
                         for d in dirs:

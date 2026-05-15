@@ -18,7 +18,7 @@ SupportedWebUiType: TypeAlias = Literal[
 ]
 """支持的 WebUI 类型"""
 
-SUPPORTED_WEBUI_LIST: list[str] = list(get_args(SupportedWebUiType))
+SUPPORTED_WEBUI_LIST: list[SupportedWebUiType] = list(get_args(SupportedWebUiType))
 """支持的 WebUI 类型列表"""
 
 
@@ -76,7 +76,7 @@ class ModelCard(TypedDict):
     dtype: str
     """模型的类型"""
 
-    supported_webui: SupportedWebUiType
+    supported_webui: list[SupportedWebUiType]
     """支持的 WebUI 类型"""
 
     save_dir: ModelSavePath

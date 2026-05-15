@@ -1,6 +1,7 @@
 """检查当前环境的 PyTorch 版本正确性"""
 
 import sys
+from collections.abc import Sequence
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -24,7 +25,7 @@ logger = get_logger(
 
 def _is_rocm_version_compatible(
     torch_type: str,
-    available_types: list[str],
+    available_types: Sequence[str],
 ) -> bool:
     """检查 ROCm 版本是否兼容
 
@@ -63,7 +64,7 @@ def _is_rocm_version_compatible(
 
 def _is_ipex_version(
     torch_type: str,
-    available_types: list[str],
+    available_types: Sequence[str],
 ) -> bool:
     """检查 IPEX 版本是否兼容
 
@@ -82,7 +83,8 @@ def check_torch_version() -> None:
     logger.info("检查当前环境中的 PyTorch 版本中")
     avaliable_types = get_avaliable_pytorch_device_type()
     gpu_list = get_gpu_list()
-    torch_ver: str | None = load_source_directly("torch.version").get("__version__")
+    torch_data = load_source_directly("torch.version") or {}
+    torch_ver: str | None = torch_data.get("__version__")
     if torch_ver is None:
         logger.warning("当前环境中未安装 PyTorch, 这将导致无法正常进行推理或者训练任务, 请安装对应版本的 PyTorch 后再试")
         return

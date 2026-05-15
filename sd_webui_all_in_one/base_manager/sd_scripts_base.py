@@ -1,9 +1,11 @@
 """SD Scripts 管理器模块"""
 
 import os
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
+    cast,
     Any,
     Callable,
     TypeAlias,
@@ -48,9 +50,9 @@ from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ImportError:
+else:
     from sd_webui_all_in_one import toml_parser as tomllib
 
 from sd_webui_all_in_one.logger import get_logger
@@ -78,7 +80,7 @@ SDScriptsBranchType: TypeAlias = Literal[
 ]
 """SD Scripts 分支类型"""
 
-SD_SCRIPTS_BRANCH_LIST: list[str] = list(get_args(SDScriptsBranchType))
+SD_SCRIPTS_BRANCH_LIST: list[SDScriptsBranchType] = cast(list[SDScriptsBranchType], list(get_args(SDScriptsBranchType)))
 """SD Scripts 分支类型列表"""
 
 
@@ -274,7 +276,9 @@ def install_sd_scripts(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -394,7 +398,9 @@ def switch_sd_scripts_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+        if git_config_global is not None:
+            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
         logger.info("切换 SD Scripts 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -471,7 +477,9 @@ def update_sd_scripts(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(sd_scripts_path)
 
@@ -511,7 +519,9 @@ def check_sd_scripts_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -547,7 +557,7 @@ def check_sd_scripts_env(
                 func(**kwargs)
             except Exception as e:
                 err.append(e)
-                logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+                logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
         if err:
             raise AggregateError("检查 SD Scripts 环境时发生错误", err)

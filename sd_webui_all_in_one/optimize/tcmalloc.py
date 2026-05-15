@@ -91,7 +91,7 @@ class TCMalloc:
                     text=True,
                     errors="ignore",
                     check=True,
-                    env=dict(os.environ, PATH="/usr/sbin:" + os.getenv("PATH")),
+                    env=dict(os.environ, PATH="/usr/sbin:" + (os.getenv("PATH") or "")),
                 ).stdout
                 libraries = result.splitlines()
 
@@ -156,6 +156,7 @@ class TCMalloc:
         if "LD_PRELOAD" not in os.environ:
             logger.warning("无法定位 TCMalloc。未在系统上找到 tcmalloc 或 google-perftool, 取消加载内存优化")
             return False
+        return True
 
     def configure_tcmalloc_colab(self) -> bool:
         """配置 TCMalloc (Colab)

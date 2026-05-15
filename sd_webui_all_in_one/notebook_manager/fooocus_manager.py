@@ -6,7 +6,7 @@ import shlex
 import argparse
 import json
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
@@ -48,7 +48,7 @@ class FooocusManager(BaseManager):
 
     def mount_drive(
         self,
-        extras: list[dict[str, str | bool]] = None,
+        extras: list[dict[str, str | bool]] | None = None,
     ) -> None:
         """挂载 Google Drive 并创建 Fooocus 输出文件夹
 
@@ -69,7 +69,7 @@ class FooocusManager(BaseManager):
         默认挂载的目录和文件: `outputs`, `presets`, `language`, `wildcards`, `config.txt`
 
         Args:
-            extras (list[dict[str, str | bool]]): 挂载额外目录
+            extras (list[dict[str, str | bool]] | None): 挂载额外目录
         """
         if not self.mount_google_drive_for_notebook():
             return
@@ -106,7 +106,7 @@ class FooocusManager(BaseManager):
         Returns:
             (Path | None): 模型保存路径
         """
-        path = self.workspace / self.workfolder / "models" / model_type
+        path = self.workspace / self.workfolder / "models" / (model_type or "checkpoints")
         return self.get_model(url=url, path=path, filename=filename, tool="aria2")
 
     def get_sd_model_from_list(
@@ -130,6 +130,8 @@ class FooocusManager(BaseManager):
         """
         for model in model_list:
             url = model.get("url")
+            if url is None:
+                continue
             filename = model.get("filename")
             model_type = model.get("type", "checkpoints")
             self.get_sd_model(url=url, filename=filename, model_type=model_type)
@@ -259,7 +261,7 @@ class FooocusManager(BaseManager):
             "requests": "request",
             "urllib": "urllib",
         }
-        base_dl = downloader_map.get(downloader)
+        base_dl = downloader_map.get(downloader or "aria2")
 
         sd_model_dl = base_dl or "aria2"
         lora_dl = base_dl or "requests"
@@ -276,7 +278,7 @@ class FooocusManager(BaseManager):
             {"key": "embeddings_downloads", "subdir": "embeddings", "tool": embedding_dl},
         ]
 
-        downloader_params: list[dict[str, str]] = []
+        downloader_params: list[dict[str, Any]] = []
         for cfg in download_configs:
             model_dict = data.get(cfg["key"], {})
             target_path = models_base / cfg["subdir"]

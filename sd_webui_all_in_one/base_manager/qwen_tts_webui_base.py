@@ -64,13 +64,13 @@ QWEN_TTS_WEBUI_REPO = "https://github.com/licyk/qwen-tts-webui"
 
 def install_qwen_tts_webui_config(
     qwen_tts_webui_path: Path,
-    download_resource_type: ModelDownloadUrlType | None = False,
+    download_resource_type: ModelDownloadUrlType | bool | None = False,
 ) -> None:
     """安装 Qwen TTS WebUI 配置文件
     Args:
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
-        download_resource_type (ModelDownloadUrlType | None):
+        download_resource_type (ModelDownloadUrlType | bool | None):
             默认配置资源来源
 
     """
@@ -144,7 +144,9 @@ def install_qwen_tts_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -208,7 +210,9 @@ def update_qwen_tts_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(qwen_tts_webui_path)
 
@@ -252,7 +256,9 @@ def check_qwen_tts_webui_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -273,7 +279,7 @@ def check_qwen_tts_webui_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 Qwen TTS WebUI 环境时发生错误", err)
@@ -331,7 +337,9 @@ def launch_qwen_tts_webui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     hf_mirror_args: list[str] = []
 
@@ -367,7 +375,7 @@ def launch_qwen_tts_webui(
         webui_path=qwen_tts_webui_path,
         launch_script="launch.py",
         webui_name="Qwen TTS WebUI",
-        launch_args=launch_args + hf_mirror_args,
+        launch_args=(launch_args or []) + hf_mirror_args,
         custom_env=custom_env,
     )
 

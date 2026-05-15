@@ -69,9 +69,9 @@ def test_apply_zluda_compat_patches_torch_backend_flags(tmp_path):
     torch = importlib.import_module("torch")
 
     assert torch.backends.cudnn.enabled is False
-    assert ("flash", False) in torch.backends.cuda.calls
-    assert ("math", True) in torch.backends.cuda.calls
-    assert ("mem", False) in torch.backends.cuda.calls
+    assert ("flash", False) in torch.backends.cuda.calls  # ty: ignore[unresolved-attribute]
+    assert ("math", True) in torch.backends.cuda.calls  # ty: ignore[unresolved-attribute]
+    assert ("mem", False) in torch.backends.cuda.calls  # ty: ignore[unresolved-attribute]
 
 
 def test_apply_zluda_compat_forces_cuda_sdp_toggles_false(tmp_path):
@@ -84,7 +84,7 @@ def test_apply_zluda_compat_forces_cuda_sdp_toggles_false(tmp_path):
     cuda.enable_flash_sdp(True)
     cuda.enable_mem_efficient_sdp(True)
 
-    assert cuda.calls[-2:] == [("flash", False), ("mem", False)]
+    assert cuda.calls[-2:] == [("flash", False), ("mem", False)]  # ty: ignore[unresolved-attribute]
 
 
 def test_apply_torch_zluda_timer_hotfix_rewrites_cpp_extension_source(tmp_path):
@@ -114,7 +114,7 @@ def test_apply_torch_zluda_timer_hotfix_rewrites_cpp_extension_source(tmp_path):
     module = importlib.import_module("torch.utils.cpp_extension")
 
     assert module.HIP_HOME == "rocm"
-    assert module.check() == "rocm"
+    assert module.check() == "rocm"  # ty: ignore[unresolved-attribute]
 
 
 def test_apply_from_config_enables_selected_zluda_patches(tmp_path):

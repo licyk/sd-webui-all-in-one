@@ -312,7 +312,9 @@ def install_comfyui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -391,7 +393,9 @@ def update_comfyui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(comfyui_path)
 
@@ -448,7 +452,9 @@ def check_comfyui_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
@@ -475,7 +481,7 @@ def check_comfyui_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 ComfyUI 环境时发生错误", err)
@@ -532,7 +538,9 @@ def launch_comfyui(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     custom_env = apply_hf_mirror(
         use_hf_mirror=use_hf_mirror,
@@ -605,7 +613,9 @@ def install_comfyui_custom_node(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     for url in urls:
         custom_node_name = get_repo_name_from_url(url)
@@ -683,7 +693,7 @@ def list_comfyui_custom_nodes(
     info_list: ComfyUiLocalExtensionInfoList = []
     ext_dirs = list(custom_node_path.iterdir())
 
-    def _process_extension(ext: Path) -> ComfyUiLocalExtensionInfo:
+    def _process_extension(ext: Path) -> ComfyUiLocalExtensionInfo | None:
         if ext.is_file() or ext.name == "__pycache__":
             return None
 
@@ -797,7 +807,9 @@ def update_comfyui_custom_nodes(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     if not custom_nodes_path.is_dir():
         raise FileNotFoundError("未找到 ComfyUI 扩展目录")

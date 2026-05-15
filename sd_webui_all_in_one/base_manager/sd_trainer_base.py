@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from typing import (
+    cast,
     Any,
     Callable,
     TypeAlias,
@@ -75,7 +76,7 @@ SDTrainerBranchType: TypeAlias = Literal[
 ]
 """SD Trainer 分支类型"""
 
-SD_TRAINER_BRANCH_LIST: list[str] = list(get_args(SDTrainerBranchType))
+SD_TRAINER_BRANCH_LIST: list[SDTrainerBranchType] = cast(list[SDTrainerBranchType], list(get_args(SDTrainerBranchType)))
 """SD Trainer 分支类型列表"""
 
 
@@ -210,7 +211,9 @@ def install_sd_trainer(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -317,7 +320,9 @@ def switch_sd_trainer_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+        if git_config_global is not None:
+            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
         logger.info("切换 SD Trainer 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -394,7 +399,9 @@ def update_sd_trainer(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(sd_trainer_path)
 
@@ -439,7 +446,9 @@ def check_sd_trainer_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -463,7 +472,7 @@ def check_sd_trainer_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 SD Trainer 环境时发生错误", err)
@@ -521,7 +530,9 @@ def launch_sd_trainer(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     custom_env = apply_hf_mirror(
         use_hf_mirror=use_hf_mirror,

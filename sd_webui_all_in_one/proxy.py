@@ -7,6 +7,7 @@ import configparser
 import socket
 from urllib.parse import urlparse
 from pathlib import Path
+from typing import Any, cast
 
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -32,6 +33,7 @@ def get_windows_proxy_address() -> str | None:
     """
     import winreg
 
+    winreg = cast(Any, winreg)
     proxy_config_path = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, proxy_config_path, 0, winreg.KEY_READ) as reg:

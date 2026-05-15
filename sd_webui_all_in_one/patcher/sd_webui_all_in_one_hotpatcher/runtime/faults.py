@@ -5,6 +5,7 @@ from __future__ import annotations
 import faulthandler
 import socket
 from dataclasses import dataclass
+from typing import Any
 
 from .client import RuntimeClient
 from .protocol import encode_message
@@ -18,14 +19,14 @@ class FaultChannel:
     Attributes:
         sock (socket.socket):
             与宿主连接的 TCP socket
-        file (object | None):
+        file (Any | None):
             交给 faulthandler 使用的二进制文件对象
         enabled (bool):
             faulthandler 是否由当前对象启用
     """
 
     sock: socket.socket
-    file: object | None
+    file: Any | None
     enabled: bool
 
     def close(self) -> None:
@@ -36,7 +37,8 @@ class FaultChannel:
             self.enabled = False
         if self.file is not None:
             self.file.close()
-        self.sock.close()
+        if self.sock is not None:
+            self.sock.close()
 
 
 def install_faulthandler(

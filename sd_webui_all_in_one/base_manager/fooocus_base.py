@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from typing import (
+    cast,
     Any,
     Callable,
     TypeAlias,
@@ -78,7 +79,7 @@ FooocusBranchType: TypeAlias = Literal[
 ]
 """Fooocus 分支类型"""
 
-FOOOCUS_BRANCH_LIST: list[str] = list(get_args(FooocusBranchType))
+FOOOCUS_BRANCH_LIST: list[FooocusBranchType] = cast(list[FooocusBranchType], list(get_args(FooocusBranchType)))
 """Fooocus 分支类型列表"""
 
 
@@ -153,14 +154,14 @@ def display_fooocus_branch_list(
 
 def install_fooocus_config(
     fooocus_path: Path,
-    download_resource_type: ModelDownloadUrlType | None = False,
+    download_resource_type: ModelDownloadUrlType | bool | None = False,
 ) -> None:
     """安装 Fooocus 配置文件
 
     Args:
         fooocus_path (Path):
             Fooocus 根目录
-        download_resource_type (ModelDownloadUrlType | None):
+        download_resource_type (ModelDownloadUrlType | bool | None):
             下载模型使用的下载源
 
     Raises:
@@ -260,7 +261,9 @@ def install_fooocus(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -373,7 +376,9 @@ def switch_fooocus_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+        if git_config_global is not None:
+            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
         logger.info("切换 Fooocus 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -451,7 +456,9 @@ def update_fooocus(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     git_warpper.update(fooocus_path)
 
@@ -499,7 +506,9 @@ def check_fooocus_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -522,7 +531,7 @@ def check_fooocus_env(
             func(**kwargs)
         except Exception as e:
             err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", func.__name__, e)
+            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
 
     if err:
         raise AggregateError("检查 Fooocus 环境时发生错误", err)
@@ -580,7 +589,9 @@ def launch_fooocus(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    os.environ["GIT_CONFIG_GLOBAL"] = custom_env.get("GIT_CONFIG_GLOBAL")
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global is not None:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
     hf_mirror_args: list[str] = []
 
@@ -592,7 +603,7 @@ def launch_fooocus(
         )
         try:
             url = git_warpper.get_current_branch_remote_url(fooocus_path)
-            if ("lllyasviel/Fooocus" in url or "licyk/Fooocus" in url) and custom_env.get("HF_ENDPOINT") is not None:
+            if ("lllyasviel/Fooocus" in (url or "") or "licyk/Fooocus" in (url or "")) and custom_env.get("HF_ENDPOINT") is not None:
                 hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
         except Exception as e:
             logger.debug("获取 Fooocus 远程源失败: %s", e)
@@ -622,7 +633,7 @@ def launch_fooocus(
         webui_path=fooocus_path,
         launch_script="launch.py",
         webui_name="Fooocus",
-        launch_args=launch_args + hf_mirror_args,
+        launch_args=(launch_args or []) + hf_mirror_args,
         custom_env=custom_env,
     )
 

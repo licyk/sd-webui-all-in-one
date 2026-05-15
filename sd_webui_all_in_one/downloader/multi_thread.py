@@ -117,7 +117,8 @@ class MultiThreadDownloader:
 
             args, kwargs = task
             count = 0
-            while count < self.retry:
+            retry = self.retry if self.retry is not None else 3
+            while count < retry:
                 count += 1
                 try:
                     self.download_func(*args, **kwargs)
@@ -125,11 +126,11 @@ class MultiThreadDownloader:
                 except Exception as e:
                     self.error_list.append(e)
                     traceback.print_exc()
-                    logger.error("[%s/%s] 执行 %s 时发生错误: %s", count, self.retry, self.download_func, e)
-                    if count < self.retry:
-                        logger.warning("[%s/%s] 重试执行中", count, self.retry)
+                    logger.error("[%s/%s] 执行 %s 时发生错误: %s", count, retry, self.download_func, e)
+                    if count < retry:
+                        logger.warning("[%s/%s] 重试执行中", count, retry)
                     else:
-                        logger.error("[%s/%s] %s 已达到最大重试次数", count, self.retry, self.download_func)
+                        logger.error("[%s/%s] %s 已达到最大重试次数", count, retry, self.download_func)
 
             self.queue.task_done()
             with self.lock:  # 访问共享资源时加锁
@@ -142,7 +143,7 @@ class MultiThreadDownloader:
         """进度条显示"""
         progress = (self.completed_count / self.total_tasks) * 100
         current_time = datetime.datetime.now()
-        time_interval = current_time - self.start_time
+        time_interval = current_time - (self.start_time or current_time)
         hours = time_interval.seconds // 3600
         minutes = (time_interval.seconds // 60) % 60
         seconds = time_interval.seconds % 60
@@ -184,10 +185,11 @@ class MultiThreadDownloader:
         """
 
         # 将重试次数作为属性传递给下载函数
-        self.retry = retry_count
+        self.retry = retry_count if retry_count is not None else 3
 
         threads: list[threading.Thread] = []
         self.start_time = datetime.datetime.now()
+        num_threads = num_threads if num_threads is not None else 16
         time.sleep(0.1)  # 避免 print_progress() 计算时间时出现 division by zero
 
         # 启动工作线程

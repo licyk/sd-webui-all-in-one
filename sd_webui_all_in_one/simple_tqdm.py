@@ -3,6 +3,7 @@
 import shutil
 import sys
 import time
+from collections.abc import Sized
 from typing import (
     Any,
     Iterable,
@@ -83,7 +84,12 @@ class SimpleTqdm(Generic[T]):
         """
         self.iterable = iterable
         self.desc = desc
-        self.total = total if total is not None else (len(iterable) if iterable and hasattr(iterable, "__len__") else None)
+        if total is not None:
+            self.total = total
+        elif isinstance(iterable, Sized):
+            self.total = len(iterable)
+        else:
+            self.total = None
         self.leave = leave
         self.position = position
         self.disable = disable

@@ -57,7 +57,7 @@ class CloudflareTunnel(BaseTunnel):
 
         # 导入或安装 pycloudflared
         try:
-            from pycloudflared import try_cloudflare
+            from pycloudflared import try_cloudflare  # ty: ignore[unresolved-import]
         except ImportError:
             try:
                 custom_env = get_auto_pypi_mirror_config()
@@ -65,7 +65,7 @@ class CloudflareTunnel(BaseTunnel):
                     "pycloudflared",
                     custom_env=custom_env,
                 )
-                from pycloudflared import try_cloudflare
+                from pycloudflared import try_cloudflare  # ty: ignore[unresolved-import]
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 CloudFlare 内网穿透失败: %s", e)
                 raise RuntimeError(f"安装 CloudFlare 内网穿透模块失败: {e}") from e

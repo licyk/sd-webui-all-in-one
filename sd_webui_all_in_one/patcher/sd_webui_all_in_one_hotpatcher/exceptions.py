@@ -41,7 +41,7 @@ def capture_exception(exc: BaseException | None = None, /, **_: Any) -> None:
 
     if exc is None:
         exc_type, exc_value, exc_tb = sys.exc_info()
-        if exc_value is None:
+        if exc_type is None or exc_value is None:
             return
         traceback.print_exception(exc_type, exc_value, exc_tb)
         _report_exception(exc_type, exc_value, exc_tb)
