@@ -321,6 +321,10 @@ class BackgroundTaskMixin:
         Args:
             message (str):
                 状态文本
+
+        Raises:
+            NotImplementedError:
+                子类未实现状态栏更新逻辑时抛出。
         """
         raise NotImplementedError
 
@@ -715,6 +719,10 @@ class AdaptiveIndexList(ttk.Frame):
 
         Returns:
             str: 行 ID
+
+        Raises:
+            TypeError:
+                传入的行数据格式不受支持时抛出。
         """
         if "iid" in kwargs or "values" in kwargs:
             item_id = str(kwargs.get("iid") or len(self._row_order))

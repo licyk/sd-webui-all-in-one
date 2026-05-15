@@ -870,7 +870,9 @@ def launch_invokeai(
 
     Raises:
         WebUiRuntimeError:
-            InvokeAI 运行发生错误时
+            InvokeAI 运行发生错误时抛出。
+        KeyboardInterrupt:
+            启动过程被用户中断时抛出。
     """
 
     logger.info("准备 InvokeAI 启动环境")
@@ -1287,6 +1289,10 @@ def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
     Returns:
         InvokeAILocalModelInfoList:
             包含模型信息的字典列表
+
+    Raises:
+        ImportError:
+            导入 InvokeAI 相关模块失败时抛出。
     """
     try:
         logger.info("导入 InvokeAI 模块中")
@@ -1368,6 +1374,10 @@ def uninstall_model_from_invokeai(
     Returns:
         bool:
             所有模型卸载成功时返回 True
+
+    Raises:
+        ImportError:
+            导入 InvokeAI 相关模块失败时抛出。
     """
     try:
         logger.info("导入 InvokeAI 模块中")

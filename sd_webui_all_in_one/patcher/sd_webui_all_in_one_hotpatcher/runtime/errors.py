@@ -122,6 +122,10 @@ class ErrorCapture:
         Returns:
             ErrorCapture:
                 已安装的错误捕获器实例
+
+        Raises:
+            Exception:
+                安装全局异常捕获 hook 失败时抛出。
         """
 
         try:
@@ -695,6 +699,10 @@ class CaughtExceptionTracer:
         Returns:
             CaughtExceptionTracer:
                 已安装的 caught exception tracer 实例
+
+        Raises:
+            RuntimeError:
+                已有其他 sys trace 函数时抛出。
         """
 
         current_trace = sys.gettrace()

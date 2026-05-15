@@ -103,6 +103,10 @@ def load_hotpatcher_config(path: str | Path | None = None, normalize: bool = Tru
     Returns:
         dict[str, Any]:
             配置对象。
+
+    Raises:
+        ValueError:
+            配置文件内容不是 JSON 对象时抛出。
     """
 
     config_path = _resolve_config_path(path)
@@ -143,6 +147,10 @@ def export_hotpatcher_default_config(path: str | Path | None = None, overwrite: 
     Returns:
         Path:
             写出的配置文件路径。
+
+    Raises:
+        FileExistsError:
+            配置文件已存在且未允许覆盖时抛出。
     """
 
     output_path = _resolve_config_path(path)
@@ -362,6 +370,8 @@ def launch_hotpatcher_manager_gui(
     Raises:
         RuntimeError:
             当前 Python 环境未安装 tkinter 时抛出。
+        ModuleNotFoundError:
+            启动 GUI 时缺少非 tkinter 模块时继续抛出。
     """
 
     try:

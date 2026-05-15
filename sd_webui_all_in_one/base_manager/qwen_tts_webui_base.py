@@ -73,6 +73,9 @@ def install_qwen_tts_webui_config(
         download_resource_type (ModelDownloadUrlType | bool | None):
             默认配置资源来源
 
+    Raises:
+        ValueError:
+            未知的下载配置源类型时抛出。
     """
     preset_path = qwen_tts_webui_path / "config.json"
     if download_resource_type == "huggingface":

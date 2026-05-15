@@ -238,6 +238,12 @@ class Monkey:
         Returns:
             tuple[str, str]:
                 补丁后的源码和文件名
+
+        Raises:
+            TypeError:
+                源码补丁返回值类型不受支持时抛出。
+            ValueError:
+                源码补丁返回的元组长度不受支持时抛出。
         """
 
         for hooker, _ in sorted(self.source_patches, key=lambda x: x[1]):
@@ -657,6 +663,10 @@ class MonkeySourceFileLoader(Loader):
         Returns:
             CodeType:
                 补丁后的 code object
+
+        Raises:
+            ImportError:
+                缺少模块名或无法加载 code object 时抛出。
         """
 
         if fullname is None:

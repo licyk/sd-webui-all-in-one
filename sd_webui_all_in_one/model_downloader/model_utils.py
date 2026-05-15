@@ -40,6 +40,10 @@ def export_model_list(
     Returns:
         ModelCardList:
             模型下载信息列表
+
+    Raises:
+        ValueError:
+            WebUI 类型不受支持时抛出。
     """
     if dtype not in SUPPORTED_WEBUI_LIST:
         raise ValueError(f"不支持的 WebUI 类型: '{dtype}'")

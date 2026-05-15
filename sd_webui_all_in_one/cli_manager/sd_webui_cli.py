@@ -248,6 +248,10 @@ def launch(
             补丁系统 runtime 通信端口
         enable_hotpatcher_runtime (bool | None):
             是否启用补丁系统 runtime host 连接
+
+    Raises:
+        Exception:
+            启动前环境检查失败并需要继续抛出时抛出。
     """
     if check_launch_env:
         try:

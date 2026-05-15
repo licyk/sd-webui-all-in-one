@@ -115,7 +115,9 @@ class RuntimeClient:
 
         Raises:
             RuntimeError:
-                ``required`` 为 True 且缺少 host 或 port
+                required 为 True 且缺少 host 或 port 时抛出。
+            Exception:
+                required 为 True 且连接宿主失败时抛出原始异常。
         """
 
         host = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST")

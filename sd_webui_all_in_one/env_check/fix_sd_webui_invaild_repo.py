@@ -30,6 +30,10 @@ def fix_stable_diffusion_invaild_repo_url(
             Stable Diffusion WebUI 根目录
         custom_env (dict[str, str] | None):
             环境变量字典
+
+    Raises:
+        RuntimeError:
+            修复 Stable Diffusion WebUI 组件仓库源失败时抛出。
     """
     logger.info("检查 Stable Diffusion WebUI 无效组件仓库源")
     stable_diffusion_path = sd_webui_path / "repositories" / "stable-diffusion-stability-ai"

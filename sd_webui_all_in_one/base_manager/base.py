@@ -758,6 +758,10 @@ def apply_hf_mirror(
     Returns:
         dict[str, str]:
             应用 HuggingFace 镜像源后的环境变量字典
+
+    Raises:
+        ValueError:
+            传入的 HuggingFace 镜像源列表类型不受支持时抛出。
     """
 
     if origin_env is not None:
@@ -775,7 +779,7 @@ def apply_hf_mirror(
         return custom_env
     if isinstance(hf_mirror, list):
         for hf in hf_mirror:  # pylint: disable=not-an-iterable
-            test_url = f"{hf}/licyk/sd-model/resolve/main/README.md"
+            test_url = f"{hf}/api/models?limit=1"
             req = urllib.request.Request(test_url, headers=headers)
             try:
                 logger.info("测试镜像源: %s", hf)

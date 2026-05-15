@@ -29,6 +29,10 @@ def fix_alert_worker(
     Args:
         sd_webui_path (Path):
             Stable Diffusion WebUI 根目录
+
+    Raises:
+        Exception:
+            迁移损坏配置文件失败时继续抛出原始异常。
     """
     sys.path.insert(0, sd_webui_path.as_posix())
     config_path = sd_webui_path / "config.json"

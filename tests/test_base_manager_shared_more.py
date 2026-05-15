@@ -157,8 +157,8 @@ def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
     result = base_module.apply_hf_mirror(use_hf_mirror=True, custom_hf_mirror=["https://bad.example", "https://good.example"], origin_env={"KEEP": "1"})
     assert result["HF_ENDPOINT"] == "https://good.example"
     assert opened == [
-        "https://bad.example/licyk/sd-model/resolve/main/README.md",
-        "https://good.example/licyk/sd-model/resolve/main/README.md",
+        "https://bad.example/api/models?limit=1",
+        "https://good.example/api/models?limit=1",
     ]
 
     with pytest.raises(ValueError):

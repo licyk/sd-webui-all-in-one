@@ -604,7 +604,12 @@ class SubprocessCapture:
         self._reader_threads: list[threading.Thread] = []
 
     def install(self) -> None:
-        """安装 subprocess.Popen patch"""
+        """安装 subprocess.Popen patch
+
+        Raises:
+            ValueError:
+                subprocess 捕获模式不受支持时抛出。
+        """
 
         if self.installed or self.mode in {"0", "false", "none", "off"}:
             return

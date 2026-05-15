@@ -171,8 +171,8 @@ def load_file_from_url(
             下载后文件的绝对路径
 
     Raises:
-        ValueError:
-            hash_prefix 校验失败
+        Exception:
+            文件下载失败时抛出。
     """
 
     import requests

@@ -120,6 +120,10 @@ def check_aria2_version() -> bool:
     Returns:
         bool:
             当 Aria2 需要更新时则返回 True
+
+    Raises:
+        Exception:
+            无法获取 aria2 版本时在内部抛出并转换为需要更新。
     """
     try:
         ver = get_aria2_ver()

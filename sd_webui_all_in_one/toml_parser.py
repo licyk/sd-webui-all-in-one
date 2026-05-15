@@ -41,6 +41,10 @@ class TomlParser:
         Returns:
             TomlDict:
                 解析后的字典对象
+
+        Raises:
+            TypeError:
+                传入的文件对象未返回二进制数据时抛出。
         """
         b = fp.read()
         try:

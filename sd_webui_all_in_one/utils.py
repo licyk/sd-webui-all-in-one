@@ -48,7 +48,12 @@ def in_jupyter() -> bool:
 
 
 def clear_jupyter_output() -> None:
-    """清理 Jupyter Notebook 输出内容"""
+    """清理 Jupyter Notebook 输出内容
+
+    Raises:
+        RuntimeError:
+            清理 Jupyter Notebook 输出内容失败时抛出。
+    """
     try:
         from IPython.display import clear_output
 

@@ -400,6 +400,10 @@ def check_local_branch_exists(
 
     Returns:
         bool: 分支存在时返回`True`
+
+    Raises:
+        ValueError:
+            所指路径不是有效的 Git 仓库时抛出。
     """
     git_exec = get_git_exec()
     if not is_git_repo(path):
