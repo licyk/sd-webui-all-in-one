@@ -145,7 +145,7 @@ lint.ignore = [
 quote-style = "double"
 skip-magic-trailing-comma = false
 
-[tool.docstring-checker]
+[tool.python-docstring-checker]
 strictness = "balanced"
 format = "text"
 show-source = false
