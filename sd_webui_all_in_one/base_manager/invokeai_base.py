@@ -555,7 +555,10 @@ def install_pypatchmatch(
         return
 
     try:
-        util = [p for p in importlib.metadata.files("pypatchmatch") if "__init__.py" in str(p)][0]
+        package_files = importlib.metadata.files("pypatchmatch")
+        if package_files is None:
+            raise ModuleNotFoundError("未找到 pypatchmatch 模块文件列表")
+        util = [p for p in package_files if "__init__.py" in str(p)][0]
         path = Path(util.locate()).parent
     except Exception as e:
         raise ModuleNotFoundError(f"未找到 pypatchmatch 模块路径, 无法安装 pypatchmatch 所需库: {e}") from e

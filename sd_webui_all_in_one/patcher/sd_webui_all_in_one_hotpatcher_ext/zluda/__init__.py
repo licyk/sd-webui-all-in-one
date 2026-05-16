@@ -59,7 +59,7 @@ def apply_zluda_library(library_path: str | os.PathLike[str]) -> None:
                         last_error = ctypes.get_last_error()
                         if res is None and last_error != 126:
                             err = ctypes.WinError(last_error)
-                            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+                            err.strerror = f"{err.strerror or ''} Error loading '{dll}' or one of its dependencies."
                             raise err
                         if res is not None:
                             is_loaded = True
@@ -71,7 +71,7 @@ def apply_zluda_library(library_path: str | os.PathLike[str]) -> None:
                         res = kernel32.LoadLibraryW(dll)
                         if res is None:
                             err = ctypes.WinError(ctypes.get_last_error())
-                            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+                            err.strerror = f"{err.strerror or ''} Error loading '{dll}' or one of its dependencies."
                             raise err
             finally:
                 kernel32.SetErrorMode(prev_error_mode)
