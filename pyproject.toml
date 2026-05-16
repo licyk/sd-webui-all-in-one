@@ -81,6 +81,25 @@ full = [
     "gradio-tunneling",
 ]
 
+[dependency-groups]
+dev = [
+    "python-docstring-checker @ git+https://github.com/licyk/python-docstring-checker.git@main",
+    "IPython",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "torch",
+    "ty",
+    "uvicorn",
+    "zstandard",
+    "py7zr",
+    "rarfile",
+    "requests",
+    "tqdm",
+    "modelscope",
+    "huggingface_hub",
+]
+
 [project.scripts]
 "sd-webui-all-in-one" = "sd_webui_all_in_one.cli_manager.cli:main"
 
@@ -138,7 +157,6 @@ exclude = [
 
 [tool.ty.environment]
 python-version = "3.10"
-python = "/root/micromamba/envs/py311/bin/python"
 extra-paths = ["sd_webui_all_in_one/patcher"]
 
 [tool.ty.terminal]
