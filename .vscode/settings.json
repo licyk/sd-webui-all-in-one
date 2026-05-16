@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./sd_webui_all_in_one/patcher"
+    ]
+}
