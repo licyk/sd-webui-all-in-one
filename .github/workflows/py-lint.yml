@@ -27,7 +27,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
 
       - name: Install lint dependencies
-        run: uv pip install --system --python "$(command -v python)" -e . --group dev
+        run: uv pip install --system --python python -e . --group dev
 
       - name: Run Ruff
         uses: astral-sh/ruff-action@v3
@@ -35,8 +35,34 @@ jobs:
           src: >-
             sd_webui_all_in_one
 
-      - name: Run ty
-        run: ty check --python "$(command -v python)" --python-version 3.10 --output-format github --no-progress sd_webui_all_in_one
-
       - name: Run docstring checker
         run: python -m python_docstring_checker sd_webui_all_in_one
+
+  Ty:
+    name: Ty on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install lint dependencies
+        run: uv pip install --system --python python -e . --group dev
+
+      - name: Run ty
+        run: ty check --python python --python-version 3.10 --output-format github --no-progress sd_webui_all_in_one
