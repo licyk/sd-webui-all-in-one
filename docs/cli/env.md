@@ -43,7 +43,7 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 
 - `SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE`
 
-  在安装自身依赖时忽略安装的依赖组合类型, 使用逗号分隔。默认为`test,docs,tunnel,full`。
+  在安装自身依赖时忽略安装的依赖组合类型, 使用逗号分隔。默认为`tunnel,full`。
 
 ### 软件根目录配置
 可以通过以下环境变量自定义各软件的默认根目录：
