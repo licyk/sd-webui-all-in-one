@@ -379,7 +379,7 @@ def launch_hotpatcher_manager_gui(
     except ModuleNotFoundError as e:
         if e.name == "tkinter":
             raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动补丁系统配置管理 GUI") from e
-        raise
+        raise e
 
     _launch_gui(config_path=config_path, host=host, port=port, token=token)
 

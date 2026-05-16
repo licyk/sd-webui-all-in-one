@@ -14,10 +14,9 @@ from typing import Any
 from zipimport import zipimporter
 
 from .exceptions import capture_exception
+from .state import HotpatcherState, get_default_state
 
 DEFAULT_FILENAME_TEMPLATE = "<hidden {name}>"
-
-_installed_finder: "StackShadowFinder | None" = None
 
 
 class LoadingSkipper:
@@ -220,6 +219,8 @@ def install_stack_shadower(
     prefixes: Iterable[str] | str,
     filename_template: str = DEFAULT_FILENAME_TEMPLATE,
     include_source_loaders: bool = True,
+    *,
+    state: HotpatcherState | None = None,
 ) -> StackShadowFinder:
     """
     安装或重新配置栈隐藏 finder
@@ -231,66 +232,84 @@ def install_stack_shadower(
             合成文件名模板, 支持 ``{name}``、``{fullname}``、``{module}``。
         include_source_loaders (bool):
             是否处理普通源码 loader。zipimporter 始终按源码能力判断。
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         StackShadowFinder:
             已安装或已重新配置的 finder
     """
 
-    global _installed_finder
-
+    active_state = state or get_default_state()
     normalized_prefixes = _normalize_prefixes(prefixes)
-    if _installed_finder is None:
-        _installed_finder = StackShadowFinder(
+    if active_state.stack_shadow_finder is None:
+        active_state.stack_shadow_finder = StackShadowFinder(
             normalized_prefixes,
             filename_template=filename_template,
             include_source_loaders=include_source_loaders,
         )
     else:
-        _installed_finder.configure(
+        active_state.stack_shadow_finder.configure(
             normalized_prefixes,
             filename_template=filename_template,
             include_source_loaders=include_source_loaders,
         )
 
-    if _installed_finder not in sys.meta_path:
-        sys.meta_path.insert(0, _installed_finder)  # ty: ignore[invalid-argument-type]
+    finder = active_state.stack_shadow_finder
+    if finder not in sys.meta_path:
+        sys.meta_path.insert(0, finder)  # ty: ignore[invalid-argument-type]
 
-    return _installed_finder
+    return finder
 
 
-def uninstall_stack_shadower() -> None:
+def uninstall_stack_shadower(*, state: HotpatcherState | None = None) -> None:
     """
     卸载栈隐藏 finder
 
     会从 ``sys.meta_path`` 中移除 finder 并清空缓存。
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
     """
 
-    if _installed_finder is None:
+    active_state = state or get_default_state()
+    finder = active_state.stack_shadow_finder
+    if finder is None:
         return
 
-    while _installed_finder in sys.meta_path:
-        sys.meta_path.remove(_installed_finder)  # ty: ignore[invalid-argument-type]
-    _installed_finder.invalidate_caches()
+    while finder in sys.meta_path:
+        sys.meta_path.remove(finder)
+    finder.invalidate_caches()
 
 
-def is_stack_shadower_installed() -> bool:
+def is_stack_shadower_installed(*, state: HotpatcherState | None = None) -> bool:
     """
     检查栈隐藏 finder 是否已安装
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         bool:
             finder 当前位于 ``sys.meta_path`` 中时返回 True
     """
 
-    return _installed_finder is not None and _installed_finder in sys.meta_path
+    active_state = state or get_default_state()
+    finder = active_state.stack_shadow_finder
+    return finder is not None and finder in sys.meta_path
 
 
-def configure_stack_shadower_from_env() -> StackShadowFinder | None:
+def configure_stack_shadower_from_env(*, state: HotpatcherState | None = None) -> StackShadowFinder | None:
     """
     根据环境变量安装栈隐藏 finder
 
     只有 ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SHADOW=1`` 时才会安装。
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         StackShadowFinder | None:
@@ -307,6 +326,7 @@ def configure_stack_shadower_from_env() -> StackShadowFinder | None:
         prefixes,
         filename_template=template,
         include_source_loaders=include_source_loaders,
+        state=state,
     )
 
 

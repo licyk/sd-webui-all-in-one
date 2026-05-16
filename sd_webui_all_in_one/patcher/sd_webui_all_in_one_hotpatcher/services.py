@@ -28,6 +28,7 @@ from .runtime.logs import (
     install_log_capture,
 )
 from .runtime.protocol import RuntimeProtocolError, decode_message, encode_message
+from .state import HotpatcherState, get_default_state
 from .stack_shadow import (
     DEFAULT_FILENAME_TEMPLATE,
     install_stack_shadower,
@@ -35,8 +36,6 @@ from .stack_shadow import (
 )
 
 _MISSING = object()
-_current_config: dict[str, Any] | None = None
-_current_config_lock = threading.RLock()
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "services": {
@@ -479,6 +478,16 @@ class ServiceControlChannel:
 class PatchService:
     """补丁系统业务控制服务对象"""
 
+    def __init__(self, *, state: HotpatcherState | None = None) -> None:
+        """初始化补丁服务对象
+
+        Args:
+            state (HotpatcherState | None):
+                可选状态对象。为 None 时使用默认状态。
+        """
+
+        self.state = state or get_default_state()
+
     def get_catalog(self) -> dict[str, Any]:
         """
         查询补丁系统能力目录
@@ -488,7 +497,7 @@ class PatchService:
                 当前功能目录、可调设置和已注册补丁状态
         """
 
-        return get_catalog()
+        return get_catalog(state=self.state)
 
     def get_default_config(self) -> dict[str, Any]:
         """
@@ -510,7 +519,7 @@ class PatchService:
                 当前进程最后加载或应用的完整配置副本
         """
 
-        return get_current_config()
+        return get_current_config(state=self.state)
 
     def normalize_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """
@@ -547,24 +556,29 @@ class PatchService:
                 固定 ok/error 格式响应
         """
 
-        return handle_request_json(raw, runtime_client=runtime_client)
+        return handle_request_json(raw, runtime_client=runtime_client, state=self.state)
 
 
-def get_catalog() -> dict[str, Any]:
+def get_catalog(*, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
     查询当前可用功能和已注册补丁
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
             JSON-serializable 能力目录
     """
 
+    active_state = state or get_default_state()
     defaults = get_default_config()
     features = copy.deepcopy(SETTING_SCHEMA)
-    _attach_feature_state(features, defaults)
+    _attach_feature_state(features, defaults, active_state)
     return {
         "features": features,
-        "registered_patches": _registered_patches(),
+        "registered_patches": _registered_patches(active_state),
     }
 
 
@@ -580,49 +594,59 @@ def get_default_config() -> dict[str, Any]:
     return copy.deepcopy(DEFAULT_CONFIG)
 
 
-def get_current_config() -> dict[str, Any]:
+def get_current_config(*, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
     获取当前进程最后加载或应用的完整配置
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
             当前进程配置副本。尚未记录时返回默认配置。
     """
 
-    with _current_config_lock:
-        if _current_config is None:
+    active_state = state or get_default_state()
+    with active_state.current_config_lock:
+        if active_state.current_config is None:
             return get_default_config()
-        return copy.deepcopy(_current_config)
+        return copy.deepcopy(active_state.current_config)
 
 
-def set_current_config(config: dict[str, Any]) -> dict[str, Any]:
+def set_current_config(config: dict[str, Any], *, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
     更新当前进程配置快照
 
     Args:
         config (dict[str, Any]):
             用户配置或完整配置
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
             规范化后的当前配置副本
     """
 
-    global _current_config
-
+    active_state = state or get_default_state()
     normalized = normalize_config(config)
-    with _current_config_lock:
-        _current_config = copy.deepcopy(normalized)
+    with active_state.current_config_lock:
+        active_state.current_config = copy.deepcopy(normalized)
     return copy.deepcopy(normalized)
 
 
-def clear_current_config() -> None:
-    """清除当前进程配置快照, 下一次查询将返回默认配置"""
+def clear_current_config(*, state: HotpatcherState | None = None) -> None:
+    """清除当前进程配置快照, 下一次查询将返回默认配置
 
-    global _current_config
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+    """
 
-    with _current_config_lock:
-        _current_config = None
+    active_state = state or get_default_state()
+    with active_state.current_config_lock:
+        active_state.current_config = None
 
 
 def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -703,6 +727,7 @@ def apply_config(
     config: dict[str, Any],
     *,
     runtime_client: RuntimeClient | None = None,
+    state: HotpatcherState | None = None,
 ) -> dict[str, Any]:
     """
     按配置启用补丁系统功能
@@ -712,20 +737,23 @@ def apply_config(
             用户配置或完整配置
         runtime_client (RuntimeClient | None):
             可选运行时客户端, 用于启用日志采集
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
             ``applied``、``warnings``、``errors`` 结果对象
     """
 
+    active_state = state or get_default_state()
     normalized = normalize_config(config)
     result: dict[str, Any] = {"applied": [], "warnings": [], "errors": []}
-    set_current_config(normalized)
+    set_current_config(normalized, state=active_state)
 
-    _apply_core_config(normalized, result)
-    _apply_runtime_config(normalized, result, runtime_client)
+    _apply_core_config(normalized, result, active_state)
+    _apply_runtime_config(normalized, result, runtime_client, active_state)
     _apply_extension_config(normalized, result)
-    _warn_disabled_but_active(normalized, result)
+    _warn_disabled_but_active(normalized, result, active_state)
     return result
 
 
@@ -733,6 +761,7 @@ def handle_request_json(
     raw: str | dict[str, Any],
     *,
     runtime_client: RuntimeClient | None = None,
+    state: HotpatcherState | None = None,
 ) -> dict[str, Any]:
     """
     处理 services JSON 请求
@@ -742,12 +771,15 @@ def handle_request_json(
             JSON 字符串或请求对象
         runtime_client (RuntimeClient | None):
             可选运行时客户端
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
             固定 ok/error 格式响应
     """
 
+    active_state = state or get_default_state()
     try:
         request = _decode_request(raw)
         message_type = request["type"]
@@ -756,11 +788,11 @@ def handle_request_json(
             return _error_response("invalid_request", "payload must be an object")
 
         if message_type == "services.catalog.get":
-            return _success_response({"catalog": get_catalog()})
+            return _success_response({"catalog": get_catalog(state=active_state)})
         if message_type == "services.defaults.get":
             return _success_response({"config": get_default_config()})
         if message_type == "services.config.current":
-            return _success_response({"config": get_current_config()})
+            return _success_response({"config": get_current_config(state=active_state)})
         if message_type == "services.config.normalize":
             return _success_response({"config": normalize_config(_payload_config(payload))})
         if message_type == "services.config.load":
@@ -775,7 +807,7 @@ def handle_request_json(
             save_config_file(path, config)
             return _success_response({"config": config})
         if message_type == "services.config.apply":
-            result = apply_config(_payload_config(payload), runtime_client=runtime_client)
+            result = apply_config(_payload_config(payload), runtime_client=runtime_client, state=active_state)
             return _success_response({"result": result})
 
         return _error_response("unknown_request", f"unknown services request: {message_type}")
@@ -788,6 +820,8 @@ def handle_request_json(
 def install_service_control_channel(
     client: RuntimeClient,
     service: PatchService | None = None,
+    *,
+    state: HotpatcherState | None = None,
 ) -> ServiceControlChannel:
     """
     安装 services runtime 控制通道
@@ -797,20 +831,22 @@ def install_service_control_channel(
             已连接的运行时客户端
         service (PatchService | None):
             可选服务对象
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         ServiceControlChannel:
             已启动的控制通道
     """
 
-    return ServiceControlChannel(client, service).start()
+    return ServiceControlChannel(client, service or PatchService(state=state)).start()
 
 
-def _apply_core_config(config: dict[str, Any], result: dict[str, Any]) -> None:
+def _apply_core_config(config: dict[str, Any], result: dict[str, Any], state: HotpatcherState) -> None:
     core = _section(config, "core")
     import_hook = _section(core, "import_hook")
     if import_hook.get("enabled"):
-        _apply_step("core.import_hook", install_import_hook, result)
+        _apply_step("core.import_hook", lambda: install_import_hook(state=state), result)
 
     stack_shadow = _section(core, "stack_shadow")
     if stack_shadow.get("enabled"):
@@ -820,6 +856,7 @@ def _apply_core_config(config: dict[str, Any], result: dict[str, Any]) -> None:
                 _normalize_string_list(stack_shadow.get("prefixes", [])),
                 filename_template=str(stack_shadow.get("filename_template", DEFAULT_FILENAME_TEMPLATE)),
                 include_source_loaders=bool(stack_shadow.get("include_source_loaders", True)),
+                state=state,
             ),
             result,
         )
@@ -829,12 +866,13 @@ def _apply_runtime_config(
     config: dict[str, Any],
     result: dict[str, Any],
     runtime_client: RuntimeClient | None,
+    state: HotpatcherState,
 ) -> None:
     runtime = _section(config, "runtime")
     errors = _section(runtime, "errors")
     if errors.get("enabled"):
         if runtime_client is None:
-            uninstall_error_capture()
+            uninstall_error_capture(state=state)
             result["warnings"].append(
                 {
                     "feature": "runtime.errors",
@@ -859,11 +897,12 @@ def _apply_runtime_config(
                         caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)
                     ),
                     caught_exception_max_events_per_second=int(caught_exceptions.get("max_events_per_second", 20)),
+                    state=state,
                 ),
                 result,
             )
     else:
-        uninstall_error_capture()
+        uninstall_error_capture(state=state)
 
     logs = _section(runtime, "logs")
     if logs.get("enabled"):
@@ -891,6 +930,7 @@ def _apply_runtime_config(
                 hook_policy=str(logs.get("hook_policy", DEFAULT_HOOK_POLICY)),
                 hook_check_interval=int(logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
                 fd_capture=str(logs.get("fd_capture", DEFAULT_FD_CAPTURE)),
+                state=state,
             ),
             result,
         )
@@ -962,16 +1002,16 @@ def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
         )
 
 
-def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any]) -> None:
+def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any], state: HotpatcherState) -> None:
     core = _section(config, "core")
-    if not _section(core, "import_hook").get("enabled") and is_import_hook_installed():
+    if not _section(core, "import_hook").get("enabled") and is_import_hook_installed(state=state):
         result["warnings"].append(
             {
                 "feature": "core.import_hook",
                 "message": "import hook is already installed and v1 services does not uninstall it",
             }
         )
-    if not _section(core, "stack_shadow").get("enabled") and is_stack_shadower_installed():
+    if not _section(core, "stack_shadow").get("enabled") and is_stack_shadower_installed(state=state):
         result["warnings"].append(
             {
                 "feature": "core.stack_shadow",
@@ -989,15 +1029,15 @@ def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any]) ->
         )
 
 
-def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any]) -> None:
+def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], state: HotpatcherState) -> None:
     features["services"]["default"] = defaults["services"]
     features["services"]["active"] = False
     features["core.import_hook"]["default"] = defaults["core"]["import_hook"]
-    features["core.import_hook"]["active"] = is_import_hook_installed()
+    features["core.import_hook"]["active"] = is_import_hook_installed(state=state)
     features["core.stack_shadow"]["default"] = defaults["core"]["stack_shadow"]
-    features["core.stack_shadow"]["active"] = is_stack_shadower_installed()
+    features["core.stack_shadow"]["active"] = is_stack_shadower_installed(state=state)
     features["runtime.errors"]["default"] = defaults["runtime"]["errors"]
-    features["runtime.errors"]["active"] = is_error_capture_installed()
+    features["runtime.errors"]["active"] = is_error_capture_installed(state=state)
     features["runtime.logs"]["default"] = defaults["runtime"]["logs"]
     features["runtime.logs"]["active"] = False
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
@@ -1039,9 +1079,10 @@ def _attach_setting_defaults(features: dict[str, Any]) -> None:
             metadata["default"] = copy.deepcopy(setting_default)
 
 
-def _registered_patches() -> dict[str, Any]:
+def _registered_patches(state: HotpatcherState) -> dict[str, Any]:
     modules: dict[str, Any] = {}
-    for name, monkey in sorted(monkey_zoo.monkeys.items()):
+    zoo = state.monkey_zoo or monkey_zoo
+    for name, monkey in sorted(zoo.monkeys.items()):
         modules[name] = {
             "premodule": len(monkey.premodule_patches),
             "module": len(monkey.module_patches),
@@ -1054,7 +1095,7 @@ def _registered_patches() -> dict[str, Any]:
         }
     return {
         "modules": modules,
-        "aliases": dict(sorted(monkey_zoo.aliases_fallback.items())),
+        "aliases": dict(sorted(zoo.aliases_fallback.items())),
     }
 
 

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from locale import getpreferredencoding
 from typing import Any, Iterable, TextIO
 
+from ..state import HotpatcherState, get_default_state
 from .client import RuntimeClient
 
 DEFAULT_MAX_CHARS = 8192
@@ -22,9 +23,6 @@ DEFAULT_LOGGER_EXCLUDE = ("sd_webui_all_in_one_hotpatcher",)
 DEFAULT_HOOK_POLICY = "cooperative"
 DEFAULT_HOOK_CHECK_INTERVAL = 1
 DEFAULT_FD_CAPTURE = "0"
-
-_current_capture: LogCapture | None = None
-_guard = threading.local()
 
 
 def install_log_capture(
@@ -41,6 +39,7 @@ def install_log_capture(
     hook_policy: str = DEFAULT_HOOK_POLICY,
     hook_check_interval: int | float = DEFAULT_HOOK_CHECK_INTERVAL,
     fd_capture: str | None = DEFAULT_FD_CAPTURE,
+    state: HotpatcherState | None = None,
 ) -> "LogCapture":
     """
     安装进程级日志采集
@@ -73,16 +72,17 @@ def install_log_capture(
             warn/reapply 模式下检查 hook 状态的间隔秒数
         fd_capture (str | None):
             实验性 fd 级标准流采集模式, 支持 ``0``、``fallback`` 和 ``force``
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         LogCapture:
             已安装的日志采集器
     """
 
-    global _current_capture
-
-    if _current_capture is not None and not _current_capture.closed:
-        return _current_capture
+    active_state = state or get_default_state()
+    if active_state.log_capture is not None and not active_state.log_capture.closed:
+        return active_state.log_capture
 
     capture = LogCapture(
         client=client,
@@ -97,19 +97,24 @@ def install_log_capture(
         hook_policy=(hook_policy or DEFAULT_HOOK_POLICY).lower(),
         hook_check_interval=hook_check_interval,
         fd_capture=(fd_capture or DEFAULT_FD_CAPTURE).lower(),
+        guard=active_state.log_guard,
     )
     capture.install()
-    _current_capture = capture
+    active_state.log_capture = capture
     return capture
 
 
-def uninstall_log_capture() -> None:
-    """卸载当前进程级日志采集器"""
+def uninstall_log_capture(*, state: HotpatcherState | None = None) -> None:
+    """卸载当前进程级日志采集器
 
-    global _current_capture
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+    """
 
-    capture = _current_capture
-    _current_capture = None
+    active_state = state or get_default_state()
+    capture = active_state.log_capture
+    active_state.log_capture = None
     if capture is not None:
         capture.close()
 
@@ -117,6 +122,8 @@ def uninstall_log_capture() -> None:
 def configure_log_capture_from_env(
     client: RuntimeClient,
     config: dict[str, Any] | None = None,
+    *,
+    state: HotpatcherState | None = None,
 ) -> "LogCapture | None":
     """
     根据环境变量和配置安装日志采集
@@ -128,12 +135,15 @@ def configure_log_capture_from_env(
             发送日志事件的运行时客户端
         config (dict[str, Any] | None):
             已加载的运行时配置
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         LogCapture | None:
             已安装的日志采集器。未启用时返回 None。
     """
 
+    active_state = state or get_default_state()
     config_logs = _config_logs(config)
     enabled = _env_bool("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOGS", default=bool(config_logs))
     if not enabled:
@@ -186,6 +196,7 @@ def configure_log_capture_from_env(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_FD_CAPTURE",
             config_logs.get("fd_capture", DEFAULT_FD_CAPTURE) if isinstance(config_logs, dict) else DEFAULT_FD_CAPTURE,
         ),
+        state=active_state,
     )
 
 
@@ -669,7 +680,7 @@ class SubprocessCapture:
         original_popen = self.original_popen
 
         class CapturedPopen(original_popen):  # type: ignore[misc, valid-type]
-            def __init__(captured_self: Any, *popenargs: Any, **kwargs: Any) -> None:
+            def __init__(captured_self: Any, *popenargs: Any, **kwargs: Any) -> None:  # pylint: disable=no-self-argument
                 (
                     prepared_args,
                     prepared_kwargs,
@@ -865,6 +876,7 @@ class LogCapture:
         hook_policy: str,
         hook_check_interval: int | float,
         fd_capture: str,
+        guard: Any | None = None,
     ):
         if policy not in {"bounded", "raw"}:
             raise ValueError("policy must be bounded or raw")
@@ -873,6 +885,7 @@ class LogCapture:
         if fd_capture not in {"0", "false", "none", "off", "fallback", "force"}:
             raise ValueError("fd_capture must be 0, fallback, or force")
         self.client = client
+        self._guard = guard or get_default_state().log_guard
         self.capture_logging = capture_logging
         self.streams = streams
         self.subprocess_mode = subprocess_mode
@@ -1055,7 +1068,7 @@ class LogCapture:
                 未处于递归保护状态时返回 True
         """
 
-        return not getattr(_guard, "active", False)
+        return not getattr(self._guard, "active", False)
 
     def should_skip_record(self, record: logging.LogRecord) -> bool:
         """
@@ -1293,15 +1306,15 @@ class LogCapture:
         self._send("log.dropped", {"count": count, "reason": "queue_full"})
 
     def _send(self, message_type: str, payload: dict[str, Any]) -> None:
-        if getattr(_guard, "active", False):
+        if getattr(self._guard, "active", False):
             return
-        _guard.active = True
+        self._guard.active = True
         try:
             self.client.transport.event(message_type, payload)
         except Exception:
             return
         finally:
-            _guard.active = False
+            self._guard.active = False
 
 
 def _config_logs(config: dict[str, Any] | None) -> dict[str, Any] | bool:

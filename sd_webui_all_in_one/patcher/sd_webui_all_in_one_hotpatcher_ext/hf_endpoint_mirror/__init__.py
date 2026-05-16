@@ -216,10 +216,10 @@ def load_file_from_url(
                 raise ValueError(f"File hash does not match the expected hash prefix {hash_prefix}!")
 
             os.replace(temp_file, cached_file)
-        except Exception:
+        except Exception as e:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
-            raise
+            raise e
 
     return cached_file
 

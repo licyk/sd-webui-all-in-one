@@ -17,11 +17,10 @@ from typing import Any
 
 from .exceptions import capture_exception
 from .mutable import CodeWrapper
+from .state import HotpatcherState, get_default_state
 
 _PACKAGE_NAME = __name__.split(".", 1)[0]
 _original_spec_from_file_location = importlib.util.spec_from_file_location
-_wrapped_spec_from_file_location: Callable[..., ModuleSpec | None] | None = None
-_installed_finder: "HookedMetaPathFinder | None" = None
 
 
 class Monkey:
@@ -470,7 +469,15 @@ class MonkeyZoo:
         self.aliases_fallback.clear()
 
 
-monkey_zoo = MonkeyZoo()
+
+def _state_monkey_zoo(state: HotpatcherState) -> MonkeyZoo:
+    if state.monkey_zoo is None:
+        state.monkey_zoo = MonkeyZoo()
+    return state.monkey_zoo
+
+
+monkey_zoo = _state_monkey_zoo(get_default_state())
+"""补丁计划的注册表实例"""
 
 
 class LoadingSkipper:
@@ -719,67 +726,89 @@ class MonkeySourceFileLoader(Loader):
             self.monkey.eval_prohibit_output(module)
 
 
-def install_import_hook() -> HookedMetaPathFinder:
+def install_import_hook(*, state: HotpatcherState | None = None) -> HookedMetaPathFinder:
     """
     安装 import hook
 
     重复调用是安全的。进程中只会安装一个 ``HookedMetaPathFinder``,
     并且只会包装一次 ``importlib.util.spec_from_file_location``。
 
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+
     Returns:
         HookedMetaPathFinder:
             已安装的 finder 实例
     """
 
-    global _installed_finder, _wrapped_spec_from_file_location
+    active_state = state or get_default_state()
+    zoo = _state_monkey_zoo(active_state)
+    if active_state.import_hook_finder is None:
+        active_state.import_hook_finder = HookedMetaPathFinder(zoo)
 
-    if _installed_finder is None:
-        _installed_finder = HookedMetaPathFinder(monkey_zoo)
-
-    if _installed_finder not in sys.meta_path:
-        sys.meta_path.insert(0, _installed_finder)  # ty: ignore[invalid-argument-type]
+    finder = active_state.import_hook_finder
+    if finder not in sys.meta_path:
+        sys.meta_path.insert(0, finder)  # ty: ignore[invalid-argument-type]
 
     if importlib.util.spec_from_file_location is not _spec_from_file_location_wrapper:
-        _wrapped_spec_from_file_location = importlib.util.spec_from_file_location
+        active_state.import_hook_wrapped_spec_from_file_location = importlib.util.spec_from_file_location
         importlib.util.spec_from_file_location = _spec_from_file_location_wrapper  # ty: ignore[invalid-assignment]
 
-    return _installed_finder
+    return finder
 
 
-def uninstall_import_hook() -> None:
+def uninstall_import_hook(*, state: HotpatcherState | None = None) -> None:
     """
     卸载 import hook
 
     会从 ``sys.meta_path`` 中移除 finder, 清理 finder 缓存,
     并恢复 ``importlib.util.spec_from_file_location``。
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
     """
 
-    global _wrapped_spec_from_file_location
-
-    if _installed_finder is not None:
-        while _installed_finder in sys.meta_path:
-            sys.meta_path.remove(_installed_finder)  # ty: ignore[invalid-argument-type]
-        _installed_finder.invalidate_caches()
+    active_state = state or get_default_state()
+    finder = active_state.import_hook_finder
+    if finder is not None:
+        while finder in sys.meta_path:
+            sys.meta_path.remove(finder)
+        finder.invalidate_caches()
 
     if importlib.util.spec_from_file_location is _spec_from_file_location_wrapper:
         importlib.util.spec_from_file_location = (
-            _wrapped_spec_from_file_location or _original_spec_from_file_location
+            active_state.import_hook_wrapped_spec_from_file_location or _original_spec_from_file_location
         )
-        _wrapped_spec_from_file_location = None
+        active_state.import_hook_wrapped_spec_from_file_location = None
 
 
-def is_import_hook_installed() -> bool:
+def is_import_hook_installed(*, state: HotpatcherState | None = None) -> bool:
     """
     检查 import hook 是否已安装
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         bool:
             finder 当前位于 ``sys.meta_path`` 中时返回 True
     """
-    return _installed_finder is not None and _installed_finder in sys.meta_path
+    active_state = state or get_default_state()
+    finder = active_state.import_hook_finder
+    return finder is not None and finder in sys.meta_path
 
 
-def register_hook(module: str, function: str, hooker: Callable[[Any, ModuleType], Any], force: bool = False) -> None:
+def register_hook(
+    module: str,
+    function: str,
+    hooker: Callable[[Any, ModuleType], Any],
+    force: bool = False,
+    *,
+    state: HotpatcherState | None = None,
+) -> None:
     """
     注册函数级补丁
 
@@ -792,12 +821,20 @@ def register_hook(module: str, function: str, hooker: Callable[[Any, ModuleType]
             接收原函数和模块对象, 返回替换函数的补丁函数
         force (bool):
             函数不存在时是否仍写入返回值
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
     """
-    with monkey_zoo(module) as monkey:
+    zoo = _state_monkey_zoo(state or get_default_state())
+    with zoo(module) as monkey:
         monkey.patch_function(function, hooker, add_if_not_exists=force)
 
 
-def register_customize_hook(module: str, hooker: Callable[[ModuleType], Any]) -> None:
+def register_customize_hook(
+    module: str,
+    hooker: Callable[[ModuleType], Any],
+    *,
+    state: HotpatcherState | None = None,
+) -> None:
     """
     注册模块级补丁
 
@@ -806,15 +843,21 @@ def register_customize_hook(module: str, hooker: Callable[[ModuleType], Any]) ->
             目标模块名
         hooker (Callable[[ModuleType], Any]):
             模块代码执行后调用的补丁函数
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
     """
-    with monkey_zoo(module) as monkey:
+    zoo = _state_monkey_zoo(state or get_default_state())
+    with zoo(module) as monkey:
         monkey.patch_module(hooker)
 
 
 def _spec_from_file_location_wrapper(*args: Any, **kwargs: Any) -> ModuleSpec | None:
-    assert _wrapped_spec_from_file_location is not None
-    spec = _wrapped_spec_from_file_location(*args, **kwargs)
-    if spec is None or spec.name not in monkey_zoo or not _is_source_file_spec(spec):
+    active_state = get_default_state()
+    wrapped_spec_from_file_location = active_state.import_hook_wrapped_spec_from_file_location
+    assert wrapped_spec_from_file_location is not None
+    spec = wrapped_spec_from_file_location(*args, **kwargs)
+    zoo = _state_monkey_zoo(active_state)
+    if spec is None or spec.name not in zoo or not _is_source_file_spec(spec):
         return spec
 
     assert isinstance(spec.loader, SourceFileLoader)
@@ -822,7 +865,7 @@ def _spec_from_file_location_wrapper(*args: Any, **kwargs: Any) -> ModuleSpec | 
         filename=spec.loader.path,
         meta_path_finder=None,
         loader=spec.loader,
-        monkey=monkey_zoo[spec.name],  # ty: ignore[invalid-argument-type]
+        monkey=zoo[spec.name],  # ty: ignore[invalid-argument-type]
     )
     return spec
 

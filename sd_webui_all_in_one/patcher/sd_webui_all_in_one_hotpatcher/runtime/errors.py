@@ -15,6 +15,7 @@ from types import TracebackType
 from typing import Any
 
 from ..exceptions import set_exception_reporter
+from ..state import HotpatcherState, get_default_state
 from .client import RuntimeClient
 
 _LOCAL_REPR_MAX_CHARS = 512
@@ -43,10 +44,6 @@ _SENSITIVE_LOCAL_NAME_PARTS = (
     "credential",
     "bearer",
 )
-_current_capture: ErrorCapture | None = None
-_guard = threading.local()
-
-
 @dataclass
 class ExceptionReporter:
     """
@@ -57,10 +54,13 @@ class ExceptionReporter:
             发送异常事件的运行时客户端
         include_locals (bool):
             是否包含脱敏后的局部变量摘要。
+        guard (Any | None):
+            发送异常事件时使用的递归保护。
     """
 
     client: RuntimeClient
     include_locals: bool = False
+    guard: Any | None = None
 
     def report(
         self,
@@ -80,7 +80,14 @@ class ExceptionReporter:
                 异常 traceback
         """
 
-        _send_exception_event(self.client, exc_type, exc_value, exc_tb, include_locals=self.include_locals)
+        _send_exception_event(
+            self.client,
+            exc_type,
+            exc_value,
+            exc_tb,
+            include_locals=self.include_locals,
+            guard=self.guard,
+        )
 
 
 @dataclass
@@ -103,9 +110,12 @@ class ErrorCapture:
     caught_exception_module_prefixes: tuple[str, ...] = ()
     caught_exception_exclude_module_prefixes: tuple[str, ...] = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES
     caught_exception_max_events_per_second: int = 20
+    state: HotpatcherState | None = None
     closed: bool = False
 
     def __post_init__(self) -> None:
+        self._state = self.state or get_default_state()
+        self._guard = self._state.error_guard
         self._original_sys_excepthook: Any = None
         self._original_threading_excepthook: Any = None
         self._original_unraisablehook: Any = None
@@ -129,7 +139,7 @@ class ErrorCapture:
         """
 
         try:
-            install_exception_reporter(self.client, include_locals=self.include_locals)
+            install_exception_reporter(self.client, include_locals=self.include_locals, state=self._state)
 
             if self.sys_excepthook:
                 self._original_sys_excepthook = sys.excepthook
@@ -159,6 +169,7 @@ class ErrorCapture:
                     module_prefixes=self.caught_exception_module_prefixes,
                     exclude_module_prefixes=self.caught_exception_exclude_module_prefixes,
                     max_events_per_second=self.caught_exception_max_events_per_second,
+                    guard=self._guard,
                 ).install()
         except Exception:
             self.close()
@@ -196,7 +207,7 @@ class ErrorCapture:
             self.caught_exception_tracer.close()
             self.caught_exception_tracer = None
 
-        uninstall_exception_reporter()
+        uninstall_exception_reporter(state=self._state)
 
     def _handle_sys_excepthook(
         self,
@@ -211,6 +222,7 @@ class ErrorCapture:
             exc_tb,
             source="sys.excepthook",
             include_locals=self.include_locals,
+            guard=self._guard,
         )
         self._call_original(self._original_sys_excepthook, exc_type, exc_value, exc_tb)
 
@@ -232,6 +244,7 @@ class ErrorCapture:
                 source="threading.excepthook",
                 context=context,
                 include_locals=self.include_locals,
+                guard=self._guard,
             )
         self._call_original(self._original_threading_excepthook, args)
 
@@ -252,6 +265,7 @@ class ErrorCapture:
                 source="sys.unraisablehook",
                 context=context,
                 include_locals=self.include_locals,
+                guard=self._guard,
             )
         self._call_original(self._original_unraisablehook, args)
 
@@ -280,6 +294,7 @@ class ErrorCapture:
                 source="asyncio",
                 context=event_context,
                 include_locals=self.include_locals,
+                guard=self._guard,
             )
             return
 
@@ -293,6 +308,7 @@ class ErrorCapture:
             source="asyncio",
             context=event_context,
             include_locals=self.include_locals,
+            guard=self._guard,
         )
 
     @staticmethod
@@ -306,6 +322,7 @@ def install_exception_reporter(
     client: RuntimeClient,
     *,
     include_locals: bool = False,
+    state: HotpatcherState | None = None,
 ) -> ExceptionReporter:
     """
     安装进程级异常上报器
@@ -315,21 +332,29 @@ def install_exception_reporter(
             发送异常事件的运行时客户端
         include_locals (bool):
             是否包含脱敏后的局部变量摘要。
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         ExceptionReporter:
             已安装的异常上报器
     """
 
-    reporter = ExceptionReporter(client=client, include_locals=include_locals)
-    set_exception_reporter(reporter.report)
+    active_state = state or get_default_state()
+    reporter = ExceptionReporter(client=client, include_locals=include_locals, guard=active_state.error_guard)
+    set_exception_reporter(reporter.report, state=active_state)
     return reporter
 
 
-def uninstall_exception_reporter() -> None:
-    """卸载进程级异常上报器"""
+def uninstall_exception_reporter(*, state: HotpatcherState | None = None) -> None:
+    """卸载进程级异常上报器
 
-    set_exception_reporter(None)
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+    """
+
+    set_exception_reporter(None, state=state)
 
 
 def install_error_capture(
@@ -345,6 +370,7 @@ def install_error_capture(
     caught_exception_module_prefixes: Iterable[str] | None = None,
     caught_exception_exclude_module_prefixes: Iterable[str] | None = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
     caught_exception_max_events_per_second: int = 20,
+    state: HotpatcherState | None = None,
 ) -> ErrorCapture:
     """
     安装全局 Python 运行时错误捕获
@@ -372,15 +398,16 @@ def install_error_capture(
             排除捕获的模块名前缀。
         caught_exception_max_events_per_second (int):
             caught exception 事件每秒发送上限。
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         ErrorCapture:
             已安装的错误捕获器
     """
 
-    global _current_capture
-
-    uninstall_error_capture()
+    active_state = state or get_default_state()
+    uninstall_error_capture(state=active_state)
     capture = ErrorCapture(
         client=client,
         include_locals=include_locals,
@@ -393,37 +420,49 @@ def install_error_capture(
         caught_exception_module_prefixes=_normalize_prefixes(caught_exception_module_prefixes),
         caught_exception_exclude_module_prefixes=_normalize_prefixes(caught_exception_exclude_module_prefixes),
         caught_exception_max_events_per_second=max(0, int(caught_exception_max_events_per_second)),
+        state=active_state,
     ).install()
-    _current_capture = capture
+    active_state.error_capture = capture
     return capture
 
 
-def uninstall_error_capture() -> None:
-    """卸载当前全局 Python 运行时错误捕获"""
+def uninstall_error_capture(*, state: HotpatcherState | None = None) -> None:
+    """卸载当前全局 Python 运行时错误捕获
 
-    global _current_capture
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+    """
 
-    capture = _current_capture
-    _current_capture = None
+    active_state = state or get_default_state()
+    capture = active_state.error_capture
+    active_state.error_capture = None
     if capture is not None:
         capture.close()
 
 
-def is_error_capture_installed() -> bool:
+def is_error_capture_installed(*, state: HotpatcherState | None = None) -> bool:
     """
     检查全局错误捕获是否已安装
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         bool:
             当前错误捕获器是否处于安装状态
     """
 
-    return _current_capture is not None and not _current_capture.closed
+    capture = (state or get_default_state()).error_capture
+    return capture is not None and not capture.closed
 
 
 def configure_error_capture_from_env(
     client: RuntimeClient,
     config: dict[str, Any] | None = None,
+    *,
+    state: HotpatcherState | None = None,
 ) -> ErrorCapture | None:
     """
     根据环境变量和配置安装错误捕获
@@ -436,16 +475,19 @@ def configure_error_capture_from_env(
             runtime 客户端
         config (dict[str, Any] | None):
             runtime 配置字典
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
 
     Returns:
         ErrorCapture | None:
             已安装的错误捕获器, 未启用时返回 None
     """
 
+    active_state = state or get_default_state()
     config_errors = _config_errors(config)
     enabled = _env_bool("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERRORS", default=_config_enabled(config_errors))
     if not enabled:
-        uninstall_error_capture()
+        uninstall_error_capture(state=active_state)
         return None
     caught_exceptions = _config_caught_exceptions(config_errors)
 
@@ -493,6 +535,7 @@ def configure_error_capture_from_env(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_MAX_EVENTS_PER_SECOND",
             int(caught_exceptions.get("max_events_per_second", 20)) if isinstance(caught_exceptions, dict) else 20,
         ),
+        state=active_state,
     )
 
 
@@ -575,10 +618,12 @@ def _send_exception_event(
     source: str | None = None,
     context: dict[str, Any] | None = None,
     include_locals: bool = False,
+    guard: Any | None = None,
 ) -> None:
-    if getattr(_guard, "active", False):
+    active_guard = guard or get_default_state().error_guard
+    if getattr(active_guard, "active", False):
         return
-    _guard.active = True
+    active_guard.active = True
     try:
         payload = format_exception_payload(
             exc_type,
@@ -596,7 +641,7 @@ def _send_exception_event(
     except Exception:
         return
     finally:
-        _guard.active = False
+        active_guard.active = False
 
 
 def _config_errors(config: dict[str, Any] | None) -> dict[str, Any] | bool:
@@ -674,9 +719,11 @@ class CaughtExceptionTracer:
     module_prefixes: tuple[str, ...] = ()
     exclude_module_prefixes: tuple[str, ...] = DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES
     max_events_per_second: int = 20
+    guard: Any | None = None
     closed: bool = False
 
     def __post_init__(self) -> None:
+        self._guard = self.guard or get_default_state().error_guard
         self.module_prefixes = _normalize_prefixes(self.module_prefixes)
         self.exclude_module_prefixes = _normalize_prefixes(self.exclude_module_prefixes)
         self.max_events_per_second = max(0, int(self.max_events_per_second))
@@ -739,7 +786,7 @@ class CaughtExceptionTracer:
         return self._trace_function
 
     def _handle_exception(self, frame: Any, arg: Any) -> None:
-        if getattr(_guard, "active", False):
+        if getattr(self._guard, "active", False):
             return
         if not isinstance(arg, tuple) or len(arg) != 3:
             return
@@ -771,6 +818,7 @@ class CaughtExceptionTracer:
             source="sys.settrace",
             context=context,
             include_locals=self.include_locals,
+            guard=self._guard,
         )
 
     def _should_emit(self, exc_value: BaseException) -> bool:
