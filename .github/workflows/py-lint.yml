@@ -27,7 +27,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
 
       - name: Install lint dependencies
-        run: uv pip install --system --python python -e . --group dev
+        run: uv pip install --system --python "$(command -v python)" -e . --group dev
 
       - name: Run Ruff
         uses: astral-sh/ruff-action@v3
@@ -44,7 +44,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        include:
+          - os: ubuntu-latest
+            ty-platform: linux
+          - os: windows-latest
+            ty-platform: win32
+          - os: macos-latest
+            ty-platform: darwin
 
     steps:
       - name: Checkout repo
@@ -61,8 +67,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
 
-      - name: Install lint dependencies
-        run: uv pip install --system --python python -e . --group dev
-
       - name: Run ty
-        run: ty check --python python --python-version 3.10 --output-format github --no-progress sd_webui_all_in_one
+        shell: bash
+        run: |
+          PYTHON_PATH="$(uv run --group dev python -c "import sys; print(sys.executable)")"
+          uv run --group dev python -m ty check sd_webui_all_in_one --python "$PYTHON_PATH" --python-version 3.10 --python-platform "${{ matrix.ty-platform }}" --output-format github --no-progress
