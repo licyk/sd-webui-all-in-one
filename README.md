@@ -30,7 +30,7 @@ _✨快速部署，简单易用_
       <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pypi-release.yml/badge.svg" alt="PyPI Release">
     </a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml">
-      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml/badge.svg" alt="Ruff Lint">
+      <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/py-lint.yml/badge.svg" alt="Python Lint">
     </a>
     <a href="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pytest.yml">
       <img src="https://github.com/licyk/sd-webui-all-in-one/actions/workflows/pytest.yml/badge.svg" alt="Pytest">
