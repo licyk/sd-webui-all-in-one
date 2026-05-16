@@ -85,7 +85,7 @@ test = [
 dev = [
     { include-group = "docs" },
     { include-group = "test" },
-    "python-docstring-checker @ git+https://github.com/licyk/python-docstring-checker.git@main",
+    "python-docstring-checker",
     "IPython",
     "ruff",
     "torch",
