@@ -61,13 +61,6 @@ tunnel = [
     "pycloudflared",
     "gradio-tunneling",
 ]
-docs = [
-    "zensical",
-]
-test = [
-    "pytest",
-    "pytest-cov",
-]
 full = [
     "zstandard",
     "py7zr",
@@ -82,11 +75,18 @@ full = [
 ]
 
 [dependency-groups]
-dev = [
-    "python-docstring-checker @ git+https://github.com/licyk/python-docstring-checker.git@main",
-    "IPython",
+docs = [
+    "zensical",
+]
+test = [
     "pytest",
     "pytest-cov",
+]
+dev = [
+    { include-group = "docs" },
+    { include-group = "test" },
+    "python-docstring-checker @ git+https://github.com/licyk/python-docstring-checker.git@main",
+    "IPython",
     "ruff",
     "torch",
     "ty",

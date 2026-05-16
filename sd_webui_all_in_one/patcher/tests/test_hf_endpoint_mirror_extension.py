@@ -5,6 +5,7 @@ import importlib.util
 import sys
 import textwrap
 import types
+from typing import Any, Protocol, cast
 
 import pytest
 
@@ -23,6 +24,19 @@ from sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror import (
 
 HF_URL = "https://huggingface.co/user/repo/resolve/main/model.bin"
 MIRROR_URL = "https://hf.example/user/repo/resolve/main/model.bin"
+_CallRecord = tuple[str, str, tuple[Any, ...], dict[str, Any]]
+
+
+class _TorchHubModule(Protocol):
+    calls: list[_CallRecord]
+
+    def download_url_to_file(self, url: str, dst: str, *args: Any, **kwargs: Any) -> str: ...
+
+
+class _TorchvisionUtilsModule(Protocol):
+    calls: list[_CallRecord]
+
+    def _urlretrieve(self, url: str, fpath: str, *args: Any, **kwargs: Any) -> str: ...
 
 
 @pytest.fixture(autouse=True)
@@ -101,10 +115,10 @@ def test_patch_torchhub_rewrites_download_url_to_file(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
 
     patch_torchhub()
-    module = importlib.import_module("torch.hub")
+    module = cast(_TorchHubModule, importlib.import_module("torch.hub"))
 
     assert module.download_url_to_file(HF_URL, "/tmp/model") == MIRROR_URL
-    assert module.calls[-1][0] == MIRROR_URL  # ty: ignore[unresolved-attribute]
+    assert module.calls[-1][0] == MIRROR_URL
 
 
 def test_patch_torchvision_rewrites_urlretrieve(tmp_path, monkeypatch):
@@ -124,10 +138,10 @@ def test_patch_torchvision_rewrites_urlretrieve(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
 
     patch_torchvision()
-    module = importlib.import_module("torchvision.datasets.utils")
+    module = cast(_TorchvisionUtilsModule, importlib.import_module("torchvision.datasets.utils"))
 
     assert module._urlretrieve(HF_URL, "/tmp/model") == MIRROR_URL
-    assert module.calls[-1][0] == MIRROR_URL  # ty: ignore[unresolved-attribute]
+    assert module.calls[-1][0] == MIRROR_URL
 
 
 def test_patch_comfyui_wd14_tagger_rewrites_async_download(tmp_path, monkeypatch):
@@ -299,7 +313,7 @@ def test_apply_mirror_keeps_original_url_without_endpoint(tmp_path):
     sys.path.insert(0, str(tmp_path))
 
     apply_mirror()
-    module = importlib.import_module("torch.hub")
+    module = cast(_TorchHubModule, importlib.import_module("torch.hub"))
 
     assert module.download_url_to_file(HF_URL, "/tmp/model") == HF_URL
     assert module.download_url_to_file("https://example.com/model.bin", "/tmp/model") == "https://example.com/model.bin"
@@ -318,7 +332,7 @@ def test_apply_from_config_can_disable_registration(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
 
     apply_from_config({"enabled": False})
-    module = importlib.import_module("torch.hub")
+    module = cast(_TorchHubModule, importlib.import_module("torch.hub"))
 
     assert module.download_url_to_file(HF_URL, "/tmp/model") == HF_URL
 
