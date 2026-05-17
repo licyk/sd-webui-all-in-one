@@ -242,25 +242,25 @@ def test_sd_webui_cli_parse_smoke(monkeypatch, tmp_path):
     monkeypatch.setattr(sd_webui_cli, "install_extension", lambda **kwargs: calls.append(("extension", kwargs)))
     monkeypatch.setattr(sd_webui_cli, "install_model_from_library", lambda **kwargs: calls.append(("model", kwargs)))
 
-    args = parser.parse_args(["sd-webui", "install", "--sd-webui-path", str(tmp_path), "--no-uv", "--no-pre-download-extension"])
+    args = parser.parse_args(["sd-webui", "install", "--sd-webui-path", str(tmp_path), "--no-auto-mirror", "--no-uv", "--no-pre-download-extension"])
     args.func(args)
     assert calls[-1][0] == "install"
     assert calls[-1][1]["sd_webui_path"] == tmp_path
     assert calls[-1][1]["use_uv"] is False
     assert calls[-1][1]["no_pre_download_extension"] is True
 
-    args = parser.parse_args(["sd-webui", "launch", "--sd-webui-path", str(tmp_path), "--launch-args", "--api --listen", "--no-check-env"])
+    args = parser.parse_args(["sd-webui", "launch", "--sd-webui-path", str(tmp_path), "--no-auto-mirror", "--launch-args", "--api --listen", "--no-check-env"])
     args.func(args)
     assert calls[-1][0] == "launch"
     assert calls[-1][1]["launch_args"] == "--api --listen"
     assert calls[-1][1]["check_launch_env"] is False
 
-    args = parser.parse_args(["sd-webui", "extension", "install", "--sd-webui-path", str(tmp_path), "--url", "https://github.com/example/ext"])
+    args = parser.parse_args(["sd-webui", "extension", "install", "--sd-webui-path", str(tmp_path), "--no-auto-mirror", "--url", "https://github.com/example/ext"])
     args.func(args)
     assert calls[-1][0] == "extension"
     assert calls[-1][1]["extension_url"] == "https://github.com/example/ext"
 
-    args = parser.parse_args(["sd-webui", "model", "install-library", "--sd-webui-path", str(tmp_path), "--index", "2", "--downloader", "urllib"])
+    args = parser.parse_args(["sd-webui", "model", "install-library", "--sd-webui-path", str(tmp_path), "--no-auto-mirror", "--index", "2", "--downloader", "urllib"])
     args.func(args)
     assert calls[-1][0] == "model"
     assert calls[-1][1]["model_index"] == 2
@@ -291,4 +291,3 @@ def test_self_manager_start_tunnel_cli_parse_smoke(monkeypatch, tmp_path):
             "zrok_token": None,
         }
     ]
-

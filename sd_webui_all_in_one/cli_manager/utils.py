@@ -17,6 +17,10 @@ from sd_webui_all_in_one.updater import (
     check_and_update_uv,
     check_and_update_pip,
 )
+from sd_webui_all_in_one.cli_manager.auto_mirror import (
+    add_auto_mirror_argument,
+    with_auto_mirror,
+)
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import (
     LOGGER_NAME,
@@ -316,19 +320,21 @@ def register_manager(
     # check-pip
     check_pip_p = sd_webui_all_in_one_sub.add_parser("check-pip", help="检查 Pip 是否需要更新并尝试更新")
     check_pip_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    add_auto_mirror_argument(check_pip_p)
     check_pip_p.set_defaults(
-        func=lambda args: check_pip(
+        func=with_auto_mirror(lambda args: check_pip(
             use_pypi_mirror=args.use_pypi_mirror,
-        )
+        ))
     )
 
     # check-uv
     check_uv_p = sd_webui_all_in_one_sub.add_parser("check-uv", help="检查 uv 是否需要更新并尝试更新")
     check_uv_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    add_auto_mirror_argument(check_uv_p)
     check_uv_p.set_defaults(
-        func=lambda args: check_uv(
+        func=with_auto_mirror(lambda args: check_uv(
             use_pypi_mirror=args.use_pypi_mirror,
-        )
+        ))
     )
 
     # patcher

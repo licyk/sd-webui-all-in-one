@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from sd_webui_all_in_one.cli_manager import comfyui_cli
+from sd_webui_all_in_one.cli_manager import auto_mirror
 from sd_webui_all_in_one.cli_manager import fooocus_cli
 from sd_webui_all_in_one.cli_manager import invokeai_cli
 from sd_webui_all_in_one.cli_manager import qwen_tts_webui_cli
@@ -17,6 +18,75 @@ def _parser(*register_funcs):
     for register in register_funcs:
         register(subparsers)
     return parser
+
+
+def test_apply_auto_mirror_uses_official_sources(monkeypatch):
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: True)
+    args = argparse.Namespace(
+        auto_mirror=True,
+        use_pypi_mirror=True,
+        use_github_mirror=True,
+        use_hf_mirror=True,
+        custom_github_mirror="https://github.example",
+        custom_hf_mirror="https://hf.example",
+        model_download_resource_type="modelscope",
+        source="modelscope",
+    )
+
+    auto_mirror.apply_auto_mirror(args)
+
+    assert args.use_pypi_mirror is False
+    assert args.use_github_mirror is False
+    assert args.use_hf_mirror is False
+    assert args.custom_github_mirror is None
+    assert args.custom_hf_mirror is None
+    assert args.model_download_resource_type == "huggingface"
+    assert args.source == "huggingface"
+
+
+def test_apply_auto_mirror_uses_mirror_sources(monkeypatch):
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: False)
+    args = argparse.Namespace(
+        auto_mirror=True,
+        use_pypi_mirror=False,
+        use_github_mirror=False,
+        use_hf_mirror=False,
+        custom_github_mirror="https://github.example",
+        custom_hf_mirror="https://hf.example",
+        model_download_resource_type="huggingface",
+        source="huggingface",
+    )
+
+    auto_mirror.apply_auto_mirror(args)
+
+    assert args.use_pypi_mirror is True
+    assert args.use_github_mirror is True
+    assert args.use_hf_mirror is True
+    assert args.custom_github_mirror is None
+    assert args.custom_hf_mirror is None
+    assert args.model_download_resource_type == "modelscope"
+    assert args.source == "modelscope"
+
+
+def test_apply_auto_mirror_can_be_disabled(monkeypatch):
+    def fail_network_probe():
+        raise AssertionError("network probe should not run")
+
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", fail_network_probe)
+    args = argparse.Namespace(
+        auto_mirror=False,
+        use_pypi_mirror=False,
+        use_github_mirror=True,
+        custom_github_mirror="https://github.example",
+        source="huggingface",
+    )
+
+    auto_mirror.apply_auto_mirror(args)
+
+    assert args.use_pypi_mirror is False
+    assert args.use_github_mirror is True
+    assert args.custom_github_mirror == "https://github.example"
+    assert args.source == "huggingface"
 
 
 @pytest.mark.parametrize(
@@ -41,31 +111,31 @@ def test_product_cli_install_update_check_reinstall_and_model_smoke(monkeypatch,
     monkeypatch.setattr(module, "list_models", lambda **kwargs: calls.append(("model-list", kwargs)))
     monkeypatch.setattr(module, "uninstall_model", lambda **kwargs: calls.append(("model-uninstall", kwargs)))
 
-    args = parser.parse_args([root, "install", path_arg, str(tmp_path), "--no-uv", "--no-pypi-mirror"])
+    args = parser.parse_args([root, "install", path_arg, str(tmp_path), "--no-auto-mirror", "--no-uv", "--no-pypi-mirror"])
     args.func(args)
     assert calls[-1][0] == "install"
     assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["use_uv"] is False
     assert calls[-1][1]["use_pypi_mirror"] is False
 
-    args = parser.parse_args([root, "update", path_arg, str(tmp_path), "--custom-github-mirror", "https://mirror.example"])
+    args = parser.parse_args([root, "update", path_arg, str(tmp_path), "--no-auto-mirror", "--custom-github-mirror", "https://mirror.example"])
     args.func(args)
     assert calls[-1][0] == "update"
     assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["custom_github_mirror"] == "https://mirror.example"
 
-    args = parser.parse_args([root, "check-env", path_arg, str(tmp_path), "--no-uv"])
+    args = parser.parse_args([root, "check-env", path_arg, str(tmp_path), "--no-auto-mirror", "--no-uv"])
     args.func(args)
     assert calls[-1][0] == "check"
     assert calls[-1][1]["use_uv"] is False
 
-    args = parser.parse_args([root, "reinstall-pytorch", "--name", "torch-demo", "--no-uv", "--force-reinstall"])
+    args = parser.parse_args([root, "reinstall-pytorch", "--no-auto-mirror", "--name", "torch-demo", "--no-uv", "--force-reinstall"])
     args.func(args)
     assert calls[-1][0] == "reinstall"
     assert calls[-1][1]["pytorch_name"] == "torch-demo"
     assert calls[-1][1]["force_reinstall"] is True
 
-    args = parser.parse_args([root, "model", "install-library", path_arg, str(tmp_path), "--name", "alpha", "--downloader", "urllib"])
+    args = parser.parse_args([root, "model", "install-library", path_arg, str(tmp_path), "--no-auto-mirror", "--name", "alpha", "--downloader", "urllib"])
     args.func(args)
     assert calls[-1][0] == "model-library"
     assert calls[-1][1][path_key] == tmp_path
@@ -104,7 +174,7 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     monkeypatch.setattr(module, "launch", lambda **kwargs: calls.append(("launch", kwargs)))
     monkeypatch.setattr(module, "launch_version_gui", lambda **kwargs: calls.append(("gui", kwargs)))
 
-    args = parser.parse_args([root, "launch", path_arg, str(tmp_path), "--launch-args", "--listen --port 7861", "--no-check-env", "--no-hotpatcher"])
+    args = parser.parse_args([root, "launch", path_arg, str(tmp_path), "--no-auto-mirror", "--launch-args", "--listen --port 7861", "--no-check-env", "--no-hotpatcher"])
     args.func(args)
     assert calls[-1][0] == "launch"
     assert calls[-1][1][path_key] == tmp_path
@@ -112,7 +182,7 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     assert calls[-1][1]["check_launch_env"] is False
     assert calls[-1][1]["enable_hotpatcher"] is False
 
-    args = parser.parse_args([root, "gui", "version-manager", path_arg, str(tmp_path)])
+    args = parser.parse_args([root, "gui", "version-manager", path_arg, str(tmp_path), "--no-auto-mirror"])
     args.func(args)
     assert calls[-1][0] == "gui"
     assert calls[-1][1][path_key] == tmp_path
@@ -141,7 +211,7 @@ def test_custom_node_cli_smoke(monkeypatch, tmp_path, module, register, root, pa
     monkeypatch.setattr(module, update_name, lambda **kwargs: calls.append(("update", kwargs)))
     monkeypatch.setattr(module, uninstall_name, lambda **kwargs: calls.append(("uninstall", kwargs)))
 
-    args = parser.parse_args([root, "custom-node", "install", path_arg, str(tmp_path), "--url", "https://github.com/example/node"])
+    args = parser.parse_args([root, "custom-node", "install", path_arg, str(tmp_path), "--no-auto-mirror", "--url", "https://github.com/example/node"])
     args.func(args)
     assert calls[-1] == ("install", {path_key: tmp_path, "custom_node_url": "https://github.com/example/node", "use_github_mirror": True, "custom_github_mirror": None})
 
@@ -153,13 +223,73 @@ def test_custom_node_cli_smoke(monkeypatch, tmp_path, module, register, root, pa
     args.func(args)
     assert calls[-1] == ("list", {path_key: tmp_path})
 
-    args = parser.parse_args([root, "custom-node", "update", path_arg, str(tmp_path), "--no-github-mirror"])
+    args = parser.parse_args([root, "custom-node", "update", path_arg, str(tmp_path), "--no-auto-mirror", "--no-github-mirror"])
     args.func(args)
     assert calls[-1] == ("update", {path_key: tmp_path, "use_github_mirror": False, "custom_github_mirror": None})
 
     args = parser.parse_args([root, "custom-node", "uninstall", path_arg, str(tmp_path), "--name", "node"])
     args.func(args)
     assert calls[-1] == ("uninstall", {path_key: tmp_path, "custom_node_name": "node"})
+
+
+def test_product_cli_auto_mirror_overrides_install_options(monkeypatch, tmp_path):
+    parser = _parser(comfyui_cli.register_comfyui)
+    calls = []
+
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: False)
+    monkeypatch.setattr(comfyui_cli, "install", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            "comfyui",
+            "install",
+            "--comfyui-path",
+            str(tmp_path),
+            "--no-pypi-mirror",
+            "--no-github-mirror",
+            "--custom-github-mirror",
+            "https://mirror.example",
+            "--model-resource",
+            "huggingface",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1]["use_pypi_mirror"] is True
+    assert calls[-1]["use_github_mirror"] is True
+    assert calls[-1]["custom_github_mirror"] is None
+    assert calls[-1]["model_download_resource_type"] == "modelscope"
+
+
+def test_product_cli_auto_mirror_overrides_launch_options(monkeypatch, tmp_path):
+    parser = _parser(comfyui_cli.register_comfyui)
+    calls = []
+
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: True)
+    monkeypatch.setattr(comfyui_cli, "launch", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            "comfyui",
+            "launch",
+            "--comfyui-path",
+            str(tmp_path),
+            "--no-hf-mirror",
+            "--custom-hf-mirror",
+            "https://hf.example",
+            "--no-github-mirror",
+            "--custom-github-mirror",
+            "https://github.example",
+            "--no-pypi-mirror",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1]["use_hf_mirror"] is False
+    assert calls[-1]["custom_hf_mirror"] is None
+    assert calls[-1]["use_github_mirror"] is False
+    assert calls[-1]["custom_github_mirror"] is None
+    assert calls[-1]["use_pypi_mirror"] is False
 
 
 def test_all_product_roots_register_together():
