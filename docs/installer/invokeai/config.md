@@ -2,6 +2,15 @@
 
 ## 配置管理
 
+### 自动镜像源选择
+!!! info
+    该设置可通过 [管理 InvokeAI Installer 设置](#invokeai-installer_1) 中提到的 `settings.ps1` 进行修改。
+
+InvokeAI Installer 生成的管理脚本默认启用 CLI 自动镜像源选择。启用时，管理脚本不会向 Python CLI 传递手动镜像参数，Python CLI 会通过 `network_gfw_test()` 自动决定是否使用 PyPI、Github、HuggingFace 镜像源和 ModelScope 模型下载源。
+
+!!! warning
+    自动镜像源选择会强制覆盖 `disable_pypi_mirror.txt`、`disable_gh_mirror.txt`、`gh_mirror.txt`、`disable_mirror.txt`、`mirror.txt` 和 `disable_model_mirror.txt` 对 Python CLI 的手动镜像设置。需要手动调整这些设置时，请先在同级目录创建 `disable_auto_mirror.txt`，或运行管理脚本时传入 `-DisableAutoMirror`。
+
 ### 设置 InvokeAI 中文
 InvokeAI 默认的界面语言为英文，在 InvokeAI 左下角的齿轮图标，点进 Settings，在 Language 选项选择简体中文即可将界面语言设置为中文。
 

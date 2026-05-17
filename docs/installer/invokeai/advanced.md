@@ -30,6 +30,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 - `-UseUpdateMode`：指定 InvokeAI Installer 使用更新模式，只对 InvokeAI Installer 的管理脚本进行更新。
 - `-DisablePyPIMirror`：禁用 InvokeAI Installer 使用 PyPI镜像源，使用 PyPI 官方源下载 Python 软件包。
+- `-DisableAutoMirror`：禁用 CLI 自动镜像源选择。默认自动镜像启用时，Python CLI 会强制覆盖 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置；需要手动控制这些镜像参数时，请添加该参数。
 - `-DisableProxy`：禁用 InvokeAI Installer 自动设置代理服务器。
 - `-UseCustomProxy` `<代理服务器地址>`：使用自定义的代理服务器地址。例如：`-UseCustomProxy "http://127.0.0.1:10809"`
 - `-DisableUV`：禁用 InvokeAI Installer 使用 uv 安装 Python 软件包，改用 Pip 安装。

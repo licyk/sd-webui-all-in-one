@@ -61,6 +61,18 @@
 
 新增参数或脚本时，要同步安装器帮助文本、`settings.ps1` 菜单、构建模式参数、用户文档和开发维护文档。
 
+## 自动镜像源选择
+
+安装器封装 Python CLI 时默认启用自动镜像源选择，由 Python CLI 的 `network_gfw_test()` 决定是否使用 PyPI、Github、HuggingFace 镜像源以及 ModelScope 模型下载源。PowerShell 侧只负责传递 `-DisableAutoMirror` / `disable_auto_mirror.txt` 到 Python CLI 的 `--no-auto-mirror`，不要在安装器 bootstrap 阶段重新实现网络探测逻辑。
+
+维护镜像相关参数时，需要同步以下位置：
+
+- 主安装器参数和帮助文本：`-DisableAutoMirror`、`-DisablePyPIMirror`、`-DisableGithubMirror`、`-DisableHuggingFaceMirror`、`-DisableModelMirror` 和自定义镜像参数。
+- 生成的管理脚本参数：安装、启动、更新、扩展更新、分支切换、模型下载、重装 PyTorch、版本管理等会封装 Python CLI 的脚本都要能接收 `-DisableAutoMirror`。
+- CLI 参数拼接：默认自动模式下不向 Python CLI 传递手动镜像参数；禁用自动镜像后先追加 `--no-auto-mirror`，再继续传递手动镜像参数。
+- 配置复制与设置菜单：`Copy-InstallerConfig` 要复制 `disable_auto_mirror.txt`，`settings.ps1` 要能创建 / 删除该文件，并提示自动模式会强制覆盖其它手动镜像设置。
+- 构建模式和产品文档：构建模式要把 `-DisableAutoMirror` 转发给后续管理脚本，用户文档要说明 `-DisableAutoMirror` / `disable_auto_mirror.txt` 是手动镜像设置生效的前置开关。
+
 ## Hotpatcher 启动封装
 
 已有 `launch` 子命令的产品安装器需要在 `launch.ps1` 中封装 Hotpatcher 启动参数，并把补丁配置路径固定到管理脚本同级目录：

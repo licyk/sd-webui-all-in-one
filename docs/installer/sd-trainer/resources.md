@@ -9,7 +9,10 @@
 !!! info
     该设置可通过 [管理 SD Trainer Installer 设置](config.md#sd-trainer-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-使用 `download_models.ps1` 脚本下载模型时，默认使用的下载源为 [ModelScope](https://modelscope.cn)，如果需要切换到 [HuggingFace](https://huggingface.co) 下载源，可以在和脚本同级的路径中创建一个 `disable_model_mirror.txt` 文件，再次启动 `download_models.ps1` 脚本时下载模型将使用 [HuggingFace](https://huggingface.co) 下载源。
+禁用自动镜像源选择后，使用 `download_models.ps1` 脚本下载模型时默认下载源为 [ModelScope](https://modelscope.cn)；如果需要切换到 [HuggingFace](https://huggingface.co) 下载源，可以在和脚本同级的路径中创建一个 `disable_model_mirror.txt` 文件，再次启动 `download_models.ps1` 脚本时下载模型将使用 [HuggingFace](https://huggingface.co) 下载源。
+
+!!! warning
+    如果自动镜像源选择保持启用，模型下载源会由 Python CLI 自动决定，并会覆盖 `disable_model_mirror.txt` 的手动设置。需要固定使用 HuggingFace 或 ModelScope 时，请先在管理脚本同级目录创建 `disable_auto_mirror.txt`，或运行管理脚本时传入 `-DisableAutoMirror`。
 
 ### 模型训练的方法
 推荐的哔哩哔哩 UP 主：

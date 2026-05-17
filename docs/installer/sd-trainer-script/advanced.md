@@ -24,6 +24,7 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
     - `musubi_tuner_main`: kohya-ss - musubi-tuner 分支
 - `-UseUpdateMode`：指定 SD Trainer Script Installer 使用更新模式，只对管理脚本进行更新。
 - `-DisablePyPIMirror`：禁用 SD Trainer Script Installer 使用 PyPI镜像源，改用 PyPI 官方源。
+- `-DisableAutoMirror`：禁用 CLI 自动镜像源选择。默认自动镜像启用时，Python CLI 会强制覆盖 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置；需要手动控制这些镜像参数时，请添加该参数。
 - `-DisableProxy`：禁用 SD Trainer Script Installer 自动设置代理服务器。
 - `-UseCustomProxy` `<代理服务器地址>`：使用自定义的代理服务器地址。例如：`-UseCustomProxy "http://127.0.0.1:10809"`
 - `-DisableUV`：禁用 SD Trainer Script Installer 使用 uv 安装 Python 软件包，改用 Pip 安装。

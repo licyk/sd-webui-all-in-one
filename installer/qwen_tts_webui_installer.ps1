@@ -28,6 +28,10 @@
 "@)][switch]$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+"@)][switch]$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@"
 禁用 Qwen TTS WebUI Installer 自动设置代理服务器
 "@)][switch]$DisableProxy,
 
@@ -83,6 +87,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
     [Parameter(HelpMessage=@"
 安装结束后保留下载 Python 软件包缓存
 "@)][switch]$NoCleanCache,
+
+    [Parameter(HelpMessage=@"
+不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型
+"@)][switch]$DisableModelMirror,
 
     [Parameter(HelpMessage=@"
 脚本执行完成后不暂停, 直接退出
@@ -212,7 +220,7 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 238
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 239
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.13"
@@ -414,10 +422,35 @@ function Get-Version {
 }
 
 
+# 设置 CLI 自动镜像源选择状态
+function Set-AutoMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]$ArrayList)
+
+    if (($script:DisableAutoMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_auto_mirror.txt"))) {
+        if (-not $ArrayList.Contains("--no-auto-mirror")) {
+            $ArrayList.Add("--no-auto-mirror") | Out-Null
+        }
+        if (-not $script:AutoMirrorStatusLogged) {
+            Write-Log "检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动镜像源选择, 将遵守手动镜像源设置"
+            $script:AutoMirrorStatusLogged = $true
+        }
+        return $true
+    }
+
+    if (-not $script:AutoMirrorStatusLogged) {
+        Write-Log "CLI 自动镜像源选择已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数"
+        $script:AutoMirrorStatusLogged = $true
+    }
+    return $false
+}
+
+
 # PyPI 镜像源状态
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
+    if (!(Set-AutoMirror $ArrayList)) { return }
     if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) -and (!($script:DisablePyPIMirror))) {
         Write-Log "使用 PyPI 镜像源"
     } else {
@@ -452,6 +485,22 @@ function Set-Proxy {
 }
 
 
+# 设置模型下载源
+function Set-ModelMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]$ArrayList)
+    if (!(Set-AutoMirror $ArrayList)) { return }
+    $ArrayList.Add("--model-resource") | Out-Null
+    if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt"))) -and (!($script:DisableModelMirror))) {
+        Write-Log "使用 ModelScope 模型下载源"
+        $ArrayList.Add("modelscope") | Out-Null
+    } else {
+        Write-Log "检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源"
+        $ArrayList.Add("huggingface") | Out-Null
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     [CmdletBinding()]
@@ -472,6 +521,7 @@ function Set-GithubMirror {
     if (Test-Path (Join-NormalizedPath $script:InstallPath ".gitconfig")) {
         Remove-Item -Path (Join-NormalizedPath $script:InstallPath ".gitconfig") -Force -Recurse
     }
+    if (!(Set-AutoMirror $ArrayList)) { return }
     if (($script:DisableGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
         Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
         $ArrayList.Add("--no-github-mirror") | Out-Null
@@ -499,6 +549,7 @@ function Get-LaunchCoreArgs {
     Set-PyPIMirror $launch_params
     Set-Proxy
     Set-GithubMirror $launch_params
+    Set-ModelMirror $launch_params
     if ($script:PyTorchMirrorType) {
         $launch_params.Add("--pytorch-mirror-type") | Out-Null
         $launch_params.Add($script:PyTorchMirrorType) | Out-Null
@@ -1020,6 +1071,7 @@ param (
     [switch]`$DisableProxy,
     [string]`$UseCustomProxy,
     [switch]`$DisablePyPIMirror,
+    [switch]`$DisableAutoMirror,
     [switch]`$DisableHuggingFaceMirror,
     [string]`$UseCustomHuggingFaceMirror,
     [switch]`$DisableGithubMirror,
@@ -1689,10 +1741,35 @@ function Set-Proxy {
 }
 
 
+# 设置 CLI 自动镜像源选择状态
+function Set-AutoMirror {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]`$ArrayList)
+
+    if ((`$script:DisableAutoMirror) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_auto_mirror.txt`"))) {
+        if (-not `$ArrayList.Contains(`"--no-auto-mirror`")) {
+            `$ArrayList.Add(`"--no-auto-mirror`") | Out-Null
+        }
+        if (-not `$script:AutoMirrorStatusLogged) {
+            Write-Log `"检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动镜像源选择, 将遵守手动镜像源设置`"
+            `$script:AutoMirrorStatusLogged = `$true
+        }
+        return `$true
+    }
+
+    if (-not `$script:AutoMirrorStatusLogged) {
+        Write-Log `"CLI 自动镜像源选择已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数`"
+        `$script:AutoMirrorStatusLogged = `$true
+    }
+    return `$false
+}
+
+
 # 配置 PyPI 镜像源
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
+    if (!(Set-AutoMirror `$ArrayList)) { return }
     if (`$script:DisablePyPIMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`"))) {
         Write-Log `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
         `$ArrayList.Add(`"--no-pypi-mirror`") | Out-Null
@@ -1706,6 +1783,7 @@ function Set-PyPIMirror {
 function Set-HuggingFaceMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
+    if (!(Set-AutoMirror `$ArrayList)) { return }
     if (`$script:DisableHuggingFaceMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`"))) {
         Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
         `$ArrayList.Add(`"--no-hf-mirror`") | Out-Null
@@ -1735,6 +1813,7 @@ function Set-GithubMirror {
     if (Test-Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`")) {
         Remove-Item -Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`") -Force -Recurse
     }
+    if (!(Set-AutoMirror `$ArrayList)) { return }
     if (`$script:DisableGithubMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`"))) {
         Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
         `$ArrayList.Add(`"--no-github-mirror`") | Out-Null
@@ -2058,6 +2137,10 @@ param (
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
 禁用 Qwen TTS WebUI Installer 更新检查
 `"@)][switch]`$DisableUpdate,
 
@@ -2135,6 +2218,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
         DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
         DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         DisableGithubMirror = `$script:DisableGithubMirror
@@ -2159,6 +2243,7 @@ try {
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
         `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
         `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
@@ -2457,6 +2542,10 @@ param (
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
 使用自定义的 Github 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
@@ -2473,6 +2562,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
         DisableGithubMirror = `$script:DisableGithubMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
@@ -2487,6 +2577,7 @@ try {
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
@@ -2837,6 +2928,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
 禁用 Qwen TTS WebUI Installer 更新检查
 `"@)][switch]`$DisableUpdate,
 
@@ -2866,6 +2961,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
         DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
@@ -2880,6 +2976,7 @@ try {
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:BuildMode = `$cfg.BuildMode
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:NoPause = `$cfg.NoPause
@@ -2973,6 +3070,10 @@ param (
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
 使用自定义的 Github 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
@@ -2989,6 +3090,7 @@ try {
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
         DisableGithubMirror = `$script:DisableGithubMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
         NoPause = `$script:NoPause
@@ -3002,6 +3104,7 @@ try {
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:NoPause = `$cfg.NoPause
@@ -3313,6 +3416,7 @@ function Main {
     while (`$true) {
         Write-Log `"=== Qwen TTS WebUI 管理设置 ===`"
         `$menu = @(
+            @{ id=0;  n=`"自动镜像源选择`"; v=`$(Get-ToggleStatus `"disable_auto_mirror.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } else { `$proxy_status = Get-TextStatus `"proxy.txt`" `$null; if (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"自定义 (地址: `$proxy_status)`" } else { `"系统`" } }) },
             @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
             @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
@@ -3336,6 +3440,7 @@ function Main {
 
         `$choice = Get-UserInput
         switch (`$choice) {
+            `"0`"  { Write-Log `"提示: 自动镜像源选择启用时, PyPI / Github / HuggingFace / 模型下载源等手动镜像设置会被 Python CLI 强制覆盖; 如需手动调整这些设置请禁用本项`"; Set-ToggleSetting `"disable_auto_mirror.txt`" `"自动镜像源选择`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_auto_mirror.txt`")) }
             `"1`"  { Update-ProxySetting }
             `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"包管理器`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) }
             `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"HuggingFace`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
@@ -3390,6 +3495,10 @@ param (
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
 禁用 Qwen TTS WebUI Installer 自动设置 Github 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
@@ -3424,6 +3533,7 @@ try {
         Help = `$script:Help
         CorePrefix = `$script:CorePrefix
         DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
         DisableGithubMirror = `$script:DisableGithubMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableProxy = `$script:DisableProxy
@@ -3439,6 +3549,7 @@ try {
         `$script:Help = `$cfg.Help
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableProxy = `$cfg.DisableProxy
@@ -3598,7 +3709,6 @@ function Set-GithubMirrorLegecy {
     if (Test-Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`")) {
         Remove-Item -Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`") -Force -Recurse
     }
-
     # 默认 Git 配置
     git config --global --add safe.directory '*'
     git config --global core.longpaths true
@@ -3788,6 +3898,10 @@ function Write-ManagerScripts {
 
 # 将安装器配置文件复制到管理脚本路径
 function Copy-InstallerConfig {
+    if ((!($script:DisableAutoMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_auto_mirror.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_auto_mirror.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_auto_mirror.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_auto_mirror.txt")"
+    }
     Write-Log "为 Qwen TTS WebUI Installer 管理脚本复制 Qwen TTS WebUI Installer 配置文件中"
 
     if ((!($script:DisablePyPIMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) {
@@ -3891,6 +4005,7 @@ function Use-BuildMode {
     if ($script:BuildWithTorch) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         $launch_args.Add("-BuildWithTorch", $script:BuildWithTorch)
         if ($script:BuildWithTorchReinstall) { $launch_args.Add("-BuildWithTorchReinstall", $true) }
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
@@ -3906,6 +4021,7 @@ function Use-BuildMode {
     if ($script:BuildWithUpdate) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
@@ -3920,6 +4036,7 @@ function Use-BuildMode {
     if ($script:BuildWithLaunch) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
         if ($script:DisableProxy) { $launch_args.Add("-DisableProxy", $true) }
