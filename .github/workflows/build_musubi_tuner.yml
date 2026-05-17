@@ -28,6 +28,7 @@ jobs:
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "musubi_tuner_main" `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `

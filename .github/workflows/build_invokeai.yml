@@ -26,6 +26,7 @@ jobs:
             -PyTorchMirrorType cuda `
             -BuildMode `
             -BuildWithLaunch `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `

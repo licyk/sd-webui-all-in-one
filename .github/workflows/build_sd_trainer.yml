@@ -27,6 +27,7 @@ jobs:
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_trainer_main" `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `

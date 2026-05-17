@@ -27,6 +27,7 @@ jobs:
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "fooocus_main" `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `

@@ -28,6 +28,7 @@ jobs:
             -BuildWithLaunch `
             -InstallBranch "sd_next_main" `
             -NoPreDownloadModel `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `
@@ -66,6 +67,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_next/launch.ps1" `
             -BuildMode `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

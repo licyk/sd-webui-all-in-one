@@ -26,6 +26,7 @@ jobs:
             -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

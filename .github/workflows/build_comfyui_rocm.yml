@@ -26,6 +26,7 @@ jobs:
             -PyTorchMirrorType rocm_win `
             -BuildMode `
             -BuildWithLaunch `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
@@ -47,6 +48,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/comfyui/launch.ps1" `
             -BuildMode `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror

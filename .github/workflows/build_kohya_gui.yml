@@ -27,6 +27,7 @@ jobs:
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "kohya_gui_main" `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `

@@ -27,6 +27,7 @@ jobs:
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_scripts_dev" `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `

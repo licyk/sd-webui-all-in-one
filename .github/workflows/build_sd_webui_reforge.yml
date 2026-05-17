@@ -29,6 +29,7 @@ jobs:
             -BuildWithLaunch `
             -InstallBranch "sd_webui_reforge_main" `
             -NoPreDownloadModel `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `
@@ -69,6 +70,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/sd_webui_reforge/launch.ps1" `
             -BuildMode `
+            -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
