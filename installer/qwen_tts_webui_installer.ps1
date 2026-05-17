@@ -220,7 +220,7 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 239
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 241
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.14"
@@ -562,8 +562,6 @@ function Get-LaunchCoreArgs {
         $launch_params.Add("--custom-xformers-package") | Out-Null
         $launch_params.Add($script:xFormersPackage) | Out-Null
     }
-    $launch_params.Add("--model-resource") | Out-Null
-    $launch_params.Add("modelscope") | Out-Null
     return $launch_params
 }
 
@@ -3821,33 +3819,47 @@ Qwen TTS WebUI Installer created by licyk
 哔哩哔哩：https://space.bilibili.com/46497516
 Github：https://github.com/licyk
 ====================================================================
-########## 使用帮助 ##########
+########## 安装后速查 ##########
 
-这是关于 Qwen TTS WebUI 的简单使用文档。
+这是 Qwen TTS WebUI 的安装后速查说明。完整安装、启动、更新和故障排查说明请阅读文档站。
+Qwen TTS WebUI Installer 文档：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/
 
-使用 Qwen TTS WebUI Installer 进行安装并安装成功后，将在当前目录生成 Qwen TTS WebUI 文件夹，以下为文件夹中不同文件 / 文件夹的作用。
+一、安装完成后先做什么
+1. 运行 launch.ps1 启动 Qwen TTS WebUI。启动成功后，浏览器会打开或终端会显示访问地址。
+2. 需要更新 Qwen TTS WebUI 时运行 update.ps1。
+3. PyTorch 出问题或需要切换版本时运行 reinstall_pytorch.ps1。
+4. 需要执行 Python、Pip、Git 命令时运行 terminal.ps1，或先运行 activate.ps1 激活环境。
 
+二、常用脚本速查
 - launch.ps1：启动 Qwen TTS WebUI。
-- update.ps1：更新 Qwen TTS WebUI。
-- reinstall_pytorch.ps1：重新安装 PyTorch 的脚本，在 PyTorch 出问题或者需要切换 PyTorch 版本时可使用。
-- version_manager.ps1：管理  Qwen TTS WebUI 的版本。
-- settings.ps1：管理 Qwen TTS WebUI Installer 的设置。
-- terminal.ps1：启动 PowerShell 终端并自动激活虚拟环境，激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- activate.ps1：虚拟环境激活脚本，使用该脚本激活虚拟环境后即可使用 Python、Pip、Git 的命令。
-- launch_qwen_tts_webui_installer.ps1：获取最新的 Qwen TTS WebUI Installer 安装脚本并运行。
-- configure_env.bat：配置环境脚本，修复 PowerShell 运行闪退和启用 Windows 长路径支持。
+- update.ps1：更新 Qwen TTS WebUI 和管理脚本。
+- reinstall_pytorch.ps1：PyTorch 损坏、版本不匹配或需要切换 CUDA / ROCm / XPU 版本时使用。
+- version_manager.ps1：管理 Qwen TTS WebUI 版本。
+- settings.ps1：调整代理、镜像、uv、启动参数、内核路径前缀等本地设置。
+- terminal.ps1：打开已配置好的 PowerShell 终端。
+- activate.ps1：在当前终端激活安装器环境。
+- launch_qwen_tts_webui_installer.ps1：重新获取并运行最新 Qwen TTS WebUI Installer。
+- configure_env.bat：修复 Windows 运行 .ps1 后立刻闪退、PowerShell 脚本运行限制和长路径支持问题。
 
-- cache：缓存文件夹，保存着 Pip / HuggingFace 等缓存文件。
-- python：Python 的存放路径。请注意，请勿将该 Python 文件夹添加到环境变量，这可能导致不良后果。
-- git：Git 的存放路径。
-- core：Qwen TTS WebUI 内核。
+三、目录说明
+- cache：Pip / HuggingFace 等缓存目录。
+- python：安装器自带 Python。请勿添加到系统环境变量。
+- git：安装器自带 Git。
+- core：Qwen TTS WebUI 程序和主要数据目录。
 
-详细的 Qwen TTS WebUI Installer 使用帮助：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/
+四、遇到问题
+- Windows 下运行 .ps1 后立刻闪退：先运行 configure_env.bat，再重新运行原脚本。
+- 启动、安装或更新报错：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/troubleshooting/
+- 不确定脚本参数：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/commands/
+- 下载器或 Launcher 出错：https://licyk.github.io/sd-webui-all-in-one/tools/troubleshooting/
 
-也可以使用 sd-webui-all-in-one-launcher 启动器管理本项目。Windows GUI Launcher 适合在 Windows 图形界面中安装、启动和维护本项目；Bash TUI / CLI Launcher 适合在 Linux、macOS 或其他终端环境中管理本项目，也可以接管已有安装目录并运行管理脚本。
-Windows GUI Launcher 文档：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
-Bash TUI / CLI Launcher 文档：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-tui
-
+五、详细文档
+- 启动与使用：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/usage/
+- 配置与镜像：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/config/
+- 维护与迁移：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/maintenance/
+- 常用命令：https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/commands/
+- Windows GUI Launcher：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui/
+- Bash TUI / CLI Launcher：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-tui/
 
 ====================================================================
 ########## Github 项目 ##########
