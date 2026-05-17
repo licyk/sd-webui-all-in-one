@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shutil
 from typing import Any
 from pathlib import Path
 
@@ -58,7 +59,10 @@ def pip_install(
         check_and_update_uv(custom_env=custom_env)
 
         try:
-            run_cmd(["uv", "pip", "install", *args], custom_env=custom_env, cwd=cwd)
+            if shutil.which("uv"):
+                run_cmd(["uv", "pip", "install", *args], custom_env=custom_env, cwd=cwd)
+            else:
+                run_cmd([Path(sys.executable).as_posix(), "-m", "uv", "pip", "install", *args], custom_env=custom_env, cwd=cwd)
             return
         except RuntimeError as e:
             logger.warning("检测到 uv 安装 Python 软件包失败, 尝试回退到 Pip 重试 Python 软件包安装: %s", e)

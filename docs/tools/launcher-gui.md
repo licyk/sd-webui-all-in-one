@@ -14,13 +14,13 @@ Windows GUI Launcher 是 `sd-webui-all-in-one-launcher` 的图形界面版本，
 如果已经下载源码，也可以手动运行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 临时试用 GUI：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\installer_launcher_gui.ps1
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\installer_launcher_gui.ps1
 ```
 
 ## 支持管理的 WebUI / 工具

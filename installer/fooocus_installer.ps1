@@ -251,10 +251,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 353
+$script:FOOOCUS_INSTALLER_VERSION = 354
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.14"
+$script:CORE_MINIMUM_VER = "2.2.15"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -4148,14 +4148,14 @@ for %%i in (%*) do (
 )
 
 if exist ```"%CorePrefixFile%```" (
-    for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"`$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(`$corePrefixText)) { `$corePrefixText.Trim() }```"') do (
+    for /f ```"delims=```" %%i in ('powershell -NoLogo -NoProfile -Command ```"```$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(```$corePrefixText)) { ```$corePrefixText.Trim() }```"') do (
         set CorePrefix=%%i
         goto :convert
     )
 )
 
 :convert
-for /f ```"delims=```" %%i in ('powershell -NoProfile -Command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
+for /f ```"delims=```" %%i in ('powershell -NoLogo -NoProfile -Command ```"```$current_path = '%CurrentPath%'.Trim('/').Trim('\'); ```$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(```$origin_core_prefix)) { ```$to_path = ```$origin_core_prefix; ```$from_uri = New-Object System.Uri(```$current_path.Replace('\', '/') + '/'); ```$to_uri = New-Object System.Uri(```$to_path.Replace('\', '/')); ```$origin_core_prefix = ```$from_uri.MakeRelativeUri(```$to_uri).ToString().Trim('/') }; Write-Host ```$origin_core_prefix```"') do (
     set CorePrefix=%%i
     goto :continue
 )
@@ -4608,14 +4608,14 @@ for %%i in (%*) do (
 )
 
 if exist `"%CorePrefixFile%`" (
-    for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"`$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(`$corePrefixText)) { `$corePrefixText.Trim() }`"') do (
+    for /f `"delims=`" %%i in ('powershell -NoLogo -NoProfile -Command `"`$corePrefixText = Get-Content -Path '%CorePrefixFile%' -Raw; if (-not [string]::IsNullOrWhiteSpace(`$corePrefixText)) { `$corePrefixText.Trim() }`"') do (
         set CorePrefix=%%i
         goto :convert
     )
 )
 
 :convert
-for /f `"delims=`" %%i in ('powershell -NoProfile -Command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
+for /f `"delims=`" %%i in ('powershell -NoLogo -NoProfile -Command `"`$current_path = '%CurrentPath%'.Trim('/').Trim('\'); `$origin_core_prefix = '%CorePrefix%'.Trim('/').Trim('\'); if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) { `$to_path = `$origin_core_prefix; `$from_uri = New-Object System.Uri(`$current_path.Replace('\', '/') + '/'); `$to_uri = New-Object System.Uri(`$to_path.Replace('\', '/')); `$origin_core_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/') }; Write-Host `$origin_core_prefix`"') do (
     set CorePrefix=%%i
     goto :continue
 )
@@ -4926,10 +4926,10 @@ if '%errorlevel%' NEQ '0' (
     title Configure environment
     echo :: Set PowerShell execution policies
     echo :: Executing command: `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
-    powershell -NoProfile -Command `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
+    powershell -NoLogo -NoProfile -Command `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
     echo :: Enable long paths supported
     echo :: Executing command: `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
-    powershell -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
+    powershell -NoLogo -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
     echo :: Configure completed
     echo :: Exit environment configuration script
     pause

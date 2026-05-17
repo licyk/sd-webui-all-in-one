@@ -103,7 +103,7 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
             显卡信息列表
     """
     try:
-        cmd = ["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
+        cmd = ["powershell", "-NoLogo", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
         result = subprocess.run(
             cmd,
             stdout=subprocess.PIPE,

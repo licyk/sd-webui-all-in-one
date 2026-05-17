@@ -28,10 +28,10 @@ if '%errorlevel%' NEQ '0' (
     title Configure environment
     echo :: Set PowerShell execution policies
     echo :: Executing command: "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
-    powershell "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
+    powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
     echo :: Enable long paths supported
     echo :: Executing command: "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
-    powershell "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
+    powershell -NoLogo -NoProfile -Command "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
     echo :: Configure completed
     echo :: Exit environment configuration script
     pause

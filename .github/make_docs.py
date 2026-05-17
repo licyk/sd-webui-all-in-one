@@ -39,10 +39,46 @@ def generate_launch_bat(psh_script: str) -> str:
 @setlocal DisableDelayedExpansion
 set "__WorkPath__=%~dp0"
 if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
-powershell -ExecutionPolicy Bypass -File "%__WorkPath__%\{{PSH_SCRIPT}}" %*
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%__WorkPath__%\{{PSH_SCRIPT}}" %*
 exit %errorlevel%
 """.strip()
     return content.replace(r"{{PSH_SCRIPT}}", psh_script)
+
+
+def generate_launch_hanamizuki_bat(base_path: Path) -> None:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+cmd /c "%__WorkPath__%\hanamizuki.bat" %*
+exit %errorlevel%
+"""
+    if not (base_path / "hanamizuki.bat").is_file():
+        return
+    print("[INFO] 生成绘世启动器启动脚本")
+    write_content_to_file(
+        content=content,
+        save_path=base_path / "启动绘世启动器.bat",
+        use_crlf=True,
+    )
+
+
+def generate_open_docs_bat(base_path: Path) -> None:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+powershell -NoLogo -NoProfile -Command "Invoke-Item (Join-Path '%__WorkPath__%' 'help.txt')" %*
+exit %errorlevel%
+"""
+    print("[INFO] 生成文档查询脚本")
+    write_content_to_file(
+        content=content,
+        save_path=base_path / "打开文档.bat",
+        use_crlf=True,
+    )
 
 
 def make_launch_scripts(base_path: Path, scripts: list[tuple[str, str]]) -> None:
@@ -137,11 +173,21 @@ https://space.bilibili.com/46497516
             ("download_models.ps1", "下载模型.bat"),
             ("switch_branch.ps1", "切换分支.bat"),
             ("reinstall_pytorch.ps1", "重装 PyTorch.bat"),
+            ("version_manager.ps1", "版本管理.bat"),
             ("settings.ps1", "打开 Installer 设置.bat"),
             ("terminal.ps1", "打开终端.bat"),
             ("train.ps1", "启动训练.bat"),
+            ("launch_comfyui_installer.ps1", "重新运行安装 ComfyUI.bat"),
+            ("launch_fooocus_installer.ps1", "重新运行安装 Fooocus.bat"),
+            ("launch_invokeai_installer.ps1", "重新运行安装 InvokeAI.bat"),
+            ("launch_qwen_tts_webui_installer.ps1", "重新运行安装 Qwen TTS WebUI.bat"),
+            ("launch_sd_trainer_installer.ps1", "重新运行安装 SD Trainer.bat"),
+            ("launch_sd_trainer_script_installer.ps1", "重新运行安装 SD Trainer Script.bat"),
+            ("launch_stable_diffusion_webui_installer.ps1", "重新运行安装 SD WebUI.bat"),
         ],
     )
+    generate_launch_hanamizuki_bat(docs_path)
+    generate_open_docs_bat(docs_path)
     install_hanamizuki_bg(docs_path)
 
 

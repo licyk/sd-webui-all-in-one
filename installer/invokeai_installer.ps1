@@ -225,10 +225,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 434
+$script:INVOKEAI_INSTALLER_VERSION = 435
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.14"
+$script:CORE_MINIMUM_VER = "2.2.15"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -4418,10 +4418,10 @@ if '%errorlevel%' NEQ '0' (
     title Configure environment
     echo :: Set PowerShell execution policies
     echo :: Executing command: `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
-    powershell -NoProfile -Command `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
+    powershell -NoLogo -NoProfile -Command `"Set-ExecutionPolicy Unrestricted -Scope CurrentUser`"
     echo :: Enable long paths supported
     echo :: Executing command: `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
-    powershell -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
+    powershell -NoLogo -NoProfile -Command `"New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force`"
     echo :: Configure completed
     echo :: Exit environment configuration script
     pause

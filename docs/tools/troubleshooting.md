@@ -45,7 +45,7 @@ Windows GUI Launcher 需要 Windows PowerShell 5.1 或 PowerShell 7+，并依赖
 可尝试：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\installer_launcher_gui.ps1
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\installer_launcher_gui.ps1
 ```
 
 如果仍然失败：

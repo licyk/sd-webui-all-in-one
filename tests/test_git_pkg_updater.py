@@ -158,6 +158,7 @@ def test_pip_install_prefers_uv_and_falls_back_to_pip(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pkg_manager, "check_and_update_pip", lambda custom_env=None: calls.append(("pip-check", custom_env.copy())))
     monkeypatch.setattr(pkg_manager, "check_and_update_uv", lambda custom_env=None: calls.append(("uv-check", custom_env.copy())))
+    monkeypatch.setattr(pkg_manager.shutil, "which", lambda name: "/usr/bin/uv" if name == "uv" else None)
 
     def fake_run_cmd(command, custom_env=None, cwd=None):
         calls.append(("run", command, custom_env.copy(), cwd))
@@ -174,6 +175,23 @@ def test_pip_install_prefers_uv_and_falls_back_to_pip(monkeypatch, tmp_path):
     assert run_calls[1][1] == [Path(sys.executable).as_posix(), "-m", "pip", "install", "demo", "--upgrade"]
     assert custom_env["KEEP"] == "1"
     assert custom_env["UV_PYTHON"] == Path(sys.executable).as_posix()
+
+
+def test_pip_install_uses_uv_module_when_uv_command_missing(monkeypatch, tmp_path):
+    calls = []
+    custom_env = {"KEEP": "1"}
+
+    monkeypatch.setattr(pkg_manager, "check_and_update_pip", lambda custom_env=None: calls.append(("pip-check", custom_env.copy())))
+    monkeypatch.setattr(pkg_manager, "check_and_update_uv", lambda custom_env=None: calls.append(("uv-check", custom_env.copy())))
+    monkeypatch.setattr(pkg_manager.shutil, "which", lambda name: None)
+    monkeypatch.setattr(pkg_manager, "run_cmd", lambda command, custom_env=None, cwd=None: calls.append(("run", command, custom_env.copy(), cwd)))
+
+    pkg_manager.pip_install("demo", "--upgrade", custom_env=custom_env, cwd=tmp_path)
+
+    run_calls = [call for call in calls if call[0] == "run"]
+    assert run_calls == [
+        ("run", [Path(sys.executable).as_posix(), "-m", "uv", "pip", "install", "demo", "--upgrade"], custom_env, tmp_path)
+    ]
 
 
 def test_install_manager_depend_filters_optional_groups_and_runs_system_commands(monkeypatch):
