@@ -3,6 +3,9 @@
 ## SD WebUI All In One Manager
 用于管理 `sd-webui-all-in-one` 自身的组件和补丁。
 
+!!! note
+    `check-pip` 和 `check-uv` 默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 `--no-pypi-mirror`；需要手动控制 PyPI 镜像时，请同时添加 `--no-auto-mirror`。
+
 ### 检查 Aria2
 检查 Aria2 是否需要更新。
 ```bash
@@ -17,6 +20,7 @@ sd-webui-all-in-one self-manager check-pip [选项]
 
 高级选项：
 
+- `--no-auto-mirror`：禁用自动镜像源选择，禁用后才会遵守 `--no-pypi-mirror`。
 - `--no-pypi-mirror`：不使用国内 PyPI 镜像源。
 
 ### 检查并更新 uv
@@ -26,6 +30,7 @@ sd-webui-all-in-one self-manager check-uv [选项]
 
 高级选项：
 
+- `--no-auto-mirror`：禁用自动镜像源选择，禁用后才会遵守 `--no-pypi-mirror`。
 - `--no-pypi-mirror`：不使用国内 PyPI 镜像源。
 
 ### Hotpatcher 配置管理

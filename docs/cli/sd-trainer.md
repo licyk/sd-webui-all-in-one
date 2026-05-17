@@ -3,6 +3,9 @@
 ## SD Trainer
 SD Trainer 是一款用于训练 Stable Diffusion 模型的工具。
 
+!!! note
+    本页中包含镜像源设置的子命令默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 PyPI、Github、HuggingFace 和模型下载源参数；需要手动调整 `--no-*mirror`、`--custom-*`、`--model-resource` 或 `--source` 时，请同时添加 `--no-auto-mirror`。
+
 ### 安装 SD Trainer
 ```bash
 sd-webui-all-in-one sd-trainer install [选项]

@@ -3,6 +3,9 @@
 ## Qwen TTS WebUI
 Qwen TTS WebUI 是一款基于 Qwen 模型的文本转语音软件。
 
+!!! note
+    本页中包含镜像源设置的子命令默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 PyPI、Github、HuggingFace 和模型下载源参数；需要手动调整 `--no-*mirror`、`--custom-*`、`--model-resource` 或 `--source` 时，请同时添加 `--no-auto-mirror`。
+
 ### 安装 Qwen TTS WebUI
 ```bash
 sd-webui-all-in-one qwen-tts-webui install [选项]

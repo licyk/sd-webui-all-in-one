@@ -53,3 +53,25 @@ pip install "sd-webui-all-in-one[full]"
 ```bash
 sd-webui-all-in-one --help
 ```
+
+## 自动镜像源选择
+
+CLI 中涉及 PyPI、Github、HuggingFace 或模型下载源的子命令默认启用自动镜像源选择。执行命令时会调用 `network_gfw_test()` 判断当前网络是否需要镜像源：
+
+- 当检测结果为 `True` 时，CLI 会强制使用官方源：关闭 PyPI、Github、HuggingFace 镜像源，并将模型下载源设为 `huggingface`。
+- 当检测结果为 `False` 时，CLI 会强制使用镜像源：启用 PyPI、Github、HuggingFace 镜像源，并将模型下载源设为 `modelscope`。
+
+!!! warning
+    自动镜像源选择会强制覆盖命令中已有的 `--no-pypi-mirror`、`--no-github-mirror`、`--no-hf-mirror`、`--custom-github-mirror`、`--custom-hf-mirror`、`--model-resource` 和 `--source`。如果需要手动调整这些镜像源设置，请显式添加 `--no-auto-mirror`。
+
+CLI 会在日志中提示是否启用了自动镜像源选择，以及最终使用官方源还是镜像源。
+
+示例：
+
+```bash
+# 默认自动模式，手动镜像参数可能会被网络检测结果覆盖
+sd-webui-all-in-one comfyui install --no-pypi-mirror --model-resource huggingface
+
+# 禁用自动模式后，才会遵守手动镜像参数
+sd-webui-all-in-one comfyui install --no-auto-mirror --no-pypi-mirror --model-resource huggingface
+```

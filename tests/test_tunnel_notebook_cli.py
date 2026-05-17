@@ -111,7 +111,7 @@ def test_base_tunnel_stop_terminates_or_kills_on_timeout(tmp_path):
 
     tunnel = DemoTunnel(7860, tmp_path)
     process = CleanProcess()
-    tunnel._process = process
+    tunnel._process = process  # ty: ignore[invalid-assignment]
     tunnel.stop()
     assert process.terminated is True
 
@@ -135,9 +135,10 @@ def test_base_tunnel_stop_terminates_or_kills_on_timeout(tmp_path):
         def kill(self):
             self.killed = True
 
-    tunnel._process = SlowProcess()
+    slow_process = SlowProcess()
+    tunnel._process = slow_process  # ty: ignore[invalid-assignment]
     tunnel.stop()
-    assert tunnel._process.killed is True
+    assert slow_process.killed is True
 
 
 class FakeRepoManager:
