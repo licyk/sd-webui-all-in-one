@@ -33,16 +33,28 @@ def write_content_to_file(
         file.write(content)
 
 
+def generate_select_powershell_bat() -> str:
+    return r"""
+set "__PowerShell__=powershell"
+where pwsh >nul 2>nul
+if not errorlevel 1 set "__PowerShell__=pwsh"
+""".strip()
+
+
 def generate_launch_bat(psh_script: str) -> str:
     content = r"""
 @echo off
 @setlocal DisableDelayedExpansion
 set "__WorkPath__=%~dp0"
 if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
-powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%__WorkPath__%\{{PSH_SCRIPT}}" %*
+{{SELECT_POWERSHELL}}
+"%__PowerShell__%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%__WorkPath__%\{{PSH_SCRIPT}}" %*
 exit %errorlevel%
 """.strip()
-    return content.replace(r"{{PSH_SCRIPT}}", psh_script)
+    return content.replace(
+        r"{{SELECT_POWERSHELL}}",
+        generate_select_powershell_bat(),
+    ).replace(r"{{PSH_SCRIPT}}", psh_script)
 
 
 def generate_launch_hanamizuki_bat(base_path: Path) -> None:
@@ -53,7 +65,7 @@ set "__WorkPath__=%~dp0"
 if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
 cmd /c "%__WorkPath__%\hanamizuki.bat" %*
 exit %errorlevel%
-"""
+""".strip()
     if not (base_path / "hanamizuki.bat").is_file():
         return
     print("[INFO] 生成绘世启动器启动脚本")
@@ -70,13 +82,73 @@ def generate_open_docs_bat(base_path: Path) -> None:
 @setlocal DisableDelayedExpansion
 set "__WorkPath__=%~dp0"
 if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
-powershell -NoLogo -NoProfile -Command "Invoke-Item (Join-Path '%__WorkPath__%' 'help.txt')" %*
+{{SELECT_POWERSHELL}}
+"%__PowerShell__%" -NoLogo -NoProfile -Command "Invoke-Item (Join-Path '%__WorkPath__%' 'help.txt')" %*
 exit %errorlevel%
-"""
+""".strip()
+    content = content.replace(r"{{SELECT_POWERSHELL}}", generate_select_powershell_bat())
     print("[INFO] 生成文档查询脚本")
     write_content_to_file(
         content=content,
         save_path=base_path / "打开文档.bat",
+        use_crlf=True,
+    )
+
+
+def generate_install_launcher_bat(base_path: Path) -> None:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+{{SELECT_POWERSHELL}}
+"%__PowerShell__%" -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference = 'Stop';" ^
+    "$PowerShell = [Environment]::GetEnvironmentVariable('__PowerShell__');" ^
+    "if (-not $PowerShell) { $PowerShell = 'powershell'; }" ^
+    "$WorkPath = [Environment]::GetEnvironmentVariable('__WorkPath__');" ^
+    "if ($WorkPath) { Set-Location -LiteralPath $WorkPath; }" ^
+    "$ScriptUrls = @(" ^
+    "    'https://github.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.ps1'," ^
+    "    'https://gitee.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.ps1'," ^
+    "    'https://github.com/licyk/sd-webui-all-in-one-launcher/raw/main/install.ps1'," ^
+    "    'https://gitlab.com/licyk/sd-webui-all-in-one-launcher/-/raw/main/install.ps1'," ^
+    "    'https://gitee.com/licyk/sd-webui-all-in-one-launcher/raw/main/install.ps1'" ^
+    ");" ^
+    "$TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ('sd-webui-all-in-one-launcher-' + [System.Guid]::NewGuid().ToString('N'));" ^
+    "$TempScript = Join-Path $TempDir 'install.ps1';" ^
+    "$ExitCode = 0;" ^
+    "try {" ^
+    "    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12;" ^
+    "    New-Item -Path $TempDir -ItemType Directory -Force | Out-Null;" ^
+    "    $Downloaded = $false;" ^
+    "    foreach ($Url in $ScriptUrls) {" ^
+    "        try {" ^
+    "            Write-Host ('Downloading SD WebUI All In One Launcher installer: ' + $Url);" ^
+    "            Invoke-WebRequest -Uri $Url -OutFile $TempScript -UseBasicParsing;" ^
+    "            if ((Test-Path -LiteralPath $TempScript) -and ((Get-Item -LiteralPath $TempScript).Length -gt 0)) { $Downloaded = $true; break; }" ^
+    "        } catch {" ^
+    "            Write-Warning ('Download failed: ' + $Url + ' - ' + $_.Exception.Message);" ^
+    "            Remove-Item -LiteralPath $TempScript -Force -ErrorAction SilentlyContinue;" ^
+    "        }" ^
+    "    }" ^
+    "    if (-not $Downloaded) { throw 'All download urls are unavailable.'; }" ^
+    "    & $PowerShell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $TempScript;" ^
+    "    if ($null -ne $LASTEXITCODE) { $ExitCode = $LASTEXITCODE; }" ^
+    "} catch {" ^
+    "    Write-Error $_;" ^
+    "    $ExitCode = 1;" ^
+    "} finally {" ^
+    "    Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue;" ^
+    "}" ^
+    "exit $ExitCode"
+exit %errorlevel%
+""".strip()
+    content = content.replace(r"{{SELECT_POWERSHELL}}", generate_select_powershell_bat())
+    print("[INFO] 生成 SD WebUI All In One 启动器安装脚本")
+    write_content_to_file(
+        content=content,
+        save_path=base_path / "安装 SD WebUI All In One 启动器.bat",
         use_crlf=True,
     )
 
@@ -188,6 +260,7 @@ https://space.bilibili.com/46497516
     )
     generate_launch_hanamizuki_bat(docs_path)
     generate_open_docs_bat(docs_path)
+    generate_install_launcher_bat(docs_path)
     install_hanamizuki_bg(docs_path)
 
 
