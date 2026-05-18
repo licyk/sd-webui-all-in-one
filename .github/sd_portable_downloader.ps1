@@ -79,7 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 103
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 104
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -547,6 +547,8 @@ function Invoke-Refresh {
         return "ERROR: " + $lastError
     }).AddArgument(@(
         "https://licyk.github.io/resources/portable_list.json",
+        "https://github.com/licyk/resources/raw/gh-pages/portable_list.json",
+        "https://gitlab.com/licyk/resources/-/raw/gh-pages/portable_list.json",
         "https://gitee.com/licyk/resources/raw/gh-pages/portable_list.json"
     ))
 
