@@ -598,19 +598,23 @@ def install_webui_model_from_library(
                 "提示:\n"
                 "1. 输入数字后回车\n"
                 "2. 如果需要下载多个模型, 可以输入多个数字并使用空格隔开\n"
-                "3. 输入 search 可以进入列表搜索模式, 可搜索列表中已有的模型\n"
+                "3. 输入 search 可以进入列表搜索模式, 输入 search <模型名称> 可以直接搜索\n"
                 "4. 输入 exit 退出模型下载"
             )
             user_input = input("==> ").strip()
 
-            if user_input == "exit":
+            if user_input.lower() == "exit":
                 return None
 
-            if user_input == "search":
+            command, _, command_arg = user_input.partition(" ")
+            if command.lower() == "search":
                 display_model = False
                 print_divider("=")
+                search_query = command_arg.strip()
+                if not search_query:
+                    search_query = input("请输入要从模型列表搜索的模型名称: ").strip()
                 search_models_from_library(
-                    query=input("请输入要从模型列表搜索的模型名称: "),
+                    query=search_query,
                     models=model_list,
                 )
                 print_divider("=")

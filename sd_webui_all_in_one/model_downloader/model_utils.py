@@ -1,5 +1,6 @@
 """模型库管理工具"""
 
+import re
 from pathlib import Path
 
 from sd_webui_all_in_one.downloader import (
@@ -216,6 +217,86 @@ def display_model_table(
         print()
 
 
+def normalize_model_search_text(
+    value: str,
+) -> str:
+    """归一化模型搜索文本
+
+    Args:
+        value (str):
+            要归一化的文本
+
+    Returns:
+        str: 去除分隔符并转换为小写后的文本
+    """
+    return "".join(char.lower() for char in value if char.isalnum())
+
+
+def get_model_search_text(
+    model: ModelCard,
+) -> tuple[str, str]:
+    """获取模型搜索文本
+
+    Args:
+        model (ModelCard):
+            模型信息
+
+    Returns:
+        tuple[str, str]: 原始搜索文本和归一化搜索文本
+    """
+    fields: list[str] = [
+        model["name"],
+        model["filename"],
+        model["dtype"],
+        Path(model["filename"]).stem,
+    ]
+    fields.extend(model["supported_webui"])
+    for webui in SUPPORTED_WEBUI_LIST:
+        save_dir = model["save_dir"].get(webui)
+        if save_dir is not None:
+            fields.append(save_dir)
+    raw_text = " ".join(fields).lower()
+    normalized_text = normalize_model_search_text(raw_text)
+    return raw_text, normalized_text
+
+
+def model_matches_search_query(
+    model: ModelCard,
+    query: str,
+) -> bool:
+    """判断模型是否匹配搜索关键词
+
+    Args:
+        model (ModelCard):
+            模型信息
+        query (str):
+            搜索关键词
+
+    Returns:
+        bool: 匹配时返回 True
+    """
+    query = query.strip()
+    if not query:
+        return False
+
+    query_lower = query.lower()
+    normalized_query = normalize_model_search_text(query)
+    query_terms = [
+        normalize_model_search_text(term)
+        for term in re.split(r"[\s,，;；/\\._-]+", query)
+        if normalize_model_search_text(term)
+    ]
+    raw_text, normalized_text = get_model_search_text(model)
+
+    if query_lower in raw_text:
+        return True
+
+    if normalized_query and normalized_query in normalized_text:
+        return True
+
+    return bool(query_terms) and all(term in normalized_text for term in query_terms)
+
+
 def search_models_from_library(
     query: str,
     models: ModelCardList,
@@ -234,10 +315,9 @@ def search_models_from_library(
 
     results_indices = []
     matched_items = []
-    query_lower = query.lower()
 
     for index, model in enumerate(models, start=1):
-        if query_lower in model["name"].lower() or query_lower in model["filename"].lower():
+        if model_matches_search_query(model, query):
             results_indices.append(index)
             matched_items.append((index, model))
 

@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -91,6 +90,87 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
         "install",
         {"torch_package": "torch-auto", "xformers_package": "xformers-auto", "custom_env": {"AUTO": "True"}, "use_uv": True},
     )
+
+
+def test_install_webui_model_from_library_interactive_direct_search(monkeypatch, tmp_path):
+    models = [
+        {
+            "name": "alpha",
+            "filename": "alpha.safetensors",
+            "url": {"modelscope": "https://modelscope.example/alpha"},
+            "dtype": "checkpoint",
+            "supported_webui": ["sd_webui"],
+            "save_dir": {"sd_webui": "models/Stable-diffusion"},
+        },
+        {
+            "name": "beta",
+            "filename": "beta.safetensors",
+            "url": {"modelscope": "https://modelscope.example/beta"},
+            "dtype": "checkpoint",
+            "supported_webui": ["sd_webui"],
+            "save_dir": {"sd_webui": "models/Stable-diffusion"},
+        },
+    ]
+    calls = []
+    inputs = iter(["search beta", "2"])
+
+    monkeypatch.setattr(base_module, "export_model_list", lambda dtype: models)
+    monkeypatch.setattr(base_module, "display_model_table", lambda model_list: calls.append(("display", model_list)))
+    monkeypatch.setattr(base_module, "print_divider", lambda char: calls.append(("divider", char)))
+    monkeypatch.setattr(base_module, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [2])
+    monkeypatch.setattr(base_module, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "beta.safetensors"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+
+    result = base_module.install_webui_model_from_library(
+        webui_path=tmp_path,
+        dtype="sd_webui",
+        interactive_mode=True,
+        downloader="urllib",
+    )
+
+    assert result == [tmp_path / "beta.safetensors"]
+    assert ("search", "beta", models) in calls
+    assert calls[-1] == (
+        "download",
+        {
+            "dtype": "sd_webui",
+            "base_path": tmp_path,
+            "download_resource_type": "modelscope",
+            "model_index": [2],
+            "downloader": "urllib",
+        },
+    )
+
+
+def test_install_webui_model_from_library_interactive_search_prompt(monkeypatch, tmp_path):
+    models = [
+        {
+            "name": "alpha",
+            "filename": "alpha.safetensors",
+            "url": {"modelscope": "https://modelscope.example/alpha"},
+            "dtype": "checkpoint",
+            "supported_webui": ["sd_webui"],
+            "save_dir": {"sd_webui": "models/Stable-diffusion"},
+        }
+    ]
+    calls = []
+    inputs = iter(["search", "alpha", "1"])
+
+    monkeypatch.setattr(base_module, "export_model_list", lambda dtype: models)
+    monkeypatch.setattr(base_module, "display_model_table", lambda model_list: calls.append(("display", model_list)))
+    monkeypatch.setattr(base_module, "print_divider", lambda char: calls.append(("divider", char)))
+    monkeypatch.setattr(base_module, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [1])
+    monkeypatch.setattr(base_module, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "alpha.safetensors"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+
+    result = base_module.install_webui_model_from_library(
+        webui_path=tmp_path,
+        dtype="sd_webui",
+        interactive_mode=True,
+    )
+
+    assert result == [tmp_path / "alpha.safetensors"]
+    assert ("search", "alpha", models) in calls
 
 
 def test_apply_git_base_config_uses_env_config_and_does_not_mutate_origin(monkeypatch, tmp_path):

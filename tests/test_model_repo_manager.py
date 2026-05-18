@@ -1,6 +1,5 @@
 import sys
 import types
-from pathlib import Path
 
 import pytest
 
@@ -48,6 +47,9 @@ def test_model_library_export_query_search_and_download(monkeypatch, tmp_path, c
 
     assert model_utils.search_models_from_library("alp", MODEL_FIXTURES) == [1]
     assert "alpha.safetensors" in capsys.readouterr().out
+    assert model_utils.search_models_from_library("alpha safe", MODEL_FIXTURES) == [1]
+    assert model_utils.search_models_from_library("sd-webui beta", MODEL_FIXTURES) == [2]
+    assert model_utils.search_models_from_library("check point beta", MODEL_FIXTURES) == [2]
 
     calls = []
 
