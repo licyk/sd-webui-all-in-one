@@ -125,7 +125,7 @@ if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
     "    foreach ($Url in $ScriptUrls) {" ^
     "        try {" ^
     "            Write-Host ('Downloading SD WebUI All In One Launcher installer: ' + $Url);" ^
-    "            Invoke-WebRequest -Uri $Url -OutFile $TempScript -UseBasicParsing;" ^
+    "            Invoke-WebRequest -Uri $Url -OutFile $TempScript -UseBasicParsing -TimeoutSec 15;" ^
     "            if ((Test-Path -LiteralPath $TempScript) -and ((Get-Item -LiteralPath $TempScript).Length -gt 0)) { $Downloaded = $true; break; }" ^
     "        } catch {" ^
     "            Write-Warning ('Download failed: ' + $Url + ' - ' + $_.Exception.Message);" ^
