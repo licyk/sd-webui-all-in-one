@@ -314,6 +314,16 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert pythonpath_args.patcher_action == "get-pythonpath"
     assert callable(pythonpath_args.func)
 
+    tcmalloc_args = parser.parse_args(["self-manager", "get-tcmalloc"])
+    assert tcmalloc_args.sd_webui_all_in_one_action == "get-tcmalloc"
+    assert tcmalloc_args.path is False
+    assert callable(tcmalloc_args.func)
+
+    tcmalloc_path_args = parser.parse_args(["self-manager", "get-tcmalloc", "--path"])
+    assert tcmalloc_path_args.sd_webui_all_in_one_action == "get-tcmalloc"
+    assert tcmalloc_path_args.path is True
+    assert callable(tcmalloc_path_args.func)
+
     gui_args = parser.parse_args(["self-manager", "patcher", "gui"])
     assert gui_args.patcher_action == "gui"
     assert gui_args.config == DEFAULT_HOTPATCHER_CONFIG_PATH

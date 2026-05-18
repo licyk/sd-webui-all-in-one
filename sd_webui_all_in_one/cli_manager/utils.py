@@ -28,7 +28,11 @@ from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
 )
-from sd_webui_all_in_one.optimize import get_cuda_malloc_var
+from sd_webui_all_in_one.optimize import (
+    get_cuda_malloc_var,
+    get_tcmalloc_path,
+    get_tcmalloc_var,
+)
 from sd_webui_all_in_one.logger import set_all_loggers_level
 from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.logger import get_logger
@@ -97,6 +101,28 @@ def get_cuda_malloc() -> None:
         prefix=LOGGER_NAME if LOGGER_NAME is not None else "sd_webui_all_in_one",
     )
     conf = get_cuda_malloc_var()
+    if conf is not None:
+        print(conf)
+
+
+def get_tcmalloc(
+    output_path: bool | None = False,
+) -> None:
+    """获取支持当前系统的 TCMalloc 配置
+
+    Args:
+        output_path (bool | None):
+            是否只输出可用的 TCMalloc 库路径
+    """
+    from sd_webui_all_in_one import config
+
+    config.LOGGER_LEVEL = logging.CRITICAL
+    set_all_loggers_level(
+        level=logging.CRITICAL,
+        prefix=LOGGER_NAME if LOGGER_NAME is not None else "sd_webui_all_in_one",
+    )
+
+    conf = get_tcmalloc_path() if output_path else get_tcmalloc_var()
     if conf is not None:
         print(conf)
 
@@ -398,6 +424,11 @@ def register_manager(
     # get-cuda-malloc
     get_cuda_malloc_p = sd_webui_all_in_one_sub.add_parser("get-cuda-malloc", help="获取支持当前设备的 CUDA 内存分配器配置")
     get_cuda_malloc_p.set_defaults(func=lambda args: get_cuda_malloc())
+
+    # get-tcmalloc
+    get_tcmalloc_p = sd_webui_all_in_one_sub.add_parser("get-tcmalloc", help="获取支持当前系统的 TCMalloc 配置")
+    get_tcmalloc_p.add_argument("--path", action="store_true", help="只输出可用的 TCMalloc 库路径")
+    get_tcmalloc_p.set_defaults(func=lambda args: get_tcmalloc(output_path=args.path))
 
     # get-env-config
     get_env_config_p = sd_webui_all_in_one_sub.add_parser("get-env-config", help="获取 SD WebUI All In One 使用的环境变量配置")

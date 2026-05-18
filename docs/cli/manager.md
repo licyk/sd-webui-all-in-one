@@ -107,6 +107,12 @@ sd-webui-all-in-one self-manager get-proxy
 sd-webui-all-in-one self-manager get-cuda-malloc
 ```
 
+### 获取适合当前系统的 TCMalloc 配置
+```bash
+sd-webui-all-in-one self-manager get-tcmalloc
+sd-webui-all-in-one self-manager get-tcmalloc --path
+```
+
 ### 获取 SD WebUI All In One 使用的环境变量配置
 ```bash
 sd-webui-all-in-one self-manager get-env-config
