@@ -4,6 +4,7 @@ import sys
 import copy
 import inspect
 import logging
+import importlib
 
 
 class LoggingColoredFormatter(logging.Formatter):
@@ -115,3 +116,31 @@ def set_all_loggers_level(
     for logger in loggers:
         if logger.name.startswith(prefix) or logger.name == "root":
             logger.setLevel(level if level is not None else logging.INFO)
+
+
+def silence_logger_output(
+    level: int = logging.CRITICAL,
+    prefix: str | None = None,
+) -> None:
+    """静默日志输出
+
+    Args:
+        level (int):
+            静默时使用的日志级别
+        prefix (str | None):
+            需要静默的日志器前缀, 默认为项目配置中的日志器名称
+    """
+    try:
+        config = importlib.import_module("sd_webui_all_in_one.config")
+    except ImportError:
+        config = None
+
+    if config is not None:
+        config.LOGGER_LEVEL = level
+        if prefix is None:
+            prefix = config.LOGGER_NAME if config.LOGGER_NAME is not None else "sd_webui_all_in_one"
+
+    set_all_loggers_level(
+        level=level,
+        prefix=prefix if prefix is not None else "sd_webui_all_in_one",
+    )

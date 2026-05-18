@@ -3,7 +3,6 @@
 import argparse
 import json
 import sys
-import logging
 import os
 import time
 from pathlib import Path
@@ -33,9 +32,8 @@ from sd_webui_all_in_one.optimize import (
     get_tcmalloc_path,
     get_tcmalloc_var,
 )
-from sd_webui_all_in_one.logger import set_all_loggers_level
 from sd_webui_all_in_one.tunnel import TunnelManager
-from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.logger import get_logger, silence_logger_output
 from sd_webui_all_in_one.utils import (
     print_divider,
     normalized_filepath,
@@ -93,13 +91,7 @@ def get_proxy() -> None:
 
 def get_cuda_malloc() -> None:
     """获取支持当前设备的 CUDA 内存分配器配置"""
-    from sd_webui_all_in_one import config
-
-    config.LOGGER_LEVEL = logging.CRITICAL
-    set_all_loggers_level(
-        level=logging.CRITICAL,
-        prefix=LOGGER_NAME if LOGGER_NAME is not None else "sd_webui_all_in_one",
-    )
+    silence_logger_output()
     conf = get_cuda_malloc_var()
     if conf is not None:
         print(conf)
@@ -114,14 +106,7 @@ def get_tcmalloc(
         output_path (bool | None):
             是否只输出可用的 TCMalloc 库路径
     """
-    from sd_webui_all_in_one import config
-
-    config.LOGGER_LEVEL = logging.CRITICAL
-    set_all_loggers_level(
-        level=logging.CRITICAL,
-        prefix=LOGGER_NAME if LOGGER_NAME is not None else "sd_webui_all_in_one",
-    )
-
+    silence_logger_output()
     conf = get_tcmalloc_path() if output_path else get_tcmalloc_var()
     if conf is not None:
         print(conf)
