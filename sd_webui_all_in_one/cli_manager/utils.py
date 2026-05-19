@@ -11,6 +11,7 @@ from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
     test_proxy_connectivity,
 )
+from sd_webui_all_in_one import config as app_config
 from sd_webui_all_in_one.updater import (
     check_aria2_version,
     check_and_update_uv,
@@ -114,30 +115,32 @@ def get_tcmalloc(
 
 def get_env_config() -> None:
     """获取 SD WebUI All In One 使用的环境变量信息"""
-    env = [
-        "SD_WEBUI_ALL_IN_ONE_LOGGER_NAME",
-        "SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL",
-        "SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR",
-        "SD_WEBUI_ALL_IN_ONE_RETRY_TIMES",
-        "SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH",
-        "SD_WEBUI_ROOT",
-        "COMFYUI_ROOT",
-        "FOOOCUS_ROOT",
-        "INVOKEAI_ROOT",
-        "SD_TRAINER_ROOT",
-        "SD_SCRIPTS_ROOT",
-        "QWEN_TTS_WEBUI_ROOT",
-        "SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR",
-        "SD_WEBUI_ALL_IN_ONE_PROXY",
-        "SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH",
-        "SD_WEBUI_ALL_IN_ONE_SET_CONFIG",
-        "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY",
-        "SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR",
-        "SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH",
-        "SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE",
-    ]
-    for e in env:
-        print(f"{e}: '{os.getenv(e)}'")
+    env_config = {
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_NAME": app_config.LOGGER_NAME,
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL": app_config.LOGGER_LEVEL,
+        "SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR": app_config.LOGGER_COLOR,
+        "SD_WEBUI_ALL_IN_ONE_RETRY_TIMES": app_config.RETRY_TIMES,
+        "SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH": app_config.SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
+        "SD_WEBUI_ROOT": app_config.SD_WEBUI_ROOT_PATH,
+        "COMFYUI_ROOT": app_config.COMFYUI_ROOT_PATH,
+        "FOOOCUS_ROOT": app_config.FOOOCUS_ROOT_PATH,
+        "INVOKEAI_ROOT": app_config.INVOKEAI_ROOT_PATH,
+        "SD_TRAINER_ROOT": app_config.SD_TRAINER_ROOT_PATH,
+        "SD_SCRIPTS_ROOT": app_config.SD_SCRIPTS_ROOT_PATH,
+        "QWEN_TTS_WEBUI_ROOT": app_config.QWEN_TTS_WEBUI_ROOT_PATH,
+        "SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR": app_config.SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR,
+        "SD_WEBUI_ALL_IN_ONE_PROXY": app_config.SD_WEBUI_ALL_IN_ONE_PROXY,
+        "SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH": app_config.SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH,
+        "SD_WEBUI_ALL_IN_ONE_SET_CONFIG": app_config.SD_WEBUI_ALL_IN_ONE_SET_CONFIG,
+        "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY": app_config.SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY,
+        "SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR": app_config.SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+        "SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH": app_config.SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
+        "SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE": app_config.SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE,
+    }
+    for name, value in env_config.items():
+        if isinstance(value, Path):
+            value = value.as_posix()
+        print(f"{name}: '{value}'")
 
 
 def start_tunnel(
