@@ -31,7 +31,8 @@ def clean_import_state():
         if (
             name == "modules"
             or name.startswith("modules.")
-            or name in {
+            or name
+            in {
                 "ComfyUI-Manager",
                 "ComfyUI-Manager-main",
                 "manager_core",
@@ -159,9 +160,7 @@ def test_apply_from_config_auto_a1111_uses_mirror_when_github_blocked(monkeypatc
     monkeypatch.setattr(
         extension_index_module,
         "_apply_github_raw_file_mirror",
-        lambda raw_file_path: (
-            calls.append(raw_file_path) or "https://mirror.example/auto-index.json"
-        ),
+        lambda raw_file_path: calls.append(raw_file_path) or "https://mirror.example/auto-index.json",
     )
 
     apply_from_config({"webui": {"enabled": True, "url": "auto"}})
@@ -267,12 +266,8 @@ def test_patch_extension_index_comfyui_manager_rewrites_manager_util_get_data_gi
             silent=True,
         )
     )
-    github_raw_result = asyncio.run(
-        manager_util.get_data("https://github.com/example/repo/raw/refs/heads/main/node.py")
-    )
-    github_blob_result = asyncio.run(
-        manager_util.get_data("https://github.com/example/repo/blob/main/readme.json")
-    )
+    github_raw_result = asyncio.run(manager_util.get_data("https://github.com/example/repo/raw/refs/heads/main/node.py"))
+    github_blob_result = asyncio.run(manager_util.get_data("https://github.com/example/repo/blob/main/readme.json"))
     other_result = asyncio.run(manager_util.get_data("https://example.com/data.json"))
 
     assert calls == [COMFYUI_MANAGER_RAW_FILE_PATH]

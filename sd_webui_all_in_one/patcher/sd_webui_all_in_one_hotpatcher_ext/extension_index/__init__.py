@@ -23,9 +23,7 @@ __all__ = [
 ]
 
 A1111_EXTENSION_INDEX_AUTO = "auto"
-A1111_EXTENSION_INDEX_RAW_FILE_PATH = (
-    "AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
-)
+A1111_EXTENSION_INDEX_RAW_FILE_PATH = "AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
 A1111_EXTENSION_INDEX_URLS = (
     "https://raw.githubusercontent.com/wiki/AUTOMATIC1111/stable-diffusion-webui/Extensions-index.md",
     "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json",
@@ -212,9 +210,7 @@ def apply_from_config(config: dict[str, Any] | None) -> None:
 
     webui_config = config.get("webui")
     if isinstance(webui_config, dict) and webui_config.get("enabled"):
-        resolved_extension_index_url = resolve_a1111_extension_index_url(
-            str(webui_config.get("url") or A1111_EXTENSION_INDEX_AUTO)
-        )
+        resolved_extension_index_url = resolve_a1111_extension_index_url(str(webui_config.get("url") or A1111_EXTENSION_INDEX_AUTO))
         if resolved_extension_index_url:
             patch_extension_index_a1111(resolved_extension_index_url)
 

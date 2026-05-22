@@ -348,9 +348,7 @@ class Monkey:
                 已执行代码的模块对象
         """
 
-        for function_name, hooker, _, add_if_not_exists in sorted(
-            self.function_patches, key=lambda x: x[2]
-        ):
+        for function_name, hooker, _, add_if_not_exists in sorted(self.function_patches, key=lambda x: x[2]):
             try:
                 if add_if_not_exists or function_name in module.__dict__:
                     original = module.__dict__.get(function_name)
@@ -467,7 +465,6 @@ class MonkeyZoo:
 
         self.monkeys.clear()
         self.aliases_fallback.clear()
-
 
 
 def _state_monkey_zoo(state: HotpatcherState) -> MonkeyZoo:
@@ -706,18 +703,10 @@ class MonkeySourceFileLoader(Loader):
         """
 
         code_object = self.get_code(module.__name__)
-        loading_context = (
-            self.meta_path_finder.currently_loading(module.__name__)
-            if self.meta_path_finder is not None
-            else nullcontext()
-        )
+        loading_context = self.meta_path_finder.currently_loading(module.__name__) if self.meta_path_finder is not None else nullcontext()
         with loading_context:
             self.monkey.eval_premodule(module)
-            execution_context = (
-                redirect_stdout(StringIO())
-                if None in self.monkey.output_prohibition
-                else nullcontext()
-            )
+            execution_context = redirect_stdout(StringIO()) if None in self.monkey.output_prohibition else nullcontext()
             with execution_context:
                 self.monkey.eval_import_injection(module)
                 exec(code_object, module.__dict__)
@@ -778,9 +767,7 @@ def uninstall_import_hook(*, state: HotpatcherState | None = None) -> None:
         finder.invalidate_caches()
 
     if importlib.util.spec_from_file_location is _spec_from_file_location_wrapper:
-        importlib.util.spec_from_file_location = (
-            active_state.import_hook_wrapped_spec_from_file_location or _original_spec_from_file_location
-        )
+        importlib.util.spec_from_file_location = active_state.import_hook_wrapped_spec_from_file_location or _original_spec_from_file_location
         active_state.import_hook_wrapped_spec_from_file_location = None
 
 
@@ -871,10 +858,4 @@ def _spec_from_file_location_wrapper(*args: Any, **kwargs: Any) -> ModuleSpec | 
 
 
 def _is_source_file_spec(spec: ModuleSpec | None) -> bool:
-    return (
-        spec is not None
-        and hasattr(spec, "loader")
-        and isinstance(spec.loader, SourceFileLoader)
-        and hasattr(spec.loader, "path")
-        and isinstance(spec.loader.path, (str, bytes, os.PathLike))
-    )
+    return spec is not None and hasattr(spec, "loader") and isinstance(spec.loader, SourceFileLoader) and hasattr(spec.loader, "path") and isinstance(spec.loader.path, (str, bytes, os.PathLike))

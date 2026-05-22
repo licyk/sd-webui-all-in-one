@@ -893,9 +893,7 @@ def _apply_runtime_config(
                     caught_exceptions_enabled=bool(caught_exceptions.get("enabled", False)),
                     caught_exceptions_threading=bool(caught_exceptions.get("threading", True)),
                     caught_exception_module_prefixes=_normalize_string_list(caught_exceptions.get("module_prefixes", [])),
-                    caught_exception_exclude_module_prefixes=_normalize_string_list(
-                        caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)
-                    ),
+                    caught_exception_exclude_module_prefixes=_normalize_string_list(caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)),
                     caught_exception_max_events_per_second=int(caught_exceptions.get("max_events_per_second", 20)),
                     state=state,
                 ),
@@ -982,10 +980,7 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
 
 
 def _is_extension_index_enabled(config: dict[str, Any]) -> bool:
-    return any(
-        isinstance(section, dict) and bool(section.get("enabled"))
-        for section in (config.get("webui"), config.get("comfyui_manager"))
-    )
+    return any(isinstance(section, dict) and bool(section.get("enabled")) for section in (config.get("webui"), config.get("comfyui_manager")))
 
 
 def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:

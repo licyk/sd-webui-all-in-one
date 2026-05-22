@@ -441,15 +441,17 @@ def register_sd_trainer(
     reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
     add_auto_mirror_argument(reinstall_pytorch_p)
     reinstall_pytorch_p.set_defaults(
-        func=with_auto_mirror(lambda args: reinstall_pytorch(
-            pytorch_name=args.name,
-            pytorch_index=args.index,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            interactive_mode=args.interactive_mode,
-            list_only=args.list_only,
-            force_reinstall=args.force_reinstall,
-        ))
+        func=with_auto_mirror(
+            lambda args: reinstall_pytorch(
+                pytorch_name=args.name,
+                pytorch_index=args.index,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                interactive_mode=args.interactive_mode,
+                list_only=args.list_only,
+                force_reinstall=args.force_reinstall,
+            )
+        )
     )
 
     # install
@@ -467,19 +469,21 @@ def register_sd_trainer(
     install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     add_auto_mirror_argument(install_p)
     install_p.set_defaults(
-        func=with_auto_mirror(lambda args: install(
-            sd_trainer_path=args.sd_trainer_path,
-            pytorch_mirror_type=args.pytorch_mirror_type,
-            custom_pytorch_package=args.custom_pytorch_package,
-            custom_xformers_package=args.custom_xformers_package,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            install_branch=args.install_branch,
-            no_pre_download_model=args.no_pre_download_model,
-            model_download_resource_type=args.model_download_resource_type,
-        ))
+        func=with_auto_mirror(
+            lambda args: install(
+                sd_trainer_path=args.sd_trainer_path,
+                pytorch_mirror_type=args.pytorch_mirror_type,
+                custom_pytorch_package=args.custom_pytorch_package,
+                custom_xformers_package=args.custom_xformers_package,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                install_branch=args.install_branch,
+                no_pre_download_model=args.no_pre_download_model,
+                model_download_resource_type=args.model_download_resource_type,
+            )
+        )
     )
 
     # update
@@ -489,11 +493,13 @@ def register_sd_trainer(
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(update_p)
     update_p.set_defaults(
-        func=with_auto_mirror(lambda args: update(
-            sd_trainer_path=args.sd_trainer_path,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: update(
+                sd_trainer_path=args.sd_trainer_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # check-env
@@ -505,13 +511,15 @@ def register_sd_trainer(
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     add_auto_mirror_argument(check_p)
     check_p.set_defaults(
-        func=with_auto_mirror(lambda args: check_env(
-            sd_trainer_path=args.sd_trainer_path,
-            use_uv=args.use_uv,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            use_pypi_mirror=args.use_pypi_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: check_env(
+                sd_trainer_path=args.sd_trainer_path,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                use_pypi_mirror=args.use_pypi_mirror,
+            )
+        )
     )
 
     # switch
@@ -524,14 +532,16 @@ def register_sd_trainer(
     switch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出分支列表并退出")
     add_auto_mirror_argument(switch_p)
     switch_p.set_defaults(
-        func=with_auto_mirror(lambda args: switch(
-            sd_trainer_path=args.sd_trainer_path,
-            branch=args.branch,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            interactive_mode=args.interactive_mode,
-            list_only=args.list_only,
-        ))
+        func=with_auto_mirror(
+            lambda args: switch(
+                sd_trainer_path=args.sd_trainer_path,
+                branch=args.branch,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                interactive_mode=args.interactive_mode,
+                list_only=args.list_only,
+            )
+        )
     )
 
     # launch
@@ -552,22 +562,24 @@ def register_sd_trainer(
     launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
     add_auto_mirror_argument(launch_p)
     launch_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch(
-            sd_trainer_path=args.sd_trainer_path,
-            launch_args=args.launch_args,
-            use_hf_mirror=args.use_hf_mirror,
-            custom_hf_mirror=args.custom_hf_mirror,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_cuda_malloc=args.use_cuda_malloc,
-            use_uv=args.use_uv,
-            check_launch_env=args.check_env,
-            enable_hotpatcher=args.enable_hotpatcher,
-            enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
-            hotpatcher_config_path=args.hotpatcher_config_path,
-            hotpatcher_port=args.hotpatcher_port,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch(
+                sd_trainer_path=args.sd_trainer_path,
+                launch_args=args.launch_args,
+                use_hf_mirror=args.use_hf_mirror,
+                custom_hf_mirror=args.custom_hf_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_cuda_malloc=args.use_cuda_malloc,
+                use_uv=args.use_uv,
+                check_launch_env=args.check_env,
+                enable_hotpatcher=args.enable_hotpatcher,
+                enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
+                hotpatcher_config_path=args.hotpatcher_config_path,
+                hotpatcher_port=args.hotpatcher_port,
+            )
+        )
     )
 
     # gui
@@ -580,11 +592,13 @@ def register_sd_trainer(
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(version_gui_p)
     version_gui_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch_version_gui(
-            sd_trainer_path=args.sd_trainer_path,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch_version_gui(
+                sd_trainer_path=args.sd_trainer_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # model
@@ -602,15 +616,17 @@ def register_sd_trainer(
     model_lib_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出模型列表并退出")
     add_auto_mirror_argument(model_lib_p)
     model_lib_p.set_defaults(
-        func=with_auto_mirror(lambda args: install_model_from_library(
-            sd_trainer_path=args.sd_trainer_path,
-            download_resource_type=args.source,
-            model_name=args.name,
-            model_index=args.index,
-            downloader=args.downloader,
-            interactive_mode=args.interactive,
-            list_only=args.list_only,
-        ))
+        func=with_auto_mirror(
+            lambda args: install_model_from_library(
+                sd_trainer_path=args.sd_trainer_path,
+                download_resource_type=args.source,
+                model_name=args.name,
+                model_index=args.index,
+                downloader=args.downloader,
+                interactive_mode=args.interactive,
+                list_only=args.list_only,
+            )
+        )
     )
 
     # model install-url

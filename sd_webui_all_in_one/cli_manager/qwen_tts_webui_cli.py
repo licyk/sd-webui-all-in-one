@@ -285,15 +285,17 @@ def register_qwen_tts_webui(
     reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
     add_auto_mirror_argument(reinstall_pytorch_p)
     reinstall_pytorch_p.set_defaults(
-        func=with_auto_mirror(lambda args: reinstall_pytorch(
-            pytorch_name=args.name,
-            pytorch_index=args.index,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            interactive_mode=args.interactive_mode,
-            list_only=args.list_only,
-            force_reinstall=args.force_reinstall,
-        ))
+        func=with_auto_mirror(
+            lambda args: reinstall_pytorch(
+                pytorch_name=args.name,
+                pytorch_index=args.index,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                interactive_mode=args.interactive_mode,
+                list_only=args.list_only,
+                force_reinstall=args.force_reinstall,
+            )
+        )
     )
 
     # install
@@ -309,17 +311,19 @@ def register_qwen_tts_webui(
     install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="默认配置资源来源")
     add_auto_mirror_argument(install_p)
     install_p.set_defaults(
-        func=with_auto_mirror(lambda args: install(
-            qwen_tts_webui_path=args.qwen_tts_webui_path,
-            pytorch_mirror_type=args.pytorch_mirror_type,
-            custom_pytorch_package=args.custom_pytorch_package,
-            custom_xformers_package=args.custom_xformers_package,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            model_download_resource_type=args.model_download_resource_type,
-        ))
+        func=with_auto_mirror(
+            lambda args: install(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
+                pytorch_mirror_type=args.pytorch_mirror_type,
+                custom_pytorch_package=args.custom_pytorch_package,
+                custom_xformers_package=args.custom_xformers_package,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                model_download_resource_type=args.model_download_resource_type,
+            )
+        )
     )
 
     # update
@@ -329,11 +333,13 @@ def register_qwen_tts_webui(
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(update_p)
     update_p.set_defaults(
-        func=with_auto_mirror(lambda args: update(
-            qwen_tts_webui_path=args.qwen_tts_webui_path,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: update(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # check-env
@@ -345,13 +351,15 @@ def register_qwen_tts_webui(
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(check_p)
     check_p.set_defaults(
-        func=with_auto_mirror(lambda args: check_env(
-            qwen_tts_webui_path=args.qwen_tts_webui_path,
-            use_uv=args.use_uv,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: check_env(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # launch
@@ -371,21 +379,23 @@ def register_qwen_tts_webui(
     launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
     add_auto_mirror_argument(launch_p)
     launch_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch(
-            qwen_tts_webui_path=args.qwen_tts_webui_path,
-            launch_args=args.launch_args,
-            use_hf_mirror=args.use_hf_mirror,
-            custom_hf_mirror=args.custom_hf_mirror,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_cuda_malloc=args.use_cuda_malloc,
-            check_launch_env=args.check_env,
-            enable_hotpatcher=args.enable_hotpatcher,
-            enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
-            hotpatcher_config_path=args.hotpatcher_config_path,
-            hotpatcher_port=args.hotpatcher_port,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
+                launch_args=args.launch_args,
+                use_hf_mirror=args.use_hf_mirror,
+                custom_hf_mirror=args.custom_hf_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_cuda_malloc=args.use_cuda_malloc,
+                check_launch_env=args.check_env,
+                enable_hotpatcher=args.enable_hotpatcher,
+                enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
+                hotpatcher_config_path=args.hotpatcher_config_path,
+                hotpatcher_port=args.hotpatcher_port,
+            )
+        )
     )
 
     # gui
@@ -398,9 +408,11 @@ def register_qwen_tts_webui(
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(version_gui_p)
     version_gui_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch_version_gui(
-            qwen_tts_webui_path=args.qwen_tts_webui_path,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch_version_gui(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )

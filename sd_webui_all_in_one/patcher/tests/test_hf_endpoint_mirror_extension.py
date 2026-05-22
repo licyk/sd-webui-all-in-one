@@ -85,17 +85,13 @@ def test_rewrite_huggingface_url_uses_hf_endpoint(monkeypatch):
     monkeypatch.setenv("HF_ENDPOINT", "https://hf.example/")
 
     assert rewrite_huggingface_url(HF_URL) == MIRROR_URL
-    assert rewrite_huggingface_url("https://huggingface.co/user/repo?download=1#frag") == (
-        "https://hf.example/user/repo?download=1#frag"
-    )
+    assert rewrite_huggingface_url("https://huggingface.co/user/repo?download=1#frag") == ("https://hf.example/user/repo?download=1#frag")
     monkeypatch.setenv("HF_ENDPOINT", "https://hf.example/base/")
     assert rewrite_huggingface_url(HF_URL) == "https://hf.example/base/user/repo/resolve/main/model.bin"
     monkeypatch.setenv("HF_ENDPOINT", "hf.example")
     assert rewrite_huggingface_url(HF_URL) == HF_URL
     assert rewrite_huggingface_url("https://example.com/user/repo") == "https://example.com/user/repo"
-    assert rewrite_huggingface_url("https://huggingface.co.evil/user/repo") == (
-        "https://huggingface.co.evil/user/repo"
-    )
+    assert rewrite_huggingface_url("https://huggingface.co.evil/user/repo") == ("https://huggingface.co.evil/user/repo")
     assert rewrite_huggingface_url(None) is None
 
 
@@ -292,9 +288,7 @@ def test_patch_comfyui_manager_model_downloads_rewrites_repo_file_downloads(
     manager_downloader.download_repo_in_bytes("user/repo", str(tmp_path / "models"))
 
     assert manager_downloader.api_endpoints == ["https://hf.example"]
-    assert manager_downloader.requested_urls == [
-        ("https://hf.example/user/repo/resolve/main/folder/model.bin", True)
-    ]
+    assert manager_downloader.requested_urls == [("https://hf.example/user/repo/resolve/main/folder/model.bin", True)]
     assert (tmp_path / "models" / "folder" / "model.bin").read_bytes() == b"abc"
 
 

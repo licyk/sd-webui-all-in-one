@@ -336,9 +336,11 @@ def register_manager(
     check_pip_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     add_auto_mirror_argument(check_pip_p)
     check_pip_p.set_defaults(
-        func=with_auto_mirror(lambda args: check_pip(
-            use_pypi_mirror=args.use_pypi_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: check_pip(
+                use_pypi_mirror=args.use_pypi_mirror,
+            )
+        )
     )
 
     # check-uv
@@ -346,9 +348,11 @@ def register_manager(
     check_uv_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     add_auto_mirror_argument(check_uv_p)
     check_uv_p.set_defaults(
-        func=with_auto_mirror(lambda args: check_uv(
-            use_pypi_mirror=args.use_pypi_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: check_uv(
+                use_pypi_mirror=args.use_pypi_mirror,
+            )
+        )
     )
 
     # patcher

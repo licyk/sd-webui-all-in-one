@@ -37,7 +37,7 @@ def get_pytorch_mirror_type_cuda(
     # cu128: 2.7.0 ~ 2.7.1
     # cu129: 2.8.0
     # cu130: 2.9.0 ~ 2.11.0
-    # cu132: 2.12.0 ~ 
+    # cu132: 2.12.0 ~
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 

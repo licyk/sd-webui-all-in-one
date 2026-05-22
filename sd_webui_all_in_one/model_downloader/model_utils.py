@@ -281,11 +281,7 @@ def model_matches_search_query(
 
     query_lower = query.lower()
     normalized_query = normalize_model_search_text(query)
-    query_terms = [
-        normalize_model_search_text(term)
-        for term in re.split(r"[\s,，;；/\\._-]+", query)
-        if normalize_model_search_text(term)
-    ]
+    query_terms = [normalize_model_search_text(term) for term in re.split(r"[\s,，;；/\\._-]+", query) if normalize_model_search_text(term)]
     raw_text, normalized_text = get_model_search_text(model)
 
     if query_lower in raw_text:

@@ -488,13 +488,15 @@ def register_invokeai(
     reinstall_pytorch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出 PyTorch 列表并退出")
     add_auto_mirror_argument(reinstall_pytorch_p)
     reinstall_pytorch_p.set_defaults(
-        func=with_auto_mirror(lambda args: reinstall_invokeai_pytorch(
-            device_type=args.device_type,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            interactive_mode=args.interactive_mode,
-            list_only=args.list_only,
-        ))
+        func=with_auto_mirror(
+            lambda args: reinstall_invokeai_pytorch(
+                device_type=args.device_type,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                interactive_mode=args.interactive_mode,
+                list_only=args.list_only,
+            )
+        )
     )
 
     # install
@@ -510,17 +512,19 @@ def register_invokeai(
     install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     add_auto_mirror_argument(install_p)
     install_p.set_defaults(
-        func=with_auto_mirror(lambda args: install(
-            invokeai_path=args.invokeai_path,
-            device_type=args.device_type,
-            invokeai_version=args.version,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            no_pre_download_model=args.no_pre_download_model,
-            model_download_resource_type=args.model_download_resource_type,
-        ))
+        func=with_auto_mirror(
+            lambda args: install(
+                invokeai_path=args.invokeai_path,
+                device_type=args.device_type,
+                invokeai_version=args.version,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                no_pre_download_model=args.no_pre_download_model,
+                model_download_resource_type=args.model_download_resource_type,
+            )
+        )
     )
 
     # update
@@ -529,10 +533,12 @@ def register_invokeai(
     update_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     add_auto_mirror_argument(update_p)
     update_p.set_defaults(
-        func=with_auto_mirror(lambda args: update(
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-        ))
+        func=with_auto_mirror(
+            lambda args: update(
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+            )
+        )
     )
 
     # check-env
@@ -543,12 +549,14 @@ def register_invokeai(
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(check_p)
     check_p.set_defaults(
-        func=with_auto_mirror(lambda args: check_env(
-            use_uv=args.use_uv,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: check_env(
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # launch
@@ -569,21 +577,23 @@ def register_invokeai(
     launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
     add_auto_mirror_argument(launch_p)
     launch_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch(
-            invokeai_path=args.invokeai_path,
-            launch_args=args.launch_args,
-            use_hf_mirror=args.use_hf_mirror,
-            custom_hf_mirror=args.custom_hf_mirror,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-            use_cuda_malloc=args.use_cuda_malloc,
-            check_launch_env=args.check_env,
-            enable_hotpatcher=args.enable_hotpatcher,
-            enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
-            hotpatcher_config_path=args.hotpatcher_config_path,
-            hotpatcher_port=args.hotpatcher_port,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch(
+                invokeai_path=args.invokeai_path,
+                launch_args=args.launch_args,
+                use_hf_mirror=args.use_hf_mirror,
+                custom_hf_mirror=args.custom_hf_mirror,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                use_cuda_malloc=args.use_cuda_malloc,
+                check_launch_env=args.check_env,
+                enable_hotpatcher=args.enable_hotpatcher,
+                enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
+                hotpatcher_config_path=args.hotpatcher_config_path,
+                hotpatcher_port=args.hotpatcher_port,
+            )
+        )
     )
 
     # gui
@@ -598,13 +608,15 @@ def register_invokeai(
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(version_gui_p)
     version_gui_p.set_defaults(
-        func=with_auto_mirror(lambda args: launch_version_gui(
-            invokeai_path=args.invokeai_path,
-            use_pypi_mirror=args.use_pypi_mirror,
-            use_uv=args.use_uv,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: launch_version_gui(
+                invokeai_path=args.invokeai_path,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # custom-node
@@ -619,12 +631,14 @@ def register_invokeai(
     node_install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(node_install_p)
     node_install_p.set_defaults(
-        func=with_auto_mirror(lambda args: install_custom_nodes(
-            invokeai_path=args.invokeai_path,
-            custom_node_url=args.url,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: install_custom_nodes(
+                invokeai_path=args.invokeai_path,
+                custom_node_url=args.url,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # custom-node status
@@ -653,11 +667,13 @@ def register_invokeai(
     node_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(node_update_p)
     node_update_p.set_defaults(
-        func=with_auto_mirror(lambda args: update_custom_nodes(
-            invokeai_path=args.invokeai_path,
-            use_github_mirror=args.use_github_mirror,
-            custom_github_mirror=args.custom_github_mirror,
-        ))
+        func=with_auto_mirror(
+            lambda args: update_custom_nodes(
+                invokeai_path=args.invokeai_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
     )
 
     # custom-node uninstall
@@ -686,15 +702,17 @@ def register_invokeai(
     model_lib_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出模型列表并退出")
     add_auto_mirror_argument(model_lib_p)
     model_lib_p.set_defaults(
-        func=with_auto_mirror(lambda args: install_model_from_library(
-            invokeai_path=args.invokeai_path,
-            download_resource_type=args.source,
-            model_name=args.name,
-            model_index=args.index,
-            downloader=args.downloader,
-            interactive_mode=args.interactive,
-            list_only=args.list_only,
-        ))
+        func=with_auto_mirror(
+            lambda args: install_model_from_library(
+                invokeai_path=args.invokeai_path,
+                download_resource_type=args.source,
+                model_name=args.name,
+                model_index=args.index,
+                downloader=args.downloader,
+                interactive_mode=args.interactive,
+                list_only=args.list_only,
+            )
+        )
     )
 
     # model install-url

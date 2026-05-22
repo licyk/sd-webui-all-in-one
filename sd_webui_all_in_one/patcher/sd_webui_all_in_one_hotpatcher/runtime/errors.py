@@ -44,6 +44,8 @@ _SENSITIVE_LOCAL_NAME_PARTS = (
     "credential",
     "bearer",
 )
+
+
 @dataclass
 class ExceptionReporter:
     """
@@ -187,20 +189,13 @@ class ErrorCapture:
         if self._sys_wrapper is not None and sys.excepthook is self._sys_wrapper:
             sys.excepthook = self._original_sys_excepthook
 
-        if (
-            self._threading_wrapper is not None
-            and hasattr(threading, "excepthook")
-            and threading.excepthook is self._threading_wrapper
-        ):
+        if self._threading_wrapper is not None and hasattr(threading, "excepthook") and threading.excepthook is self._threading_wrapper:
             threading.excepthook = self._original_threading_excepthook
 
         if self._unraisable_wrapper is not None and hasattr(sys, "unraisablehook") and sys.unraisablehook is self._unraisable_wrapper:
             sys.unraisablehook = self._original_unraisablehook
 
-        if (
-            self._asyncio_wrapper is not None
-            and asyncio_module.BaseEventLoop.call_exception_handler is self._asyncio_wrapper
-        ):
+        if self._asyncio_wrapper is not None and asyncio_module.BaseEventLoop.call_exception_handler is self._asyncio_wrapper:
             asyncio_module.BaseEventLoop.call_exception_handler = self._original_asyncio_call_exception_handler
 
         if self.caught_exception_tracer is not None:
@@ -527,9 +522,7 @@ def configure_error_capture_from_env(
         ),
         caught_exception_exclude_module_prefixes=_env_list(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_EXCLUDE_PREFIXES",
-            caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)
-            if isinstance(caught_exceptions, dict)
-            else DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
+            caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES) if isinstance(caught_exceptions, dict) else DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
         ),
         caught_exception_max_events_per_second=_env_int(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ERROR_CAUGHT_MAX_EVENTS_PER_SECOND",

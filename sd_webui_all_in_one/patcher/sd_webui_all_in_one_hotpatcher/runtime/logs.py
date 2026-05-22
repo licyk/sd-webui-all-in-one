@@ -178,9 +178,7 @@ def configure_log_capture_from_env(
         ),
         logger_exclude=_env_list(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOGGER_EXCLUDE",
-            config_logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)
-            if isinstance(config_logs, dict)
-            else DEFAULT_LOGGER_EXCLUDE,
+            config_logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE) if isinstance(config_logs, dict) else DEFAULT_LOGGER_EXCLUDE,
         ),
         hook_policy=_env_value(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_POLICY",
@@ -188,9 +186,7 @@ def configure_log_capture_from_env(
         ),
         hook_check_interval=_env_int(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_HOOK_CHECK_INTERVAL",
-            int(config_logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL))
-            if isinstance(config_logs, dict)
-            else DEFAULT_HOOK_CHECK_INTERVAL,
+            int(config_logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)) if isinstance(config_logs, dict) else DEFAULT_HOOK_CHECK_INTERVAL,
         ),
         fd_capture=_env_value(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOG_FD_CAPTURE",

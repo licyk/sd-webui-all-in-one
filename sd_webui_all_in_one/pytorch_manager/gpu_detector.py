@@ -318,9 +318,7 @@ def has_gpus(
     return any(
         x
         for x in gpu_list
-        if "Intel" in (x.get("AdapterCompatibility") or "")
-        or "NVIDIA" in (x.get("AdapterCompatibility") or "")
-        or "Advanced Micro Devices" in (x.get("AdapterCompatibility") or "")
+        if "Intel" in (x.get("AdapterCompatibility") or "") or "NVIDIA" in (x.get("AdapterCompatibility") or "") or "Advanced Micro Devices" in (x.get("AdapterCompatibility") or "")
     )
 
 
@@ -359,9 +357,7 @@ def has_intel_xpu(
             当列表中存在可用的 Intel 显卡时则返回 True
     """
     return any(
-        x
-        for x in gpu_list
-        if "Intel" in (x.get("AdapterCompatibility") or "") and ((x.get("Name") or "").startswith("Intel(R) Arc") or (x.get("Name") or "").startswith("Intel(R) Core Ultra"))
+        x for x in gpu_list if "Intel" in (x.get("AdapterCompatibility") or "") and ((x.get("Name") or "").startswith("Intel(R) Arc") or (x.get("Name") or "").startswith("Intel(R) Core Ultra"))
     )
 
 

@@ -93,9 +93,7 @@ def patch_comfyui_wd14_tagger() -> None:
             @wraps(func)
             async def wrapper(url, dst, *args, **kwargs):
                 rewritten = rewrite_huggingface_url(url)
-                task = asyncio.create_task(
-                    asyncio.to_thread(func, rewritten, dst, *args, **kwargs)
-                )
+                task = asyncio.create_task(asyncio.to_thread(func, rewritten, dst, *args, **kwargs))
                 await asyncio.sleep(0)
                 await task
                 return task.result()
@@ -273,9 +271,7 @@ def _download_comfyui_manager_repo_in_bytes(module: Any, repo_id: str, local_dir
 
             out_path = module.os.path.join(local_dir, file_info.rfilename)
             module.os.makedirs(module.os.path.dirname(out_path), exist_ok=True)
-            download_url = rewrite_huggingface_url(
-                f"https://huggingface.co/{repo_id}/resolve/main/{file_info.rfilename}"
-            )
+            download_url = rewrite_huggingface_url(f"https://huggingface.co/{repo_id}/resolve/main/{file_info.rfilename}")
 
             with module.requests.get(download_url, stream=True) as response, open(out_path, "wb") as file:
                 response.raise_for_status()

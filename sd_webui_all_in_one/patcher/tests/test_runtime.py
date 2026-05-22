@@ -271,11 +271,7 @@ def test_fault_channel_opens_raw_channel():
             channel = install_faulthandler(client, enable=False)
             channel.close()
 
-        assert host.wait_for(
-            lambda message: message.get("type") == "channel.open"
-            and message.get("channel") == "fault"
-            and message.get("token") == "fault-token"
-        )
+        assert host.wait_for(lambda message: message.get("type") == "channel.open" and message.get("channel") == "fault" and message.get("token") == "fault-token")
 
 
 def test_audit_hook_sends_filtered_event():
@@ -760,16 +756,8 @@ def test_log_capture_tees_stdout_and_stderr(capsys):
             print("stream hello")
             sys.stderr.write("stream bad\n")
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["stream"] == "stdout"
-                and "stream hello" in message["payload"]["text"]
-            )
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["stream"] == "stderr"
-                and "stream bad" in message["payload"]["text"]
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["stream"] == "stdout" and "stream hello" in message["payload"]["text"])
+            assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["stream"] == "stderr" and "stream bad" in message["payload"]["text"])
             uninstall_log_capture()
 
     captured = capsys.readouterr()
@@ -788,11 +776,7 @@ def test_log_capture_wraps_existing_stdout_hook():
                 install_log_capture(client, capture_logging=False, streams=("stdout",), subprocess_mode="0")
                 print("cooperative stdout")
 
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.stream"
-                    and message["payload"]["source"] == "stream"
-                    and "cooperative stdout" in message["payload"]["text"]
-                )
+                assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "stream" and "cooperative stdout" in message["payload"]["text"])
                 uninstall_log_capture()
                 assert sys.stdout is preexisting_hook
     finally:
@@ -810,16 +794,14 @@ def test_log_capture_stream_write_error_is_best_effort():
                 install_log_capture(client, capture_logging=False, streams=("stdout",), subprocess_mode="0")
                 print("stream write survives")
 
+                assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "stream" and "stream write survives" in message["payload"]["text"])
                 assert host.wait_for(
-                    lambda message: message.get("type") == "log.stream"
-                    and message["payload"]["source"] == "stream"
-                    and "stream write survives" in message["payload"]["text"]
-                )
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.hook_status"
-                    and message["payload"]["component"] == "stream.stdout"
-                    and message["payload"]["status"] == "error"
-                    and "write failed" in message["payload"]["detail"]
+                    lambda message: (
+                        message.get("type") == "log.hook_status"
+                        and message["payload"]["component"] == "stream.stdout"
+                        and message["payload"]["status"] == "error"
+                        and "write failed" in message["payload"]["detail"]
+                    )
                 )
     finally:
         uninstall_log_capture()
@@ -837,10 +819,12 @@ def test_log_capture_stream_flush_error_is_best_effort():
                 sys.stdout.flush()
 
                 assert host.wait_for(
-                    lambda message: message.get("type") == "log.hook_status"
-                    and message["payload"]["component"] == "stream.stdout"
-                    and message["payload"]["status"] == "error"
-                    and "flush failed" in message["payload"]["detail"]
+                    lambda message: (
+                        message.get("type") == "log.hook_status"
+                        and message["payload"]["component"] == "stream.stdout"
+                        and message["payload"]["status"] == "error"
+                        and "flush failed" in message["payload"]["detail"]
+                    )
                 )
     finally:
         uninstall_log_capture()
@@ -863,11 +847,7 @@ def test_log_capture_warns_when_stdout_hook_is_replaced():
                 )
                 sys.stdout = ForwardingStream(original_stdout)
 
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.hook_status"
-                    and message["payload"]["component"] == "stream.stdout"
-                    and message["payload"]["status"] == "lost"
-                )
+                assert host.wait_for(lambda message: message.get("type") == "log.hook_status" and message["payload"]["component"] == "stream.stdout" and message["payload"]["status"] == "lost")
     finally:
         uninstall_log_capture()
         sys.stdout = original_stdout
@@ -889,17 +869,9 @@ def test_log_capture_reapplies_when_stdout_hook_is_replaced():
                 )
                 sys.stdout = ForwardingStream(original_stdout)
 
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.hook_status"
-                    and message["payload"]["component"] == "stream.stdout"
-                    and message["payload"]["status"] == "reapplied"
-                )
+                assert host.wait_for(lambda message: message.get("type") == "log.hook_status" and message["payload"]["component"] == "stream.stdout" and message["payload"]["status"] == "reapplied")
                 print("after stdout reapply")
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.stream"
-                    and message["payload"]["source"] == "stream"
-                    and "after stdout reapply" in message["payload"]["text"]
-                )
+                assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "stream" and "after stdout reapply" in message["payload"]["text"])
     finally:
         uninstall_log_capture()
         sys.stdout = original_stdout
@@ -923,16 +895,14 @@ def test_log_capture_safe_subprocess_captures_explicit_pipe():
             assert result.stdout.strip() == "safe out"
             assert result.stderr.strip() == "safe err"
             assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "subprocess"
-                and message["payload"]["stream"] == "stdout"
-                and "safe out" in message["payload"]["text"]
+                lambda message: (
+                    message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and message["payload"]["stream"] == "stdout" and "safe out" in message["payload"]["text"]
+                )
             )
             assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "subprocess"
-                and message["payload"]["stream"] == "stderr"
-                and "safe err" in message["payload"]["text"]
+                lambda message: (
+                    message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and message["payload"]["stream"] == "stderr" and "safe err" in message["payload"]["text"]
+                )
             )
             uninstall_log_capture()
 
@@ -946,9 +916,7 @@ def test_log_capture_safe_subprocess_does_not_force_inherited_output():
                 check=True,
             )
             assert not host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "subprocess"
-                and "safe inherit" in message["payload"]["text"],
+                lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and "safe inherit" in message["payload"]["text"],
                 timeout=0.3,
             )
             uninstall_log_capture()
@@ -969,16 +937,14 @@ def test_log_capture_force_subprocess_captures_and_writes_back(capsys):
             )
 
             assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "subprocess"
-                and message["payload"]["stream"] == "stdout"
-                and "force out" in message["payload"]["text"]
+                lambda message: (
+                    message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and message["payload"]["stream"] == "stdout" and "force out" in message["payload"]["text"]
+                )
             )
             assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "subprocess"
-                and message["payload"]["stream"] == "stderr"
-                and "force err" in message["payload"]["text"]
+                lambda message: (
+                    message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and message["payload"]["stream"] == "stderr" and "force err" in message["payload"]["text"]
+                )
             )
             uninstall_log_capture()
 
@@ -1020,11 +986,7 @@ def test_log_capture_wraps_preexisting_subprocess_popen_hook():
                 )
 
                 assert result.stdout.strip() == "third party popen"
-                assert host.wait_for(
-                    lambda message: message.get("type") == "log.stream"
-                    and message["payload"]["source"] == "subprocess"
-                    and "third party popen" in message["payload"]["text"]
-                )
+                assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "subprocess" and "third party popen" in message["payload"]["text"])
                 uninstall_log_capture()
                 assert subprocess.Popen is ThirdPartyPopen
     finally:
@@ -1045,11 +1007,7 @@ def test_log_capture_warns_when_logging_handler_is_removed():
             assert capture._root_handler is not None
             logging.getLogger().removeHandler(capture._root_handler)
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.hook_status"
-                and message["payload"]["component"] == "logging"
-                and message["payload"]["status"] == "lost"
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.hook_status" and message["payload"]["component"] == "logging" and message["payload"]["status"] == "lost")
             uninstall_log_capture()
 
 
@@ -1067,18 +1025,11 @@ def test_log_capture_reapplies_removed_logging_handler():
             assert handler is not None
             logging.getLogger().removeHandler(handler)
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.hook_status"
-                and message["payload"]["component"] == "logging"
-                and message["payload"]["status"] == "reapplied"
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.hook_status" and message["payload"]["component"] == "logging" and message["payload"]["status"] == "reapplied")
             assert handler in logging.getLogger().handlers
 
             logging.getLogger("app.logging.reapply").warning("logging after reapply")
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.record"
-                and message["payload"]["message"] == "logging after reapply"
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.record" and message["payload"]["message"] == "logging after reapply")
             uninstall_log_capture()
 
 
@@ -1097,11 +1048,7 @@ def test_log_capture_fd_force_captures_os_write():
                 pytest.skip("fd capture is not supported in this environment")
 
             os.write(fd_capture.fd, b"fd force hello\n")
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["source"] == "fd"
-                and "fd force hello" in message["payload"]["text"]
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["source"] == "fd" and "fd force hello" in message["payload"]["text"])
             uninstall_log_capture()
 
 
@@ -1118,11 +1065,7 @@ def test_log_capture_bounded_and_raw_policy(capsys):
             )
             print("abcdef")
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["text"] == "abcde"
-                and message["payload"].get("truncated") is True
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["text"] == "abcde" and message["payload"].get("truncated") is True)
             uninstall_log_capture()
 
     capsys.readouterr()
@@ -1139,11 +1082,7 @@ def test_log_capture_bounded_and_raw_policy(capsys):
             )
             print("abcdef")
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "log.stream"
-                and message["payload"]["text"] == "abcdef"
-                and "truncated" not in message["payload"]
-            )
+            assert host.wait_for(lambda message: message.get("type") == "log.stream" and message["payload"]["text"] == "abcdef" and "truncated" not in message["payload"])
             uninstall_log_capture()
 
 
@@ -1215,10 +1154,7 @@ def test_bootstrap_installs_log_capture_from_env(monkeypatch):
         assert state.log_capture.fd_capture == "fallback"
         logging.getLogger("bootstrap.logs").warning("from bootstrap")
 
-        assert host.wait_for(
-            lambda message: message.get("type") == "log.record"
-            and message["payload"]["message"] == "from bootstrap"
-        )
+        assert host.wait_for(lambda message: message.get("type") == "log.record" and message["payload"]["message"] == "from bootstrap")
         uninstall_log_capture()
         state.runtime_client.close()
 
@@ -1254,16 +1190,8 @@ def test_bootstrap_installs_error_capture_from_config(monkeypatch):
                 captured_exc = exc
                 sys.excepthook(type(exc), exc, exc.__traceback__)
 
-            assert host.wait_for(
-                lambda message: message.get("type") == "error.exception"
-                and message["payload"]["message"] == "from bootstrap error capture"
-            )
-            event = next(
-                message
-                for message in host.messages
-                if message.get("type") == "error.exception"
-                and message["payload"]["message"] == "from bootstrap error capture"
-            )
+            assert host.wait_for(lambda message: message.get("type") == "error.exception" and message["payload"]["message"] == "from bootstrap error capture")
+            event = next(message for message in host.messages if message.get("type") == "error.exception" and message["payload"]["message"] == "from bootstrap error capture")
             assert _locals_for_function(event["payload"], "_raise_with_locals")["visible_local"]["repr"] == "'visible value'"
             assert calls and calls[0][1] is captured_exc
         finally:

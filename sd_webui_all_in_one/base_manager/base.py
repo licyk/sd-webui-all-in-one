@@ -142,9 +142,7 @@ def prepare_pytorch_install_info(
             _update_mirror(cast(PyTorchDeviceType, torch_part[0].split("+")[-1]))
         else:
             # 不存在类型声明时
-            mirror_device_type: PyTorchDeviceTypeCategory = (
-                auto_detect_pytorch_device_category() if device_type is None else cast(PyTorchDeviceTypeCategory, device_type)
-            )
+            mirror_device_type: PyTorchDeviceTypeCategory = auto_detect_pytorch_device_category() if device_type is None else cast(PyTorchDeviceTypeCategory, device_type)
             _update_mirror(
                 get_pytorch_mirror_type(
                     torch_ver=get_package_version(torch_part[0]),
