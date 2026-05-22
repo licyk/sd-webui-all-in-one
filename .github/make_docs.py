@@ -95,6 +95,25 @@ exit %errorlevel%
     )
 
 
+def generate_configure_env_bat(base_path: Path) -> None:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+cmd /c "%__WorkPath__%\configure_env.bat" %*
+exit %errorlevel%
+""".strip()
+    if not (base_path / "configure_env.bat").is_file():
+        return
+    print("[INFO] 生成配置环境脚本")
+    write_content_to_file(
+        content=content,
+        save_path=base_path / "配置环境并修复闪退.bat",
+        use_crlf=True,
+    )
+
+
 def generate_install_launcher_bat(base_path: Path) -> None:
     content = r"""
 @echo off
@@ -191,7 +210,7 @@ def main() -> None:
     args = get_args()
     docs_path: Path = args.docs_path
     help_content = """
-首次使用该需要双击运行 configure_env.bat 配置环境
+首次使用该需要双击运行 configure_env.bat 配置环境, 如果运行 PowerShell 脚本闪退时请运行这个脚本去修复闪退
 运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
 
 使用该整合包启动前请打开 help.txt 文件阅读说明
@@ -225,7 +244,7 @@ https://space.bilibili.com/46497516
 
     write_content_to_file(
         content=help_content,
-        save_path=docs_path / "说明.txt",
+        save_path=docs_path / "必读使用说明.txt",
     )
     write_content_to_file(
         content=sign_content,
@@ -261,6 +280,7 @@ https://space.bilibili.com/46497516
     generate_launch_hanamizuki_bat(docs_path)
     generate_open_docs_bat(docs_path)
     generate_install_launcher_bat(docs_path)
+    generate_configure_env_bat(docs_path)
     install_hanamizuki_bg(docs_path)
 
 
