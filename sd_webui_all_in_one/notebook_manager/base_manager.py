@@ -33,6 +33,7 @@ from sd_webui_all_in_one.utils import (
     print_divider,
 )
 from sd_webui_all_in_one.colab_tools import (
+    get_colab_secret as _get_colab_secret,
     is_colab_environment,
     mount_google_drive,
 )
@@ -48,8 +49,13 @@ from sd_webui_all_in_one.file_operations import (
     move_files,
     sync_files_and_create_symlink,
 )
-from sd_webui_all_in_one.kaggle_tools import import_kaggle_input
+from sd_webui_all_in_one.kaggle_tools import (
+    get_kaggle_secret as _get_kaggle_secret,
+    import_kaggle_input,
+)
 from sd_webui_all_in_one.cmd import run_cmd
+
+SecretType = Literal["colab", "kaggle"]
 
 
 logger = get_logger(
@@ -141,6 +147,31 @@ class BaseManager:
             hf_token=hf_token,
             ms_token=ms_token,
         )
+
+    def get_secret(
+        self,
+        secret_type: SecretType,
+        key: str,
+    ) -> str | None:
+        """根据密钥类型获取密钥
+
+        Args:
+            secret_type (SecretType):
+                密钥类型, 支持 `colab` / `kaggle`
+            key (str):
+                密钥名称
+
+        Returns:
+            (str | None):
+                密钥名称对应的密钥
+        """
+        if secret_type == "colab":
+            return _get_colab_secret(key)
+        if secret_type == "kaggle":
+            return _get_kaggle_secret(key)
+
+        logger.error("未知的密钥类型: %s", secret_type)
+        return None
 
     def get_model(
         self,
