@@ -101,7 +101,9 @@ def check_torch_version() -> None:
                 return
 
             logger.warning(
-                "当前设备支持的 PyTorch 类型为 %s, 而当前环境安装的 PyTorch 类型有 %s, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch", torch_type, avaliable_types
+                "当前设备支持的 PyTorch 类型有 %s, 而当前环境安装的 PyTorch 类型为 %s, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch",
+                avaliable_types,
+                torch_type,
             )
             return
 

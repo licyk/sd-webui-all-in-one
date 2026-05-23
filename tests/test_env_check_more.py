@@ -40,6 +40,20 @@ def test_check_torch_version_handles_missing_cpu_and_compatible_gpu(monkeypatch)
     check_torch_version.check_torch_version()
 
 
+def test_check_torch_version_warning_reports_supported_type_before_installed_type(monkeypatch):
+    warnings = []
+    monkeypatch.setattr(check_torch_version, "get_avaliable_pytorch_device_type", lambda: ["cu128"])
+    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
+    monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
+    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
+    monkeypatch.setattr(check_torch_version.logger, "warning", lambda *args: warnings.append(args))
+
+    check_torch_version.check_torch_version()
+
+    assert "当前设备支持的 PyTorch 类型有 %s, 而当前环境安装的 PyTorch 类型为 %s" in warnings[-1][0]
+    assert warnings[-1][1:] == (["cu128"], "cu121")
+
+
 def test_check_numpy_installs_only_when_version_is_too_new(monkeypatch):
     calls = []
     monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: "2.0.0")
