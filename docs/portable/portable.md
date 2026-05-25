@@ -98,7 +98,6 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=Stable+Diffusion+WebUI+reForge){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=Stable+Diffusion+WebUI+reForge){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
@@ -126,34 +125,33 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 详细绘世启动器使用说明可阅读：[绘世启动器使用说明 - SD Note](https://sdnote.netlify.app/sd_launcher)
 
 
-## Stable Diffusion WebUI Forge Classic
-![Stable Diffusion WebUI Forge Classic 整合包预览](../assets/images/portable/portable/stable-diffusion-webui-forge-classic.jpg)
+## Stable Diffusion WebUI Forge Neo
+![Stable Diffusion WebUI Forge Neo 整合包预览](../assets/images/portable/portable/stable-diffusion-webui-forge-neo.jpg)
 
 **基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。**
 
 支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=Stable+Diffusion+WebUI+Forge+Classic){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=Stable+Diffusion+WebUI+Forge+Classic){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=Stable+Diffusion+WebUI+Forge+Neo){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
 - configure_env.bat：首次使用 SD WebUI Installer 需要运行一次，保证能正常运行
-- launch.ps1：启动 Stable Diffusion WebUI Forge Classic
-- update.ps1：更新 Stable Diffusion WebUI Forge Classic
-- update_extension.ps1：更新 Stable Diffusion WebUI Forge Classic 扩展
+- launch.ps1：启动 Stable Diffusion WebUI Forge Neo
+- update.ps1：更新 Stable Diffusion WebUI Forge Neo
+- update_extension.ps1：更新 Stable Diffusion WebUI Forge Neo 扩展
 - download_models.ps1：下载模型
-- switch_branch.ps1：切换 Stable Diffusion WebUI Forge Classic 分支
+- switch_branch.ps1：切换 Stable Diffusion WebUI Forge Neo 分支
 - reinstall_pytorch.ps1：切换 / 重装 PyTorch
 - version_manager.ps1：管理对应 WebUI / 扩展的版本，安装、启用 / 禁用、卸载扩展
 - settings.ps1：SD WebUI Installer 设置
-- terminal.ps1：打开终端并进入 Stable Diffusion WebUI Forge Classic 环境
-- activate.ps1：激活 Stable Diffusion WebUI Forge Classic 环境
+- terminal.ps1：打开终端并进入 Stable Diffusion WebUI Forge Neo 环境
+- activate.ps1：激活 Stable Diffusion WebUI Forge Neo 环境
 - launch_stable_diffusion_webui_installer.ps1：运行 SD WebUI Installer 并执行安装任务
 
 详细 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
 ### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI`，并在高级选项中把安装路径指向 Stable Diffusion WebUI Forge Classic 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI`，并在高级选项中把安装路径指向 Stable Diffusion WebUI Forge Neo 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -168,7 +166,6 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=SD+Next){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=SD+Next){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
@@ -205,7 +202,6 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **Nvidia 显卡版本：**
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=ComfyUI){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=ComfyUI){ .md-button .md-button--primary }
 
 **AMD 显卡版本：**
@@ -281,7 +277,6 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 InvokeAI Installer / SD WebUI All In One Launcher 进行管理。
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=InvokeAI){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=InvokeAI){ .md-button .md-button--primary }
 
 ### InvokeAI Installer 管理方式

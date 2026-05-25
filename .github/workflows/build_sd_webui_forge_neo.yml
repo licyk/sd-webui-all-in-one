@@ -1,11 +1,11 @@
-name: Build SD WebUI Forge Classic
+name: Build SD WebUI Forge Neo
 
 on:
   workflow_dispatch:
 
 jobs:
-  Build-SD-WebUI-Forge-Classic:
-    name: Build SD WebUI Forge Classic
+  Build-SD-WebUI-Forge-Neo:
+    name: Build SD WebUI Forge Neo
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
@@ -42,7 +42,7 @@ jobs:
         run: |
           uv pip install insightface
 
-      - name: Launch SD WebUI Forge Classic to init component
+      - name: Launch SD WebUI Forge Neo to init component
         shell: pwsh
         env:
           PIP_NO_WARN_SCRIPT_LOCATION: 0
