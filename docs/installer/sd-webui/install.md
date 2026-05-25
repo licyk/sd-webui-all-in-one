@@ -113,14 +113,11 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[Mikubill/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
+    |[licyk/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
     |[pkuliyi2015/multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|
     |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
     |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
-    |[licyk/stable-diffusion-webui-model-toolkit](https://github.com/licyk/stable-diffusion-webui-model-toolkit)|
     |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
-    |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
-    |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
     |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
     |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
     |[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
@@ -164,10 +161,7 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[licyk/stable-diffusion-webui-model-toolkit](https://github.com/licyk/stable-diffusion-webui-model-toolkit)|
     |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
-    |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
-    |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
     |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
     |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
     |[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
@@ -185,7 +179,24 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/sd-webui-tcd-sampler](https://github.com/licyk/sd-webui-tcd-sampler)|
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[licyk/stable-diffusion-webui-model-toolkit](https://github.com/licyk/stable-diffusion-webui-model-toolkit)|
+    |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
+    |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
+    |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
+    |[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
+    
+    |[Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)|
+    |---|
+    |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
+    |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
+    |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
+    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
+    |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
+    |[Haoming02/sd-webui-mosaic-outpaint](https://github.com/Haoming02/sd-webui-mosaic-outpaint)|
+    |[Haoming02/sd-webui-resource-monitor](https://github.com/Haoming02/sd-webui-resource-monitor)|
+    |[licyk/sd-webui-tcd-sampler](https://github.com/licyk/sd-webui-tcd-sampler)|
+    |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
+    |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
     |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
     |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
     |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
@@ -207,14 +218,11 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[Mikubill/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
+    |[licyk/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
     |[pkuliyi2015/multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|
     |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
     |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
-    |[licyk/stable-diffusion-webui-model-toolkit](https://github.com/licyk/stable-diffusion-webui-model-toolkit)|
     |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
-    |[hako-mikan/sd-webui-supermerger](https://github.com/hako-mikan/sd-webui-supermerger)|
-    |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
     |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
     |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
     |[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|
@@ -235,7 +243,6 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
     |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
     |[licyk/a1111-sd-webui-haku-img](https://github.com/licyk/a1111-sd-webui-haku-img)|
-    |[continue-revolution/sd-webui-segment-anything](https://github.com/continue-revolution/sd-webui-segment-anything)|
     |[licyk/sd-webui-licyk-style-image](https://github.com/licyk/sd-webui-licyk-style-image)|
     |[w-e-w/sdwebui-close-confirmation-dialogue](https://github.com/w-e-w/sdwebui-close-confirmation-dialogue)|
     |[viyiviyi/stable-diffusion-webui-zoomimage](https://github.com/viyiviyi/stable-diffusion-webui-zoomimage)|

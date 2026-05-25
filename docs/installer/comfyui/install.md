@@ -73,9 +73,7 @@
     |[cubiq/ComfyUI_IPAdapter_plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus)|
     |[kijai/ComfyUI-Marigold](https://github.com/kijai/ComfyUI-Marigold)|
     |[pythongosssss/ComfyUI-WD14-Tagger](https://github.com/pythongosssss/ComfyUI-WD14-Tagger)|
-    |[BlenderNeko/ComfyUI_TiledKSampler](https://github.com/BlenderNeko/ComfyUI_TiledKSampler)|
     |[pythongosssss/ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts)|
-    |[LEv145/images-grid-comfy-plugin](https://github.com/LEv145/images-grid-comfy-plugin)|
     |[ssitu/ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale)|
     |[AlekPet/ComfyUI_Custom_Nodes_AlekPet](https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet)|
     |[talesofai/comfyui-browser](https://github.com/talesofai/comfyui-browser)|
@@ -83,7 +81,6 @@
     |[Suzie1/ComfyUI_Comfyroll_CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes)|
     |[crystian/ComfyUI-Crystools](https://github.com/crystian/ComfyUI-Crystools)|
     |[shiimizu/ComfyUI-TiledDiffusion](https://github.com/shiimizu/ComfyUI-TiledDiffusion)|
-    |[huchenlei/ComfyUI-openpose-editor](https://github.com/huchenlei/ComfyUI-openpose-editor)|
     |[licyk/ComfyUI-Restart-Sampler](https://github.com/licyk/ComfyUI-Restart-Sampler)|
     |[weilin9999/WeiLin-Comfyui-Tools](https://github.com/weilin9999/WeiLin-Comfyui-Tools)|
     |[licyk/ComfyUI-HakuImg](https://github.com/licyk/ComfyUI-HakuImg)|
