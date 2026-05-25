@@ -147,6 +147,55 @@ def test_file_operations_copy_move_remove_scan_and_sync(tmp_path):
     assert not moved.exists()
 
 
+def test_file_operations_copy_merge_directly_merges_directory(tmp_path):
+    src = tmp_path / "t"
+    src.mkdir()
+    (src / "a.txt").write_text("new", encoding="utf-8")
+    (src / "nested").mkdir()
+    (src / "nested" / "b.txt").write_text("b", encoding="utf-8")
+
+    dst = tmp_path / "test"
+    dst.mkdir()
+    (dst / "a.txt").write_text("old", encoding="utf-8")
+    (dst / "keep.txt").write_text("keep", encoding="utf-8")
+    (dst / "nested").mkdir()
+    (dst / "nested" / "old.txt").write_text("old", encoding="utf-8")
+
+    file_manager.copy_files_merge(src, dst)
+
+    assert not (dst / "t").exists()
+    assert (dst / "a.txt").read_text(encoding="utf-8") == "new"
+    assert (dst / "keep.txt").read_text(encoding="utf-8") == "keep"
+    assert (dst / "nested" / "b.txt").read_text(encoding="utf-8") == "b"
+    assert (dst / "nested" / "old.txt").read_text(encoding="utf-8") == "old"
+    assert (src / "a.txt").exists()
+
+
+def test_file_operations_move_merge_directly_merges_directory(tmp_path):
+    src = tmp_path / "t"
+    src.mkdir()
+    (src / "a.txt").write_text("new", encoding="utf-8")
+    (src / "nested").mkdir()
+    (src / "nested" / "b.txt").write_text("b", encoding="utf-8")
+
+    dst = tmp_path / "test"
+    dst.mkdir()
+    (dst / "a.txt").write_text("old", encoding="utf-8")
+    (dst / "keep.txt").write_text("keep", encoding="utf-8")
+    (dst / "nested").mkdir()
+    (dst / "nested" / "old.txt").write_text("old", encoding="utf-8")
+
+    file_manager.move_files_merge(src, dst)
+
+    assert not src.exists()
+    assert not (dst / "t").exists()
+    assert not (dst / "nested" / "nested").exists()
+    assert (dst / "a.txt").read_text(encoding="utf-8") == "new"
+    assert (dst / "keep.txt").read_text(encoding="utf-8") == "keep"
+    assert (dst / "nested" / "b.txt").read_text(encoding="utf-8") == "b"
+    assert (dst / "nested" / "old.txt").read_text(encoding="utf-8") == "old"
+
+
 def test_sync_files_and_create_symlink_preserves_existing_link_contents(tmp_path):
     src = tmp_path / "drive" / "models"
     link = tmp_path / "workspace" / "models"

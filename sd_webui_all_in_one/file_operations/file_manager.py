@@ -132,6 +132,71 @@ def copy_files(
         raise e
 
 
+def copy_files_merge(
+    src: Path,
+    dst: Path,
+) -> None:
+    """复制文件或目录, 当源为目录时直接合并到目标目录
+
+    与 copy_files 的区别:
+    当源路径为目录时, 不会在目标目录下额外创建源目录同名文件夹, 而是
+    将源目录中的内容直接复制并合并到目标路径。
+
+    Args:
+        src (Path):
+            源文件路径
+        dst (Path):
+            复制文件到指定的路径
+
+    Raises:
+        PermissionError:
+            没有权限复制文件时
+        OSError:
+            复制文件失败时
+        FileNotFoundError:
+            源文件未找到时
+        ValueError:
+            路径逻辑错误（如循环复制）时
+    """
+    try:
+        src_path = src.resolve()
+        dst_path = dst.resolve()
+
+        if not src_path.exists():
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path.is_dir():
+            if src_path == dst_path:
+                return
+
+            if dst_path.is_relative_to(src_path):
+                logger.error("不能将目录复制到自身的子目录中: '%s'", src)
+                raise ValueError(f"不能将目录复制到自身的子目录中: {src}")
+
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                shutil.copytree(src_path, dst_path, symlinks=True, dirs_exist_ok=True)
+            except shutil.Error:
+                shutil.copytree(src_path, dst_path, symlinks=False, dirs_exist_ok=True)
+            return
+
+        if dst_path.exists() and dst_path.is_dir():
+            dst_file = dst_path / src_path.name
+        else:
+            dst_file = dst_path
+
+        dst_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_path, dst_file)
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("复制失败: %s", e)
+        raise e
+
+
 def move_files(
     src: Path,
     dst: Path,
@@ -191,6 +256,87 @@ def move_files(
 
                 if src_path.exists():
                     src_path.rmdir()
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("移动失败: %s", e)
+        raise e
+
+
+def move_files_merge(
+    src: Path,
+    dst: Path,
+) -> None:
+    """移动文件或目录, 当源为目录时直接合并到目标目录
+
+    与 move_files 的区别:
+    当源路径为目录时, 不会在目标目录下额外创建源目录同名文件夹, 而是
+    将源目录中的内容直接移动并合并到目标路径。
+
+    Args:
+        src (Path):
+            源路径
+        dst (Path):
+            目标路径
+
+    Raises:
+        FileNotFoundError:
+            源路径不存在时
+        PermissionError:
+            权限不足以移动文件时
+        OSError:
+            移动文件失败时
+        ValueError:
+            路径逻辑错误（如循环移动）时
+    """
+    try:
+        src_path = src.resolve()
+        dst_path = dst.resolve()
+
+        if not src_path.exists():
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path == dst_path:
+            return
+
+        if src_path.is_file() or src_path.is_symlink():
+            if dst_path.exists() and dst_path.is_dir():
+                final_dst = dst_path / src_path.name
+            else:
+                final_dst = dst_path
+
+            if final_dst.is_file():
+                remove_files(final_dst)
+
+            final_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src_path), str(final_dst))
+            return
+
+        if src_path.is_dir():
+            if dst_path.is_relative_to(src_path):
+                logger.error("不能将目录移动到自身的子目录中: '%s'", src)
+                raise ValueError(f"不能将目录移动到自身的子目录中: {src}")
+
+            if dst_path.exists() and not dst_path.is_dir():
+                remove_files(dst_path)
+
+            dst_path.mkdir(parents=True, exist_ok=True)
+            logger.debug("目标目录执行直接合并操作: '%s' -> '%s'", src_path, dst_path)
+            for item in src_path.iterdir():
+                if item.is_symlink():
+                    final_dst = dst_path / item.name
+                    if final_dst.exists() or final_dst.is_symlink():
+                        remove_files(final_dst)
+                    final_dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(item), str(final_dst))
+                else:
+                    move_files_merge(item, dst_path / item.name)
+
+            if src_path.exists():
+                src_path.rmdir()
 
     except PermissionError as e:
         logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)

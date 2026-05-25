@@ -7,7 +7,9 @@ from sd_webui_all_in_one.file_operations.archive_manager import (
 from sd_webui_all_in_one.file_operations.file_manager import (
     remove_files,
     copy_files,
+    copy_files_merge,
     move_files,
+    move_files_merge,
     get_file_list,
     generate_dir_tree,
     recursive_tree_builder,
@@ -25,7 +27,9 @@ __all__ = [
     # file_manager.py
     "remove_files",
     "copy_files",
+    "copy_files_merge",
     "move_files",
+    "move_files_merge",
     "get_file_list",
     "generate_dir_tree",
     "recursive_tree_builder",
