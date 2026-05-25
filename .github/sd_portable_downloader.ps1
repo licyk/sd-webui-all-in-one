@@ -79,7 +79,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 104
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 105
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -1033,6 +1033,7 @@ function Start-App {
                         <Button Name="ProjBtn" Content="项目主页" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                         <Button Name="DocBtn" Content="使用说明" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                         <Button Name="LauncherBtn" Content="启动器下载" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                        <Button Name="IssueBtn" Content="问题反馈" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                     </StackPanel>
                 </Grid>
 
@@ -1245,7 +1246,7 @@ function Start-App {
         StableRadio = $window.FindName("Stable"); NightlyRadio = $window.FindName("Nightly"); HFRadio = $window.FindName("HF"); MSRadio = $window.FindName("MS")
         RefreshBtn = $window.FindName("RefreshBtn"); ToggleQueueBtn = $window.FindName("ToggleQueueBtn"); BrowseBtn = $window.FindName("BrowseBtn")
         AutoExtract = $window.FindName("AutoExtract"); AutoDelete = $window.FindName("AutoDelete")
-        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn"); LauncherBtn = $window.FindName("LauncherBtn");
+        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn"); LauncherBtn = $window.FindName("LauncherBtn"); IssueBtn = $window.FindName("IssueBtn");
         LoadingOverlay = $window.FindName("LoadingOverlay")
         TitleBar = $window.FindName("TitleBar"); CloseBtn = $window.FindName("CloseBtn")
         MinBtn = $window.FindName("MinBtn"); MaxBtn = $window.FindName("MaxBtn")
@@ -1403,6 +1404,7 @@ function Start-App {
     $UI.ProjBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one" })
     $UI.DocBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/portable/portable" })
     $UI.LauncherBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui" })
+    $UI.IssueBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/issues" })
 
     # 队列显隐切换 (增加过渡动画)
     $UI.ToggleQueueBtn.Add_Click({
