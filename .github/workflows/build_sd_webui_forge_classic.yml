@@ -22,7 +22,7 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
-            -InstallPath "${{ github.workspace }}/sd_webui_forge_classic" `
+            -InstallPath "${{ github.workspace }}/sd_webui_forge_neo" `
             -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithLaunch `
@@ -37,7 +37,7 @@ jobs:
       - name: Install Insightface
         shell: pwsh
         env:
-          UV_PYTHON: "${{ github.workspace }}/sd_webui_forge_classic/core/python/python.exe"
+          UV_PYTHON: "${{ github.workspace }}/sd_webui_forge_neo/core/python/python.exe"
           UV_LINK_MODE: copy
         run: |
           uv pip install insightface
@@ -49,9 +49,9 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         continue-on-error: true
         run: |
-          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_classic/core"
-          & "${{ github.workspace }}/sd_webui_forge_classic/core/python/python.exe" `
-            "${{ github.workspace }}/sd_webui_forge_classic/core/launch.py" `
+          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_neo/core"
+          & "${{ github.workspace }}/sd_webui_forge_neo/core/python/python.exe" `
+            "${{ github.workspace }}/sd_webui_forge_neo/core/launch.py" `
             --exit `
             --skip-torch-cuda-test `
             --use-cpu all `
@@ -61,7 +61,7 @@ jobs:
       - name: Launch to complete dependencies
         shell: pwsh
         run: |
-          & "${{ github.workspace }}/sd_webui_forge_classic/launch.ps1" `
+          & "${{ github.workspace }}/sd_webui_forge_neo/launch.ps1" `
             -BuildMode `
             -DisableAutoMirror `
             -DisablePyPIMirror `
@@ -72,25 +72,25 @@ jobs:
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
-            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_classic/core/models/VAE-approx"
+            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_neo/core/models/VAE-approx"
 
       - name: Make docs
         shell: pwsh
         run: |
-          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui_forge_classic"
+          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui_forge_neo"
 
       - name: Clean cache dir
         shell: pwsh
         run: |
-          Remove-Item -Path "${{ github.workspace }}/sd_webui_forge_classic/cache" -Force -Recurse
+          Remove-Item -Path "${{ github.workspace }}/sd_webui_forge_neo/cache" -Force -Recurse
 
       - name: Archive
         shell: pwsh
         run: |
           & "${{ github.workspace }}/.github/archive_portable.ps1" `
-            -SoftwareName "sd_webui_forge_classic" `
+            -SoftwareName "sd_webui_forge_neo" `
             -Workspace "${{ github.workspace }}" `
-            -Source "${{ github.workspace }}/sd_webui_forge_classic" `
+            -Source "${{ github.workspace }}/sd_webui_forge_neo" `
             -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
             -Author "licyk"
 
