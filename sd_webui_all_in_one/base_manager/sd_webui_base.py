@@ -443,7 +443,7 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
     },
     {
         "name": "sd-webui-controlnet",
-        "url": "https://github.com/Mikubill/sd-webui-controlnet",
+        "url": "https://github.com/licyk/sd-webui-controlnet",
         "save_dir": "extensions/sd-webui-controlnet",
         "supported_branch": [
             "sd_webui_main",
@@ -486,20 +486,6 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
         ],
     },
     {
-        "name": "stable-diffusion-webui-model-toolkit",
-        "url": "https://github.com/licyk/stable-diffusion-webui-model-toolkit",
-        "save_dir": "extensions/stable-diffusion-webui-model-toolkit",
-        "supported_branch": [
-            "sd_webui_main",
-            "sd_webui_dev",
-            "sd_webui_reforge_main",
-            "sd_webui_reforge_dev",
-            "sd_webui_forge_classic",
-            "sd_webui_forge_neo",
-            "sd_webui_amdgpu",
-        ],
-    },
-    {
         "name": "a1111-sd-webui-haku-img",
         "url": "https://github.com/licyk/a1111-sd-webui-haku-img",
         "save_dir": "extensions/a1111-sd-webui-haku-img",
@@ -511,32 +497,6 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
             "sd_webui_reforge_dev",
             "sd_webui_forge_classic",
             "sd_webui_forge_neo",
-            "sd_webui_amdgpu",
-            "sd_next_main",
-            "sd_next_dev",
-        ],
-    },
-    {
-        "name": "sd-webui-supermerger",
-        "url": "https://github.com/hako-mikan/sd-webui-supermerger",
-        "save_dir": "extensions/sd-webui-supermerger",
-        "supported_branch": [
-            "sd_webui_main",
-            "sd_webui_dev",
-            "sd_webui_reforge_main",
-            "sd_webui_reforge_dev",
-            "sd_webui_amdgpu",
-        ],
-    },
-    {
-        "name": "sd-webui-segment-anything",
-        "url": "https://github.com/continue-revolution/sd-webui-segment-anything",
-        "save_dir": "extensions/sd-webui-segment-anything",
-        "supported_branch": [
-            "sd_webui_main",
-            "sd_webui_dev",
-            "sd_webui_reforge_main",
-            "sd_webui_reforge_dev",
             "sd_webui_amdgpu",
             "sd_next_main",
             "sd_next_dev",

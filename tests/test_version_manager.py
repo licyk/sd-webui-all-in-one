@@ -123,7 +123,7 @@ def test_parse_extension_index_tolerates_missing_fields():
     items = parse_extension_index(
         {
             "extensions": [
-                {"name": "ControlNet", "url": "https://github.com/Mikubill/sd-webui-controlnet", "tags": ["script", "models"]},
+                {"name": "ControlNet", "url": "https://github.com/licyk/sd-webui-controlnet", "tags": ["script", "models"]},
                 {"description": "missing url"},
                 {"url": "https://github.com/example/example-extension"},
             ]

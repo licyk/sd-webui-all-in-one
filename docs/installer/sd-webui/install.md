@@ -113,7 +113,7 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|
+    |[Mikubill/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
     |[pkuliyi2015/multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|
     |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
     |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|
@@ -207,7 +207,7 @@ SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-W
     |[licyk/advanced_euler_sampler_extension](https://github.com/licyk/advanced_euler_sampler_extension)|
     |[hako-mikan/sd-webui-regional-prompter](https://github.com/hako-mikan/sd-webui-regional-prompter)|
     |[Akegarasu/sd-webui-model-converter](https://github.com/Akegarasu/sd-webui-model-converter)|
-    |[Mikubill/sd-webui-controlnet](https://github.com/Mikubill/sd-webui-controlnet)|
+    |[Mikubill/sd-webui-controlnet](https://github.com/licyk/sd-webui-controlnet)|
     |[pkuliyi2015/multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111)|
     |[mcmonkeyprojects/sd-dynamic-thresholding](https://github.com/mcmonkeyprojects/sd-dynamic-thresholding)|
     |[hako-mikan/sd-webui-lora-block-weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)|

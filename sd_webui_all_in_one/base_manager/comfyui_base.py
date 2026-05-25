@@ -121,19 +121,9 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "save_dir": "custom_nodes/ComfyUI-WD14-Tagger",
     },
     {
-        "name": "ComfyUI_TiledKSampler",
-        "url": "https://github.com/BlenderNeko/ComfyUI_TiledKSampler",
-        "save_dir": "custom_nodes/ComfyUI_TiledKSampler",
-    },
-    {
         "name": "ComfyUI-Custom-Scripts",
         "url": "https://github.com/pythongosssss/ComfyUI-Custom-Scripts",
         "save_dir": "custom_nodes/ComfyUI-Custom-Scripts",
-    },
-    {
-        "name": "images-grid-comfy-plugin",
-        "url": "https://github.com/LEv145/images-grid-comfy-plugin",
-        "save_dir": "custom_nodes/images-grid-comfy-plugin",
     },
     {
         "name": "ComfyUI_UltimateSDUpscale",
@@ -169,11 +159,6 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "name": "ComfyUI-TiledDiffusion",
         "url": "https://github.com/shiimizu/ComfyUI-TiledDiffusion",
         "save_dir": "custom_nodes/ComfyUI-TiledDiffusion",
-    },
-    {
-        "name": "ComfyUI-openpose-editor",
-        "url": "https://github.com/huchenlei/ComfyUI-openpose-editor",
-        "save_dir": "custom_nodes/ComfyUI-openpose-editor",
     },
     {
         "name": "ComfyUI-Restart-Sampler",
